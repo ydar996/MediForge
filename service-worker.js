@@ -1,8 +1,8 @@
 // Purpose: Root-scoped service worker with absolute paths to avoid cache addAll failures
 // TRACE LOG: Service worker updated to v=200 for mobile consistency
-const CACHE_NAME = "ehr-cache-v20251019043800";
-const STATIC_CACHE = "ehr-static-v20251019043800";
-const DYNAMIC_CACHE = "ehr-dynamic-v20251019043800";
+const CACHE_NAME = "mediforge-cache-v20251019043800";
+const STATIC_CACHE = "mediforge-static-v20251019043800";
+const DYNAMIC_CACHE = "mediforge-dynamic-v20251019043800";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",

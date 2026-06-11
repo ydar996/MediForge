@@ -10,7 +10,7 @@ $filesChecked = 0
 
 # List of critical JavaScript files to check
 $criticalFiles = @(
-    "js/ehr-org-patient-id.js",
+    "js/mediforge-org-patient-id.js",
     "js/patients.js",
     "js/patient-id-normalizer.js",
     "js/patients-supabase.js",

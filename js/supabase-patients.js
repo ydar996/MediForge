@@ -279,8 +279,8 @@ window.generateSupabasePatientId = async function(organizationId) {
       .single();
 
     let orgPrefix;
-    if (typeof window.ehrResolveDefaultPatientIdPrefix === 'function') {
-      orgPrefix = window.ehrResolveDefaultPatientIdPrefix(organizationId, org, {
+    if (typeof window.mfResolveDefaultPatientIdPrefix === 'function') {
+      orgPrefix = window.mfResolveDefaultPatientIdPrefix(organizationId, org, {
         orgFetchFailed: !!(orgError || !org)
       });
     } else if (orgError || !org) {
@@ -304,16 +304,16 @@ window.generateSupabasePatientId = async function(organizationId) {
 
     if (error) {
       console.error('❌ [SUPABASE-PATIENTS] Error getting patient IDs:', error.message);
-      return typeof window.ehrFormatPatientMrn === 'function'
-        ? window.ehrFormatPatientMrn(orgPrefix, 1)
+      return typeof window.mfFormatPatientMrn === 'function'
+        ? window.mfFormatPatientMrn(orgPrefix, 1)
         : `${orgPrefix}0001`;
     }
 
     let maxNumber =
-      typeof window.ehrMaxPatientMrnNumericSuffix === 'function'
-        ? window.ehrMaxPatientMrnNumericSuffix(patients)
+      typeof window.mfMaxPatientMrnNumericSuffix === 'function'
+        ? window.mfMaxPatientMrnNumericSuffix(patients)
         : 0;
-    if (typeof window.ehrMaxPatientMrnNumericSuffix !== 'function') {
+    if (typeof window.mfMaxPatientMrnNumericSuffix !== 'function') {
       const stemPatterns = [
         /^MIN([0-9]{4})$/i,
         /^MFA([0-9]{4})$/i,
@@ -341,8 +341,8 @@ window.generateSupabasePatientId = async function(organizationId) {
 
     const nextNumber = maxNumber + 1;
     const patientId =
-      typeof window.ehrFormatPatientMrn === 'function'
-        ? window.ehrFormatPatientMrn(orgPrefix, nextNumber)
+      typeof window.mfFormatPatientMrn === 'function'
+        ? window.mfFormatPatientMrn(orgPrefix, nextNumber)
         : `${orgPrefix}${nextNumber.toString().padStart(4, '0')}`;
 
     console.log('✅ [SUPABASE-PATIENTS] Generated patient ID:', patientId);

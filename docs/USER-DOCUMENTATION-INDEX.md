@@ -1,6 +1,6 @@
 # MediForge user documentation index
 
-**Last updated:** May 2026
+**Last updated:** June 2026
 
 ## Start here (all clinic staff)
 
@@ -44,4 +44,10 @@ npm run manual:screenshots
 
 ## Developer / deployment docs
 
-Not for end users: `DEPLOYMENT-HANDOVER.md`, `AGENT-HANDOVER.md`, and files under `supabase/migrations/`.
+Not for end users. Technical index: **[DOCUMENTATION-INDEX.md](DOCUMENTATION-INDEX.md)**.
+
+| Document | Purpose |
+|----------|---------|
+| [AGENT-HANDOVER.md](../AGENT-HANDOVER.md) | Living handover for AI agents |
+| [GO-LIVE-GUIDE.md](../GO-LIVE-GUIDE.md) | First Netlify + Supabase setup |
+| [PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md) | Architecture reference |

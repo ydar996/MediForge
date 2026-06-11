@@ -113,7 +113,7 @@
 | `deleted-patients.html` | | | | |
 | `delete-unknown-patients.html` | | | | |
 | `diagnose-broken-functionality.html` | | | | |
-| `diagnose-ehr-app.html` | | | | |
+| `diagnose-mediforge-app.html` | | | | |
 | `diagnose-patient-data.html` | | | | |
 | `diagnose-user-auth.html` | | | | |
 | `diagnose-user-login.html` | | | | |

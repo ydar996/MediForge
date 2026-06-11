@@ -128,7 +128,7 @@ const patientData = {
 1. **Choose your preferred solution** from the options above
 2. **Execute the fix** using your chosen method
 3. **Verify the results** using the verification tools
-4. **Test the EHR application** to ensure it displays patient DOB correctly
+4. **Test MediForgelication** to ensure it displays patient DOB correctly
 5. **Document the resolution** for future reference
 
 ## Support
@@ -139,4 +139,4 @@ If you encounter any issues with these fixes, please:
 3. Verify your Supabase configuration and permissions
 4. Ensure all required fields are properly configured
 
-The tools I've created should resolve the missing date of birth issue and ensure all patient data is properly migrated to Supabase and synced with your EHR application.
+The tools I've created should resolve the missing date of birth issue and ensure all patient data is properly migrated to Supabase and synced with MediForgelication.

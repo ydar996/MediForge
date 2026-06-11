@@ -458,7 +458,7 @@ Print this and check off as you test:
 
 ---
 
-*Happy testing! Your EHR system is now much more secure.* 🛡️
+*Happy testing! Your MediForge is now much more secure.* 🛡️
 
 
 

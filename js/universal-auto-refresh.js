@@ -42,7 +42,7 @@ console.log('🔄 Universal auto refresh loaded with smart loop prevention');
         }
         
         // Check if localStorage has old version
-        const storedVersion = localStorage.getItem('ehrAppVersion');
+        const storedVersion = localStorage.getItem('mediforgeAppVersion');
         if (storedVersion && (storedVersion.includes('20251019043800') || storedVersion.includes('20251019050000'))) {
             console.log('🔄 Old localStorage version detected, forcing refresh');
             return true;
@@ -77,7 +77,7 @@ console.log('🔄 Universal auto refresh loaded with smart loop prevention');
         }
         
         // Clear localStorage versions
-        localStorage.removeItem('ehrAppVersion');
+        localStorage.removeItem('mediforgeAppVersion');
         localStorage.removeItem('universalAutoRefreshVersion');
         localStorage.removeItem('autoRefreshVersion');
         

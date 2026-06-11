@@ -1,7 +1,7 @@
 /**
  * Pharmacy Inventory Bulk Import
  * Parses CSV or Excel (.xlsx) opening stock and imports into medication_inventory.
- * NORMALIZES medication names to EHR format (DRUG_DATABASE) for legacy single-column format.
+ * NORMALIZES medication names to MediForge format (DRUG_DATABASE) for legacy single-column format.
  * Preferred columns: generic in Medication Name; Brand Name → brand_name; Manufacturer → manufacturer;
  * Count per Card → pack_size; M/D/YYYY and ISO expiry supported.
  */

@@ -44,7 +44,7 @@ ORDER BY patient_id;
 ```
 
 ### Check in Your EHR App:
-1. **Open your EHR application**
+1. **Open MediForgelication**
 2. **Go to the patient list**
 3. **Verify that patients now show their dates of birth**
 
@@ -100,7 +100,7 @@ Your backup file contains these DOB entries:
 
 1. **Get the organization ID** using the `get-org-id.html` tool
 2. **Run the fix** using `fix-patient-dob-migration.html`
-3. **Confirm it works** by checking your EHR app
+3. **Confirm it works** by checking MediForge
 4. **Let me know if you need help** with the Netlify deployment
 
 ## Safety Measures
@@ -114,7 +114,7 @@ Your backup file contains these DOB entries:
 
 1. Open `get-org-id.html` → Get your organization ID
 2. Open `fix-patient-dob-migration.html` → Enter org ID → Click "Fix Missing DOB"
-3. Test your EHR app → Verify DOB data is showing
+3. Test MediForge → Verify DOB data is showing
 4. Deploy to Netlify → Push changes to git or trigger manual deploy
 
 That's it! The missing date of birth issue will be completely resolved.

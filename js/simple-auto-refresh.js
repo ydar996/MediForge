@@ -147,7 +147,7 @@ console.log('🔄 Simple Auto-Refresh System loaded');
         console.log('🔍 Checking if refresh is needed (ignoring loop state)...');
         
         // Check localStorage version
-        const storedVersion = localStorage.getItem('ehrAppVersion');
+        const storedVersion = localStorage.getItem('mediforgeAppVersion');
         if (storedVersion !== CONFIG.CURRENT_VERSION) {
             console.log('🔄 Version mismatch:', storedVersion, 'vs', CONFIG.CURRENT_VERSION);
             return true;
@@ -197,7 +197,7 @@ console.log('🔄 Simple Auto-Refresh System loaded');
         
         // Clear mobile-specific localStorage keys
         const keysToRemove = [
-            'ehrAppVersion', 'autoRefreshVersion', 'universalAutoRefreshVersion',
+            'mediforgeAppVersion', 'autoRefreshVersion', 'universalAutoRefreshVersion',
             'mobileCacheNotificationShown', 'appVersion', 'mobileCacheRefresh',
             'ehrAppCache', 'mobileAppCache', 'browserCache'
         ];
@@ -255,13 +255,13 @@ console.log('🔄 Simple Auto-Refresh System loaded');
             }
             
             // Clear localStorage
-            localStorage.removeItem('ehrAppVersion');
+            localStorage.removeItem('mediforgeAppVersion');
             localStorage.removeItem('autoRefreshVersion');
             localStorage.removeItem('universalAutoRefreshVersion');
         }
         
         // Set new version
-        localStorage.setItem('ehrAppVersion', CONFIG.CURRENT_VERSION);
+        localStorage.setItem('mediforgeAppVersion', CONFIG.CURRENT_VERSION);
         
         // Create new URL with mobile-specific parameters
         const url = new URL(window.location);

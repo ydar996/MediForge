@@ -440,7 +440,7 @@ MAX_LENGTHS: {
 
 ## ✅ Summary
 
-**Your EHR system now has enterprise-grade security:**
+**Your MediForge now has enterprise-grade security:**
 
 - 🔐 Secure session management
 - 🛡️ XSS attack protection

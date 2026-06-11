@@ -429,7 +429,7 @@
     return st;
   };
 
-  var PV_BANNER_SNOOZE_PREFIX = 'ehr_pv_banner_snooze_';
+  var PV_BANNER_SNOOZE_PREFIX = 'mediforge_pv_banner_snooze_';
 
   function pvBannerSnoozeKey(userId) {
     return PV_BANNER_SNOOZE_PREFIX + userId;

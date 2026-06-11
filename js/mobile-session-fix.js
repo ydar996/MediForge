@@ -100,7 +100,7 @@ if (navigator.userAgent.match(/Mobile|Android|iPhone|iPad/)) {
     if ('caches' in window) {
       caches.keys().then(names => {
         names.forEach(name => {
-          if (name.includes('ehr-cache')) {
+          if (name.includes('mediforge-cache')) {
             caches.delete(name);
             console.log('🔧 Cleared cache:', name);
           }

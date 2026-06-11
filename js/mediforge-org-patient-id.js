@@ -5,11 +5,11 @@
 (function () {
   'use strict';
 
-  window.EHR_MFASC_ORGANIZATION_ID = '94534e80-06a8-468f-b8a2-ece3f07697c4';
-  window.EHR_MFASC_DEFAULT_PATIENT_ID_PREFIX = 'MFA-SC';
+  window.MFASC_ORGANIZATION_ID = '94534e80-06a8-468f-b8a2-ece3f07697c4';
+  window.MFASC_DEFAULT_PATIENT_ID_PREFIX = 'MFA-SC';
 
-  window.ehrIsMfascOrganization = function (orgId) {
-    return String(orgId || '') === window.EHR_MFASC_ORGANIZATION_ID;
+  window.mfIsMfascOrganization = function (orgId) {
+    return String(orgId || '') === window.MFASC_ORGANIZATION_ID;
   };
 
   /**
@@ -17,10 +17,10 @@
    * @param {{ name?: string, settings?: object } | null} orgRow
    * @param {{ orgFetchFailed?: boolean } | undefined} opts
    */
-  window.ehrResolveDefaultPatientIdPrefix = function (organizationId, orgRow, opts) {
+  window.mfResolveDefaultPatientIdPrefix = function (organizationId, orgRow, opts) {
     const failed = opts && opts.orgFetchFailed;
-    if (failed && window.ehrIsMfascOrganization(organizationId)) {
-      return window.EHR_MFASC_DEFAULT_PATIENT_ID_PREFIX;
+    if (failed && window.mfIsMfascOrganization(organizationId)) {
+      return window.MFASC_DEFAULT_PATIENT_ID_PREFIX;
     }
     if (
       orgRow &&
@@ -30,8 +30,8 @@
     ) {
       return orgRow.settings.patient_id_prefix.trim().toUpperCase();
     }
-    if (window.ehrIsMfascOrganization(organizationId)) {
-      return window.EHR_MFASC_DEFAULT_PATIENT_ID_PREFIX;
+    if (window.mfIsMfascOrganization(organizationId)) {
+      return window.MFASC_DEFAULT_PATIENT_ID_PREFIX;
     }
     if (!orgRow || !orgRow.name) {
       return 'ORG';
@@ -39,7 +39,7 @@
     return (orgRow.name || '').substring(0, 3).toUpperCase() || 'ORG';
   };
 
-  window.ehrMaxPatientMrnNumericSuffix = function (patientRows) {
+  window.mfMaxPatientMrnNumericSuffix = function (patientRows) {
     var stemPatterns = [
       /^MIN([0-9]{4})$/i,
       /^MFA([0-9]{4})$/i,
@@ -67,27 +67,27 @@
     return maxNumber;
   };
 
-  window.ehrFormatPatientMrn = function (prefix, numeric) {
+  window.mfFormatPatientMrn = function (prefix, numeric) {
     return String(prefix) + String(numeric).padStart(4, '0');
   };
 
   /** Sync: best-effort prefix from localStorage org cache (MFASC always MFA-SC if no settings). */
-  window.ehrCachedOrgPatientPrefix = function (organizationId) {
+  window.mfCachedOrgPatientPrefix = function (organizationId) {
     if (!organizationId) return null;
     try {
       var user = JSON.parse(localStorage.getItem('user') || '{}');
       var orgs = JSON.parse(localStorage.getItem('organizations') || '{}');
       if (user.org && orgs[user.org] && orgs[user.org].id === organizationId) {
-        return window.ehrResolveDefaultPatientIdPrefix(organizationId, orgs[user.org], {});
+        return window.mfResolveDefaultPatientIdPrefix(organizationId, orgs[user.org], {});
       }
       for (var k in orgs) {
         if (orgs[k] && orgs[k].id === organizationId) {
-          return window.ehrResolveDefaultPatientIdPrefix(organizationId, orgs[k], {});
+          return window.mfResolveDefaultPatientIdPrefix(organizationId, orgs[k], {});
         }
       }
     } catch (e) { /* ignore */ }
-    return window.ehrIsMfascOrganization(organizationId)
-      ? window.EHR_MFASC_DEFAULT_PATIENT_ID_PREFIX
+    return window.mfIsMfascOrganization(organizationId)
+      ? window.MFASC_DEFAULT_PATIENT_ID_PREFIX
       : null;
   };
 })();

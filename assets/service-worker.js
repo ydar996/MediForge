@@ -1,7 +1,7 @@
 // Purpose: Caches pages for offline use. Register in main.js.
 self.addEventListener("install", event => {
   event.waitUntil(
-    caches.open("ehr-cache").then(cache => {
+    caches.open("mediforge-cache").then(cache => {
       return cache.addAll([
         "/", "index.html", "login.html", "dashboard.html", "patients.html", "add-patient.html",
         "patient-details.html", "appointments.html", "add-appointment.html", "reports.html", "schedule.html",

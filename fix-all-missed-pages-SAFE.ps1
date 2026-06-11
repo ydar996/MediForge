@@ -18,7 +18,7 @@ $pagesToFix = @(
     'cleanup-duplicates.html',
     'create-auth-users.html',
     'create-icon.html',
-    'diagnose-ehr-app.html',
+    'diagnose-mediforge-app.html',
     'direct-mobile-sync.html',
     'force-cache-update.html',
     'force-mobile-cache-bust.html',

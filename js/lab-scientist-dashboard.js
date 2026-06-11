@@ -2464,8 +2464,8 @@ function createLoadingModal(message) {
 // Fallback function to generate order HTML if generateLabOrderHTML is not available
 function generateFallbackOrderHTML(order, patient, user, visitDate, orderedByLine, orgLine) {
   let selectedItems =
-    typeof window.ehrNormalizeOrderSelectedItems === 'function'
-      ? window.ehrNormalizeOrderSelectedItems(order)
+    typeof window.mfNormalizeOrderSelectedItems === 'function'
+      ? window.mfNormalizeOrderSelectedItems(order)
       : [];
   if (!selectedItems.length) {
     if (Array.isArray(order.selectedItems)) {
@@ -2488,8 +2488,8 @@ function generateFallbackOrderHTML(order, patient, user, visitDate, orderedByLin
   } else if (selectedItems.length > 0) {
     selectedItems.forEach(item => {
       const row =
-        typeof window.ehrMergeLabOrderItemWithCatalog === 'function'
-          ? window.ehrMergeLabOrderItemWithCatalog(item)
+        typeof window.mfMergeLabOrderItemWithCatalog === 'function'
+          ? window.mfMergeLabOrderItemWithCatalog(item)
           : null;
       const testNameStr =
         typeof item === 'object' && item !== null
@@ -2578,11 +2578,11 @@ async function openLabOrderDetailsPage(order, patient, user, visitDate) {
     window.supabaseClient;
   let orderedByLine = '';
   let orgLine = '';
-  if (typeof window.ehrResolveOrderedByLineForOrder === 'function') {
-    orderedByLine = await window.ehrResolveOrderedByLineForOrder(supabase, order, user);
+  if (typeof window.mfResolveOrderedByLineForOrder === 'function') {
+    orderedByLine = await window.mfResolveOrderedByLineForOrder(supabase, order, user);
   }
-  if (typeof window.ehrResolveOrganizationDisplayLineForOrder === 'function') {
-    orgLine = await window.ehrResolveOrganizationDisplayLineForOrder(supabase, order, user);
+  if (typeof window.mfResolveOrganizationDisplayLineForOrder === 'function') {
+    orgLine = await window.mfResolveOrganizationDisplayLineForOrder(supabase, order, user);
   }
 
   if (typeof window.generateLabOrderHTML === 'function') {

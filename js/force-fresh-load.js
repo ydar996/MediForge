@@ -31,7 +31,7 @@ console.log('🔄 Force fresh load script loaded');
         }
         
         // Clear localStorage versions
-        localStorage.removeItem('ehrAppVersion');
+        localStorage.removeItem('mediforgeAppVersion');
         localStorage.removeItem('autoRefreshVersion');
         localStorage.removeItem('universalAutoRefreshVersion');
         

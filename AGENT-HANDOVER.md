@@ -1,297 +1,224 @@
-# MediForge Agent Handover
+# MediForge Agent Handover (living document)
 
-**Last updated:** May 2026  
-**Purpose:** Primary handover document for the next AI agent. Read this first.
+**Last updated:** June 11, 2026  
+**Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
+**Project folder:** `C:\Users\yinka\Documents\MediForge`
+
+---
+
+## How to keep this document alive
+
+Every agent that makes meaningful changes **must** update this file before finishing:
+
+1. Set **Last updated** to today’s date.
+2. Add a short entry under **Session log** (what changed, why, what the owner must do next).
+3. If Netlify sites were created, update **`NETLIFY-SITE-IDS.txt`** with real site IDs.
+4. If Supabase setup steps changed, update **`GO-LIVE-GUIDE.md`** and **`docs/PROJECT-OVERVIEW.md`**.
+5. Do **not** paste secrets (passwords, service role keys, Netlify tokens) into any doc.
 
 ---
 
 ## Communication with the user (mandatory)
 
-**Always explain things in layman's terms.** The project owner is not asking for jargon, long checklists they must execute themselves, or “fancy” technical prose.
+**Always explain things in layman's terms.** The project owner is not asking for jargon, long checklists they must execute themselves, or consultant-style prose.
 
 - Say **what** changed, **why** it matters, and **what they need to do next** — in plain English.
-- Avoid dense acronyms without a one-line explanation. Prefer “website login key” over unexplained shorthand.
 - When you can **do the work yourself** (deploy, commit, run checks), **do it** — don’t hand back a long DIY checklist unless they asked to do it themselves.
-- Keep answers **short and direct**. No padding, no consultant tone.
-- Technical detail belongs in code comments or docs — not in every reply to the user.
+- Keep answers **short and direct**.
+- Technical detail belongs in code comments or docs — not in every chat reply.
 
 ---
 
-## Netlify CLI auth (never commit tokens)
+## What MediForge is
 
-- **Normal deploys:** `git push` to `dev` / `staging` / `main` — no personal access token needed.
-- **CLI on the user's PC:** prefer `netlify login` (browser). Do **not** paste `nfp_...` tokens into repo docs or chat.
-- **`NETLIFY_AUTH_TOKEN`:** only if the user explicitly sets it in Windows or GitHub Actions secrets — never in git.
-- Old tokens were scrubbed from `QUICK-REFERENCE.md`, `START-HERE.md`, `DEPLOYMENT-AND-FIXES-STATUS.md`, etc. (May 2026).
+MediForge is a **multi-tenant electronic health record (EMR)** platform: clinic staff manage patients, appointments, clinical notes, billing, pharmacy, labs, in-patient care, and platform administration.
 
----
+It was **forked from a prior codebase in June 2026**, fully rebranded, and pointed at a **new, empty Supabase project**. It is **not** the same product deployment as any legacy project.
 
-These rules are **non-negotiable**. Follow them exactly.
+### Product rules (non-negotiable)
 
-### 0. NEVER DEPLOY WITHOUT EXPLICIT APPROVAL (READ FIRST)
+| Rule | Detail |
+|------|--------|
+| **Product name** | MediForge only. No “EHR Africa” branding in user-facing copy or new docs. |
+| **Default currency** | **CAD** (Canadian Dollar) for new orgs and platform fallbacks. Orgs can override (e.g. Mecure → NGN). |
+| **Organizations** | Database starts **empty**. **Mecure Clinics** is registered first via `/register`. **All other orgs must self-register** — do not seed demo orgs in production. |
+| **Data isolation** | Each org sees only its own data (Supabase RLS + `organization_id`). |
+| **Secrets** | Browser uses publishable key in `js/supabase-env.js` (or Netlify build injection). Service role key **only** in Netlify env + Functions. |
 
-- **Do NOT deploy when the user says "deploy" or "deploy to main dev url."** Those phrases are NOT sufficient approval.
-- **You MUST wait for explicit approval** before running any deploy command. Examples of explicit approval: *"Yes, deploy"*, *"I approve the deployment"*, *"Go ahead and deploy"*, *"You have my approval to deploy"*.
-- **When the user asks to deploy:** Summarize what will be deployed, then **stop and wait** for them to confirm. Do not run `netlify deploy` until they give explicit approval.
-- **When in doubt, do not deploy.** Ask: "Should I proceed with the deployment?"
-- Agents have repeatedly deployed without proper approval. This rule overrides all others. **No deployment without explicit, separate approval.**
-
-### 1. Deploy Only to Dev (Unless Explicitly Approved)
-
-- **Deploy first to the main dev URL only.** Never deploy to staging or production without the user's explicit say-so.
-- **Staging and production require separate, explicit user instruction each time.** Do not assume approval.
-
-### 2. Single Deployment, Even for Many Changes
-
-- **Do one deployment only**, even after several prompts, fixes, or upgrades.
-- Batch all changes into a **single deployment** with **detailed, clear notes** about what was changed.
-- **Never do multiple deployments** just because many changes were made.
-- When deploying, use a comprehensive deploy message listing all tasks, files, and fixes.
-
-### 3. Site IDs – Use the Site ID Document
-
-- **Site IDs:** See `NETLIFY-SITE-IDS.txt` (and table below) for authoritative IDs.
-- Dev, staging, and production are separate Netlify sites. Always deploy to dev first.
-- Verify which site you are linked to: `netlify status`
+Full product rules: **`docs/MEDIFORGE-PRODUCT-RULES.md`**
 
 ---
 
-## Netlify Site IDs and URLs
+## Architecture (30-second version)
 
-| Environment | Netlify Site     | Site ID                                | URL                                    |
-|-------------|------------------|----------------------------------------|----------------------------------------|
-| **Dev**     | mediforge-dev   | `OLD-SITE-ID-REMOVED-CREATE-NEW-SITE` | https://mediforge-dev.netlify.app     |
-| **Staging** | mediforge-staging | `OLD-SITE-ID-REMOVED-CREATE-NEW-SITE` | https://mediforge-staging.netlify.app |
-| **Production** | mediforge    | `OLD-SITE-ID-REMOVED-CREATE-NEW-SITE` | https://mediforge.netlify.app         |
+```
+Browser (HTML + JS pages)
+    ↕  Supabase JS client (anon/publishable key)
+Supabase (Postgres + Auth + Storage bucket patient-documents)
+    ↕  service role (server only)
+Netlify Functions (secure-supabase.js, reminders, legal agreements, CSP report)
+```
 
-### Linking and Deploying to Dev
+- **Hybrid data:** Supabase-first; localStorage fallback when offline. See **`HANDOVER-NOTE-HYBRID-ARCHITECTURE.md`**.
+- **Auth:** Clinic users → Supabase Auth + `users` table. Platform admin → `/platform-login` + `platform_admins` table.
+- **Build:** `netlify.toml` runs `node scripts/inject-supabase-env.cjs && npm run check` on deploy.
+
+Key files:
+
+| File | Role |
+|------|------|
+| `js/supabase-env.js` | Browser Supabase URL + publishable key (placeholders until go-live) |
+| `js/supabase-client.js` | Shared client; no hardcoded production credentials |
+| `js/universal-data-loader.js` | Loads org data from Supabase into localStorage |
+| `js/billing.js` | `getDefaultCurrency()` → CAD fallback |
+| `js/register-handler.js` | Org registration; creates org if new |
+| `netlify/functions/secure-supabase.js` | Privileged RPC / admin operations |
+| `supabase/migrations/` | ~100 SQL migrations (schema history) |
+
+---
+
+## Deployment rules (non-negotiable)
+
+### 0. NEVER deploy without explicit approval
+
+- “Deploy” or “deploy to dev” alone is **not** approval.
+- Wait for: *“Yes, deploy”*, *“I approve”*, *“Go ahead and deploy”*.
+- Summarize what will ship, then **stop** until they confirm.
+
+### 1. Dev first
+
+Deploy to **dev** Netlify site first. Staging and production need **separate** explicit approval each time.
+
+### 2. One deployment per batch of work
+
+Batch changes into **one** deploy with a **detailed** `--message` listing all tasks.
+
+### 3. Site IDs
+
+Use **`NETLIFY-SITE-IDS.txt`** after sites exist. Until then, create sites per **`GO-LIVE-GUIDE.md`**.
+
+### Netlify CLI auth
+
+- Prefer `netlify login` (browser). Never commit `nfp_...` tokens.
+- `NETLIFY_AUTH_TOKEN` only in user machine env or GitHub Actions secrets.
+
+---
+
+## Environments (target setup)
+
+| Git branch | Netlify site (name) | Purpose |
+|------------|---------------------|---------|
+| `dev` | `mediforge-dev` | Daily development |
+| `staging` | `mediforge-staging` | Pre-production validation |
+| `main` | `mediforge` | Production |
+
+Site IDs: fill in **`NETLIFY-SITE-IDS.txt`** when created.  
+Promotion: `dev` → `staging` → `main` via PR. Details: **`DEPLOYMENT-ENVIRONMENTS.md`**.
+
+**Current git state:** Single `main` branch with initial commit (`173f3ac`). Dev/staging branches and Netlify sites are **not created yet** unless the owner has done go-live steps.
+
+---
+
+## Go-live (owner-facing summary)
+
+Full steps: **`GO-LIVE-GUIDE.md`** (~30 minutes).
+
+1. Create new Supabase project (Canada Central recommended).
+2. Export schema from legacy DB with `scripts/export-database-schema.ps1` (structure only, no patient data).
+3. Run schema in new project; create `patient-documents` bucket; run `sql-scripts/create-platform-admin.sql`.
+4. Paste Supabase URL + publishable key into `js/supabase-env.js`.
+5. `netlify sites:create` + `netlify deploy --prod --dir .`
+6. Set Netlify env vars: `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`; redeploy.
+7. Register **Mecure Clinics** at `/register`.
+
+---
+
+## Local testing
 
 ```powershell
 cd C:\Users\yinka\Documents\MediForge
-netlify unlink
-netlify link --id OLD-SITE-ID-REMOVED-CREATE-NEW-SITE
-netlify deploy --prod --dir .
-```
-
-*(Use `--prod` because it deploys to the "production" URL of that linked site—i.e., the main dev URL.)*
-
----
-
-## Reference Documents
-
-| Document | Purpose |
-|---------|---------|
-| **`NETLIFY-SITE-IDS.txt`** | **Authoritative Site IDs for deploy targets** – use this to reference where to deploy |
-| `DEPLOYMENT-HANDOVER.md` | Deploy URLs, site IDs, process (no secrets — keys in Netlify) |
-| `DEPLOYMENT-ENVIRONMENTS.md` | Branch/site mapping, promotion flow |
-| `Correct deployment pipeline.txt` | Production pipeline, trace logging, testing checklist |
-| `mediforge deployment handover 10202025.txt` | Deployment credentials, critical rules |
-
----
-
-## Security posture (infrastructure & assessments)
-
-Use this alongside automated scans (e.g. Skipfish); do not wait for the next PDF before acting.
-
-- **Canonical production host for tools and links:** `https://mediforge.netlify.app` (apex). Do **not** aim scanners only at `www.*` unless that hostname is configured; prefer real paths (e.g. `/login.html`) over bare `/` if the root does not serve HTML.
-- **In-repo hardening:** `404.html` (generic message, no stack traces); `netlify.toml` **301** from `https://www.mediforge.netlify.app/*` → apex; `/.well-known/security.txt` (RFC 9116 contact); **CSP** `report-uri` → `/.netlify/functions/csp-report` (watch Netlify function logs for violations); Netlify Functions return **`Content-Type: application/json`** for JSON bodies where applicable; **500** responses from `get-platform-legal-agreements` do not echo exception text to clients.
-- **Supabase:** Review **RLS** regularly in the Supabase Dashboard (`anon` / `authenticated`). Never expose **service role** keys in front-end bundles; keep privileged access in Netlify env + Functions.
-- **Retesting:** Re-run DAST on the canonical URL with meaningful paths; add manual checks for XSS on reflected input and auth/session flows; run **`npm audit`** before releases and patch where safe.
-
----
-
-## Current Project State (as of last session)
-
-### Git Branches
-
-- **dev** – Development branch; deploy here first
-- **staging** – Pre-production; do not deploy without explicit approval
-- **main** – Production; do not deploy without explicit approval
-
-### Recent Work (2026) — patient IDs & numbering
-
-1. **MFASC canonical prefix (MFA Staff Clinic only)** — Organization UUID `94534e80-06a8-468f-b8a2-ece3f07697c4`. Default generated MRNs use **`MFA-SC` + 4 digits** when `settings.patient_id_prefix` is missing; merged sequence across legacy stems (MIN/MFA/MFA-MC/MFA-SC). See `supabase/migrations/20260428160000_mfasc_canonical_patient_id_prefix.sql`, `js/ehr-org-patient-id.js`, `js/supabase-patients.js`, `netlify/functions/secure-supabase.js`.
-2. **Manual patient numbering** — When enabled per org, **Patient/File Number** is optional: leave blank for the org’s default auto number (for MFASC: **MFA-SC####**); enter a value only to override. `js/patients.js`, `js/manual-patient-numbering.js`.
-3. **Planned (not implemented)** — **App-wide numbering for all other orgs:** today, non-MFASC default prefix is still **first three letters of org name** (collision-prone: e.g. Mecure vs Mecrest → both **MEC**). User intent: review options (unique `org_code`, id-derived prefix, hybrid, branch model) before implementation. Tracked as agent todo: strategy + scope + MFASC exception unchanged.
-
-4. **Patient identity & routing (2025–2026)** — Legacy **MIN/MFA/MFA-MC/MFA-SC** handling, `resolvePatientByIdentifier`, URL-safe navigation, suppression of legacy MIN in patient-facing UI where appropriate, appointment/patient name↔ID reconciliation. Touchpoints include `js/patients.js`, `js/appointments.js`, intake approval flows, `secure-supabase` where MFASC intake assigns IDs.
-
-### Broader history (2025–2026) — not exhaustive
-
-The repo has **many commits** after early 2025; do not assume “March 2025” is the last activity. Use **`git log --oneline --since=2025-03-01`** for the full train.
-
-| Area | Notes (high level) |
-|------|---------------------|
-| **Pharmacy** | Inventory **lots**, **FEFO** dispense, **COGS**; Excel opening stock / **bulk import** UX (progress, column picker); `brand_name`, `pack_size`, `price_unit`; migrations under `supabase/migrations/` (e.g. `20260417*`, `20260219*`). |
-| **Physician verification** | Regulatory uploads (e.g. MDCN), admin review, access gates, login/modal/banner UX, configure-services grid. |
-| **Configure services / labs** | Heritage-themed UI, CPT lab catalog cleanup, lab ordering grouped by **category**, results/audit trail readability, heritage table CSS fixes. |
-| **Patient intake** | Stricter **email** validation; approval RPCs and secure function paths evolve with schema. |
-| **Storage / Pre-EMR** | **RLS** for patient documents; path variants and signed-URL/list fallbacks for legacy uploads; org segment fixes. |
-| **Appointments** | **Reminder** system (settings, SMS copy, cron/`Run Now`), duplicate-edit and **Supabase row id** fixes, patient UUID vs name reconciliation, safer list filter/sort. |
-| **Auth & platform** | **RLS hardening**, auth-related RPCs, login **rate limit** / lockout UX, false-positive **auto-refresh** vs session handling; **username org-scoped** migration exists — check app code vs DB when debugging auth. |
-| **Netlify / release** | Promotions **dev → staging → production** appear often in commit messages; still follow **explicit deploy approval** above. |
-
-### Older fixes (examples only)
-
-1. **Patient View button** — `isUuidLike(displayId)` for MFA-MC style IDs in `js/patients.js`.
-2. **Icons & currency** — Font Awesome + `formatCurrency` / locale symbols on high-traffic pages (platform dashboard, clinics, billing, register, etc.).
-
----
-
-## Deployment Workflow (Summary)
-
-1. **Develop** – Make fixes on `dev` branch. Test locally.
-2. **Commit** – Use descriptive commit messages. Batch related changes.
-3. **Wait** – Do **not** deploy until the user gives **explicit approval** (e.g. "Yes, deploy" or "I approve"). "Deploy" or "Deploy to main dev url" alone is NOT approval—see Rule 0 above.
-4. **Deploy to dev** – Only after explicit approval:
-   - Link to `mediforge-dev` (site ID above)
-   - Run `netlify deploy --prod --dir .`
-   - Use a **single deployment** with a **detailed deploy message** listing all tasks implemented.
-5. **Staging/Production** – Only when the user explicitly approves. Never assume.
-
----
-
-## Local Testing
-
-```powershell
+# Edit js/supabase-env.js with dev Supabase credentials first
 python -m http.server 5500
-# Then open http://localhost:5500
+# Open http://localhost:5500/login.html
 ```
-
----
-
-## Quick Commands
 
 ```powershell
-# Check which site is linked
+npm run check          # icon + patient-identity guards (runs on Netlify build too)
+npm run inject:supabase-env   # regenerate supabase-env.js from env vars
+```
+
+---
+
+## Quick commands
+
+```powershell
 netlify status
-
-# Link to dev and deploy (when user approves)
-netlify link --id OLD-SITE-ID-REMOVED-CREATE-NEW-SITE
-netlify deploy --prod --dir . --message "DETAILED_LIST_OF_ALL_CHANGES"
-
-# Deploy to dev using deploy-with-message.ps1 (Site ID from NETLIFY-SITE-IDS.txt)
-.\deploy-with-message.ps1 -SiteId OLD-SITE-ID-REMOVED-CREATE-NEW-SITE -Prod -MessageOverride "DETAILED_LIST_OF_ALL_CHANGES"
-
-# Discard uncommitted .netlify changes if pre-push fails
-git restore .netlify/
+netlify link --id YOUR-SITE-ID-FROM-NETLIFY-SITE-IDS.txt
+netlify deploy --prod --dir . --message "Summary: ..."
+.\deploy-with-message.ps1 -SiteId YOUR-SITE-ID -Prod -MessageOverride "..."
+git restore .netlify/   # if pre-push hook complains about .netlify churn
 ```
 
 ---
 
-## SQL Scripts for Easy Retrieval
+## Documentation map
 
-When needed, run these in Supabase SQL Editor. Copy from below or from `supabase/migrations/`.
+| Document | Audience | Purpose |
+|----------|----------|---------|
+| **`AGENT-HANDOVER.md`** (this file) | AI agents | Living handover — update every session |
+| **`GO-LIVE-GUIDE.md`** | Owner | First-time Netlify + Supabase setup |
+| **`docs/DOCUMENTATION-INDEX.md`** | Everyone | Master index of all docs |
+| **`docs/PROJECT-OVERVIEW.md`** | Developers | Technical deep dive |
+| **`docs/MEDIFORGE-PRODUCT-RULES.md`** | Agents + owner | CAD, orgs, branding rules |
+| **`DEPLOYMENT-ENVIRONMENTS.md`** | DevOps | Branch/site promotion |
+| **`CRITICAL-WORKFLOWS.md`** | QA / agents | Regression scenarios before deploy |
+| **`docs/USER-DOCUMENTATION-INDEX.md`** | Clinic staff | End-user help topics |
 
-**Note:** The embedded **MIN→MFA** / **MIN→MFA-MC** blocks below target specific **`org_code`** values. **MFASC** canonical **`MFA-SC`** for Staff Clinic is tied to organization UUID **`94534e80-06a8-468f-b8a2-ece3f07697c4`** — see `supabase/migrations/20260428160000_mfasc_canonical_patient_id_prefix.sql`. Do not assume one script applies to all clinics.
-
-### 1. MIN→MFA (Staff Clinic, org MIN-2026-OO9A)
-
-```sql
--- Migration: Patient ID prefix MIN→MFA for organization MIN-2026-OO9A
--- Purpose: Change patient numbering from MINXXXX to MFAXXXX (retroactive + future)
--- Runs in single transaction - all or nothing
-
-BEGIN;
-
-DO $$
-DECLARE
-  v_org_id UUID;
-  v_settings JSONB;
-BEGIN
-  SELECT id, COALESCE(settings, '{}'::jsonb)
-  INTO v_org_id, v_settings
-  FROM public.organizations
-  WHERE org_code = 'MIN-2026-OO9A';
-
-  IF v_org_id IS NULL THEN
-    RAISE NOTICE 'Organization with org_code MIN-2026-OO9A not found. Skipping migration.';
-    RETURN;
-  END IF;
-
-  v_settings := v_settings || jsonb_build_object(
-    'patient_id_prefix', 'MFA',
-    'patient_id_previous_prefix', 'MIN'
-  );
-
-  UPDATE public.organizations
-  SET settings = v_settings, updated_at = NOW()
-  WHERE id = v_org_id;
-
-  RAISE NOTICE 'Updated org % with patient_id_prefix=MFA, patient_id_previous_prefix=MIN', v_org_id;
-END $$;
-
-DO $$
-DECLARE
-  v_org_id UUID;
-  v_old_id TEXT;
-  v_new_id TEXT;
-  v_num TEXT;
-  v_updated INT;
-BEGIN
-  SELECT id INTO v_org_id
-  FROM public.organizations
-  WHERE org_code = 'MIN-2026-OO9A';
-
-  IF v_org_id IS NULL THEN RETURN; END IF;
-
-  FOR v_old_id, v_num IN
-    SELECT patient_id, SUBSTRING(patient_id FROM 4)
-    FROM public.patients
-    WHERE organization_id = v_org_id AND patient_id ~ '^MIN[0-9]{4}$'
-  LOOP
-    v_new_id := 'MFA' || v_num;
-    UPDATE public.patients SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    GET DIAGNOSTICS v_updated = ROW_COUNT;
-    IF v_updated > 0 THEN RAISE NOTICE 'Patients: % -> %', v_old_id, v_new_id; END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'clinical_notes' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.clinical_notes SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'patient_encounters' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.patient_encounters SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'lab_results' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.lab_results SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'lab_orders' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.lab_orders SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'prescriptions' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.prescriptions SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'billing_invoices' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.billing_invoices SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'payments' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.payments SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'patient_documents' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.patient_documents SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'referral_details' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.referral_details SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'preventive_care' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.preventive_care SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'dispensing_records' AND c.column_name = 'patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.dispensing_records SET patient_id = v_new_id WHERE organization_id = v_org_id AND patient_id = v_old_id;
-    END IF;
-    IF EXISTS (SELECT 1 FROM information_schema.tables t JOIN information_schema.columns c ON t.table_name = c.table_name AND t.table_schema = c.table_schema WHERE t.table_schema = 'public' AND t.table_name = 'patient_intake_submissions' AND c.column_name = 'created_patient_id' AND c.data_type IN ('text', 'character varying')) THEN
-      UPDATE public.patient_intake_submissions SET created_patient_id = v_new_id WHERE organization_id = v_org_id AND created_patient_id = v_old_id;
-    END IF;
-  END LOOP;
-  RAISE NOTICE 'MIN->MFA migration completed for org %', v_org_id;
-END $$;
-
-COMMIT;
-```
-
-### 2. MIN→MFA-MC (Mobile Clinic, org MIN-2026-BGA5)
-
-Full script: `supabase/migrations/20260312000000_patient_id_prefix_min_to_mfa_mc_bga5.sql`  
-If org_code differs (e.g. MIN-2026-6JHW), replace `MIN-2026-BGA5` in both DO blocks.
+Legacy handover notes from the fork (hybrid architecture, prescriptions, legal agreements, etc.) remain in `HANDOVER-*.md` files — use when debugging those areas.
 
 ---
 
-**Next agent:** Read this document first. Follow the deployment rules. Use `NETLIFY-SITE-IDS.txt` for Site IDs. Deploy to dev only with one batch and detailed comments—never piecemeal, never to staging/production without explicit approval.
+## Security reminders
+
+- RLS on all tenant tables; review in Supabase Dashboard regularly.
+- CSP + security headers in `netlify.toml`; violations → `/.netlify/functions/csp-report`.
+- Never put service role key in front-end JS or git.
+- Key rotation: **`docs/ROTATE-SUPABASE-KEYS-AFTER-EXPOSURE.md`**.
+
+---
+
+## Known fork carryovers (do not confuse with MediForge policy)
+
+The codebase still contains **legacy implementation details** from the source fork:
+
+- `js/mediforge-org-patient-id.js` — org-specific patient ID prefixes (`window.mf*` API).
+- Migrations referencing orgs like MFASC / MIN-* — apply only if those orgs exist in **this** database (they won’t on a fresh MediForge DB).
+- Mecure test patient ID examples (e.g. `MEC0006`) in old handover docs — valid only after Mecure is registered and has data.
+
+On a **fresh MediForge database**, ignore org-specific migration scripts unless the owner explicitly creates those organizations.
+
+---
+
+## Session log
+
+### June 11, 2026 — Initial MediForge fork
+
+- Cloned codebase to `Documents/MediForge`; removed backups, node_modules, `.git` history from source.
+- Rebranded ~354 files from legacy name to **MediForge**; scrubbed old Supabase URLs/keys from app code.
+- Default currency set to **CAD** (`js/billing.js`, `js/currency-converter.js`, registration, platform plans, etc.).
+- Added Canada to country list; neutralized Africa-only marketing copy on public pages.
+- Created **`GO-LIVE-GUIDE.md`**, `scripts/export-database-schema.ps1`, `sql-scripts/create-platform-admin.sql`.
+- Fresh git repo: `main` @ `173f3ac`.
+- **Owner next steps:** Run go-live guide; create Netlify sites; fill `NETLIFY-SITE-IDS.txt`; register Mecure Clinics.
+
+### June 11, 2026 — Legacy `ehr` name scrub
+
+- Clarified for owner: literal **“ehr-africa”** text was already removed; remaining hits were generic **EHR** (Electronic Health Record) or internal **`ehr*`** code prefixes from the fork.
+- Renamed `js/ehr-org-patient-id.js` → `js/mediforge-org-patient-id.js`; `window.ehr*` → `window.mf*`.
+- Renamed `diagnose-ehr-app.html` → `diagnose-mediforge-app.html`.
+- Updated cache keys (`mediforge-cache`), session cookies, dashboard title, and 88+ files via `scripts/scrub-ehr-legacy-names.ps1`.
+- **Still OK to keep:** “Electronic Health Record (EHR)” as a medical acronym on marketing pages — that is not “EHR Africa” branding.
+
+---
+
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. Update this session log before you finish.

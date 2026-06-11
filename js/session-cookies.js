@@ -8,8 +8,8 @@
  */
 
 const SESSION_CONFIG = {
-  cookieName: 'ehr_session',
-  cookieNameLegacy: 'ehr_session_token',
+  cookieName: 'mediforge_session',
+  cookieNameLegacy: 'mediforge_session_token',
   maxAge: 2 * 60 * 60 * 1000, // 2 hours in milliseconds
   sameSite: 'Strict', // 'Strict', 'Lax', or 'None'
   secure: window.location.protocol === 'https:' // Only set Secure flag on HTTPS
@@ -161,7 +161,7 @@ window.clearSessionToken = function() {
  */
 window.areCookiesEnabled = function() {
   try {
-    const testCookie = 'ehr_cookie_test';
+    const testCookie = 'mediforge_cookie_test';
     setSecureCookie(testCookie, 'test', 1000);
     const result = getCookie(testCookie) === 'test';
     deleteCookie(testCookie);

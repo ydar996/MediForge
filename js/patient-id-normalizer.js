@@ -92,8 +92,8 @@ window.getLegacyPatientId = function(patient) {
         const orgs = JSON.parse(localStorage.getItem("organizations") || "{}");
         const orgData = Object.values(orgs).find(org => org && org.id === orgId) ||
           (user.org ? orgs[user.org] : null);
-        if (typeof window.ehrResolveDefaultPatientIdPrefix === 'function') {
-          orgPrefix = window.ehrResolveDefaultPatientIdPrefix(
+        if (typeof window.mfResolveDefaultPatientIdPrefix === 'function') {
+          orgPrefix = window.mfResolveDefaultPatientIdPrefix(
             orgId,
             orgData ? { name: orgData.name, settings: orgData.settings } : null,
             {}
@@ -193,8 +193,8 @@ window.normalizePatientIdForDisplay = async function(identifier) {
             .select('name, settings')
             .eq('id', orgId)
             .single();
-          if (typeof window.ehrResolveDefaultPatientIdPrefix === 'function') {
-            orgPrefix = window.ehrResolveDefaultPatientIdPrefix(orgId, org, { orgFetchFailed: !org });
+          if (typeof window.mfResolveDefaultPatientIdPrefix === 'function') {
+            orgPrefix = window.mfResolveDefaultPatientIdPrefix(orgId, org, { orgFetchFailed: !org });
           } else if (org?.name) {
             orgPrefix = org.name.substring(0, 3).toUpperCase();
           }

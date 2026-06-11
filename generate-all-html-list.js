@@ -175,7 +175,7 @@ const htmlFiles = [
   'direct-override.html',
   'direct-mobile-sync.html',
   'diagnose-patient-data.html',
-  'diagnose-ehr-app.html',
+  'diagnose-mediforge-app.html',
   'delete-unknown-patients.html',
   'create-icon.html',
   'create-auth-users.html',

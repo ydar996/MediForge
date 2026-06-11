@@ -378,7 +378,7 @@ After deploying with HTTPS, your security audit should show:
 
 4. Follow prompts, get your HTTPS URL!
 
-**Done!** ✅ Your EHR system is now secure with HTTPS.
+**Done!** ✅ Your MediForge is now secure with HTTPS.
 
 ---
 

@@ -83,7 +83,7 @@ return;
         
         // Clear localStorage with mobile-specific keys
         const keysToRemove = [
-            'ehrAppVersion', 'autoRefreshVersion', 'universalAutoRefreshVersion',
+            'mediforgeAppVersion', 'autoRefreshVersion', 'universalAutoRefreshVersion',
             'mobileCacheNotificationShown', 'appVersion', 'mobileCacheRefresh',
             'ehrAppCache', 'mobileAppCache', 'browserCache'
         ];
@@ -145,7 +145,7 @@ return;
         }
         
         // Check localStorage version
-        const storedVersion = localStorage.getItem('ehrAppVersion');
+        const storedVersion = localStorage.getItem('mediforgeAppVersion');
         if (storedVersion !== CONFIG.CURRENT_VERSION) {
             console.log('🔄 Version mismatch detected:', storedVersion, 'vs', CONFIG.CURRENT_VERSION);
             return true;
@@ -203,7 +203,7 @@ return;
             }
             
             // Clear localStorage versions
-            localStorage.removeItem('ehrAppVersion');
+            localStorage.removeItem('mediforgeAppVersion');
             localStorage.removeItem('autoRefreshVersion');
             localStorage.removeItem('universalAutoRefreshVersion');
             localStorage.removeItem('mobileCacheNotificationShown');
@@ -213,7 +213,7 @@ return;
         }
         
         // Set new version
-        localStorage.setItem('ehrAppVersion', CONFIG.CURRENT_VERSION);
+        localStorage.setItem('mediforgeAppVersion', CONFIG.CURRENT_VERSION);
         
         // Create new URL with aggressive cache busting parameters
         const url = new URL(window.location);

@@ -751,8 +751,8 @@ window.resolvePatientByIdentifier = async function(identifier) {
                   .eq('id', orgId)
                   .single();
                 const prefix =
-                  typeof window.ehrResolveDefaultPatientIdPrefix === 'function'
-                    ? window.ehrResolveDefaultPatientIdPrefix(orgId, org, { orgFetchFailed: !org })
+                  typeof window.mfResolveDefaultPatientIdPrefix === 'function'
+                    ? window.mfResolveDefaultPatientIdPrefix(orgId, org, { orgFetchFailed: !org })
                     : (org?.settings?.patient_id_prefix
                         ? String(org.settings.patient_id_prefix).trim().toUpperCase()
                         : org?.name
@@ -764,8 +764,8 @@ window.resolvePatientByIdentifier = async function(identifier) {
                   .eq('organization_id', orgId)
                   .not('patient_id', 'is', null);
                 const maxN =
-                  typeof window.ehrMaxPatientMrnNumericSuffix === 'function'
-                    ? window.ehrMaxPatientMrnNumericSuffix(existingPatients)
+                  typeof window.mfMaxPatientMrnNumericSuffix === 'function'
+                    ? window.mfMaxPatientMrnNumericSuffix(existingPatients)
                     : (function (rows) {
                         var stemPatterns = [
                           /^MIN([0-9]{4})$/i,
@@ -794,8 +794,8 @@ window.resolvePatientByIdentifier = async function(identifier) {
                         return max;
                       })(existingPatients);
                 displayId =
-                  typeof window.ehrFormatPatientMrn === 'function'
-                    ? window.ehrFormatPatientMrn(prefix, maxN + 1)
+                  typeof window.mfFormatPatientMrn === 'function'
+                    ? window.mfFormatPatientMrn(prefix, maxN + 1)
                     : `${prefix}${(maxN + 1).toString().padStart(4, '0')}`;
               } else {
                 displayId = generatePatientId();
@@ -843,8 +843,8 @@ window.resolvePatientByIdentifier = async function(identifier) {
             .eq('id', orgId)
             .single();
           const orgPrefix =
-            typeof window.ehrResolveDefaultPatientIdPrefix === 'function'
-              ? window.ehrResolveDefaultPatientIdPrefix(orgId, org, { orgFetchFailed: !org })
+            typeof window.mfResolveDefaultPatientIdPrefix === 'function'
+              ? window.mfResolveDefaultPatientIdPrefix(orgId, org, { orgFetchFailed: !org })
               : org?.name
                 ? org.name.substring(0, 3).toUpperCase()
                 : 'ORG';
@@ -1095,8 +1095,8 @@ function generatePatientId() {
     entry = user.org ? organizations[user.org] : null;
     const orgIdForPrefix = oid || (entry && entry.id) || null;
     const synthetic = entry ? { name: entry.name, settings: entry.settings } : null;
-    if (typeof window.ehrResolveDefaultPatientIdPrefix === "function" && orgIdForPrefix) {
-      orgPrefix = window.ehrResolveDefaultPatientIdPrefix(orgIdForPrefix, synthetic, {});
+    if (typeof window.mfResolveDefaultPatientIdPrefix === "function" && orgIdForPrefix) {
+      orgPrefix = window.mfResolveDefaultPatientIdPrefix(orgIdForPrefix, synthetic, {});
     } else {
       const MFASC_ORGANIZATION_ID = "94534e80-06a8-468f-b8a2-ece3f07697c4";
       if (oid === MFASC_ORGANIZATION_ID || (entry && entry.id === MFASC_ORGANIZATION_ID)) {
@@ -1108,7 +1108,7 @@ function generatePatientId() {
   } catch (e) { /* keep orgPrefix */ }
 
   let maxNumber = 0;
-  if (typeof window.ehrMaxPatientMrnNumericSuffix === "function") {
+  if (typeof window.mfMaxPatientMrnNumericSuffix === "function") {
     let scoped = patients;
     if (oid) {
       scoped = patients.filter(
@@ -1116,7 +1116,7 @@ function generatePatientId() {
       );
     }
     const asRows = scoped.map((p) => ({ patient_id: p.id || p.patient_id }));
-    maxNumber = window.ehrMaxPatientMrnNumericSuffix(asRows);
+    maxNumber = window.mfMaxPatientMrnNumericSuffix(asRows);
   } else {
     const escapedPrefix = orgPrefix.replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
     const tailRe = new RegExp("^" + escapedPrefix + "(\\d{4})$", "i");
@@ -1132,8 +1132,8 @@ function generatePatientId() {
   }
 
   const nextNumber = maxNumber + 1;
-  return typeof window.ehrFormatPatientMrn === "function"
-    ? window.ehrFormatPatientMrn(orgPrefix, nextNumber)
+  return typeof window.mfFormatPatientMrn === "function"
+    ? window.mfFormatPatientMrn(orgPrefix, nextNumber)
     : `${orgPrefix}${nextNumber.toString().padStart(4, "0")}`;
 }
 
@@ -2575,7 +2575,7 @@ if (typeof window !== 'undefined') {
   window.getLabTestCategory = getLabTestCategory;
 
   /** DB rows use selected_items; in-memory orders use selectedItems; value may be a JSON string. */
-  window.ehrNormalizeOrderSelectedItems = function (order) {
+  window.mfNormalizeOrderSelectedItems = function (order) {
     if (!order || typeof order !== 'object') return [];
     let sel =
       order.selectedItems != null && order.selectedItems !== ''
@@ -2593,7 +2593,7 @@ if (typeof window !== 'undefined') {
   };
 
   /** Normalize lab/imaging test labels for matching (orders may differ slightly from catalog). */
-  window.ehrNormalizeLabTestDisplayName = function (s) {
+  window.mfNormalizeLabTestDisplayName = function (s) {
     return String(s || '')
       .trim()
       .replace(/\s+/g, ' ')
@@ -2601,9 +2601,9 @@ if (typeof window !== 'undefined') {
       .toLowerCase();
   };
 
-  window.ehrLooseLabNameMatch = function (a, b) {
-    const na = window.ehrNormalizeLabTestDisplayName(a);
-    const nb = window.ehrNormalizeLabTestDisplayName(b);
+  window.mfLooseLabNameMatch = function (a, b) {
+    const na = window.mfNormalizeLabTestDisplayName(a);
+    const nb = window.mfNormalizeLabTestDisplayName(b);
     if (!na || !nb) return false;
     if (na === nb) return true;
     if (na.length < 6 || nb.length < 6) return false;
@@ -2630,13 +2630,13 @@ if (typeof window !== 'undefined') {
     return inter >= 3;
   };
 
-  window.ehrResolveLabCatalogEntryForDisplay = function (item) {
+  window.mfResolveLabCatalogEntryForDisplay = function (item) {
     var tests = LAB_TESTS;
     if (!tests.length) return null;
     var obj = item && typeof item === 'object' && !Array.isArray(item) ? item : {};
     var rawName = typeof item === 'string' ? item : (obj.name || obj.testName || obj.test_name || '');
     var nameKey = String(rawName).trim();
-    var norm = window.ehrNormalizeLabTestDisplayName(nameKey);
+    var norm = window.mfNormalizeLabTestDisplayName(nameKey);
 
     var catalog = null;
     if (nameKey) {
@@ -2645,7 +2645,7 @@ if (typeof window !== 'undefined') {
       });
       if (!catalog) {
         catalog = tests.find(function (t) {
-          return window.ehrNormalizeLabTestDisplayName(t.name) === norm;
+          return window.mfNormalizeLabTestDisplayName(t.name) === norm;
         });
       }
       if (!catalog) {
@@ -2654,15 +2654,15 @@ if (typeof window !== 'undefined') {
           return t.panelTests.some(function (p) {
             return (
               p === nameKey ||
-              window.ehrNormalizeLabTestDisplayName(p) === norm ||
-              window.ehrLooseLabNameMatch(p, nameKey)
+              window.mfNormalizeLabTestDisplayName(p) === norm ||
+              window.mfLooseLabNameMatch(p, nameKey)
             );
           });
         });
       }
       if (!catalog) {
         catalog = tests.find(function (t) {
-          return window.ehrLooseLabNameMatch(t.name, nameKey);
+          return window.mfLooseLabNameMatch(t.name, nameKey);
         });
       }
     }
@@ -2705,10 +2705,10 @@ if (typeof window !== 'undefined') {
     return catalog || null;
   };
 
-  window.ehrMergeLabOrderItemWithCatalog = function (item) {
+  window.mfMergeLabOrderItemWithCatalog = function (item) {
     var obj = item && typeof item === 'object' && !Array.isArray(item) ? Object.assign({}, item) : {};
     if (typeof item === 'string') obj.name = String(item).trim();
-    var catalog = window.ehrResolveLabCatalogEntryForDisplay(item);
+    var catalog = window.mfResolveLabCatalogEntryForDisplay(item);
     var merged = Object.assign({}, catalog || {});
     ['name', 'cpt', 'specimen', 'container', 'transport', 'notes', 'category'].forEach(function (k) {
       var v = obj[k];
@@ -2719,13 +2719,13 @@ if (typeof window !== 'undefined') {
     return merged;
   };
 
-  window.ehrResolveImagingCatalogEntryForDisplay = function (item) {
+  window.mfResolveImagingCatalogEntryForDisplay = function (item) {
     var tests = IMAGING_TESTS;
     if (!tests.length) return null;
     var obj = item && typeof item === 'object' && !Array.isArray(item) ? item : {};
     var rawName = typeof item === 'string' ? item : (obj.name || obj.testName || obj.test_name || '');
     var nameKey = String(rawName).trim();
-    var norm = window.ehrNormalizeLabTestDisplayName(nameKey);
+    var norm = window.mfNormalizeLabTestDisplayName(nameKey);
 
     var catalog = null;
     if (nameKey) {
@@ -2734,12 +2734,12 @@ if (typeof window !== 'undefined') {
       });
       if (!catalog) {
         catalog = tests.find(function (t) {
-          return window.ehrNormalizeLabTestDisplayName(t.name) === norm;
+          return window.mfNormalizeLabTestDisplayName(t.name) === norm;
         });
       }
       if (!catalog) {
         catalog = tests.find(function (t) {
-          return window.ehrLooseLabNameMatch(t.name, nameKey);
+          return window.mfLooseLabNameMatch(t.name, nameKey);
         });
       }
     }
@@ -2754,10 +2754,10 @@ if (typeof window !== 'undefined') {
     return catalog || null;
   };
 
-  window.ehrMergeImagingOrderItemWithCatalog = function (item) {
+  window.mfMergeImagingOrderItemWithCatalog = function (item) {
     var obj = item && typeof item === 'object' && !Array.isArray(item) ? Object.assign({}, item) : {};
     if (typeof item === 'string') obj.name = String(item).trim();
-    var catalog = window.ehrResolveImagingCatalogEntryForDisplay(item);
+    var catalog = window.mfResolveImagingCatalogEntryForDisplay(item);
     var merged = Object.assign({}, catalog || {});
     ['name', 'cpt', 'modality', 'preparation', 'contrast', 'notes'].forEach(function (k) {
       var v = obj[k];
@@ -7483,11 +7483,11 @@ async function createOrderModal(order, patient, user, visitDate) {
   const supabase = window.supabaseClient;
   let orderedByLine = '';
   let orgLine = '';
-  if (typeof window.ehrResolveOrderedByLineForOrder === 'function') {
-    orderedByLine = await window.ehrResolveOrderedByLineForOrder(supabase, order, user);
+  if (typeof window.mfResolveOrderedByLineForOrder === 'function') {
+    orderedByLine = await window.mfResolveOrderedByLineForOrder(supabase, order, user);
   }
-  if (typeof window.ehrResolveOrganizationDisplayLineForOrder === 'function') {
-    orgLine = await window.ehrResolveOrganizationDisplayLineForOrder(supabase, order, user);
+  if (typeof window.mfResolveOrganizationDisplayLineForOrder === 'function') {
+    orgLine = await window.mfResolveOrganizationDisplayLineForOrder(supabase, order, user);
   }
 
   // Generate order content based on type
@@ -8095,7 +8095,7 @@ function deleteOrderResult(patientId, visitDate, timestamp, resultId) {
 }
 
 /** Ordered-by line for session user (viewer). Used only when order has no stored creator. */
-window.ehrFormatOrderedByFromSessionUser = function ehrFormatOrderedByFromSessionUser(sessionUser) {
+window.mfFormatOrderedByFromSessionUser = function mfFormatOrderedByFromSessionUser(sessionUser) {
   if (!sessionUser || (!sessionUser.username && !sessionUser.firstName && !sessionUser.first_name)) {
     return 'Unknown';
   }
@@ -8119,11 +8119,11 @@ window.ehrFormatOrderedByFromSessionUser = function ehrFormatOrderedByFromSessio
  * Resolve "Ordered By" for a persisted lab/imaging order from order.created_by / order.createdBy.
  * Does not use the viewer unless no creator is stored on the order.
  */
-window.ehrResolveOrderedByLineForOrder = async function ehrResolveOrderedByLineForOrder(supabase, order, sessionUser) {
+window.mfResolveOrderedByLineForOrder = async function mfResolveOrderedByLineForOrder(supabase, order, sessionUser) {
   const raw =
     order && (order.created_by != null && order.created_by !== '' ? order.created_by : order.createdBy);
   const username = raw != null && String(raw).trim() ? String(raw).trim() : '';
-  if (!username) return window.ehrFormatOrderedByFromSessionUser(sessionUser);
+  if (!username) return window.mfFormatOrderedByFromSessionUser(sessionUser);
   if (!supabase || typeof supabase.from !== 'function') return username;
   try {
     let userData = null;
@@ -8171,7 +8171,7 @@ window.ehrResolveOrderedByLineForOrder = async function ehrResolveOrderedByLineF
 };
 
 /** Organization line for order header from order.organization_id when available. */
-window.ehrResolveOrganizationDisplayLineForOrder = async function ehrResolveOrganizationDisplayLineForOrder(
+window.mfResolveOrganizationDisplayLineForOrder = async function mfResolveOrganizationDisplayLineForOrder(
   supabase,
   order,
   sessionUser
@@ -8218,15 +8218,15 @@ window.generateLabOrderHTML = function generateLabOrderHTML(
 ) {
   let tableRows = '';
   
-  const sel = window.ehrNormalizeOrderSelectedItems(order);
+  const sel = window.mfNormalizeOrderSelectedItems(order);
   
   if (order.noItemsChecked) {
     tableRows = '<tr><td colspan="6" style="border: 1px solid #ddd; padding: 12px; text-align: center; font-style: italic; color: #666;">No lab tests required</td></tr>';
   } else if (sel.length > 0) {
     sel.forEach(item => {
       const row =
-        typeof window.ehrMergeLabOrderItemWithCatalog === 'function'
-          ? window.ehrMergeLabOrderItemWithCatalog(item)
+        typeof window.mfMergeLabOrderItemWithCatalog === 'function'
+          ? window.mfMergeLabOrderItemWithCatalog(item)
           : null;
       if (!row || !row.name) {
         const testName =
@@ -8266,7 +8266,7 @@ window.generateLabOrderHTML = function generateLabOrderHTML(
       ? orderedByLineOpt
       : order && (order.created_by || order.createdBy)
         ? String(order.created_by || order.createdBy)
-        : window.ehrFormatOrderedByFromSessionUser(user);
+        : window.mfFormatOrderedByFromSessionUser(user);
   const organizationDisplay =
     organizationLineOpt != null && organizationLineOpt !== ''
       ? organizationLineOpt
@@ -8309,15 +8309,15 @@ window.generateLabOrderHTML = function generateLabOrderHTML(
 // Generate Imaging Order HTML - v195 (Fixed table alignment)
 function generateImagingOrderHTML(order, patient, user, visitDate, orderedByLineOpt, organizationLineOpt) {
   let tableRows = '';
-  const sel = window.ehrNormalizeOrderSelectedItems(order);
+  const sel = window.mfNormalizeOrderSelectedItems(order);
   
   if (order.noItemsChecked) {
     tableRows = '<tr><td colspan="6" style="border: 1px solid #ddd; padding: 12px; text-align: center; font-style: italic; color: #666;">No imaging tests required</td></tr>';
   } else if (sel.length > 0) {
     sel.forEach(item => {
       const row =
-        typeof window.ehrMergeImagingOrderItemWithCatalog === 'function'
-          ? window.ehrMergeImagingOrderItemWithCatalog(item)
+        typeof window.mfMergeImagingOrderItemWithCatalog === 'function'
+          ? window.mfMergeImagingOrderItemWithCatalog(item)
           : null;
       if (!row || !row.name) {
         const testName =
@@ -8356,7 +8356,7 @@ function generateImagingOrderHTML(order, patient, user, visitDate, orderedByLine
       ? orderedByLineOpt
       : order && (order.created_by || order.createdBy)
         ? String(order.created_by || order.createdBy)
-        : window.ehrFormatOrderedByFromSessionUser(user);
+        : window.mfFormatOrderedByFromSessionUser(user);
   const organizationDisplayIm =
     organizationLineOpt != null && organizationLineOpt !== ''
       ? organizationLineOpt
@@ -8431,15 +8431,15 @@ function generateLabOrderPDF(order, patient, user, visitDate) {
       : displayPatientId;
   
   let tableRows = '';
-  const selLabPdf = window.ehrNormalizeOrderSelectedItems(order);
+  const selLabPdf = window.mfNormalizeOrderSelectedItems(order);
   
   if (order.noItemsChecked) {
     tableRows = '<tr><td colspan="6" style="text-align: center; font-style: italic; padding: 20px;">No lab tests required</td></tr>';
   } else if (selLabPdf.length > 0) {
     selLabPdf.forEach(item => {
       const row =
-        typeof window.ehrMergeLabOrderItemWithCatalog === 'function'
-          ? window.ehrMergeLabOrderItemWithCatalog(item)
+        typeof window.mfMergeLabOrderItemWithCatalog === 'function'
+          ? window.mfMergeLabOrderItemWithCatalog(item)
           : null;
       const testName =
         typeof item === 'object' && item != null
@@ -8644,15 +8644,15 @@ function generateImagingOrderPDF(order, patient, user, visitDate) {
       : displayPatientId;
   
   let tableRows = '';
-  const selImPdf = window.ehrNormalizeOrderSelectedItems(order);
+  const selImPdf = window.mfNormalizeOrderSelectedItems(order);
   
   if (order.noItemsChecked) {
     tableRows = '<tr><td colspan="6" style="text-align: center; font-style: italic; padding: 20px;">No imaging tests required</td></tr>';
   } else if (selImPdf.length > 0) {
     selImPdf.forEach(item => {
       const row =
-        typeof window.ehrMergeImagingOrderItemWithCatalog === 'function'
-          ? window.ehrMergeImagingOrderItemWithCatalog(item)
+        typeof window.mfMergeImagingOrderItemWithCatalog === 'function'
+          ? window.mfMergeImagingOrderItemWithCatalog(item)
           : null;
       const testLabel =
         typeof item === 'object' && item != null

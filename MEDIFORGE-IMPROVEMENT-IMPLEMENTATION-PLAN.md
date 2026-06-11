@@ -280,7 +280,7 @@ class DataEncryption {
 ## 2. 🔑 TWO-FACTOR AUTHENTICATION (2FA) - CRITICAL
 
 ### **Why This Is Critical:**
-- **Industry Standard:** All major EHR systems require 2FA
+- **Industry Standard:** All major MediForges require 2FA
 - **HIPAA Recommendation:** Strong authentication required
 - **Risk Reduction:** 99% reduction in account compromise
 - **User Trust:** Builds confidence in platform security

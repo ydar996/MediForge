@@ -1,108 +1,61 @@
-# �??? START HERE - Your First Steps
+# Start here — MediForge
 
-**Confused? Start here!** This is the simplest guide to get you started.
+**MediForge** is a clinic management / EMR web app (patients, appointments, notes, billing, pharmacy, labs, and more).
 
----
-
-## �??� WHAT YOU NEED TO KNOW
-
-The framework is just **3 simple steps** before you deploy code:
-
-1. �?? **Check syntax** (30 seconds)
-2. �?? **Test locally** (5 minutes)
-3. �?? **Deploy** (if everything works)
-
-That's it!
+**Folder:** `C:\Users\yinka\Documents\MediForge`
 
 ---
 
-## �??� STEP-BY-STEP (Copy & Paste)
+## If you are the project owner
 
-### **Step 1: Check Syntax**
+1. **Not live yet?** → **[GO-LIVE-GUIDE.md](GO-LIVE-GUIDE.md)** (about 30 minutes: Supabase + Netlify + register Mecure Clinics).
+2. **Already live?** → Open your Netlify URL → `/login` for staff, `/platform-login` for platform admin.
+3. **Need help using the app?** → **[docs/USER-DOCUMENTATION-INDEX.md](docs/USER-DOCUMENTATION-INDEX.md)**
 
-Open PowerShell in your project folder (`C:\Users\yinka\Documents\MediForge`) and run:
+**Defaults for this product:**
+
+- Currency: **Canadian Dollar (CAD)** unless a clinic sets otherwise
+- Organizations: database starts empty — **Mecure Clinics** registers first; everyone else uses **Register**
+
+---
+
+## If you are an AI agent
+
+1. Read **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living doc — **update it before you finish**).
+2. Read **[docs/MEDIFORGE-PRODUCT-RULES.md](docs/MEDIFORGE-PRODUCT-RULES.md)** (CAD, orgs, no legacy branding).
+3. Use **[docs/DOCUMENTATION-INDEX.md](docs/DOCUMENTATION-INDEX.md)** to find deeper docs.
+4. **Never deploy** without explicit owner approval (“Yes, deploy” / “I approve”).
+
+---
+
+## Key files
+
+| File | Purpose |
+|------|---------|
+| `js/supabase-env.js` | Supabase URL + browser key (edit before local test / go-live) |
+| `NETLIFY-SITE-IDS.txt` | Netlify site IDs (fill in after creating sites) |
+| `netlify.toml` | Hosting config, security headers, build command |
+
+---
+
+## Quick local test
 
 ```powershell
-.\scripts\quick-syntax-check.ps1
-```
-
-**Wait for:** �?? Green checkmarks = Good to go!
-
-**If you see:** �? Red errors = Fix them first, then run again.
-
----
-
-### **Step 2: Test Locally**
-
-#### 2a. Start Server
-
-In PowerShell, run:
-
-```powershell
+cd C:\Users\yinka\Documents\MediForge
+# Set real values in js/supabase-env.js first
 python -m http.server 5500
 ```
 
-**You'll see:** Server running on port 5500
-
-#### 2b. Open in Browser
-
-1. Open Chrome/Firefox
-2. Go to: `http://localhost:5500`
-3. Press **F12** to open console
-4. Navigate to the page you changed
-
-#### 2c. Check Console
-
-**Look for:**
-- �?? No red errors = Good!
-- �? Red errors = Fix them!
-
-**Test:** Click around, make sure things work.
+Open `http://localhost:5500/login.html`
 
 ---
 
-### **Step 3: Deploy (if Steps 1 & 2 passed)**
+## Documentation map
 
-```powershell
-# Log in to Netlify (opens browser)
-netlify login
-
-# Deploy
-npx --yes netlify-cli deploy --prod --dir . --message "What you fixed"
-```
-
----
-
-## �?? THAT'S IT!
-
-**Total time:** ~10 minutes
-
-**What you did:**
-- �?? Checked for syntax errors
-- �?? Tested locally
-- �?? Deployed safely
-
----
-
-## �??? NEED MORE DETAILS?
-
-- **Simple guide:** `HOW-TO-USE-THE-FRAMEWORK.md`
-- **Quick reference:** `QUICK-REFERENCE.md`
-- **Detailed testing:** `LOCAL-TESTING-GUIDE.md`
-
----
-
-## �??? YOUR FIRST TIME?
-
-**Right now, try this:**
-
-1. Open PowerShell
-2. Navigate to: `cd C:\Users\yinka\Documents\MediForge`
-3. Run: `.\scripts\quick-syntax-check.ps1`
-4. See what happens!
-
-**That's your first step!** �???
-
----
-
-**Questions?** Check `HOW-TO-USE-THE-FRAMEWORK.md` for detailed explanations.
+| Doc | Purpose |
+|-----|---------|
+| [AGENT-HANDOVER.md](AGENT-HANDOVER.md) | Agent living handover |
+| [GO-LIVE-GUIDE.md](GO-LIVE-GUIDE.md) | First deployment |
+| [docs/PROJECT-OVERVIEW.md](docs/PROJECT-OVERVIEW.md) | Technical overview |
+| [docs/DOCUMENTATION-INDEX.md](docs/DOCUMENTATION-INDEX.md) | Full doc catalog |
+| [CRITICAL-WORKFLOWS.md](CRITICAL-WORKFLOWS.md) | Test before deploy |

@@ -80,10 +80,10 @@
     }
     if (
       orgId &&
-      typeof window.ehrIsMfascOrganization === "function" &&
-      window.ehrIsMfascOrganization(orgId)
+      typeof window.mfIsMfascOrganization === "function" &&
+      window.mfIsMfascOrganization(orgId)
     ) {
-      return window.EHR_MFASC_DEFAULT_PATIENT_ID_PREFIX || "MFA-SC";
+      return window.MFASC_DEFAULT_PATIENT_ID_PREFIX || "MFA-SC";
     }
     try {
       const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");

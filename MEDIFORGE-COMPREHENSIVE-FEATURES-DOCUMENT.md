@@ -1067,7 +1067,7 @@ const decrypted = await decryptData(encrypted, orgKey);
 **What to Implement:**
 - HL7 FHIR R4 standard implementation
 - Patient data export in FHIR format
-- Import from other EHR systems
+- Import from other MediForges
 - API endpoints for third-party integrations
 - SMART on FHIR authentication
 - Document sharing with other providers

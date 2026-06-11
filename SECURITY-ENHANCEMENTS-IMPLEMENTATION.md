@@ -223,7 +223,7 @@ await restoreBackup(file); // Automatically detects encryption
 ### **What to Test After Deployment:**
 1. **Security Headers:** Verify headers in browser DevTools → Network tab
 2. **DLP Monitoring:** Export a backup, check audit logs for `data_export_backup` event
-3. **Session Cookies:** Login, check DevTools → Application → Cookies for `ehr_session`
+3. **Session Cookies:** Login, check DevTools → Application → Cookies for `mediforge_session`
 4. **Backup Encryption:** Download backup, verify it prompts for password
 
 ### **Environment Variables:**
