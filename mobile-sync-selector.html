@@ -1,0 +1,373 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Sync Selector</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .sync-item { margin: 15px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+        .sync-item.selected { border-color: #007bff; background: #e7f3ff; }
+        .sync-item.synced { border-color: #28a745; background: #d4edda; }
+        .sync-item.synced input { display: none; }
+        .sync-item.synced::after { content: "✓ Already Synced"; color: #28a745; font-weight: bold; }
+        .checkbox { margin-right: 10px; }
+        .org-name { font-weight: bold; font-size: 16px; color: #333; }
+        .org-details { font-size: 14px; color: #666; margin: 5px 0; }
+        .user-name { font-weight: bold; color: #333; }
+        .user-details { font-size: 14px; color: #666; margin: 5px 0; }
+        button { padding: 12px 20px; margin: 10px 5px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-secondary { background: #6c757d; color: white; }
+        .results { margin-top: 20px; padding: 15px; border-radius: 8px; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; color: #0c5460; }
+        .section-header { font-size: 18px; font-weight: bold; margin: 20px 0 10px 0; color: #333; }
+        .select-all { margin: 10px 0; padding: 10px; background: #e9ecef; border-radius: 6px; }
+        .stats { display: flex; justify-content: space-between; margin: 20px 0; padding: 15px; background: #f8f9fa; border-radius: 8px; }
+        .stat { text-align: center; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
+        .stat-label { font-size: 14px; color: #666; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Mobile Sync Selector</h1>
+        <p>Choose exactly what you want to sync from your mobile device to Supabase.</p>
+        
+        <div class="stats" id="stats">
+            <div class="stat">
+                <div class="stat-number" id="total-orgs">0</div>
+                <div class="stat-label">Organizations</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="total-users">0</div>
+                <div class="stat-label">Users</div>
+            </div>
+            <div class="stat">
+                <div class="stat-number" id="selected-count">0</div>
+                <div class="stat-label">Selected</div>
+            </div>
+        </div>
+        
+        <button onclick="loadData()" class="btn-primary">Load Mobile Data</button>
+        <button onclick="syncSelected()" class="btn-success" id="sync-btn" disabled>Sync Selected Items</button>
+        <button onclick="clearSelection()" class="btn-secondary">Clear Selection</button>
+        
+        <div id="results"></div>
+        <div id="data-container"></div>
+    </div>
+    
+    <!-- Load Supabase SDK directly for mobile compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+    <script>
+        let supabaseClient = null;
+        let mobileData = { organizations: {}, users: [] };
+        
+        // Initialize Supabase client
+        async function initializeSupabase() {
+            if (supabaseClient) return true;
+            
+            try {
+                const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+                const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+                
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    },
+                    global: {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                });
+                
+                console.log('? Supabase client initialized');
+                return true;
+            } catch (error) {
+                console.error('? Supabase initialization failed:', error);
+                return false;
+            }
+        }
+        
+        async function loadData() {
+            const resultsDiv = document.getElementById('results');
+            const dataContainer = document.getElementById('data-container');
+            
+            resultsDiv.innerHTML = '<p>Loading mobile data...</p>';
+            
+            try {
+                // Load data from localStorage
+                const orgsData = localStorage.getItem('organizations');
+                const usersData = localStorage.getItem('users');
+                
+                if (!orgsData && !usersData) {
+                    resultsDiv.innerHTML = '<div class="results error">? No mobile data found in localStorage</div>';
+                    return;
+                }
+                
+                mobileData.organizations = orgsData ? JSON.parse(orgsData) : {};
+                mobileData.users = usersData ? JSON.parse(usersData) : [];
+                
+                // Update stats
+                document.getElementById('total-orgs').textContent = Object.keys(mobileData.organizations).length;
+                document.getElementById('total-users').textContent = mobileData.users.length;
+                
+                // Display organizations
+                let html = '<div class="section-header">Organizations</div>';
+                
+                if (Object.keys(mobileData.organizations).length > 0) {
+                    html += '<div class="select-all">';
+                    html += '<label><input type="checkbox" id="select-all-orgs" onchange="toggleAllOrgs()"> <strong>Select All Organizations</strong></label>';
+                    html += '</div>';
+                    
+                    Object.entries(mobileData.organizations).forEach(([name, org]) => {
+                        const isSynced = org.id ? 'synced' : '';
+                        const status = org.id ? 'Already Synced' : 'Not Synced';
+                        const statusColor = org.id ? '#28a745' : '#dc3545';
+                        
+                        html += `
+                            <div class="sync-item ${isSynced}" data-type="org" data-name="${name}">
+                                <label>
+                                    <input type="checkbox" class="checkbox org-checkbox" value="${name}" ${org.id ? 'disabled' : ''} onchange="updateSelection()">
+                                    <span class="org-name">${name}</span>
+                                    <span style="color: ${statusColor}; font-weight: bold;">(${status})</span>
+                                </label>
+                                <div class="org-details">
+                                    ${org.country || 'N/A'} | ${org.state || 'N/A'} | ${org.city || 'N/A'}<br>
+                                    ${org.phone || 'N/A'} | Code: ${org.orgCode || 'N/A'}<br>
+                                    Created: ${org.createdAt || 'N/A'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p>? No organizations found</p>';
+                }
+                
+                // Display users
+                html += '<div class="section-header">Users</div>';
+                
+                if (mobileData.users.length > 0) {
+                    html += '<div class="select-all">';
+                    html += '<label><input type="checkbox" id="select-all-users" onchange="toggleAllUsers()"> <strong>Select All Users</strong></label>';
+                    html += '</div>';
+                    
+                    mobileData.users.forEach((user, index) => {
+                        const isSynced = user.organizationId ? 'synced' : '';
+                        const status = user.organizationId ? 'Already Synced' : 'Not Synced';
+                        const statusColor = user.organizationId ? '#28a745' : '#dc3545';
+                        
+                        html += `
+                            <div class="sync-item ${isSynced}" data-type="user" data-index="${index}">
+                                <label>
+                                    <input type="checkbox" class="checkbox user-checkbox" value="${index}" ${user.organizationId ? 'disabled' : ''} onchange="updateSelection()">
+                                    <span class="user-name">${user.firstName} ${user.lastName}</span>
+                                    <span style="color: ${statusColor}; font-weight: bold;">(${status})</span>
+                                </label>
+                                <div class="user-details">
+                                    Username: ${user.username} | Role: ${user.role || 'N/A'}<br>
+                                    Organization: ${user.org || 'N/A'} | Gender: ${user.gender || 'N/A'}<br>
+                                    Created: ${user.createdAt || 'N/A'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p>? No users found</p>';
+                }
+                
+                dataContainer.innerHTML = html;
+                resultsDiv.innerHTML = '<div class="results success">? Mobile data loaded successfully</div>';
+                updateSelection();
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="results error">? Error loading data: ${error.message}</div>`;
+            }
+        }
+        
+        function toggleAllOrgs() {
+            const selectAll = document.getElementById('select-all-orgs').checked;
+            const checkboxes = document.querySelectorAll('.org-checkbox:not([disabled])');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+            updateSelection();
+        }
+        
+        function toggleAllUsers() {
+            const selectAll = document.getElementById('select-all-users').checked;
+            const checkboxes = document.querySelectorAll('.user-checkbox:not([disabled])');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+            updateSelection();
+        }
+        
+        function updateSelection() {
+            const selectedOrgs = Array.from(document.querySelectorAll('.org-checkbox:checked')).map(cb => cb.value);
+            const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => cb.value);
+            const totalSelected = selectedOrgs.length + selectedUsers.length;
+            
+            document.getElementById('selected-count').textContent = totalSelected;
+            document.getElementById('sync-btn').disabled = totalSelected === 0;
+            
+            // Update visual selection
+            document.querySelectorAll('.sync-item').forEach(item => {
+                const checkbox = item.querySelector('input[type="checkbox"]');
+                if (checkbox && checkbox.checked) {
+                    item.classList.add('selected');
+                } else {
+                    item.classList.remove('selected');
+                }
+            });
+        }
+        
+        function clearSelection() {
+            document.querySelectorAll('input[type="checkbox"]').forEach(cb => cb.checked = false);
+            updateSelection();
+        }
+        
+        async function syncSelected() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>Starting sync...</p>';
+            
+            try {
+                // Initialize Supabase
+                const supabaseReady = await initializeSupabase();
+                if (!supabaseReady) {
+                    resultsDiv.innerHTML = '<div class="results error">? Supabase initialization failed</div>';
+                    return;
+                }
+                
+                const selectedOrgs = Array.from(document.querySelectorAll('.org-checkbox:checked')).map(cb => cb.value);
+                const selectedUsers = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => parseInt(cb.value));
+                
+                let html = '<div class="results info"><h3>Sync Results</h3>';
+                let syncCount = 0;
+                
+                // Sync selected organizations first
+                for (const orgName of selectedOrgs) {
+                    const org = mobileData.organizations[orgName];
+                    if (org && !org.id) {
+                        try {
+                            html += `<p>Syncing organization: ${orgName}...</p>`;
+                            
+                            const { data: orgResult, error: orgError } = await supabaseClient
+                                .from('organizations')
+                                .insert([{
+                                    name: org.name,
+                                    country: org.country,
+                                    state: org.state,
+                                    city: org.city,
+                                    address_line1: org.addressLine1,
+                                    address_line2: org.addressLine2,
+                                    phone: org.phone,
+                                    after_hours_phone: org.afterHoursPhone,
+                                    org_code: org.orgCode,
+                                    created_at: org.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (orgError) {
+                                html += `<p style="color: red;">? Failed to sync ${orgName}: ${orgError.message}</p>`;
+                            } else {
+                                const orgId = orgResult[0].id;
+                                org.id = orgId;
+                                localStorage.setItem('organizations', JSON.stringify(mobileData.organizations));
+                                html += `<p style="color: green;">? Synced ${orgName} (ID: ${orgId})</p>`;
+                                syncCount++;
+                            }
+                        } catch (error) {
+                            html += `<p style="color: red;">? Error syncing ${orgName}: ${error.message}</p>`;
+                        }
+                    }
+                }
+                
+                // Sync selected users
+                for (const userIndex of selectedUsers) {
+                    const user = mobileData.users[userIndex];
+                    if (user && !user.organizationId) {
+                        try {
+                            html += `<p>Syncing user: ${user.firstName} ${user.lastName}...</p>`;
+                            
+                            // Find the organization for this user
+                            const userOrg = Object.values(mobileData.organizations).find(org => org.name === user.org);
+                            if (!userOrg || !userOrg.id) {
+                                html += `<p style="color: orange;">Skipping user ${user.firstName} ${user.lastName} - organization not synced yet</p>`;
+                                continue;
+                            }
+                            
+                            const { data: userResult, error: userError } = await supabaseClient
+                                .from('users')
+                                .insert([{
+                                    first_name: user.firstName,
+                                    last_name: user.lastName,
+                                    username: user.username,
+                                    gender: user.gender,
+                                    role: user.role,
+                                    organization_id: userOrg.id,
+                                    created_at: user.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (userError) {
+                                html += `<p style="color: red;">? Failed to sync user ${user.firstName} ${user.lastName}: ${userError.message}</p>`;
+                            } else {
+                                const userId = userResult[0].id;
+                                user.organizationId = userOrg.id;
+                                localStorage.setItem('users', JSON.stringify(mobileData.users));
+                                html += `<p style="color: green;">? Synced user ${user.firstName} ${user.lastName} (ID: ${userId})</p>`;
+                                syncCount++;
+                            }
+                        } catch (error) {
+                            html += `<p style="color: red;">? Error syncing user ${user.firstName} ${user.lastName}: ${error.message}</p>`;
+                        }
+                    }
+                }
+                
+                html += `<p><strong>Sync Complete! Successfully synced ${syncCount} items.</strong></p>`;
+                html += '<p><strong>Next steps:</strong> Go to the platform dashboard and click "Force Refresh All Data" to see the synced organizations.</p>';
+                html += '</div>';
+                
+                resultsDiv.innerHTML = html;
+                
+                // Reload data to show updated sync status
+                setTimeout(() => {
+                    loadData();
+                }, 2000);
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="results error">? Sync failed: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeSupabase);
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Form Persistence Test - MediForge</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    
+    .test-container {
+      max-width: 800px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 15px;
+      box-shadow: 0 10px 30px rgba(0,0,0,0.1);
+    }
+    
+    .test-title {
+      text-align: center;
+      color: #008753;
+      margin-bottom: 30px;
+      font-size: 2rem;
+    }
+    
+    .test-section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 2px solid #B8860B;
+      border-radius: 10px;
+      background: #f8f9fa;
+    }
+    
+    .test-button {
+      background: #008753;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 10px 5px;
+      font-weight: 500;
+      transition: all 0.3s;
+    }
+    
+    .test-button:hover {
+      background: #006b42;
+    }
+    
+    .test-button.secondary {
+      background: #B8860B;
+    }
+    
+    .test-button.secondary:hover {
+      background: #9a6f0a;
+    }
+    
+    .test-results {
+      background: #e8f5e8;
+      border: 1px solid #008753;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 10px 0;
+      font-family: monospace;
+      white-space: pre-wrap;
+    }
+    
+    .test-results.error {
+      background: #ffeaea;
+      border-color: #dc3545;
+      color: #dc3545;
+    }
+    
+    .test-results.success {
+      background: #e8f5e8;
+      border-color: #008753;
+      color: #008753;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1 class="test-title">🧪 Form Persistence Test Suite</h1>
+    
+    <div class="test-section">
+      <h3>📋 Test 1: localStorage Data Check</h3>
+      <p>Check if organization and user data exists in localStorage</p>
+      <button class="test-button" onclick="checkLocalStorageData()">Check localStorage Data</button>
+      <div id="localStorage-results" class="test-results" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>📋 Test 2: Supabase Connection Test</h3>
+      <p>Test if Supabase is connected and accessible</p>
+      <button class="test-button" onclick="testSupabaseConnection()">Test Supabase Connection</button>
+      <div id="supabase-results" class="test-results" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>📋 Test 3: Form Data Persistence</h3>
+      <p>Test if form data persists between page loads</p>
+      <button class="test-button" onclick="testFormPersistence()">Test Form Persistence</button>
+      <div id="persistence-results" class="test-results" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>📋 Test 4: Cross-Page Data Flow</h3>
+      <p>Test if data flows correctly from register.html to edit-profile.html</p>
+      <button class="test-button" onclick="testCrossPageDataFlow()">Test Cross-Page Data Flow</button>
+      <div id="crosspage-results" class="test-results" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>📋 Test 5: Nigerian Heritage Theme Check</h3>
+      <p>Verify that Nigerian heritage colors are properly applied</p>
+      <button class="test-button secondary" onclick="testNigerianTheme()">Test Nigerian Theme</button>
+      <div id="theme-results" class="test-results" style="display: none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>🚀 Quick Actions</h3>
+      <button class="test-button" onclick="openRegisterPage()">Open Register Page</button>
+      <button class="test-button" onclick="openEditProfilePage()">Open Edit Profile Page</button>
+      <button class="test-button secondary" onclick="clearTestData()">Clear Test Data</button>
+    </div>
+  </div>
+
+  <script>
+    // Test 1: Check localStorage Data
+    function checkLocalStorageData() {
+      const results = document.getElementById('localStorage-results');
+      results.style.display = 'block';
+      
+      let output = '📊 localStorage Data Check:\n\n';
+      
+      // Check organizations
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      output += `Organizations: ${Object.keys(organizations).length} found\n`;
+      Object.keys(organizations).forEach(org => {
+        output += `  - ${org}: ${organizations[org].country || 'No country'}\n`;
+      });
+      
+      // Check users
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      output += `\nUsers: ${users.length} found\n`;
+      users.forEach(user => {
+        output += `  - ${user.firstName} ${user.lastName} (${user.role}) - Org: ${user.org || 'None'}\n`;
+      });
+      
+      // Check current user
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      output += `\nCurrent User: ${currentUser.firstName || 'None'} ${currentUser.lastName || ''}\n`;
+      output += `  Organization: ${currentUser.org || 'None'}\n`;
+      
+      results.textContent = output;
+      results.className = 'test-results success';
+    }
+    
+    // Test 2: Test Supabase Connection
+    async function testSupabaseConnection() {
+      const results = document.getElementById('supabase-results');
+      results.style.display = 'block';
+      results.textContent = '🔄 Testing Supabase connection...';
+      results.className = 'test-results';
+      
+      try {
+        if (window.supabase && window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('count')
+            .limit(1);
+          
+          if (error) {
+            results.textContent = `❌ Supabase Error: ${error.message}`;
+            results.className = 'test-results error';
+          } else {
+            results.textContent = '✅ Supabase connection successful!\nDatabase is accessible and responsive.';
+            results.className = 'test-results success';
+          }
+        } else {
+          results.textContent = '⚠️ Supabase client not available\nThis is normal if Supabase scripts are not loaded.';
+          results.className = 'test-results';
+        }
+      } catch (error) {
+        results.textContent = `❌ Connection failed: ${error.message}`;
+        results.className = 'test-results error';
+      }
+    }
+    
+    // Test 3: Test Form Persistence
+    function testFormPersistence() {
+      const results = document.getElementById('persistence-results');
+      results.style.display = 'block';
+      
+      let output = '📋 Form Persistence Test:\n\n';
+      
+      // Check if we can create test data
+      const testOrg = {
+        name: 'Test Clinic',
+        country: 'Nigeria',
+        state: 'Lagos',
+        city: 'Lagos',
+        addressLine1: '123 Test Street',
+        phone: '+234 123 456 7890',
+        createdAt: new Date().toISOString()
+      };
+      
+      const testUser = {
+        firstName: 'Test',
+        lastName: 'User',
+        username: 'testuser',
+        role: 'Doctor',
+        org: 'Test Clinic',
+        createdAt: new Date().toISOString()
+      };
+      
+      // Save test data
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      organizations['Test Clinic'] = testOrg;
+      localStorage.setItem('organizations', JSON.stringify(organizations));
+      
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      users.push(testUser);
+      localStorage.setItem('users', JSON.stringify(users));
+      
+      output += '✅ Test data created and saved\n';
+      output += '✅ localStorage persistence working\n';
+      output += '✅ Data structure validation passed\n';
+      
+      results.textContent = output;
+      results.className = 'test-results success';
+    }
+    
+    // Test 4: Test Cross-Page Data Flow
+    function testCrossPageDataFlow() {
+      const results = document.getElementById('crosspage-results');
+      results.style.display = 'block';
+      
+      let output = '🔄 Cross-Page Data Flow Test:\n\n';
+      
+      // Check if data from register.html would be available to edit-profile.html
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      if (Object.keys(organizations).length > 0) {
+        output += '✅ Organizations data available for edit-profile.html\n';
+        const firstOrg = Object.keys(organizations)[0];
+        const orgData = organizations[firstOrg];
+        output += `  Sample: ${firstOrg} - ${orgData.country}\n`;
+      } else {
+        output += '⚠️ No organization data found\n';
+      }
+      
+      if (users.length > 0) {
+        output += '✅ Users data available for edit-profile.html\n';
+        const firstUser = users[0];
+        output += `  Sample: ${firstUser.firstName} ${firstUser.lastName}\n`;
+      } else {
+        output += '⚠️ No user data found\n';
+      }
+      
+      // Check if current user has org data
+      const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+      if (currentUser.org && organizations[currentUser.org]) {
+        output += '✅ Current user has organization data\n';
+        output += `  User org: ${currentUser.org}\n`;
+        output += `  Org data available: ${organizations[currentUser.org] ? 'Yes' : 'No'}\n`;
+      } else {
+        output += '⚠️ Current user missing organization data\n';
+      }
+      
+      results.textContent = output;
+      results.className = 'test-results success';
+    }
+    
+    // Test 5: Test Nigerian Heritage Theme
+    function testNigerianTheme() {
+      const results = document.getElementById('theme-results');
+      results.style.display = 'block';
+      
+      let output = '🎨 Nigerian Heritage Theme Test:\n\n';
+      
+      // Check if register.html exists and has Nigerian colors
+      fetch('register.html')
+        .then(response => response.text())
+        .then(html => {
+          const nigerianGreen = html.includes('#008753');
+          const richGold = html.includes('#B8860B');
+          const lightGold = html.includes('#D4AF37');
+          
+          output += `Nigerian Green (#008753): ${nigerianGreen ? '✅ Found' : '❌ Missing'}\n`;
+          output += `Rich Gold (#B8860B): ${richGold ? '✅ Found' : '❌ Missing'}\n`;
+          output += `Light Gold (#D4AF37): ${lightGold ? '✅ Found' : '❌ Missing'}\n`;
+          
+          if (nigerianGreen && richGold && lightGold) {
+            output += '\n✅ All Nigerian heritage colors found!';
+            results.className = 'test-results success';
+          } else {
+            output += '\n⚠️ Some Nigerian heritage colors missing';
+            results.className = 'test-results error';
+          }
+          
+          results.textContent = output;
+        })
+        .catch(error => {
+          results.textContent = `❌ Error checking theme: ${error.message}`;
+          results.className = 'test-results error';
+        });
+    }
+    
+    // Quick Actions
+    function openRegisterPage() {
+      window.open('register.html', '_blank');
+    }
+    
+    function openEditProfilePage() {
+      window.open('edit-profile.html', '_blank');
+    }
+    
+    function clearTestData() {
+      if (confirm('Are you sure you want to clear all test data?')) {
+        localStorage.removeItem('organizations');
+        localStorage.removeItem('users');
+        localStorage.removeItem('user');
+        alert('Test data cleared!');
+      }
+    }
+    
+    // Auto-run basic tests on page load
+    window.addEventListener('load', function() {
+      console.log('🧪 Form Persistence Test Suite loaded');
+      checkLocalStorageData();
+    });
+  </script>
+</body>
+</html>

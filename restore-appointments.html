@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restore Appointments</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .info { background-color: #d1ecf1; }
+    .success { background-color: #d4edda; }
+    .warning { background-color: #fff3cd; }
+    button { padding: 10px 15px; margin: 5px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    .restore-btn { background-color: #28a745; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+  </style>
+</head>
+<body>
+  <h1>?? Restore Appointments</h1>
+  
+  <!-- Load Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>
+  
+  <div class="section info">
+    <h2>?? Check localStorage Backup</h2>
+    <button onclick="checkBackup()">?? Check for Backup Data</button>
+    <div id="backup-check"></div>
+  </div>
+  
+  <div class="section warning">
+    <h2>?? Restore Appointments</h2>
+    <div id="restore-section" style="display: none;">
+      <p>Found backup appointments that can be restored to Supabase.</p>
+      <button class="restore-btn" onclick="restoreAppointments()">?? Restore Appointments to Supabase</button>
+    </div>
+    <div id="restore-results"></div>
+  </div>
+
+  <script>
+    let currentOrgId = null;
+    let backupAppointments = [];
+
+    async function initialize() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      currentOrgId = user.organizationId || (user.org ? JSON.parse(localStorage.getItem("organizations") || "{}")[user.org]?.id : null);
+      
+      if (!currentOrgId) {
+        alert('No organization ID found. Please login first.');
+        return;
+      }
+      
+      console.log('?? Organization ID:', currentOrgId);
+    }
+
+    function checkBackup() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      
+      // Check multiple possible keys for backup data
+      const possibleKeys = [
+        `${org}_appointments`,
+        'appointments',
+        `${org}_patients`,
+        'patients'
+      ];
+      
+      let html = '<h3>?? localStorage Backup Check</h3>';
+      html += '<table><tr><th>Key</th><th>Type</th><th>Count</th><th>Sample</th></tr>';
+      
+      let foundAppointments = [];
+      
+      possibleKeys.forEach(key => {
+        const data = localStorage.getItem(key);
+        if (data) {
+          try {
+            const parsed = JSON.parse(data);
+            let type = Array.isArray(parsed) ? 'Array' : 'Object';
+            let count = Array.isArray(parsed) ? parsed.length : Object.keys(parsed).length;
+            let sample = JSON.stringify(parsed).substring(0, 100) + '...';
+            
+            // Check if this looks like appointments data
+            if (Array.isArray(parsed) && parsed.length > 0) {
+              const firstItem = parsed[0];
+              if (firstItem.patientName || firstItem.patient_name || firstItem.date || firstItem.appointment_date) {
+                foundAppointments = parsed;
+                type += ' (APPOINTMENTS)';
+              }
+            }
+            
+            html += `<tr><td>${key}</td><td>${type}</td><td>${count}</td><td>${sample}</td></tr>`;
+          } catch (e) {
+            html += `<tr><td>${key}</td><td>String</td><td>${data.length} chars</td><td>${data.substring(0, 50)}...</td></tr>`;
+          }
+        } else {
+          html += `<tr><td>${key}</td><td>Not found</td><td>0</td><td>-</td></tr>`;
+        }
+      });
+      
+      html += '</table>';
+      
+      if (foundAppointments.length > 0) {
+        html += '<div class="success">';
+        html += `<h3>? Found ${foundAppointments.length} appointments in backup!</h3>`;
+        html += '<p>These appointments can be restored to Supabase.</p>';
+        
+        // Show sample of appointments
+        html += '<h4>Sample appointments:</h4>';
+        html += '<table><tr><th>Patient</th><th>Date</th><th>Time</th><th>Doctor</th></tr>';
+        foundAppointments.slice(0, 5).forEach(apt => {
+          const patientName = apt.patientName || apt.patient_name || 'Unknown';
+          const date = apt.date || apt.appointment_date || 'Unknown';
+          const time = apt.time || apt.appointment_time || 'Unknown';
+          const doctor = apt.doctor || 'Unknown';
+          html += `<tr><td>${patientName}</td><td>${date}</td><td>${time}</td><td>${doctor}</td></tr>`;
+        });
+        if (foundAppointments.length > 5) {
+          html += `<tr><td colspan="4">... and ${foundAppointments.length - 5} more</td></tr>`;
+        }
+        html += '</table>';
+        html += '</div>';
+        
+        backupAppointments = foundAppointments;
+        document.getElementById('restore-section').style.display = 'block';
+      } else {
+        html += '<div class="warning">';
+        html += '<h3>?? No appointment backup found</h3>';
+        html += '<p>No appointments found in localStorage backup. You may need to recreate appointments manually.</p>';
+        html += '</div>';
+      }
+      
+      document.getElementById('backup-check').innerHTML = html;
+    }
+
+    async function restoreAppointments() {
+      if (backupAppointments.length === 0) {
+        alert('No backup appointments to restore');
+        return;
+      }
+      
+      if (!confirm(`Restore ${backupAppointments.length} appointments to Supabase?`)) {
+        return;
+      }
+      
+      if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+        alert('Online data client not available');
+        return;
+      }
+      
+      let restored = 0;
+      let errors = 0;
+      
+      for (const apt of backupAppointments) {
+        try {
+          // Convert localStorage format to Supabase format
+          const supabaseAppointment = {
+            appointment_date: apt.date || apt.appointment_date,
+            appointment_time: apt.time || apt.appointment_time,
+            patient_name: apt.patientName || apt.patient_name || 'Unknown Patient',
+            patient_id: apt.patientId || apt.patient_id || null,
+            duration: apt.duration || 30,
+            visit_type: apt.visitType || apt.visit_type || 'General',
+            doctor: apt.doctor || 'Dr. Smith',
+            status: apt.status || 'Scheduled',
+            notes: apt.notes || '',
+            organization_id: currentOrgId,
+            check_in_time: apt.checkInTime || apt.check_in_time || null,
+            check_out_time: apt.checkOutTime || apt.check_out_time || null
+          };
+          
+          const { error } = await window.supabaseClient
+            .from('appointments')
+            .insert([supabaseAppointment]);
+          
+          if (error) {
+            console.error('Error restoring appointment:', error);
+            errors++;
+          } else {
+            restored++;
+            console.log(`? Restored appointment: ${supabaseAppointment.patient_name} - ${supabaseAppointment.appointment_date}`);
+          }
+        } catch (err) {
+          console.error('Exception restoring appointment:', err);
+          errors++;
+        }
+      }
+      
+      document.getElementById('restore-results').innerHTML = `
+        <div class="success">
+          <h3>? Restoration Complete!</h3>
+          <p><strong>Restored:</strong> ${restored} appointments</p>
+          <p><strong>Errors:</strong> ${errors} appointments</p>
+          <p><strong>Next steps:</strong></p>
+          <ul>
+            <li>Go back to the appointments page</li>
+            <li>Refresh the page</li>
+            <li>Your appointments should be restored!</li>
+          </ul>
+        </div>
+      `;
+      
+      console.log(`? Restored ${restored} appointments, ${errors} errors`);
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', initialize);
+  </script>  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+

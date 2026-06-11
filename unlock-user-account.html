@@ -1,0 +1,268 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Unlock User Account</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        input:focus {
+            border-color: #007bff;
+            outline: none;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        button:disabled {
+            background: #6c757d;
+            cursor: not-allowed;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .result-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .result-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .result-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        .info-box {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 20px 0;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 Unlock User Account</h1>
+        <p><strong>Purpose:</strong> Unlock a user account that has been locked due to failed login attempts.</p>
+        
+        <div class="info-box">
+            <strong>ℹ️ Information:</strong> Enter the username or email of the locked account. The system will unlock all variations (username, email formats).
+        </div>
+        
+        <div class="form-group">
+            <label for="identifier">Username or Email*:</label>
+            <input type="text" id="identifier" placeholder="Enter username or email (e.g., username or username@mediforge.app)" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="unlockedBy">Unlocked By (Your Name)*:</label>
+            <input type="text" id="unlockedBy" placeholder="Enter your name (e.g., Platform Admin)" required>
+        </div>
+        
+        <button onclick="unlockAccount()" id="unlock-btn">🔓 Unlock Account</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            return supabase;
+        }
+
+        function logResult(message, type = 'info') {
+            const div = document.getElementById('result');
+            div.className = `result result-${type}`;
+            div.textContent = message;
+        }
+
+        async function unlockAccount() {
+            const identifier = document.getElementById('identifier').value.trim();
+            const unlockedBy = document.getElementById('unlockedBy').value.trim();
+            const unlockBtn = document.getElementById('unlock-btn');
+            
+            if (!identifier || !unlockedBy) {
+                logResult('Please fill in all required fields.', 'error');
+                return;
+            }
+            
+            unlockBtn.disabled = true;
+            unlockBtn.textContent = 'Unlocking...';
+            logResult('Unlocking account...', 'info');
+            
+            try {
+                initSupabase();
+                
+                // Method 1: Try using unlockAccount function if available
+                if (typeof window.unlockAccount === 'function') {
+                    const result = await window.unlockAccount(identifier, unlockedBy, 'Unlocked via unlock-user-account.html tool');
+                    
+                    if (result && result.success) {
+                        logResult(
+                            `✅ Account unlocked successfully!\n\n` +
+                            `Identifier: ${identifier}\n` +
+                            `Unlocked by: ${unlockedBy}\n` +
+                            `Variations unlocked: ${result.unlockedCount || 'Multiple'}\n\n` +
+                            `The user can now log in again.`,
+                            'success'
+                        );
+                    } else {
+                        logResult(
+                            `❌ Failed to unlock account.\n\n` +
+                            `Error: ${result?.error || 'Unknown error'}\n\n` +
+                            `Trying alternative method...`,
+                            'error'
+                        );
+                        // Continue to alternative method
+                    }
+                }
+                
+                // Method 2: Direct Supabase unlock via RPC
+                try {
+                    // Clear rate limit records in Supabase
+                    const { error: clearError } = await supabase.rpc('clear_rate_limit', {
+                        p_type: 'login',
+                        p_identifier: identifier
+                    });
+                    
+                    if (clearError) {
+                        console.warn('RPC clear_rate_limit failed, trying direct update:', clearError);
+                        
+                        // Alternative: Update rate_limits table directly
+                        const { error: updateError } = await supabase
+                            .from('rate_limits')
+                            .update({
+                                locked: false,
+                                permanent_lock: false,
+                                locked_at: null,
+                                locked_by: null,
+                                attempts: 0,
+                                first_attempt_at: null
+                            })
+                            .or(`identifier.eq.${identifier},identifier.eq.${identifier}@mediforge.app,identifier.ilike.${identifier.toLowerCase()}`);
+                        
+                        if (updateError) {
+                            throw updateError;
+                        }
+                    }
+                    
+                    // Also clear localStorage variations (for client-side)
+                    const variations = [
+                        identifier,
+                        identifier.toLowerCase(),
+                        identifier.includes('@') ? identifier.split('@')[0] : `${identifier}@mediforge.app`
+                    ];
+                    
+                    variations.forEach(variation => {
+                        localStorage.removeItem(`rate_limit_lockout_login_${variation}`);
+                        localStorage.removeItem(`rate_limit_login_${variation}`);
+                    });
+                    
+                    logResult(
+                        `✅ Account unlocked successfully!\n\n` +
+                        `Identifier: ${identifier}\n` +
+                        `Unlocked by: ${unlockedBy}\n` +
+                        `Method: Direct Supabase update\n\n` +
+                        `✅ All variations cleared:\n` +
+                        `  • ${variations.join('\n  • ')}\n\n` +
+                        `The user can now log in again.`,
+                        'success'
+                    );
+                    
+                } catch (error) {
+                    logResult(
+                        `❌ Error unlocking account:\n\n` +
+                        `${error.message}\n\n` +
+                        `Please try again or contact support.`,
+                        'error'
+                    );
+                }
+                
+            } catch (error) {
+                logResult(
+                    `❌ Unexpected error: ${error.message}\n${error.stack}`,
+                    'error'
+                );
+            } finally {
+                unlockBtn.disabled = false;
+                unlockBtn.textContent = '🔓 Unlock Account';
+            }
+        }
+        
+        // Load unlockAccount function if available
+        if (typeof window.unlockAccount === 'undefined') {
+            // Try to load account-management.js
+            const script = document.createElement('script');
+            script.src = 'js/account-management.js';
+            script.onload = () => console.log('✅ account-management.js loaded');
+            script.onerror = () => console.warn('⚠️ account-management.js not found, using direct method');
+            document.head.appendChild(script);
+        }
+    </script>
+</body>
+</html>
+

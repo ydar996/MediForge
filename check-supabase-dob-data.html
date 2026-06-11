@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Check Supabase DOB Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 1000px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        .btn:hover { background: #0056b3; }
+        .log { background: #000; color: #0f0; padding: 15px; font-family: monospace; height: 400px; overflow-y: auto; margin: 20px 0; border-radius: 5px; }
+        .patient-row { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 5px 0; border-radius: 5px; }
+        .patient-row.has-dob { background: #d4edda; border-color: #c3e6cb; }
+        .patient-row.no-dob { background: #f8d7da; border-color: #f5c6cb; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Check Supabase DOB Data</h1>
+        
+        <button class="btn" onclick="checkSupabaseData()">?? Check Supabase DOB Data</button>
+        <button class="btn" onclick="fixMissingDOB()">?? Fix Missing DOB Data</button>
+        
+        <div class="log" id="log"></div>
+        <div id="patient-list"></div>
+    </div>
+
+    
+  </script>
+    
+  
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        async function checkSupabaseData() {
+            log('?? Checking Supabase DOB data...');
+            
+            try {
+                const { data: patients, error } = await supabase
+                    .from('patients')
+                    .select('patient_id, first_name, last_name, date_of_birth')
+                    .eq('organization_id', ORG_ID);
+                
+                if (error) {
+                    log(`? Error: ${error.message}`);
+                    return;
+                }
+                
+                log(`? Retrieved ${patients.length} patients from Supabase`);
+                
+                const patientsWithDOB = patients.filter(p => p.date_of_birth);
+                const patientsWithoutDOB = patients.filter(p => !p.date_of_birth);
+                
+                log(`?? Patients with DOB: ${patientsWithDOB.length}`);
+                log(`? Patients without DOB: ${patientsWithoutDOB.length}`);
+                
+                // Display patients
+                const patientListDiv = document.getElementById('patient-list');
+                patientListDiv.innerHTML = '';
+                
+                patients.forEach(patient => {
+                    const div = document.createElement('div');
+                    div.className = patient.date_of_birth ? 'patient-row has-dob' : 'patient-row no-dob';
+                    div.innerHTML = `
+                        <strong>${patient.first_name} ${patient.last_name}</strong> (${patient.patient_id})<br>
+                        DOB: ${patient.date_of_birth || 'NULL'}
+                    `;
+                    patientListDiv.appendChild(div);
+                });
+                
+                if (patientsWithoutDOB.length > 0) {
+                    log('? Found patients with missing DOB data:');
+                    patientsWithoutDOB.forEach(patient => {
+                        log(`   ? ${patient.first_name} ${patient.last_name} (${patient.patient_id})`);
+                    });
+                }
+                
+            } catch (error) {
+                log(`? Error: ${error.message}`);
+            }
+        }
+        
+        async function fixMissingDOB() {
+            log('?? Fixing missing DOB data...');
+            
+            // The actual DOB data from the backup file
+            const dobData = {
+                'MEC0001': '1964-01-02',
+                'MEC0002': '1970-01-03', 
+                'MEC0003': '1975-05-22',
+                'MEC0004': '1969-05-01',
+                'MEC0005': '1980-01-01',
+                'MEC0006': '1987-01-01',
+                'MEC0007': '1990-01-01'
+            };
+            
+            let fixedCount = 0;
+            
+            for (const [patientId, dob] of Object.entries(dobData)) {
+                try {
+                    const { error } = await supabase
+                        .from('patients')
+                        .update({ 
+                            date_of_birth: dob,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('patient_id', patientId)
+                        .eq('organization_id', ORG_ID);
+                    
+                    if (error) {
+                        log(`? Error updating ${patientId}: ${error.message}`);
+                    } else {
+                        log(`? Updated ${patientId} with DOB: ${dob}`);
+                        fixedCount++;
+                    }
+                } catch (error) {
+                    log(`? Error updating ${patientId}: ${error.message}`);
+                }
+            }
+            
+            log(`?? Fixed ${fixedCount} patients with DOB data`);
+            log('?? Refreshing data...');
+            setTimeout(() => checkSupabaseData(), 1000);
+        }
+        
+        // Auto-check on load
+        window.addEventListener('load', () => {
+            log('?? DOB Data Checker ready');
+            checkSupabaseData();
+        });
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+

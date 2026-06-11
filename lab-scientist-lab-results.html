@@ -1,0 +1,1005 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Results - Lab Scientist View - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=217">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 12px 24px;
+      background: #008753;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+    }
+    
+    .results-container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .order-card {
+      border: 2px solid #008753;
+      border-radius: 8px;
+      padding: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid #008753;
+    }
+    
+    .test-results {
+      margin-top: 15px;
+    }
+    
+    .result-item {
+      padding: 12px;
+      margin: 8px 0;
+      background: #f8f9fa;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+    }
+    
+    .result-item.abnormal {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    
+    .result-label {
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .result-value {
+      font-size: 18px;
+      color: #008753;
+      margin: 5px 0;
+    }
+    
+    .result-value.abnormal {
+      color: #dc3545;
+    }
+    
+    .result-range {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .filter-section {
+      margin-bottom: 20px;
+      padding: 15px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .filter-section select,
+    .filter-section input {
+      padding: 8px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      margin-right: 10px;
+    }
+    
+    .results-list {
+      display: flex;
+      flex-direction: column;
+      gap: 15px;
+    }
+    
+    .result-list-item {
+      transition: all 0.3s ease;
+    }
+    
+    .result-list-item:hover {
+      transform: translateY(-2px);
+    }
+    
+    /* Print styles */
+    @media print {
+      .back-button, .filter-section {
+        display: none !important;
+      }
+      
+      .results-container {
+        page-break-inside: avoid;
+        border: 1px solid #000 !important;
+      }
+      
+      body {
+        background: white;
+      }
+    }
+  </style>
+  
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Define getDataKey function before loading patients.js -->
+  <script>
+    // Helper function to get organization-specific data key
+    // This must be defined before patients.js loads
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || '{}');
+      return user && user.org ? `${user.org}_${key}` : key;
+    }
+    
+    // Make getDataKey globally available
+    window.getDataKey = getDataKey;
+  </script>
+  
+  <script src="js/lab-results-manager.js"></script>
+  <script src="js/patient-id-normalizer.js?v=1"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <a href="lab-scientist-dashboard" class="back-button">← Back to Lab Dashboard</a>
+  
+  <div class="header">
+    <h1>🔬 Lab Results - Lab Scientist View</h1>
+    <p>View-only results sent to doctors (reviewed and awaiting review)</p>
+  </div>
+
+  <div id="access-denied" class="empty-state" style="display: none;">
+    <h3>Access Restricted</h3>
+    <p>This page is only accessible to Medical Lab Scientists.</p>
+    <a href="dashboard" class="back-button" style="margin-top: 20px;">← Back to Dashboard</a>
+  </div>
+  
+  <div id="loading" class="loading">Loading lab results...</div>
+  <div id="results-content" style="display: none;"></div>
+  
+  <script>
+    let allResults = [];
+    let filteredResults = [];
+    
+    function isLabScientistUser() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const labScientistRoles = [
+        'Medical Lab Scientist',
+        'Lab Scientist',
+        'Medical Laboratory Scientist',
+        'Laboratory Scientist',
+        'Lab Tech',
+        'Laboratory Technician'
+      ];
+      return labScientistRoles.some(role =>
+        user.role === role || user.role?.toLowerCase() === role.toLowerCase()
+      );
+    }
+
+    async function loadLabResults() {
+      const loadingDiv = document.getElementById('loading');
+      const contentDiv = document.getElementById('results-content');
+      const accessDenied = document.getElementById('access-denied');
+
+      if (!isLabScientistUser()) {
+        loadingDiv.style.display = 'none';
+        contentDiv.style.display = 'none';
+        if (accessDenied) {
+          accessDenied.style.display = 'block';
+        }
+        return;
+      }
+      
+      try {
+        // Get all completed lab orders with results
+        const supabase = await window.getLabSupabaseClient();
+        const orgId = await getLabOrgId();
+        
+        // Get all lab orders with results (regardless of status)
+        // This allows doctors to see partial results as soon as they're entered
+        const { data: orders, error } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('organization_id', orgId)
+          .eq('type', 'lab')
+          .not('results', 'is', null)
+          .order('created_at', { ascending: false });
+        
+        // Filter client-side to only show orders that have at least one test with actual result data
+        // (not just status metadata)
+        const ordersWithResults = (orders || []).filter(order => {
+          if (!order.results) return false;
+          
+          try {
+            // Parse results if it's a string
+            const results = typeof order.results === 'string' 
+              ? JSON.parse(order.results) 
+              : order.results;
+            
+            if (!results || typeof results !== 'object') return false;
+            
+            // Check if any test has actual result data (not just status)
+            // A test has results if it has data beyond just status/metadata fields
+            const hasActualResults = Object.values(results).some(testResult => {
+              if (!testResult || typeof testResult !== 'object') return false;
+              
+              // Check if test has any result fields (not just status, entered_at, entered_by)
+              const metadataFields = ['status', 'entered_at', 'entered_by', 'completed_at', 'completed_by', 'started_at', 'started_by', 'file_name', 'file_data', 'file_type', 'file_size'];
+              const resultFields = Object.keys(testResult).filter(key => {
+                // Exclude metadata fields
+                if (metadataFields.includes(key)) return false;
+                // Exclude empty/null values
+                const value = testResult[key];
+                if (value === null || value === undefined || value === '') return false;
+                // Include all other fields (these are actual result data)
+                return true;
+              });
+              
+              // Has results if there are fields beyond metadata with actual values
+              return resultFields.length > 0;
+            });
+            
+            return hasActualResults;
+          } catch (e) {
+            // If results can't be parsed, exclude it
+            return false;
+          }
+        });
+        
+        if (error) {
+          throw error;
+        }
+        
+        allResults = ordersWithResults || [];
+        filteredResults = allResults;
+        
+        loadingDiv.style.display = 'none';
+        contentDiv.style.display = 'block';
+        
+        await displayResults();
+        
+      } catch (error) {
+        console.error('Error loading lab results:', error);
+        loadingDiv.innerHTML = `<div class="loading">Error: ${error.message}</div>`;
+      }
+    }
+    
+    // Helper function to extract display value from result field
+    function getResultDisplayValue(value) {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+      
+      // If value is an object (has value, unit, normalRange structure)
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        // Check if it's a result object with value property
+        if (value.value !== undefined && value.value !== null && value.value !== '') {
+          let display = String(value.value);
+          if (value.unit && value.unit !== '') {
+            display += ` ${value.unit}`;
+          }
+          if (value.normalRange && value.normalRange !== '') {
+            display += ` (Range: ${value.normalRange})`;
+          }
+          // Check for reactionStrength (for Blood Group tests)
+          if (value.reactionStrength && value.reactionStrength !== '') {
+            display += ` [${value.reactionStrength}]`;
+          }
+          return display;
+        }
+        // If it's an object but doesn't have a value property, try to extract meaningful data
+        // Check for common field names that might contain the actual value
+        if (value.comments !== undefined) {
+          return String(value.comments);
+        }
+        // Last resort: return empty string to skip this field
+        return '';
+      }
+      
+      // If it's a string or number, return as is
+      return String(value);
+    }
+    
+    async function displayResults() {
+      const contentDiv = document.getElementById('results-content');
+      
+      if (filteredResults.length === 0) {
+        contentDiv.innerHTML = '<div class="empty-state"><h3>No lab results found</h3><p>Completed lab results will appear here.</p></div>';
+        return;
+      }
+      
+      // Supabase-first: Get patient list - try Supabase first, fallback to localStorage
+      let patients = [];
+      
+      try {
+        const supabase = await window.getLabSupabaseClient();
+        if (supabase) {
+          const orgId = await getLabOrgId();
+          if (orgId) {
+            const { data: supabasePatients, error } = await supabase
+              .from('patients')
+              .select('id, patient_id, first_name, last_name')
+              .eq('organization_id', orgId);
+            
+            if (!error && supabasePatients && supabasePatients.length > 0) {
+              // Convert snake_case to camelCase for compatibility
+              patients = supabasePatients.map(p => ({
+                id: p.id || p.patient_id,
+                patient_id: p.patient_id || p.id, // Ensure patient_id is set
+                firstName: p.first_name || '',
+                lastName: p.last_name || '',
+                first_name: p.first_name || '',
+                last_name: p.last_name || ''
+              }));
+              
+              // Cache to localStorage
+              localStorage.setItem('patients', JSON.stringify(patients));
+              console.log(`✅ [DOCTOR-LAB-RESULTS] Loaded ${patients.length} patients from Supabase`, {
+                sample: patients.slice(0, 3).map(p => ({ 
+                  id: p.id, 
+                  patient_id: p.patient_id, 
+                  first_name: p.first_name, 
+                  last_name: p.last_name 
+                }))
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [DOCTOR-LAB-RESULTS] Supabase fetch failed, falling back to localStorage:', error);
+      }
+      
+      // Fallback to localStorage if Supabase didn't provide data
+      if (patients.length === 0) {
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            patients = JSON.parse(localStorage.getItem('patients') || '[]');
+          }
+        } catch (error) {
+          patients = JSON.parse(localStorage.getItem('patients') || '[]');
+        }
+      }
+      
+      // Fetch organization details
+      let orgName = 'Medical Clinic';
+      let orgAddress = '';
+      let orgPhone = '';
+      
+      if (filteredResults.length > 0 && filteredResults[0].organization_id) {
+        try {
+          const supabase = await window.getLabSupabaseClient();
+          const { data: orgData } = await supabase
+            .from('organizations')
+            .select('name, address_line1, address_line2, city, state, country, phone')
+            .eq('id', filteredResults[0].organization_id)
+            .single();
+          
+          if (orgData) {
+            orgName = orgData.name || orgName;
+            const addrParts = [
+              orgData.address_line1,
+              orgData.address_line2,
+              orgData.city,
+              orgData.state,
+              orgData.country
+            ].filter(Boolean);
+            orgAddress = addrParts.join(', ');
+            orgPhone = orgData.phone || '';
+          }
+        } catch (error) {
+          console.warn('Could not fetch organization details:', error);
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          if (user.org) orgName = user.org;
+        }
+      }
+      
+      // Fetch user names and roles for all orders
+      const userNamesMap = {};
+      const supabase = await window.getLabSupabaseClient();
+      
+      for (const order of filteredResults) {
+        if (order.created_by && !userNamesMap[order.created_by]) {
+          try {
+            // Try to find user by username first (most common case)
+            let userData = null;
+            const username = order.created_by;
+            
+            // Try username match first
+            const { data: usernameMatch } = await supabase
+              .from('users')
+              .select('first_name, last_name, username, role')
+              .eq('username', username)
+              .maybeSingle();
+            
+            if (usernameMatch) {
+              userData = usernameMatch;
+            } else {
+              // Try other fields if username doesn't match
+              const { data: otherMatch } = await supabase
+                .from('users')
+                .select('first_name, last_name, username, role')
+                .or(`id.eq.${username},auth_user_id.eq.${username}`)
+                .limit(1)
+                .maybeSingle();
+              
+              if (otherMatch) {
+                userData = otherMatch;
+              }
+            }
+            
+            if (userData) {
+              const firstName = userData.first_name || '';
+              const lastName = userData.last_name || '';
+              const fullName = (firstName && lastName) ? `${firstName} ${lastName}` : (firstName || lastName || userData.username || 'Unknown');
+              const role = (userData.role || '').toLowerCase();
+              
+              // Determine appropriate title based on role
+              let title = '';
+              if (role.includes('lab') || role.includes('scientist') || role === 'medical lab scientist') {
+                title = 'Medical Lab Scientist';
+              } else if (role.includes('doctor') || role.includes('physician') || role === 'dr') {
+                title = 'Dr.';
+              } else if (role.includes('nurse')) {
+                title = 'Nurse';
+              } else if (role.includes('admin')) {
+                title = 'Admin';
+              } else if (role.includes('staff')) {
+                title = 'Staff';
+              } else {
+                // Default to Dr. for backward compatibility
+                title = 'Dr.';
+              }
+              
+              userNamesMap[order.created_by] = `${title} ${fullName}`.trim();
+            } else if (order.created_by && !order.created_by.includes('-')) {
+              // Fallback: use the username with appropriate title
+              const username = order.created_by;
+              if (username.startsWith('Dr.') || username.startsWith('Medical Lab Scientist')) {
+                userNamesMap[order.created_by] = username;
+              } else {
+                // Default to Dr. for backward compatibility
+                userNamesMap[order.created_by] = `Dr. ${username}`;
+              }
+            } else {
+              userNamesMap[order.created_by] = 'Unknown User';
+            }
+          } catch (error) {
+            console.warn('Could not fetch user name:', error);
+            // Fallback to username
+            if (order.created_by && !order.created_by.includes('-')) {
+              userNamesMap[order.created_by] = `Dr. ${order.created_by}`;
+            } else {
+              userNamesMap[order.created_by] = 'Unknown User';
+            }
+          }
+        }
+      }
+      
+      // Group completed tests by patient
+      const patientResultsMap = {};
+      
+      // Process each order and resolve patients properly
+      for (const order of filteredResults) {
+        const orderPatientId = order.patient_id;
+        let patient = null;
+        let legacyPatientId = orderPatientId; // Default fallback
+        
+        // Use resolvePatientByIdentifier for robust patient lookup (same as lab-scientist-dashboard)
+        if (orderPatientId && typeof window.resolvePatientByIdentifier === 'function') {
+          try {
+            patient = await window.resolvePatientByIdentifier(orderPatientId);
+            if (patient) {
+              // Get legacy patient ID - CRITICAL: Always use getPatientIdentifier first
+              if (typeof window.getPatientIdentifier === 'function') {
+                legacyPatientId = window.getPatientIdentifier(patient);
+              }
+              
+              // If getPatientIdentifier returned null or UUID, try alternative fields
+              if (!legacyPatientId || legacyPatientId.includes('-')) {
+                legacyPatientId = patient.patient_id || patient.legacy_id || patient.temp_id || orderPatientId;
+              }
+              
+              console.log(`✅ [DOCTOR-LAB-RESULTS] Resolved patient for order ${order.id}:`, {
+                orderPatientId: orderPatientId,
+                legacyPatientId: legacyPatientId,
+                patientName: `${patient.first_name || patient.firstName || ''} ${patient.last_name || patient.lastName || ''}`.trim()
+              });
+            }
+          } catch (error) {
+            console.warn(`⚠️ [DOCTOR-LAB-RESULTS] Error resolving patient ${orderPatientId}:`, error);
+          }
+        }
+        
+        // Fallback: Try multiple lookup strategies if resolvePatientByIdentifier didn't work
+        if (!patient) {
+          // Strategy 1: Direct patient_id match (most common)
+          patient = patients.find(p => p.patient_id === orderPatientId);
+          
+          // Strategy 2: String comparison of patient_id
+          if (!patient) {
+            patient = patients.find(p => String(p.patient_id) === String(orderPatientId));
+          }
+          
+          // Strategy 3: Try UUID id field (in case patient_id is stored in id)
+          if (!patient) {
+            patient = patients.find(p => p.id === orderPatientId);
+          }
+          
+          // Strategy 4: String comparison of id field
+          if (!patient) {
+            patient = patients.find(p => String(p.id) === String(orderPatientId));
+          }
+          
+          // Strategy 5: Check if patient_id contains the order patient_id or vice versa
+          if (!patient) {
+            patient = patients.find(p => 
+              (p.patient_id && p.patient_id.includes(orderPatientId)) || 
+              (orderPatientId && orderPatientId.includes(p.patient_id))
+            );
+          }
+          
+          // If patient found via fallback, get legacy ID
+          if (patient && typeof window.getPatientIdentifier === 'function') {
+            legacyPatientId = window.getPatientIdentifier(patient);
+            if (!legacyPatientId || legacyPatientId.includes('-')) {
+              legacyPatientId = patient.patient_id || patient.legacy_id || patient.temp_id || orderPatientId;
+            }
+          }
+        }
+        
+        // Try multiple field name variations
+        const firstName = patient ? (patient.first_name || patient.firstName || '') : '';
+        const lastName = patient ? (patient.last_name || patient.lastName || '') : '';
+        let patientName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : null;
+        
+        // If still no name, try to get from patient object directly
+        if (!patientName && patient) {
+          // Check if patient has a name property
+          if (patient.name) {
+            patientName = patient.name;
+          } else {
+            // Last resort: use legacy patient ID
+            patientName = legacyPatientId;
+          }
+        } else if (!patientName) {
+          patientName = legacyPatientId;
+        }
+        
+        // Debug logging
+        if (!patient) {
+          console.warn(`⚠️ [DOCTOR-LAB-RESULTS] Patient not found for ID: ${orderPatientId}`, {
+            orderPatientId: order.patient_id,
+            patientsCount: patients.length,
+            allPatientIds: patients.map(p => ({ id: p.id, patient_id: p.patient_id, first_name: p.first_name, last_name: p.last_name }))
+          });
+        } else {
+          console.log(`✅ [DOCTOR-LAB-RESULTS] Patient found for ID: ${orderPatientId}`, {
+            legacyPatientId: legacyPatientId,
+            patient_id: patient.patient_id,
+            id: patient.id,
+            first_name: patient.first_name,
+            last_name: patient.last_name,
+            firstName: patient.firstName,
+            lastName: patient.lastName
+          });
+        }
+        if (patient && !firstName && !lastName) {
+          console.warn(`⚠️ [DOCTOR-LAB-RESULTS] Patient found but no name fields for ID: ${orderPatientId}`, patient);
+        }
+        
+        // Use legacyPatientId as the key and for display
+        const displayPatientId = legacyPatientId || orderPatientId;
+        
+        if (!patientResultsMap[displayPatientId]) {
+          patientResultsMap[displayPatientId] = {
+            patientId: displayPatientId, // Store legacy ID for display
+            originalPatientId: orderPatientId, // Keep original for lookup if needed
+            patientName: patientName,
+            patient: patient,
+            completedTests: []
+          };
+        }
+        
+        const selectedItems = order.selected_items || [];
+        let results = {};
+        try {
+          if (typeof order.results === 'string' && order.results.trim()) {
+            results = JSON.parse(order.results);
+          } else if (order.results && typeof order.results === 'object') {
+            results = order.results;
+          }
+        } catch (e) {
+          console.warn('Failed to parse results for order:', order.id, e);
+          results = {};
+        }
+        
+        const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A';
+        const doctorName = userNamesMap[order.created_by] || 'Unknown User';
+        
+        // Only collect COMPLETED tests (not pending ones)
+        selectedItems.forEach(test => {
+          const testName = test.name || test;
+          const testResults = results[testName];
+          
+          if (!testResults || typeof testResults !== 'object') return;
+          
+          // Check if test has actual result data (not just status metadata)
+          const metadataFields = ['status', 'entered_at', 'entered_by', 'completed_at', 'completed_by', 'started_at', 'started_by', 'file_name', 'file_data', 'file_type', 'file_size', 'notes'];
+          const resultFields = Object.keys(testResults).filter(key => {
+            if (metadataFields.includes(key)) return false;
+            const value = testResults[key];
+            if (value === null || value === undefined || value === '') return false;
+            // If it's an object, check if it has a value property with actual data
+            if (typeof value === 'object' && !Array.isArray(value)) {
+              return value.value !== undefined && value.value !== null && value.value !== '';
+            }
+            return true;
+          });
+          
+          // Only include if test has actual result data (not just metadata)
+          if (resultFields.length > 0) {
+            // Check if test has been reviewed
+            const isReviewed = testResults.reviewed_at && testResults.reviewed_by;
+            
+            patientResultsMap[displayPatientId].completedTests.push({
+              testName: testName,
+              testResults: testResults,
+              orderId: order.id,
+              orderSerialNumber: order.serial_number,
+              orderDate: orderDate,
+              doctorName: doctorName,
+              orgName: orgName,
+              orgAddress: orgAddress,
+              orgPhone: orgPhone,
+              isReviewed: isReviewed,
+              reviewedAt: testResults.reviewed_at || null,
+              reviewedBy: testResults.reviewed_by || null
+            });
+          }
+        });
+      }
+      
+      // Filter out patients with no completed tests
+      const patientsWithResults = Object.values(patientResultsMap).filter(p => p.completedTests.length > 0);
+      
+      if (patientsWithResults.length === 0) {
+        contentDiv.innerHTML = '<div class="empty-state"><h3>No completed lab results found</h3><p>Completed lab results will appear here once tests are finished.</p></div>';
+        return;
+      }
+      
+      // Check if we're showing a specific patient's results
+      const urlParams = new URLSearchParams(window.location.search);
+      const selectedPatientId = urlParams.get('patientId');
+      
+      if (selectedPatientId) {
+        // Show patient-specific test results
+        const patientData = patientsWithResults.find(p => p.patientId === selectedPatientId);
+        
+        if (!patientData) {
+          contentDiv.innerHTML = `
+            <div class="empty-state">
+              <h3>Patient Not Found</h3>
+              <p>The requested patient could not be found.</p>
+              <a href="lab-scientist-lab-results.html" class="back-button" style="margin-top: 20px;">← Back to Patient List</a>
+            </div>
+          `;
+          return;
+        }
+        
+        // Ensure patientName is set correctly
+        let displayName = patientData.patientName;
+        if (!displayName || displayName === patientData.patientId || displayName.trim() === '') {
+          const patient = patientData.patient;
+          if (patient) {
+            const firstName = patient.first_name || patient.firstName || '';
+            const lastName = patient.last_name || patient.lastName || '';
+            const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : '';
+            displayName = fullName || patientData.patientId;
+          } else {
+            displayName = patientData.patientId;
+          }
+        }
+        
+        // Sort tests by category, then by date (most recent first) within category
+        const labCategoryOrder = ['Haematology', 'Medical Microbiology / Serology', 'Clinical Chemistry'];
+        const getCatIdx = (name) => {
+          const cat = typeof window.getLabTestCategory === 'function' ? window.getLabTestCategory(name) : null;
+          const idx = labCategoryOrder.indexOf(cat);
+          return idx >= 0 ? idx : 999;
+        };
+        const sortedTests = [...patientData.completedTests].sort((a, b) => {
+          const ca = getCatIdx(a.testName), cb = getCatIdx(b.testName);
+          if (ca !== cb) return ca - cb;
+          const dateA = new Date(a.orderDate);
+          const dateB = new Date(b.orderDate);
+          return dateB - dateA;
+        });
+        
+        let html = `
+          <div style="margin-bottom: 20px;">
+            <a href="lab-scientist-lab-results.html" class="back-button">← Back to Patient List</a>
+          </div>
+          <div class="patient-info" style="background: linear-gradient(135deg, #008753 0%, #006b42 100%); color: white; padding: 20px; border-radius: 8px; margin-bottom: 30px;">
+            <h2 style="margin: 0; font-size: 24px;">${displayName}</h2>
+            <p style="margin: 5px 0 0 0; opacity: 0.9;">Patient ID: ${typeof window.patientMrnDisplay === 'function' ? (patientData.patient ? window.patientMrnDisplay(patientData.patient, patientData.patientId) : window.patientMrnDisplay(patientData.patientId, patientData.patientId)) : patientData.patientId} | ${sortedTests.length} completed test(s)</p>
+          </div>
+          <div class="results-list" style="margin-top: 20px;">
+        `;
+        
+        if (sortedTests.length === 0) {
+          html += `
+            <div class="empty-state">
+              <h3>No Test Results</h3>
+              <p>This patient has no completed test results.</p>
+            </div>
+          `;
+        } else {
+          let lastCategory = null;
+          sortedTests.forEach(test => {
+            const testCategory = typeof window.getLabTestCategory === 'function' ? window.getLabTestCategory(test.testName) : null;
+            if (sortedTests.length > 1 && testCategory && testCategory !== lastCategory) {
+              lastCategory = testCategory;
+              html += `<div style="margin-top: 24px; margin-bottom: 12px; padding: 10px 16px; background: linear-gradient(135deg, #004d2e 0%, #003320 100%); color: white; font-weight: 700; font-size: 14px; text-transform: uppercase; letter-spacing: 0.5px; border-radius: 6px;">${testCategory}</div>`;
+            }
+            const testUrl = `lab-scientist-lab-result-details.html?orderId=${encodeURIComponent(test.orderId)}&testName=${encodeURIComponent(test.testName)}`;
+            const isReviewed = test.isReviewed || false;
+            const borderColor = isReviewed ? '#17a2b8' : '#ffc107';
+            const bgColor = isReviewed ? 'white' : '#fffbf0';
+            
+            html += `
+              <a href="${testUrl}" style="text-decoration: none; color: inherit; display: block;">
+                <div class="result-list-item" style="
+                  background: ${bgColor};
+                  border: 2px solid #e0e0e0;
+                  border-left: 4px solid ${borderColor};
+                  border-radius: 8px;
+                  padding: 20px;
+                  margin-bottom: 15px;
+                  transition: all 0.3s ease;
+                  cursor: pointer;
+                " onmouseover="this.style.borderColor='${borderColor}'; this.style.boxShadow='0 4px 12px rgba(${isReviewed ? '23,162,184' : '255,193,7'},0.2)';" 
+                   onmouseout="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+                  <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                    <div style="flex: 1; min-width: 250px;">
+                      <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                        <h3 style="margin: 0; color: #008753; font-size: 18px;">${test.testName}</h3>
+                        <span style="background: #28a745; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">✓ Completed</span>
+                        ${isReviewed ? 
+                          '<span style="background: #17a2b8; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">✓ Reviewed</span>' : 
+                          '<span style="background: #ffc107; color: #333; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">⚠ Not Reviewed</span>'
+                        }
+                      </div>
+                      <p style="margin: 5px 0; color: #666; font-size: 14px;">
+                        Order #${typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(test.orderSerialNumber || test.orderId.substring(0, 8), test.orderId, test) : (test.orderSerialNumber || test.orderId.substring(0, 8))} | 
+                        Ordered by ${test.doctorName}
+                      </p>
+                      <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                        ${test.orderDate}
+                      </p>
+                    </div>
+                    <div style="display: flex; align-items: center; color: #008753; font-size: 24px;">
+                      →
+                    </div>
+                  </div>
+                </div>
+              </a>
+            `;
+          });
+        }
+        
+        html += `</div>`;
+        contentDiv.innerHTML = html;
+        return;
+      }
+      
+      // Show patient list (top level)
+      let html = `
+        <div class="filter-section">
+          <label>Filter by Date:</label>
+          <input type="date" id="date-filter" onchange="filterResults()">
+        </div>
+        
+        <div class="results-list" style="margin-top: 20px;">
+      `;
+      
+      // Sort patients by most recent test date
+      // First, sort each patient's tests by date (most recent first)
+      patientsWithResults.forEach(patientData => {
+        patientData.completedTests.sort((a, b) => {
+          const dateA = new Date(a.orderDate);
+          const dateB = new Date(b.orderDate);
+          return dateB - dateA; // Most recent first
+        });
+      });
+      
+      // Sort patients: unreviewed tests first, then by most recent test date
+      const sortedPatients = [...patientsWithResults].sort((a, b) => {
+        // Count unreviewed tests for each patient
+        const aUnreviewedCount = a.completedTests.filter(t => !t.isReviewed).length;
+        const bUnreviewedCount = b.completedTests.filter(t => !t.isReviewed).length;
+        
+        // If one has unreviewed tests and the other doesn't, prioritize the one with unreviewed
+        if (aUnreviewedCount > 0 && bUnreviewedCount === 0) return -1;
+        if (bUnreviewedCount > 0 && aUnreviewedCount === 0) return 1;
+        
+        // If both have unreviewed or both don't, sort by most recent test date
+        const aLatestTest = a.completedTests.length > 0 
+          ? new Date(a.completedTests[0].orderDate) 
+          : new Date(0);
+        const bLatestTest = b.completedTests.length > 0 
+          ? new Date(b.completedTests[0].orderDate) 
+          : new Date(0);
+        return bLatestTest - aLatestTest; // Most recent first
+      });
+      
+      if (sortedPatients.length === 0) {
+        html += `
+          <div class="empty-state">
+            <h3>No Patients with Lab Results</h3>
+            <p>Patients with completed lab results will appear here.</p>
+          </div>
+        `;
+      } else {
+        sortedPatients.forEach(patientData => {
+          // Ensure patientName is set correctly
+          let displayName = patientData.patientName;
+          if (!displayName || displayName === patientData.patientId || displayName.trim() === '') {
+            const patient = patientData.patient;
+            if (patient) {
+              const firstName = patient.first_name || patient.firstName || '';
+              const lastName = patient.last_name || patient.lastName || '';
+              const fullName = (firstName || lastName) ? `${firstName} ${lastName}`.trim() : '';
+              displayName = fullName || patientData.patientId;
+            } else {
+              displayName = patientData.patientId;
+            }
+          }
+          
+          // Count unreviewed tests
+          const unreviewedCount = patientData.completedTests.filter(t => !t.isReviewed).length;
+          const hasUnreviewed = unreviewedCount > 0;
+          
+          // Use different styling for patients with unreviewed tests
+          const borderColor = hasUnreviewed ? '#ffc107' : '#008753';
+          const bgColor = hasUnreviewed ? '#fffbf0' : 'white';
+          
+          // Get most recent test date
+          const sortedTests = [...patientData.completedTests].sort((a, b) => {
+            const dateA = new Date(a.orderDate);
+            const dateB = new Date(b.orderDate);
+            return dateB - dateA;
+          });
+          const mostRecentDate = sortedTests.length > 0 ? sortedTests[0].orderDate : 'N/A';
+          
+          const patientUrl = `lab-scientist-lab-results.html?patientId=${encodeURIComponent(patientData.patientId)}`;
+          
+          html += `
+            <a href="${patientUrl}" style="text-decoration: none; color: inherit; display: block;">
+              <div class="result-list-item" style="
+                background: ${bgColor};
+                border: 2px solid #e0e0e0;
+                border-left: 4px solid ${borderColor};
+                border-radius: 8px;
+                padding: 20px;
+                margin-bottom: 15px;
+                transition: all 0.3s ease;
+                cursor: pointer;
+              " onmouseover="this.style.borderColor='${borderColor}'; this.style.boxShadow='0 4px 12px rgba(${hasUnreviewed ? '255,193,7' : '0,135,83'},0.2)';" 
+                 onmouseout="this.style.borderColor='#e0e0e0'; this.style.boxShadow='none';">
+                <div style="display: flex; justify-content: space-between; align-items: flex-start; flex-wrap: wrap; gap: 15px;">
+                  <div style="flex: 1; min-width: 250px;">
+                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px; flex-wrap: wrap;">
+                      <h3 style="margin: 0; color: #008753; font-size: 18px;">${displayName}</h3>
+                      <span style="background: #008753; color: white; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">${patientData.completedTests.length} test(s)</span>
+                      ${hasUnreviewed ? `<span style="background: #ffc107; color: #333; padding: 3px 10px; border-radius: 12px; font-size: 11px; font-weight: 600;">⚠ ${unreviewedCount} unreviewed</span>` : ''}
+                    </div>
+                    <p style="margin: 5px 0; color: #666; font-size: 14px;">
+                      <strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? (patientData.patient ? window.patientMrnDisplay(patientData.patient, patientData.patientId) : window.patientMrnDisplay(patientData.patientId, patientData.patientId)) : patientData.patientId}
+                    </p>
+                    <p style="margin: 5px 0; color: #999; font-size: 12px;">
+                      Most recent: ${mostRecentDate}
+                    </p>
+                  </div>
+                  <div style="display: flex; align-items: center; color: #008753; font-size: 24px;">
+                    →
+                  </div>
+                </div>
+              </div>
+            </a>
+          `;
+        });
+      }
+      
+      html += `</div>`;
+      
+      contentDiv.innerHTML = html;
+    }
+    
+    function filterResults() {
+      const dateFilter = document.getElementById('date-filter')?.value || '';
+      
+      // If date filter is set, filter results
+      if (dateFilter) {
+        filteredResults = allResults.filter(order => {
+          const orderDate = order.created_at ? new Date(order.created_at).toISOString().split('T')[0] : '';
+          return orderDate === dateFilter;
+        });
+      } else {
+        filteredResults = allResults;
+      }
+      
+      // Reload and display results
+      displayResults();
+    }
+    
+    function viewResultFile(orderId, testName) {
+      // Open file viewer modal or download
+      alert('File viewer will be implemented');
+    }
+    
+    // Get organization ID helper
+    async function getLabOrgId() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.organizationId) return user.organizationId;
+      if (user.organization_id) return user.organization_id;
+      
+      // Try to get from Supabase
+      const supabase = await window.getLabSupabaseClient();
+      const { data } = await supabase
+        .from('organizations')
+        .select('id')
+        .eq('name', user.org)
+        .single();
+      
+      return data?.id;
+    }
+    
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', loadLabResults);
+  </script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

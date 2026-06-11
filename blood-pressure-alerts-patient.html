@@ -1,0 +1,201 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#dc3545">
+  <title>BP Alerts - Patient Details - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=242">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --light-green: rgba(0, 135, 83, 0.1);
+      --nigerian-white: #FFFFFF;
+      --gold: #FFD700;
+      --kente-gold: #DAA520;
+      --dark-gold: #B8860B;
+      --adire-blue: #4169E1;
+      --ivory: #FFFFF0;
+      --soft-white: #FAFAFA;
+      --charcoal: #36454F;
+      --critical-red: #dc3545;
+      --critical-bg: rgba(220, 53, 69, 0.08);
+      --elevated-bg: rgba(218, 165, 32, 0.12);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, var(--soft-white) 0%, var(--ivory) 100%); color: var(--charcoal); }
+    .container { background: var(--nigerian-white); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15), 0 0 30px rgba(218, 165, 32, 0.08); border: 1px solid rgba(0, 135, 83, 0.2); }
+    h1 { color: var(--primary-green); margin-bottom: 10px; }
+    h2 { color: var(--dark-green); border-bottom: 3px solid var(--kente-gold); padding-bottom: 10px; text-shadow: 1px 1px 2px rgba(0, 135, 83, 0.15); }
+    .back-button { background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%); color: white; border: 2px solid var(--kente-gold); padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 135, 83, 0.3); transition: all 0.3s ease; }
+    .back-button:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4); border-color: var(--gold); }
+    .button-group { display: flex; gap: 10px; flex-wrap: wrap; margin-bottom: 20px; }
+    table { width: 100%; border-collapse: collapse; margin-top: 15px; border-radius: 10px; overflow: hidden; border: 2px solid var(--primary-green); box-shadow: 0 2px 12px rgba(0, 135, 83, 0.15); }
+    table th, table td { padding: 12px; text-align: left; border: 1px solid rgba(0, 135, 83, 0.2); }
+    table th { background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%); color: white; font-weight: 600; }
+    table tr:nth-child(even) { background: var(--light-green); }
+    .bp-critical { background: var(--critical-bg) !important; color: var(--critical-red); font-weight: 700; border-left: 4px solid var(--critical-red); }
+    .bp-elevated { background: var(--elevated-bg) !important; color: var(--dark-gold); font-weight: 600; border-left: 4px solid var(--kente-gold); }
+    .badge-critical { background: var(--critical-red); color: white; padding: 2px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .badge-elevated { background: linear-gradient(135deg, var(--kente-gold) 0%, var(--dark-gold) 100%); color: white; padding: 2px 10px; border-radius: 6px; font-size: 11px; font-weight: 600; }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--dark-green); font-style: italic; background: linear-gradient(135deg, var(--light-green) 0%, var(--ivory) 100%); border-radius: 10px; border: 2px dashed var(--primary-green); }
+    .patient-header { padding: 18px; background: linear-gradient(135deg, var(--light-green) 0%, rgba(218, 165, 32, 0.08) 100%); border-radius: 10px; border-left: 5px solid var(--primary-green); margin-bottom: 20px; color: var(--dark-green); font-weight: 600; box-shadow: 0 2px 10px rgba(0, 135, 83, 0.1); }
+    table a { color: var(--adire-blue); font-weight: 600; text-decoration: none; }
+    table a:hover { text-decoration: underline; color: var(--dark-green); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="button-group">
+      <button class="back-button" onclick="window.location.href='blood-pressure-alerts-dashboard'">← Back to Alerts</button>
+      <button class="back-button" onclick="window.location.href='dashboard'">← Dashboard</button>
+    </div>
+    <div id="patient-header" class="patient-header">Loading...</div>
+    <div class="button-group">
+      <button class="back-button" style="background: linear-gradient(135deg, var(--adire-blue), #1E90FF); display:none;" id="patient-details-btn" onclick="goToPatientDetails()">Patient Details</button>
+    </div>
+    <h2 style="color: var(--dark-green); margin-top: 25px; border-bottom: 2px solid var(--primary-green); padding-bottom: 10px;">Elevated & Critical BP Readings (last 7 days)</h2>
+    <div id="readings-table"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/logout-button.js"></script>
+
+  <script>
+    function isCriticalBp(systolic, diastolic) {
+      if (systolic == null && diastolic == null) return false;
+      const s = parseInt(systolic, 10);
+      const d = parseInt(diastolic, 10);
+      if (isNaN(s) && isNaN(d)) return false;
+      return (s >= 180 || s <= 90 || d >= 120 || d <= 60);
+    }
+    function isElevatedBp(systolic, diastolic) {
+      if (systolic == null && diastolic == null) return false;
+      const s = parseInt(systolic, 10);
+      const d = parseInt(diastolic, 10);
+      if (isNaN(s) && isNaN(d)) return false;
+      return (s >= 140 || d >= 90);
+    }
+
+    let patient = null;
+
+    async function load() {
+      const params = new URLSearchParams(window.location.search);
+      const patientId = params.get('patientId');
+      if (!patientId) {
+        document.getElementById('patient-header').textContent = 'Missing patient ID.';
+        document.getElementById('readings-table').innerHTML = '<div class="empty-state">Go back to the alerts dashboard and click a patient.</div>';
+        return;
+      }
+
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority(true);
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (e) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+
+      patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      if (!patient) {
+        document.getElementById('patient-header').textContent = `Patient not found: ${patientId}`;
+        document.getElementById('readings-table').innerHTML = '<div class="empty-state">Patient not found. They may have been moved or deleted.</div>';
+        return;
+      }
+
+      const name = `${patient.firstName || ''} ${(patient.middleName || '')} ${patient.lastName || ''}`.replace(/\s+/g, ' ').trim() || 'Unknown';
+      const displayId =
+        typeof window.patientMrnDisplay === 'function'
+          ? window.patientMrnDisplay(patient)
+          : (typeof window.getPatientIdentifier === 'function'
+              ? window.getPatientIdentifier(patient)
+              : null) ||
+            patient.patient_id ||
+            patient.patientNumber ||
+            'N/A';
+      document.getElementById('patient-header').innerHTML = `<strong>${name}</strong> (ID: ${displayId})`;
+      const pdBtn = document.getElementById('patient-details-btn');
+      if (pdBtn) pdBtn.style.display = 'inline-block';
+
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 7);
+      const seenKeys = new Set();
+      const readings = [];
+
+      function addIfRelevant(v, visitDate) {
+        if (!v.systolic && !v.diastolic) return;
+        const tsVal = v.timestamp || visitDate;
+        const ts = tsVal ? new Date(tsVal) : new Date();
+        if (ts < cutoff) return;
+        const critical = v.isCritical === true || isCriticalBp(v.systolic, v.diastolic);
+        const elevated = isElevatedBp(v.systolic, v.diastolic);
+        if (!critical && !elevated) return;
+        const key = `${visitDate || tsVal}-${v.systolic}-${v.diastolic}`;
+        if (seenKeys.has(key)) return;
+        seenKeys.add(key);
+        readings.push({
+          systolic: v.systolic,
+          diastolic: v.diastolic,
+          hr: v.hr,
+          timestamp: v.timestamp || visitDate,
+          visitDate: visitDate || v.visitDate,
+          isCritical: critical
+        });
+      }
+
+      (patient.vitals || []).forEach(v => addIfRelevant(v, v.visitDate || v.timestamp));
+      (patient.visits || []).forEach(visit => {
+        const visitDate = visit.date;
+        (visit?.bloodPressureCheck?.bpReadings || []).forEach(r => addIfRelevant(r, visitDate));
+      });
+
+      readings.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      if (readings.length === 0) {
+        document.getElementById('readings-table').innerHTML = '<div class="empty-state">No elevated or critical readings in the last 7 days for this patient.</div>';
+        return;
+      }
+
+      const tbody = readings.map(r => {
+        const timeStr = r.timestamp ? new Date(r.timestamp).toLocaleString() : 'N/A';
+        const cls = r.isCritical ? 'bp-critical' : 'bp-elevated';
+        const badge = r.isCritical ? '<span class="badge-critical">CRITICAL</span>' : '<span class="badge-elevated">Elevated</span>';
+        return `<tr class="${cls}"><td>${timeStr}</td><td>${r.systolic}</td><td>${r.diastolic}</td><td>${r.hr || '-'}</td><td>${badge}</td><td><a href="blood-pressure-check-note.html?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(r.visitDate || '')}">Open BP Note</a></td></tr>`;
+      }).join('');
+
+      document.getElementById('readings-table').innerHTML = `
+        <table>
+          <thead><tr><th>Date & Time</th><th>Systolic</th><th>Diastolic</th><th>HR</th><th>Status</th><th>Action</th></tr></thead>
+          <tbody>${tbody}</tbody>
+        </table>
+      `;
+    }
+
+    async function goToPatientDetails() {
+      if (!patient) return;
+      let patientId = patient.id || patient.patient_id;
+      if (typeof window.normalizePatientIdForUrl === 'function') {
+        try { patientId = await window.normalizePatientIdForUrl(patientId); } catch (_) {}
+      }
+      window.location.href = `patient-details?id=${patientId}`;
+    }
+
+    window.addEventListener('load', load);
+  </script>
+</body>
+</html>

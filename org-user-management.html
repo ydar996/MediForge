@@ -1,0 +1,1141 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Management - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  
+  <!-- Account Management -->
+  <script src="js/account-management.js?v=20251115050000"></script>
+  
+  <!-- Rate Limiter -->
+  <script src="js/rate-limiter.js?v=20251115040000"></script>
+  
+  <!-- Security Module -->
+  <script src="js/security.js?v=20251022120000"></script>
+  
+  <!-- User Sync Recovery -->
+  <script src="js/user-sync-recovery.js?v=20250117"></script>
+
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --light-green: rgba(0, 135, 83, 0.1);
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--soft-white);
+    }
+    
+    .page-header {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+    }
+    
+    .users-section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      overflow-x: auto;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+      width: 100%;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      min-width: 1200px;
+    }
+    
+    th {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+    }
+    
+    th:nth-child(1) { width: 20%; } /* Name */
+    th:nth-child(2) { width: 15%; } /* Username */
+    th:nth-child(3) { width: 12%; } /* Role */
+    th:nth-child(4) { width: 12%; } /* Status */
+    th:nth-child(5) { width: 41%; } /* Actions */
+    
+    td {
+      padding: 15px;
+      border-bottom: 1px solid #ddd;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      vertical-align: middle;
+    }
+    
+    td:nth-child(5) {
+      white-space: normal;
+      padding: 15px 12px;
+    }
+    
+    tr:hover {
+      background: var(--light-green);
+    }
+    
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-locked {
+      background: #fff5f5;
+      color: #8B0000;
+    }
+    
+    .status-active {
+      background: var(--light-green);
+      color: var(--dark-green);
+    }
+    
+    button {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      margin-right: 8px;
+      margin-bottom: 5px;
+      white-space: nowrap;
+      min-width: 140px;
+      transition: all 0.3s ease;
+    }
+    
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .btn-reset {
+      background: linear-gradient(135deg, #ff9800, #f57c00);
+      color: white;
+    }
+    
+    .btn-reset:hover {
+      background: linear-gradient(135deg, #f57c00, #ff9800);
+    }
+    
+    .btn-unlock {
+      background: linear-gradient(135deg, #4caf50, #45a049);
+      color: white;
+    }
+    
+    .btn-unlock:hover {
+      background: linear-gradient(135deg, #45a049, #4caf50);
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>👥 User Management</h1>
+    <p id="org-name-display">Manage users in your organization - unlock accounts and reset passwords</p>
+    <a href="dashboard" style="color: white; text-decoration: underline;">← Back to Dashboard</a>
+  </div>
+
+  <!-- Diagnostic Log Container -->
+  <div id="diagnostic-log" style="display: none; background: #1e1e1e; color: #d4d4d4; padding: 20px; border-radius: 8px; margin: 20px 0; font-family: 'Courier New', monospace; font-size: 12px; max-height: 400px; overflow-y: auto;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+      <h3 style="margin: 0; color: #d4d4d4;">🔍 Diagnostic Logs</h3>
+      <button onclick="clearDiagnosticLogs()" style="background: #6c757d; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Clear Logs</button>
+    </div>
+    <div id="log-content"></div>
+  </div>
+
+  <div id="auth-check" class="error" style="display: none;">
+    ⚠️ You must be logged in as an Administrator or Doctor to access this page.
+  </div>
+
+  <div id="user-management" style="display: none;">
+    <div class="users-section">
+      <h2>Organization Users</h2>
+      <div id="loading">Loading users...</div>
+      <div id="error" class="error" style="display: none;"></div>
+      <div id="no-data" style="display: none;">No users found</div>
+      
+      <div id="users-table-wrapper" style="display: none;">
+        <table>
+          <thead>
+            <tr>
+              <th>Name</th>
+              <th>Username</th>
+              <th>Role</th>
+              <th>Status</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="users-tbody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is Admin, Doctor, or Platform Admin
+    async function checkUserRole() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const platformAdmin = JSON.parse(localStorage.getItem('platformAdmin') || 'null');
+        
+        // Check for platform admin
+        const isPlatformAdmin = platformAdmin !== null || 
+                               user.role === 'Platform Admin' ||
+                               user.role === 'PlatformOwner' ||
+                               (typeof window.isPlatformOwner === 'function' && window.isPlatformOwner());
+        
+        // Check for org admin or doctor
+        const isOrgAdmin = user.role === 'Admin' || 
+                          user.role === 'Doctor' || 
+                          user.role === 'Administrator';
+        
+        const hasAccess = isPlatformAdmin || isOrgAdmin;
+        
+        diagnosticLog(`Role check: Platform Admin=${isPlatformAdmin}, Org Admin=${isOrgAdmin}, User Role=${user.role}`, 'info');
+        
+        if (!hasAccess) {
+          document.getElementById('auth-check').style.display = 'block';
+          diagnosticLog('❌ Access denied: User does not have admin privileges', 'error');
+          return false;
+        }
+        
+        document.getElementById('user-management').style.display = 'block';
+        diagnosticLog(`✅ Access granted: ${isPlatformAdmin ? 'Platform Admin' : 'Org Admin'}`, 'success');
+        return true;
+      } catch (error) {
+        console.error('Error checking user role:', error);
+        diagnosticLog(`❌ Error checking role: ${error.message}`, 'error');
+        document.getElementById('auth-check').style.display = 'block';
+        return false;
+      }
+    }
+
+    // Diagnostic logging function
+    function diagnosticLog(message, type = 'info') {
+      const logContainer = document.getElementById('diagnostic-log');
+      const logContent = document.getElementById('log-content');
+      
+      if (!logContainer || !logContent) return;
+      
+      logContainer.style.display = 'block';
+      const timestamp = new Date().toLocaleTimeString();
+      const colors = {
+        info: '#4ec9b0',
+        success: '#4ec9b0',
+        error: '#f48771',
+        warning: '#dcdcaa'
+      };
+      const color = colors[type] || '#d4d4d4';
+      
+      const logEntry = document.createElement('div');
+      logEntry.style.color = color;
+      logEntry.style.marginBottom = '4px';
+      logEntry.textContent = `[${timestamp}] ${message}`;
+      logContent.appendChild(logEntry);
+      logContent.scrollTop = logContent.scrollHeight;
+      
+      console.log(`[USER-MGMT] ${message}`);
+    }
+
+    function clearDiagnosticLogs() {
+      const logContent = document.getElementById('log-content');
+      if (logContent) {
+        logContent.innerHTML = '';
+      }
+    }
+
+    // Get organization name from URL parameter
+    function getOrgFromURL() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('org');
+    }
+
+    /**
+     * Staff login uses checkRateLimit('login', email) where email comes from public.users (org-scoped or custom).
+     * UI must match rate_limits.identifier to those values — not only username@mediforge.app.
+     */
+    function buildStaffLoginIdentifierSet(userItem) {
+      const username = (userItem.username || '').trim();
+      const email = (userItem.email || '').trim();
+      const orgId = userItem.organization_id ? String(userItem.organization_id) : '';
+      const set = new Set();
+      const add = (s) => {
+        if (s == null || s === '') return;
+        const t = String(s).trim();
+        if (!t) return;
+        set.add(t);
+        set.add(t.toLowerCase());
+      };
+      add(username);
+      add(email);
+      add(`${username}@mediforge.app`);
+      add(`${username}@example.com`);
+      if (orgId && username) {
+        add(`${username}-${orgId.substring(0, 8)}@mediforge.app`);
+        add(`${username}-${orgId}@mediforge.app`);
+      }
+      return set;
+    }
+
+    function rateLimitRowMatchesStaffUser(lockRow, userItem) {
+      if (!lockRow || !lockRow.identifier) return false;
+      const idRaw = String(lockRow.identifier).trim();
+      const idl = idRaw.toLowerCase();
+      const variants = buildStaffLoginIdentifierSet(userItem);
+      for (const v of variants) {
+        if (v && idl === String(v).toLowerCase()) return true;
+      }
+      const u = (userItem.username || '').trim().toLowerCase();
+      if (u && idl.startsWith(u + '@')) return true;
+      if (u && idl.startsWith(u + '-') && idl.includes('@mediforge.app')) return true;
+      return false;
+    }
+
+    // Load organization users
+    async function loadOrgUsers() {
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const noDataEl = document.getElementById('no-data');
+      const tableWrapper = document.getElementById('users-table-wrapper');
+      const tbodyEl = document.getElementById('users-tbody');
+      
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      noDataEl.style.display = 'none';
+      tableWrapper.style.display = 'none';
+      tbodyEl.innerHTML = '';
+
+      diagnosticLog('Starting to load organization users...', 'info');
+
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgNameFromURL = getOrgFromURL();
+        
+        diagnosticLog(`URL org parameter: ${orgNameFromURL || 'none'}`, 'info');
+        diagnosticLog(`Current user role: ${user.role || 'unknown'}`, 'info');
+        
+        let orgId = user.organizationId || user.organization_id;
+        let targetOrgName = null;
+        
+        // If org name is in URL (platform admin viewing specific org)
+        if (orgNameFromURL) {
+          diagnosticLog(`Platform admin mode: Loading users for organization "${orgNameFromURL}"`, 'info');
+          targetOrgName = orgNameFromURL;
+          
+          // Get organization ID from name
+          try {
+            if (typeof getAllOrganizations === 'function') {
+              const allOrgs = await getAllOrganizations();
+              const targetOrg = allOrgs[orgNameFromURL];
+              if (targetOrg && targetOrg.id) {
+                orgId = targetOrg.id;
+                diagnosticLog(`Found organization ID: ${orgId}`, 'success');
+              } else {
+                throw new Error(`Organization "${orgNameFromURL}" not found`);
+              }
+            } else {
+              // Try direct query
+              const { data: orgs, error: orgError } = await window.supabaseClient
+                .from('organizations')
+                .select('id, name')
+                .eq('name', orgNameFromURL)
+                .single();
+              
+              if (orgError) {
+                diagnosticLog(`Error finding organization: ${orgError.message}`, 'error');
+                throw orgError;
+              }
+              
+              if (orgs) {
+                orgId = orgs.id;
+                diagnosticLog(`Found organization ID via direct query: ${orgId}`, 'success');
+              }
+            }
+          } catch (orgErr) {
+            diagnosticLog(`Failed to get organization ID: ${orgErr.message}`, 'error');
+            throw new Error(`Failed to find organization: ${orgErr.message}`);
+          }
+        }
+        
+        if (!orgId) {
+          diagnosticLog('ERROR: Organization ID not found', 'error');
+          throw new Error('Organization ID not found');
+        }
+        
+        diagnosticLog(`Using organization ID: ${orgId}`, 'info');
+        
+        // Update header if we have org name
+        if (targetOrgName) {
+          const orgDisplay = document.getElementById('org-name-display');
+          if (orgDisplay) {
+            orgDisplay.textContent = `Managing users for: ${targetOrgName}`;
+          }
+        }
+
+        // Get users for organization
+        diagnosticLog(`Fetching users for organization ID: ${orgId}`, 'info');
+        let users = [];
+        
+        if (typeof window.secureSupabaseRpc === 'function') {
+          diagnosticLog('Using secureSupabaseRpc to fetch users...', 'info');
+          try {
+            const result = await window.secureSupabaseRpc('get_organization_users', {
+              p_org_id: orgId
+            });
+            
+            diagnosticLog(`Secure RPC response received: ${JSON.stringify(result).substring(0, 200)}...`, 'info');
+            
+            if (Array.isArray(result)) {
+              users = result;
+              diagnosticLog(`✅ Found ${users.length} users (direct array)`, 'success');
+            } else if (result && Array.isArray(result.data)) {
+              users = result.data;
+              diagnosticLog(`✅ Found ${users.length} users (nested in data)`, 'success');
+            } else {
+              diagnosticLog(`⚠️ Unexpected response format: ${typeof result}`, 'warning');
+            }
+          } catch (rpcError) {
+            diagnosticLog(`❌ Secure RPC failed: ${rpcError.message}`, 'error');
+            throw rpcError;
+          }
+        } else if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+          diagnosticLog('Using direct Supabase query (fallback)...', 'warning');
+          const { data, error } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('organization_id', orgId);
+          
+          if (error) {
+            diagnosticLog(`❌ Direct query error: ${error.message}`, 'error');
+            throw error;
+          }
+          users = data || [];
+          diagnosticLog(`✅ Found ${users.length} users via direct query`, 'success');
+        } else {
+          diagnosticLog('❌ No Supabase client available', 'error');
+          throw new Error('Supabase client not available');
+        }
+        
+        diagnosticLog(`Total users loaded: ${users.length}`, 'info');
+
+        loadingEl.style.display = 'none';
+
+        if (!users || users.length === 0) {
+          noDataEl.style.display = 'block';
+          return;
+        }
+
+        // Get locked accounts
+        let lockedAccounts = [];
+        if (typeof window.getLockedAccounts === 'function') {
+          lockedAccounts = await window.getLockedAccounts(orgId);
+        }
+
+        // Display users
+        tbodyEl.innerHTML = '';
+        users.forEach(userItem => {
+          const row = document.createElement('tr');
+          const fullName = `${userItem.first_name || ''} ${userItem.last_name || ''}`.trim() || userItem.username;
+          const username = userItem.username;
+          const role = userItem.role || 'Unknown';
+          
+          // Check if account is locked (check all variations)
+          const isLocked = lockedAccounts.some(acc => rateLimitRowMatchesStaffUser(acc, userItem));
+          const isPatientPortal = (userItem.role || '') === 'Patient';
+          const showUnlockButton = isLocked || !isPatientPortal;
+          
+          const statusBadge = isLocked
+            ? '<span class="status-badge status-locked">🔒 Locked</span>'
+            : '<span class="status-badge status-active">✅ Active</span>';
+
+          row.innerHTML = `
+            <td style="font-weight: 500;">${fullName}</td>
+            <td><strong style="color: var(--charcoal);">${username}</strong></td>
+            <td>${role}</td>
+            <td>${statusBadge}</td>
+            <td style="display: flex; flex-wrap: wrap; gap: 8px; align-items: center;">
+              <button class="btn-reset" onclick="resetUserPasswordOrg('${userItem.id}', '${username}', '${fullName.replace(/'/g, "\\'")}')" title="Reset password for ${fullName}">
+                🔑 Reset Password
+              </button>
+              <button class="btn-diagnose" onclick="diagnoseUserAuth('${userItem.id}', '${username}', '${fullName.replace(/'/g, "\\'")}')" title="Diagnose authentication issues for ${fullName}" style="background: #17a2b8; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px;">
+                🔍 Diagnose
+              </button>
+              ${showUnlockButton ? `<button class="btn-unlock" onclick="unlockUserAccountOrg('${username}', '${fullName.replace(/'/g, "\\'")}')" title="${isLocked ? 'Unlock: clears permanent login lockout' : 'Use if user cannot sign in after failed attempts (clears staff login rate limit for their emails)'}">
+                🔓 ${isLocked ? 'Unlock Account' : 'Clear login lock'}
+              </button>` : ''}
+            </td>
+          `;
+          
+          tbodyEl.appendChild(row);
+        });
+
+        tableWrapper.style.display = 'block';
+        console.log(`✅ Loaded ${users.length} organization users`);
+
+      } catch (error) {
+        loadingEl.style.display = 'none';
+        errorEl.textContent = `Error loading users: ${error.message}`;
+        errorEl.style.display = 'block';
+        console.error('❌ Error loading users:', error);
+      }
+    }
+
+    // Generate a secure temporary password
+    function generateTempPassword() {
+      const length = 12;
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      let password = '';
+      const values = new Uint32Array(length);
+      crypto.getRandomValues(values);
+      
+      for (let i = 0; i < length; i++) {
+        password += charset[values[i] % charset.length];
+      }
+      
+      // Ensure at least one of each type
+      if (!/[a-z]/.test(password)) password = password.slice(0, -1) + 'a';
+      if (!/[A-Z]/.test(password)) password = password.slice(0, -1) + 'A';
+      if (!/[0-9]/.test(password)) password = password.slice(0, -1) + '1';
+      if (!/[!@#$%^&*]/.test(password)) password = password.slice(0, -1) + '!';
+      
+      return password;
+    }
+
+    // Reset user password (org-level admin)
+    async function resetUserPasswordOrg(userId, username, userFullName) {
+      const confirmation = confirm(`Reset password for ${userFullName} (${username})?\n\nA new temporary password will be generated and the user will need to change it on first login.`);
+      
+      if (!confirmation) {
+        return;
+      }
+
+      try {
+        // Generate a secure temporary password
+        const tempPassword = generateTempPassword();
+        
+        // Update password in Supabase Auth if user has auth_user_id
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+          const { data: userData, error: fetchError } = await window.supabaseClient
+            .from('users')
+            .select('auth_user_id')
+            .eq('id', userId)
+            .single();
+          
+          if (!fetchError && userData && userData.auth_user_id) {
+            // CRITICAL: Update password via secure RPC function (requires admin privileges)
+            try {
+              if (typeof window.secureSupabaseRpc === 'function') {
+                // Use secure RPC to update password in Supabase Auth
+                console.log('🔍 RESET: Calling secureSupabaseRpc with:', {
+                  p_user_id: userId,
+                  p_auth_user_id: userData.auth_user_id,
+                  p_new_password: '***hidden***',
+                  p_reset_by: JSON.parse(localStorage.getItem('user') || '{}').username || 'Org Admin'
+                });
+                
+                const resetResult = await window.secureSupabaseRpc('reset_user_password', {
+                  p_user_id: userId,
+                  p_auth_user_id: userData.auth_user_id,
+                  p_new_password: tempPassword,
+                  p_reset_by: JSON.parse(localStorage.getItem('user') || '{}').username || 'Org Admin'
+                });
+                
+                console.log('🔍 RESET: secureSupabaseRpc response:', resetResult);
+                
+                // Parse response (secureSupabaseRpc extracts data property, so response is { success: true } or { error: ... })
+                let success = false;
+                let errorMsg = null;
+                
+                // Check various response formats
+                if (resetResult && resetResult.success === true) {
+                  success = true;
+                  console.log('✅ RESET: Success flag found in response');
+                } else if (resetResult?.data && resetResult.data.success === true) {
+                  success = true;
+                  console.log('✅ RESET: Success flag found in response.data');
+                } else if (resetResult?.error) {
+                  errorMsg = resetResult.error;
+                  console.error('❌ RESET: Error in response:', errorMsg);
+                } else if (resetResult?.data && resetResult.data.error) {
+                  errorMsg = resetResult.data.error;
+                  console.error('❌ RESET: Error in response.data:', errorMsg);
+                } else {
+                  // If no success/error indicators, check if response looks successful
+                  console.warn('⚠️ RESET: No clear success/error indicator. Full response:', JSON.stringify(resetResult));
+                  // Assume success if we got a response object without an error
+                  if (resetResult && typeof resetResult === 'object' && !resetResult.error) {
+                    success = true;
+                    console.log('✅ RESET: Assuming success based on response structure');
+                  }
+                }
+                
+                if (success) {
+                  console.log('✅ Password updated in Supabase Auth via secure RPC');
+                  
+                  // Extract diagnostic information
+                  const resultData = resetResult?.data || resetResult;
+                  const email = resultData?.email || resultData?.verifiedEmail || resultData?.expectedEmail;
+                  const verifiedEmail = resultData?.verifiedEmail;
+                  const expectedEmail = resultData?.expectedEmail;
+                  const emailUpdated = resultData?.emailUpdated;
+                  const emailMatchesExpected = resultData?.emailMatchesExpected;
+                  const diagnostic = resultData?.diagnostic;
+                  
+                  // Build detailed message
+                  let message = `✅ Password reset successful!\n\n`;
+                  
+                  if (diagnostic) {
+                    message += `📊 Diagnostic Information:\n`;
+                    message += `   Before reset: ${diagnostic.currentEmailBeforeReset || 'unknown'}\n`;
+                    message += `   Expected after: ${diagnostic.expectedEmailAfterReset || 'unknown'}\n`;
+                    message += `   Verified in Auth: ${diagnostic.verifiedEmailAfterReset || 'unknown'}\n`;
+                    message += `   Update attempted: ${diagnostic.emailUpdateAttempted ? 'Yes' : 'No'}\n`;
+                    message += `   Update successful: ${diagnostic.emailUpdateSuccessful ? 'Yes' : 'No'}\n\n`;
+                  }
+                  
+                  message += `🔑 Login Credentials:\n`;
+                  message += `   Username: ${username}\n`;
+                  
+                  if (verifiedEmail && verifiedEmail !== 'verification_failed') {
+                    message += `   Email: ${verifiedEmail}\n`;
+                    if (emailMatchesExpected === false) {
+                      message += `   ⚠️ WARNING: Email in Auth (${verifiedEmail}) doesn't match expected (${expectedEmail})\n`;
+                      message += `   Try logging in with: ${verifiedEmail}\n`;
+                    }
+                  } else if (email) {
+                    message += `   Email: ${email}\n`;
+                  } else {
+                    message += `   Email: ${username}@mediforge.app (or original format)\n`;
+                  }
+                  
+                  message += `\n📝 New temporary password has been set.`;
+                  
+                  if (emailMatchesExpected === false && verifiedEmail && verifiedEmail !== 'verification_failed') {
+                    message += `\n\n⚠️ IMPORTANT: Use the verified email (${verifiedEmail}) to login, not the expected format.`;
+                  }
+                  
+                  console.log('📊 Full reset result:', JSON.stringify(resultData, null, 2));
+                  alert(message);
+                } else {
+                  throw new Error(errorMsg || 'Password reset failed - no success indicator in response');
+                }
+              } else {
+                // Fallback: Try to use admin API if available (may not work client-side)
+                if (window.supabaseClient.auth.admin) {
+                  const { data: authUser, error: authError } = await window.supabaseClient.auth.admin.updateUserById(
+                    userData.auth_user_id,
+                    { password: tempPassword }
+                  );
+                  
+                  if (authError) {
+                    throw new Error(`Admin API failed: ${authError.message}`);
+                  } else {
+                    console.log('✅ Password updated in Supabase Auth via admin API');
+                  }
+                } else {
+                  throw new Error('Neither secure RPC nor admin API available');
+                }
+              }
+            } catch (authErr) {
+              console.error('❌ CRITICAL: Could not update password in Supabase Auth:', authErr);
+              alert(`⚠️ Password reset partially completed, but Supabase Auth update failed.\n\nError: ${authErr.message}\n\nThe user may need to use password recovery or contact support.`);
+              // Still update users table as fallback
+              await window.supabaseClient
+                .from('users')
+                .update({ 
+                  password_reset_required: true,
+                  temp_password: tempPassword 
+                })
+                .eq('id', userId);
+            }
+          } else {
+            // User doesn't have auth_user_id - this is a problem
+            console.warn('⚠️ User does not have auth_user_id - cannot update Supabase Auth password');
+            await window.supabaseClient
+              .from('users')
+              .update({ 
+                password_reset_required: true,
+                temp_password: tempPassword 
+              })
+              .eq('id', userId);
+          }
+        }
+        
+        // Also update in localStorage users array if it exists
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const userIndex = localUsers.findIndex(u => u.username === username);
+        if (userIndex >= 0) {
+          // Hash the temporary password using SHA-256
+          const encoder = new TextEncoder();
+          const data = encoder.encode(tempPassword);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          
+          localUsers[userIndex].password = hashedPassword;
+          localUsers[userIndex].passwordType = 'sha256';
+          localUsers[userIndex].passwordReset = true;
+          localUsers[userIndex].tempPassword = tempPassword;
+          localStorage.setItem('users', JSON.stringify(localUsers));
+        }
+        
+        // Log password reset action
+        if (typeof window.logAuditEvent === 'function') {
+          const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+          await window.logAuditEvent('password_reset_by_org_admin', {
+            target_user: username,
+            target_full_name: userFullName,
+            reset_by: currentUser.username || 'Org Admin',
+            reset_by_role: currentUser.role || 'Unknown'
+          });
+        }
+        
+        // Show temporary password in a modal with copy functionality
+        showPasswordResetModal(userFullName, username, tempPassword);
+        
+        // Refresh users list
+        await loadOrgUsers();
+      } catch (error) {
+        console.error('❌ Error resetting password:', error);
+        alert(`❌ Failed to reset password: ${error.message}`);
+      }
+    }
+
+    // Unlock user account (org-level admin)
+    async function unlockUserAccountOrg(username, userFullName) {
+      const confirmation = confirm(`Unlock account for ${userFullName} (${username})?\n\nThis will unlock the account and clear rate limits for both username and email formats.`);
+      
+      if (!confirmation) {
+        return;
+      }
+
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const unlockedBy = currentUser.username || 'Org Admin';
+
+        // CRITICAL: Get user's actual email from database to unlock the correct identifier
+        let userEmail = null;
+        let orgId = null;
+        try {
+          const { data: userData } = await window.supabaseClient
+            .from('users')
+            .select('email, organization_id')
+            .eq('username', username)
+            .maybeSingle();
+          
+          if (userData) {
+            userEmail = userData.email;
+            orgId = userData.organization_id;
+          }
+        } catch (err) {
+          console.warn('Could not get user email:', err);
+        }
+
+        // Try multiple variations to handle typos and different email formats
+        const variations = [
+          username, // Original username
+          `${username}@mediforge.app`, // New format
+          `${username}@example.com`, // Legacy format
+        ];
+        
+        // CRITICAL: Add the actual org-scoped email format if we have it
+        if (userEmail) {
+          variations.push(userEmail); // This is the email login handler uses!
+          console.log(`✅ Adding org-scoped email to unlock: ${userEmail}`);
+        }
+        
+        // Also try org-scoped format if we have orgId
+        if (orgId) {
+          const orgScopedEmail = `${username}-${orgId.substring(0, 8)}@mediforge.app`;
+          variations.push(orgScopedEmail);
+          console.log(`✅ Adding org-scoped email format: ${orgScopedEmail}`);
+        }
+        
+        // Also try common typos (swap 's' and 't' if applicable)
+        if (username.includes('Mistura') || username.includes('Mitsura')) {
+          const corrected = username.replace('Mitsura', 'Mistura').replace('Mistura', 'Mitsura');
+          if (corrected !== username) {
+            variations.push(corrected);
+            variations.push(`${corrected}@mediforge.app`);
+            variations.push(`${corrected}@example.com`);
+          }
+        }
+
+        let unlockedCount = 0;
+        const unlockResults = [];
+
+        if (typeof window.unlockAccount === 'function') {
+          for (const identifier of variations) {
+            try {
+              const result = await window.unlockAccount(identifier, unlockedBy, 'Unlocked by organization administrator');
+              if (result.success) {
+                unlockedCount++;
+                unlockResults.push(`✅ Unlocked: ${identifier}`);
+                console.log(`✅ Successfully unlocked: ${identifier}`);
+              } else {
+                unlockResults.push(`⚠️ Failed: ${identifier} - ${result.error}`);
+              }
+            } catch (err) {
+              unlockResults.push(`❌ Error unlocking ${identifier}: ${err.message}`);
+            }
+          }
+        }
+
+        // CRITICAL FIX: Also clear rate limits directly in Supabase
+        // This ensures we clear even if RPC says "not found"
+          for (const identifier of variations) {
+          try {
+            // Direct Supabase update to clear rate limits
+            // Note: rate_limits table uses 'rate_limit_type' not 'type', and doesn't have 'locked' or 'first_attempt_at'
+            const { error: updateError } = await window.supabaseClient
+              .from('rate_limits')
+              .update({
+                permanent_lock: false,
+                locked_until: null,
+                locked_at: null,
+                locked_by: null,
+                attempts: 0,
+                window_start: new Date().toISOString()
+              })
+              .eq('rate_limit_type', 'login')
+              .eq('identifier', identifier);
+            
+            if (!updateError) {
+              console.log(`✅ Directly cleared rate limit for: ${identifier}`);
+              if (!unlockResults.some(r => r.includes(identifier))) {
+                unlockedCount++;
+                unlockResults.push(`✅ Cleared: ${identifier}`);
+              }
+            }
+          } catch (err) {
+            console.warn(`⚠️ Could not directly clear rate limit for ${identifier}:`, err);
+          }
+          
+          // Also try RPC clear if available
+          if (typeof window.clearRateLimit === 'function') {
+            try {
+              await window.clearRateLimit('login', identifier);
+              console.log(`✅ Cleared rate limit via RPC for: ${identifier}`);
+            } catch (err) {
+              console.warn(`⚠️ Could not clear rate limit via RPC for ${identifier}:`, err);
+            }
+          }
+        }
+        
+        // Clear localStorage locks for all variations
+        for (const identifier of variations) {
+          localStorage.removeItem(`rate_limit_lockout_login_${identifier}`);
+          localStorage.removeItem(`rate_limit_login_${identifier}`);
+        }
+
+        if (unlockedCount > 0) {
+          let message = `✅ Account unlocked successfully!\n\nUnlocked ${unlockedCount} of ${variations.length} variations.\n\n`;
+          message += unlockResults.join('\n');
+          message += `\n\n${userFullName} (${username}) can now login.`;
+          alert(message);
+          
+          // CRITICAL: Refresh the user list to update status display
+          setTimeout(async () => {
+            await loadOrgUsers();
+          }, 500);
+        } else {
+          alert(`❌ Failed to unlock account for any variation.\n\nResults:\n${unlockResults.join('\n')}\n\nTry using diagnose-user-login.html for detailed diagnosis.`);
+        }
+      } catch (error) {
+        console.error('❌ Error unlocking account:', error);
+        alert(`❌ Failed to unlock account: ${error.message}`);
+      }
+    }
+
+    // Diagnose user authentication issues
+    async function diagnoseUserAuth(userId, username, userFullName) {
+      diagnosticLog(`═══════════════════════════════════════════`, 'info');
+      diagnosticLog(`Starting diagnosis for: ${userFullName}`, 'info');
+      diagnosticLog(`Username: ${username}`, 'info');
+      diagnosticLog(`User ID: ${userId}`, 'info');
+      diagnosticLog(`User ID type: ${typeof userId}`, 'info');
+      
+      console.log(`🔍 [DIAGNOSE] Starting diagnosis for user: ${username} (ID: ${userId})`);
+      console.log(`🔍 [DIAGNOSE] User ID type: ${typeof userId}, value: ${userId}`);
+      
+      try {
+        // Optional client lookup (same-org RLS only). Platform admins viewing another org will get
+        // zero rows — that is NOT an error; diagnose_user_auth uses the service role on the server.
+        diagnosticLog(`Step 1: Optional client-side user row (skipped if RLS hides user)...`, 'info');
+        let userRecord = null;
+        try {
+          const { data: userData, error: userError } = await window.supabaseClient
+            .from('users')
+            .select('id, username, auth_user_id, organization_id, first_name, last_name, role, email')
+            .eq('id', userId)
+            .maybeSingle();
+
+          if (!userError && userData) {
+            userRecord = userData;
+            diagnosticLog(`✅ Client loaded user row (id=${userRecord.id})`, 'success');
+          } else {
+            const { data: byName, error: nameErr } = await window.supabaseClient
+              .from('users')
+              .select('id, username, auth_user_id, organization_id, first_name, last_name, role, email')
+              .eq('username', username)
+              .maybeSingle();
+            if (!nameErr && byName) {
+              userRecord = byName;
+              diagnosticLog(`✅ Client loaded user by username`, 'success');
+            } else {
+              diagnosticLog(`ℹ️ Client could not read users row (normal for platform admin / cross-org). Using secure RPC.`, 'warning');
+            }
+          }
+        } catch (verifyError) {
+          diagnosticLog(`ℹ️ Client verification skipped: ${verifyError.message}`, 'warning');
+        }
+
+        diagnosticLog(`Step 2: Calling diagnose_user_auth RPC (service role lookup)...`, 'info');
+        console.log(`🔍 [DIAGNOSE] RPC params:`, {
+          p_user_id: userId,
+          p_username: username,
+          p_auth_user_id: userRecord?.auth_user_id ?? null
+        });
+        
+        if (typeof window.secureSupabaseRpc !== 'function') {
+          diagnosticLog(`❌ secureSupabaseRpc function not available`, 'error');
+          throw new Error('secureSupabaseRpc function not available');
+        }
+
+        const result = await window.secureSupabaseRpc('diagnose_user_auth', {
+          p_user_id: userId,
+          p_username: username,
+          p_auth_user_id: userRecord?.auth_user_id || null
+        });
+
+        diagnosticLog(`Step 3: RPC call completed`, 'success');
+        console.log('🔍 [DIAGNOSE] Diagnosis result:', result);
+        console.log('🔍 [DIAGNOSE] Full result JSON:', JSON.stringify(result, null, 2));
+
+        diagnosticLog(`Step 4: Parsing diagnosis result...`, 'info');
+        console.log(`🔍 [DIAGNOSE] Step 4: Parsing result`);
+        console.log(`🔍 [DIAGNOSE] Result structure:`, {
+          hasResult: !!result,
+          hasData: !!result?.data,
+          hasDiagnosis: !!(result?.diagnosis || result?.data?.diagnosis),
+          keys: result ? Object.keys(result) : []
+        });
+        
+        const diagnosis = result?.diagnosis || result?.data?.diagnosis;
+        const warning = result?.warning || result?.data?.warning;
+        
+        console.log(`🔍 [DIAGNOSE] Extracted diagnosis:`, diagnosis);
+        console.log(`🔍 [DIAGNOSE] Warning:`, warning);
+        
+        if (!diagnosis) {
+          const errorMsg = result?.error || result?.data?.error || 'No diagnosis data returned';
+          const suggestions = result?.suggestions || result?.data?.suggestions || [];
+          diagnosticLog(`❌ No diagnosis data: ${errorMsg}`, 'error');
+          console.error(`🔍 [DIAGNOSE] ERROR: ${errorMsg}`);
+          console.error(`🔍 [DIAGNOSE] Full result object:`, result);
+          if (suggestions.length > 0) {
+            console.log(`🔍 [DIAGNOSE] Suggestions:`, suggestions);
+            suggestions.forEach(s => diagnosticLog(`   Suggestion: ${s}`, 'warning'));
+          }
+          throw new Error(errorMsg + (suggestions.length > 0 ? '\n\nSuggestions:\n' + suggestions.join('\n') : ''));
+        }
+        
+        diagnosticLog(`✅ Diagnosis data received`, 'success');
+        console.log(`🔍 [DIAGNOSE] Diagnosis data:`, diagnosis);
+        if (warning) {
+          diagnosticLog(`⚠️ Warning: ${warning}`, 'warning');
+          console.warn(`🔍 [DIAGNOSE] Warning:`, warning);
+        }
+
+        // Build diagnostic message
+        let message = `🔍 Authentication Diagnosis for ${userFullName} (${username})\n\n`;
+        message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+
+        const auth = diagnosis.authUser || null;
+        message += `📧 Email in Supabase Auth:\n`;
+        message += `   ${auth && auth.email ? auth.email : 'Not found'}\n\n`;
+
+        if (diagnosis.profileEmail) {
+          message += `📋 Profile email (public.users — used for staff login):\n`;
+          message += `   ${diagnosis.profileEmail}\n\n`;
+        }
+
+        message += `📋 Expected / login email (reference):\n`;
+        message += `   ${diagnosis.expectedEmail || 'N/A'}\n\n`;
+
+        message += `✅ Profile vs Auth email:\n`;
+        message += `   ${diagnosis.emailMatchesExpected ? 'Match ✓' : 'Mismatch or unknown ✗'}\n\n`;
+
+        message += `📅 Account Created:\n`;
+        message += `   ${auth && auth.createdAt ? new Date(auth.createdAt).toLocaleString() : 'Unknown'}\n\n`;
+
+        message += `🔐 Last Sign In:\n`;
+        message += `   ${auth && auth.lastSignIn ? new Date(auth.lastSignIn).toLocaleString() : 'Never'}\n\n`;
+
+        message += `✉️ Email Confirmed:\n`;
+        message += `   ${auth && auth.emailConfirmed ? 'Yes ✓' : 'No ✗'}\n\n`;
+
+        if (diagnosis.recommendations && diagnosis.recommendations.length > 0) {
+          message += `⚠️ Recommendations:\n`;
+          diagnosis.recommendations.forEach(rec => {
+            message += `   • ${rec}\n`;
+          });
+          message += `\n`;
+        }
+
+        message += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+        message += `💡 Staff login checks public.users email first — use the profile/login email your app shows above.\n`;
+        if (auth && auth.email) {
+          message += `   Auth email on file: "${auth.email}"\n`;
+        }
+        message += `   If password reset was done, use the temporary password provided.`;
+
+        alert(message);
+        
+        // Also log to console for detailed inspection
+        console.log('📊 Full diagnosis data:', JSON.stringify(diagnosis, null, 2));
+
+      } catch (error) {
+        console.error('❌ Error diagnosing user auth:', error);
+        alert(`❌ Failed to diagnose user authentication: ${error.message}\n\nCheck console for details.`);
+      }
+    }
+
+    // Show password reset modal with copy functionality
+    function showPasswordResetModal(userFullName, username, tempPassword) {
+      const modalHtml = `
+        <div id="password-reset-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="if(event.target.id === 'password-reset-modal') this.remove()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2 style="margin: 0; color: #333;">✅ Password Reset Successful</h2>
+              <button onclick="document.getElementById('password-reset-modal').remove()" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; line-height: 1;">×</button>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin: 0 0 10px 0; color: #495057;"><strong>User:</strong> ${userFullName} (${username})</p>
+              <p style="margin: 0; color: #495057; font-size: 14px;">⚠️ Please share this password securely with the user. They will be required to change it on first login.</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Temporary Password:</label>
+              <div style="display: flex; gap: 10px;">
+                <input type="text" id="temp-password-display" value="${tempPassword}" readonly style="flex: 1; padding: 12px; border: 2px solid #008753; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: 600; background: #f8f9fa; color: #333;">
+                <button onclick="copyPasswordToClipboard('${tempPassword}')" style="background: #008753; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                  📋 Copy
+                </button>
+              </div>
+              <p id="copy-feedback" style="margin: 8px 0 0 0; color: #28a745; font-size: 14px; display: none;">✅ Password copied to clipboard!</p>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+              <p style="margin: 0; color: #856404; font-size: 13px;">
+                <strong>Security Requirements:</strong> The user must create a new password that meets the highest security standards:
+                <ul style="margin: 8px 0 0 20px; padding: 0; color: #856404; font-size: 12px;">
+                  <li>Minimum 12 characters (required)</li>
+                  <li>At least one uppercase letter</li>
+                  <li>At least one lowercase letter</li>
+                  <li>At least one number</li>
+                  <li>At least one special character</li>
+                  <li>Cannot be a common password pattern</li>
+                </ul>
+              </p>
+            </div>
+            
+            <div style="text-align: right;">
+              <button onclick="document.getElementById('password-reset-modal').remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Copy password to clipboard
+    function copyPasswordToClipboard(password) {
+      navigator.clipboard.writeText(password).then(() => {
+        const feedback = document.getElementById('copy-feedback');
+        if (feedback) {
+          feedback.style.display = 'block';
+          setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 3000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy password:', err);
+        // Fallback: select text
+        const input = document.getElementById('temp-password-display');
+        if (input) {
+          input.select();
+          input.setSelectionRange(0, 99999);
+          document.execCommand('copy');
+          const feedback = document.getElementById('copy-feedback');
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.textContent = '✅ Password copied to clipboard!';
+            setTimeout(() => {
+              feedback.style.display = 'none';
+            }, 3000);
+          }
+        }
+      });
+    }
+
+    // Initialize page
+    async function initialize() {
+      const hasAccess = await checkUserRole();
+      if (!hasAccess) {
+        return;
+      }
+
+      await loadOrgUsers();
+    }
+
+    // Run on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+      initialize();
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

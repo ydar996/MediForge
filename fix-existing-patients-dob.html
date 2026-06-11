@@ -1,0 +1,395 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Existing Patients DOB</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 10px;
+            margin-bottom: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .btn.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+        
+        .btn.warning {
+            background: linear-gradient(135deg, #ffc107 0%, #fd7e14 100%);
+        }
+        
+        .btn.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #e83e8c 100%);
+        }
+        
+        .log {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 400px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin: 5px 0;
+            padding: 3px 0;
+        }
+        
+        .log-entry.success { color: #68d391; }
+        .log-entry.error { color: #fc8181; }
+        .log-entry.warning { color: #f6ad55; }
+        .log-entry.info { color: #63b3ed; }
+        
+        .progress-bar {
+            width: 100%;
+            height: 20px;
+            background: #e2e8f0;
+            border-radius: 10px;
+            overflow: hidden;
+            margin: 10px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s ease;
+        }
+        
+        .patient-match {
+            background: #e8f5e8;
+            border: 1px solid #4caf50;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        
+        .patient-missing {
+            background: #fff3cd;
+            border: 1px solid #ffc107;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+        
+        .patient-extra {
+            background: #f8d7da;
+            border: 1px solid #dc3545;
+            padding: 10px;
+            margin: 5px 0;
+            border-radius: 4px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Existing Patients DOB</h1>
+        
+        <div class="section">
+            <h2>📊 Current Situation</h2>
+            <p><strong>Supabase:</strong> 16 patients (all missing DOB)</p>
+            <p><strong>Backup:</strong> 7 patients (all have DOB)</p>
+            <p><strong>Action:</strong> Update existing patients with DOB from backup</p>
+        </div>
+        
+        <div class="section">
+            <h2>📁 Load Backup File</h2>
+            <p>Upload your backup file to match patients and fix DOB data:</p>
+            <input type="file" id="backup-file" accept=".json" style="margin-bottom: 15px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; width: 100%;">
+            <button class="btn" onclick="analyzeAndFix()">🔍 Analyze & Fix DOB</button>
+        </div>
+        
+        <div class="section">
+            <h2>📊 Progress</h2>
+            <div class="progress-bar">
+                <div class="progress-fill" id="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="progress-text">Ready to fix patient DOB data...</div>
+        </div>
+        
+        <div class="section">
+            <h2>👥 Patient Analysis</h2>
+            <div id="patient-analysis"></div>
+        </div>
+        
+        <div class="section">
+            <h2>📝 Log</h2>
+            <div class="log" id="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const supabaseClient = supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970'; // Mecure Clinics ID
+        
+        // Logging function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Update progress
+        function updateProgress(percent, text) {
+            document.getElementById('progress-fill').style.width = `${percent}%`;
+            document.getElementById('progress-text').textContent = text;
+        }
+        
+        // Read file as text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsText(file);
+            });
+        }
+        
+        // Main function to analyze and fix
+        async function analyzeAndFix() {
+            const fileInput = document.getElementById('backup-file');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                log('❌ Please select a backup file first', 'error');
+                return;
+            }
+            
+            log('🚀 Starting DOB fix process...', 'info');
+            updateProgress(10, 'Loading backup file...');
+            
+            try {
+                // Load backup data
+                const file = fileInput.files[0];
+                log(`📁 Reading file: ${file.name}`, 'info');
+                const fileContent = await readFileAsText(file);
+                const backupData = JSON.parse(fileContent);
+                
+                const backupPatients = backupData.organizationData?.['Mecure Clinics']?.patients || [];
+                log(`✅ Loaded ${backupPatients.length} patients from backup`, 'success');
+                updateProgress(30, 'Loading Supabase patients...');
+                
+                // Load Supabase patients
+                const { data: supabasePatients, error } = await supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', ORG_ID);
+                
+                if (error) throw error;
+                
+                log(`✅ Loaded ${supabasePatients.length} patients from Supabase`, 'success');
+                updateProgress(50, 'Analyzing patient matches...');
+                
+                // Analyze matches
+                const analysis = analyzePatientMatches(backupPatients, supabasePatients);
+                displayAnalysis(analysis);
+                updateProgress(70, 'Fixing DOB data...');
+                
+                // Fix DOB data
+                const fixResults = await fixDOBData(analysis.matches);
+                updateProgress(100, 'Fix complete!');
+                
+                log(`🎉 DOB fix complete! ${fixResults.fixed} patients updated, ${fixResults.errors} errors`, 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+                updateProgress(0, 'Error occurred');
+            }
+        }
+        
+        // Analyze patient matches
+        function analyzePatientMatches(backupPatients, supabasePatients) {
+            const matches = [];
+            const missing = [];
+            const extra = [];
+            
+            // Find matches
+            backupPatients.forEach(backupPatient => {
+                const supabasePatient = supabasePatients.find(sp => sp.patient_id === backupPatient.id);
+                if (supabasePatient) {
+                    matches.push({
+                        backup: backupPatient,
+                        supabase: supabasePatient,
+                        needsUpdate: !supabasePatient.date_of_birth && backupPatient.dob
+                    });
+                } else {
+                    missing.push(backupPatient);
+                }
+            });
+            
+            // Find extra patients in Supabase
+            supabasePatients.forEach(supabasePatient => {
+                const backupPatient = backupPatients.find(bp => bp.id === supabasePatient.patient_id);
+                if (!backupPatient) {
+                    extra.push(supabasePatient);
+                }
+            });
+            
+            return { matches, missing, extra };
+        }
+        
+        // Display analysis
+        function displayAnalysis(analysis) {
+            const analysisDiv = document.getElementById('patient-analysis');
+            let html = '<h3>Patient Analysis Results:</h3>';
+            
+            // Matches
+            html += `<h4>✅ Matches (${analysis.matches.length})</h4>`;
+            analysis.matches.forEach(match => {
+                const status = match.needsUpdate ? 'NEEDS UPDATE' : 'ALREADY HAS DOB';
+                const className = match.needsUpdate ? 'patient-missing' : 'patient-match';
+                html += `
+                    <div class="${className}">
+                        <strong>${match.backup.firstName} ${match.backup.lastName}</strong> (${match.backup.id})<br>
+                        Backup DOB: ${match.backup.dob || 'N/A'}<br>
+                        Supabase DOB: ${match.supabase.date_of_birth || 'MISSING'}<br>
+                        Status: ${status}
+                    </div>
+                `;
+            });
+            
+            // Missing
+            if (analysis.missing.length > 0) {
+                html += `<h4>⚠️ Missing from Supabase (${analysis.missing.length})</h4>`;
+                analysis.missing.forEach(patient => {
+                    html += `
+                        <div class="patient-missing">
+                            <strong>${patient.firstName} ${patient.lastName}</strong> (${patient.id})<br>
+                            DOB: ${patient.dob || 'N/A'}
+                        </div>
+                    `;
+                });
+            }
+            
+            // Extra
+            if (analysis.extra.length > 0) {
+                html += `<h4>ℹ️ Extra in Supabase (${analysis.extra.length})</h4>`;
+                analysis.extra.forEach(patient => {
+                    html += `
+                        <div class="patient-extra">
+                            <strong>${patient.first_name} ${patient.last_name}</strong> (${patient.patient_id})<br>
+                            DOB: ${patient.date_of_birth || 'MISSING'}
+                        </div>
+                    `;
+                });
+            }
+            
+            analysisDiv.innerHTML = html;
+        }
+        
+        // Fix DOB data
+        async function fixDOBData(matches) {
+            let fixed = 0;
+            let errors = 0;
+            
+            for (const match of matches) {
+                if (match.needsUpdate) {
+                    try {
+                        const { error } = await supabaseClient
+                            .from('patients')
+                            .update({ 
+                                date_of_birth: match.backup.dob,
+                                updated_at: new Date().toISOString()
+                            })
+                            .eq('id', match.supabase.id);
+                        
+                        if (error) throw error;
+                        
+                        fixed++;
+                        log(`✅ Fixed DOB for ${match.backup.firstName} ${match.backup.lastName} (${match.backup.dob})`, 'success');
+                        
+                    } catch (error) {
+                        errors++;
+                        log(`❌ Error fixing ${match.backup.firstName} ${match.backup.lastName}: ${error.message}`, 'error');
+                    }
+                } else {
+                    log(`⏭️ Skipped ${match.backup.firstName} ${match.backup.lastName} (already has DOB)`, 'info');
+                }
+            }
+            
+            return { fixed, errors };
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            log('🚀 DOB Fix Tool ready', 'info');
+            log('💡 Upload your backup file and click "Analyze & Fix DOB"', 'info');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113100113101310"></script>
+
+</html>
+
+
+
+
+
+

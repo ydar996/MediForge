@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Billing Dashboard - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=224">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <link rel="stylesheet" href="css/mobile.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <style>
+    .billing-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    .stat-card {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      transition: all 0.3s;
+    }
+    .stat-card:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 6px 12px rgba(0,0,0,0.2);
+    }
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      opacity: 0.9;
+    }
+    .stat-card .stat-value {
+      font-size: 32px;
+      font-weight: bold;
+      margin: 0;
+    }
+    .quick-actions {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .quick-actions button {
+      padding: 15px 20px;
+      font-size: 16px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 10px;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .section h2 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    table {
+      width: 100%;
+      margin-top: 15px;
+    }
+    .status-pending {
+      color: orange;
+      font-weight: bold;
+    }
+    .status-paid {
+      color: green;
+      font-weight: bold;
+    }
+    .status-overdue {
+      color: red;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <h1>💰 Billing Dashboard</h1>
+  <div style="margin-bottom: 20px;">
+    <button onclick="window.location.href='dashboard'" style="background: #666;">← Back to Main Dashboard</button>
+  </div>
+
+  <!-- Statistics Cards -->
+  <div class="billing-stats" id="billing-stats">
+    <div class="stat-card" onclick="viewTodaysPayments()" style="cursor: pointer;" title="Click to view today's payments">
+      <h3>Today's Revenue</h3>
+      <p class="stat-value" id="stat-today-revenue">$0.00</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
+    </div>
+    <div class="stat-card" onclick="viewTotalRevenue()" style="background: linear-gradient(135deg, #4CAF50, #45a049); cursor: pointer;" title="Click to view total historical revenue with filters">
+      <h3>Total Revenue</h3>
+      <p class="stat-value" id="stat-total-revenue">$0.00</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details & filters</p>
+    </div>
+    <div class="stat-card" onclick="viewOutstandingInvoices()" style="background: linear-gradient(135deg, #2196F3, #1976D2); cursor: pointer;" title="Click to view outstanding invoices">
+      <h3>Outstanding Balance</h3>
+      <p class="stat-value" id="stat-outstanding">$0.00</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
+    </div>
+    <div class="stat-card" onclick="viewPendingInvoices()" style="background: linear-gradient(135deg, #FF9800, #F57C00); cursor: pointer;" title="Click to view pending invoices">
+      <h3>Pending Invoices</h3>
+      <p class="stat-value" id="stat-pending">0</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
+    </div>
+    <div class="stat-card" onclick="viewCashRegister()" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2); cursor: pointer;" title="Click to view cash register">
+      <h3>Cash on Hand</h3>
+      <p class="stat-value" id="stat-cash">$0.00</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
+    </div>
+    <div class="stat-card" onclick="viewTotalCashReceived()" style="background: linear-gradient(135deg, #009688, #00796B); cursor: pointer;" title="Click to view total cash received with filters">
+      <h3>Total Cash Received</h3>
+      <p class="stat-value" id="stat-total-cash">$0.00</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details & filters</p>
+    </div>
+  </div>
+
+  <!-- Quick Actions -->
+  <div class="section">
+    <h2>Quick Actions</h2>
+    <div class="quick-actions">
+      <button onclick="window.location.href='configure-services'" style="background: #FF9800;">
+        ⚙️ Configure Services
+      </button>
+      <button onclick="window.location.href='quick-checkout'">
+        ⚡ Quick Checkout
+      </button>
+      <button onclick="window.location.href='quick-checkout'">
+        📄 Create Invoice
+      </button>
+      <button onclick="window.location.href='payments'">
+        💳 Record Payment
+      </button>
+      <button onclick="window.location.href='cash-register'">
+        🏪 Cash Register
+      </button>
+      <button onclick="window.location.href='invoices'" style="background: #2196F3;">
+        📋 View All Invoices
+      </button>
+      <button id="view-all-payments-btn" onclick="window.location.href='all-payments'" style="background: #607D8B;">
+        💳 View All Payments
+      </button>
+      <button onclick="window.location.href='billing-reports'" style="background: #9C27B0;">
+        📊 View Reports
+      </button>
+      <button onclick="window.location.href='gl-dashboard'" style="background: #795548;">
+        📒 General Ledger
+      </button>
+      <button onclick="window.location.href='billing-permissions'" style="background: #f44336;" id="permissions-btn">
+        🔐 Billing Permissions
+      </button>
+    </div>
+  </div>
+
+  <!-- Recent Invoices -->
+  <div class="section">
+    <h2>Recent Invoices</h2>
+    <table id="recent-invoices-table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Patient</th>
+          <th>Date</th>
+          <th>Amount</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="recent-invoices-body">
+        <tr>
+          <td colspan="6" style="text-align: center;">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- Outstanding Invoices -->
+  <div class="section">
+    <h2>Outstanding Invoices</h2>
+    <table id="outstanding-invoices-table">
+      <thead>
+        <tr>
+          <th>Invoice #</th>
+          <th>Patient</th>
+          <th>Due Date</th>
+          <th>Amount Due</th>
+          <th>Days Overdue</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="outstanding-invoices-body">
+        <tr>
+          <td colspan="6" style="text-align: center;">Loading...</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=289"></script>
+  <script src="js/pricing.js?v=1"></script>
+  <script src="js/payments.js?v=1"></script>
+  <script src="js/cash-register.js?v=288"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+
+  <script>
+    // Billing dashboard initialized
+    
+    // Verify View All Payments button exists
+    document.addEventListener('DOMContentLoaded', function() {
+      const viewPaymentsBtn = document.getElementById('view-all-payments-btn');
+      if (!viewPaymentsBtn) {
+        console.error('❌ View All Payments button NOT FOUND in DOM!');
+        // Force add the button if missing
+        const quickActions = document.querySelector('.quick-actions');
+        if (quickActions) {
+          const invoicesBtn = quickActions.querySelector('button[onclick*="invoices"]');
+          if (invoicesBtn && invoicesBtn.nextSibling) {
+            const newBtn = document.createElement('button');
+            newBtn.id = 'view-all-payments-btn';
+            newBtn.onclick = () => window.location.href = 'all-payments';
+            newBtn.style.cssText = 'background: #607D8B; color: white; padding: 15px 20px; font-size: 16px; border: none; border-radius: 4px; cursor: pointer;';
+            newBtn.textContent = '💳 View All Payments';
+            invoicesBtn.parentNode.insertBefore(newBtn, invoicesBtn.nextSibling);
+          }
+        }
+      } else {
+        // Ensure it's visible
+        viewPaymentsBtn.style.display = 'flex';
+        viewPaymentsBtn.style.visibility = 'visible';
+      }
+    });
+    
+    // Force data refresh on page load if organizations data is missing or stale
+    function forceDataRefresh() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+      const userOrg = user.org;
+      
+      // Check if organization data is missing (Edge cache issue)
+      if (userOrg && !organizations[userOrg]) {
+        console.warn('⚠️ STALE DATA DETECTED: Organization data missing. Forcing refresh...');
+        
+        // Clear stale cache
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          // Force refresh patients
+          window.loadPatientsWithSupabasePriority(true);
+        }
+        
+        // Try to reload organizations from Supabase
+        if (typeof window.getAllOrganizations === 'function') {
+          window.getAllOrganizations(true).then(() => {
+            console.log('✅ Organizations reloaded from Supabase');
+            // Reload dashboard stats after organizations are loaded
+            setTimeout(() => {
+              loadBillingStats();
+            }, 500);
+          });
+        }
+        
+        // Clear any cached billing data
+        const billingCacheKeys = [
+          `${userOrg}_billing_invoices`,
+          `${userOrg}_billing_default_currency`,
+          `${userOrg}_billing_settings`
+        ];
+        
+        // Don't clear the data, just mark for refresh
+        console.log('🔄 Marking billing data for refresh');
+      }
+    }
+    
+    // Load dashboard data
+    window.addEventListener('load', async function() {
+      // DO NOT clear localStorage here - let getAllInvoices and getAllPayments handle it
+      // They will only clear/replace localStorage AFTER successfully loading from Supabase
+      // This preserves data if Supabase is unavailable
+      
+      // Force data refresh if stale data detected
+      if (typeof forceDataRefresh === 'function') {
+        forceDataRefresh();
+      }
+      
+      // Auto-open cash register if needed
+      if (typeof initializeCashRegister === 'function') {
+        initializeCashRegister();
+      }
+      
+      checkAdminAccess();
+      
+      // Delay stats loading slightly to allow cash register to open and data refresh
+      setTimeout(async function() {
+        await loadBillingStats();
+        await loadRecentInvoices();
+        await loadOutstandingInvoices();
+      }, 500);
+    });
+
+    function checkAdminAccess() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      // Show permissions button to Admins and Doctors
+      const allowedRoles = ['Admin', 'admin', 'Doctor', 'doctor'];
+      if (!allowedRoles.includes(user.role)) {
+        const permBtn = document.getElementById('permissions-btn');
+        if (permBtn) permBtn.style.display = 'none';
+      }
+    }
+
+    async function loadBillingStats() {
+      const today = new Date().toISOString().split('T')[0];
+      
+      // Get stats for today's revenue (filtered to today)
+      const todayStats = await getBillingStats(today, today);
+      
+      // Get ALL-TIME stats for outstanding balance (no date filter)
+      const allTimeStats = await getBillingStats(null, null);
+      
+      // Get default currency - use window function directly to avoid shadowing
+      let defaultCurrency = 'USD'; // Default fallback
+      if (typeof window.getDefaultCurrency === 'function') {
+        try {
+          defaultCurrency = window.getDefaultCurrency();
+        } catch (e) {
+          console.warn('Error getting default currency:', e);
+          // Fallback to localStorage
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const org = user.org || "Default";
+          const saved = localStorage.getItem(`${org}_billing_default_currency`);
+          defaultCurrency = saved || 'USD';
+        }
+      } else {
+        // Fallback if billing.js hasn't loaded
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const org = user.org || "Default";
+        const saved = localStorage.getItem(`${org}_billing_default_currency`);
+        defaultCurrency = saved || 'USD';
+      }
+      
+      // Today's revenue - ALL payment methods (only today's payments)
+      document.getElementById('stat-today-revenue').textContent = formatCurrency(todayStats.totalPaid, defaultCurrency);
+      
+      // Total historical revenue - ALL payments ever received (all-time)
+      document.getElementById('stat-total-revenue').textContent = formatCurrency(allTimeStats.totalPaid, defaultCurrency);
+      
+      // Outstanding balance - ALL outstanding invoices (not just today's)
+      document.getElementById('stat-outstanding').textContent = formatCurrency(allTimeStats.totalOutstanding, defaultCurrency);
+      
+      // Pending invoices count - ALL pending invoices (not just today's)
+      document.getElementById('stat-pending').textContent = allTimeStats.pendingInvoices;
+      
+      // Total cash received - ALL cash payments ever (all-time, not just cash on hand)
+      document.getElementById('stat-total-cash').textContent = formatCurrency(allTimeStats.cashAmount, defaultCurrency);
+      
+      // Cash on hand - MUST match cash register's expected balance
+      let cashOnHand = 0;
+      const currentSession = getCurrentCashSession();
+      
+      if (currentSession) {
+        // Use cash register's expected closing balance
+        const opening = parseFloat(currentSession.openingBalance) || 0;
+        const cashIn = parseFloat(currentSession.totalCashIn) || 0;
+        const cashOut = parseFloat(currentSession.totalCashOut) || 0;
+        cashOnHand = opening + cashIn - cashOut;
+      } else {
+        // If register is closed, calculate from today's cash payments
+        const allPayments = await getAllPayments();
+        const todaysCashPayments = allPayments.filter(p => 
+          (p.date === today || p.paymentDate === today) && 
+          (p.method === 'cash' || p.paymentMethod === 'cash') && 
+          p.status === 'completed'
+        );
+        cashOnHand = todaysCashPayments.reduce((sum, p) => sum + p.amount, 0);
+      }
+      
+      document.getElementById('stat-cash').textContent = formatCurrency(cashOnHand, defaultCurrency);
+    }
+
+
+    async function loadRecentInvoices() {
+      try {
+      const invoices = await getAllInvoices();
+        
+        if (!Array.isArray(invoices)) {
+          console.error('❌ [BILLING-DASHBOARD] getAllInvoices did not return an array:', invoices);
+          const tbody = document.getElementById('recent-invoices-body');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading invoices. Please refresh the page.</td></tr>';
+          }
+          return;
+        }
+        
+      const recent = invoices.slice(-10).reverse(); // Last 10, newest first
+      
+      const tbody = document.getElementById('recent-invoices-body');
+        if (!tbody) {
+          console.error('❌ [BILLING-DASHBOARD] recent-invoices-body element not found');
+          return;
+        }
+        
+      tbody.innerHTML = '';
+      
+      if (recent.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No invoices found</td></tr>';
+        return;
+      }
+      
+      recent.forEach(invoice => {
+        const row = document.createElement('tr');
+        
+        const statusClass = 
+          invoice.status === 'paid' ? 'status-paid' :
+          invoice.status === 'overdue' ? 'status-overdue' :
+          'status-pending';
+        
+        row.innerHTML = `
+          <td>${invoice.invoiceNumber}</td>
+          <td>${invoice.patientName}</td>
+          <td>${invoice.date}</td>
+          <td>${formatCurrency(invoice.total, invoice.currency)}</td>
+          <td class="${statusClass}">${invoice.status.toUpperCase()}</td>
+          <td>
+            <button onclick="viewInvoice('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">View</button>
+            ${invoice.status !== 'paid' && invoice.amountDue > 0 ? `
+              <button onclick="window.location.href='/collect-payment?invoiceId=${invoice.id}&returnUrl=billing-dashboard'" style="font-size: 12px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">💳 Collect Payment</button>
+            ` : ''}
+            ${invoice.status !== 'paid' ? `
+              <button onclick="editInvoice('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #FF9800; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">Edit</button>
+              <button onclick="deleteInvoiceFromDashboard('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">Delete</button>
+            ` : `
+              <button onclick="editInvoice('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #FF9800; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">Edit</button>
+            `}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+      } catch (error) {
+        console.error('❌ [BILLING-DASHBOARD] Error loading recent invoices:', error);
+        const tbody = document.getElementById('recent-invoices-body');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading invoices: ' + error.message + '</td></tr>';
+        }
+      }
+    }
+
+    async function loadOutstandingInvoices() {
+      try {
+      const outstanding = await getOutstandingInvoices();
+        
+        if (!Array.isArray(outstanding)) {
+          console.error('❌ [BILLING-DASHBOARD] getOutstandingInvoices did not return an array:', outstanding);
+          const tbody = document.getElementById('outstanding-invoices-body');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading outstanding invoices. Please refresh the page.</td></tr>';
+          }
+          return;
+        }
+      
+      const tbody = document.getElementById('outstanding-invoices-body');
+        if (!tbody) {
+          console.error('❌ [BILLING-DASHBOARD] outstanding-invoices-body element not found');
+          return;
+        }
+        
+      tbody.innerHTML = '';
+      
+      if (outstanding.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: green;">✅ No outstanding invoices</td></tr>';
+        return;
+      }
+      
+      outstanding.forEach(invoice => {
+        const row = document.createElement('tr');
+        
+        const daysOverdue = invoice.dueDate ? Math.floor((new Date() - new Date(invoice.dueDate)) / (1000 * 60 * 60 * 24)) : 0;
+        const overdueText = daysOverdue > 0 ? daysOverdue : '-';
+        const rowStyle = daysOverdue > 30 ? 'background: #ffebee;' : '';
+        
+        row.innerHTML = `
+          <td>${invoice.invoiceNumber}</td>
+          <td>${invoice.patientName}</td>
+          <td>${invoice.dueDate || 'N/A'}</td>
+          <td>${formatCurrency(invoice.amountDue, invoice.currency)}</td>
+          <td style="${daysOverdue > 0 ? 'color: red; font-weight: bold;' : ''}">${overdueText}</td>
+          <td>
+            <button onclick="viewInvoice('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #2196F3; color: white; border: none; border-radius: 3px; cursor: pointer;">View</button>
+            <button onclick="window.location.href='/collect-payment?invoiceId=${invoice.id}&returnUrl=billing-dashboard'" style="font-size: 12px; padding: 5px 10px; background: #4CAF50; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">💳 Collect Payment</button>
+            <button onclick="editInvoice('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #FF9800; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">Edit</button>
+            <button onclick="deleteInvoiceFromDashboard('${invoice.id}')" style="font-size: 12px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; margin-left: 5px;">Delete</button>
+          </td>
+        `;
+        row.style.cssText = rowStyle;
+        tbody.appendChild(row);
+      });
+      } catch (error) {
+        console.error('❌ [BILLING-DASHBOARD] Error loading outstanding invoices:', error);
+        const tbody = document.getElementById('outstanding-invoices-body');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error loading outstanding invoices: ' + error.message + '</td></tr>';
+        }
+      }
+    }
+
+    function viewInvoice(invoiceId) {
+      window.location.href = `/invoice-details?id=${invoiceId}`;
+    }
+
+    function editInvoice(invoiceId) {
+      window.location.href = `/edit-invoice?id=${invoiceId}`;
+    }
+
+    function recordPaymentFor(invoiceId) {
+      window.location.href = `/collect-payment?invoiceId=${invoiceId}&returnUrl=billing-dashboard`;
+    }
+
+    async function deleteInvoiceFromDashboard(invoiceId) {
+      
+      const success = await deleteInvoice(invoiceId);
+      if (success) {
+        // Refresh the dashboard data
+        await loadBillingStats();
+        await loadRecentInvoices();
+        await loadOutstandingInvoices();
+        
+        // Show success message
+        alert('Invoice deleted successfully!');
+      }
+    }
+
+    // Stat card click handlers - redirect to detail pages
+    function viewTodaysPayments() {
+      window.location.href = 'todays-revenue';
+    }
+
+    function viewOutstandingInvoices() {
+      window.location.href = '/invoices?filter=outstanding';
+    }
+
+    function viewPendingInvoices() {
+      window.location.href = '/invoices?filter=pending';
+    }
+
+    function viewCashRegister() {
+      window.location.href = 'cash-register';
+    }
+
+    function viewTotalRevenue() {
+      window.location.href = 'total-revenue';
+    }
+
+    function viewTotalCashReceived() {
+      window.location.href = 'total-cash-received';
+    }
+
+
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+      loadBillingStats();
+      loadRecentInvoices();
+      loadOutstandingInvoices();
+    }, 30000);
+    
+    // Billing dashboard initialization complete
+  </script>
+
+</html>
+
+
+
+
+
+
+
+

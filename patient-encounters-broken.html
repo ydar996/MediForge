@@ -1,0 +1,884 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Encounters</title>
+  <link rel="stylesheet" href="css/styles.css?v=105">
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1>Non-Visit Patient Encounters</h1>
+  
+  <!-- Top Navigation Buttons -->
+  <div style="margin-bottom: 20px;">
+    <button onclick="backToPatientDetails()" style="margin-right: 10px; background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">? Back to Patient Details</button>
+    <button onclick="backToPatients()" style="margin-right: 10px; background: #2196F3; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">? Back to Patients</button>
+    <button onclick="backToDashboard()" style="background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">? Back to Dashboard</button>
+  </div>
+
+  <div id="patient-info"></div>
+
+  <h3>Non-Visit Encounters</h3>
+  <table>
+    <thead>
+      <tr>
+        <th>Date</th>
+        <th>Reason</th>
+        <th>Assigned Doctor</th>
+        <th>Status</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="encounters-list"></tbody>
+  </table>
+
+  <!-- Prescriptions from Encounters -->
+  <div id="encounter-prescriptions" style="margin-bottom: 30px;">
+    <h3>Prescriptions Created from Encounters</h3>
+    <table style="width: 100%; border-collapse: collapse; margin-bottom: 15px;">
+      <thead>
+        <tr style="background-color: #f8f9fa;">
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Prescription ID</th>
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Encounter Date</th>
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Reason</th>
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Diagnosis</th>
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Medications</th>
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Status</th>
+          <th style="border: 1px solid #ddd; padding: 8px; text-align: left;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="encounter-prescriptions-list">
+        <!-- Prescriptions from encounters will be populated here -->
+      </tbody>
+    </table>
+  </div>
+
+  <h3>Add New Encounter</h3>
+  <div id="add-encounter-form" style="background: #f8f9fa; padding: 20px; border-radius: 8px; margin: 20px 0;">
+    <div style="margin-bottom: 15px;">
+      <label for="encounter-date" style="display: block; margin-bottom: 5px; font-weight: bold;">Date:</label>
+      <input type="date" id="encounter-date" style="width: 200px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label for="encounter-reason" style="display: block; margin-bottom: 5px; font-weight: bold;">Reason:</label>
+      <select id="encounter-reason" style="width: 300px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="">Select a reason...</option>
+        <option value="Medication Refill Request">Medication Refill Request</option>
+        <option value="Question/Consultation">Question/Consultation</option>
+        <option value="Test Results Discussion">Test Results Discussion</option>
+        <option value="Appointment Scheduling">Appointment Scheduling</option>
+        <option value="Prescription Clarification">Prescription Clarification</option>
+        <option value="Follow-up Call">Follow-up Call</option>
+        <option value="Emergency Consultation">Emergency Consultation</option>
+        <option value="Insurance/Authorization">Insurance/Authorization</option>
+        <option value="Other">Other</option>
+      </select>
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label for="encounter-assigned-doctor" style="display: block; margin-bottom: 5px; font-weight: bold;">Assigned Doctor:</label>
+      <select id="encounter-assigned-doctor" style="width: 300px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">
+        <option value="">Select a doctor...</option>
+      </select>
+    </div>
+    
+    <div style="margin-bottom: 15px;">
+      <label for="encounter-message" style="display: block; margin-bottom: 5px; font-weight: bold;">Message/Details:</label>
+      <textarea id="encounter-message" rows="4" style="width: 100%; max-width: 600px; padding: 8px; border: 1px solid #ddd; border-radius: 4px; resize: vertical;" placeholder="Enter detailed message or description of the encounter..."></textarea>
+    </div>
+    
+    <button type="button" onclick="addEncounter()" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold;">Add Encounter</button>
+  </div>
+
+  <!-- Encounter Detail Modal -->
+  <div id="encounter-modal" class="modal" style="display: none;">
+    <div class="modal-content" style="max-width: 800px;">
+      <span class="close" onclick="closeEncounterModal()">&times;</span>
+      <h2 id="modal-title">Encounter Details</h2>
+      <div id="modal-content"></div>
+    </div>
+  </div>
+
+  
+  </script>
+  
+  
+    // Helper function to get patients data with fallback
+    function getPatientsData() {
+      console.log("getPatientsData - getDataKey available:", typeof getDataKey !== 'undefined');
+      if (typeof getDataKey === 'undefined') {
+        console.log("getPatientsData - Using fallback, no getDataKey");
+        return JSON.parse(localStorage.getItem("patients") || "[]");
+      } else {
+        const key = getDataKey("patients");
+        console.log("getPatientsData - Using getDataKey, key:", key);
+        return JSON.parse(localStorage.getItem(key) || "[]");
+      }
+    }
+    
+    // Helper function to save patients data with fallback
+    function savePatientsData(patients) {
+      if (typeof getDataKey === 'undefined') {
+        localStorage.setItem("patients", JSON.stringify(patients));
+      } else {
+        savePatientsData(patients);
+      }
+    }
+
+    window.addEventListener('load', function() {
+      // Add a small delay to ensure all scripts are loaded
+      setTimeout(() => {
+        console.log("Window loaded, getDataKey available:", typeof getDataKey !== 'undefined');
+        
+        // Test patient data access
+        console.log("Testing patient data access...");
+        const testPatients = getPatientsData();
+        console.log("Test patients loaded:", testPatients.length);
+        
+        loadPatientEncounters();
+        loadDoctors();
+      }, 100);
+    });
+
+    function backToPatientDetails() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      window.location.href = '/patient-details?id=' + patientId;
+    }
+
+    function backToPatients() {
+      window.location.href = "patients";
+    }
+
+    function backToDashboard() {
+      window.location.href = "dashboard";
+    }
+
+    // Create prescription from encounter (Doctor only)
+    function createPrescriptionFromEncounter(encounterId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      if (!patientId) {
+        alert("Patient ID not found. Cannot create prescription.");
+        return;
+      }
+      
+      // Get encounter details for context
+      const patients = getPatientsData();
+      const patient = patients.find(p => p.id === patientId);
+      if (!patient) {
+        alert("Patient not found. Cannot create prescription.");
+        return;
+      }
+      
+      const encounter = patient.encounters?.find(e => e.id === encounterId);
+      if (!encounter) {
+        alert("Encounter not found. Cannot create prescription.");
+        return;
+      }
+      
+      // Open prescription form with patient and encounter data
+      const prescriptionUrl = 'prescription.html?patientId=' + patientId + '&encounterId=' + encounterId + '&encounterDate=' + encounter.date;
+      const prescriptionWindow = window.open(prescriptionUrl, '_blank', 'width=1400,height=800,scrollbars=yes,resizable=yes');
+      
+      // Listen for prescription saved event
+      window.addEventListener('message', function(event) {
+        if (event.data.type === 'prescriptionSaved') {
+          // Refresh encounters display
+          loadPatientEncounters();
+          
+          // Show success message
+          showNotification('Prescription created successfully for encounter: ' + encounter.reason, 'success');
+        }
+      });
+    }
+
+    // Simple notification function
+    function showNotification(message, type = 'info') {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        padding: 15px 20px;
+        border-radius: 5px;
+        color: white;
+        font-weight: bold;
+        z-index: 10000;
+        max-width: 400px;
+        word-wrap: break-word;
+        box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+      `;
+      
+      if (type === 'success') {
+        notification.style.backgroundColor = '#28a745';
+      } else if (type === 'error') {
+        notification.style.backgroundColor = '#dc3545';
+      } else {
+        notification.style.backgroundColor = '#007bff';
+      }
+      
+      notification.textContent = message;
+      document.body.appendChild(notification);
+      
+      // Auto-remove after 5 seconds
+      setTimeout(() => {
+        if (notification.parentNode) {
+          notification.parentNode.removeChild(notification);
+        }
+      }, 5000);
+    }
+
+    function loadPatientEncounters() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      console.log("Loading patient encounters for patientId:", patientId);
+      
+      if (!patientId) {
+        console.error("Patient ID not found");
+        document.getElementById("patient-info").innerHTML = '<div style="color: red; padding: 20px;">Error: Patient ID not found in URL parameters.</div>';
+        return;
+      }
+
+      const patients = getPatientsData();
+      
+      console.log("Total patients found:", patients.length);
+      console.log("Looking for patient with ID:", patientId, "Type:", typeof patientId);
+      console.log("Available patient IDs:", patients.map(p => p.id));
+      console.log("Available patient ID types:", patients.map(p => typeof p.id));
+      console.log("All localStorage keys:", Object.keys(localStorage));
+      
+      // Debug patient data structure
+      console.log("Patient data structure sample:", patients[0]);
+      console.log("Looking for patient ID:", patientId, "Type:", typeof patientId);
+      
+      // Try to find patient with both string and number comparison
+      let patient = null;
+      for (let i = 0; i < patients.length; i++) {
+        const p = patients[i];
+        console.log("Comparing:", p.id, "with", patientId, "Result:", p.id === patientId);
+        if (p.id === patientId) {
+          patient = p;
+          const patientName = p.name || (p.firstName + ' ' + (p.middleName || '') + ' ' + p.lastName).trim();
+          console.log("Found patient at index", i, ":", patientName);
+          break;
+        }
+      }
+      const foundPatientName = patient ? (patient.name || (patient.firstName + ' ' + (patient.middleName || '') + ' ' + patient.lastName).trim()) : "null";
+      console.log("First attempt - patient found:", foundPatientName);
+      
+      if (!patient) {
+        // Try converting to number if it's a string
+        patient = patients.find(p => p.id === parseInt(patientId));
+        const secondAttemptName = patient ? (patient.name || (patient.firstName + ' ' + (patient.middleName || '') + ' ' + patient.lastName).trim()) : "null";
+        console.log("Second attempt (parseInt) - patient found:", secondAttemptName);
+      }
+      if (!patient) {
+        // Try converting to string if it's a number
+        patient = patients.find(p => p.id.toString() === patientId);
+        const thirdAttemptName = patient ? (patient.name || (patient.firstName + ' ' + (patient.middleName || '') + ' ' + patient.lastName).trim()) : "null";
+        console.log("Third attempt (toString) - patient found:", thirdAttemptName);
+      }
+      if (!patient) {
+        // Try loose comparison
+        patient = patients.find(p => p.id == patientId);
+        const fourthAttemptName = patient ? (patient.name || (patient.firstName + ' ' + (patient.middleName || '') + ' ' + patient.lastName).trim()) : "null";
+        console.log("Fourth attempt (loose ==) - patient found:", fourthAttemptName);
+      }
+      
+      if (!patient) {
+        console.log("Patient not found with any ID format");
+        console.log("Available patients:", patients.map(p => ({ 
+          id: p.id, 
+          name: p.name || (p.firstName + ' ' + (p.middleName || '') + ' ' + p.lastName).trim() 
+        })));
+        document.getElementById("patient-info").innerHTML = '<div style="color: red; padding: 20px;">Error: Patient not found in database.</div>';
+        return;
+      }
+      
+      const finalPatientName = patient.name || (patient.firstName + ' ' + (patient.middleName || '') + ' ' + patient.lastName).trim();
+      console.log("Patient found:", finalPatientName);
+      console.log("Patient object:", patient);
+      console.log("About to display patient info...");
+
+      // Display patient info
+      const patientName = patient.name || (patient.firstName + ' ' + (patient.middleName || '') + ' ' + patient.lastName).trim();
+      document.getElementById("patient-info").innerHTML = 
+        '<div style="background: #e8f5e8; padding: 15px; border-radius: 8px; margin-bottom: 20px;">' +
+          '<h2>' + patientName + '</h2>' +
+          '<p><strong>DOB:</strong> ' + patient.dob + ' | <strong>Gender:</strong> ' + patient.gender + ' | <strong>ID:</strong> ' + patient.id + '</p>' +
+        '</div>';
+      console.log("Patient info displayed successfully");
+
+      // Display encounters
+      console.log("About to display encounters...");
+      try {
+        displayEncounters(patient.encounters || []);
+        console.log("Encounters displayed successfully");
+        
+        // Display prescriptions created from encounters
+        displayEncounterPrescriptions(patient.prescriptions || []);
+        console.log("Encounter prescriptions displayed successfully");
+      } catch (error) {
+        console.error("Error displaying encounters:", error);
+      }
+    }
+
+    function displayEncounters(encounters) {
+      const tbody = document.getElementById("encounters-list");
+      if (!tbody) return;
+
+      tbody.innerHTML = "";
+      
+      if (encounters.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #666;">No encounters recorded</td></tr>';
+        return;
+      }
+
+      // Check user role for prescription creation
+      const user = JSON.parse(localStorage.getItem("user"));
+      const isDoctor = user && user.role === "Doctor";
+
+      encounters.forEach((encounter, index) => {
+        const row = document.createElement("tr");
+        const statusColor = encounter.status === 'Resolved' ? 'green' : encounter.status === 'Pending' ? 'orange' : 'red';
+        
+        // Create prescription button HTML (only for doctors)
+        const prescriptionButton = isDoctor ? 
+          '<button type="button" onclick="createPrescriptionFromEncounter(\'' + encounter.id + '\')" ' +
+                   'style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 5px;">' +
+            '?? Prescription' +
+          '</button>' : '';
+        
+        row.innerHTML = 
+          '<td>' + encounter.date + '</td>' +
+          '<td>' + encounter.reason + '</td>' +
+          '<td>' + (encounter.assignedDoctor || 'Unassigned') + '</td>' +
+          '<td style="color: ' + statusColor + '; font-weight: bold;">' + (encounter.status || 'Open') + '</td>' +
+          '<td>' +
+            '<div style="display: flex; gap: 5px; flex-wrap: nowrap; align-items: center;">' +
+              '<button type="button" onclick="viewEncounter(' + index + ')" ' +
+                      'style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">' +
+                'View' +
+              '</button>' +
+              '<button type="button" onclick="editEncounter(' + index + ')" ' +
+                      'style="background: #ffc107; color: black; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">' +
+                'Edit' +
+              '</button>' +
+              '<button type="button" onclick="deleteEncounter(' + index + ')" ' +
+                      'style="background: #dc3545; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">' +
+                'Delete' +
+              '</button>' +
+              prescriptionButton +
+            '</div>' +
+          '</td>';
+        tbody.appendChild(row);
+      });
+    }
+
+    // Display prescriptions created from encounters
+    function displayEncounterPrescriptions(prescriptions) {
+      const tbody = document.getElementById("encounter-prescriptions-list");
+      if (!tbody) return;
+
+      // Filter prescriptions that were created from encounters
+      const encounterPrescriptions = prescriptions.filter(p => p.encounterId);
+
+      if (encounterPrescriptions.length === 0) {
+        tbody.innerHTML = 
+          '<tr>' +
+            '<td colspan="7" style="border: 1px solid #ddd; padding: 15px; text-align: center; color: #666; font-style: italic;">' +
+              'No prescriptions created from encounters yet. Click "?? Prescription" on an encounter to create one.' +
+            '</td>' +
+          '</tr>';
+        return;
+      }
+
+      // Sort by encounter date (newest first)
+      const sortedPrescriptions = encounterPrescriptions.sort((a, b) => new Date(b.encounterDate) - new Date(a.encounterDate));
+
+      tbody.innerHTML = sortedPrescriptions.map(function(prescription) {
+        // Get encounter details for display
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get("patientId");
+        const patients = getPatientsData();
+        const patient = patients.find(p => p.id === patientId);
+        const encounter = patient && patient.encounters ? patient.encounters.find(e => e.id === prescription.encounterId) : null;
+        
+        return '<tr>' +
+          '<td style="border: 1px solid #ddd; padding: 8px; font-family: monospace; font-size: 12px;">' + prescription.id + '</td>' +
+          '<td style="border: 1px solid #ddd; padding: 8px;">' + (prescription.encounterDate || 'Unknown') + '</td>' +
+          '<td style="border: 1px solid #ddd; padding: 8px;">' + (encounter ? encounter.reason : 'Unknown') + '</td>' +
+          '<td style="border: 1px solid #ddd; padding: 8px;">' + (prescription.diagnosis || 'Not specified') + '</td>' +
+          '<td style="border: 1px solid #ddd; padding: 8px;">' + (prescription.medications ? prescription.medications.length : 0) + '</td>' +
+          '<td style="border: 1px solid #ddd; padding: 8px;">' +
+            '<span style="background: ' + (prescription.status === 'signed' ? '#d4edda' : '#fff3cd') + '; ' +
+                       'color: ' + (prescription.status === 'signed' ? '#155724' : '#856404') + '; ' +
+                       'padding: 4px 8px; border-radius: 12px; font-size: 12px;">' +
+              (prescription.status === 'signed' ? '? Signed' : '?? Draft') +
+            '</span>' +
+          '</td>' +
+          '<td style="border: 1px solid #ddd; padding: 8px;">' +
+            '<div style="display: flex; gap: 5px; align-items: center;">' +
+              '<button onclick="viewPrescriptionFromEncounter(\'' + prescription.id + '\')" ' +
+                      'style="background: #007bff; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">' +
+                '??? View' +
+              '</button>' +
+              '<button onclick="printPrescriptionFromEncounter(\'' + prescription.id + '\')" ' +
+                      'style="background: #28a745; color: white; border: none; padding: 4px 8px; border-radius: 4px; cursor: pointer; font-size: 12px;">' +
+                '??? Print' +
+              '</button>' +
+            '</div>' +
+          '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    // View prescription from encounter
+    function viewPrescriptionFromEncounter(prescriptionId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const prescriptionUrl = 'prescription.html?patientId=' + patientId + '&viewId=' + prescriptionId;
+      window.open(prescriptionUrl, '_blank', 'width=1400,height=800,scrollbars=yes,resizable=yes');
+    }
+
+    // Print prescription from encounter
+    function printPrescriptionFromEncounter(prescriptionId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const patients = getPatientsData();
+      const patient = patients.find(p => p.id === patientId);
+      const prescription = patient?.prescriptions?.find(p => p.id === prescriptionId);
+      
+      if (!prescription) {
+        alert('Prescription not found');
+        return;
+      }
+      
+      // Generate print content (similar to the one in patients.js)
+      const printContent = generatePrescriptionPrintContent(prescription);
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(
+        '<html>' +
+          '<head>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">' +
+            '<title>Prescription - ' + prescription.id + '</title>' +
+            '<style>' +
+              'body { font-family: Arial, sans-serif; margin: 20px; }' +
+              '.prescription-header { text-align: center; margin-bottom: 30px; border-bottom: 2px solid #333; padding-bottom: 20px; }' +
+              '.prescription-body { display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 30px; }' +
+              '.prescription-footer { border-top: 2px solid #333; padding-top: 20px; text-align: center; }' +
+              '.medication-item { border: 1px solid #333; padding: 15px; margin: 10px 0; }' +
+              '@media print { body { margin: 0; } }' +
+            '</style>' +
+          '
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>' +
+          '<body>' +
+            printContent +
+          '  
+' +
+        '
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>'
+      );
+      
+      printWindow.document.close();
+      printWindow.print();
+    }
+
+    // Generate prescription print content (simplified version)
+    function generatePrescriptionPrintContent(prescription) {
+      return '<div class="prescription-header">' +
+        '<h1>PRESCRIPTION</h1>' +
+        '<h2>' + (prescription.prescriber.org || 'Medical Clinic') + '</h2>' +
+        '<p>' + prescription.prescriber.address + '</p>' +
+        '<p>Phone: ' + prescription.prescriber.phone + ' | Email: ' + prescription.prescriber.email + '</p>' +
+        '</div>' +
+        '<div class="prescription-body">' +
+        '<div>' +
+        '<h3>PRESCRIBER INFORMATION</h3>' +
+        '<p><strong>Name:</strong> ' + prescription.prescriber.name + '</p>' +
+        '<p><strong>License:</strong> ' + prescription.prescriber.license + '</p>' +
+        '<p><strong>Specialty:</strong> ' + prescription.prescriber.specialty + '</p>' +
+        '</div>' +
+        '<div>' +
+        '<h3>PATIENT INFORMATION</h3>' +
+        '<p><strong>Name:</strong> ' + prescription.patient.name + '</p>' +
+        '<p><strong>DOB:</strong> ' + prescription.patient.dob + '</p>' +
+        '<p><strong>Gender:</strong> ' + (prescription.patient.gender || 'Not specified') + '</p>' +
+        '<p><strong>Patient ID:</strong> ' + (typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(prescription.patient) : '') + '</p>' +
+        '</div>' +
+        '</div>' +
+        '<div style="margin: 30px 0;">' +
+        '<h3>PRESCRIPTION DETAILS</h3>' +
+        '<p><strong>Date:</strong> ' + prescription.date + '</p>' +
+        '<p><strong>Prescription ID:</strong> ' + prescription.id + '</p>' +
+        '<p><strong>Diagnosis/Indication:</strong> ' + prescription.diagnosis + '</p>' +
+        (prescription.encounterId ? '<p><strong>Related Encounter:</strong> ' + prescription.encounterDate + ' - ' + prescription.encounterId + '</p>' : '') +
+        '</div>' +
+        '<div style="margin: 30px 0;">' +
+        '<h3>MEDICATIONS</h3>' +
+        (prescription.medications ? prescription.medications.map(function(med, index) {
+          return '<div class="medication-item">' +
+            '<h4>Medication #' + (index + 1) + '</h4>' +
+            '<p><strong>Name:</strong> ' + med.name + '</p>' +
+            '<p><strong>Strength:</strong> ' + med.strength + '</p>' +
+            '<p><strong>Form:</strong> ' + med.form + '</p>' +
+            '<p><strong>Route:</strong> ' + med.route + '</p>' +
+            '<p><strong>Quantity:</strong> ' + med.quantity + '</p>' +
+            '<p><strong>Duration:</strong> ' + med.duration + ' days</p>' +
+            '<p><strong>Refills:</strong> ' + med.refills + '</p>' +
+            '<p><strong>Directions:</strong> ' + med.directions + '</p>' +
+            (med.warnings ? '<p><strong>Warnings:</strong> ' + med.warnings + '</p>' : '') +
+            '</div>';
+        }).join('') : '') +
+        '</div>' +
+        '<div class="prescription-footer">' +
+        '<div style="border: 1px solid #333; height: 60px; margin: 20px 0; padding: 10px;">' +
+        '<p>Electronic Signature: ' + prescription.prescriber.name + '</p>' +
+        '<p>Date: ' + new Date(prescription.signatureDate).toLocaleString() + '</p>' +
+        '</div>' +
+        '<div style="margin-top: 20px; font-size: 12px; color: #666;">' +
+        '<p>Prescription ID: ' + prescription.id + '</p>' +
+        '<p>Generated on: ' + new Date(prescription.savedAt).toLocaleString() + '</p>' +
+        '</div>' +
+        '</div>';
+    }
+
+    function addEncounter() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const date = document.getElementById("encounter-date").value;
+      const reason = document.getElementById("encounter-reason").value;
+      const assignedDoctor = document.getElementById("encounter-assigned-doctor").value;
+      const message = document.getElementById("encounter-message").value;
+
+      if (!date || !reason || !message.trim()) {
+        alert("Please fill in all required fields (Date, Reason, and Message).");
+        return;
+      }
+
+      const patients = getPatientsData();
+      const patientIndex = patients.findIndex(p => p.id === patientId);
+      
+      if (patientIndex === -1) {
+        console.error("Patient not found for encounter addition");
+        return;
+      }
+
+      if (!patients[patientIndex].encounters) {
+        patients[patientIndex].encounters = [];
+      }
+
+      const newEncounter = {
+        id: Date.now(),
+        date: date,
+        reason: reason,
+        assignedDoctor: assignedDoctor,
+        message: message.trim(),
+        status: 'Open',
+        responses: [],
+        createdAt: new Date().toISOString()
+      };
+
+      patients[patientIndex].encounters.push(newEncounter);
+      savePatientsData(patients);
+
+      // Clear form
+      document.getElementById("encounter-date").value = "";
+      document.getElementById("encounter-reason").value = "";
+      document.getElementById("encounter-assigned-doctor").value = "";
+      document.getElementById("encounter-message").value = "";
+
+      // Refresh display
+      displayEncounters(patients[patientIndex].encounters);
+      
+      // Dispatch sync event
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: { patientId, action: 'encounterAdded', data: newEncounter }
+      }));
+    }
+
+    function viewEncounter(index) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const patients = getPatientsData();
+      const patient = patients.find(p => p.id === patientId);
+      const encounter = patient.encounters[index];
+
+      document.getElementById("modal-title").textContent = 'Encounter Details - ' + encounter.reason;
+      
+      let responsesHtml = "";
+      if (encounter.responses && encounter.responses.length > 0) {
+        responsesHtml = '<h4>Responses:</h4>' +
+          '<div style="max-height: 300px; overflow-y: auto;">' +
+          encounter.responses.map(function(response) {
+            return '<div style="background: #f8f9fa; padding: 10px; margin: 10px 0; border-radius: 4px; border-left: 4px solid #4CAF50;">' +
+              '<div style="font-weight: bold; color: #333;">' + response.doctor + ' - ' + response.date + '</div>' +
+              '<div style="margin-top: 5px;">' + response.message + '</div>' +
+              '</div>';
+          }).join('') +
+          '</div>';
+      }
+
+      document.getElementById("modal-content").innerHTML = 
+        '<div style="margin-bottom: 20px;">' +
+          '<p><strong>Date:</strong> ' + encounter.date + '</p>' +
+          '<p><strong>Reason:</strong> ' + encounter.reason + '</p>' +
+          '<p><strong>Assigned Doctor:</strong> ' + (encounter.assignedDoctor || 'Unassigned') + '</p>' +
+          '<p><strong>Status:</strong> <span style="color: ' + (encounter.status === 'Resolved' ? 'green' : encounter.status === 'Pending' ? 'orange' : 'red') + ';">' + (encounter.status || 'Open') + '</span></p>' +
+        '</div>' +
+        '<div style="margin-bottom: 20px;">' +
+          '<h4>Original Message:</h4>' +
+          '<div style="background: #f8f9fa; padding: 15px; border-radius: 4px; white-space: pre-wrap;">' + encounter.message + '</div>' +
+        '</div>' +
+        responsesHtml +
+        '<div style="margin-top: 20px; padding-top: 20px; border-top: 1px solid #ddd;">' +
+          '<h4>Add Response:</h4>' +
+          '<div style="margin-bottom: 10px;">' +
+            '<label for="response-doctor" style="display: block; margin-bottom: 5px;">Doctor:</label>' +
+            '<select id="response-doctor" style="width: 300px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">' +
+              '<option value="">Select a doctor...</option>' +
+            '</select>' +
+          '</div>' +
+          '<div style="margin-bottom: 10px;">' +
+            '<label for="response-message" style="display: block; margin-bottom: 5px;">Response:</label>' +
+            '<textarea id="response-message" rows="3" style="width: 100%; max-width: 600px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;" placeholder="Enter your response..."></textarea>' +
+          '</div>' +
+          '<div style="margin-bottom: 10px;">' +
+            '<label for="response-status" style="display: block; margin-bottom: 5px;">Update Status:</label>' +
+            '<select id="response-status" style="width: 200px; padding: 8px; border: 1px solid #ddd; border-radius: 4px;">' +
+              '<option value="">Keep current status</option>' +
+              '<option value="Open">Open</option>' +
+              '<option value="Pending">Pending</option>' +
+              '<option value="Resolved">Resolved</option>' +
+            '</select>' +
+          '</div>' +
+          '<button type="button" onclick="addResponse(' + index + ')" style="background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">Add Response</button>' +
+        '</div>';
+
+      // Load doctors for response dropdown
+      loadDoctorsForResponse();
+      
+      document.getElementById("encounter-modal").style.display = "block";
+    }
+
+    function addResponse(encounterIndex) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const doctor = document.getElementById("response-doctor").value;
+      const message = document.getElementById("response-message").value;
+      const status = document.getElementById("response-status").value;
+
+      if (!doctor || !message.trim()) {
+        alert("Please select a doctor and enter a response message.");
+        return;
+      }
+
+      const patients = getPatientsData();
+      const patientIndex = patients.findIndex(p => p.id === patientId);
+      const encounter = patients[patientIndex].encounters[encounterIndex];
+
+      if (!encounter.responses) {
+        encounter.responses = [];
+      }
+
+      const newResponse = {
+        id: Date.now(),
+        doctor: doctor,
+        message: message.trim(),
+        date: new Date().toLocaleDateString(),
+        timestamp: new Date().toISOString()
+      };
+
+      encounter.responses.push(newResponse);
+      
+      if (status) {
+        encounter.status = status;
+      }
+
+      savePatientsData(patients);
+
+      // Clear form
+      document.getElementById("response-doctor").value = "";
+      document.getElementById("response-message").value = "";
+      document.getElementById("response-status").value = "";
+
+      // Refresh modal content
+      viewEncounter(encounterIndex);
+      
+      // Dispatch sync event
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: { patientId, action: 'encounterResponseAdded', data: newResponse }
+      }));
+    }
+
+    function editEncounter(index) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const patients = getPatientsData();
+      const patient = patients.find(p => p.id === patientId);
+      const encounter = patient.encounters[index];
+
+      const newDate = prompt("Enter new date:", encounter.date);
+      if (newDate === null) return;
+
+      const newReason = prompt("Enter new reason:", encounter.reason);
+      if (newReason === null) return;
+
+      const newDoctor = prompt("Enter assigned doctor:", encounter.assignedDoctor || "");
+      if (newDoctor === null) return;
+
+      const newMessage = prompt("Enter new message:", encounter.message);
+      if (newMessage === null) return;
+
+      const newStatus = prompt("Enter status (Open/Pending/Resolved):", encounter.status || "Open");
+      if (newStatus === null) return;
+
+      encounter.date = newDate;
+      encounter.reason = newReason;
+      encounter.assignedDoctor = newDoctor;
+      encounter.message = newMessage;
+      encounter.status = newStatus;
+
+      savePatientsData(patients);
+      displayEncounters(patient.encounters);
+      
+      // Dispatch sync event
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: { patientId, action: 'encounterUpdated', data: encounter }
+      }));
+    }
+
+    function deleteEncounter(index) {
+      if (!confirm("Are you sure you want to delete this encounter?")) return;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      const patients = getPatientsData();
+      const patientIndex = patients.findIndex(p => p.id === patientId);
+      
+      patients[patientIndex].encounters.splice(index, 1);
+      savePatientsData(patients);
+      
+      displayEncounters(patients[patientIndex].encounters);
+      
+      // Dispatch sync event
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: { patientId, action: 'encounterDeleted', data: { index } }
+      }));
+    }
+
+    function closeEncounterModal() {
+      document.getElementById("encounter-modal").style.display = "none";
+    }
+
+    function loadDoctors() {
+      console.log("Loading doctors...");
+      let doctors;
+      if (typeof getDataKey === 'undefined') {
+        doctors = JSON.parse(localStorage.getItem("doctors") || "[]");
+      } else {
+        doctors = JSON.parse(localStorage.getItem(getDataKey("doctors")) || "[]");
+      }
+      
+      console.log("Doctors loaded:", doctors.length);
+      
+      const select = document.getElementById("encounter-assigned-doctor");
+      if (!select) {
+        console.error("encounter-assigned-doctor select element not found");
+        return;
+      }
+      
+      select.innerHTML = '<option value="">Select a doctor...</option>';
+      doctors.forEach(doctor => {
+        const option = document.createElement("option");
+        option.value = doctor.name;
+        option.textContent = doctor.name;
+        select.appendChild(option);
+      });
+      console.log("Doctors loaded successfully");
+    }
+
+    function loadDoctorsForResponse() {
+      let doctors;
+      if (typeof getDataKey === 'undefined') {
+        doctors = JSON.parse(localStorage.getItem("doctors") || "[]");
+      } else {
+        doctors = JSON.parse(localStorage.getItem(getDataKey("doctors")) || "[]");
+      }
+      
+      const select = document.getElementById("response-doctor");
+      
+      select.innerHTML = '<option value="">Select a doctor...</option>';
+      doctors.forEach(doctor => {
+        const option = document.createElement("option");
+        option.value = doctor.name;
+        option.textContent = doctor.name;
+        select.appendChild(option);
+      });
+    }
+
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById("encounter-modal");
+      if (event.target === modal) {
+        modal.style.display = "none";
+      }
+    }
+  </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+

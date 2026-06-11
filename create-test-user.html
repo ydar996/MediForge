@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create Test User</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .form-group { margin: 10px 0; }
+        label { display: block; margin-bottom: 5px; }
+        input { padding: 8px; width: 300px; }
+        button { padding: 10px 20px; background: #007bff; color: white; border: none; cursor: pointer; }
+        .result { margin: 20px 0; padding: 10px; border-radius: 5px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Create Test User</h1>
+    
+    <div class="form-group">
+        <label>Username:</label>
+        <input type="text" id="username" value="ydar2" />
+    </div>
+    
+    <div class="form-group">
+        <label>Email:</label>
+        <input type="text" id="email" value="ydar2@mecureclinics.com" />
+    </div>
+    
+    <div class="form-group">
+        <label>Password:</label>
+        <input type="password" id="password" value="password123" />
+    </div>
+    
+    <div class="form-group">
+        <label>Organization:</label>
+        <input type="text" id="organization" value="Mecure Clinics" />
+    </div>
+    
+    <button onclick="createUser()">Create User</button>
+    
+    <div id="result"></div>
+    
+    <script>
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+        
+        async function createUser() {
+            const username = document.getElementById('username').value;
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            const organization = document.getElementById('organization').value;
+            
+            try {
+                // Hash the password
+                const hashedPassword = await hashPassword(password);
+                
+                // Create user object
+                const userData = {
+                    username: username,
+                    email: email,
+                    password: hashedPassword,
+                    passwordType: 'sha256',
+                    firstName: 'Test',
+                    lastName: 'User',
+                    role: 'Doctor',
+                    organization: organization,
+                    organizationId: '576522cc-e769-4fb4-9487-3d150857d970',
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Get existing users
+                const existingUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                // Add new user
+                existingUsers.push(userData);
+                localStorage.setItem('users', JSON.stringify(existingUsers));
+                
+                // Also create organizations entry
+                const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                organizations[organization] = {
+                    id: '576522cc-e769-4fb4-9487-3d150857d970',
+                    name: organization,
+                    addressLine1: '123 Medical Street',
+                    city: 'Lagos',
+                    country: 'Nigeria',
+                    state: 'Lagos',
+                    phone: '+234-123-456-7890'
+                };
+                localStorage.setItem('organizations', JSON.stringify(organizations));
+                
+                document.getElementById('result').innerHTML = `
+                    <div class="result success">
+                        <strong>✅ User Created Successfully!</strong><br>
+                        Username: ${username}<br>
+                        Email: ${email}<br>
+                        Organization: ${organization}<br>
+                        Password: ${password}<br><br>
+                        <strong>You can now login with these credentials.</strong>
+                    </div>
+                `;
+                
+                console.log('✅ User created:', userData);
+                
+            } catch (error) {
+                document.getElementById('result').innerHTML = `
+                    <div class="result error">
+                        <strong>❌ Error:</strong> ${error.message}
+                    </div>
+                `;
+            }
+        }
+    </script>
+</body>
+</html>
+
+
+

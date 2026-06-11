@@ -1,0 +1,458 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unlock All Locked Accounts - Platform Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #008753; }
+    .section {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+    }
+    button {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #006b42; }
+    button.danger {
+      background: #dc3545;
+    }
+    button.danger:hover {
+      background: #c82333;
+    }
+    .error { color: #dc3545; }
+    .success { color: #28a745; }
+    .info { color: #17a2b8; }
+    .warning { color: #ffc107; }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #008753;
+      color: white;
+    }
+    tr:hover {
+      background: #f5f5f5;
+    }
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status-locked {
+      background: #dc3545;
+      color: white;
+    }
+    .status-unlocked {
+      background: #28a745;
+      color: white;
+    }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #008753;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔓 Unlock All Locked Accounts</h1>
+    <p class="info">This tool helps restore access for users who may have been locked out due to recent app updates.</p>
+    
+    <div class="section">
+      <h2>Step 1: Scan for Locked Accounts</h2>
+      <button onclick="scanAllLocks()">🔍 Scan for All Locked Accounts</button>
+      <div id="scan-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 2: Quick Fix for MisturaM</h2>
+      <button onclick="unlockMisturaM()">🔓 Unlock MisturaM</button>
+      <div id="misturam-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 3: Unlock All Found Accounts</h2>
+      <button onclick="unlockAllFound()" class="danger">🔓 Unlock All Found Accounts</button>
+      <p class="warning">⚠️ This will unlock ALL accounts found in the scan above. Use with caution.</p>
+      <div id="unlock-all-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 4: Clear All localStorage Locks (Admin Browser Only)</h2>
+      <button onclick="clearAllLocalStorageLocks()" class="danger">🗑️ Clear All localStorage Locks</button>
+      <p class="info">
+        <strong>ℹ️ Important:</strong> This only clears localStorage on <strong>YOUR browser</strong> (the admin device), 
+        <strong>NOT on user devices</strong>.
+      </p>
+      <p class="success">
+        <strong>✅ You don't need this for users!</strong> When you unlock accounts in Supabase (Step 3), 
+        users' devices will automatically clear their localStorage locks when they try to log in. 
+        The rate limiter checks Supabase first and syncs automatically.
+      </p>
+      <p class="warning">
+        <strong>Only use this if:</strong> You're testing on your own device, or a user reports they're still 
+        locked after Supabase unlock (rare edge case).
+      </p>
+      <div id="localstorage-results"></div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/account-management.js"></script>
+  <script src="js/rate-limiter.js"></script>
+
+  <script>
+    let foundLocks = [];
+
+    async function scanAllLocks() {
+      const resultsDiv = document.getElementById('scan-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Scanning for locked accounts...</p>';
+      
+      let html = '<h3>Scan Results:</h3>';
+      
+      // 1. Check Supabase
+      html += '<h4>1. Supabase Database Locks:</h4>';
+      try {
+        if (typeof window.getLockedAccounts === 'function') {
+          const lockedAccounts = await window.getLockedAccounts();
+          
+          if (lockedAccounts && lockedAccounts.length > 0) {
+            html += `<p class="error">❌ Found ${lockedAccounts.length} locked account(s) in Supabase:</p>`;
+            html += '<table><tr><th>Identifier</th><th>Attempts</th><th>Locked At</th><th>Status</th></tr>';
+            
+            lockedAccounts.forEach(acc => {
+              foundLocks.push({
+                identifier: acc.identifier,
+                source: 'supabase',
+                attempts: acc.attempt_count,
+                lockedAt: acc.locked_at
+              });
+              
+              html += `<tr>
+                <td><strong>${acc.identifier}</strong></td>
+                <td>${acc.attempt_count || 'N/A'}</td>
+                <td>${acc.locked_at ? new Date(acc.locked_at).toLocaleString() : 'N/A'}</td>
+                <td><span class="status-badge status-locked">Locked</span></td>
+              </tr>`;
+            });
+            html += '</table>';
+          } else {
+            html += '<p class="success">✅ No locked accounts found in Supabase</p>';
+          }
+        } else {
+          html += '<p class="error">❌ getLockedAccounts function not available</p>';
+        }
+      } catch (error) {
+        html += `<p class="error">❌ Error checking Supabase: ${error.message}</p>`;
+      }
+      
+      // 2. Check localStorage
+      html += '<h4>2. localStorage Locks:</h4>';
+      const localStorageLocks = [];
+      
+      // Scan all localStorage keys for rate limit locks
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.startsWith('rate_limit_lockout_login_')) {
+          const identifier = key.replace('rate_limit_lockout_login_', '');
+          const lockData = localStorage.getItem(key);
+          
+          localStorageLocks.push({
+            identifier: identifier,
+            key: key,
+            data: lockData
+          });
+          
+          // Check if already in foundLocks
+          if (!foundLocks.find(l => l.identifier === identifier)) {
+            foundLocks.push({
+              identifier: identifier,
+              source: 'localStorage',
+              key: key
+            });
+          }
+        }
+      }
+      
+      if (localStorageLocks.length > 0) {
+        html += `<p class="error">❌ Found ${localStorageLocks.length} lock(s) in localStorage:</p>`;
+        html += '<table><tr><th>Identifier</th><th>Status</th></tr>';
+        localStorageLocks.forEach(lock => {
+          html += `<tr>
+            <td><strong>${lock.identifier}</strong></td>
+            <td><span class="status-badge status-locked">Locked (localStorage)</span></td>
+          </tr>`;
+        });
+        html += '</table>';
+      } else {
+        html += '<p class="success">✅ No locks found in localStorage</p>';
+      }
+      
+      // 3. Summary
+      html += '<h4>3. Summary:</h4>';
+      if (foundLocks.length > 0) {
+        html += `<p class="warning">⚠️ Found <strong>${foundLocks.length}</strong> potentially locked account(s):</p>`;
+        html += '<ul>';
+        const uniqueIdentifiers = [...new Set(foundLocks.map(l => l.identifier))];
+        uniqueIdentifiers.forEach(id => {
+          const sources = foundLocks.filter(l => l.identifier === id).map(l => l.source).join(', ');
+          html += `<li><strong>${id}</strong> - Locked in: ${sources}</li>`;
+        });
+        html += '</ul>';
+      } else {
+        html += '<p class="success">✅ No locked accounts found!</p>';
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function unlockMisturaM() {
+      const resultsDiv = document.getElementById('misturam-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Unlocking MisturaM...</p>';
+      
+      const variations = ['MisturaM', 'MisturaM@mediforge.app', 'misturam', 'misturam@mediforge.app'];
+      let html = '<h3>MisturaM Unlock Results:</h3>';
+      let successCount = 0;
+      
+      // Unlock via Supabase
+      html += '<h4>Supabase Unlock:</h4>';
+      for (const variation of variations) {
+        try {
+          if (typeof window.unlockAccount === 'function') {
+            const result = await window.unlockAccount(variation, 'Platform Admin', 'Unlocked via admin tool - MisturaM');
+            if (result.success) {
+              html += `<p class="success">✅ Unlocked "${variation}" via Supabase</p>`;
+              successCount++;
+            } else {
+              html += `<p class="info">ℹ️ "${variation}": ${result.error || 'Not found in Supabase'}</p>`;
+            }
+          }
+        } catch (error) {
+          html += `<p class="error">❌ Error unlocking "${variation}": ${error.message}</p>`;
+        }
+      }
+      
+      // Clear localStorage
+      html += '<h4>localStorage Cleanup:</h4>';
+      let clearedCount = 0;
+      for (const variation of variations) {
+        const lockoutKey = `rate_limit_lockout_login_${variation}`;
+        const storageKey = `rate_limit_login_${variation}`;
+        
+        if (localStorage.getItem(lockoutKey) || localStorage.getItem(storageKey)) {
+          localStorage.removeItem(lockoutKey);
+          localStorage.removeItem(storageKey);
+          clearedCount++;
+        }
+        
+        // Use rate limiter clear if available
+        if (typeof window.rateLimiter !== 'undefined' && window.rateLimiter && window.rateLimiter.clearLocalStorageLockout) {
+          try {
+            window.rateLimiter.clearLocalStorageLockout('login', variation);
+          } catch (e) {
+            // Ignore errors
+          }
+        }
+      }
+      
+      if (clearedCount > 0) {
+        html += `<p class="success">✅ Cleared ${clearedCount} localStorage lock(s)</p>`;
+        successCount++;
+      } else {
+        html += '<p class="info">ℹ️ No localStorage locks found</p>';
+      }
+      
+      if (successCount > 0) {
+        html += '<p class="success"><strong>✅ MisturaM should now be able to log in!</strong></p>';
+      } else {
+        html += '<p class="warning">⚠️ No locks were found or cleared. MisturaM may not have been locked.</p>';
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function unlockAllFound() {
+      if (foundLocks.length === 0) {
+        alert('Please run the scan first to find locked accounts.');
+        return;
+      }
+      
+      if (!confirm(`Are you sure you want to unlock ${foundLocks.length} account(s)?`)) {
+        return;
+      }
+      
+      const resultsDiv = document.getElementById('unlock-all-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Unlocking all accounts...</p>';
+      
+      const uniqueIdentifiers = [...new Set(foundLocks.map(l => l.identifier))];
+      let html = '<h3>Unlock All Results:</h3>';
+      let successCount = 0;
+      let failCount = 0;
+      
+      html += `<p>Attempting to unlock ${uniqueIdentifiers.length} account(s)...</p>`;
+      html += '<table><tr><th>Identifier</th><th>Result</th></tr>';
+      
+      for (const identifier of uniqueIdentifiers) {
+        try {
+          if (typeof window.unlockAccount === 'function') {
+            const result = await window.unlockAccount(identifier, 'Platform Admin', 'Bulk unlock - recent app update fix');
+            if (result.success) {
+              html += `<tr><td><strong>${identifier}</strong></td><td><span class="success">✅ Unlocked</span></td></tr>`;
+              successCount++;
+            } else {
+              html += `<tr><td><strong>${identifier}</strong></td><td><span class="info">ℹ️ ${result.error || 'Not found'}</span></td></tr>`;
+            }
+          }
+        } catch (error) {
+          html += `<tr><td><strong>${identifier}</strong></td><td><span class="error">❌ ${error.message}</span></td></tr>`;
+          failCount++;
+        }
+      }
+      
+      html += '</table>';
+      html += `<p class="success">✅ Successfully unlocked: ${successCount}</p>`;
+      if (failCount > 0) {
+        html += `<p class="error">❌ Failed: ${failCount}</p>`;
+      }
+      
+      html += '<p class="info">ℹ️ Now clearing localStorage locks...</p>';
+      
+      // Clear localStorage for all found identifiers (with all variations)
+      let clearedCount = 0;
+      for (const identifier of uniqueIdentifiers) {
+        const variations = [identifier];
+        if (identifier.includes('@')) {
+          variations.push(identifier.split('@')[0]);
+        } else {
+          variations.push(`${identifier}@mediforge.app`);
+        }
+        
+        // Also add lowercase variations
+        variations.forEach(v => {
+          if (v.toLowerCase() !== v) variations.push(v.toLowerCase());
+        });
+        
+        for (const variation of variations) {
+          const lockoutKey = `rate_limit_lockout_login_${variation}`;
+          const storageKey = `rate_limit_login_${variation}`;
+          
+          if (localStorage.getItem(lockoutKey) || localStorage.getItem(storageKey)) {
+            localStorage.removeItem(lockoutKey);
+            localStorage.removeItem(storageKey);
+            clearedCount++;
+          }
+          
+          // Use rate limiter's clearAllVariations if available
+          if (typeof window.rateLimiter !== 'undefined' && window.rateLimiter) {
+            try {
+              if (window.rateLimiter.clearAllVariations) {
+                window.rateLimiter.clearAllVariations('login', variation);
+              } else if (window.rateLimiter.clearLocalStorageLockout) {
+                window.rateLimiter.clearLocalStorageLockout('login', variation);
+              }
+            } catch (e) {
+              // Ignore
+            }
+          }
+        }
+      }
+      
+      html += `<p class="success">✅ Cleared ${clearedCount} localStorage lock(s)</p>`;
+      html += '<p class="success"><strong>✅ All accounts should now be unlocked!</strong></p>';
+      
+      resultsDiv.innerHTML = html;
+      
+      // Refresh scan
+      setTimeout(scanAllLocks, 2000);
+    }
+
+    function clearAllLocalStorageLocks() {
+      if (!confirm('Are you sure you want to clear ALL localStorage rate limit locks? This affects all users.')) {
+        return;
+      }
+      
+      const resultsDiv = document.getElementById('localstorage-results');
+      resultsDiv.innerHTML = '<p class="info">Clearing all localStorage locks...</p>';
+      
+      let clearedCount = 0;
+      const keysToRemove = [];
+      
+      // Find all rate limit keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.startsWith('rate_limit_lockout_') || key.startsWith('rate_limit_'))) {
+          keysToRemove.push(key);
+        }
+      }
+      
+      // Remove them
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+        clearedCount++;
+      });
+      
+      let html = '<h3>localStorage Cleanup Results:</h3>';
+      html += `<p class="success">✅ Cleared ${clearedCount} localStorage key(s)</p>`;
+      html += '<p class="info">ℹ️ All rate limit locks have been removed from localStorage.</p>';
+      html += '<p class="warning">⚠️ Note: This only affects this browser. Users on other devices may still have locks.</p>';
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    // Auto-scan on load
+    window.addEventListener('load', () => {
+      setTimeout(scanAllLocks, 1000);
+    });
+  </script>
+</body>
+</html>
+

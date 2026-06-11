@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>?? Force Cache Update</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .error { color: #d32f2f; }
+        .success { color: #388e3c; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Force Cache Update & Deployment Verification</h1>
+        <p><strong>Purpose:</strong> Ensure all devices get the latest login fixes by forcing cache invalidation</p>
+        
+        <div class="section">
+            <h3>?? Clear All Caches</h3>
+            <button onclick="clearAllCaches()">Clear Browser Cache</button>
+            <button onclick="clearServiceWorker()">Clear Service Worker</button>
+            <button onclick="clearLocalStorage()">Clear Local Storage</button>
+            <button onclick="clearAll()">Clear Everything</button>
+        </div>
+
+        <div class="section">
+            <h3>?? Check Current Files</h3>
+            <button onclick="checkLoginPage()">Check Login Page</button>
+            <button onclick="checkSupabaseClient()">Check Supabase Client</button>
+            <button onclick="checkLoginHandler()">Check Login Handler</button>
+            <button onclick="checkServiceWorker()">Check Service Worker</button>
+        </div>
+
+        <div class="section">
+            <h3>?? Test Login System</h3>
+            <button onclick="testSupabaseConnection()">Test Supabase Connection</button>
+            <button onclick="testLoginFlow()">Test Login Flow</button>
+            <button onclick="checkCurrentUser()">Check Current User</button>
+        </div>
+
+        <div class="section">
+            <h3>?? Debug Information</h3>
+            <button onclick="showDebugInfo()">Show Debug Info</button>
+            <button onclick="checkNetworkStatus()">Check Network Status</button>
+            <button onclick="testCacheHeaders()">Test Cache Headers</button>
+        </div>
+
+        <div class="section">
+            <h3>?? Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    
+  </script>
+    
+  
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        async function initSupabase() {
+            if (!supabase) {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    log('? Supabase client initialized', 'success');
+                    return true;
+                } catch (error) {
+                    log('? Error initializing Supabase: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function clearAllCaches() {
+            log('?? Clearing browser cache...');
+            try {
+                if ('caches' in window) {
+                    const cacheNames = await caches.keys();
+                    log(`?? Found ${cacheNames.length} caches to clear`);
+                    
+                    for (const cacheName of cacheNames) {
+                        await caches.delete(cacheName);
+                        log(`??? Deleted cache: ${cacheName}`, 'success');
+                    }
+                    
+                    log('? All browser caches cleared', 'success');
+                } else {
+                    log('?? Cache API not supported', 'warning');
+                }
+            } catch (error) {
+                log(`? Error clearing caches: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearServiceWorker() {
+            log('?? Clearing service worker...');
+            try {
+                if ('serviceWorker' in navigator) {
+                    const registrations = await navigator.serviceWorker.getRegistrations();
+                    log(`?? Found ${registrations.length} service workers`);
+                    
+                    for (const registration of registrations) {
+                        await registration.unregister();
+                        log(`??? Unregistered service worker: ${registration.scope}`, 'success');
+                    }
+                    
+                    // Force reload to clear service worker cache
+                    log('?? Reloading page to clear service worker cache...', 'warning');
+                    setTimeout(() => window.location.reload(true), 2000);
+                } else {
+                    log('?? Service Worker not supported', 'warning');
+                }
+            } catch (error) {
+                log(`? Error clearing service worker: ${error.message}`, 'error');
+            }
+        }
+
+        function clearLocalStorage() {
+            log('?? Clearing local storage...');
+            try {
+                const keys = Object.keys(localStorage);
+                log(`?? Found ${keys.length} items in localStorage`);
+                
+                localStorage.clear();
+                log('? Local storage cleared', 'success');
+            } catch (error) {
+                log(`? Error clearing localStorage: ${error.message}`, 'error');
+            }
+        }
+
+        async function clearAll() {
+            log('?? Clearing everything...');
+            await clearAllCaches();
+            clearLocalStorage();
+            await clearServiceWorker();
+        }
+
+        async function checkLoginPage() {
+            log('?? Checking login page...');
+            try {
+                const response = await fetch('/login.html?v=' + Date.now());
+                const text = await response.text();
+                
+                if (text.includes('ydar105@eko.com')) {
+                    log('? Login page has correct email: ydar105@eko.com', 'success');
+                } else {
+                    log('? Login page still has old email', 'error');
+                }
+                
+                if (text.includes('v=3')) {
+                    log('? Login page has updated cache version v=3', 'success');
+                } else {
+                    log('? Login page has old cache version', 'error');
+                }
+                
+                log(`?? Response status: ${response.status}`);
+                log(`?? Cache headers: ${response.headers.get('cache-control') || 'none'}`);
+                
+            } catch (error) {
+                log(`? Error checking login page: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkSupabaseClient() {
+            log('?? Checking Supabase client...');
+            try {
+                const response = await fetch('/js/supabase-client.js?v=202510220113100113101310?v=' + Date.now());
+                const text = await response.text();
+                
+                if (text.includes('SUPABASE_URL')) {
+                    log('? Supabase client file loaded', 'success');
+                } else {
+                    log('? Supabase client file not found', 'error');
+                }
+                
+                log(`?? Response status: ${response.status}`);
+                
+            } catch (error) {
+                log(`? Error checking Supabase client: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkLoginHandler() {
+            log('?? Checking login handler...');
+            try {
+                const response = await fetch('/js/login-handler.js?v=' + Date.now());
+                const text = await response.text();
+                
+                if (text.includes('supabaseLogin')) {
+                    log('? Login handler file loaded', 'success');
+                } else {
+                    log('? Login handler file not found', 'error');
+                }
+                
+                log(`?? Response status: ${response.status}`);
+                
+            } catch (error) {
+                log(`? Error checking login handler: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkServiceWorker() {
+            log('?? Checking service worker...');
+            try {
+                const response = await fetch('/service-worker.js?v=' + Date.now());
+                const text = await response.text();
+                
+                if (text.includes('ehr-cache-v313')) {
+                    log('? Service worker has updated cache version v313', 'success');
+                } else {
+                    log('? Service worker has old cache version', 'error');
+                }
+                
+                log(`?? Response status: ${response.status}`);
+                
+            } catch (error) {
+                log(`? Error checking service worker: ${error.message}`, 'error');
+            }
+        }
+
+        async function testSupabaseConnection() {
+            if (!await initSupabase()) return;
+
+            log('?? Testing Supabase connection...');
+            try {
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    log(`? Supabase connection failed: ${error.message}`, 'error');
+                } else {
+                    log('? Supabase connection successful', 'success');
+                }
+            } catch (e) {
+                log(`? Supabase connection exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function testLoginFlow() {
+            if (!await initSupabase()) return;
+
+            log('?? Testing login flow...');
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'ydar105@eko.com',
+                    password: 'OlowoPoroku108%'
+                });
+
+                if (error) {
+                    log(`? Login test failed: ${error.message}`, 'error');
+                } else {
+                    log('? Login test successful', 'success');
+                    await supabase.auth.signOut();
+                    log('?? Signed out');
+                }
+            } catch (e) {
+                log(`? Login test exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkCurrentUser() {
+            if (!await initSupabase()) return;
+
+            log('?? Checking current user...');
+            try {
+                const { data: { user }, error } = await supabase.auth.getUser();
+                
+                if (error) {
+                    log(`? Error getting user: ${error.message}`, 'error');
+                } else if (user) {
+                    log(`? Current user: ${user.email}`, 'success');
+                } else {
+                    log('?? No user currently logged in', 'info');
+                }
+            } catch (e) {
+                log(`? Exception getting user: ${e.message}`, 'error');
+            }
+        }
+
+        function showDebugInfo() {
+            log('?? Debug Information:');
+            log(`?? User Agent: ${navigator.userAgent}`);
+            log(`?? Platform: ${navigator.platform}`);
+            log(`?? Language: ${navigator.language}`);
+            log(`?? Online: ${navigator.onLine}`);
+            log(`?? Cookie Enabled: ${navigator.cookieEnabled}`);
+            log(`?? Local Storage: ${typeof(Storage) !== "undefined" ? "Supported" : "Not Supported"}`);
+            log(`?? Service Worker: ${'serviceWorker' in navigator ? "Supported" : "Not Supported"}`);
+            log(`?? Cache API: ${'caches' in window ? "Supported" : "Not Supported"}`);
+        }
+
+        async function checkNetworkStatus() {
+            log('?? Checking network status...');
+            log(`?? Online: ${navigator.onLine}`);
+            log(`?? Connection Type: ${navigator.connection ? navigator.connection.effectiveType : 'Unknown'}`);
+            
+            try {
+                const response = await fetch('/login.html', { method: 'HEAD' });
+                log(`?? Network response: ${response.status} ${response.statusText}`);
+                log(`?? Cache control: ${response.headers.get('cache-control') || 'none'}`);
+            } catch (error) {
+                log(`? Network error: ${error.message}`, 'error');
+            }
+        }
+
+        async function testCacheHeaders() {
+            log('?? Testing cache headers...');
+            try {
+                const urls = ['/login.html', '/js/login-handler.js', '/js/supabase-client.js?v=202510220113100113101310'];
+                
+                for (const url of urls) {
+                    const response = await fetch(url, { method: 'HEAD' });
+                    log(`?? ${url}:`);
+                    log(`   Status: ${response.status}`);
+                    log(`   Cache-Control: ${response.headers.get('cache-control') || 'none'}`);
+                    log(`   ETag: ${response.headers.get('etag') || 'none'}`);
+                    log(`   Last-Modified: ${response.headers.get('last-modified') || 'none'}`);
+                }
+            } catch (error) {
+                log(`? Error testing cache headers: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('?? Cache update tool loaded and ready');
+            log('?? Use this tool to force cache invalidation on all devices');
+        });
+    </script>
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+
+
+
+

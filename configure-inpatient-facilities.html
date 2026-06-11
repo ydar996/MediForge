@@ -1,0 +1,898 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Configure In-Patient Facilities - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .rooms-list, .beds-list {
+      margin-top: 20px;
+    }
+    
+    .room-item, .bed-item {
+      background: var(--soft-white);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    
+    .room-item.inactive, .bed-item.inactive {
+      opacity: 0.6;
+      border-left-color: #ccc;
+    }
+    
+    .room-info, .bed-info {
+      flex: 1;
+    }
+    
+    .room-info h3, .bed-info h3 {
+      margin: 0 0 5px 0;
+      color: var(--primary-green);
+    }
+    
+    .room-info p, .bed-info p {
+      margin: 5px 0;
+      color: var(--charcoal);
+      font-size: 14px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    
+    .status-occupied {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .status-available {
+      background: #28a745;
+      color: white;
+    }
+    
+    .status-inactive {
+      background: #6c757d;
+      color: white;
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="window.location.href='dashboard'">← Back to Dashboard</button>
+    
+    <h1>🏨 Configure In-Patient Facilities</h1>
+    
+    <!-- Add Room Section -->
+    <div class="section">
+      <h2>Add New Room</h2>
+      <form id="room-form">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Room Name/Number *</label>
+            <input type="text" id="room-name" placeholder="e.g., Room 101, Ward A, ICU-1" required>
+          </div>
+          <div class="form-group">
+            <label>Room Type *</label>
+            <select id="room-type" required>
+              <option value="general">General Ward</option>
+              <option value="private">Private Room</option>
+              <option value="semi-private">Semi-Private Room</option>
+              <option value="ward">Ward (Multiple Beds)</option>
+              <option value="icu">Intensive Care Unit (ICU)</option>
+              <option value="isolation">Isolation Room</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Floor Number</label>
+            <input type="number" id="floor-number" placeholder="e.g., 1, 2, 3" min="0">
+          </div>
+          <div class="form-group">
+            <label>Capacity (Number of Beds) *</label>
+            <input type="number" id="room-capacity" placeholder="e.g., 1, 2, 4" min="1" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="room-notes" rows="2" placeholder="Optional notes about this room"></textarea>
+        </div>
+        <button type="submit">➕ Add Room</button>
+        <button type="button" class="btn-secondary" onclick="resetRoomForm()">Clear Form</button>
+      </form>
+    </div>
+    
+    <!-- Rooms List -->
+    <div class="section">
+      <h2>Existing Rooms</h2>
+      <div id="rooms-list" class="rooms-list">
+        <p>Loading rooms...</p>
+      </div>
+    </div>
+    
+    <!-- Add Bed Section (shown when a room is selected) -->
+    <div class="section" id="add-bed-section" style="display: none;">
+      <h2>Add Beds to Room: <span id="selected-room-name"></span></h2>
+      <form id="bed-form">
+        <input type="hidden" id="bed-room-id">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Bed Number/Identifier *</label>
+            <input type="text" id="bed-number" placeholder="e.g., 1, A, ICU-1" required>
+          </div>
+          <div class="form-group">
+            <label>Bed Type *</label>
+            <select id="bed-type" required>
+              <option value="standard">Standard Bed</option>
+              <option value="icu">ICU Bed</option>
+              <option value="isolation">Isolation Bed</option>
+              <option value="bariatric">Bariatric Bed</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Bed Name (Optional)</label>
+          <input type="text" id="bed-name" placeholder="e.g., Bed A, Primary Bed">
+        </div>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="bed-notes" rows="2" placeholder="Optional notes about this bed"></textarea>
+        </div>
+        <button type="submit">➕ Add Bed</button>
+        <button type="button" class="btn-secondary" onclick="resetBedForm()">Clear Form</button>
+        <button type="button" class="btn-secondary" onclick="closeBedSection()">Cancel</button>
+      </form>
+    </div>
+    
+    <!-- Beds List (shown when viewing a room's beds) -->
+    <div class="section" id="beds-section" style="display: none;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h2 style="margin: 0;">Beds in Room: <span id="beds-room-name"></span></h2>
+        <button onclick="addBedFromBedsSection()" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px; font-weight: 600;">
+          ➕ Add Bed to This Room
+        </button>
+      </div>
+      <button class="btn-secondary" onclick="closeBedsSection()">← Back to Rooms</button>
+      <div id="beds-list" class="beds-list">
+        <p>Loading beds...</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let organizationId = null;
+    let rooms = [];
+    let beds = [];
+    let selectedRoomId = null;
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        window.location.href = 'dashboard';
+        return;
+      }
+      
+      // Check if in-patient services are enabled
+      await checkInPatientServicesEnabled();
+      
+      // Load rooms and beds
+      await loadRooms();
+      await loadBeds();
+      
+      // Setup form handlers
+      document.getElementById('room-form').addEventListener('submit', handleAddRoom);
+      document.getElementById('bed-form').addEventListener('submit', handleAddBed);
+    });
+    
+    async function checkInPatientServicesEnabled() {
+      const enabled =
+        typeof window.isInPatientServicesEnabled === 'function'
+          ? await window.isInPatientServicesEnabled(organizationId)
+          : false;
+      if (!enabled) {
+        alert('In-Patient Services are not enabled for this organization. Please enable it from the dashboard first.');
+        window.location.href = 'dashboard';
+      }
+    }
+    
+    async function loadRooms() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .order('room_name', { ascending: true });
+          
+          if (error) throw error;
+          
+          rooms = data || [];
+          displayRooms();
+        } else {
+          // Fallback to localStorage (for development)
+          const stored = localStorage.getItem(`rooms_${organizationId}`);
+          rooms = stored ? JSON.parse(stored) : [];
+          displayRooms();
+        }
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+        document.getElementById('rooms-list').innerHTML = '<p style="color: red;">Error loading rooms. Please try again.</p>';
+      }
+    }
+    
+    async function loadBeds() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('beds')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .order('bed_number', { ascending: true });
+          
+          if (error) throw error;
+          
+          beds = data || [];
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`beds_${organizationId}`);
+          beds = stored ? JSON.parse(stored) : [];
+        }
+      } catch (error) {
+        console.error('Error loading beds:', error);
+      }
+    }
+    
+    function displayRooms() {
+      const list = document.getElementById('rooms-list');
+      if (rooms.length === 0) {
+        list.innerHTML = '<p>No rooms configured yet. Add a room above to get started.</p>';
+        return;
+      }
+      
+      list.innerHTML = rooms.map(room => {
+        const roomBeds = beds.filter(b => b.room_id === room.id);
+        const occupiedBeds = roomBeds.filter(b => b.is_occupied).length;
+        const availableBeds = roomBeds.filter(b => !b.is_occupied && b.is_active).length;
+        
+        return `
+          <div class="room-item ${room.is_active ? '' : 'inactive'}">
+            <div class="room-info">
+              <h3>${room.room_name} ${!room.is_active ? '<span class="status-badge status-inactive">Inactive</span>' : ''}</h3>
+              <p><strong>Type:</strong> ${room.room_type.charAt(0).toUpperCase() + room.room_type.slice(1)} | 
+                 <strong>Capacity:</strong> ${room.capacity} beds | 
+                 <strong>Floor:</strong> ${room.floor_number || 'N/A'}</p>
+              <p><strong>Beds:</strong> ${roomBeds.length} configured (${occupiedBeds} occupied, ${availableBeds} available)</p>
+              ${room.notes ? `<p><em>${room.notes}</em></p>` : ''}
+            </div>
+            <div>
+              <button onclick="viewRoomBeds('${room.id}')">View Beds</button>
+              <button onclick="addBedToRoom('${room.id}', '${room.room_name}')">Add Bed</button>
+              <button onclick="editRoom('${room.id}')" class="btn-secondary">Edit</button>
+              <button onclick="toggleRoomStatus('${room.id}', ${room.is_active})" class="btn-secondary">
+                ${room.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+              <button onclick="deleteRoom('${room.id}')" class="btn-danger">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function displayBeds(roomId) {
+      const list = document.getElementById('beds-list');
+      const roomBeds = beds.filter(b => b.room_id === roomId);
+      
+      if (roomBeds.length === 0) {
+        list.innerHTML = '<p>No beds configured for this room yet. Add a bed above to get started.</p>';
+        return;
+      }
+      
+      list.innerHTML = roomBeds.map(bed => {
+        return `
+          <div class="bed-item ${bed.is_active ? '' : 'inactive'}">
+            <div class="bed-info">
+              <h3>${bed.bed_name || bed.bed_number} ${!bed.is_active ? '<span class="status-badge status-inactive">Inactive</span>' : ''}</h3>
+              <p><strong>Bed Number:</strong> ${bed.bed_number} | 
+                 <strong>Type:</strong> ${bed.bed_type.charAt(0).toUpperCase() + bed.bed_type.slice(1)}</p>
+              <p><strong>Status:</strong> 
+                ${bed.is_occupied ? 
+                  `<span class="status-badge status-occupied">Occupied</span> (Patient: ${bed.current_patient_id || 'N/A'})` : 
+                  '<span class="status-badge status-available">Available</span>'
+                }</p>
+              ${bed.notes ? `<p><em>${bed.notes}</em></p>` : ''}
+            </div>
+            <div>
+              <button onclick="editBed('${bed.id}')" class="btn-secondary">Edit</button>
+              <button onclick="toggleBedStatus('${bed.id}', ${bed.is_active})" class="btn-secondary">
+                ${bed.is_active ? 'Deactivate' : 'Activate'}
+              </button>
+              <button onclick="deleteBed('${bed.id}')" class="btn-danger">Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function handleAddRoom(e) {
+      e.preventDefault();
+      
+      const roomData = {
+        organization_id: organizationId,
+        room_name: document.getElementById('room-name').value.trim(),
+        room_type: document.getElementById('room-type').value,
+        floor_number: document.getElementById('floor-number').value ? parseInt(document.getElementById('floor-number').value) : null,
+        capacity: parseInt(document.getElementById('room-capacity').value),
+        notes: document.getElementById('room-notes').value.trim() || null,
+        is_active: true
+      };
+      
+      try {
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('rooms')
+            .insert(roomData)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          rooms.push(data);
+          console.log('✅ Room saved to Supabase');
+        } else {
+          // Fallback to localStorage
+          const newRoom = { ...roomData, id: `room_${Date.now()}`, created_at: new Date().toISOString() };
+          rooms.push(newRoom);
+          localStorage.setItem(`rooms_${organizationId}`, JSON.stringify(rooms));
+          console.log('✅ Room saved to localStorage');
+        }
+        
+        // Auto-add bed services to configure-services (will be handled separately)
+        await syncBedServicesToPricing();
+        
+        displayRooms();
+        resetRoomForm();
+        alert('Room added successfully!');
+      } catch (error) {
+        console.error('Error adding room:', error);
+        alert('Error adding room: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function handleAddBed(e) {
+      e.preventDefault();
+      
+      // Get room_id from selectedRoomId or from hidden field (for form preservation)
+      const roomId = selectedRoomId || document.getElementById('bed-room-id').value;
+      
+      if (!roomId) {
+        alert('Error: Room not selected. Please select a room first using "Add Bed" or "View Beds".');
+        return;
+      }
+      
+      // Ensure selectedRoomId is set for consistency
+      if (!selectedRoomId) {
+        selectedRoomId = roomId;
+      }
+      
+      const bedData = {
+        room_id: roomId,
+        organization_id: organizationId,
+        bed_number: document.getElementById('bed-number').value.trim(),
+        bed_name: document.getElementById('bed-name').value.trim() || null,
+        bed_type: document.getElementById('bed-type').value,
+        notes: document.getElementById('bed-notes').value.trim() || null,
+        is_occupied: false,
+        is_active: true
+      };
+      
+      try {
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('beds')
+            .insert(bedData)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          beds.push(data);
+          console.log('✅ Bed saved to Supabase');
+        } else {
+          // Fallback to localStorage
+          const newBed = { ...bedData, id: `bed_${Date.now()}`, created_at: new Date().toISOString() };
+          beds.push(newBed);
+          localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+          console.log('✅ Bed saved to localStorage');
+        }
+        
+        // Auto-add bed services to configure-services
+        await syncBedServicesToPricing();
+        
+        // Refresh beds display but keep the form open for adding more beds to the same room
+        if (selectedRoomId) {
+          displayBeds(selectedRoomId);
+        }
+        
+        // Reset form fields but preserve selectedRoomId and room context
+        document.getElementById('bed-form').reset();
+        // Restore the room_id field so user can add more beds
+        if (selectedRoomId) {
+          document.getElementById('bed-room-id').value = selectedRoomId;
+          const room = rooms.find(r => r.id === selectedRoomId);
+          if (room) {
+            document.getElementById('selected-room-name').textContent = room.room_name;
+          }
+        }
+        
+        alert('Bed added successfully! You can add more beds to this room below.');
+      } catch (error) {
+        console.error('Error adding bed:', error);
+        alert('Error adding bed: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function addBedToRoom(roomId, roomName) {
+      selectedRoomId = roomId;
+      document.getElementById('bed-room-id').value = roomId;
+      document.getElementById('selected-room-name').textContent = roomName;
+      document.getElementById('add-bed-section').style.display = 'block';
+      document.getElementById('add-bed-section').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    function viewRoomBeds(roomId) {
+      selectedRoomId = roomId;
+      const room = rooms.find(r => r.id === roomId);
+      if (room) {
+        document.getElementById('beds-room-name').textContent = room.room_name;
+        document.getElementById('beds-section').style.display = 'block';
+        document.getElementById('add-bed-section').style.display = 'none';
+        displayBeds(roomId);
+        document.getElementById('beds-section').scrollIntoView({ behavior: 'smooth' });
+      }
+    }
+    
+    function addBedFromBedsSection() {
+      // When adding bed from beds section, use the current selectedRoomId
+      if (selectedRoomId) {
+        const room = rooms.find(r => r.id === selectedRoomId);
+        if (room) {
+          addBedToRoom(selectedRoomId, room.room_name);
+        }
+      }
+    }
+    
+    function closeBedSection() {
+      document.getElementById('add-bed-section').style.display = 'none';
+      resetBedForm();
+    }
+    
+    function closeBedsSection() {
+      document.getElementById('beds-section').style.display = 'none';
+      selectedRoomId = null;
+    }
+    
+    function resetRoomForm() {
+      document.getElementById('room-form').reset();
+    }
+    
+    function resetBedForm() {
+      document.getElementById('bed-form').reset();
+      // Don't clear selectedRoomId - user might want to add more beds to the same room
+      // Only clear it when explicitly canceling/closing the section
+    }
+    
+    async function syncBedServicesToPricing() {
+      // This function will be called to sync bed services to the pricing configuration
+      // It will be implemented to automatically add bed services when rooms/beds are configured
+      console.log('Syncing bed services to pricing configuration...');
+      // Implementation will be added in the next step
+    }
+    
+    // Edit, Delete, and Toggle functions
+    async function editRoom(roomId) {
+      const room = rooms.find(r => r.id === roomId);
+      if (!room) return;
+      
+      document.getElementById('room-name').value = room.room_name;
+      document.getElementById('room-type').value = room.room_type;
+      document.getElementById('floor-number').value = room.floor_number || '';
+      document.getElementById('room-capacity').value = room.capacity;
+      document.getElementById('room-notes').value = room.notes || '';
+      
+      // Change form to edit mode
+      const form = document.getElementById('room-form');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.textContent = '💾 Update Room';
+      submitBtn.onclick = async (e) => {
+        e.preventDefault();
+        await updateRoom(roomId);
+      };
+      
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    async function updateRoom(roomId) {
+      const roomData = {
+        room_name: document.getElementById('room-name').value.trim(),
+        room_type: document.getElementById('room-type').value,
+        floor_number: document.getElementById('floor-number').value ? parseInt(document.getElementById('floor-number').value) : null,
+        capacity: parseInt(document.getElementById('room-capacity').value),
+        notes: document.getElementById('room-notes').value.trim() || null
+      };
+      
+      try {
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('rooms')
+            .update(roomData)
+            .eq('id', roomId);
+          
+          if (error) throw error;
+        } else {
+          const index = rooms.findIndex(r => r.id === roomId);
+          if (index !== -1) {
+            rooms[index] = { ...rooms[index], ...roomData };
+            localStorage.setItem(`rooms_${organizationId}`, JSON.stringify(rooms));
+          }
+        }
+        
+        await loadRooms();
+        resetRoomForm();
+        const form = document.getElementById('room-form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.textContent = '➕ Add Room';
+        submitBtn.onclick = null;
+        form.onsubmit = handleAddRoom;
+        alert('Room updated successfully!');
+      } catch (error) {
+        console.error('Error updating room:', error);
+        alert('Error updating room: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function toggleRoomStatus(roomId, currentStatus) {
+      const newStatus = !currentStatus;
+      
+      try {
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('rooms')
+            .update({ is_active: newStatus })
+            .eq('id', roomId);
+          
+          if (error) throw error;
+        } else {
+          const index = rooms.findIndex(r => r.id === roomId);
+          if (index !== -1) {
+            rooms[index].is_active = newStatus;
+            localStorage.setItem(`rooms_${organizationId}`, JSON.stringify(rooms));
+          }
+        }
+        
+        await loadRooms();
+        alert(`Room ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      } catch (error) {
+        console.error('Error toggling room status:', error);
+        alert('Error updating room status: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function deleteRoom(roomId) {
+      if (!confirm('Are you sure you want to delete this room? All beds in this room will also be deleted.')) {
+        return;
+      }
+      
+      try {
+        // Delete beds first (if using Supabase, CASCADE will handle this)
+        if (window.supabaseClient) {
+          // Delete beds
+          await window.supabaseClient
+            .from('beds')
+            .delete()
+            .eq('room_id', roomId);
+          
+          // Delete room
+          const { error } = await window.supabaseClient
+            .from('rooms')
+            .delete()
+            .eq('id', roomId);
+          
+          if (error) throw error;
+        } else {
+          beds = beds.filter(b => b.room_id !== roomId);
+          rooms = rooms.filter(r => r.id !== roomId);
+          localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+          localStorage.setItem(`rooms_${organizationId}`, JSON.stringify(rooms));
+        }
+        
+        await loadRooms();
+        await loadBeds();
+        alert('Room deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting room:', error);
+        alert('Error deleting room: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function editBed(bedId) {
+      const bed = beds.find(b => b.id === bedId);
+      if (!bed) return;
+      
+      selectedRoomId = bed.room_id;
+      const room = rooms.find(r => r.id === bed.room_id);
+      
+      document.getElementById('bed-room-id').value = bed.room_id;
+      document.getElementById('selected-room-name').textContent = room ? room.room_name : 'Unknown Room';
+      document.getElementById('bed-number').value = bed.bed_number;
+      document.getElementById('bed-name').value = bed.bed_name || '';
+      document.getElementById('bed-type').value = bed.bed_type;
+      document.getElementById('bed-notes').value = bed.notes || '';
+      
+      document.getElementById('add-bed-section').style.display = 'block';
+      
+      // Change form to edit mode
+      const form = document.getElementById('bed-form');
+      const submitBtn = form.querySelector('button[type="submit"]');
+      submitBtn.textContent = '💾 Update Bed';
+      submitBtn.onclick = async (e) => {
+        e.preventDefault();
+        await updateBed(bedId);
+      };
+      
+      form.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    async function updateBed(bedId) {
+      const bedData = {
+        bed_number: document.getElementById('bed-number').value.trim(),
+        bed_name: document.getElementById('bed-name').value.trim() || null,
+        bed_type: document.getElementById('bed-type').value,
+        notes: document.getElementById('bed-notes').value.trim() || null
+      };
+      
+      try {
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('beds')
+            .update(bedData)
+            .eq('id', bedId);
+          
+          if (error) throw error;
+        } else {
+          const index = beds.findIndex(b => b.id === bedId);
+          if (index !== -1) {
+            beds[index] = { ...beds[index], ...bedData };
+            localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+          }
+        }
+        
+        await loadBeds();
+        displayBeds(selectedRoomId);
+        resetBedForm();
+        const form = document.getElementById('bed-form');
+        const submitBtn = form.querySelector('button[type="submit"]');
+        submitBtn.textContent = '➕ Add Bed';
+        submitBtn.onclick = null;
+        form.onsubmit = handleAddBed;
+        alert('Bed updated successfully!');
+      } catch (error) {
+        console.error('Error updating bed:', error);
+        alert('Error updating bed: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function toggleBedStatus(bedId, currentStatus) {
+      const newStatus = !currentStatus;
+      
+      try {
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('beds')
+            .update({ is_active: newStatus })
+            .eq('id', bedId);
+          
+          if (error) throw error;
+        } else {
+          const index = beds.findIndex(b => b.id === bedId);
+          if (index !== -1) {
+            beds[index].is_active = newStatus;
+            localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+          }
+        }
+        
+        await loadBeds();
+        if (selectedRoomId) {
+          displayBeds(selectedRoomId);
+        }
+        alert(`Bed ${newStatus ? 'activated' : 'deactivated'} successfully!`);
+      } catch (error) {
+        console.error('Error toggling bed status:', error);
+        alert('Error updating bed status: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function deleteBed(bedId) {
+      if (!confirm('Are you sure you want to delete this bed?')) {
+        return;
+      }
+      
+      try {
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('beds')
+            .delete()
+            .eq('id', bedId);
+          
+          if (error) throw error;
+        } else {
+          beds = beds.filter(b => b.id !== bedId);
+          localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+        }
+        
+        await loadBeds();
+        if (selectedRoomId) {
+          displayBeds(selectedRoomId);
+        }
+        alert('Bed deleted successfully!');
+      } catch (error) {
+        console.error('Error deleting bed:', error);
+        alert('Error deleting bed: ' + (error.message || 'Please try again.'));
+      }
+    }
+  </script>
+</body>
+</html>
+

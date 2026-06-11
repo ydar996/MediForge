@@ -1,0 +1,834 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Collect Payment - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=220">
+  <style>
+    .payment-container {
+      max-width: 800px;
+      margin: 20px auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+    }
+    .invoice-summary {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+      border-left: 4px solid #4CAF50;
+    }
+    .amount-display {
+      font-size: 48px;
+      font-weight: bold;
+      color: #4CAF50;
+      text-align: center;
+      margin: 30px 0;
+    }
+    .payment-methods {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 30px 0;
+    }
+    .payment-method-btn {
+      padding: 30px 20px;
+      font-size: 18px;
+      font-weight: 700;
+      border: 3px solid #333;
+      background: linear-gradient(135deg, #f5f5f5, #e0e0e0);
+      color: #333;
+      cursor: pointer;
+      border-radius: 12px;
+      transition: all 0.3s;
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    .payment-method-btn:hover {
+      border-color: #4CAF50;
+      background: linear-gradient(135deg, #e8f5e9, #c8e6c9);
+      color: #2e7d32;
+      transform: translateY(-3px);
+      box-shadow: 0 6px 12px rgba(76,175,80,0.3);
+    }
+    .payment-method-btn.selected {
+      border-color: #4CAF50;
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      box-shadow: 0 6px 16px rgba(76,175,80,0.4);
+      transform: translateY(-2px);
+    }
+    .payment-details {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      display: none;
+    }
+    .payment-details.active {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="payment-container">
+    <h1>&#128176; Collect Payment</h1>
+    
+    <div class="invoice-summary">
+      <h2 style="margin-top: 0;">Invoice Details</h2>
+      <p><strong>Invoice #:</strong> <span id="invoice-number"></span></p>
+      <p><strong>Patient:</strong> <span id="patient-name"></span></p>
+      <p><strong>Date:</strong> <span id="invoice-date"></span></p>
+      <p><strong>Status:</strong> <span id="invoice-status"></span></p>
+      
+      <div id="invoice-description" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px; border-left: 4px solid #4CAF50;">
+        <h3 style="margin-top: 0; color: #4CAF50; font-size: 16px;">What is this payment for?</h3>
+        <div id="services-list" style="margin-top: 10px; display: block; width: 100%;">
+          <!-- Services will be loaded here -->
+        </div>
+      </div>
+    </div>
+
+    <div class="amount-display" id="amount-display">
+      <!-- Amount will be loaded here -->
+    </div>
+
+    <h2>Select Payment Method</h2>
+    <div class="payment-methods">
+      <button class="payment-method-btn" data-method="cash" onclick="selectPaymentMethod('cash', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128176;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Cash</div>
+      </button>
+      <button class="payment-method-btn" data-method="mobile_money" onclick="selectPaymentMethod('mobile_money', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128241;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Mobile Money</div>
+      </button>
+      <button class="payment-method-btn" data-method="card" onclick="selectPaymentMethod('card', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128179;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Card</div>
+      </button>
+      <button class="payment-method-btn" data-method="bank_transfer" onclick="selectPaymentMethod('bank_transfer', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#127974;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Bank Transfer</div>
+      </button>
+      <button class="payment-method-btn" data-method="check" onclick="selectPaymentMethod('check', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128424;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Check/Cheque</div>
+      </button>
+    </div>
+
+    <!-- Payment Details Forms -->
+    <div id="cash-details" class="payment-details">
+      <h3>Cash Payment</h3>
+      <label>Amount Received:</label>
+      <input type="number" id="cash-amount" step="0.01" placeholder="Enter amount">
+      <div id="change-display" style="margin-top: 15px; font-size: 20px; color: #4CAF50;"></div>
+    </div>
+
+    <div id="mobile_money-details" class="payment-details">
+      <h3>Mobile Money Payment</h3>
+      <label>Mobile Money Provider:</label>
+      <select id="mobile-provider">
+        <option value="">Select Provider</option>
+        <option value="M-Pesa">M-Pesa (Kenya, Tanzania)</option>
+        <option value="MTN Mobile Money">MTN Mobile Money</option>
+        <option value="Airtel Money">Airtel Money</option>
+        <option value="Orange Money">Orange Money</option>
+        <option value="Vodacom M-Pesa">Vodacom M-Pesa (South Africa)</option>
+        <option value="Other">Other</option>
+      </select>
+      <label>Transaction Code/Reference:</label>
+      <input type="text" id="mobile-reference" placeholder="e.g., RB45FGH8KL">
+      <label>Phone Number:</label>
+      <input type="tel" id="mobile-phone" placeholder="e.g., +254712345678">
+    </div>
+
+    <div id="card-details" class="payment-details">
+      <h3>Card Payment</h3>
+      <label>Card Type:</label>
+      <select id="card-type">
+        <option value="Visa">Visa</option>
+        <option value="Mastercard">Mastercard</option>
+        <option value="American Express">American Express</option>
+        <option value="Other">Other</option>
+      </select>
+      <label>Last 4 Digits:</label>
+      <input type="text" id="card-last4" maxlength="4" placeholder="1234">
+      <label>Authorization Code:</label>
+      <input type="text" id="card-auth" placeholder="AUTH123456">
+    </div>
+
+    <div id="bank_transfer-details" class="payment-details">
+      <h3>Bank Transfer</h3>
+      <div id="bank-account-info" style="background: #e8f5e9; padding: 15px; border-radius: 6px; margin-bottom: 15px; display: none;">
+        <h4 style="margin: 0 0 10px 0; color: #2e7d32;">Organization Bank Account Details</h4>
+        <div id="bank-account-details-content"></div>
+        <p style="font-size: 12px; color: #666; margin-top: 10px;">
+          <a href="manage-bank-accounts" target="_blank" style="color: #4CAF50; text-decoration: underline;">Manage bank accounts</a>
+        </p>
+      </div>
+      <label>Bank Name:</label>
+      <input type="text" id="bank-name" placeholder="e.g., KCB Bank">
+      <label>Transfer Reference:</label>
+      <input type="text" id="bank-reference" placeholder="Transfer reference number">
+      <label>Transfer Date:</label>
+      <input type="date" id="bank-date">
+      <label>Proof of Payment (PDF or Image):</label>
+      <input type="file" id="bank-proof" accept=".pdf,.jpg,.jpeg,.png,.gif" onchange="handleBankProofUpload(event)">
+      <div id="bank-proof-preview" style="margin-top: 10px; display: none;">
+        <p style="color: green; font-weight: bold;">✓ Proof of payment uploaded</p>
+        <p id="bank-proof-filename" style="font-size: 12px; color: #666;"></p>
+        <button type="button" onclick="removeBankProof()" style="margin-top: 5px; padding: 5px 10px; background: #f44336; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">Remove</button>
+      </div>
+      <p style="font-size: 12px; color: #666; margin-top: 5px;">Upload a screenshot or PDF of the bank transfer confirmation for audit purposes.</p>
+    </div>
+
+    <div id="check-details" class="payment-details">
+      <h3>Check/Cheque Payment</h3>
+      <label>Check Number:</label>
+      <input type="text" id="check-number" placeholder="Check number">
+      <label>Bank Name:</label>
+      <input type="text" id="check-bank" placeholder="Bank name">
+      <label>Check Date:</label>
+      <input type="date" id="check-date">
+    </div>
+
+    <!-- Partial Payment Option -->
+    <div style="margin: 20px 0; padding: 15px; background: #fff3cd; border-radius: 6px;">
+      <label>
+        <input type="checkbox" id="partial-payment" onchange="togglePartialPayment()">
+        <strong>Partial Payment</strong> (Patient paying less than full amount)
+      </label>
+      <div id="partial-amount-section" style="display: none; margin-top: 10px;">
+        <label>Amount Paying Now:</label>
+        <input type="number" id="partial-amount" step="0.01" placeholder="Enter partial amount">
+      </div>
+    </div>
+
+    <label>Notes (Optional):</label>
+    <textarea id="payment-notes" rows="3" placeholder="Any additional notes about this payment..."></textarea>
+
+    <div style="display: flex; gap: 15px; margin-top: 30px;">
+      <button onclick="processPayment()" style="flex: 1; background: #4CAF50; color: white; font-size: 18px; padding: 18px; border: none; border-radius: 6px; cursor: pointer; min-height: 56px;">
+        &#10004; Process Payment
+      </button>
+      <button onclick="cancelPayment()" style="flex: 1; background: #f44336; color: white; font-size: 18px; padding: 18px; border: none; border-radius: 6px; cursor: pointer; min-height: 56px;">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113090113091309"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113090113091309"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=286"></script>
+  <script src="js/gl.js?v=1"></script>
+  <script src="js/pharmacy-manager.js"></script>
+  <script src="js/payments.js?v=1"></script>
+  <script src="js/cash-register.js"></script>
+  
+  <!-- Lab Order Billing -->
+  <script src="js/lab-order-billing.js"></script>
+  
+  <!-- Lab order serial formatting (short display format) -->
+  <script src="js/format-lab-order-serial.js"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
+  
+  <script>
+    const COLLECT_PAYMENT_DEBUG = !!window.__DEBUG_LOGS;
+    const debugLog = (...args) => {
+      if (COLLECT_PAYMENT_DEBUG) {
+        console.log(...args);
+      }
+    };
+
+    function showProcessingPaymentOverlay() {
+      const existing = document.getElementById('collect-payment-processing-overlay');
+      if (existing) return;
+      const overlay = document.createElement('div');
+      overlay.id = 'collect-payment-processing-overlay';
+      overlay.style.cssText = 'position:fixed;top:0;left:0;right:0;bottom:0;background:rgba(0,0,0,0.5);z-index:99999;display:flex;align-items:center;justify-content:center;flex-direction:column;';
+      overlay.innerHTML = '<div style="background:white;padding:24px 32px;border-radius:12px;box-shadow:0 4px 20px rgba(0,0,0,0.3);text-align:center;"><p style="margin:0 0 12px 0;font-size:18px;font-weight:600;color:#333;">Processing Payment...</p><div style="width:40px;height:40px;border:3px solid #e0e0e0;border-top-color:#4CAF50;border-radius:50%;animation:collect-payment-spin 0.8s linear infinite;"></div></div>';
+      const style = document.createElement('style');
+      style.textContent = '@keyframes collect-payment-spin{to{transform:rotate(360deg)}}';
+      document.head.appendChild(style);
+      document.body.appendChild(overlay);
+    }
+    function hideProcessingPaymentOverlay() {
+      const overlay = document.getElementById('collect-payment-processing-overlay');
+      if (overlay) overlay.remove();
+    }
+
+    // Lightweight helper to avoid loading full lab-results-manager on this page
+    window.getLabSupabaseClient = async function() {
+      if (typeof window.getSupabaseClient === 'function') {
+        return await window.getSupabaseClient();
+      }
+      if (window.supabaseClient) {
+        return window.supabaseClient;
+      }
+      if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        return window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      }
+      throw new Error('Supabase client not available');
+    };
+    
+    let currentInvoice = null;
+    let selectedMethod = null;
+    let bankProofData = null; // Store base64 proof data
+    let bankProofFileName = null;
+
+    window.addEventListener('load', async function() {
+      debugLog('🔧 TRACE: Collect payment page loaded - initializing');
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const invoiceId = urlParams.get('invoiceId');
+      
+      if (!invoiceId) {
+        alert('Invoice ID not provided');
+        window.location.href = 'billing-dashboard';
+        return;
+      }
+      
+      try {
+        if (typeof window.getInvoiceById !== 'function') {
+          alert('Billing system is not loaded. Please refresh the page and try again.');
+          window.location.href = 'billing-dashboard';
+          return;
+        }
+        
+        currentInvoice = await window.getInvoiceById(invoiceId);
+        if (!currentInvoice) {
+          alert('Invoice not found');
+          window.location.href = 'billing-dashboard';
+          return;
+        }
+        
+        displayInvoiceInfo();
+        console.log('🔧 TRACE: Invoice loaded successfully:', currentInvoice.invoiceNumber);
+      } catch (error) {
+        console.error('❌ Error loading invoice:', error);
+        alert('Error loading invoice. Please try again.');
+        window.location.href = 'billing-dashboard';
+      }
+    });
+
+    function displayInvoiceInfo() {
+      document.getElementById('invoice-number').textContent = currentInvoice.invoiceNumber;
+      document.getElementById('patient-name').textContent = currentInvoice.patientName;
+      document.getElementById('invoice-date').textContent = currentInvoice.date;
+      document.getElementById('invoice-status').textContent = currentInvoice.status.toUpperCase();
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
+      document.getElementById('amount-display').textContent = formatCurrencyFn(currentInvoice.amountDue, currentInvoice.currency);
+      
+      // Display invoice services/description
+      displayInvoiceDescription();
+      
+      // Set default amount for partial payment
+      document.getElementById('partial-amount').value = currentInvoice.amountDue;
+      
+      // Set cash amount
+      document.getElementById('cash-amount').value = currentInvoice.amountDue;
+      
+      // Set today's date for transfers
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('bank-date').value = today;
+      document.getElementById('check-date').value = today;
+    }
+    
+    function displayInvoiceDescription() {
+      const servicesList = document.getElementById('services-list');
+      if (!currentInvoice) {
+        servicesList.innerHTML = '<p style="color: #666; font-style: italic;">No invoice data</p>';
+        return;
+      }
+      let displayNotes = currentInvoice.notes || '';
+      // Format lab order number in notes (e.g. "Invoice for Lab Order LAB-MEC0021-1770948937929-bqui7nu" -> short format)
+      const urlParams = new URLSearchParams(window.location.search);
+      const labOrderId = urlParams.get('labOrderId');
+      if (displayNotes && labOrderId && displayNotes.includes('Invoice for Lab Order ')) {
+        const match = displayNotes.match(/Invoice for Lab Order (.+?)(?:\s|$)/);
+        if (match && match[1] && typeof window.formatLabOrderSerial === 'function') {
+          const longSerial = match[1].trim();
+          const shortSerial = window.formatLabOrderSerial(longSerial, labOrderId);
+          displayNotes = displayNotes.replace(longSerial, shortSerial);
+        }
+      }
+      if (!currentInvoice.services || currentInvoice.services.length === 0) {
+        servicesList.innerHTML = displayNotes
+          ? `<p style="margin-bottom: 10px;"><strong>${displayNotes}</strong></p><p style="color: #666; font-style: italic;">No services listed</p>`
+          : '<p style="color: #666; font-style: italic;">No services listed</p>';
+        return;
+      }
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
+      
+      const serviceParts = currentInvoice.services.map(service => {
+        const serviceName = service.name || service.serviceName || 'Unknown Service';
+        const quantity = service.quantity || 1;
+        const unitPrice = service.unitPrice || service.price || 0;
+        const total = service.total || (unitPrice * quantity);
+        return `${serviceName}${quantity > 1 ? ` (Qty: ${quantity})` : ''} - ${formatCurrencyFn(total, currentInvoice.currency)}`;
+      });
+      const servicesText = serviceParts.join(' | ');
+      
+      let html = '<div style="display: block; width: 100%;">';
+      if (displayNotes) {
+        html += `<p style="display: block; margin: 0 0 10px 0; font-weight: 600; line-height: 1.5;">${displayNotes}</p>`;
+      }
+      html += `<p style="display: block; margin: 0; line-height: 1.6; white-space: normal;">${servicesText}</p>`;
+      html += '</div>';
+      
+      servicesList.innerHTML = html;
+    }
+
+    function selectPaymentMethod(method, event) {
+      selectedMethod = method;
+      
+      // Update button styles
+      document.querySelectorAll('.payment-method-btn').forEach(btn => {
+        btn.classList.remove('selected');
+      });
+      
+      // Find and select the clicked button
+      if (event && event.target) {
+        const clickedBtn = event.target.closest('.payment-method-btn');
+        if (clickedBtn) {
+          clickedBtn.classList.add('selected');
+        }
+      }
+      
+      // Fallback: select by data-method attribute
+      const methodButton = document.querySelector(`.payment-method-btn[data-method="${method}"]`);
+      if (methodButton) {
+        methodButton.classList.add('selected');
+      }
+      
+      // Hide all detail sections
+      document.querySelectorAll('.payment-details').forEach(div => {
+        div.classList.remove('active');
+      });
+      
+      // Show selected detail section
+      const detailsSection = document.getElementById(method + '-details');
+      if (detailsSection) {
+        detailsSection.classList.add('active');
+      }
+    }
+
+    function togglePartialPayment() {
+      const section = document.getElementById('partial-amount-section');
+      const checkbox = document.getElementById('partial-payment');
+      section.style.display = checkbox.checked ? 'block' : 'none';
+    }
+    
+    // Handle bank proof upload
+    function handleBankProofUpload(event) {
+      const file = event.target.files[0];
+      if (!file) return;
+      
+      // Validate file type
+      const validTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png', 'image/gif'];
+      if (!validTypes.includes(file.type)) {
+        alert('Please upload a PDF or image file (JPG, PNG, GIF)');
+        event.target.value = '';
+        return;
+      }
+      
+      // Validate file size (max 10MB)
+      const maxSize = 10 * 1024 * 1024; // 10MB
+      if (file.size > maxSize) {
+        alert('File size must be less than 10MB');
+        event.target.value = '';
+        return;
+      }
+      
+      // Convert to base64
+      const reader = new FileReader();
+      reader.onload = function(e) {
+        bankProofData = e.target.result;
+        bankProofFileName = file.name;
+        
+        // Show preview
+        document.getElementById('bank-proof-preview').style.display = 'block';
+        document.getElementById('bank-proof-filename').textContent = `File: ${file.name} (${(file.size / 1024).toFixed(2)} KB)`;
+      };
+      reader.onerror = function() {
+        alert('Error reading file. Please try again.');
+        event.target.value = '';
+      };
+      reader.readAsDataURL(file);
+    }
+    
+    // Remove bank proof
+    function removeBankProof() {
+      bankProofData = null;
+      bankProofFileName = null;
+      document.getElementById('bank-proof').value = '';
+      document.getElementById('bank-proof-preview').style.display = 'none';
+      document.getElementById('bank-proof-filename').textContent = '';
+    }
+
+    // Calculate change for cash payments
+    window.addEventListener('load', function() {
+      const cashAmountInput = document.getElementById('cash-amount');
+      if (cashAmountInput) {
+        cashAmountInput.addEventListener('input', function() {
+          if (!currentInvoice) return;
+          
+          const received = parseFloat(this.value) || 0;
+          const due = currentInvoice.amountDue;
+          const change = received - due;
+          
+          const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
+          const changeDisplay = document.getElementById('change-display');
+          
+          if (received > 0) {
+            if (change > 0) {
+              changeDisplay.textContent = `Change: ${formatCurrencyFn(change, currentInvoice.currency)}`;
+              changeDisplay.style.color = '#4CAF50';
+            } else if (change < 0) {
+              changeDisplay.textContent = `Short: ${formatCurrencyFn(Math.abs(change), currentInvoice.currency)}`;
+              changeDisplay.style.color = '#f44336';
+            } else {
+              changeDisplay.innerHTML = 'Exact amount &#10004;';
+              changeDisplay.style.color = '#4CAF50';
+            }
+          } else {
+            changeDisplay.textContent = '';
+          }
+        });
+      }
+    });
+
+    async function processPayment() {
+      if (!selectedMethod) {
+        alert('Please select a payment method');
+        return;
+      }
+      
+      // Determine payment amount
+      const isPartial = document.getElementById('partial-payment').checked;
+      let paymentAmount = isPartial ? 
+        parseFloat(document.getElementById('partial-amount').value) : 
+        currentInvoice.amountDue;
+      
+      // Validate amount
+      if (!paymentAmount || paymentAmount <= 0) {
+        alert('Please enter a valid payment amount');
+        return;
+      }
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
+      
+      if (paymentAmount > currentInvoice.amountDue) {
+        if (!confirm(`Payment amount (${formatCurrencyFn(paymentAmount, currentInvoice.currency)}) exceeds balance due (${formatCurrencyFn(currentInvoice.amountDue, currentInvoice.currency)}). Continue?`)) {
+          return;
+        }
+      }
+      
+      // Get method details
+      let methodDetails = '';
+      switch(selectedMethod) {
+        case 'cash':
+          const cashReceived = parseFloat(document.getElementById('cash-amount').value);
+          const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
+          methodDetails = cashReceived > paymentAmount ? 
+            `Received: ${formatCurrencyFn(cashReceived, currentInvoice.currency)}, Change: ${formatCurrencyFn(cashReceived - paymentAmount, currentInvoice.currency)}` : 
+            'Exact amount';
+          break;
+        case 'mobile_money':
+          const provider = document.getElementById('mobile-provider').value;
+          const mobileRef = document.getElementById('mobile-reference').value;
+          const phone = document.getElementById('mobile-phone').value;
+          if (!provider || !mobileRef) {
+            alert('Please fill in mobile money details');
+            return;
+          }
+          methodDetails = `${provider} - ${mobileRef} (${phone})`;
+          break;
+        case 'card':
+          const cardType = document.getElementById('card-type').value;
+          const last4 = document.getElementById('card-last4').value;
+          const auth = document.getElementById('card-auth').value;
+          if (!last4) {
+            alert('Please enter last 4 digits of card');
+            return;
+          }
+          methodDetails = `${cardType} ending ${last4} - Auth: ${auth}`;
+          break;
+        case 'bank_transfer':
+          const bankName = document.getElementById('bank-name').value;
+          const bankRef = document.getElementById('bank-reference').value;
+          if (!bankName || !bankRef) {
+            alert('Please fill in bank transfer details');
+            return;
+          }
+          methodDetails = `${bankName} - Ref: ${bankRef}`;
+          // Note: Proof of payment is stored separately in paymentData
+          break;
+        case 'check':
+          const checkNum = document.getElementById('check-number').value;
+          const checkBank = document.getElementById('check-bank').value;
+          if (!checkNum) {
+            alert('Please enter check number');
+            return;
+          }
+          methodDetails = `Check #${checkNum} - ${checkBank}`;
+          break;
+      }
+      
+      if (typeof window.recordPayment !== 'function') {
+        alert('Payment system is not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      showProcessingPaymentOverlay();
+      
+      try {
+      // Create payment record
+      const paymentData = {
+        invoiceId: currentInvoice.id,
+        patientId: currentInvoice.patientId,
+        patientName: currentInvoice.patientName,
+        amount: paymentAmount,
+        currency: currentInvoice.currency,
+        method: selectedMethod,
+        methodDetails: methodDetails,
+        date: new Date().toISOString().split('T')[0],
+        status: 'completed',
+        notes: document.getElementById('payment-notes').value
+      };
+      
+      // Add bank transfer proof if available
+      if (selectedMethod === 'bank_transfer' && bankProofData) {
+        paymentData.proofOfPayment = bankProofData;
+        paymentData.proofOfPaymentFileName = bankProofFileName;
+        paymentData.proofOfPaymentType = bankProofData.split(';')[0].split(':')[1]; // Extract MIME type from data URL
+      }
+      
+      const payment = await window.recordPayment(paymentData);
+      
+      if (!payment || !payment.id) {
+        hideProcessingPaymentOverlay();
+        alert('Failed to record payment. Please try again.');
+        return;
+      }
+      
+      // Store payment for receipt printing
+      const savedPaymentId = payment.id;
+      
+      // Auto-record in cash register if cash
+      if (selectedMethod === 'cash') {
+        try {
+          if (typeof autoRecordCashPayment === 'function') {
+            autoRecordCashPayment(payment);
+          } else {
+            console.log('🔧 TRACE: autoRecordCashPayment function not available, skipping cash register recording');
+          }
+        } catch (error) {
+          console.log('🔧 TRACE: Cash register recording failed:', error.message);
+        }
+      }
+      
+      // Update invoice status
+      try {
+        const newAmountPaid = (currentInvoice.amountPaid || 0) + paymentAmount;
+        const newAmountDue = currentInvoice.total - newAmountPaid;
+        let newStatus = currentInvoice.status;
+        
+        if (newAmountDue <= 0) {
+          newStatus = 'paid';
+        } else if (newAmountPaid > 0) {
+          newStatus = 'partial';
+        }
+        
+        await window.updateInvoice(currentInvoice.id, {
+          amountPaid: newAmountPaid,
+          amountDue: newAmountDue,
+          status: newStatus
+        });
+        
+        // Update lab order payment status if this is a lab order payment
+        const urlParams = new URLSearchParams(window.location.search);
+        const labOrderId = urlParams.get('labOrderId');
+        if (labOrderId && typeof window.getLabSupabaseClient === 'function') {
+          try {
+            const supabase = await window.getLabSupabaseClient();
+            const paymentStatus = newStatus === 'paid' ? 'paid' : 'partial';
+            await supabase
+              .from('orders')
+              .update({
+                payment_status: paymentStatus,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', labOrderId)
+              .eq('type', 'lab');
+            
+            console.log('✅ Lab order payment status updated:', paymentStatus);
+          } catch (labError) {
+            console.error('Error updating lab order payment status:', labError);
+            // Continue anyway - payment was recorded
+          }
+        }
+      } catch (error) {
+        console.error('Error updating invoice:', error);
+        // Continue even if update fails
+      }
+      
+      alert('Payment processed successfully!');
+      
+      // Wait a moment for payment to be saved to localStorage/Supabase before printing
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Determine redirect target before confirm (so we always redirect even if print flow errors)
+      const urlParams = new URLSearchParams(window.location.search);
+      const labOrderIdForRedirect = urlParams.get('labOrderId');
+      const returnUrlForRedirect = urlParams.get('returnUrl');
+      let redirectTarget = '/lab-scientist-dashboard';
+      if (labOrderIdForRedirect) {
+        redirectTarget = '/lab-scientist-dashboard';
+      } else if (returnUrlForRedirect) {
+        try {
+          const decoded = decodeURIComponent(returnUrlForRedirect);
+          redirectTarget = decoded.startsWith('/') ? decoded : '/' + decoded;
+        } catch (e) {
+          redirectTarget = '/' + returnUrlForRedirect;
+        }
+      } else {
+        redirectTarget = `/invoice-details?id=${currentInvoice.id}`;
+      }
+      
+      // Print receipt (if function exists) - wrapped so redirect always runs
+      try {
+        if (confirm('Print receipt?')) {
+          if (typeof printReceipt === 'function') {
+            try {
+              if (payment && payment.id) {
+                await printReceipt(payment);
+              } else if (savedPaymentId) {
+                await printReceipt(savedPaymentId);
+              } else {
+                alert('Payment ID not available. Please print receipt from the dashboard.');
+              }
+            } catch (printError) {
+              console.error('Error printing receipt:', printError);
+              if (payment && typeof window.generateReceiptHTML === 'function') {
+                try {
+                  const receiptHTML = window.generateReceiptHTML(payment, currentInvoice);
+                  if (receiptHTML) {
+                    const printWindow = window.open('', '_blank', 'width=800,height=600');
+                    printWindow.document.write(receiptHTML);
+                    printWindow.document.close();
+                    setTimeout(() => printWindow.print(), 300);
+                  }
+                } catch (altError) {
+                  console.error('Alternative print method failed:', altError);
+                }
+              }
+            }
+          }
+        }
+      } finally {
+        // Always redirect - use replace() to avoid back-button returning to collect-payment
+        hideProcessingPaymentOverlay();
+        const target = typeof redirectTarget === 'string' ? redirectTarget : '/lab-scientist-dashboard';
+        try {
+          window.location.replace(target.startsWith('/') ? target : '/' + target);
+        } catch (e) {
+          window.location.href = target;
+        }
+      }
+      } catch (err) {
+        hideProcessingPaymentOverlay();
+        console.error('Error processing payment:', err);
+        alert('Error processing payment: ' + (err.message || 'Please try again.'));
+      }
+    }
+
+    function cancelPayment() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const labOrderId = urlParams.get('labOrderId');
+      const returnUrl = urlParams.get('returnUrl');
+      
+      function getRedirectTarget() {
+        if (labOrderId) return '/lab-scientist-dashboard';
+        if (returnUrl) {
+          // Decode and use return URL (e.g. accountant-dashboard, billing-dashboard, invoice-details?id=...)
+          try {
+            return decodeURIComponent(returnUrl).startsWith('/') ? decodeURIComponent(returnUrl) : '/' + decodeURIComponent(returnUrl);
+          } catch (e) {
+            return '/' + returnUrl;
+          }
+        }
+        return `/invoice-details?id=${currentInvoice ? currentInvoice.id : ''}`;
+      }
+      
+      if (labOrderId) {
+        // If coming from lab order, ask if they want to cancel the invoice too
+        if (confirm('Cancel payment collection?\n\nDo you also want to cancel the invoice and reset the lab order to "Not Invoiced" status?')) {
+          if (confirm('This will cancel the invoice and unlink it from the lab order. Continue?')) {
+            // Cancel invoice and unlink from lab order
+            if (typeof window.cancelLabOrderInvoice === 'function') {
+              window.cancelLabOrderInvoice(labOrderId).then(success => {
+                window.location.href = getRedirectTarget();
+              });
+            } else {
+              window.location.href = getRedirectTarget();
+            }
+          } else {
+            window.location.href = getRedirectTarget();
+          }
+        }
+      } else {
+        // Not from lab order, just cancel payment collection
+        if (confirm('Cancel payment collection?')) {
+          window.location.href = getRedirectTarget();
+        }
+      }
+    }
+  </script>
+
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('🔄 Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

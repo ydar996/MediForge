@@ -1,0 +1,946 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Specialists</title>
+  <link rel="stylesheet" href="css/styles.css?v=209">
+  <style>
+    .specialist-form {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .specialist-form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .specialist-form input,
+    .specialist-form select {
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .specialist-form button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .specialist-form button:hover {
+      background: #45a049;
+    }
+    
+    .specialists-list {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .specialist-item {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+    }
+    
+    .specialist-item h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .specialist-item p {
+      margin: 5px 0;
+      color: #666;
+    }
+    
+    .specialist-actions {
+      margin-top: 10px;
+    }
+    
+    .specialist-actions button {
+      background: #007bff;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-right: 5px;
+      font-size: 12px;
+    }
+    
+    .specialist-actions button:hover {
+      background: #0056b3;
+    }
+    
+    .specialist-actions button.delete {
+      background: #dc3545;
+    }
+    
+    .specialist-actions button.delete:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="page-title">Manage Specialists</h1>
+  
+  <!-- Back to Dashboard Button -->
+  <div style="margin-bottom: 20px;">
+    <a href="dashboard" style="background-color: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+      ← Back to Dashboard
+    </a>
+  </div>
+  
+  <div class="specialist-form">
+  <h2>Add New Specialist</h2>
+  <form id="add-specialist-form">
+    <label for="specialty">Specialty*:</label>
+      <select id="specialty" required>
+        <option value="">Select Specialty</option>
+        <!-- Populated dynamically from MEDICAL_SPECIALTIES in js/medical-specialties.js -->
+      </select>
+    
+    <label for="businessName">Business Name:</label>
+      <input type="text" id="businessName" placeholder="Enter business name">
+    
+    <label for="firstName">Physician First Name*:</label>
+      <input type="text" id="firstName" required placeholder="Enter first name">
+    
+    <label for="lastName">Physician Last Name*:</label>
+      <input type="text" id="lastName" required placeholder="Enter last name">
+    
+    <label for="addressLine1">Address Line 1*:</label>
+      <input type="text" id="addressLine1" required placeholder="Enter address">
+    
+    <label for="addressLine2">Address Line 2:</label>
+      <input type="text" id="addressLine2" placeholder="Enter address line 2">
+    
+    <label for="city">City*:</label>
+      <input type="text" id="city" required placeholder="Enter city">
+    
+    <label for="country">Country*:</label>
+    <select id="country" required onchange="handleSpecialistCountryChange()">
+        <option value="">-- Select Country --</option>
+        <!-- Populated by countries-data.js -->
+    </select>
+    
+    <label for="state">State*:</label>
+    <select id="state" required>
+      <option value="">-- Select State/Province --</option>
+      <!-- Populated dynamically based on country selection -->
+    </select>
+    
+    <label for="gender">Gender*:</label>
+    <select id="gender" required>
+      <option value="">Select Gender</option>
+      <option value="Male">Male</option>
+      <option value="Female">Female</option>
+    </select>
+    
+    <label for="medicalLicense">Medical License Number:</label>
+      <input type="text" id="medicalLicense" placeholder="Enter license number">
+    
+    <label for="businessType">Business Type:</label>
+    <select id="businessType">
+      <option value="">Select Type</option>
+      <option value="Group Practice">Group Practice</option>
+      <option value="Private Practice">Private Practice</option>
+        <option value="Hospital">Hospital</option>
+        <option value="Clinic">Clinic</option>
+      <option value="Other">Other</option>
+    </select>
+    
+    <label for="telephone">Telephone*:</label>
+      <div style="display: flex; gap: 10px;">
+        <select id="telephoneCode" required style="width: 150px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+          <option value="">Code</option>
+          <!-- Populated by JavaScript -->
+        </select>
+        <input type="tel" id="telephone" required placeholder="Phone number" style="flex: 1;">
+      </div>
+    
+    <label for="fax">Fax:</label>
+      <div style="display: flex; gap: 10px;">
+        <select id="faxCode" style="width: 150px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+          <option value="">Code</option>
+          <!-- Populated by JavaScript -->
+        </select>
+        <input type="tel" id="fax" placeholder="Fax number" style="flex: 1;">
+      </div>
+    
+    <label for="email">Email*:</label>
+      <input type="email" id="email" required placeholder="Enter email address">
+    
+    <button type="submit">Add Specialist</button>
+  </form>
+  </div>
+  
+  <div class="specialists-list">
+  <h2>Existing Specialists</h2>
+    <div id="specialists-list"></div>
+  </div>
+  
+  <div style="margin-top: 20px;">
+    <a href="dashboard" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block; margin-right: 10px;">
+      ← Back to Dashboard
+    </a>
+    <a id="return-to-clinical-note" href="#" style="background: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: none; margin-left: 10px;">
+      ← Return to Clinical Note
+    </a>
+  </div>
+  
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113130113131313"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113130113131313"></script>
+  
+  <!-- Medical specialties data (must be loaded before page script) -->
+  <script src="js/medical-specialties.js"></script>
+  
+  <!-- Countries data -->
+  <script src="js/countries-data.js?v=1"></script>
+  
+  <!-- Phone input enhancement -->
+  <script src="js/phone-input.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>
+  
+  <script>
+    // ?? TRACE: specialist-register.html loaded - complete functionality fix v209
+    console.log('?? TRACE: Added complete Supabase setup for specialist management');
+    console.log('?? TRACE: Fixed all dropdown selectors and form functionality');
+    console.log('?? TRACE: Added connection status notifier for real-time sync');
+    console.log('?? TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('?? TRACE: CSS version updated to v209 for cache busting');
+    
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+    
+    // Split phone number helper function (robust version matching edit-profile.html)
+    function splitPhoneNumber(phoneStr) {
+      if (!phoneStr) return { code: '', number: '' };
+      
+      // Remove leading/trailing whitespace
+      phoneStr = phoneStr.trim();
+      
+      // Check if it starts with a country code pattern (+XXX or XXX followed by space)
+      let phoneCodeMatch = phoneStr.match(/^(\+\d{1,4})\s+/);
+      if (!phoneCodeMatch) {
+        // Try without + sign but with space
+        phoneCodeMatch = phoneStr.match(/^(\d{1,4})\s+/);
+      }
+      if (phoneCodeMatch) {
+        const code = phoneCodeMatch[1];
+        let number = phoneStr.substring(phoneCodeMatch[0].length).trim();
+        // If number starts with the same code again (duplicate), remove it
+        if (number.startsWith(code) || number.startsWith(code.replace('+', ''))) {
+          number = number.substring(code.replace('+', '').length).trim();
+          // Also remove leading + if present
+          if (number.startsWith('+')) {
+            number = number.substring(1).trim();
+          }
+        }
+        return { code: code, number: number };
+      }
+      
+      // Check for country code without space but with obvious pattern
+      // If phone starts with +XXX and is longer than 10 digits, likely has embedded code
+      if (phoneStr.startsWith('+')) {
+        const codeMatch = phoneStr.match(/^(\+\d{1,4})/);
+        if (codeMatch && phoneStr.length > 10) {
+          const code = codeMatch[1];
+          let number = phoneStr.substring(code.length).trim();
+          // Remove duplicate code if present
+          if (number.startsWith(code.replace('+', ''))) {
+            number = number.substring(code.replace('+', '').length).trim();
+          }
+          return { code: code, number: number };
+        }
+      }
+      
+      // Try pattern without + but with digits at start
+      if (phoneStr.match(/^\d{1,4}/) && phoneStr.length > 10) {
+        // Try to match common country codes (2-4 digits)
+        const codeMatch = phoneStr.match(/^(\d{2,4})/);
+        if (codeMatch) {
+          const code = '+' + codeMatch[1];
+          const number = phoneStr.substring(codeMatch[0].length).trim();
+          return { code: code, number: number };
+        }
+      }
+      
+      // If no space and doesn't start with +, check if entire string is a code (unlikely but possible)
+      if (phoneStr.match(/^(\+\d{1,4})$/) || phoneStr.match(/^\d{1,4}$/)) {
+        return { code: phoneStr, number: '' };
+      }
+      
+      // No code found, return as-is for number
+      return { code: '', number: phoneStr };
+    }
+    
+    // Populate country code dropdowns
+    function populateCountryCodeDropdowns() {
+      const telephoneCodeSelect = document.getElementById('telephoneCode');
+      const faxCodeSelect = document.getElementById('faxCode');
+      
+      if (!telephoneCodeSelect || !faxCodeSelect) return;
+      
+      // Clear existing options
+      telephoneCodeSelect.innerHTML = '<option value="">Code</option>';
+      faxCodeSelect.innerHTML = '<option value="">Code</option>';
+      
+      // Use COUNTRIES_DATA if available
+      const countriesData = typeof COUNTRIES_DATA !== 'undefined' ? COUNTRIES_DATA : {};
+      
+      // Add country codes sorted by country name
+      const sortedCountries = Object.entries(countriesData).sort((a, b) => a[0].localeCompare(b[0]));
+      
+      sortedCountries.forEach(([country, data]) => {
+        const phoneCode = data.phoneCode || data.code || '';
+        if (phoneCode) {
+          // Ensure phone code has + prefix for consistency
+          const formattedCode = phoneCode.startsWith('+') ? phoneCode : '+' + phoneCode;
+          const displayText = `${formattedCode} (${country})`;
+          const option1 = new Option(displayText, formattedCode);
+          const option2 = new Option(displayText, formattedCode);
+          telephoneCodeSelect.add(option1);
+          faxCodeSelect.add(option2);
+        }
+      });
+    }
+    
+    // Auto-select country code based on country
+    function autoSelectCountryCode() {
+      const country = document.getElementById('country').value;
+      if (!country) return;
+      
+      const countriesData = typeof COUNTRIES_DATA !== 'undefined' ? COUNTRIES_DATA : {};
+      const countryData = countriesData[country];
+      
+      if (countryData) {
+        const phoneCode = countryData.phoneCode || countryData.code || '';
+        if (phoneCode) {
+          // Ensure phone code has + prefix for consistency
+          const formattedCode = phoneCode.startsWith('+') ? phoneCode : '+' + phoneCode;
+          const telephoneCodeSelect = document.getElementById('telephoneCode');
+          const faxCodeSelect = document.getElementById('faxCode');
+          
+          if (telephoneCodeSelect) {
+            telephoneCodeSelect.value = formattedCode;
+          }
+          if (faxCodeSelect) {
+            faxCodeSelect.value = formattedCode;
+          }
+        }
+      }
+    }
+    
+    // Handle country change for state dropdown and auto-select country code
+    function handleSpecialistCountryChange() {
+      const country = document.getElementById('country').value;
+      
+      // Use populateStateDropdown from countries-data.js if available
+      if (typeof window.populateStateDropdown === 'function') {
+        window.populateStateDropdown('state', country);
+      } else {
+        // Fallback: manual state population
+        const stateSelect = document.getElementById('state');
+        stateSelect.innerHTML = '<option value="">-- Select State/Province --</option>';
+        
+        if (country && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
+          const states = COUNTRIES_DATA[country].states || [];
+          states.forEach(state => {
+            const option = document.createElement('option');
+            option.value = state;
+            option.textContent = state;
+            stateSelect.appendChild(option);
+          });
+        }
+      }
+      
+      // Auto-select country code based on selected country
+      autoSelectCountryCode();
+    }
+    
+    // Helper function to get specialists from localStorage (checking both keys for compatibility)
+    function getSpecialists() {
+      // First try with organization-prefixed key (standard format)
+      let specialists = JSON.parse(localStorage.getItem(getDataKey('specialists')) || '[]');
+      
+      // If empty, try old non-prefixed key and migrate
+      if (specialists.length === 0) {
+        const oldSpecialists = JSON.parse(localStorage.getItem('specialists') || '[]');
+        if (oldSpecialists.length > 0) {
+          // Migrate to prefixed key
+          localStorage.setItem(getDataKey('specialists'), JSON.stringify(oldSpecialists));
+          localStorage.removeItem('specialists');
+          specialists = oldSpecialists;
+          console.log('? Migrated specialists to organization-prefixed key');
+        }
+      }
+      
+      return specialists;
+    }
+    
+    // Load and display specialists
+    async function loadSpecialists() {
+      try {
+        console.log('?? TRACE: Loading specialists...');
+        
+        const specialists = getSpecialists();
+        console.log('?? TRACE: Loaded specialists:', specialists.length);
+        
+        displaySpecialists(specialists);
+      } catch (error) {
+        console.error('? Error loading specialists:', error);
+      }
+    }
+    
+    // Display specialists in the list
+    function displaySpecialists(specialists) {
+      const container = document.getElementById('specialists-list');
+      
+      if (specialists.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No specialists found. Add your first specialist above.</p>';
+        return;
+      }
+      
+      let html = '';
+      specialists.forEach((specialist, index) => {
+        html += `
+          <div class="specialist-item">
+            <h4>Dr. ${specialist.firstName} ${specialist.lastName}</h4>
+            <p><strong>Specialty:</strong> ${specialist.specialty}</p>
+            <p><strong>Business:</strong> ${specialist.businessName || 'N/A'}</p>
+            <p><strong>Address:</strong> ${specialist.addressLine1}, ${specialist.city}, ${specialist.state}, ${specialist.country}</p>
+            <p><strong>Phone:</strong> ${specialist.telephone}</p>
+            <p><strong>Email:</strong> ${specialist.email}</p>
+            <div class="specialist-actions">
+              <button onclick="editSpecialist(${index})">Edit</button>
+              <button onclick="viewSpecialist(${index})">View</button>
+              <button class="delete" onclick="deleteSpecialist(${index})">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+    
+    // Add new specialist
+    function addSpecialist(specialistData) {
+      const specialists = getSpecialists();
+      specialistData.id = Date.now().toString() + Math.random().toString(36).slice(2); // Simple ID generation
+      specialistData.createdAt = new Date().toISOString();
+      specialists.push(specialistData);
+      localStorage.setItem(getDataKey('specialists'), JSON.stringify(specialists));
+      
+      console.log('? Added new specialist:', specialistData);
+      loadSpecialists(); // Refresh the list
+    }
+    
+    // Edit specialist
+    function editSpecialist(index) {
+      const specialists = getSpecialists();
+      const specialist = specialists[index];
+      
+      if (!specialist) {
+        alert('Specialist not found');
+        return;
+      }
+      
+      // Store the index for update
+      window.editingSpecialistIndex = index;
+      
+      // First, ensure country dropdown is populated (it should be, but just in case)
+      if (typeof window.populateCountryDropdown === 'function' && typeof COUNTRIES_DATA !== 'undefined') {
+        window.populateCountryDropdown('country');
+      }
+      
+      // Ensure country code dropdowns are populated
+      populateCountryCodeDropdowns();
+      
+      // Wait a bit for dropdowns to populate, then set all values
+      // Ensure specialty dropdown is populated first
+      const setFormValues = (retryCount = 0) => {
+        const specialtySelect = document.getElementById('specialty');
+        
+        // If specialty dropdown is not populated yet, wait and retry
+        if (specialtySelect && specialtySelect.options.length <= 1 && retryCount < 10) {
+          setTimeout(() => setFormValues(retryCount + 1), 100);
+          return;
+        }
+        
+        // Populate ALL form fields with existing data
+        const businessNameInput = document.getElementById('businessName');
+        const firstNameInput = document.getElementById('firstName');
+        const lastNameInput = document.getElementById('lastName');
+        const addressLine1Input = document.getElementById('addressLine1');
+        const addressLine2Input = document.getElementById('addressLine2');
+        const cityInput = document.getElementById('city');
+        const countrySelect = document.getElementById('country');
+        const stateSelect = document.getElementById('state');
+        const genderSelect = document.getElementById('gender');
+        const medicalLicenseInput = document.getElementById('medicalLicense');
+        const businessTypeSelect = document.getElementById('businessType');
+        const emailInput = document.getElementById('email');
+        const telephoneCodeSelect = document.getElementById('telephoneCode');
+        const telephoneInput = document.getElementById('telephone');
+        const faxCodeSelect = document.getElementById('faxCode');
+        const faxInput = document.getElementById('fax');
+        
+        // Set specialty value - try exact match first, then try to find a close match
+        if (specialtySelect && specialist.specialty) {
+          specialtySelect.value = specialist.specialty || '';
+          
+          // If value wasn't set (specialty name might have changed), try to find a close match
+          if (!specialtySelect.value && specialist.specialty) {
+            const specialtyName = specialist.specialty.toLowerCase();
+            for (let i = 0; i < specialtySelect.options.length; i++) {
+              const option = specialtySelect.options[i];
+              if (option.value.toLowerCase().includes(specialtyName) || 
+                  specialtyName.includes(option.value.toLowerCase())) {
+                specialtySelect.value = option.value;
+                console.log(`? Matched specialty "${specialist.specialty}" to "${option.value}"`);
+                break;
+              }
+            }
+          }
+        }
+        if (businessNameInput) businessNameInput.value = specialist.businessName || '';
+        if (firstNameInput) firstNameInput.value = specialist.firstName || '';
+        if (lastNameInput) lastNameInput.value = specialist.lastName || '';
+        if (addressLine1Input) addressLine1Input.value = specialist.addressLine1 || '';
+        if (addressLine2Input) addressLine2Input.value = specialist.addressLine2 || '';
+        if (cityInput) cityInput.value = specialist.city || '';
+        if (genderSelect) genderSelect.value = specialist.gender || '';
+        if (medicalLicenseInput) medicalLicenseInput.value = specialist.medicalLicense || '';
+        if (businessTypeSelect) businessTypeSelect.value = specialist.businessType || '';
+        if (emailInput) emailInput.value = specialist.email || '';
+        
+        // Set country FIRST, then populate states based on country
+        if (countrySelect && specialist.country) {
+          countrySelect.value = specialist.country;
+          
+          // Populate states for the selected country
+          if (typeof window.populateStateDropdown === 'function') {
+            window.populateStateDropdown('state', specialist.country);
+          } else {
+            handleSpecialistCountryChange();
+          }
+          
+          // Wait for states to populate, then set state value
+          setTimeout(() => {
+            if (stateSelect && specialist.state) {
+              stateSelect.value = specialist.state;
+            }
+            
+            // Auto-select country code after country is set
+            autoSelectCountryCode();
+          }, 100);
+        }
+        
+        // Split phone numbers and set them (wait for dropdowns to be fully populated)
+        const telephoneSplit = splitPhoneNumber(specialist.telephone || '');
+        const faxSplit = splitPhoneNumber(specialist.fax || '');
+        
+        // Wait a bit more to ensure country code dropdowns are fully populated
+        setTimeout(() => {
+          // Set phone code and number
+          if (telephoneCodeSelect && telephoneInput) {
+            if (telephoneSplit.code) {
+              // Ensure the code format matches dropdown format (with or without +)
+              let codeToSet = telephoneSplit.code;
+              if (!codeToSet.startsWith('+')) {
+                codeToSet = '+' + codeToSet;
+              }
+              telephoneCodeSelect.value = codeToSet;
+              // If value wasn't set (code not in dropdown), try without +
+              if (!telephoneCodeSelect.value && telephoneSplit.code.startsWith('+')) {
+                telephoneCodeSelect.value = telephoneSplit.code.substring(1);
+              }
+            }
+            telephoneInput.value = telephoneSplit.number || '';
+          }
+          
+          // Set fax code and number
+          if (faxCodeSelect && faxInput) {
+            if (faxSplit.code) {
+              // Ensure the code format matches dropdown format (with +)
+              let codeToSet = faxSplit.code;
+              if (!codeToSet.startsWith('+')) {
+                codeToSet = '+' + codeToSet;
+              }
+              faxCodeSelect.value = codeToSet;
+            }
+            faxInput.value = faxSplit.number || '';
+          }
+        }, 150);
+      };
+      
+      // Start setting form values (will retry if dropdown not ready)
+      setTimeout(() => setFormValues(), 100);
+      
+      // Update UI to show edit mode
+      const formTitle = document.querySelector('.specialist-form h2');
+      if (formTitle) formTitle.textContent = 'Edit Specialist';
+      
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Edit Specialist';
+      
+      const submitButton = document.querySelector('#add-specialist-form button[type="submit"]');
+      if (submitButton) {
+        submitButton.textContent = 'Update Specialist';
+        submitButton.style.background = '#007bff';
+      }
+      
+      // Scroll to form
+      document.querySelector('.specialist-form')?.scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Update specialist
+    function updateSpecialist(index) {
+      const form = document.getElementById('add-specialist-form');
+      
+      // Collect form data including phone codes
+      const specialistData = {
+        specialty: document.getElementById('specialty').value,
+        businessName: document.getElementById('businessName').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        addressLine1: document.getElementById('addressLine1').value,
+        addressLine2: document.getElementById('addressLine2').value,
+        city: document.getElementById('city').value,
+        country: document.getElementById('country').value,
+        state: document.getElementById('state').value,
+        gender: document.getElementById('gender').value,
+        medicalLicense: document.getElementById('medicalLicense').value,
+        businessType: document.getElementById('businessType').value,
+        email: document.getElementById('email').value
+      };
+      
+      // Combine phone code and number
+      const telephoneCode = document.getElementById('telephoneCode').value;
+      const telephone = document.getElementById('telephone').value;
+      specialistData.telephone = telephoneCode && telephone ? `${telephoneCode} ${telephone}` : telephone;
+      
+      const faxCode = document.getElementById('faxCode').value;
+      const fax = document.getElementById('fax').value;
+      specialistData.fax = faxCode && fax ? `${faxCode} ${fax}` : fax;
+      
+      // Validate required fields
+      if (!specialistData.specialty || !specialistData.firstName || !specialistData.lastName || 
+          !specialistData.addressLine1 || !specialistData.city || !specialistData.country || 
+          !specialistData.state || !specialistData.gender || !specialistData.telephone || 
+          !specialistData.email) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+      const specialists = getSpecialists();
+      
+      // Preserve ID and timestamps
+      specialistData.id = specialists[index].id;
+      specialistData.createdAt = specialists[index].createdAt || new Date().toISOString();
+      specialistData.updatedAt = new Date().toISOString();
+      
+      specialists[index] = specialistData;
+      localStorage.setItem(getDataKey('specialists'), JSON.stringify(specialists));
+      
+      console.log('? Updated specialist:', specialistData);
+      
+      loadSpecialists(); // Refresh the list
+      alert('Specialist updated successfully!');
+      
+      // Reset form and UI to add mode
+      form.reset();
+      
+      // Reset UI elements
+      const formTitle = document.querySelector('.specialist-form h2');
+      if (formTitle) formTitle.textContent = 'Add New Specialist';
+      
+      const pageTitle = document.getElementById('page-title');
+      if (pageTitle) pageTitle.textContent = 'Manage Specialists';
+      
+      const submitButton = document.querySelector('#add-specialist-form button[type="submit"]');
+      if (submitButton) {
+        submitButton.textContent = 'Add Specialist';
+        submitButton.style.background = '#4CAF50';
+      }
+      
+      // Reset state dropdown
+      const stateSelect = document.getElementById('state');
+      if (stateSelect) {
+        stateSelect.innerHTML = '<option value="">-- Select State/Province --</option>';
+      }
+      
+      // Clear editing flag
+      window.editingSpecialistIndex = null;
+    }
+    
+    // View specialist details
+    function viewSpecialist(index) {
+      const specialists = getSpecialists();
+      const specialist = specialists[index];
+      
+      alert(`Specialist Details:\n\nName: Dr. ${specialist.firstName} ${specialist.lastName}\nSpecialty: ${specialist.specialty}\nBusiness: ${specialist.businessName || 'N/A'}\nAddress: ${specialist.addressLine1}, ${specialist.city}, ${specialist.state}, ${specialist.country}\nPhone: ${specialist.telephone}\nEmail: ${specialist.email}\nLicense: ${specialist.medicalLicense || 'N/A'}`);
+    }
+    
+    // Delete specialist
+    function deleteSpecialist(index) {
+      if (confirm('Are you sure you want to delete this specialist?')) {
+        const specialists = getSpecialists();
+        specialists.splice(index, 1);
+        localStorage.setItem(getDataKey('specialists'), JSON.stringify(specialists));
+        
+        console.log('? Deleted specialist at index:', index);
+        loadSpecialists(); // Refresh the list
+      }
+    }
+    
+    // Handle form submission
+    document.getElementById('add-specialist-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      // If we're in edit mode, call update instead
+      if (window.editingSpecialistIndex !== undefined && window.editingSpecialistIndex !== null) {
+        updateSpecialist(window.editingSpecialistIndex);
+        return;
+      }
+      
+      // Collect form data including phone codes
+      const specialistData = {
+        specialty: document.getElementById('specialty').value,
+        businessName: document.getElementById('businessName').value,
+        firstName: document.getElementById('firstName').value,
+        lastName: document.getElementById('lastName').value,
+        addressLine1: document.getElementById('addressLine1').value,
+        addressLine2: document.getElementById('addressLine2').value,
+        city: document.getElementById('city').value,
+        country: document.getElementById('country').value,
+        state: document.getElementById('state').value,
+        gender: document.getElementById('gender').value,
+        medicalLicense: document.getElementById('medicalLicense').value,
+        businessType: document.getElementById('businessType').value,
+        email: document.getElementById('email').value
+      };
+      
+      // Combine phone code and number
+      const telephoneCode = document.getElementById('telephoneCode').value;
+      const telephone = document.getElementById('telephone').value;
+      specialistData.telephone = telephoneCode && telephone ? `${telephoneCode} ${telephone}` : telephone;
+      
+      const faxCode = document.getElementById('faxCode').value;
+      const fax = document.getElementById('fax').value;
+      specialistData.fax = faxCode && fax ? `${faxCode} ${fax}` : fax;
+      
+      // Validate required fields
+      if (!specialistData.specialty || !specialistData.firstName || !specialistData.lastName || 
+          !specialistData.addressLine1 || !specialistData.city || !specialistData.country || 
+          !specialistData.state || !specialistData.gender || !specialistData.telephone || 
+          !specialistData.email) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+      addSpecialist(specialistData);
+      
+      // Reset form
+      this.reset();
+      document.getElementById('state').innerHTML = '<option value="">-- Select State/Province --</option>';
+      
+      alert('Specialist added successfully!');
+    });
+    
+    // Handle return to clinical note
+    function handleReturnToClinicalNote() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnTo = urlParams.get('returnTo');
+      
+      if (returnTo) {
+        const returnBtn = document.getElementById('return-to-clinical-note');
+        if (returnBtn) {
+          returnBtn.href = returnTo;
+          returnBtn.style.display = 'inline-block';
+          returnBtn.style.marginLeft = '10px';
+        }
+      }
+    }
+    
+    // Populate specialty dropdown from MEDICAL_SPECIALTIES
+    function populateSpecialtyDropdown(retryCount = 0) {
+      const specialtySelect = document.getElementById('specialty');
+      if (!specialtySelect) {
+        console.warn('?? Specialty select element not found');
+        if (retryCount < 5) {
+          setTimeout(() => populateSpecialtyDropdown(retryCount + 1), 100);
+        }
+        return;
+      }
+      
+      // Check if MEDICAL_SPECIALTIES is available
+      if (typeof MEDICAL_SPECIALTIES === 'undefined' || !Array.isArray(MEDICAL_SPECIALTIES)) {
+        if (retryCount < 10) {
+          // Retry loading the specialties array (script might still be loading)
+          console.log(`? Waiting for MEDICAL_SPECIALTIES to load... (attempt ${retryCount + 1}/10)`);
+          setTimeout(() => populateSpecialtyDropdown(retryCount + 1), 200);
+          return;
+        }
+        
+        console.error('? MEDICAL_SPECIALTIES not available after retries. Using fallback specialties.');
+        // Fallback to basic specialties if the array is not available
+        const fallbackSpecialties = [
+          'Cardiology', 'Dermatology', 'Endocrinology', 'Gastroenterology', 
+          'Hematology', 'Infectious Disease', 'Nephrology', 'Neurology', 
+          'Oncology', 'Orthopedics', 'Pediatrics', 'Psychiatry', 
+          'Pulmonology', 'Radiology', 'Surgery', 'Urology', 'Other'
+        ];
+        fallbackSpecialties.forEach(spec => {
+          const option = document.createElement('option');
+          option.value = spec;
+          option.textContent = spec;
+          specialtySelect.appendChild(option);
+        });
+        return;
+      }
+      
+      // Clear existing options (except the first "Select Specialty" option)
+      specialtySelect.innerHTML = '<option value="">Select Specialty</option>';
+      
+      // Populate from MEDICAL_SPECIALTIES array
+      MEDICAL_SPECIALTIES.forEach(spec => {
+        const option = document.createElement('option');
+        option.value = spec.name;
+        option.textContent = spec.name;
+        specialtySelect.appendChild(option);
+      });
+      
+      console.log(`? Populated specialty dropdown with ${MEDICAL_SPECIALTIES.length} specialties`);
+    }
+    
+    // Initialize page when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      console.log('?? TRACE: DOM loaded - initializing specialist register page');
+      
+      // Populate specialty dropdown first
+      populateSpecialtyDropdown();
+      
+      // Initialize country dropdown (same as edit-profile.html)
+      const initializeDropdowns = () => {
+        if (typeof window.populateCountryDropdown === 'function' && typeof COUNTRIES_DATA !== 'undefined') {
+          // Initialize country dropdown with regions (same as edit-profile.html)
+          window.populateCountryDropdown('country');
+          
+          // Initialize country code dropdowns
+          populateCountryCodeDropdowns();
+          
+          // Load specialists
+          loadSpecialists();
+          
+          // Add auto-population for state dropdown when clicked/focused
+          setTimeout(() => {
+            const stateSelect = document.getElementById('state');
+            const countrySelect = document.getElementById('country');
+            
+            if (stateSelect && countrySelect) {
+              stateSelect.addEventListener('focus', function() {
+                const countryValue = countrySelect.value;
+                if (countryValue && stateSelect.options.length <= 1) {
+                  if (typeof window.populateStateDropdown === 'function') {
+                    window.populateStateDropdown('state', countryValue);
+                  } else {
+                    handleSpecialistCountryChange();
+                  }
+                }
+              });
+              stateSelect.addEventListener('click', function() {
+                const countryValue = countrySelect.value;
+                if (countryValue && stateSelect.options.length <= 1) {
+                  if (typeof window.populateStateDropdown === 'function') {
+                    window.populateStateDropdown('state', countryValue);
+                  } else {
+                    handleSpecialistCountryChange();
+                  }
+                }
+              });
+            }
+          }, 500);
+          
+          console.log('? Country dropdowns initialized');
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(initializeDropdowns, 100);
+        } else {
+          console.error('ERROR: Countries data failed to load after maximum retries');
+          // Fallback: try to initialize anyway
+          try {
+            populateCountryCodeDropdowns();
+            loadSpecialists();
+          } catch (error) {
+            console.error('ERROR: Fallback initialization failed:', error);
+          }
+        }
+      };
+      
+      let retryCount = 0;
+      const maxRetries = 20;
+      
+      // Start initialization
+      initializeDropdowns();
+      
+      // Handle return to clinical note
+      handleReturnToClinicalNote();
+      
+      // Listen for storage events to refresh when specialists are added from other pages
+      window.addEventListener('storage', function(e) {
+        if (e.key === getDataKey('specialists')) {
+          loadSpecialists();
+        }
+      });
+    });
+    
+    console.log('?? TRACE: Specialist register page initialization complete');
+  </script>
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

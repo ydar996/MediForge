@@ -1,0 +1,189 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Data Leakage Fix Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 4px;
+            font-weight: bold;
+        }
+        .success { background-color: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+        .error { background-color: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+        .warning { background-color: #fff3cd; color: #856404; border: 1px solid #ffeaa7; }
+        .info { background-color: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+        button {
+            background-color: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 4px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover { background-color: #0056b3; }
+        .log {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 4px;
+            padding: 10px;
+            margin: 10px 0;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔒 Data Leakage Fix Test</h1>
+        <p>This page tests the data leakage prevention system to ensure patients from one organization don't appear in another organization's data.</p>
+        
+        <div id="status" class="status info">
+            Ready to test data leakage prevention...
+        </div>
+        
+        <div>
+            <button onclick="testDataLeakage()">Test Data Leakage Prevention</button>
+            <button onclick="runDatabaseCleanup()">Run Database Cleanup</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+        
+        <div id="log" class="log">
+            <div>Console log will appear here...</div>
+        </div>
+    </div>
+
+    <!-- Include required scripts -->
+    <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+    <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+
+    <script>
+        // Override console.log to capture logs
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        function addToLog(message, type = 'log') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            logDiv.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToLog(args.join(' '), 'log');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToLog(args.join(' '), 'warn');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToLog(args.join(' '), 'error');
+        };
+        
+        function updateStatus(message, type = 'info') {
+            const statusDiv = document.getElementById('status');
+            statusDiv.textContent = message;
+            statusDiv.className = `status ${type}`;
+        }
+        
+        function clearLog() {
+            document.getElementById('log').innerHTML = '<div>Console log cleared...</div>';
+        }
+        
+        async function testDataLeakage() {
+            updateStatus('Testing data leakage prevention...', 'info');
+            console.log('🔒 Starting data leakage test...');
+            
+            try {
+                // Check if user is logged in
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                if (!user || !user.username) {
+                    updateStatus('❌ No user logged in. Please log in first.', 'error');
+                    return;
+                }
+                
+                console.log('👤 Current user:', user.username, 'Organization:', user.org);
+                
+                // Test loading patients
+                console.log('🔄 Loading patients with security validation...');
+                const patients = await window.loadPatientsWithSupabasePriority(true);
+                
+                console.log('📋 Loaded patients:', patients.length);
+                
+                // Check for any patients that don't belong to current organization
+                const userOrg = user.org;
+                let leakageDetected = false;
+                
+                for (const patient of patients) {
+                    if (patient.id && patient.id.startsWith('EKO') && userOrg !== 'Eko Clinics') {
+                        console.error('🚨 LEAKAGE DETECTED: Eko Clinics patient in non-Eko organization!');
+                        leakageDetected = true;
+                    }
+                    if (patient.id && patient.id.startsWith('AXIOM') && userOrg !== 'Axiom Medical') {
+                        console.error('🚨 LEAKAGE DETECTED: Axiom Medical patient in non-Axiom organization!');
+                        leakageDetected = true;
+                    }
+                    if (patient.id && patient.id.startsWith('MECURE') && userOrg !== 'Mecure Clinics') {
+                        console.error('🚨 LEAKAGE DETECTED: Mecure patient in non-Mecure organization!');
+                        leakageDetected = true;
+                    }
+                }
+                
+                if (leakageDetected) {
+                    updateStatus('❌ Data leakage detected! Security fix needed.', 'error');
+                } else {
+                    updateStatus('✅ No data leakage detected. Security working correctly.', 'success');
+                }
+                
+            } catch (error) {
+                console.error('❌ Error during test:', error);
+                updateStatus('❌ Test failed: ' + error.message, 'error');
+            }
+        }
+        
+        async function runDatabaseCleanup() {
+            updateStatus('Running database cleanup...', 'info');
+            console.log('🔒 Starting database cleanup...');
+            
+            try {
+                await window.cleanupDatabaseLeakage();
+                updateStatus('✅ Database cleanup completed successfully.', 'success');
+            } catch (error) {
+                console.error('❌ Error during database cleanup:', error);
+                updateStatus('❌ Database cleanup failed: ' + error.message, 'error');
+            }
+        }
+        
+        // Auto-run test on page load
+        window.addEventListener('load', function() {
+            console.log('🔒 Data leakage test page loaded');
+            console.log('👤 Current user:', JSON.parse(localStorage.getItem("user") || "{}"));
+        });
+    </script>
+</body>
+</html>

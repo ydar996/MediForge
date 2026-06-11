@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mobile Registration</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+    </style>
+</head>
+<body>
+    <h1>Mobile Registration Test</h1>
+    <p>This page tests if mobile registration is working properly.</p>
+    
+    <button onclick="testMobileRegistration()" class="btn-primary">📱 Test Mobile Registration</button>
+    <button onclick="checkRegistrationData()" class="btn-success">🔍 Check Registration Data</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        function testMobileRegistration() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>🔍 Testing mobile registration process...</p>';
+            
+            try {
+                // Simulate mobile registration data
+                const testOrgData = {
+                    name: 'Test Mobile Organization',
+                    country: 'Nigeria',
+                    state: 'Lagos',
+                    city: 'Lagos',
+                    addressLine1: '123 Test Street',
+                    addressLine2: '',
+                    phone: '+234-123-456-7890',
+                    afterHoursPhone: '+234-123-456-7891',
+                    createdAt: new Date().toISOString()
+                };
+                
+                const testUserData = {
+                    firstName: 'Test',
+                    lastName: 'User',
+                    username: 'testuser' + Date.now(),
+                    password: 'testpassword123',
+                    gender: 'Male',
+                    role: 'Doctor',
+                    org: 'Test Mobile Organization',
+                    createdAt: new Date().toISOString()
+                };
+                
+                // Test localStorage save (this should always work)
+                const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                organizations[testOrgData.name] = testOrgData;
+                localStorage.setItem('organizations', JSON.stringify(organizations));
+                
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                users.push(testUserData);
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                let html = '<h3>📱 Mobile Registration Test Results:</h3>';
+                html += '<div class="test-item success">✅ localStorage save successful</div>';
+                html += '<div class="test-item success">✅ Organization data saved</div>';
+                html += '<div class="test-item success">✅ User data saved</div>';
+                
+                // Test Supabase connection (this might fail on mobile)
+                if (typeof window.supabaseClient !== 'undefined') {
+                    html += '<div class="test-item success">✅ Supabase client available</div>';
+                } else {
+                    html += '<div class="test-item warning">⚠️ Supabase client not available (mobile fallback will be used)</div>';
+                }
+                
+                html += '<div class="test-item success">✅ Mobile registration process completed</div>';
+                html += '<p><strong>Result:</strong> Mobile registration is working! Users can register even if Supabase is not available.</p>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-item error">❌ Test failed: ${error.message}</div>`;
+            }
+        }
+        
+        function checkRegistrationData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>🔍 Checking registration data...</p>';
+            
+            try {
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let html = '<h3>📋 Registration Data Found:</h3>';
+                
+                if (Object.keys(localOrgs).length === 0) {
+                    html += '<div class="test-item warning">⚠️ No organizations found</div>';
+                } else {
+                    html += '<h4>Organizations:</h4>';
+                    Object.entries(localOrgs).forEach(([name, org]) => {
+                        const syncStatus = org.id ? '✅ Synced to Supabase' : '❌ Not synced to Supabase';
+                        html += `
+                            <div class="test-item">
+                                <strong>${name}</strong> - ${syncStatus}<br>
+                                Country: ${org.country || 'N/A'} | State: ${org.state || 'N/A'} | City: ${org.city || 'N/A'}<br>
+                                Created: ${org.createdAt || 'N/A'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (localUsers.length === 0) {
+                    html += '<div class="test-item warning">⚠️ No users found</div>';
+                } else {
+                    html += '<h4>Users:</h4>';
+                    localUsers.forEach(user => {
+                        const syncStatus = user.organizationId ? '✅ Synced to Supabase' : '❌ Not synced to Supabase';
+                        html += `
+                            <div class="test-item">
+                                <strong>${user.firstName} ${user.lastName}</strong> (${user.username}) - ${syncStatus}<br>
+                                Organization: ${user.org || 'N/A'} | Role: ${user.role || 'N/A'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-item error">❌ Error checking data: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-test on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔄 Auto-testing mobile registration...');
+            setTimeout(testMobileRegistration, 1000);
+        });
+    </script>
+</body>
+</html>

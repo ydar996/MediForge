@@ -1,0 +1,1166 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Subscription Invoice - MediForge</title>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113080113081308"></script>
+  
+  <!-- Invoice Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  
+  <link rel="stylesheet" href="css/styles.css?v=238">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      max-width: 900px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .invoice-container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    
+    .invoice-header {
+      text-align: center;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .invoice-title {
+      color: #667eea;
+      font-size: 28px;
+      font-weight: bold;
+      margin: 0;
+    }
+    
+    .invoice-subtitle {
+      color: #666;
+      font-size: 16px;
+      margin: 5px 0 0 0;
+    }
+    
+    .invoice-details {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .invoice-section {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+    }
+    
+    .invoice-section h3 {
+      color: #333;
+      margin: 0 0 15px 0;
+      font-size: 18px;
+    }
+    
+    .invoice-section p {
+      margin: 5px 0;
+      color: #666;
+    }
+    
+    .invoice-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+    }
+    
+    .invoice-table th,
+    .invoice-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    .invoice-table th {
+      background-color: #667eea;
+      color: white;
+      font-weight: bold;
+    }
+    
+    .invoice-total {
+      text-align: right;
+      margin-top: 20px;
+      padding-top: 20px;
+      border-top: 2px solid #667eea;
+    }
+    
+    .invoice-total-amount {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+    
+    .invoice-actions {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 1px solid #eee;
+    }
+    
+    .invoice-btn {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      transition: all 0.3s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .invoice-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .invoice-btn.secondary {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+    }
+    
+    .back-button {
+      margin-bottom: 20px;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 500;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+      text-decoration: none;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .receipt-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      border-radius: 8px;
+    }
+    
+    .receipt-section h3 {
+      color: #856404;
+      margin: 0 0 15px 0;
+    }
+    
+    .receipt-section p {
+      color: #856404;
+      margin: 5px 0;
+    }
+    
+    @media print {
+      .invoice-actions,
+      .back-button {
+        display: none;
+      }
+      body {
+        background: white;
+        padding: 0;
+      }
+      .invoice-container {
+        box-shadow: none;
+      }
+    }
+  </style>
+</head>
+<body>
+  <a href="manage-subscription" class="back-button"><i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Back to Manage Subscription</a>
+  
+  <div class="invoice-container" id="invoiceContent">
+    <div style="text-align: center; padding: 40px; color: #999;">
+      <p>Loading invoice...</p>
+    </div>
+  </div>
+  
+  <div class="invoice-actions">
+    <button class="invoice-btn" onclick="downloadInvoicePDF()">
+      Download PDF
+    </button>
+    <button class="invoice-btn secondary" onclick="downloadInvoiceImage()">
+      Download Image
+    </button>
+    <button class="invoice-btn secondary" onclick="printInvoice()">
+      Print Invoice
+    </button>
+  </div>
+  
+    <script>
+    // Currency formatting helper
+    function formatCurrencyDisplay(amount, currency) {
+      const currencySymbols = {
+        'NGN': '\u20A6',
+        'USD': '$',
+        'EUR': '€',
+        'GBP': '£',
+        'KES': 'KSh',
+        'GHS': 'GH₵',
+        'ZAR': 'R'
+      };
+      
+      const symbol = currencySymbols[currency] || currency;
+      return `${symbol} ${parseFloat(amount || 0).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`;
+    }
+    
+    let currentInvoiceData = null;
+    let currentPaymentId = null;
+    
+    window.addEventListener('load', function() {
+      // Get payment ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      currentPaymentId = urlParams.get('paymentId');
+      
+      // Try to get invoice data from sessionStorage (set by manage-subscription page)
+      const storedData = sessionStorage.getItem('currentInvoiceData');
+      if (storedData) {
+        currentInvoiceData = JSON.parse(storedData);
+        displayInvoice();
+      } else {
+        // If not in sessionStorage, load from localStorage/organizations
+        loadInvoiceData();
+      }
+    });
+    
+    async function loadInvoiceData() {
+      console.log('[INVOICE] Loading invoice data for payment:', currentPaymentId);
+      
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgName = user.organization || user.org || 'Default Organization';
+      // Supabase-first: Try getAllOrganizations() first, fallback to localStorage
+      let organizations = {};
+      try {
+        if (typeof getAllOrganizations === 'function') {
+          organizations = await getAllOrganizations();
+        } else {
+          organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        }
+      } catch (error) {
+        organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      }
+      const orgData = organizations[orgName];
+      
+      let payment = null;
+      let subscription = null;
+      
+      // First try to get from subscription.lastPayment
+      if (orgData && orgData.subscription && orgData.subscription.lastPayment) {
+        const lastPaymentId = orgData.subscription.lastPayment.id || 
+                             orgData.subscription.lastPayment.payment_id || '';
+        if (lastPaymentId === currentPaymentId || lastPaymentId.includes(currentPaymentId) || currentPaymentId.includes(lastPaymentId)) {
+          payment = orgData.subscription.lastPayment;
+          subscription = orgData.subscription;
+          
+          // Ensure plan name comes from payment if it exists there
+          if (payment.planName && subscription.planName !== payment.planName) {
+            subscription.planName = payment.planName;
+            console.log('? Updated subscription plan name from payment:', payment.planName);
+          }
+          
+          // Ensure billing cycle is correctly set from organization subscription (user's selection) first, then payment
+          // Organization's billing cycle takes priority as it reflects the user's actual selection
+          if (subscription.billingCycle && payment.billingCycle && subscription.billingCycle !== payment.billingCycle) {
+            // Keep organization's billing cycle (user's selection)
+            console.log('? Using organization billing cycle (user selection):', subscription.billingCycle, 'instead of payment:', payment.billingCycle);
+          } else if (payment.billingCycle && !subscription.billingCycle) {
+            // Only use payment's billing cycle if organization doesn't have one set
+            subscription.billingCycle = payment.billingCycle;
+            console.log('? Using payment billing cycle as fallback:', payment.billingCycle);
+          }
+          
+          console.log('? Found payment in subscription.lastPayment, plan:', subscription.planName, 'billing cycle:', subscription.billingCycle);
+        }
+      }
+      
+      // If not found, try to load from billing_history in Supabase
+      if (!payment && typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData && orgData.id) {
+        console.log('[INVOICE] Payment not found in localStorage, searching billing_history for:', currentPaymentId);
+        try {
+          const { data: billingHistory, error } = await window.supabaseClient
+            .from('billing_history')
+            .select('*')
+            .eq('organization_id', orgData.id)
+            .order('created_at', { ascending: false });
+          
+          console.log('[INVOICE] Billing history from Supabase:', billingHistory?.length || 0, 'records');
+          
+          if (!error && billingHistory && billingHistory.length > 0) {
+            console.log('[INVOICE] Searching for payment ID:', currentPaymentId);
+            console.log('[INVOICE] Available payment IDs:', billingHistory.map(p => ({
+              id: p.id,
+              payment_id: p.payment_id,
+              last_payment: p.last_payment
+            })));
+            
+            // Find payment by ID
+            const foundPayment = billingHistory.find(p => 
+              p.id === currentPaymentId || 
+              (p.last_payment && typeof p.last_payment === 'object' && p.last_payment.id === currentPaymentId) ||
+              (p.payment_id === currentPaymentId)
+            );
+            
+            if (foundPayment) {
+              console.log('? Found payment in billing_history:', foundPayment);
+              
+              // Extract payment data from billing_history record
+              if (foundPayment.last_payment && typeof foundPayment.last_payment === 'object') {
+                payment = foundPayment.last_payment;
+              } else {
+                // Construct payment object from billing_history fields
+                payment = {
+                  id: foundPayment.id || currentPaymentId,
+                  date: foundPayment.created_at || foundPayment.date || new Date().toISOString(),
+                  amount: foundPayment.amount,
+                  currency: foundPayment.currency || 'CAD',
+                  method: foundPayment.payment_method || foundPayment.method || 'Bank Transfer',
+                  status: foundPayment.status || 'pending',
+                  billingCycle: foundPayment.billing_cycle, // Include billing cycle in payment object
+                  planName: foundPayment.plan_name // Include plan name in payment object
+                };
+              }
+              
+              // Use billing cycle from organization subscription first (user's selection), then from payment, then default to monthly
+              // Organization's billing cycle takes priority as it reflects the user's actual selection
+              const paymentBillingCycle = payment.billingCycle || payment.billing_cycle;
+              const foundBillingCycle = foundPayment.billing_cycle;
+              const orgBillingCycle = orgData.subscription?.billingCycle;
+              
+              // Use plan name from payment object first, then from foundPayment, then from org subscription
+              const paymentPlanName = payment.planName || payment.plan_name;
+              const foundPlanName = foundPayment.plan_name;
+              const orgPlanName = orgData.subscription?.planName || orgData.subscription?.currentPlan;
+              
+              subscription = {
+                currentPlan: orgData.subscription?.currentPlan || 'basic',
+                planName: paymentPlanName || foundPlanName || orgPlanName || 'Basic Plan',
+                // Prioritize organization's billing cycle (user's selection) over payment's billing cycle
+                billingCycle: orgBillingCycle || paymentBillingCycle || foundBillingCycle || 'monthly',
+                status: foundPayment.status || 'pending'
+              };
+              
+              console.log('[INVOICE] Plan name determination:', {
+                paymentPlanName,
+                foundPlanName,
+                orgPlanName,
+                final: subscription.planName
+              });
+              
+              console.log('[INVOICE] Billing cycle determination:', {
+                paymentBillingCycle,
+                foundBillingCycle,
+                orgBillingCycle,
+                final: subscription.billingCycle
+              });
+            }
+          }
+        } catch (err) {
+          console.warn('[INVOICE] Error loading from billing_history:', err);
+        }
+      }
+      
+      // Check payment_receipts table for approval status
+      if (payment && typeof window.supabaseClient !== 'undefined' && window.supabaseClient && currentPaymentId) {
+        try {
+          const { data: receiptData, error: receiptError } = await window.supabaseClient
+            .from('payment_receipts')
+            .select('status, approved_date, approved_by, rejected_date, rejected_by, rejection_reason')
+            .eq('payment_id', currentPaymentId)
+            .maybeSingle();
+          
+          if (receiptError) {
+            // 404 means table doesn't exist yet - this is OK, we'll use localStorage
+            if (receiptError.code === 'PGRST116' || receiptError.message?.includes('404')) {
+              console.log('[INVOICE] payment_receipts table not found in Supabase yet. Using localStorage for receipt data.');
+            } else {
+              console.warn('[INVOICE] Error checking payment_receipts:', receiptError);
+            }
+          } else if (receiptData) {
+            console.log('? [INVOICE] Found receipt approval status:', receiptData);
+            // Update payment status based on receipt approval
+            if (receiptData.status === 'approved') {
+              payment.status = 'completed';
+              payment.receiptApproved = true;
+              payment.approvedDate = receiptData.approved_date;
+              payment.approvedBy = receiptData.approved_by;
+            } else if (receiptData.status === 'rejected') {
+              payment.status = 'pending'; // Keep as pending if rejected
+              payment.receiptApproved = false;
+              payment.rejectedDate = receiptData.rejected_date;
+              payment.rejectedBy = receiptData.rejected_by;
+              payment.rejectionReason = receiptData.rejection_reason;
+            } else if (receiptData.status === 'pending_approval') {
+              payment.receiptApproved = false;
+              payment.status = 'pending';
+            }
+          }
+        } catch (err) {
+          console.warn('[INVOICE] Exception checking payment_receipts:', err);
+        }
+      }
+      
+      if (!payment) {
+        document.getElementById('invoiceContent').innerHTML = `
+          <div style="text-align: center; padding: 40px;">
+            <h2>Invoice Not Found</h2>
+            <p>No payment information found for payment ID: ${currentPaymentId}</p>
+            <p style="color: #666; font-size: 14px; margin-top: 10px;">Please make sure the payment exists in your billing history.</p>
+            <a href="manage-subscription" class="back-button" style="margin-top: 20px;"><i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Back to Manage Subscription</a>
+          </div>
+        `;
+        return;
+      }
+      
+      // Generate invoice number
+      const invoiceNumber = `INV-${new Date().getFullYear()}-${String(new Date().getMonth() + 1).padStart(2, '0')}-${String(currentPaymentId || Date.now()).slice(-6)}`;
+      
+      // Use date from payment or current date
+      const paymentDate = payment.date ? new Date(payment.date) : new Date();
+      
+      currentInvoiceData = {
+        invoiceNumber: invoiceNumber,
+        invoiceDate: paymentDate.toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        dueDate: new Date(paymentDate.getTime() + 30 * 24 * 60 * 60 * 1000).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }),
+        organization: {
+          name: orgData.name || orgName,
+          email: orgData.email || 'contact@organization.com',
+          address: orgData.address || 'Organization Address'
+        },
+        payment: {
+          // Prioritize plan name from payment object first, then subscription
+          planName: payment.planName || payment.plan_name || subscription.planName || subscription.currentPlan || 'Basic Plan',
+          // Prioritize billing cycle from organization subscription (user's selection) first, then payment, then default to monthly
+          billingCycle: subscription.billingCycle || payment.billingCycle || payment.billing_cycle || 'monthly',
+          amount: payment.amount,
+          currency: payment.currency || 'CAD',
+          method: payment.method || 'Bank Transfer',
+          status: payment.status || 'pending',
+          date: payment.date || paymentDate.toISOString(),
+          receiptUploaded: payment.receiptUploaded || false,
+          receiptApproved: payment.receiptApproved || false
+        }
+      };
+      
+      console.log('? Invoice data loaded:', currentInvoiceData);
+      displayInvoice();
+    }
+    
+    function displayInvoice() {
+      if (!currentInvoiceData) {
+        console.error('? No invoice data available');
+        return;
+      }
+      
+      const { organization, payment, invoiceNumber, invoiceDate, dueDate } = currentInvoiceData;
+      
+      const invoiceHTML = `
+        <div class="invoice-header">
+          <h1 class="invoice-title">INVOICE</h1>
+          <p class="invoice-subtitle">MediForge Subscription Service</p>
+        </div>
+        
+        <div class="invoice-details">
+          <div class="invoice-section">
+            <h3>Bill To:</h3>
+            <p><strong>${organization.name}</strong></p>
+            <p>${organization.email}</p>
+            <p>${organization.address}</p>
+          </div>
+          
+          <div class="invoice-section">
+            <h3>Invoice Details:</h3>
+            <p><strong>Invoice #:</strong> ${invoiceNumber}</p>
+            <p><strong>Date:</strong> ${invoiceDate}</p>
+            <p><strong>Due Date:</strong> ${dueDate}</p>
+            <p><strong>Status:</strong> <span style="color: ${payment.status === 'completed' ? '#4CAF50' : '#ff9800'}; font-weight: bold;">${payment.status === 'completed' ? 'PAID' : 'PENDING'}</span></p>
+          </div>
+        </div>
+        
+        <table class="invoice-table">
+          <thead>
+            <tr>
+              <th>Description</th>
+              <th>Billing Cycle</th>
+              <th>Payment Method</th>
+              <th>Amount</th>
+            </tr>
+          </thead>
+          <tbody>
+            <tr>
+              <td>${payment.planName} - MediForge Subscription</td>
+              <td>${payment.billingCycle.charAt(0).toUpperCase() + payment.billingCycle.slice(1)} Billing</td>
+              <td>${payment.method}</td>
+              <td>${formatCurrencyDisplay(payment.amount, payment.currency)}</td>
+            </tr>
+          </tbody>
+        </table>
+        
+        <div class="invoice-total">
+          <p><strong>Total Amount: <span class="invoice-total-amount">${formatCurrencyDisplay(payment.amount, payment.currency)}</span></strong></p>
+          <p style="color: #666; font-size: 14px; margin-top: 10px;">
+            ${payment.status === 'completed' ? 'Payment completed on' : 'Payment initiated on'} ${new Date(payment.date).toLocaleDateString('en-US', { 
+              year: 'numeric', 
+              month: 'long', 
+              day: 'numeric' 
+            })}
+          </p>
+        </div>
+        
+        ${payment.status === 'completed' && payment.receiptApproved ? `
+          <div class="receipt-section" style="background: #e8f5e9; padding: 20px; border-radius: 8px; border: 2px solid #4CAF50; margin-top: 20px;">
+            <h3 style="color: #155724; margin-top: 0;">Payment Approved</h3>
+            <p style="color: #155724; margin-bottom: 10px;">
+              Your payment receipt has been reviewed and approved by the platform administrator.
+            </p>
+            ${payment.approvedDate ? `
+              <p style="color: #666; font-size: 14px; margin: 5px 0;">
+                <strong>Approved on:</strong> ${new Date(payment.approvedDate).toLocaleDateString('en-US', { 
+                  year: 'numeric', 
+                  month: 'long', 
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })}
+              </p>
+            ` : ''}
+            ${payment.approvedBy ? `
+              <p style="color: #666; font-size: 14px; margin: 5px 0;">
+                <strong>Approved by:</strong> ${payment.approvedBy}
+              </p>
+            ` : ''}
+            <p style="color: #155724; font-weight: bold; margin-top: 15px; margin-bottom: 0;">
+              Your subscription is now active!
+            </p>
+          </div>
+        ` : payment.status === 'pending' ? `
+          <div class="receipt-section">
+            ${payment.receiptUploaded && !payment.receiptApproved ? `
+              <h3>Receipt Uploaded - Awaiting Review</h3>
+              <p>
+                Your payment receipt has been uploaded and is being reviewed by our platform admin. 
+                You will be notified once the payment is approved.
+              </p>
+              <div style="background: #fff3cd; padding: 15px; border-radius: 6px; border: 1px solid #ffc107; margin-top: 15px;">
+                <p style="margin: 0; color: #856404; font-weight: bold; margin-bottom: 15px;">
+                  Receipt Status: Uploaded and Under Review
+                </p>
+                <button onclick="deleteReceipt()" style="background: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                  Delete Receipt
+                </button>
+              </div>
+            ` : payment.rejectionReason ? `
+              <h3>Receipt Rejected</h3>
+              <div style="background: #ffebee; padding: 15px; border-radius: 6px; border: 1px solid #f44336; margin-top: 15px;">
+                <p style="margin: 0; color: #c62828; font-weight: bold; margin-bottom: 10px;">
+                  Your payment receipt was rejected.
+                </p>
+                <p style="margin: 0; color: #666; font-size: 14px; margin-bottom: 15px;">
+                  <strong>Reason:</strong> ${payment.rejectionReason}
+                </p>
+                <p style="margin: 0; color: #666; font-size: 14px; margin-bottom: 15px;">
+                  Please upload a new receipt or contact support if you have questions.
+                </p>
+                <div style="margin: 15px 0;">
+                  <input type="file" id="receiptFile" accept=".pdf,.jpg,.jpeg,.png" style="margin-right: 10px;">
+                  <button onclick="uploadReceipt()" style="background: #ff9800; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                    Upload New Receipt
+                  </button>
+                </div>
+              </div>
+            ` : `
+              <h3>Payment Receipt Required</h3>
+              <p>
+                Please upload your bank transfer receipt to complete payment verification.
+              </p>
+              <div style="margin: 15px 0;">
+                <input type="file" id="receiptFile" accept=".pdf,.jpg,.jpeg,.png" style="margin-right: 10px;">
+                <button onclick="uploadReceipt()" style="background: #ff9800; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer;">
+                  Upload Receipt
+                </button>
+              </div>
+              <p style="color: #856404; font-size: 12px; margin: 10px 0 0 0;">
+                Accepted formats: PDF, JPG, PNG. File size limit: 10MB
+              </p>
+            `}
+          </div>
+        ` : ''}
+        
+        <div style="margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; text-align: center;">
+          <p style="margin: 0; color: #666;">
+            <strong>Thank you for your subscription to MediForge!</strong><br>
+            For support, contact us at support@mediforge.com
+          </p>
+        </div>
+      `;
+      
+      document.getElementById('invoiceContent').innerHTML = invoiceHTML;
+      console.log('? Invoice displayed:', currentInvoiceData);
+    }
+    
+    function downloadInvoicePDF() {
+      if (!currentInvoiceData) {
+        alert('No invoice data available for download.');
+        return;
+      }
+      
+      // Use html2canvas to capture the HTML invoice and convert to PDF
+      // This preserves all special characters (like ?) and formatting
+      const invoiceElement = document.getElementById('invoiceContent');
+      if (!invoiceElement) {
+        alert('Invoice content not found. Please refresh the page.');
+        return;
+      }
+      
+      // Show loading indicator
+      const loadingMsg = document.createElement('div');
+      loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: rgba(0,0,0,0.8); color: white; padding: 20px; border-radius: 8px; z-index: 10000;';
+      loadingMsg.textContent = 'Generating PDF...';
+      document.body.appendChild(loadingMsg);
+      
+      html2canvas(invoiceElement, {
+        scale: 2,
+        useCORS: true,
+        logging: false,
+        backgroundColor: '#ffffff',
+        width: invoiceElement.scrollWidth,
+        height: invoiceElement.scrollHeight
+      }).then(canvas => {
+        try {
+          const { jsPDF } = window.jspdf;
+          const imgData = canvas.toDataURL('image/png');
+          
+          // Calculate PDF dimensions
+          const imgWidth = 210; // A4 width in mm
+          const pageHeight = 297; // A4 height in mm
+          const imgHeight = (canvas.height * imgWidth) / canvas.width;
+          let heightLeft = imgHeight;
+          
+          const doc = new jsPDF('p', 'mm', 'a4');
+          let position = 0;
+          
+          // Add first page
+          doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+          
+          // Add additional pages if needed
+          while (heightLeft > 0) {
+            position = heightLeft - imgHeight;
+            doc.addPage();
+            doc.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+            heightLeft -= pageHeight;
+          }
+          
+          // Save the PDF
+          const fileName = `invoice-${currentInvoiceData.invoiceNumber}.pdf`;
+          doc.save(fileName);
+          
+          console.log('? PDF invoice downloaded:', fileName);
+          
+          // Remove loading indicator
+          document.body.removeChild(loadingMsg);
+        } catch (error) {
+          console.error('? Error generating PDF:', error);
+          document.body.removeChild(loadingMsg);
+          alert('Error generating PDF. Please try again.');
+        }
+      }).catch(error => {
+        console.error('? Error capturing invoice:', error);
+        document.body.removeChild(loadingMsg);
+        alert('Error capturing invoice. Please try again.');
+      });
+    }
+    
+    function downloadInvoiceImage() {
+      if (!currentInvoiceData) {
+        alert('No invoice data available for download.');
+        return;
+      }
+      
+      try {
+        const invoiceElement = document.getElementById('invoiceContent');
+        
+        html2canvas(invoiceElement, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff'
+        }).then(canvas => {
+          const link = document.createElement('a');
+          link.download = `invoice-${currentInvoiceData.invoiceNumber}.png`;
+          link.href = canvas.toDataURL('image/png');
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log('? Image invoice downloaded:', link.download);
+        }).catch(error => {
+          console.error('? Error generating image:', error);
+          alert('Error generating image. Please try again.');
+        });
+      } catch (error) {
+        console.error('? Error in image generation:', error);
+        alert('Error generating image. Please try again.');
+      }
+    }
+    
+    function printInvoice() {
+      if (!currentInvoiceData) {
+        alert('No invoice data available for printing.');
+        return;
+      }
+      
+      try {
+        window.print();
+        console.log('? Invoice sent to printer');
+      } catch (error) {
+        console.error('? Error printing invoice:', error);
+        alert('Error printing invoice. Please try again.');
+      }
+    }
+    
+    async function uploadReceipt() {
+      console.log('[RECEIPT-UPLOAD] Starting receipt upload process...');
+      const fileInput = document.getElementById('receiptFile');
+      const file = fileInput.files[0];
+      
+      if (!file) {
+        alert('Please select a file to upload.');
+        console.warn('[RECEIPT-UPLOAD] No file selected');
+        return;
+      }
+      
+      console.log('[RECEIPT-UPLOAD] File selected:', {
+        name: file.name,
+        type: file.type,
+        size: file.size,
+        paymentId: currentPaymentId
+      });
+      
+      // Validate file size (10MB limit)
+      if (file.size > 10 * 1024 * 1024) {
+        alert('File size must be less than 10MB.');
+        console.warn('[RECEIPT-UPLOAD] File too large:', file.size);
+        return;
+      }
+      
+      // Validate file type
+      const allowedTypes = ['application/pdf', 'image/jpeg', 'image/jpg', 'image/png'];
+      if (!allowedTypes.includes(file.type)) {
+        alert('Please upload a PDF, JPG, or PNG file.');
+        console.warn('[RECEIPT-UPLOAD] Invalid file type:', file.type);
+        return;
+      }
+      
+      // Convert file to base64 for storage
+      const reader = new FileReader();
+      reader.onload = async function(e) {
+        console.log('[RECEIPT-UPLOAD] File read successfully, preparing receipt data...');
+        const receiptData = {
+          paymentId: currentPaymentId,
+          fileName: file.name,
+          fileType: file.type,
+          fileSize: file.size,
+          uploadDate: new Date().toISOString(),
+          base64Data: e.target.result.split(',')[1],
+          status: 'pending_approval'
+        };
+        
+        console.log('[RECEIPT-UPLOAD] Receipt data prepared:', {
+          paymentId: receiptData.paymentId,
+          fileName: receiptData.fileName,
+          fileType: receiptData.fileType,
+          fileSize: receiptData.fileSize,
+          uploadDate: receiptData.uploadDate,
+          status: receiptData.status,
+          base64Length: receiptData.base64Data?.length || 0
+        });
+        
+        // HYBRID ARCHITECTURE: SUPABASE-FIRST
+        // Step 1: Try to save to Supabase FIRST
+        let supabaseSaved = false;
+        let supabaseReceiptId = null;
+        
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const orgName = user.organization || user.org || 'Default Organization';
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          const orgData = organizations[orgName];
+          const organizationId = orgData?.id || user.organizationId;
+          
+          console.log('[RECEIPT-UPLOAD] Organization info:', {
+            orgName: orgName,
+            organizationId: organizationId,
+            hasOrgData: !!orgData
+          });
+          
+          try {
+            const receiptRecord = {
+              payment_id: currentPaymentId,
+              organization_id: organizationId,
+              organization_name: orgName,
+              file_name: receiptData.fileName,
+              file_type: receiptData.fileType,
+              file_size: receiptData.fileSize,
+              base64_data: receiptData.base64Data,
+              file_data: receiptData.base64Data, // Alias for compatibility
+              upload_date: receiptData.uploadDate,
+              status: 'pending_approval'
+            };
+            
+            console.log('[RECEIPT-UPLOAD] Attempting to save to Supabase FIRST:', {
+              payment_id: receiptRecord.payment_id,
+              organization_id: receiptRecord.organization_id,
+              organization_name: receiptRecord.organization_name,
+              file_name: receiptRecord.file_name,
+              status: receiptRecord.status
+            });
+            
+            const { data, error } = await window.supabaseClient
+              .from('payment_receipts')
+              .insert([receiptRecord])
+              .select()
+              .single();
+            
+            if (error) {
+              // 404 or PGRST116 means table doesn't exist yet
+              if (error.code === 'PGRST116' || error.message?.includes('404') || error.message?.includes('relation') || error.message?.includes('does not exist')) {
+                console.warn('[RECEIPT-UPLOAD] payment_receipts table does not exist in Supabase yet. Will save to localStorage as fallback.');
+                console.warn('[RECEIPT-UPLOAD] Please run the migration: supabase/migrations/20250120000000_create_payment_receipts_table.sql');
+              } else {
+                console.error('? [RECEIPT-UPLOAD] Error saving receipt to Supabase:', error);
+                console.error('? [RECEIPT-UPLOAD] Error details:', JSON.stringify(error, null, 2));
+                console.warn('[RECEIPT-UPLOAD] Falling back to localStorage');
+              }
+            } else {
+              console.log('? [RECEIPT-UPLOAD] Receipt saved to Supabase successfully:', data);
+              console.log('? [RECEIPT-UPLOAD] Receipt ID:', data.id);
+              supabaseSaved = true;
+              supabaseReceiptId = data.id;
+              
+              // Update receiptData with Supabase ID
+              receiptData.id = data.id;
+              receiptData.supabaseId = data.id;
+            }
+          } catch (err) {
+            console.error('? [RECEIPT-UPLOAD] Exception saving receipt to Supabase:', err);
+            console.error('? [RECEIPT-UPLOAD] Exception stack:', err.stack);
+            console.warn('[RECEIPT-UPLOAD] Falling back to localStorage');
+          }
+        } else {
+          console.warn('[RECEIPT-UPLOAD] Supabase client not available, will save to localStorage as fallback');
+        }
+        
+        // Step 2: Save to localStorage as fallback/cache (only if Supabase save failed or for offline support)
+        let receipts = JSON.parse(localStorage.getItem('payment_receipts') || '[]');
+        
+        // If Supabase save succeeded, update the receipt in localStorage with Supabase ID
+        // If Supabase save failed, add to localStorage for later sync
+        if (supabaseSaved) {
+          // Update existing receipt or add new one with Supabase ID
+          const existingIndex = receipts.findIndex(r => r.paymentId === receiptData.paymentId);
+          if (existingIndex >= 0) {
+            receipts[existingIndex] = { ...receiptData, id: supabaseReceiptId, supabaseId: supabaseReceiptId };
+          } else {
+            receipts.push({ ...receiptData, id: supabaseReceiptId, supabaseId: supabaseReceiptId });
+          }
+          console.log('? [RECEIPT-UPLOAD] Updated localStorage cache with Supabase receipt ID');
+        } else {
+          // Queue for sync if Supabase save failed
+          receipts.push(receiptData);
+          console.log('[RECEIPT-UPLOAD] Receipt saved to localStorage for later sync. Total receipts:', receipts.length);
+          
+          // Queue for sync
+          if (typeof window.queueForSync === 'function') {
+            window.queueForSync('payment_receipt', receiptData);
+            console.log('[RECEIPT-UPLOAD] Receipt queued for sync');
+          }
+        }
+        
+        localStorage.setItem('payment_receipts', JSON.stringify(receipts));
+        
+        // Update the payment record
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgName = user.organization || user.org || 'Default Organization';
+        const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        const orgData = organizations[orgName];
+        
+        if (orgData && orgData.subscription && orgData.subscription.lastPayment) {
+          orgData.subscription.lastPayment.receiptUploaded = true;
+          orgData.subscription.lastPayment.receiptData = receiptData;
+          
+          // Supabase-first: Write to Supabase first, then cache in localStorage
+          let supabaseSuccess = false;
+          if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+            try {
+              const { error } = await window.supabaseClient
+                .from('subscriptions')
+                .update({
+                  last_payment: {
+                    ...orgData.subscription.lastPayment,
+                    receiptUploaded: true,
+                    receiptData: receiptData
+                  }
+                })
+                .eq('organization_id', orgData.id);
+              
+              if (error) {
+                console.warn('?? Could not update subscription in Supabase:', error);
+                // Try updating organizations table as fallback
+                const { error: orgError } = await window.supabaseClient
+                  .from('organizations')
+                  .update({
+                    settings: {
+                      ...(orgData.settings || {}),
+                      last_payment: {
+                        ...orgData.subscription.lastPayment,
+                        receiptUploaded: true,
+                        receiptData: receiptData
+                      }
+                    }
+                  })
+                  .eq('id', orgData.id);
+                
+                if (!orgError) {
+                  supabaseSuccess = true;
+                  console.log('? Updated receipt in organizations.settings');
+                  // Cache to localStorage immediately after successful Supabase write
+                  // Supabase write: supabaseClient.update() completed above
+                  organizations[orgName] = orgData;
+                  localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+                }
+              } else {
+                supabaseSuccess = true;
+                console.log('? Updated receipt in Supabase subscriptions table');
+                // Cache to localStorage immediately after successful Supabase write
+                // Supabase write: supabaseClient.update() completed above
+                organizations[orgName] = orgData;
+                localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+              }
+            } catch (err) {
+              console.warn('?? Could not update subscription in Supabase:', err);
+              // Fallback: Cache to localStorage if Supabase write failed
+              organizations[orgName] = orgData;
+              localStorage.setItem('organizations', JSON.stringify(organizations));
+            }
+          } else {
+            // Supabase not available - fallback to localStorage only
+            organizations[orgName] = orgData;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+          }
+        }
+        
+        alert('Receipt uploaded successfully! It will be reviewed by our platform admin within 24-48 hours.');
+        
+        // Update the invoice display
+        if (currentInvoiceData) {
+          currentInvoiceData.payment.receiptUploaded = true;
+          displayInvoice();
+        }
+        
+        console.log('? Receipt uploaded:', receiptData);
+      };
+      
+      reader.readAsDataURL(file);
+    }
+    
+    async function deleteReceipt() {
+      const confirmation = confirm('Are you sure you want to delete the uploaded receipt?\n\nYou will be able to upload a new receipt after deletion.');
+      
+      if (!confirmation) {
+        return;
+      }
+      
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgName = user.organization || user.org || 'Default Organization';
+        const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        const orgData = organizations[orgName];
+        
+        if (!orgData || !orgData.subscription || !orgData.subscription.lastPayment) {
+          alert('No payment record found.');
+          return;
+        }
+        
+        const payment = orgData.subscription.lastPayment;
+        const paymentId = payment.id || payment.payment_id || currentPaymentId;
+        
+        // 1. Delete receipt from Supabase payment_receipts table
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && paymentId) {
+          try {
+            // Find and delete receipt from payment_receipts
+            const { data: receipts, error: findError } = await window.supabaseClient
+              .from('payment_receipts')
+              .select('id')
+              .eq('payment_id', paymentId)
+              .or(`organization_id.eq.${orgData.id},organization_name.eq.${orgName}`);
+            
+            if (!findError && receipts && receipts.length > 0) {
+              for (const receipt of receipts) {
+                const { error: deleteError } = await window.supabaseClient
+                  .from('payment_receipts')
+                  .delete()
+                  .eq('id', receipt.id);
+                
+                if (deleteError) {
+                  console.warn('[INVOICE] Could not delete receipt from Supabase:', deleteError);
+                } else {
+                  console.log('? Deleted receipt from Supabase payment_receipts');
+                }
+              }
+            }
+          } catch (err) {
+            console.warn('[INVOICE] Error deleting receipt from Supabase:', err);
+          }
+        }
+        
+        // 2. Remove receipt from localStorage payment_receipts
+        try {
+          let receipts = JSON.parse(localStorage.getItem('payment_receipts') || '[]');
+          receipts = receipts.filter(r => {
+            const rPaymentId = r.paymentId || r.payment_id;
+            return rPaymentId !== paymentId && !rPaymentId.includes(paymentId) && !paymentId.includes(rPaymentId);
+          });
+          localStorage.setItem('payment_receipts', JSON.stringify(receipts));
+          console.log('? Removed receipt from localStorage');
+        } catch (err) {
+          console.warn('[INVOICE] Error updating localStorage receipts:', err);
+        }
+        
+        // 3. Update payment record - remove receipt flags
+        payment.receiptUploaded = false;
+        delete payment.receiptData;
+        
+        // Supabase-first: Update Supabase first, then cache in localStorage
+        // 4. Update Supabase subscriptions table if available
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+          try {
+            const { error } = await window.supabaseClient
+              .from('subscriptions')
+              .update({
+                last_payment: {
+                  ...payment,
+                  receiptUploaded: false,
+                  receiptData: null
+                }
+              })
+              .eq('organization_id', orgData.id);
+              
+            if (error) {
+              console.warn('?? Error updating Supabase subscriptions:', error);
+              // Try updating organizations table as fallback
+              try {
+                await window.supabaseClient
+                  .from('organizations')
+                  .update({
+                    settings: {
+                      ...(orgData.settings || {}),
+                      last_payment: {
+                        ...payment,
+                        receiptUploaded: false,
+                        receiptData: null
+                      }
+                    }
+                  })
+                  .eq('id', orgData.id);
+              } catch (orgErr) {
+                console.warn('[INVOICE] Error updating Supabase organizations:', orgErr);
+                // Fallback: Cache to localStorage even if Supabase write failed
+                organizations[orgName] = orgData;
+                localStorage.setItem('organizations', JSON.stringify(organizations));
+              }
+            } else {
+              console.log('? Updated subscription in Supabase');
+              // Cache to localStorage immediately after successful Supabase write
+              // Supabase write: supabaseClient.update() completed above
+              organizations[orgName] = orgData;
+              localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+            }
+          } catch (err) {
+            console.warn('?? Could not update subscription in Supabase:', err);
+            // Fallback: Cache to localStorage if Supabase exception
+            organizations[orgName] = orgData;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+          }
+        } else {
+          // Supabase not available - fallback to localStorage only
+          organizations[orgName] = orgData;
+          localStorage.setItem('organizations', JSON.stringify(organizations));
+        }
+        
+        // 5. Update invoice data and refresh display
+        if (currentInvoiceData && currentInvoiceData.payment) {
+          currentInvoiceData.payment.receiptUploaded = false;
+          delete currentInvoiceData.payment.receiptData;
+        }
+        
+        displayInvoice();
+        alert('Receipt deleted successfully! You can now upload a new receipt.');
+      } catch (error) {
+        console.error('? Error deleting receipt:', error);
+        alert('Error deleting receipt. Please try again.');
+      }
+    }
+    
+    // Make deleteReceipt globally accessible
+    window.deleteReceipt = deleteReceipt;
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

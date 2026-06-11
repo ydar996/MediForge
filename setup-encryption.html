@@ -1,0 +1,622 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Setup Encryption - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .setup-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+      padding: 40px;
+      max-width: 500px;
+      width: 100%;
+    }
+    
+    .setup-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .setup-header h1 {
+      color: #667eea;
+      font-size: 2rem;
+      margin: 0 0 10px 0;
+    }
+    
+    .setup-header p {
+      color: #666;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+    }
+    
+    .info-box h3 {
+      margin: 0 0 10px 0;
+      color: #1976D2;
+      font-size: 1rem;
+    }
+    
+    .info-box ul {
+      margin: 10px 0 0 0;
+      padding-left: 20px;
+      color: #555;
+      font-size: 0.9rem;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .password-strength {
+      margin-top: 8px;
+      font-size: 0.85rem;
+      min-height: 20px;
+    }
+    
+    .password-strength.weak {
+      color: #d32f2f;
+    }
+    
+    .password-strength.medium {
+      color: #f57c00;
+    }
+    
+    .password-strength.strong {
+      color: #388e3c;
+    }
+    
+    .button {
+      width: 100%;
+      padding: 14px 20px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      margin-top: 10px;
+    }
+    
+    .button-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      box-shadow: 0 4px 15px rgba(102, 126, 234, 0.3);
+    }
+    
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(102, 126, 234, 0.4);
+    }
+    
+    .button-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .button-secondary {
+      background: #f5f5f5;
+      color: #666;
+    }
+    
+    .button-secondary:hover {
+      background: #e0e0e0;
+    }
+    
+    .status-message {
+      margin-top: 15px;
+      padding: 12px;
+      border-radius: 6px;
+      font-size: 0.9rem;
+      display: none;
+    }
+    
+    .status-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+      display: block;
+    }
+    
+    .status-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+      display: block;
+    }
+    
+    .back-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .back-link a {
+      color: #667eea;
+      text-decoration: none;
+      font-size: 0.9rem;
+    }
+    
+    .back-link a:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <div class="setup-container">
+    <div class="setup-header">
+      <h1>&#128274; Setup Encryption</h1>
+      <p>Enable end-to-end encryption for your organization's patient data</p>
+    </div>
+
+    <div class="info-box">
+      <h3>Why Enable Encryption?</h3>
+      <ul>
+        <li><strong>HIPAA/GDPR Compliance:</strong> Required for handling protected health information</li>
+        <li><strong>Data Security:</strong> Patient data encrypted at rest and in transit</li>
+        <li><strong>Privacy Protection:</strong> Only authorized users with the master password can decrypt data</li>
+        <li><strong>Backward Compatible:</strong> Existing data will be encrypted gradually as it's accessed</li>
+      </ul>
+    </div>
+
+    <form id="encryption-setup-form">
+      <div class="form-group">
+        <label for="master-password">Master Encryption Password *</label>
+        <input 
+          type="password" 
+          id="master-password" 
+          name="master-password" 
+          required 
+          minlength="12"
+          placeholder="Enter a strong password (min 12 characters)"
+          autocomplete="new-password"
+        >
+        <div id="password-strength" class="password-strength"></div>
+      </div>
+
+      <div class="form-group">
+        <label for="confirm-password">Confirm Master Password *</label>
+        <input 
+          type="password" 
+          id="confirm-password" 
+          name="confirm-password" 
+          required 
+          minlength="12"
+          placeholder="Re-enter the password"
+          autocomplete="new-password"
+        >
+      </div>
+
+      <button type="submit" class="button button-primary" id="setup-button">
+        Enable Encryption
+      </button>
+
+      <div id="status-message" class="status-message"></div>
+    </form>
+
+    <div class="back-link">
+      <a href="dashboard">&larr; Back to Dashboard</a>
+    </div>
+  </div>
+
+  <!-- Load required scripts -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/encryption.js"></script>
+
+  <script>
+    let isSettingUp = false;
+
+    // Check if encryption is already enabled
+    async function checkEncryptionStatus() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgId = user.organizationId || user.org;
+
+        if (!orgId || !window.supabaseClient) {
+          // No org ID or Supabase - allow setup to proceed
+          return false;
+        }
+
+        // Check if we've already determined settings column doesn't exist (cache)
+        const settingsColumnExistsKey = `settings_column_exists_${orgId}`;
+        const cachedColumnStatus = localStorage.getItem(settingsColumnExistsKey);
+        
+        if (cachedColumnStatus === 'false') {
+          // Settings column doesn't exist - encryption not enabled, allow setup
+          return false;
+        }
+
+        // Try to check encryption status (handle missing column gracefully)
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', orgId)
+            .single();
+
+          if (error) {
+            // If settings column doesn't exist, encryption is not enabled (this is expected)
+            if (error.code === '42703' || error.message?.includes('does not exist') || error.message?.includes('column')) {
+              // Cache the fact that settings column doesn't exist
+              localStorage.setItem(settingsColumnExistsKey, 'false');
+              // Settings column doesn't exist - encryption not enabled, allow setup
+              return false;
+            }
+            // Other error - don't cache, just return false
+            return false;
+          }
+
+          // Cache that settings column exists
+          localStorage.setItem(settingsColumnExistsKey, 'true');
+
+          if (data && data.settings && data.settings.encryption_enabled) {
+            // Encryption already enabled
+            document.getElementById('status-message').className = 'status-message success';
+            document.getElementById('status-message').textContent = '? Encryption is already enabled for this organization.';
+            document.getElementById('setup-button').disabled = true;
+            document.getElementById('setup-button').textContent = 'Encryption Already Enabled';
+            return true;
+          }
+
+          return false;
+        } catch (err) {
+          // Settings column doesn't exist - encryption not enabled, allow setup
+          if (err.code === '42703' || err.message?.includes('does not exist') || err.message?.includes('column')) {
+            // Cache the fact that settings column doesn't exist
+            localStorage.setItem(settingsColumnExistsKey, 'false');
+            return false; // Allow setup to proceed
+          }
+          // Other exception - don't cache, just return false
+          return false;
+        }
+      } catch (error) {
+        // Any unexpected error - allow setup to proceed
+        return false;
+      }
+    }
+
+    // Password strength checker
+    function checkPasswordStrength(password) {
+      const strengthDiv = document.getElementById('password-strength');
+      
+      if (!password || password.length < 12) {
+        strengthDiv.textContent = '';
+        strengthDiv.className = 'password-strength';
+        return false;
+      }
+
+      let strength = 0;
+      if (password.length >= 12) strength++;
+      if (password.match(/[a-z]/)) strength++;
+      if (password.match(/[A-Z]/)) strength++;
+      if (password.match(/[0-9]/)) strength++;
+      if (password.match(/[^a-zA-Z0-9]/)) strength++;
+
+      if (strength <= 2) {
+        strengthDiv.textContent = '&#9888; Weak password';
+        strengthDiv.className = 'password-strength weak';
+        return false;
+      } else if (strength === 3) {
+        strengthDiv.textContent = '? Medium password';
+        strengthDiv.className = 'password-strength medium';
+        return true;
+      } else {
+        strengthDiv.textContent = '? Strong password';
+        strengthDiv.className = 'password-strength strong';
+        return true;
+      }
+    }
+
+    // Setup encryption
+    async function setupEncryption() {
+      if (isSettingUp) {
+        return;
+      }
+
+      const passwordInput = document.getElementById('master-password');
+      const confirmInput = document.getElementById('confirm-password');
+      const password = passwordInput.value;
+      const confirmPassword = confirmInput.value;
+      const statusDiv = document.getElementById('status-message');
+      const setupButton = document.getElementById('setup-button');
+
+      // Validate passwords match
+      if (password !== confirmPassword) {
+        statusDiv.className = 'status-message error';
+        statusDiv.textContent = '? Passwords do not match. Please try again.';
+        return;
+      }
+
+      // Validate password length
+      if (password.length < 12) {
+        statusDiv.className = 'status-message error';
+        statusDiv.textContent = '? Password must be at least 12 characters long.';
+        return;
+      }
+
+      // Validate password strength
+      if (!checkPasswordStrength(password)) {
+        statusDiv.className = 'status-message error';
+        statusDiv.textContent = '? Password is too weak. Please use a stronger password with uppercase, lowercase, numbers, and special characters.';
+        return;
+      }
+
+      // Get organization ID
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgId = user.organizationId;
+
+      if (!orgId) {
+        statusDiv.className = 'status-message error';
+        statusDiv.textContent = '? Organization not found. Please log in again.';
+        return;
+      }
+
+      // Disable button during setup
+      isSettingUp = true;
+      setupButton.disabled = true;
+      setupButton.textContent = 'Setting up encryption...';
+      statusDiv.className = 'status-message info';
+      statusDiv.textContent = '? Initializing encryption... This may take a few seconds.';
+
+      try {
+        // Generate recovery key FIRST (before initializing encryption)
+        const recoveryKey = await window.encryptionService.generateRecoveryKey();
+        
+        // Initialize encryption service with master password
+        const initialized = await window.encryptionService.initialize(orgId, password);
+
+        if (!initialized) {
+          throw new Error('Failed to initialize encryption service');
+        }
+
+        // Wrap encryption key with recovery key for recovery
+        let wrappedEncryptionKey = null;
+        try {
+          wrappedEncryptionKey = await window.encryptionService.wrapEncryptionKeyWithRecoveryKey(recoveryKey);
+        } catch (err) {
+          console.warn('?? Could not wrap encryption key with recovery key:', err);
+          // Continue anyway - recovery won't work but encryption will
+        }
+
+        // Encrypt recovery key with platform admin key (for platform admin recovery)
+        const platformMasterKey = 'PLATFORM_RECOVERY_KEY_PLACEHOLDER'; // TODO: Get from platform admin settings
+        let encryptedRecoveryKey = null;
+        
+        try {
+          encryptedRecoveryKey = await window.encryptionService.encryptRecoveryKey(recoveryKey, platformMasterKey);
+        } catch (err) {
+          console.warn('?? Could not encrypt recovery key with platform key:', err);
+          // Continue anyway - platform admin recovery won't work but user recovery will
+        }
+
+        // Mark encryption as enabled in Supabase and store recovery key
+        if (window.supabaseClient) {
+          let existingSettings = {};
+          
+          // Try to get existing settings (handle missing column gracefully)
+          try {
+            const { data: orgData, error: fetchError } = await window.supabaseClient
+              .from('organizations')
+              .select('settings')
+              .eq('id', orgId)
+              .single();
+
+            // If settings column doesn't exist, that's fine - we'll create it
+            if (fetchError && (fetchError.code === '42703' || fetchError.message?.includes('does not exist') || fetchError.message?.includes('column'))) {
+              // Settings column doesn't exist yet - will be created on update
+              existingSettings = {};
+            } else if (!fetchError && orgData?.settings) {
+              existingSettings = orgData.settings;
+            }
+          } catch (err) {
+            // Settings column doesn't exist - will be created on update
+            if (err.code === '42703' || err.message?.includes('does not exist') || err.message?.includes('column')) {
+              existingSettings = {};
+            } else {
+              console.warn('?? Could not fetch existing settings:', err);
+            }
+          }
+
+          // Update settings (this will create the column if it doesn't exist)
+          const { error: updateError } = await window.supabaseClient
+            .from('organizations')
+            .update({
+              settings: {
+                ...existingSettings,
+                encryption_enabled: true,
+                encryption_setup_date: new Date().toISOString(),
+                encryption_setup_by: user.username || user.email,
+                encryption_key_wrapped: wrappedEncryptionKey || null, // Wrapped encryption key (for recovery)
+                recovery_key_encrypted: encryptedRecoveryKey || null, // Recovery key encrypted with platform key
+                recovery_key_hash: btoa(recoveryKey).substring(0, 20) + '...' // Partial hash for verification
+              }
+            })
+            .eq('id', orgId);
+
+          if (updateError) {
+            console.warn('?? Could not update organization settings:', updateError);
+            // Continue anyway - encryption is initialized
+          }
+        }
+
+        // Show recovery key to user (ONE TIME ONLY)
+        const recoveryKeyDisplay = document.createElement('div');
+        recoveryKeyDisplay.className = 'recovery-key-display';
+        recoveryKeyDisplay.style.cssText = `
+          background: #fff3cd;
+          border: 2px solid #ffc107;
+          border-radius: 8px;
+          padding: 20px;
+          margin: 20px 0;
+          text-align: center;
+        `;
+        recoveryKeyDisplay.innerHTML = `
+          <h3 style="color: #856404; margin-top: 0;">&#9888; IMPORTANT: Save Your Recovery Key</h3>
+          <p style="color: #856404; margin-bottom: 15px;">
+            <strong>You will need this recovery key if you forget your master password!</strong><br>
+            This is the <strong>only time</strong> you will see this key. Save it securely.
+          </p>
+          <div style="background: white; border: 1px solid #ddd; border-radius: 4px; padding: 15px; margin: 15px 0; font-family: monospace; font-size: 14px; word-break: break-all;">
+            ${recoveryKey}
+          </div>
+          <button onclick="copyRecoveryKey('${recoveryKey}')" style="background: #ffc107; color: #000; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 10px 5px;">
+            &#128203; Copy Recovery Key
+          </button>
+          <button onclick="hideRecoveryKey()" style="background: #4caf50; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: bold; margin: 10px 5px;">
+            ? I've Saved My Recovery Key
+          </button>
+          <p style="color: #856404; font-size: 12px; margin-top: 15px;">
+            &#128161; <strong>Tip:</strong> Save this in a password manager or secure file. You won't see it again!
+          </p>
+        `;
+        
+        // Insert recovery key display before form
+        const form = document.getElementById('encryption-setup-form');
+        form.parentNode.insertBefore(recoveryKeyDisplay, form);
+        
+        // Hide form initially
+        form.style.display = 'none';
+        
+        // Store recovery key temporarily for copy function
+        window.tempRecoveryKey = recoveryKey;
+
+        // Success message
+        statusDiv.className = 'status-message success';
+        statusDiv.textContent = '? Encryption initialized! Please save your recovery key above.';
+        
+        setupButton.textContent = 'Encryption Enabled';
+        setupButton.style.background = '#4caf50';
+
+        // Clear password fields
+        passwordInput.value = '';
+        confirmInput.value = '';
+
+      } catch (error) {
+        console.error('? Error setting up encryption:', error);
+        statusDiv.className = 'status-message error';
+        statusDiv.textContent = '? Failed to enable encryption: ' + error.message;
+        
+        setupButton.disabled = false;
+        setupButton.textContent = 'Enable Encryption';
+        isSettingUp = false;
+      }
+    }
+
+    // Helper function to copy recovery key
+    window.copyRecoveryKey = function(recoveryKey) {
+      navigator.clipboard.writeText(recoveryKey).then(() => {
+        alert('? Recovery key copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback: select text
+        const textArea = document.createElement('textarea');
+        textArea.value = recoveryKey;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          alert('? Recovery key copied to clipboard!');
+        } catch (err) {
+          alert('? Could not copy. Please manually copy the recovery key.');
+        }
+        document.body.removeChild(textArea);
+      });
+    };
+
+    // Helper function to hide recovery key and continue
+    window.hideRecoveryKey = function() {
+      const recoveryKeyDisplay = document.querySelector('.recovery-key-display');
+      if (recoveryKeyDisplay) {
+        recoveryKeyDisplay.remove();
+      }
+      
+      // Show form again (hidden during recovery key display)
+      const form = document.getElementById('encryption-setup-form');
+      form.style.display = 'block';
+      
+      // Redirect to dashboard after 2 seconds
+      setTimeout(() => {
+        window.location.href = '/dashboard';
+      }, 2000);
+    };
+
+    // Event listeners
+    document.getElementById('master-password').addEventListener('input', function(e) {
+      checkPasswordStrength(e.target.value);
+    });
+
+    document.getElementById('encryption-setup-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      setupEncryption();
+    });
+
+    // Check encryption status on load
+    window.addEventListener('load', async function() {
+      // Verify user is logged in
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.username) {
+        window.location.href = '/login';
+        return;
+      }
+
+      // Check if encryption is already enabled
+      await checkEncryptionStatus();
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

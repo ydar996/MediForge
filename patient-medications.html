@@ -1,0 +1,339 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#008751">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>My Medications - Patient Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    :root {
+      --nigerian-green: #008751;
+      --nigerian-green-dark: #006B3F;
+      --nigerian-white: #FFFFFF;
+      --nigerian-gold: #FFD700;
+      --warm-beige: #F5F5DC;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--warm-beige);
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--nigerian-green) 0%, var(--nigerian-green-dark) 100%);
+      color: var(--nigerian-white);
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    
+    .nav-bar {
+      background: var(--nigerian-white);
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .nav-bar a {
+      color: var(--nigerian-green);
+      text-decoration: none;
+      font-weight: 500;
+      padding: 8px 15px;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    
+    .nav-bar a:hover {
+      background: var(--warm-beige);
+    }
+    
+    .nav-bar a.active {
+      background: var(--nigerian-green);
+      color: var(--nigerian-white);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    
+    .medications-list {
+      background: var(--nigerian-white);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .medication-item {
+      padding: 25px;
+      border-bottom: 1px solid #eee;
+      transition: background 0.3s;
+    }
+    
+    .medication-item:hover {
+      background: var(--warm-beige);
+    }
+    
+    .medication-item:last-child {
+      border-bottom: none;
+    }
+    
+    .medication-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .medication-name {
+      font-size: 1.3rem;
+      font-weight: bold;
+      color: var(--nigerian-green);
+    }
+    
+    .medication-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .status-active {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .status-discontinued {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .medication-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .detail-item {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .detail-item label {
+      color: #666;
+      font-size: 0.85rem;
+      font-weight: 600;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .detail-item .value {
+      color: #333;
+      font-weight: 500;
+      font-size: 1rem;
+    }
+    
+    .instructions {
+      background: var(--warm-beige);
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 4px solid var(--nigerian-green);
+      margin-top: 15px;
+    }
+    
+    .instructions label {
+      color: var(--nigerian-green);
+      font-weight: 600;
+      display: block;
+      margin-bottom: 8px;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--nigerian-green);
+    }
+    
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px;
+      border-left: 4px solid #c33;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>&#128138; My Medications</h1>
+    <p class="subtitle">View your current and past medications</p>
+  </div>
+  
+  <div class="nav-bar">
+    <a href="patient-dashboard">&#127968; Dashboard</a>
+    <a href="patient-profile">&#128100; Profile</a>
+    <a href="patient-appointments">&#128197; Appointments</a>
+    <a href="patient-medications" class="active">&#128138; Medications</a>
+    <a href="patient-results">&#128200; Results</a>
+    <a href="patient-summary">&#128196; Summary</a>
+    <a href="#" onclick="logout(); return false;" style="margin-left: auto; color: #c33;">&#128682; Logout</a>
+  </div>
+  
+  <div class="container">
+    <div id="loading" class="loading">
+      <p>Loading medications...</p>
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="content" style="display: none;">
+      <div class="medications-list" id="medicationsList">
+        <!-- Medications will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-auth.js"></script>
+  <script src="js/patient-data-loader.js"></script>
+  <script src="js/security.js"></script>
+  
+  <script>
+    window.ensurePatientAccess();
+    
+    async function loadMedications() {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const content = document.getElementById('content');
+      
+      try {
+        const medications = await window.getPatientMedications();
+        
+        const listContainer = document.getElementById('medicationsList');
+        
+        if (medications.length === 0) {
+          listContainer.innerHTML = `
+            <div class="empty-state">
+              <h3>No medications found</h3>
+              <p>You don't have any medications recorded yet.</p>
+            </div>
+          `;
+        } else {
+          listContainer.innerHTML = medications.map(med => {
+            const name = med.medication_name || med.name || med.drug_name || 'Unknown Medication';
+            const status = med.status || 'active';
+            const dosage = med.dosage || med.dose || 'Not specified';
+            const frequency = med.frequency || med.how_often || 'Not specified';
+            const route = med.route || med.route_of_administration || 'Not specified';
+            const startDate = med.start_date || med.prescribed_date || med.date;
+            const endDate = med.end_date || med.discontinued_date;
+            const doctor = med.prescribing_doctor || med.doctor || med.physician || 'Not specified';
+            const instructions = med.instructions || med.directions || med.note || '';
+            
+            const statusClass = status === 'active' || status === 'current' ? 'status-active' : 'status-discontinued';
+            const statusText = status === 'active' || status === 'current' ? 'Active' : 'Discontinued';
+            
+            return `
+              <div class="medication-item">
+                <div class="medication-header">
+                  <div class="medication-name">${name}</div>
+                  <span class="medication-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="medication-details">
+                  <div class="detail-item">
+                    <label>&#128138; Dosage</label>
+                    <span class="value">${dosage}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>? Frequency</label>
+                    <span class="value">${frequency}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>&#128207; Route</label>
+                    <span class="value">${route}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>&#127973; Prescribed By</label>
+                    <span class="value">${doctor}</span>
+                  </div>
+                  ${startDate ? `
+                    <div class="detail-item">
+                      <label>&#128197; Start Date</label>
+                      <span class="value">${new Date(startDate).toLocaleDateString()}</span>
+                    </div>
+                  ` : ''}
+                  ${endDate ? `
+                    <div class="detail-item">
+                      <label>&#128197; End Date</label>
+                      <span class="value">${new Date(endDate).toLocaleDateString()}</span>
+                    </div>
+                  ` : ''}
+                </div>
+                ${instructions ? `
+                  <div class="instructions">
+                    <label>&#128221; Instructions</label>
+                    <div class="value">${instructions}</div>
+                  </div>
+                ` : ''}
+              </div>
+            `;
+          }).join('');
+        }
+        
+        loading.style.display = 'none';
+        content.style.display = 'block';
+        
+      } catch (err) {
+        console.error('Error loading medications:', err);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = `Error loading medications: ${err.message}`;
+      }
+    }
+    
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('user');
+        window.location.href = '/patient-login';
+      }
+    }
+    
+    window.addEventListener('load', loadMedications);
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

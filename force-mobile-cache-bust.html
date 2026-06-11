@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force Mobile Cache Bust - MediForge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 400px;
+            margin: 0 auto;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            min-height: 100vh;
+        }
+        .container {
+            background: rgba(255,255,255,0.1);
+            padding: 20px;
+            border-radius: 15px;
+            backdrop-filter: blur(10px);
+            text-align: center;
+        }
+        button {
+            background: #ff6b6b;
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 25px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        button:hover {
+            background: #ff5252;
+            transform: translateY(-2px);
+        }
+        .success {
+            background: #4ecdc4;
+        }
+        .success:hover {
+            background: #45b7b8;
+        }
+        .status {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 10px;
+            background: rgba(255,255,255,0.2);
+        }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Mobile Cache Buster</h1>
+        <p>This tool will force your mobile browser to load the latest files.</p>
+        
+        <div id="status" class="status">
+            <h3>Ready to Clear Cache</h3>
+            <p>Click the button below to force cache refresh</p>
+        </div>
+        
+        <button onclick="forceCacheBust()">?? Force Cache Refresh</button>
+        <button onclick="goToLogin()" class="success">?? Go to Login</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        function forceCacheBust() {
+            console.log('?? Starting aggressive mobile cache bust...');
+            
+            // Update status
+            document.getElementById('status').innerHTML = `
+                <h3>?? Clearing Cache...</h3>
+                <p>Please wait while we clear your browser cache...</p>
+            `;
+            
+            try {
+                // 1. Clear all localStorage data
+                console.log('?? Clearing localStorage...');
+                const keysToKeep = ['user', 'organizations', 'users'];
+                const allKeys = Object.keys(localStorage);
+                let clearedCount = 0;
+                
+                allKeys.forEach(key => {
+                    if (!keysToKeep.includes(key)) {
+                        localStorage.removeItem(key);
+                        clearedCount++;
+                    }
+                });
+                console.log(`? Cleared ${clearedCount} localStorage items`);
+                
+                // 2. Clear all caches if available
+                if ('caches' in window) {
+                    console.log('?? Clearing browser caches...');
+                    caches.keys().then(cacheNames => {
+                        cacheNames.forEach(cacheName => {
+                            caches.delete(cacheName);
+                            console.log(`? Cleared cache: ${cacheName}`);
+                        });
+                    });
+                }
+                
+                // 3. Force service worker update
+                if ('serviceWorker' in navigator) {
+                    console.log('?? Updating service worker...');
+                    navigator.serviceWorker.getRegistrations().then(registrations => {
+                        registrations.forEach(registration => {
+                            registration.unregister();
+                            console.log('? Service worker unregistered');
+                        });
+                    });
+                }
+                
+                // 4. Set new version in localStorage
+                const newVersion = Date.now().toString();
+                localStorage.setItem('appVersion', newVersion);
+                localStorage.setItem('cacheBustVersion', newVersion);
+                console.log(`? Set new version: ${newVersion}`);
+                
+                // 5. Force reload with cache busting
+                const currentUrl = new URL(window.location);
+                currentUrl.searchParams.set('cb', newVersion);
+                currentUrl.searchParams.set('v', newVersion);
+                currentUrl.searchParams.set('refresh', '1');
+                
+                // Update status
+                document.getElementById('status').innerHTML = `
+                    <h3>? Cache Cleared!</h3>
+                    <p>Redirecting to login with fresh files...</p>
+                `;
+                
+                // Redirect to login with cache busting
+                setTimeout(() => {
+                    window.location.href = `/login?cb=${newVersion}&v=${newVersion}&refresh=1`;
+                }, 2000);
+                
+            } catch (error) {
+                console.error('? Cache bust failed:', error);
+                document.getElementById('status').innerHTML = `
+                    <h3>? Cache Clear Failed</h3>
+                    <p>Error: ${error.message}</p>
+                    <p>Try manually refreshing the page</p>
+                `;
+            }
+        }
+        
+        function goToLogin() {
+            const newVersion = Date.now().toString();
+            window.location.href = `/login?cb=${newVersion}&v=${newVersion}&refresh=1`;
+        }
+        
+        // Auto-run cache bust on page load
+        window.addEventListener('load', function() {
+            console.log('?? Auto-running mobile cache bust...');
+            setTimeout(forceCacheBust, 1000);
+        });
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

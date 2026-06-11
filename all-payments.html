@@ -1,0 +1,230 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Payments - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=225">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=289"></script>
+  <script src="js/payments.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1>📋 All Historical Payments</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">← Back to Dashboard</button>
+
+  <div style="max-width: 1400px; margin: 20px auto;">
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <table class="billing-table" style="width: 100%;">
+        <thead>
+          <tr>
+            <th class="center">Date</th>
+            <th class="left">Reference</th>
+            <th class="left">Patient</th>
+            <th class="left">Invoice #</th>
+            <th class="right">Amount</th>
+            <th class="center">Method</th>
+            <th class="center">Status</th>
+            <th class="center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="all-payments-body">
+          <tr>
+            <td colspan="8" style="text-align: center; padding: 20px;">Loading payments...</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <script>
+    async function loadAllPayments() {
+      try {
+        const tbody = document.getElementById('all-payments-body');
+        if (!tbody) return;
+        
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Loading payments...</td></tr>';
+        
+        const payments = await getAllPayments();
+        
+        if (!Array.isArray(payments) || payments.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #666;">No payments found</td></tr>';
+          return;
+        }
+        
+        // Sort by date (newest first)
+        const sortedPayments = payments.sort((a, b) => {
+          const dateA = new Date(a.date || a.paymentDate || 0);
+          const dateB = new Date(b.date || b.paymentDate || 0);
+          return dateB - dateA;
+        });
+        
+        tbody.innerHTML = '';
+        
+        const defaultCurrency = getDefaultCurrency();
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+        };
+        
+        sortedPayments.forEach(payment => {
+          const row = document.createElement('tr');
+          const paymentDate = payment.date || payment.paymentDate || 'N/A';
+          const reference = payment.reference || payment.id || 'N/A';
+          const invoiceNumber = payment.invoiceNumber || (payment.invoiceId ? `INV-${payment.invoiceId}` : 'N/A');
+          const patientName = payment.patientName || 'Unknown Patient';
+          const amount = parseFloat(payment.amount || 0);
+          const currency = payment.currency || defaultCurrency;
+          const method = payment.method || payment.paymentMethod || 'cash';
+          const methodNames = {
+            'cash': 'Cash',
+            'mobile_money': 'Mobile Money',
+            'card': 'Card',
+            'bank_transfer': 'Bank Transfer',
+            'check': 'Check'
+          };
+          const methodDisplay = methodNames[method] || method.replace('_', ' ').replace(/\b\w/g, l => l.toUpperCase());
+          const status = payment.status || 'completed';
+          const statusDisplay = status.charAt(0).toUpperCase() + status.slice(1);
+          const statusBg = status === 'completed' ? '#d4edda' : status === 'voided' ? '#e2e3e5' : status === 'refunded' ? '#f8d7da' : '#fff3cd';
+          const statusColor = status === 'completed' ? '#155724' : status === 'voided' ? '#383d41' : status === 'refunded' ? '#721c24' : '#856404';
+          const canVoid = status === 'completed';
+          const canEdit = status === 'completed';
+          const canPrint = status === 'completed' || status === 'refunded';
+          row.innerHTML = `
+            <td class="center">${paymentDate}</td>
+            <td class="left">${reference}</td>
+            <td class="left">${patientName}</td>
+            <td class="left">${invoiceNumber}</td>
+            <td class="right">${formatCurrencyFn(amount, currency)}</td>
+            <td class="center">${methodDisplay}</td>
+            <td class="center">
+              <span style="padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: ${statusBg}; color: ${statusColor};">
+                ${statusDisplay.toUpperCase()}
+              </span>
+            </td>
+            <td class="center">
+              ${canEdit ? `<button onclick="editPayment('${payment.id}')" style="background: #FF9800; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">Edit</button>` : ''}
+              ${canPrint ? `<button onclick="printReceipt('${payment.id}')" style="background: #4CAF50; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">Receipt</button>` : ''}
+              ${canVoid ? `<button onclick="voidPaymentConfirm('${payment.id}')" style="background: #6c757d; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">Void</button>` : ''}
+              ${canEdit ? `<button onclick="deletePaymentConfirm('${payment.id}')" style="background: #f44336; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>` : ''}
+            </td>
+          `;
+          tbody.appendChild(row);
+        });
+      } catch (error) {
+        console.error('Error loading all payments:', error);
+        const tbody = document.getElementById('all-payments-body');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Error loading payments. Please try again.</td></tr>';
+        }
+      }
+    }
+
+    function getDefaultCurrency() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      const saved = localStorage.getItem(`${org}_billing_default_currency`);
+      return saved || 'CAD';
+    }
+
+    function editPayment(paymentId) {
+      window.location.href = `/edit-payment?id=${paymentId}`;
+    }
+
+    async function voidPaymentConfirm(paymentId) {
+      const reason = prompt('Reason for void (e.g., duplicate entry, wrong amount):');
+      if (!reason || reason.trim().length < 3) {
+        if (reason !== null) alert('Please provide a reason (min 3 characters).');
+        return;
+      }
+      try {
+        if (typeof window.processVoid !== 'function') {
+          alert('Void function not available. Ensure payments.js is loaded.');
+          return;
+        }
+        const result = await window.processVoid(paymentId, reason.trim());
+        if (result) {
+          alert('Payment voided successfully.');
+          await loadAllPayments();
+        }
+      } catch (err) {
+        console.error('Void error:', err);
+        alert('Error voiding payment: ' + (err.message || err));
+      }
+    }
+
+    function printReceipt(paymentId) {
+      if (typeof window.printReceipt === 'function') {
+        window.printReceipt(paymentId);
+      } else {
+        alert('Receipt printing function not available');
+      }
+    }
+
+    async function deletePaymentConfirm(paymentId) {
+      const payments = await getAllPayments();
+      const payment = payments.find(p => p.id === paymentId);
+      
+      if (!payment) {
+        alert('Payment not found');
+        return;
+      }
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+      };
+      
+      if (confirm(`DELETE PAYMENT PERMANENTLY?\n\nPayment: ${payment.reference || payment.id}\nAmount: ${formatCurrencyFn(payment.amount || 0, payment.currency || 'CAD')}\nMethod: ${(payment.method || payment.paymentMethod || 'Unknown').replace('_', ' ').toUpperCase()}\n\nThis will remove the payment and reverse it on the invoice.\n\nThis action CANNOT be undone!\n\nAre you sure?`)) {
+        if (confirm('Final confirmation: Permanently delete this payment?')) {
+          try {
+            const success = await deletePayment(paymentId);
+            
+            if (success) {
+              alert('Payment permanently deleted');
+              await loadAllPayments(); // Refresh the list
+            } else {
+              alert('Failed to delete payment. Check console for details.');
+            }
+          } catch (error) {
+            console.error('Error deleting payment:', error);
+            alert('Error deleting payment: ' + (error.message || 'Unknown error'));
+          }
+        }
+      }
+    }
+
+    // Load payments when page loads
+    window.addEventListener('load', async function() {
+      await loadAllPayments();
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

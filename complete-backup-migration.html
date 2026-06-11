@@ -1,0 +1,409 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Backup Migration</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; font-size: 16px; }
+        .btn:hover { background: #0056b3; }
+        .btn-success { background: #28a745; }
+        .btn-success:hover { background: #218838; }
+        .btn-danger { background: #dc3545; }
+        .btn-danger:hover { background: #c82333; }
+        .results { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 10px 0; max-height: 400px; overflow-y: auto; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .progress { background: #e9ecef; border-radius: 10px; height: 20px; margin: 10px 0; }
+        .progress-bar { background: #007bff; height: 100%; border-radius: 10px; transition: width 0.3s; }
+        .file-input { margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ðŸ”„ Complete Backup Migration</h1>
+        <p><strong>Simple approach:</strong> Upload backup file â†’ Migrate all data to Supabase â†’ Sync app</p>
+        
+        <div class="file-input">
+            <label for="backupFile"><strong>Select Backup File:</strong></label><br>
+            <input type="file" id="backupFile" accept=".json" style="margin: 10px 0;">
+        </div>
+        
+        <button class="btn" onclick="analyzeBackup()">ðŸ“Š Analyze Backup File</button>
+        <button class="btn btn-success" onclick="migrateToSupabase()">ðŸš€ Migrate All Data to Supabase</button>
+        <button class="btn btn-danger" onclick="clearSupabase()">ðŸ—‘ï¸ Clear Supabase (Reset)</button>
+        
+        <div class="progress" id="progress" style="display: none;">
+            <div class="progress-bar" id="progressBar"></div>
+        </div>
+        
+        <div class="results" id="results">
+            <p>1. <strong>Select the backup file</strong> (mediforge-backup-2025-10-14.json)</p>
+            <p>2. <strong>Click "Analyze Backup File"</strong> to see what data we have</p>
+            <p>3. <strong>Click "Migrate All Data to Supabase"</strong> to complete the migration</p>
+            <p>4. <strong>The app will automatically sync</strong> with the updated Supabase data</p>
+        </div>
+    </div>
+
+    <script>
+        let backupData = null;
+        let supabaseClient = null;
+
+        // Initialize Supabase client
+        if (typeof window.supabaseClient !== 'undefined') {
+            supabaseClient = window.supabaseClient;
+        } else {
+            // Create Supabase client for this tool
+            const supabaseUrl = ((window.__SUPABASE_CONFIG__||{}).url||'');
+            const supabaseKey = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+            supabaseClient = supabase.createClient(supabaseUrl, supabaseKey);
+        }
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `results ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+            console.log(message);
+        }
+
+        function updateProgress(percent) {
+            const progress = document.getElementById('progress');
+            const progressBar = document.getElementById('progressBar');
+            progress.style.display = 'block';
+            progressBar.style.width = percent + '%';
+        }
+
+        function analyzeBackup() {
+            const fileInput = document.getElementById('backupFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('âŒ Please select a backup file first', 'error');
+                return;
+            }
+            
+            log('ðŸ” Analyzing backup file...');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    backupData = JSON.parse(e.target.result);
+                    log(`âœ… Backup file loaded successfully (${file.size} bytes)`);
+                    
+                    // Analyze the data structure
+                    if (backupData.patients) {
+                        log(`ðŸ“Š Found ${backupData.patients.length} patients in backup`);
+                        
+                        const withDob = backupData.patients.filter(p => p.dob);
+                        const withoutDob = backupData.patients.filter(p => !p.dob);
+                        
+                        log(`âœ… ${withDob.length} patients with DOB data`);
+                        log(`âŒ ${withoutDob.length} patients without DOB data`);
+                        
+                        if (withDob.length > 0) {
+                            log(`ðŸ“‹ Sample patients with DOB: ${withDob.slice(0, 3).map(p => `${p.firstName} ${p.lastName} (${p.dob})`).join(', ')}`);
+                        }
+                        
+                        // Check for other data types
+                        if (backupData.visits) log(`ðŸ¥ Found ${backupData.visits.length} visits`);
+                        if (backupData.prescriptions) log(`ðŸ’Š Found ${backupData.prescriptions.length} prescriptions`);
+                        if (backupData.appointments) log(`ðŸ“… Found ${backupData.appointments.length} appointments`);
+                        
+                        log('âœ… Backup analysis complete. Ready for migration!', 'success');
+                    } else {
+                        log('âŒ No patients found in backup file', 'error');
+                    }
+                } catch (error) {
+                    log(`âŒ Error parsing backup file: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        async function migrateToSupabase() {
+            if (!backupData) {
+                log('âŒ Please analyze the backup file first', 'error');
+                return;
+            }
+            
+            if (!backupData.patients) {
+                log('âŒ No patients found in backup data', 'error');
+                return;
+            }
+            
+            log('ðŸš€ Starting complete migration to Supabase...');
+            updateProgress(0);
+            
+            const orgId = '576522cc-e769-4fb4-9487-3d150857d970'; // Mecure Clinics
+            const patients = backupData.patients;
+            let successCount = 0;
+            let errorCount = 0;
+            
+            // Clear existing patients for this organization first
+            log('ðŸ—‘ï¸ Clearing existing patients for Mecure Clinics...');
+            const { error: deleteError } = await supabaseClient
+                .from('patients')
+                .delete()
+                .eq('organization_id', orgId);
+            
+            if (deleteError) {
+                log(`âš ï¸ Warning clearing existing patients: ${deleteError.message}`, 'warning');
+            } else {
+                log('âœ… Cleared existing patients');
+            }
+            
+            // Migrate patients
+            for (let i = 0; i < patients.length; i++) {
+                const patient = patients[i];
+                const progress = ((i + 1) / patients.length) * 100;
+                updateProgress(progress);
+                
+                try {
+                    // Convert backup format to Supabase format
+                    const supabasePatient = {
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        first_name: patient.firstName || '',
+                        middle_name: patient.middleName || '',
+                        last_name: patient.lastName || '',
+                        date_of_birth: patient.dob || null,
+                        gender: patient.gender || '',
+                        marital_status: patient.maritalStatus || '',
+                        phone: patient.phone || '',
+                        email: patient.email || '',
+                        address: patient.addressLine1 || '',
+                        city: patient.city || '',
+                        state: patient.state || '',
+                        country: patient.country || '',
+                        blood_group: patient.bloodGroup || '',
+                        allergies: JSON.stringify(patient.allergies || []),
+                        chronic_conditions: JSON.stringify(patient.conditions || []),
+                        emergency_contact_name: `${patient.emergencyFirstName || ''} ${patient.emergencyLastName || ''}`.trim(),
+                        emergency_contact_phone: patient.emergencyPhone || '',
+                        emergency_contact_relationship: patient.emergencyRelationship || '',
+                        created_at: patient.createdDate || new Date().toISOString(),
+                        updated_at: patient.updatedDate || new Date().toISOString()
+                    };
+                    
+                    const { error } = await supabaseClient
+                        .from('patients')
+                        .insert([supabasePatient]);
+                    
+                    if (error) {
+                        log(`âŒ Error migrating ${patient.firstName} ${patient.lastName}: ${error.message}`, 'error');
+                        errorCount++;
+                    } else {
+                        log(`âœ… Migrated ${patient.firstName} ${patient.lastName} (DOB: ${patient.dob || 'N/A'})`);
+                        successCount++;
+                    }
+                } catch (error) {
+                    log(`âŒ Error processing ${patient.firstName} ${patient.lastName}: ${error.message}`, 'error');
+                    errorCount++;
+                }
+            }
+            
+            updateProgress(100);
+            
+            log(`ðŸŽ‰ Migration complete!`, 'success');
+            log(`âœ… Successfully migrated: ${successCount} patients`);
+            log(`âŒ Failed to migrate: ${errorCount} patients`);
+            
+            // Verify the migration
+            log('ðŸ” Verifying migration...');
+            const { data: verifyPatients, error: verifyError } = await supabaseClient
+                .from('patients')
+                .select('*')
+                .eq('organization_id', orgId);
+            
+            if (verifyError) {
+                log(`âŒ Verification error: ${verifyError.message}`, 'error');
+            } else {
+                const withDob = verifyPatients.filter(p => p.date_of_birth);
+                log(`âœ… Verification complete: ${verifyPatients.length} patients in Supabase`);
+                log(`âœ… ${withDob.length} patients with DOB data`);
+                
+                // Now sync the app
+                log('ðŸ”„ Syncing app with Supabase...');
+                await syncAppWithSupabase();
+            }
+        }
+
+        async function syncAppWithSupabase() {
+            log('ðŸ”„ Creating app sync code...');
+            
+            const syncCode = `
+// APP SYNC CODE - Paste this in your EHR app console
+console.log('ðŸ”„ Syncing app with Supabase...');
+
+// Override loadPatients to use Supabase as primary source
+window.loadPatients = async function(page = 1) {
+    console.log('ðŸ”„ Loading patients from Supabase (primary source)...');
+    
+    const supabaseClient = window.supabaseClient;
+    
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            const { data: patients, error } = await supabaseClient
+                .from('patients')
+                .select('*')
+                .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970');
+            
+            if (error) {
+                console.error('âŒ Error loading from Supabase:', error);
+                return;
+            }
+            
+            console.log('âœ… Loaded', patients.length, 'patients from Supabase');
+            
+            // Convert to app format
+            const appPatients = patients.map(patient => ({
+                id: patient.patient_id,
+                firstName: patient.first_name || '',
+                middleName: patient.middle_name || '',
+                lastName: patient.last_name || '',
+                dob: patient.date_of_birth,
+                gender: patient.gender || '',
+                maritalStatus: patient.marital_status || '',
+                phone: patient.phone || '',
+                email: patient.email || '',
+                addressLine1: patient.address || '',
+                city: patient.city || '',
+                state: patient.state || '',
+                country: patient.country || '',
+                bloodGroup: patient.blood_group || '',
+                allergies: JSON.parse(patient.allergies || '[]'),
+                conditions: JSON.parse(patient.chronic_conditions || '[]'),
+                emergencyFirstName: patient.emergency_contact_name?.split(' ')[0] || '',
+                emergencyLastName: patient.emergency_contact_name?.split(' ').slice(1).join(' ') || '',
+                emergencyPhone: patient.emergency_contact_phone || '',
+                emergencyRelationship: patient.emergency_contact_relationship || '',
+                createdDate: patient.created_at,
+                updatedDate: patient.updated_at,
+                visits: [],
+                immunizations: [],
+                prescriptions: [],
+                hasDiabetes: false
+            }));
+            
+            // Update localStorage
+            localStorage.setItem('mecure_patients', JSON.stringify(appPatients));
+            
+            // Display patients
+            displayPatients(appPatients, page);
+            
+        } catch (error) {
+            console.error('âŒ Supabase connection failed:', error);
+        }
+    }
+};
+
+// Helper function to display patients
+function displayPatients(patients, page) {
+    // Sort patients
+    patients.sort((a, b) => {
+        const nameA = \`\${a.firstName} \${a.lastName}\`.toLowerCase();
+        const nameB = \`\${b.firstName} \${b.lastName}\`.toLowerCase();
+        return nameA.localeCompare(nameB);
+    });
+    
+    // Pagination
+    const patientsPerPage = 10;
+    const startIndex = (page - 1) * patientsPerPage;
+    const endIndex = startIndex + patientsPerPage;
+    const paginatedPatients = patients.slice(startIndex, endIndex);
+    
+    // Display patients
+    const tbody = document.getElementById('patient-list');
+    if (tbody) {
+        tbody.innerHTML = '';
+        
+        if (paginatedPatients.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">No patients found.</td></tr>';
+        } else {
+            paginatedPatients.forEach(patient => {
+                const row = document.createElement("tr");
+                row.innerHTML = \`
+                    <td>\${patient.firstName} \${patient.lastName}</td>
+                    <td>\${patient.dob}</td>
+                    <td>\${patient.gender}</td>
+                    <td>
+                        <button onclick="viewPatient('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">View</button>
+                        <button onclick="editPatient('\${patient.id}')" style="background-color: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Edit</button>
+                        <button onclick="deletePatient('\${patient.id}')" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Delete</button>
+                        <button onclick="addEncounter('\${patient.id}')" style="background-color: #fd7e14; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Encounter</button>
+                        <button onclick="addAppointment('\${patient.id}')" style="background-color: #6f42c1; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Appointment</button>
+                        <button onclick="printPatientSummary('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">ðŸ“„ Print Patient Summary</button>
+                    </td>
+                \`;
+                tbody.appendChild(row);
+            });
+        }
+    }
+    
+    // Update pagination
+    const totalPages = Math.ceil(patients.length / patientsPerPage);
+    const paginationDiv = document.getElementById('pagination-controls');
+    if (paginationDiv) {
+        paginationDiv.innerHTML = '';
+        if (totalPages > 1) {
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.style.margin = '5px';
+                button.style.padding = '5px 10px';
+                button.style.backgroundColor = i === page ? '#007bff' : '#f8f9fa';
+                button.style.color = i === page ? 'white' : 'black';
+                button.style.border = '1px solid #dee2e6';
+                button.style.borderRadius = '3px';
+                button.style.cursor = 'pointer';
+                button.onclick = () => window.loadPatients(i);
+                paginationDiv.appendChild(button);
+            }
+        }
+    }
+}
+
+console.log('âœ… App sync code ready');
+console.log('ðŸ”„ Loading patients...');
+window.loadPatients(1);
+`;
+            
+            log('ðŸ“‹ Copy the code above and paste it in your EHR app console to complete the sync', 'success');
+            log('ðŸŽ‰ Complete migration and sync process finished!', 'success');
+        }
+
+        async function clearSupabase() {
+            if (!confirm('Are you sure you want to clear all patients from Supabase? This cannot be undone!')) {
+                return;
+            }
+            
+            log('ðŸ—‘ï¸ Clearing all patients from Supabase...');
+            
+            const { error } = await supabaseClient
+                .from('patients')
+                .delete()
+                .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970');
+            
+            if (error) {
+                log(`âŒ Error clearing patients: ${error.message}`, 'error');
+            } else {
+                log('âœ… All patients cleared from Supabase', 'success');
+            }
+        }
+    </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+

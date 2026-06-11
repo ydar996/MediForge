@@ -1,0 +1,206 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Sync Unstructured Records to Supabase</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+    }
+    button {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #006b42;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #log {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-top: 20px;
+      border-radius: 6px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    .success { color: #008753; }
+    .error { color: #dc3545; }
+    .warning { color: #ffc107; }
+    .info { color: #0066cc; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Sync Unstructured Records to Supabase</h1>
+    <p>This tool will find all unstructured records in localStorage and sync them to Supabase.</p>
+    
+    <button onclick="syncRecords()" id="syncBtn">🚀 Sync All Records</button>
+    <button onclick="checkRecords()" id="checkBtn">🔍 Check Records</button>
+    <button onclick="clearLog()">🗑️ Clear Log</button>
+    
+    <div id="log"></div>
+  </div>
+
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script>
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info';
+      logDiv.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+    }
+
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.org) {
+        return `${user.org}_${key}`;
+      }
+      return key;
+    }
+
+    async function checkRecords() {
+      log('🔍 Checking for unstructured records in localStorage...', 'info');
+      clearLog();
+      
+      try {
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        log(`Found ${patients.length} patients in localStorage`, 'info');
+        
+        let totalRecords = 0;
+        patients.forEach(patient => {
+          if (patient.unstructuredRecords && Array.isArray(patient.unstructuredRecords) && patient.unstructuredRecords.length > 0) {
+            log(`\n📋 Patient: ${patient.firstName} ${patient.lastName} (ID: ${patient.id || patient.patient_id})`, 'info');
+            log(`   Found ${patient.unstructuredRecords.length} unstructured record(s):`, 'info');
+            patient.unstructuredRecords.forEach((record, idx) => {
+              const preview = (record.text || '').substring(0, 50) + '...';
+              log(`   ${idx + 1}. ID: ${record.id || 'N/A'}, Created: ${record.createdAt || 'N/A'}, Preview: ${preview}`, 'info');
+            });
+            totalRecords += patient.unstructuredRecords.length;
+          }
+        });
+        
+        if (totalRecords === 0) {
+          log('\n⚠️ No unstructured records found in localStorage', 'warning');
+          log('Records may have already been synced, or you need to add records first via add-unstructured-records page', 'info');
+        } else {
+          log(`\n✅ Total: ${totalRecords} unstructured record(s) found across ${patients.filter(p => p.unstructuredRecords && p.unstructuredRecords.length > 0).length} patient(s)`, 'success');
+        }
+      } catch (error) {
+        log(`❌ Error checking records: ${error.message}`, 'error');
+      }
+    }
+
+    async function syncRecords() {
+      const syncBtn = document.getElementById('syncBtn');
+      syncBtn.disabled = true;
+      syncBtn.textContent = '⏳ Syncing...';
+      
+      clearLog();
+      log('🚀 Starting sync of unstructured records to Supabase...', 'info');
+      
+      try {
+        // Wait for Supabase client
+        let maxAttempts = 10;
+        let attempts = 0;
+        while ((typeof window.supabaseClient === 'undefined' || !window.supabaseClient) && attempts < maxAttempts) {
+          await new Promise(resolve => setTimeout(resolve, 500));
+          attempts++;
+        }
+        
+        if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+          throw new Error('Supabase client not available. Please refresh the page and try again.');
+        }
+        
+        if (typeof window.savePatientToSupabase !== 'function') {
+          throw new Error('savePatientToSupabase function not available. Please ensure js/patients.js is loaded.');
+        }
+        
+        // Load patients from localStorage
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        log(`📋 Loaded ${patients.length} patients from localStorage`, 'info');
+        
+        let syncedCount = 0;
+        let skippedCount = 0;
+        let errorCount = 0;
+        
+        for (const patient of patients) {
+          if (patient.unstructuredRecords && Array.isArray(patient.unstructuredRecords) && patient.unstructuredRecords.length > 0) {
+            log(`\n📝 Processing patient: ${patient.firstName} ${patient.lastName} (ID: ${patient.id || patient.patient_id})`, 'info');
+            log(`   Found ${patient.unstructuredRecords.length} record(s) to sync`, 'info');
+            
+            try {
+              // Save patient to Supabase (this will include unstructured_records)
+              await window.savePatientToSupabase(patient);
+              log(`   ✅ Successfully synced ${patient.unstructuredRecords.length} record(s) to Supabase`, 'success');
+              syncedCount += patient.unstructuredRecords.length;
+            } catch (error) {
+              log(`   ❌ Error syncing records: ${error.message}`, 'error');
+              errorCount += patient.unstructuredRecords.length;
+            }
+          } else {
+            skippedCount++;
+          }
+        }
+        
+        log(`\n📊 Sync Summary:`, 'info');
+        log(`   ✅ Successfully synced: ${syncedCount} record(s)`, 'success');
+        log(`   ❌ Errors: ${errorCount} record(s)`, errorCount > 0 ? 'error' : 'info');
+        log(`   ⏭️  Skipped (no records): ${skippedCount} patient(s)`, 'info');
+        
+        if (syncedCount > 0) {
+          log(`\n✅ Sync complete! Records are now in Supabase.`, 'success');
+          log(`   You can now view them on the patient-documents page.`, 'info');
+        }
+        
+      } catch (error) {
+        log(`❌ Sync failed: ${error.message}`, 'error');
+        log(`   Please check the console for more details.`, 'error');
+      } finally {
+        syncBtn.disabled = false;
+        syncBtn.textContent = '🚀 Sync All Records';
+      }
+    }
+
+    // Auto-check on page load
+    window.addEventListener('load', function() {
+      setTimeout(checkRecords, 1000);
+    });
+  </script>
+</body>
+</html>
+

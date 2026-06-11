@@ -1,0 +1,224 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Conditions Breakdown</title>
+  <link rel="stylesheet" href="css/styles.css?v=205">
+</head>
+<body>
+  <button onclick="window.location.href='dashboard'" style="margin-bottom: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">&larr; Back to Dashboard</button>
+  <h1 id="page-title">Conditions Breakdown</h1>
+  <table id="summary-table" class="conditions-breakdown-table">
+    <thead>
+      <tr>
+        <th>Medical Condition</th>
+        <th>Total Count</th>
+        <th>Male</th>
+        <th>Female</th>
+        <th>Tribe</th>
+        <th>0-18 years</th>
+        <th>19-25 years</th>
+        <th>26-65 years</th>
+        <th>66+ years</th>
+      </tr>
+    </thead>
+    <tbody id="summary-body"></tbody>
+  </table>
+  <button onclick="window.location.href='dashboard'" style="margin-top: 20px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">&larr; Back to Dashboard</button>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251019050000"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=20251019050000"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251019043800"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=20251019050000"></script>
+  
+  <!-- Script for conditions logic -->
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+    
+    // Load and display conditions breakdown data
+    async function loadConditionsBreakdown() {
+      try {
+        // Use universal data loader for Supabase-first approach
+        const patients = await window.loadPatientsWithSupabasePriority();
+        
+        if (!patients || patients.length === 0) {
+          console.warn('?? No patients found');
+          displayConditionsBreakdown([]);
+          return;
+        }
+        
+        // Process conditions data
+        const conditionsData = processConditionsData(patients);
+        displayConditionsBreakdown(conditionsData);
+      } catch (error) {
+        console.error('? Error loading conditions breakdown:', error);
+        document.getElementById('summary-body').innerHTML = 
+          '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #d32f2f;">Error loading data. Please refresh the page.</td></tr>';
+      }
+    }
+    
+    // Process patients data to extract conditions breakdown
+    function processConditionsData(patients) {
+      const conditionsMap = new Map();
+      
+      patients.forEach(patient => {
+        // Check both diagnoses (clinical notes) and conditions (chronic conditions)
+        const allDiagnoses = [];
+        
+        // Add diagnoses from patient.diagnoses
+        if (patient.diagnoses && Array.isArray(patient.diagnoses)) {
+          patient.diagnoses.forEach(diag => {
+            if (diag.diagnosis) {
+              // Extract diagnosis name (may include ICD code like "A00 - Cholera")
+              // If it contains " - ", use the part after it; otherwise use the whole string
+              const diagnosisName = diag.diagnosis.includes(' - ') 
+                ? diag.diagnosis.split(' - ').slice(1).join(' - ').trim() 
+                : diag.diagnosis.trim();
+              if (diagnosisName) {
+                allDiagnoses.push(diagnosisName);
+              }
+            }
+          });
+        }
+        
+        // Add chronic conditions from patient.conditions
+        if (patient.conditions && Array.isArray(patient.conditions)) {
+          patient.conditions.forEach(condition => {
+            if (condition.name) {
+              allDiagnoses.push(condition.name);
+            } else if (typeof condition === 'string') {
+              allDiagnoses.push(condition);
+            }
+          });
+        }
+        
+        // Process each diagnosis
+        allDiagnoses.forEach(diagnosisName => {
+          if (!conditionsMap.has(diagnosisName)) {
+            conditionsMap.set(diagnosisName, {
+              name: diagnosisName,
+              total: 0,
+              male: 0,
+              female: 0,
+              tribes: new Set(),
+              ageGroups: { '0-18': 0, '19-25': 0, '26-65': 0, '66+': 0 },
+              patientIds: new Set() // Track unique patients per condition
+            });
+          }
+          
+          const conditionData = conditionsMap.get(diagnosisName);
+          
+          // Only count each patient once per condition
+          if (!conditionData.patientIds.has(patient.id)) {
+            conditionData.patientIds.add(patient.id);
+            conditionData.total++;
+            
+            // Gender breakdown
+            const gender = patient.gender ? patient.gender.toLowerCase() : '';
+            if (gender === 'male') conditionData.male++;
+            else if (gender === 'female') conditionData.female++;
+            
+            // Tribe breakdown
+            if (patient.tribe) conditionData.tribes.add(patient.tribe);
+            
+            // Age group breakdown
+            const dob = patient.dateOfBirth || patient.dob;
+            const age = calculateAge(dob);
+            if (age <= 18) conditionData.ageGroups['0-18']++;
+            else if (age <= 25) conditionData.ageGroups['19-25']++;
+            else if (age <= 65) conditionData.ageGroups['26-65']++;
+            else conditionData.ageGroups['66+']++;
+          }
+        });
+      });
+      
+      // Convert Sets to arrays and remove patientIds before returning
+      return Array.from(conditionsMap.values()).map(condition => ({
+        name: condition.name,
+        total: condition.total,
+        male: condition.male,
+        female: condition.female,
+        tribes: condition.tribes,
+        ageGroups: condition.ageGroups
+      }));
+    }
+    
+    // Calculate age from date of birth
+    function calculateAge(dateOfBirth) {
+      if (!dateOfBirth) return 0;
+      try {
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        if (isNaN(birthDate.getTime())) return 0;
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        return age >= 0 ? age : 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+    
+    // Display conditions breakdown in table
+    function displayConditionsBreakdown(conditionsData) {
+      const tbody = document.getElementById('summary-body');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '';
+      
+      if (conditionsData.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="9" style="text-align: center; padding: 20px; color: #666;">No conditions data available</td></tr>';
+        return;
+      }
+      
+      conditionsData.forEach(condition => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${condition.name}</td>
+          <td>${condition.total}</td>
+          <td>${condition.male}</td>
+          <td>${condition.female}</td>
+          <td>${Array.from(condition.tribes).join(', ') || 'N/A'}</td>
+          <td>${condition.ageGroups['0-18']}</td>
+          <td>${condition.ageGroups['19-25']}</td>
+          <td>${condition.ageGroups['26-65']}</td>
+          <td>${condition.ageGroups['66+']}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+    
+    // Initialize page when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      loadConditionsBreakdown();
+    });
+  </script>
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

@@ -1,0 +1,1791 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
+  <title>Security Monitoring - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=20251112063500"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251112063500"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=20251112063500"></script>
+  
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      /* Primary Nigerian Colors */
+      --primary-green: #008753;        /* Nigerian flag green */
+      --dark-green: #006b42;           /* Deep forest green */
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      
+      /* Nigerian Flag Colors */
+      --nigerian-white: #FFFFFF;       /* White stripe */
+      --nigerian-green: #008753;       /* Green stripe */
+      
+      /* Traditional Nigerian Colors */
+      --gold: #FFD700;                 /* Nigerian gold/amber */
+      --dark-gold: #B8860B;            /* Dark gold */
+      --bronze: #CD7F32;               /* Bronze accent */
+      --warm-orange: #FF8C00;          /* Warm orange */
+      
+      /* Neutral Palette */
+      --charcoal: #36454F;             /* Charcoal text */
+      --soft-white: #FAFAFA;           /* Soft white background */
+    }
+    
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--soft-white);
+    }
+    
+    .security-header {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+    }
+    
+    .security-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+    
+    .security-header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border-left: 5px solid var(--primary-green);
+      transition: all 0.3s;
+      cursor: pointer;
+      position: relative;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+    
+    .stat-card::after {
+      content: '👁️ View Details →';
+      position: absolute;
+      bottom: 10px;
+      right: 15px;
+      font-size: 11px;
+      color: #666;
+      opacity: 0;
+      transition: opacity 0.3s;
+    }
+    
+    .stat-card:hover::after {
+      opacity: 1;
+    }
+    
+    a.stat-card {
+      display: block;
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-card .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: var(--primary-green);
+      margin: 0;
+    }
+    
+    .security-section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    
+    .security-section h2 {
+      margin: 0 0 20px 0;
+      font-size: 24px;
+      color: var(--charcoal);
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .time-filter {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .time-filter button {
+      padding: 8px 16px;
+      border: 2px solid var(--primary-green);
+      background: white;
+      color: var(--dark-green);
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+      font-weight: 500;
+    }
+    
+    .time-filter button:hover {
+      border-color: var(--dark-green);
+      color: var(--dark-green);
+      background: var(--light-green);
+    }
+    
+    .time-filter button.active {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      border-color: var(--dark-green);
+      font-weight: 600;
+    }
+    
+    .time-filter button.active:hover {
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+      border-color: var(--dark-green);
+      color: white;
+    }
+    
+    .table-container {
+      overflow-x: auto;
+      margin-top: 20px;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    
+    th {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      font-weight: 600;
+      color: white;
+      text-transform: uppercase;
+      font-size: 12px;
+      letter-spacing: 1px;
+      border-bottom: 1px solid var(--dark-green);
+    }
+    
+    tr:hover {
+      background: var(--light-green);
+    }
+    
+    .alert-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      text-transform: uppercase;
+    }
+    
+    .alert-badge.high {
+      background: #fff5f5;
+      color: #8B0000;
+      border-left: 3px solid #8B0000;
+    }
+    
+    .alert-badge.medium {
+      background: #fffef0;
+      color: var(--dark-gold);
+      border-left: 3px solid var(--gold);
+    }
+    
+    .alert-badge.low {
+      background: var(--light-green);
+      color: var(--dark-green);
+      border-left: 3px solid var(--primary-green);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--charcoal);
+    }
+    
+    .error {
+      background: #fff5f5;
+      color: #8B0000;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #8B0000;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 40px;
+      color: var(--charcoal);
+    }
+    
+  </style>
+</head>
+<body>
+  <div class="security-header">
+    <h1>🔒 Security Operations Center</h1>
+    <p>Monitor security events, failed login attempts, and suspicious activity • Auto-refresh every 60s</p>
+    <div style="margin-top: 15px; font-size: 14px; opacity: 0.9; display: flex; align-items: center; gap: 15px; flex-wrap: wrap;">
+      <a href="platform-dashboard" style="color: white; text-decoration: underline;">← Back to Platform Dashboard</a>
+      <span id="live-indicator" style="display: inline-flex; align-items: center; gap: 6px; background: rgba(255,255,255,0.2); padding: 4px 10px; border-radius: 6px;">
+        <span id="live-dot" style="width: 8px; height: 8px; border-radius: 50%; background: #90EE90;"></span>
+        <span id="live-text">Live</span>
+      </span>
+      <span id="last-updated" style="opacity: 0.9;">Last updated: --</span>
+    </div>
+  </div>
+
+  <div id="auth-check" class="error" style="display: none;">
+    <p style="margin: 0 0 15px 0;">⚠️ You must be logged in as a platform administrator to access this page.</p>
+    <a href="" id="auth-login-link" style="display: inline-block; background: linear-gradient(135deg, #667eea, #764ba2); color: white; padding: 12px 24px; border-radius: 8px; text-decoration: none; font-weight: 700; font-size: 1rem;">Login as Platform Admin →</a>
+  </div>
+
+  <div id="security-dashboard" style="display: none;">
+    <!-- Security Summary -->
+    <div class="security-section">
+      <h2>Security Summary</h2>
+      <div class="stats-grid" id="security-summary-stats">
+        <a href="audit-log-details?filter=all" class="stat-card" data-filter="all" style="text-decoration: none; color: inherit;">
+          <h3>Total Events</h3>
+          <p class="value" id="total-events">-</p>
+        </a>
+        <a href="audit-log-details?filter=login_failed" class="stat-card" data-filter="login_failed" style="text-decoration: none; color: inherit; border-left-color: #dc3545;">
+          <h3>Failed Logins</h3>
+          <p class="value" id="failed-logins" style="color: #dc3545;">-</p>
+        </a>
+        <a href="audit-log-details?filter=login_success" class="stat-card" data-filter="login_success" style="text-decoration: none; color: inherit; border-left-color: #28a745;">
+          <h3>Successful Logins</h3>
+          <p class="value" id="successful-logins" style="color: #28a745;">-</p>
+        </a>
+        <a href="audit-log-details?filter=unauthorized_access_attempt" class="stat-card" data-filter="unauthorized_access_attempt" style="text-decoration: none; color: inherit; border-left-color: #dc3545;">
+          <h3>Unauthorized Attempts</h3>
+          <p class="value" id="unauthorized-attempts" style="color: #dc3545;">-</p>
+        </a>
+        <a href="audit-log-details?filter=by_ip" class="stat-card" data-filter="by_ip" style="text-decoration: none; color: inherit; border-left-color: #007bff;">
+          <h3>Unique IPs</h3>
+          <p class="value" id="unique-ips" style="color: #007bff;">-</p>
+        </a>
+        <a href="audit-log-details?filter=by_user" class="stat-card" data-filter="by_user" style="text-decoration: none; color: inherit; border-left-color: #28a745;">
+          <h3>Unique Users</h3>
+          <p class="value" id="unique-users" style="color: #28a745;">-</p>
+        </a>
+        <a href="audit-log-details?filter=high_risk" class="stat-card" data-filter="high_risk" style="text-decoration: none; color: inherit; border-left-color: #dc3545;">
+          <h3>Security Alerts</h3>
+          <p class="value" id="security-alerts" style="color: #dc3545;">-</p>
+        </a>
+        <a href="audit-log-details?filter=data_exported" class="stat-card" data-filter="data_exported" style="text-decoration: none; color: inherit; border-left-color: #fd7e14;">
+          <h3>Data Exports</h3>
+          <p class="value" id="data-exports" style="color: #fd7e14;">-</p>
+        </a>
+        <a href="audit-log-details?filter=patient_viewed" class="stat-card" data-filter="patient_viewed" style="text-decoration: none; color: inherit; border-left-color: #20c997;">
+          <h3>Patient Accesses</h3>
+          <p class="value" id="patient-accesses" style="color: #20c997;">-</p>
+        </a>
+      </div>
+    </div>
+    
+    <!-- Security Alerts Section -->
+    <div class="security-section" id="security-alerts-section" style="background: #fff3cd; border: 2px solid #ffc107; display: none;">
+      <h2 style="color: #856404;">⚠️ Security Alerts</h2>
+      <div id="security-alerts-list"></div>
+    </div>
+
+    <!-- Failed Login Attempts -->
+    <div class="security-section">
+      <h2>Failed Login Attempts</h2>
+      <div class="time-filter">
+        <button class="active" data-hours="1">Last Hour</button>
+        <button data-hours="24">Last 24 Hours</button>
+        <button data-hours="168">Last 7 Days</button>
+        <button data-hours="720">Last 30 Days</button>
+      </div>
+      <div class="table-container">
+        <div id="failed-logins-loading" class="loading">Loading failed login attempts...</div>
+        <div id="failed-logins-error" class="error" style="display: none;"></div>
+        <div id="failed-logins-no-data" class="no-data" style="display: none;">No failed login attempts found</div>
+        <table id="failed-logins-table" style="display: none;">
+          <thead>
+            <tr>
+              <th>Risk</th>
+              <th>IP Address</th>
+              <th>Username</th>
+              <th>Organization</th>
+              <th>Attempt Count</th>
+              <th>Last Attempt</th>
+              <th>User Agent</th>
+            </tr>
+          </thead>
+          <tbody id="failed-logins-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Suspicious Activity -->
+    <div class="security-section">
+      <h2>Suspicious Activity</h2>
+      <div class="time-filter">
+        <button class="active" data-hours="1">Last Hour</button>
+        <button data-hours="24">Last 24 Hours</button>
+        <button data-hours="168">Last 7 Days</button>
+        <button data-hours="720">Last 30 Days</button>
+      </div>
+      <div class="table-container">
+        <div id="suspicious-activity-loading" class="loading">Loading suspicious activity...</div>
+        <div id="suspicious-activity-error" class="error" style="display: none;"></div>
+        <div id="suspicious-activity-no-data" class="no-data" style="display: none;">No suspicious activity found</div>
+        <table id="suspicious-activity-table" style="display: none;">
+          <thead>
+            <tr>
+              <th>Risk</th>
+              <th>IP Address</th>
+              <th>Action</th>
+              <th>Organization</th>
+              <th>Event Count</th>
+              <th>First Event</th>
+              <th>Last Event</th>
+              <th>Usernames</th>
+            </tr>
+          </thead>
+          <tbody id="suspicious-activity-tbody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is platform admin (same logic as platform-dashboard.html)
+    async function checkPlatformAdmin() {
+      try {
+        const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+        
+        if (!platformAdmin) {
+          console.warn('⚠️ SECURITY-MONITORING: No platform admin session found.');
+          const authCheck = document.getElementById('auth-check');
+          const loginLink = document.getElementById('auth-login-link');
+          authCheck.style.display = 'block';
+          if (loginLink) {
+            const returnUrl = encodeURIComponent(window.location.pathname + (window.location.search || ''));
+            loginLink.href = 'platform-login?returnUrl=' + returnUrl;
+          }
+          return false;
+        }
+        
+        console.log('✅ Platform admin session found:', platformAdmin.username);
+        document.getElementById('security-dashboard').style.display = 'block';
+        return true;
+      } catch (error) {
+        console.error('❌ Error checking platform admin status:', error);
+        document.getElementById('auth-check').style.display = 'block';
+        return false;
+      }
+    }
+
+    // Load security summary
+    async function loadSecuritySummary(hours = 24) {
+      try {
+        // Try Supabase first (hybrid architecture)
+        if (typeof window.secureSupabaseRpc !== 'function') {
+          console.warn('⚠️ secureSupabaseRpc unavailable, Supabase may be offline');
+          throw new Error('secureSupabaseRpc helper is unavailable');
+        }
+
+        console.log('📊 Loading security summary from Supabase...');
+        let rawResponse = await window.secureSupabaseRpc('get_security_summary', { p_time_window_hours: hours });
+        console.log('🔍 Raw response type:', typeof rawResponse);
+        console.log('🔍 Raw response:', rawResponse);
+        
+        // Handle if response is a JSON string (shouldn't happen, but handle it)
+        if (typeof rawResponse === 'string') {
+          try {
+            rawResponse = JSON.parse(rawResponse);
+            console.log('✅ Parsed JSON string response:', rawResponse);
+          } catch (e) {
+            console.error('❌ Failed to parse JSON string:', e);
+            throw new Error('Invalid JSON response');
+          }
+        }
+        
+        // Extract data from response
+        let responseArray = null;
+        
+        if (Array.isArray(rawResponse)) {
+          // Already an array (extracted)
+          responseArray = rawResponse;
+          console.log('✅ Response is already an array');
+        } else if (rawResponse && typeof rawResponse === 'object') {
+          // Check if wrapped in { data: [...] }
+          if (rawResponse.data !== undefined) {
+            if (Array.isArray(rawResponse.data)) {
+              responseArray = rawResponse.data;
+              console.log('✅ Extracted array from data property');
+            } else if (rawResponse.data && typeof rawResponse.data === 'object' && rawResponse.data.total_events !== undefined) {
+              // Single object in data
+              const summaryData = rawResponse.data;
+              document.getElementById('total-events').textContent = summaryData.total_events || 0;
+              document.getElementById('failed-logins').textContent = summaryData.failed_logins || 0;
+              document.getElementById('successful-logins').textContent = summaryData.successful_logins || 0;
+              document.getElementById('unauthorized-attempts').textContent = summaryData.unauthorized_attempts || 0;
+              document.getElementById('unique-ips').textContent = summaryData.unique_ips || 0;
+              document.getElementById('unique-users').textContent = summaryData.unique_users || 0;
+              console.log('✅ Security summary loaded:', summaryData);
+              return;
+            } else {
+              console.warn('⚠️ Response has data property but it\'s not an array or object:', rawResponse.data);
+            }
+          } else if (rawResponse.total_events !== undefined) {
+            // Already the summary object
+            console.log('✅ Response is already the summary object');
+            const summaryData = rawResponse;
+            document.getElementById('total-events').textContent = summaryData.total_events || 0;
+            document.getElementById('failed-logins').textContent = summaryData.failed_logins || 0;
+            document.getElementById('successful-logins').textContent = summaryData.successful_logins || 0;
+            document.getElementById('unauthorized-attempts').textContent = summaryData.unauthorized_attempts || 0;
+            document.getElementById('unique-ips').textContent = summaryData.unique_ips || 0;
+            document.getElementById('unique-users').textContent = summaryData.unique_users || 0;
+            console.log('✅ Security summary loaded:', summaryData);
+            return;
+          } else {
+            console.warn('⚠️ Unexpected response format:', rawResponse);
+          }
+        }
+        
+        // Summary should return one row (array with one object)
+        const summaryData = responseArray && responseArray.length > 0 ? responseArray[0] : null;
+
+        if (!summaryData) {
+          console.warn('⚠️ No summary data returned, using default values');
+          const defaultData = {
+            total_events: 0,
+            failed_logins: 0,
+            successful_logins: 0,
+            unauthorized_attempts: 0,
+            unique_ips: 0,
+            unique_users: 0
+          };
+          document.getElementById('total-events').textContent = defaultData.total_events;
+          document.getElementById('failed-logins').textContent = defaultData.failed_logins;
+          document.getElementById('successful-logins').textContent = defaultData.successful_logins;
+          document.getElementById('unauthorized-attempts').textContent = defaultData.unauthorized_attempts;
+          document.getElementById('unique-ips').textContent = defaultData.unique_ips;
+          document.getElementById('unique-users').textContent = defaultData.unique_users;
+          return;
+        }
+
+        // Display summary data (0 is a valid value, not an error)
+        document.getElementById('total-events').textContent = (summaryData.total_events !== undefined && summaryData.total_events !== null) ? summaryData.total_events : 0;
+        document.getElementById('failed-logins').textContent = (summaryData.failed_logins !== undefined && summaryData.failed_logins !== null) ? summaryData.failed_logins : 0;
+        document.getElementById('successful-logins').textContent = (summaryData.successful_logins !== undefined && summaryData.successful_logins !== null) ? summaryData.successful_logins : 0;
+        document.getElementById('unauthorized-attempts').textContent = (summaryData.unauthorized_attempts !== undefined && summaryData.unauthorized_attempts !== null) ? summaryData.unauthorized_attempts : 0;
+        document.getElementById('unique-ips').textContent = (summaryData.unique_ips !== undefined && summaryData.unique_ips !== null) ? summaryData.unique_ips : 0;
+        document.getElementById('unique-users').textContent = (summaryData.unique_users !== undefined && summaryData.unique_users !== null) ? summaryData.unique_users : 0;
+        
+        // Calculate additional cybersecurity metrics
+        const securityAlerts = (summaryData.failed_logins || 0) + (summaryData.unauthorized_attempts || 0);
+        document.getElementById('security-alerts').textContent = securityAlerts;
+        
+        // Load additional metrics (data exports, patient accesses) from audit logs
+        loadAdditionalMetrics(hours);
+        
+        console.log('✅ Security summary loaded:', summaryData);
+      } catch (error) {
+        console.error('❌ Error loading security summary:', error);
+        console.error('❌ Error details:', error.stack);
+        // Show error state (security data should come from Supabase only)
+        document.getElementById('total-events').textContent = 'N/A';
+        document.getElementById('failed-logins').textContent = 'N/A';
+        document.getElementById('successful-logins').textContent = 'N/A';
+        document.getElementById('unauthorized-attempts').textContent = 'N/A';
+        document.getElementById('unique-ips').textContent = 'N/A';
+        document.getElementById('unique-users').textContent = 'N/A';
+        
+        // Show error message
+        const errorMsg = error.message || 'Unable to load security summary. Supabase may be offline.';
+        console.error('Security summary error:', errorMsg);
+      }
+    }
+
+    // Load failed login attempts
+    async function loadFailedLoginAttempts(hours = 24, filterUsername = null) {
+      const loadingEl = document.getElementById('failed-logins-loading');
+      const errorEl = document.getElementById('failed-logins-error');
+      const noDataEl = document.getElementById('failed-logins-no-data');
+      const tableEl = document.getElementById('failed-logins-table');
+      const tbodyEl = document.getElementById('failed-logins-tbody');
+
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      noDataEl.style.display = 'none';
+      tableEl.style.display = 'none';
+
+      try {
+        // Try Supabase first (hybrid architecture)
+        if (typeof window.secureSupabaseRpc !== 'function') {
+          console.warn('⚠️ secureSupabaseRpc unavailable, trying direct Supabase query');
+          
+          // Fallback to direct Supabase query
+          if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+            console.log('📊 Loading failed login attempts directly from Supabase...');
+            const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+            
+            const { data, error } = await window.supabaseClient
+              .from('audit_logs')
+              .select('*')
+              .eq('action', 'login_failed')
+              .gte('timestamp', timeThreshold)
+              .order('timestamp', { ascending: false })
+              .limit(1000);
+            
+            if (error) {
+              throw error;
+            }
+            
+            // Filter by username if provided
+            let filteredData = data || [];
+            if (filterUsername) {
+              filteredData = filteredData.filter(log => 
+                log.username && log.username.toLowerCase() === filterUsername.toLowerCase()
+              );
+              console.log(`🔍 Filtered to ${filteredData.length} failed login attempts for username: ${filterUsername}`);
+            }
+            
+            // Group by IP and username
+            const attemptsMap = {};
+            filteredData.forEach(log => {
+              const key = `${log.ip_address || 'unknown'}_${log.username || 'unknown'}`;
+              if (!attemptsMap[key]) {
+                attemptsMap[key] = {
+                  ip_address: log.ip_address || 'Unknown',
+                  username: log.username || 'Unknown',
+                  organization_name: log.organization_name || 'Unknown',
+                  attempt_count: 0,
+                  last_attempt: log.timestamp,
+                  user_agent: log.user_agent || 'N/A'
+                };
+              }
+              attemptsMap[key].attempt_count++;
+              if (new Date(log.timestamp) > new Date(attemptsMap[key].last_attempt)) {
+                attemptsMap[key].last_attempt = log.timestamp;
+              }
+            });
+            
+            const attempts = Object.values(attemptsMap).sort((a, b) => b.attempt_count - a.attempt_count);
+            
+            loadingEl.style.display = 'none';
+            if (attempts.length === 0) {
+              noDataEl.style.display = 'block';
+              return;
+            }
+            
+            tbodyEl.innerHTML = '';
+            attempts.forEach(attempt => {
+              const riskLevel = attempt.attempt_count >= 10 ? 'high' : attempt.attempt_count >= 5 ? 'medium' : 'low';
+              const riskIcon = riskLevel === 'high' ? '🔴' : riskLevel === 'medium' ? '🟡' : '🟢';
+              const row = document.createElement('tr');
+              row.style.borderLeft = riskLevel === 'high' ? '4px solid #dc3545' : riskLevel === 'medium' ? '4px solid #ffc107' : '4px solid #28a745';
+              row.innerHTML = `
+                <td style="text-align: center; font-size: 18px;" title="${riskLevel.toUpperCase()} Risk">${riskIcon}</td>
+                <td><code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${attempt.ip_address}</code></td>
+                <td>${attempt.username}</td>
+                <td>${attempt.organization_name}</td>
+                <td>
+                  <a href="audit-log-details?filter=login_failed&organization=${encodeURIComponent(attempt.organization_name)}&action=login_failed" 
+                     style="text-decoration: none; color: inherit; cursor: pointer;" 
+                     title="Click to view detailed failed login attempts">
+                    <span class="alert-badge ${riskLevel}" style="cursor: pointer; transition: all 0.2s;" 
+                          onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)'"
+                          onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                      ${attempt.attempt_count}
+                    </span>
+                  </a>
+                </td>
+                <td>${new Date(attempt.last_attempt).toLocaleString()}</td>
+                <td style="font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${attempt.user_agent}">${attempt.user_agent.substring(0, 50)}${attempt.user_agent.length > 50 ? '...' : ''}</td>
+              `;
+              tbodyEl.appendChild(row);
+            });
+            
+            tableEl.style.display = 'table';
+            console.log(`✅ Loaded ${attempts.length} failed login attempts (direct query)`);
+            return;
+          } else {
+            throw new Error('secureSupabaseRpc helper is unavailable and Supabase client not available');
+          }
+        }
+
+        // Always use direct Supabase query for complete data
+        console.log('📊 Loading failed login attempts directly from Supabase (for complete data)...');
+        console.log(`📅 Time window: Last ${hours} hours (${hours / 24} days)`);
+        
+        if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+          throw new Error('Supabase client not available');
+        }
+        
+        const timeThresholdMs = new Date(Date.now() - hours * 60 * 60 * 1000).getTime();
+        const timeThreshold = new Date(timeThresholdMs).toISOString();
+        console.log(`📅 Time window: last ${hours} hours`);
+        
+        // Use secureSupabaseSelect - no server timestamp filter (like platform-security-dashboard), filter client-side
+        let auditLogs = [];
+        let queryHadError = false;
+        
+        if (typeof window.secureSupabaseSelect === 'function') {
+          console.log('📡 Querying audit_logs via secure proxy (bypasses RLS)...');
+          try {
+            auditLogs = await window.secureSupabaseSelect('audit_logs', {
+              select: '*',
+              filters: {},
+              order: { column: 'timestamp', ascending: false },
+              limit: 5000
+            });
+            auditLogs = (auditLogs || []).filter(log => {
+              const ts = log.timestamp ? new Date(log.timestamp).getTime() : 0;
+              return ts >= timeThresholdMs;
+            });
+            console.log(`✅ Loaded ${auditLogs.length} audit log entries from all organizations via secure proxy`);
+            
+            // Resolve organization names
+            const orgIds = [...new Set(auditLogs.map(log => log.organization_id).filter(Boolean))];
+            if (orgIds.length > 0) {
+              const { data: orgsData } = await window.supabaseClient
+                .from('organizations')
+                .select('id, name')
+                .in('id', orgIds);
+              
+              if (orgsData) {
+                const orgMap = {};
+                orgsData.forEach(org => {
+                  orgMap[org.id] = org.name;
+                });
+                auditLogs = auditLogs.map(log => ({
+                  ...log,
+                  organization_name: log.organization_name || orgMap[log.organization_id] || 'Unknown'
+                }));
+              }
+            }
+          } catch (secureError) {
+            console.warn('⚠️ Secure select failed, trying direct query:', secureError);
+            queryHadError = true;
+            // Fallback to direct query
+            try {
+              const { data, error: auditError } = await window.supabaseClient
+                .from('audit_logs')
+                .select(`
+                  *,
+                  organizations:organization_id (
+                    name
+                  )
+                `)
+                .gte('timestamp', timeThreshold)
+                .order('timestamp', { ascending: false })
+                .limit(1000);
+              
+              if (auditError) {
+                throw auditError;
+              }
+              auditLogs = data || [];
+            } catch (fallbackError) {
+              console.error('❌ Fallback query also failed:', fallbackError);
+              throw fallbackError;
+            }
+          }
+        } else {
+          // Fallback to direct query
+          try {
+            const { data, error: auditError } = await window.supabaseClient
+              .from('audit_logs')
+              .select(`
+                *,
+                organizations:organization_id (
+                  name
+                )
+              `)
+              .gte('timestamp', timeThreshold)
+              .order('timestamp', { ascending: false })
+              .limit(1000);
+            
+            if (auditError) {
+              throw auditError;
+            }
+            auditLogs = data || [];
+          } catch (directError) {
+            console.error('❌ Direct query failed:', directError);
+            queryHadError = true;
+            throw directError;
+          }
+        }
+        
+        console.log(`📊 Total audit logs retrieved: ${auditLogs?.length || 0}`);
+        
+        // Filter for failed login attempts client-side (more flexible)
+        let failedLoginLogs = [];
+        if (auditLogs && auditLogs.length > 0) {
+          failedLoginLogs = auditLogs.filter(log => {
+            const action = (log.action || '').toLowerCase();
+            return action.includes('failed') || 
+                   action.includes('unauthorized') ||
+                   action === 'login_failed' ||
+                   action === 'password_change_failed' ||
+                   action === 'unauthorized_access' ||
+                   action === 'unauthorized_access_attempt';
+          });
+          console.log(`🔍 Filtered to ${failedLoginLogs.length} failed login attempts`);
+        }
+        
+        // If no results, try without join (only if we haven't already tried)
+        if (queryHadError || failedLoginLogs.length === 0) {
+          console.warn('⚠️ No results with join or error occurred, trying direct query...');
+          const { data: logsData, error: logsError } = await window.supabaseClient
+            .from('audit_logs')
+            .select('*')
+            .gte('timestamp', timeThreshold)
+            .order('timestamp', { ascending: false })
+            .limit(1000);
+          
+          if (logsError) {
+            console.error('❌ Error querying audit_logs:', logsError);
+            throw logsError;
+          }
+          
+          console.log(`📊 Direct query retrieved ${logsData?.length || 0} audit logs`);
+          
+          // Filter for failed login attempts
+          failedLoginLogs = (logsData || []).filter(log => {
+            const action = (log.action || '').toLowerCase();
+            return action.includes('failed') || 
+                   action.includes('unauthorized') ||
+                   action === 'login_failed' ||
+                   action === 'password_change_failed' ||
+                   action === 'unauthorized_access' ||
+                   action === 'unauthorized_access_attempt';
+          });
+          
+          console.log(`🔍 Filtered to ${failedLoginLogs.length} failed login attempts`);
+          
+          // Enrich with organization names
+          const enrichedLogs = await enrichAuditLogsWithOrgNames(failedLoginLogs);
+          processFailedLoginAttempts(enrichedLogs);
+        } else {
+          // Enrich audit logs with organization names from join
+          const enrichedLogs = failedLoginLogs.map(log => ({
+            ...log,
+            organization_name: log.organization_name || (log.organizations && log.organizations.name) || null
+          }));
+          processFailedLoginAttempts(enrichedLogs);
+        }
+        
+        function processFailedLoginAttempts(logs) {
+          console.log(`🔍 TRACE: Processing ${logs.length} failed login logs`);
+          
+          // Group by IP and username
+          const attemptsMap = {};
+          logs.forEach((log, index) => {
+            // Extract username from various sources with comprehensive fallback
+            let username = log.username || log.user_name || null;
+            
+            // Try to get username from details JSONB field
+            if ((!username || username.toLowerCase() === 'unknown') && log.details) {
+              let detailsObj = log.details;
+              if (typeof log.details === 'string') {
+                try {
+                  detailsObj = JSON.parse(log.details);
+                } catch (e) {
+                  // Keep as string
+                }
+              }
+              
+              if (typeof detailsObj === 'object' && detailsObj !== null) {
+                username = detailsObj.username || detailsObj.user || detailsObj.userName || username;
+              }
+            }
+            
+            // Final fallback
+            if (!username || username.toLowerCase() === 'unknown') {
+              username = 'Unknown';
+            }
+            
+            // Extract organization name with comprehensive fallback
+            let orgName = log.organization_name || null;
+            
+            // Try to get organization name from details
+            if ((!orgName || orgName.toLowerCase() === 'unknown') && log.details) {
+              let detailsObj = log.details;
+              if (typeof log.details === 'string') {
+                try {
+                  detailsObj = JSON.parse(log.details);
+                } catch (e) {
+                  // Keep as string
+                }
+              }
+              
+              if (typeof detailsObj === 'object' && detailsObj !== null) {
+                orgName = detailsObj.organization_name || detailsObj.organization || detailsObj.org_name || detailsObj.org || orgName;
+              }
+            }
+            
+            // If still unknown and we have organization_id, mark for resolution
+            if ((!orgName || orgName.toLowerCase() === 'unknown') && log.organization_id) {
+              orgName = 'Loading...'; // Will be resolved later
+            } else if (!orgName || orgName.toLowerCase() === 'unknown') {
+              orgName = 'Unknown';
+            }
+            
+            // Extract IP address with comprehensive fallback
+            let ipAddress = log.ip_address || null;
+            if (!ipAddress || ipAddress === 'Unknown') {
+              if (log.details) {
+                let detailsObj = log.details;
+                if (typeof log.details === 'string') {
+                  try {
+                    detailsObj = JSON.parse(log.details);
+                  } catch (e) {
+                    // Keep as string
+                  }
+                }
+                
+                if (typeof detailsObj === 'object' && detailsObj !== null) {
+                  ipAddress = detailsObj.ip_address || detailsObj.ip || ipAddress;
+                }
+              }
+            }
+            
+            if (!ipAddress || ipAddress === 'Unknown') {
+              ipAddress = 'Unknown';
+            }
+            
+            // Extract user agent with comprehensive fallback
+            let userAgent = log.user_agent || null;
+            if (!userAgent || userAgent === 'N/A') {
+              if (log.details) {
+                let detailsObj = log.details;
+                if (typeof log.details === 'string') {
+                  try {
+                    detailsObj = JSON.parse(log.details);
+                  } catch (e) {
+                    // Keep as string
+                  }
+                }
+                
+                if (typeof detailsObj === 'object' && detailsObj !== null) {
+                  userAgent = detailsObj.user_agent || detailsObj.userAgent || userAgent;
+                }
+              }
+            }
+            
+            if (!userAgent || userAgent === 'N/A') {
+              userAgent = 'N/A';
+            }
+            
+            // Log extraction for first few items for debugging
+            if (index < 3) {
+              console.log(`🔍 TRACE: Log ${index}:`, {
+                action: log.action,
+                username_extracted: username,
+                orgName_extracted: orgName,
+                ipAddress_extracted: ipAddress,
+                hasDetails: !!log.details,
+                detailsType: typeof log.details
+              });
+            }
+            
+            const key = `${ipAddress}_${username}`;
+            if (!attemptsMap[key]) {
+              attemptsMap[key] = {
+                ip_address: ipAddress,
+                username: username,
+                organization_name: orgName,
+                organization_id: log.organization_id,
+                attempt_count: 0,
+                last_attempt: log.timestamp,
+                user_agent: userAgent
+              };
+            }
+            attemptsMap[key].attempt_count++;
+            if (new Date(log.timestamp) > new Date(attemptsMap[key].last_attempt)) {
+              attemptsMap[key].last_attempt = log.timestamp;
+              attemptsMap[key].user_agent = userAgent; // Update to most recent user agent
+            }
+          });
+          
+          // Resolve organization names for entries that need it
+          const orgIdsToResolve = [...new Set(Object.values(attemptsMap)
+            .filter(a => a.organization_name === 'Loading...' && a.organization_id)
+            .map(a => a.organization_id))];
+          
+          if (orgIdsToResolve.length > 0) {
+            resolveOrganizationNames(orgIdsToResolve, attemptsMap).then(() => {
+              displayFailedLoginAttempts(Object.values(attemptsMap));
+            });
+          } else {
+            displayFailedLoginAttempts(Object.values(attemptsMap));
+          }
+        }
+        
+        async function enrichAuditLogsWithOrgNames(logs) {
+          const orgIds = [...new Set(logs.map(log => log.organization_id).filter(id => id))];
+          if (orgIds.length === 0) return logs;
+          
+          const { data: orgs } = await window.supabaseClient
+            .from('organizations')
+            .select('id, name')
+            .in('id', orgIds);
+          
+          const orgMap = {};
+          (orgs || []).forEach(org => {
+            orgMap[org.id] = org.name;
+          });
+          
+          return logs.map(log => ({
+            ...log,
+            organization_name: log.organization_name || orgMap[log.organization_id] || null
+          }));
+        }
+        
+        async function resolveOrganizationNames(orgIds, attemptsMap) {
+          try {
+            const { data: orgs } = await window.supabaseClient
+              .from('organizations')
+              .select('id, name')
+              .in('id', orgIds);
+            
+            const orgMap = {};
+            (orgs || []).forEach(org => {
+              orgMap[org.id] = org.name;
+            });
+            
+            Object.values(attemptsMap).forEach(attempt => {
+              if (attempt.organization_name === 'Loading...' && attempt.organization_id) {
+                attempt.organization_name = orgMap[attempt.organization_id] || 'Unknown';
+              }
+            });
+          } catch (error) {
+            console.warn('⚠️ Error resolving organization names:', error);
+            Object.values(attemptsMap).forEach(attempt => {
+              if (attempt.organization_name === 'Loading...') {
+                attempt.organization_name = 'Unknown';
+              }
+            });
+          }
+        }
+        
+        function displayFailedLoginAttempts(attempts) {
+          loadingEl.style.display = 'none';
+          
+          if (attempts.length === 0) {
+            noDataEl.style.display = 'block';
+            console.log('✅ No failed login attempts found');
+            return;
+          }
+          
+          // Sort by attempt count (highest first)
+          attempts.sort((a, b) => b.attempt_count - a.attempt_count);
+          
+          tbodyEl.innerHTML = '';
+          attempts.forEach(attempt => {
+            const riskLevel = attempt.attempt_count >= 10 ? 'high' : attempt.attempt_count >= 5 ? 'medium' : 'low';
+            const riskIcon = riskLevel === 'high' ? '🔴' : riskLevel === 'medium' ? '🟡' : '🟢';
+            
+            // Normalize values - handle 'unknown' lowercase as well
+            const ipAddress = (attempt.ip_address && attempt.ip_address !== 'Unknown' && attempt.ip_address.toLowerCase() !== 'unknown') ? attempt.ip_address : 'Unknown';
+            let username = attempt.username || 'Unknown';
+            if (username.toLowerCase() === 'unknown') {
+              username = 'Unknown';
+            }
+            const orgName = (attempt.organization_name && attempt.organization_name !== 'Unknown' && attempt.organization_name !== 'Loading...') ? attempt.organization_name : 'Unknown';
+            const userAgent = (attempt.user_agent && attempt.user_agent !== 'N/A') ? attempt.user_agent : 'N/A';
+            
+            const row = document.createElement('tr');
+            row.style.borderLeft = riskLevel === 'high' ? '4px solid #dc3545' : riskLevel === 'medium' ? '4px solid #ffc107' : '4px solid #28a745';
+            row.innerHTML = `
+              <td style="text-align: center; font-size: 18px;" title="${riskLevel.toUpperCase()} Risk">${riskIcon}</td>
+              <td><code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${ipAddress}</code></td>
+              <td>${username}</td>
+              <td>${orgName}</td>
+              <td>
+                <a href="audit-log-details?filter=login_failed&organization=${encodeURIComponent(orgName)}&action=login_failed" 
+                   style="text-decoration: none; color: inherit; cursor: pointer;" 
+                   title="Click to view detailed failed login attempts">
+                  <span class="alert-badge ${riskLevel}" style="cursor: pointer; transition: all 0.2s;" 
+                        onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)'"
+                        onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                    ${attempt.attempt_count || 0}
+                  </span>
+                </a>
+              </td>
+              <td>${new Date(attempt.last_attempt).toLocaleString()}</td>
+              <td style="font-size: 11px; max-width: 200px; overflow: hidden; text-overflow: ellipsis;" title="${userAgent}">${userAgent.substring(0, 50)}${userAgent.length > 50 ? '...' : ''}</td>
+            `;
+            tbodyEl.appendChild(row);
+          });
+          
+          tableEl.style.display = 'table';
+          console.log(`✅ Loaded ${attempts.length} failed login attempts`);
+        }
+        
+      } catch (error) {
+        loadingEl.style.display = 'none';
+        const errorMsg = error.message || 'Unable to load failed login attempts. Supabase may be offline.';
+        errorEl.textContent = `Error: ${errorMsg}`;
+        errorEl.style.display = 'block';
+        console.error('❌ Error loading failed login attempts:', error);
+        console.error('❌ Error details:', error.stack);
+      }
+    }
+
+    // Load suspicious activity
+    async function loadSuspiciousActivity(hours = 24, filterIP = null) {
+      const loadingEl = document.getElementById('suspicious-activity-loading');
+      const errorEl = document.getElementById('suspicious-activity-error');
+      const noDataEl = document.getElementById('suspicious-activity-no-data');
+      const tableEl = document.getElementById('suspicious-activity-table');
+      const tbodyEl = document.getElementById('suspicious-activity-tbody');
+
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      noDataEl.style.display = 'none';
+      tableEl.style.display = 'none';
+
+      try {
+        // If filtering by IP, query directly from audit_logs for better control
+        if (filterIP && typeof window.secureSupabaseSelect === 'function') {
+          console.log(`📊 Loading suspicious activity filtered by IP: ${filterIP}...`);
+          const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+          
+          try {
+            const auditLogs = await window.secureSupabaseSelect('audit_logs', {
+              select: '*',
+              filters: {
+                ip_address: filterIP,
+                timestamp: { operator: 'gte', value: timeThreshold }
+              },
+              order: { column: 'timestamp', ascending: false },
+              limit: 1000
+            });
+            
+            console.log(`✅ Loaded ${auditLogs.length} audit logs for IP ${filterIP}`);
+            
+            // Resolve org names
+            const orgIds = [...new Set(auditLogs.map(l => l.organization_id).filter(Boolean))];
+            let orgMap = {};
+            if (orgIds.length > 0 && window.supabaseClient) {
+              try {
+                const { data: orgs } = await window.supabaseClient.from('organizations').select('id, name').in('id', orgIds);
+                (orgs || []).forEach(o => { orgMap[o.id] = o.name; });
+              } catch (e) {}
+            }
+            // Group by IP and action; collect unique org names
+            const activityByIP = {};
+            auditLogs.forEach(log => {
+              const ip = log.ip_address || 'Unknown';
+              const action = log.action || 'unknown';
+              const key = `${ip}_${action}`;
+              const orgName = log.organization_name || (log.organization_id && orgMap[log.organization_id]) || null;
+              if (!activityByIP[key]) {
+                activityByIP[key] = {
+                  ip_address: ip,
+                  action: action,
+                  event_count: 0,
+                  first_event: log.timestamp,
+                  last_event: log.timestamp,
+                  orgNames: new Set(),
+                  usernames: new Set()
+                };
+              }
+              activityByIP[key].event_count++;
+              if (orgName) activityByIP[key].orgNames.add(orgName);
+              if (log.username) activityByIP[key].usernames.add(log.username);
+              if (new Date(log.timestamp) < new Date(activityByIP[key].first_event)) {
+                activityByIP[key].first_event = log.timestamp;
+              }
+              if (new Date(log.timestamp) > new Date(activityByIP[key].last_event)) {
+                activityByIP[key].last_event = log.timestamp;
+              }
+            });
+            
+            let activity = Object.values(activityByIP).map(item => {
+              const orgArr = Array.from(item.orgNames || []);
+              let orgDisplay = orgArr.length === 1 ? orgArr[0] : orgArr.length === 2 ? orgArr.join(', ') : orgArr.length > 2 ? orgArr.slice(0, 2).join(', ') + ` +${orgArr.length - 2} more` : 'Platform-wide';
+              return { ...item, usernames: Array.from(item.usernames), organization_name: orgDisplay };
+            });
+            
+            console.log(`✅ Processed ${activity.length} suspicious activity groups for IP ${filterIP}`);
+            
+            // Continue with display logic below
+            loadingEl.style.display = 'none';
+            if (activity.length === 0) {
+              noDataEl.style.display = 'block';
+              console.log('✅ No suspicious activity found for IP:', filterIP);
+              return;
+            }
+            
+            tbodyEl.innerHTML = '';
+            
+            // Process items sequentially to handle async username queries
+            for (let index = 0; index < activity.length; index++) {
+              const item = activity[index];
+              const riskLevel = getRiskLevelForActivity(item);
+              const riskIcon = riskLevel === 'high' ? '🔴' : riskLevel === 'medium' ? '🟡' : '🟢';
+              const row = document.createElement('tr');
+              row.style.borderLeft = riskLevel === 'high' ? '4px solid #dc3545' : riskLevel === 'medium' ? '4px solid #ffc107' : '4px solid #28a745';
+              
+              const ipAddress = item.ip_address || 'Unknown';
+              const action = item.action || 'Unknown';
+              const orgName = item.organization_name || 'Platform-wide';
+              const eventCount = item.event_count || 0;
+              const firstEvent = item.first_event ? new Date(item.first_event).toLocaleString() : 'Unknown';
+              const lastEvent = item.last_event ? new Date(item.last_event).toLocaleString() : 'Unknown';
+              const usernames = Array.isArray(item.usernames) ? item.usernames.filter(u => u && u.toLowerCase() !== 'unknown') : [];
+              const detailsUrl = `audit-log-details?filter=${encodeURIComponent(action)}&action=${encodeURIComponent(action)}&ip=${encodeURIComponent(ipAddress)}`;
+              
+              row.innerHTML = `
+                <td style="text-align: center; font-size: 18px;" title="${riskLevel.toUpperCase()} Risk">${riskIcon}</td>
+                <td><code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${ipAddress}</code></td>
+                <td>${action}</td>
+                <td>${orgName}</td>
+                <td><a href="${detailsUrl}" title="View individual events"><span class="alert-badge ${riskLevel}">${eventCount}</span></a></td>
+                <td>${firstEvent}</td>
+                <td>${lastEvent}</td>
+                <td>${usernames.length > 0 ? usernames.slice(0, 3).join(', ') + (usernames.length > 3 ? ` (+${usernames.length - 3} more)` : '') : 'Unknown'}</td>
+              `;
+              
+              tbodyEl.appendChild(row);
+            }
+            
+            tableEl.style.display = 'table';
+            console.log(`✅ Displayed ${activity.length} suspicious activity items for IP ${filterIP}`);
+            return;
+          } catch (selectError) {
+            console.warn('⚠️ Secure select failed, falling back to RPC:', selectError);
+            // Fall through to RPC method
+          }
+        }
+        
+        // Use secureSupabaseSelect (same approach as platform-security-dashboard).
+        // RPC get_suspicious_activity has HAVING COUNT>=10 which hides most data.
+        if (typeof window.secureSupabaseSelect !== 'function') {
+          throw new Error('secureSupabaseSelect helper is unavailable');
+        }
+
+        // Same as platform-security-dashboard: fetch without timestamp filter, filter client-side.
+        // Server-side timestamp filter can fail; client-side is reliable.
+        const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).getTime();
+        console.log('📊 Loading suspicious activity from audit_logs via secure proxy...');
+        
+        let auditLogs = await window.secureSupabaseSelect('audit_logs', {
+          select: '*',
+          filters: {},
+          order: { column: 'timestamp', ascending: false },
+          limit: 5000
+        });
+
+        // Filter by time window client-side
+        const logsInWindow = (auditLogs || []).filter(log => {
+          const ts = log.timestamp ? new Date(log.timestamp).getTime() : 0;
+          return ts >= timeThreshold;
+        });
+
+        // Broader security-relevant actions (no minimum count - show all)
+        const suspiciousActions = ['login_failed', 'unauthorized_access_attempt', 'rpc_failure', 'data_exported', 
+          'report_exported', 'patient_deleted', 'user_profile_updated', 'patient_exported_hl7',
+          'password_change_failed', 'unauthorized_access', 'platform_admin_login'];
+        
+        const relevantLogs = logsInWindow.filter(log => {
+          const action = (log.action || '').toLowerCase();
+          return suspiciousActions.some(a => action.includes(a) || action === a) ||
+            action.includes('failed') || action.includes('unauthorized') || action.includes('export');
+        });
+
+        // Resolve organization names before grouping
+        const orgIds = [...new Set(relevantLogs.map(l => l.organization_id).filter(Boolean))];
+        let orgMap = {};
+        if (orgIds.length > 0 && window.supabaseClient) {
+          try {
+            const { data: orgs } = await window.supabaseClient.from('organizations').select('id, name').in('id', orgIds);
+            (orgs || []).forEach(o => { orgMap[o.id] = o.name; });
+          } catch (e) { console.warn('Org resolve failed:', e); }
+        }
+
+        // Group by IP + action; collect unique org names per group
+        const activityByKey = {};
+        relevantLogs.forEach(log => {
+          const ip = log.ip_address || 'Unknown';
+          const action = log.action || 'unknown';
+          const key = `${ip}_${action}`;
+          const orgName = log.organization_name || (log.organization_id && orgMap[log.organization_id]) || null;
+          if (!activityByKey[key]) {
+            activityByKey[key] = {
+              ip_address: ip,
+              action: action,
+              event_count: 0,
+              first_event: log.timestamp,
+              last_event: log.timestamp,
+              orgNames: new Set(),
+              usernames: new Set()
+            };
+          }
+          activityByKey[key].event_count++;
+          if (orgName) activityByKey[key].orgNames.add(orgName);
+          if (log.username) activityByKey[key].usernames.add(log.username);
+          if (new Date(log.timestamp) < new Date(activityByKey[key].first_event)) {
+            activityByKey[key].first_event = log.timestamp;
+          }
+          if (new Date(log.timestamp) > new Date(activityByKey[key].last_event)) {
+            activityByKey[key].last_event = log.timestamp;
+          }
+        });
+
+        let activity = Object.values(activityByKey).map(item => {
+          const orgArr = Array.from(item.orgNames || []);
+          let orgDisplay = 'Platform-wide';
+          if (orgArr.length === 1) orgDisplay = orgArr[0];
+          else if (orgArr.length === 2) orgDisplay = orgArr.join(', ');
+          else if (orgArr.length === 3) orgDisplay = orgArr.join(', ');
+          else if (orgArr.length > 3) orgDisplay = orgArr.slice(0, 2).join(', ') + ` +${orgArr.length - 2} more`;
+          return {
+            ...item,
+            usernames: Array.from(item.usernames || []),
+            organization_name: orgDisplay,
+            event_count: item.event_count,
+            count: item.event_count
+          };
+        }).sort((a, b) => (b.event_count || 0) - (a.event_count || 0));
+
+        if (filterIP) {
+          activity = activity.filter(item => (item.ip_address || item.ip) === filterIP);
+        }
+
+        console.log(`✅ Found ${activity.length} suspicious activity groups (no threshold)`);
+
+        loadingEl.style.display = 'none';
+
+        if (activity.length === 0) {
+          noDataEl.style.display = 'block';
+          console.log('✅ No suspicious activity found');
+          return;
+        }
+
+        tbodyEl.innerHTML = '';
+        
+        // Process items sequentially to handle async username queries
+        for (let index = 0; index < activity.length; index++) {
+          const item = activity[index];
+          const riskLevel = getRiskLevelForActivity(item);
+          const riskIcon = riskLevel === 'high' ? '🔴' : riskLevel === 'medium' ? '🟡' : '🟢';
+          const row = document.createElement('tr');
+          row.style.borderLeft = riskLevel === 'high' ? '4px solid #dc3545' : riskLevel === 'medium' ? '4px solid #ffc107' : '4px solid #28a745';
+          
+          // Extract IP address with comprehensive fallback
+          let ipAddress = item.ip_address || item.ip || null;
+          if (!ipAddress || ipAddress === 'Unknown') {
+            ipAddress = 'Unknown';
+          }
+          
+          const action = item.action || item.event_type || 'Unknown';
+          
+          // Extract organization name with comprehensive fallback
+          let orgName = item.organization_name || item.organization || item.org_name || item.org || null;
+          
+          // If multiple organizations or null, show "Multiple"
+          if (!orgName || orgName === 'Unknown' || orgName === 'Loading...') {
+            // Check if we have organization_id to resolve
+            if (item.organization_id) {
+              orgName = 'Loading...'; // Will be resolved
+            } else {
+              orgName = 'Multiple';
+            }
+          }
+          
+          const eventCount = item.event_count || item.count || 0;
+          const firstEvent = item.first_event || item.firstEvent || item.timestamp || new Date().toISOString();
+          const lastEvent = item.last_event || item.lastEvent || item.timestamp || new Date().toISOString();
+          
+          // Extract usernames with comprehensive fallback
+          let usernames = [];
+          
+          // First, try the usernames array field
+          if (Array.isArray(item.usernames)) {
+            usernames = item.usernames.filter(u => u && u.toLowerCase() !== 'unknown' && u !== 'null' && u !== null);
+          } 
+          // Then try single username field
+          else if (item.username && item.username.toLowerCase() !== 'unknown' && item.username !== 'null') {
+            usernames = [item.username];
+          }
+          // Try user_name field
+          else if (item.user_name && item.user_name.toLowerCase() !== 'unknown' && item.user_name !== 'null') {
+            usernames = [item.user_name];
+          }
+          
+          // If no usernames found, try to extract from details JSONB field
+          if (usernames.length === 0 && item.details) {
+            let detailsObj = item.details;
+            if (typeof item.details === 'string') {
+              try {
+                detailsObj = JSON.parse(item.details);
+              } catch (e) {
+                // Keep as string
+              }
+            }
+            if (typeof detailsObj === 'object' && detailsObj !== null) {
+              const extractedUser = detailsObj.username || detailsObj.user || detailsObj.userName || detailsObj.user_name;
+              if (extractedUser && extractedUser.toLowerCase() !== 'unknown' && extractedUser !== 'null') {
+                usernames = [extractedUser];
+              }
+            }
+          }
+          
+          // Try to query actual audit logs for this IP/action to get usernames (only if needed)
+          if (usernames.length === 0 && ipAddress && ipAddress !== 'Unknown' && typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+            console.log(`🔍 TRACE: No usernames found in RPC response for IP ${ipAddress}, querying audit_logs...`);
+            try {
+              const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+              const { data: ipLogs, error: ipError } = await window.supabaseClient
+                .from('audit_logs')
+                .select('username, user_name, details')
+                .eq('ip_address', ipAddress)
+                .eq('action', action)
+                .gte('timestamp', timeThreshold)
+                .limit(10);
+              
+              if (ipError) {
+                console.warn('⚠️ TRACE: Error querying audit_logs:', ipError);
+              } else if (ipLogs && ipLogs.length > 0) {
+                const foundUsernames = new Set();
+                ipLogs.forEach(log => {
+                  let username = log.username || log.user_name;
+                  if (!username && log.details) {
+                    let detailsObj = log.details;
+                    if (typeof log.details === 'string') {
+                      try {
+                        detailsObj = JSON.parse(log.details);
+                      } catch (e) {
+                        // Keep as string
+                      }
+                    }
+                    if (typeof detailsObj === 'object' && detailsObj !== null) {
+                      username = detailsObj.username || detailsObj.user || detailsObj.userName || detailsObj.user_name;
+                    }
+                  }
+                  if (username && username.toLowerCase() !== 'unknown' && username !== 'null') {
+                    foundUsernames.add(username);
+                  }
+                });
+                if (foundUsernames.size > 0) {
+                  usernames = Array.from(foundUsernames);
+                  console.log(`✅ TRACE: Found usernames from audit_logs query:`, usernames);
+                }
+              }
+            } catch (queryError) {
+              console.warn('⚠️ TRACE: Error querying audit_logs for usernames:', queryError);
+            }
+          }
+          
+          // Final fallback - only show Unknown if we truly couldn't find anything
+          if (usernames.length === 0) {
+            usernames = ['Unknown'];
+          }
+          
+          // Log extraction for first few items for debugging
+          if (index < 3) {
+            console.log(`🔍 TRACE: Suspicious activity item ${index}:`, {
+              action: action,
+              ipAddress: ipAddress,
+              orgName: orgName,
+              usernames: usernames,
+              eventCount: eventCount,
+              rawItem: item
+            });
+          }
+          
+          const detailsUrl = `audit-log-details?filter=${encodeURIComponent(action)}&action=${encodeURIComponent(action)}&ip=${encodeURIComponent(ipAddress)}${orgName && orgName !== 'Platform-wide' ? '&organization=' + encodeURIComponent(orgName) : ''}`;
+          row.innerHTML = `
+            <td style="text-align: center; font-size: 18px;" title="${riskLevel.toUpperCase()} Risk">${riskIcon}</td>
+            <td><code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${ipAddress}</code></td>
+            <td><code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${action}</code></td>
+            <td>${orgName}</td>
+            <td>
+              <a href="${detailsUrl}" 
+                 style="text-decoration: none; color: inherit; cursor: pointer;" 
+                 title="View individual events for this IP and action">
+                <span class="alert-badge ${riskLevel}" style="cursor: pointer; transition: all 0.2s;" 
+                      onmouseover="this.style.transform='scale(1.1)'; this.style.boxShadow='0 2px 8px rgba(0,0,0,0.2)'"
+                      onmouseout="this.style.transform='scale(1)'; this.style.boxShadow='none'">
+                  ${eventCount}
+                </span>
+              </a>
+            </td>
+            <td>${new Date(firstEvent).toLocaleString()}</td>
+            <td>${new Date(lastEvent).toLocaleString()}</td>
+            <td style="font-size: 11px;">
+              ${usernames.length > 0 && usernames.some(u => u && u.toLowerCase() !== 'unknown')
+                ? usernames
+                    .filter(u => u && u.toLowerCase() !== 'unknown')
+                    .slice(0, 3)
+                    .join(', ') + (usernames.filter(u => u && u.toLowerCase() !== 'unknown').length > 3 ? ` (+${usernames.filter(u => u && u.toLowerCase() !== 'unknown').length - 3} more)` : '')
+                : 'Unknown'}
+            </td>
+          `;
+          tbodyEl.appendChild(row);
+        }
+
+        tableEl.style.display = 'table';
+        console.log(`✅ Loaded ${activity.length} suspicious activity items`);
+      } catch (error) {
+        loadingEl.style.display = 'none';
+        const errorMsg = error.message || 'Unable to load suspicious activity. Supabase may be offline.';
+        errorEl.textContent = `Error: ${errorMsg}`;
+        errorEl.style.display = 'block';
+        console.error('❌ Error loading suspicious activity:', error);
+        console.error('❌ Error details:', error.stack);
+      }
+    }
+
+    // Removed - now using dedicated audit-log-details.html page instead of modal
+
+    // Handle time filter clicks
+    function setupTimeFilters() {
+      document.querySelectorAll('.time-filter button').forEach(button => {
+        button.addEventListener('click', function() {
+          const hours = parseInt(this.dataset.hours);
+          
+          // Update active state
+          this.parentElement.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Reload data based on section
+          const section = this.closest('.security-section');
+          if (section.querySelector('#failed-logins-table')) {
+            loadFailedLoginAttempts(hours);
+          } else if (section.querySelector('#suspicious-activity-table')) {
+            loadSuspiciousActivity(hours);
+          }
+        });
+      });
+    }
+
+    // Risk level calculation for activity
+    function getRiskLevelForActivity(item) {
+      const action = (item.action || '').toLowerCase();
+      const count = item.event_count || 0;
+      
+      if (action.includes('failed') || action.includes('unauthorized') || count >= 50) {
+        return 'high';
+      } else if (action.includes('export') || action.includes('delete') || count >= 20) {
+        return 'medium';
+      }
+      return 'low';
+    }
+    
+    // Load additional cybersecurity metrics
+    async function loadAdditionalMetrics(hours = 24) {
+      try {
+        if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+          console.warn('⚠️ Supabase client unavailable for additional metrics');
+          document.getElementById('data-exports').textContent = 'N/A';
+          document.getElementById('patient-accesses').textContent = 'N/A';
+          return;
+        }
+        
+        const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+        
+        // Get data exports count directly from audit_logs
+        const { data: exportLogs, error: exportError } = await window.supabaseClient
+          .from('audit_logs')
+          .select('id', { count: 'exact', head: true })
+          .in('action', ['data_exported', 'report_exported', 'patient_exported_hl7'])
+          .gte('timestamp', timeThreshold);
+        
+        const exportsCount = exportError ? 0 : (exportLogs?.length || 0);
+        // If count query worked, use it; otherwise query full data
+        let finalExportsCount = exportsCount;
+        if (exportsCount === 0 && !exportError) {
+          const { count } = await window.supabaseClient
+            .from('audit_logs')
+            .select('*', { count: 'exact', head: true })
+            .in('action', ['data_exported', 'report_exported', 'patient_exported_hl7'])
+            .gte('timestamp', timeThreshold);
+          finalExportsCount = count || 0;
+        }
+        document.getElementById('data-exports').textContent = finalExportsCount;
+        
+        // Get patient accesses count directly from audit_logs
+        const { count: patientCount } = await window.supabaseClient
+          .from('audit_logs')
+          .select('*', { count: 'exact', head: true })
+          .in('action', ['patient_viewed', 'patient_updated', 'patient_edited'])
+          .gte('timestamp', timeThreshold);
+        
+        document.getElementById('patient-accesses').textContent = patientCount || 0;
+        
+        // Load and display security alerts
+        await loadSecurityAlerts(hours);
+      } catch (error) {
+        console.error('❌ Error loading additional metrics:', error);
+        document.getElementById('data-exports').textContent = 'N/A';
+        document.getElementById('patient-accesses').textContent = 'N/A';
+      }
+    }
+    
+    function extractCount(response, field) {
+      if (Array.isArray(response) && response.length > 0) {
+        return response[0][field] || 0;
+      } else if (response && response.data && Array.isArray(response.data) && response.data.length > 0) {
+        return response.data[0][field] || 0;
+      } else if (response && response[field] !== undefined) {
+        return response[field] || 0;
+      }
+      return 0;
+    }
+    
+    // Load and display security alerts
+    async function loadSecurityAlerts(hours = 24) {
+      try {
+        if (typeof window.secureSupabaseRpc !== 'function') {
+          return;
+        }
+        
+        // Get failed logins for pattern detection
+        const failedLogins = await window.secureSupabaseRpc('get_failed_login_attempts', {
+          p_time_window_minutes: hours * 60,
+          p_threshold: 3
+        });
+        
+        const alerts = [];
+        const attempts = Array.isArray(failedLogins) ? failedLogins : (failedLogins?.data || []);
+        
+        // Multiple failed logins from same user
+        attempts.forEach(attempt => {
+          if (attempt.attempt_count >= 3) {
+            alerts.push({
+              type: 'high',
+              message: `⚠️ User "${attempt.username}" from ${attempt.organization_name || 'Unknown Org'} has ${attempt.attempt_count} failed login attempts`,
+              timestamp: attempt.last_attempt,
+              organization: attempt.organization_name || attempt.organization
+            });
+          }
+        });
+        
+        // Get suspicious activity
+        const suspicious = await window.secureSupabaseRpc('get_suspicious_activity', {
+          p_time_window_hours: hours
+        });
+        const activity = Array.isArray(suspicious) ? suspicious : (suspicious?.data || []);
+        
+        // High event count activities
+        activity.forEach(item => {
+          if (item.event_count >= 50) {
+            alerts.push({
+              type: 'high',
+              message: `🔴 Suspicious activity: ${item.action} occurred ${item.event_count} times from IP ${item.ip_address}`,
+              timestamp: item.last_event,
+              organization: item.organization_name || 'Multiple'
+            });
+          } else if (item.event_count >= 20 && (item.action || '').includes('export')) {
+            alerts.push({
+              type: 'medium',
+              message: `📤 Multiple data exports: ${item.event_count} export events detected`,
+              timestamp: item.last_event,
+              organization: item.organization_name || 'Multiple'
+            });
+          }
+        });
+        
+        // Display alerts
+        const alertsSection = document.getElementById('security-alerts-section');
+        const alertsList = document.getElementById('security-alerts-list');
+        
+        if (alerts.length > 0) {
+          alertsSection.style.display = 'block';
+          alertsList.innerHTML = alerts.map(alert => `
+            <div style="padding: 15px; margin-bottom: 10px; background: white; border-radius: 6px; border-left: 4px solid ${alert.type === 'high' ? '#dc3545' : '#ffc107'};">
+              <strong style="color: ${alert.type === 'high' ? '#dc3545' : '#856404'};">${alert.message}</strong>
+              <div style="font-size: 12px; color: #666; margin-top: 5px;">
+                <span style="font-weight: 600;">Organization:</span> ${alert.organization} | 
+                <span style="font-weight: 600;">Time:</span> ${new Date(alert.timestamp).toLocaleString()}
+              </div>
+            </div>
+          `).join('');
+        } else {
+          alertsSection.style.display = 'none';
+        }
+      } catch (error) {
+        console.error('❌ Error loading security alerts:', error);
+      }
+    }
+    
+    // Initialize
+    async function initialize() {
+      const isAdmin = await checkPlatformAdmin();
+      if (!isAdmin) {
+        return;
+      }
+
+      setupTimeFilters();
+      
+      // Check URL parameters for filtering
+      const urlParams = new URLSearchParams(window.location.search);
+      const filterIP = urlParams.get('ip');
+      const filterUsername = urlParams.get('username');
+      const viewType = urlParams.get('view');
+      
+      // If specific view requested, scroll to that section after a short delay to ensure DOM is ready
+      setTimeout(() => {
+        if (viewType === 'suspicious' && filterIP) {
+          // Find the suspicious activity table and scroll to its parent section
+          const table = document.getElementById('suspicious-activity-table');
+          if (table) {
+            const section = table.closest('.security-section');
+            if (section) {
+              section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              // Fallback: scroll to the table itself
+              table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          } else {
+            // Find by h2 text content
+            const h2Elements = Array.from(document.querySelectorAll('h2'));
+            const suspiciousH2 = h2Elements.find(h2 => h2.textContent.includes('Suspicious Activity'));
+            if (suspiciousH2) {
+              const section = suspiciousH2.closest('.security-section');
+              if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
+          }
+        } else if (viewType === 'failed_logins' && filterUsername) {
+          // Find the failed logins table and scroll to its parent section
+          const table = document.getElementById('failed-logins-table');
+          if (table) {
+            const section = table.closest('.security-section');
+            if (section) {
+              section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            } else {
+              // Fallback: scroll to the table itself
+              table.scrollIntoView({ behavior: 'smooth', block: 'start' });
+            }
+          } else {
+            // Find by h2 text content
+            const h2Elements = Array.from(document.querySelectorAll('h2'));
+            const failedH2 = h2Elements.find(h2 => h2.textContent.includes('Failed Login Attempts'));
+            if (failedH2) {
+              const section = failedH2.closest('.security-section');
+              if (section) {
+                section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+              }
+            }
+          }
+        }
+      }, 500);
+      
+      // Load initial data with filters
+      const currentHours = 24;
+      await loadSecuritySummary(currentHours);
+      await loadFailedLoginAttempts(currentHours, filterUsername);
+      await loadSuspiciousActivity(currentHours, filterIP);
+      document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+
+      // Auto-refresh every 60 seconds (real-time visibility)
+      setInterval(() => {
+        loadSecuritySummary(currentHours);
+        loadAdditionalMetrics(currentHours);
+        loadFailedLoginAttempts(currentHours, filterUsername);
+        loadSuspiciousActivity(currentHours, filterIP);
+        document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+      }, 60 * 1000);
+
+      // Supabase Realtime: subscribe to new audit_logs for instant updates
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          const channel = window.supabaseClient
+            .channel('audit-logs-realtime')
+            .on('postgres_changes', { event: 'INSERT', schema: 'public', table: 'audit_logs' }, (payload) => {
+              console.log('🔴 New audit event (realtime):', payload?.new?.action);
+              loadSecuritySummary(currentHours);
+              loadAdditionalMetrics(currentHours);
+              document.getElementById('last-updated').textContent = 'Last updated: ' + new Date().toLocaleTimeString();
+            })
+            .subscribe((status) => {
+              const dot = document.getElementById('live-dot');
+              const text = document.getElementById('live-text');
+              if (dot && text) {
+                if (status === 'SUBSCRIBED') {
+                  dot.style.background = '#90EE90';
+                  text.textContent = 'Live';
+                } else if (status === 'CHANNEL_ERROR') {
+                  dot.style.background = '#ffcccb';
+                  text.textContent = 'Polling only';
+                }
+              }
+            });
+        } catch (realtimeErr) {
+          console.warn('Realtime subscription failed (using polling):', realtimeErr.message);
+          document.getElementById('live-text').textContent = 'Polling only';
+          document.getElementById('live-dot').style.background = '#ffcccb';
+        }
+      }
+    }
+
+    // Wait for DOM and scripts to load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+      initialize();
+    }
+  </script>
+</body>
+</html>
+

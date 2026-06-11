@@ -1,0 +1,721 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inpatient Assessment - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .risk-score-box {
+      background: var(--soft-white);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+      border-left: 4px solid var(--primary-green);
+    }
+    
+    .risk-score-box.high {
+      border-left-color: var(--coral);
+      background: #fff3cd;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Inpatient Dashboard</button>
+    
+    <h1>📋 Inpatient Assessment</h1>
+    
+    <form id="assessment-form" onsubmit="handleAssessmentSubmit(event)">
+      <!-- Assessment Type -->
+      <div class="form-section">
+        <h2>Assessment Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Assessment Type *</label>
+            <select id="assessment-type" required>
+              <option value="initial">Initial Assessment</option>
+              <option value="ongoing">Ongoing Assessment</option>
+              <option value="reassessment">Reassessment</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Assessment Date/Time *</label>
+            <input type="datetime-local" id="assessment-datetime" required>
+          </div>
+        </div>
+      </div>
+      
+      <!-- History & Physical -->
+      <div class="form-section">
+        <h2>History & Physical Examination</h2>
+        <div class="form-group">
+          <label>Chief Complaint</label>
+          <textarea id="history-cc" rows="3" placeholder="Primary reason for admission"></textarea>
+        </div>
+        <div class="form-group">
+          <label>History of Present Illness</label>
+          <textarea id="history-hpi" rows="4" placeholder="Detailed history of current illness"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Past Medical History</label>
+          <textarea id="history-pmh" rows="3" placeholder="Previous medical conditions, surgeries"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Physical Examination Findings</label>
+          <textarea id="physical-exam" rows="5" placeholder="General appearance, vital signs, system-by-system examination"></textarea>
+        </div>
+      </div>
+      
+      <!-- Risk Screening -->
+      <div class="form-section">
+        <h2>Risk Screening</h2>
+        
+        <div class="risk-score-box">
+          <h3 style="margin-top: 0;">Fall Risk Assessment</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Fall Risk Score (0-10)</label>
+              <input type="number" id="risk-fall-score" min="0" max="10" value="0">
+            </div>
+            <div class="form-group">
+              <label>Fall Risk Level</label>
+              <select id="risk-fall-level">
+                <option value="low">Low (0-2)</option>
+                <option value="moderate">Moderate (3-5)</option>
+                <option value="high">High (6-10)</option>
+              </select>
+            </div>
+          </div>
+          <div class="checkbox-group">
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-fall-history" value="history">
+              <label for="risk-fall-history">History of Falls</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-fall-mobility" value="mobility">
+              <label for="risk-fall-mobility">Mobility Issues</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-fall-medication" value="medication">
+              <label for="risk-fall-medication">High-Risk Medications</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-fall-cognitive" value="cognitive">
+              <label for="risk-fall-cognitive">Cognitive Impairment</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="risk-score-box">
+          <h3 style="margin-top: 0;">Infection Risk Assessment</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Infection Risk Level</label>
+              <select id="risk-infection-level">
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Current Infection</label>
+              <select id="risk-infection-current">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+                <option value="suspected">Suspected</option>
+              </select>
+            </div>
+          </div>
+          <div class="checkbox-group">
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-infection-wound" value="wound">
+              <label for="risk-infection-wound">Open Wounds</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-infection-catheter" value="catheter">
+              <label for="risk-infection-catheter">Indwelling Catheters</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="risk-infection-immune" value="immune">
+              <label for="risk-infection-immune">Compromised Immune System</label>
+            </div>
+          </div>
+        </div>
+        
+        <div class="risk-score-box">
+          <h3 style="margin-top: 0;">Pressure Ulcer Risk</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Braden Scale Score (6-23)</label>
+              <input type="number" id="risk-pressure-score" min="6" max="23" value="23">
+            </div>
+            <div class="form-group">
+              <label>Risk Level</label>
+              <select id="risk-pressure-level">
+                <option value="low">Low (19-23)</option>
+                <option value="moderate">Moderate (15-18)</option>
+                <option value="high">High (13-14)</option>
+                <option value="very-high">Very High (6-12)</option>
+              </select>
+            </div>
+          </div>
+        </div>
+        
+        <div class="risk-score-box">
+          <h3 style="margin-top: 0;">DVT/PE Risk</h3>
+          <div class="form-row">
+            <div class="form-group">
+              <label>DVT Risk Level</label>
+              <select id="risk-dvt-level">
+                <option value="low">Low</option>
+                <option value="moderate">Moderate</option>
+                <option value="high">High</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Prophylaxis Needed</label>
+              <select id="risk-dvt-prophylaxis">
+                <option value="no">No</option>
+                <option value="yes">Yes</option>
+              </select>
+            </div>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Functional Assessment -->
+      <div class="form-section">
+        <h2>Functional Assessment</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Mobility Status</label>
+            <select id="functional-mobility">
+              <option value="independent">Independent</option>
+              <option value="assistive-device">With Assistive Device</option>
+              <option value="assistance-needed">Assistance Needed</option>
+              <option value="dependent">Dependent</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Activities of Daily Living (ADL)</label>
+            <select id="functional-adl">
+              <option value="independent">Independent</option>
+              <option value="minimal-assist">Minimal Assistance</option>
+              <option value="moderate-assist">Moderate Assistance</option>
+              <option value="maximal-assist">Maximal Assistance</option>
+              <option value="dependent">Dependent</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Functional Notes</label>
+          <textarea id="functional-notes" rows="3" placeholder="Additional functional assessment details"></textarea>
+        </div>
+      </div>
+      
+      <!-- Social Assessment -->
+      <div class="form-section">
+        <h2>Social Assessment</h2>
+        <div class="form-group">
+          <label>Social Assessment</label>
+          <textarea id="social-assessment" rows="4" placeholder="Home situation, support systems, social needs, barriers to discharge"></textarea>
+        </div>
+      </div>
+      
+      <!-- Nutritional Assessment -->
+      <div class="form-section">
+        <h2>Nutritional Assessment</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Nutritional Status</label>
+            <select id="nutritional-status">
+              <option value="well-nourished">Well Nourished</option>
+              <option value="at-risk">At Risk</option>
+              <option value="malnourished">Malnourished</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Appetite</label>
+            <select id="nutritional-appetite">
+              <option value="good">Good</option>
+              <option value="fair">Fair</option>
+              <option value="poor">Poor</option>
+              <option value="none">None</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Nutritional Notes</label>
+          <textarea id="nutritional-notes" rows="3" placeholder="Dietary restrictions, preferences, nutritional concerns"></textarea>
+        </div>
+      </div>
+      
+      <!-- Pain Assessment -->
+      <div class="form-section">
+        <h2>Pain Assessment</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Pain Score (0-10)</label>
+            <input type="number" id="pain-score" min="0" max="10" value="0">
+          </div>
+          <div class="form-group">
+            <label>Pain Location</label>
+            <input type="text" id="pain-location" placeholder="e.g., Lower back, Right knee">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Pain Description</label>
+          <textarea id="pain-description" rows="2" placeholder="Quality, intensity, triggers, relief measures"></textarea>
+        </div>
+      </div>
+      
+      <!-- Additional Notes -->
+      <div class="form-section">
+        <h2>Additional Notes</h2>
+        <div class="form-group">
+          <label>Assessment Notes</label>
+          <textarea id="assessment-notes" rows="4" placeholder="Any additional assessment findings or concerns"></textarea>
+        </div>
+      </div>
+      
+      <!-- Submit Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="submit">💾 Save Assessment</button>
+        <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let legacyPatientId = null;
+    let organizationId = null;
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId = urlParams.get('patientId');
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+
+      await resolveLegacyPatientId();
+      
+      // Set default assessment datetime to now
+      const now = new Date();
+      const datetimeLocal = now.toISOString().slice(0, 16);
+      document.getElementById('assessment-datetime').value = datetimeLocal;
+      
+      // Load existing assessment if any
+      await loadExistingAssessment();
+    });
+
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && data?.patient_id) {
+            resolvedId = data.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+    
+    async function loadExistingAssessment() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('inpatient_assessments')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .order('assessment_date', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (error) throw error;
+          
+          if (data) {
+            populateForm(data);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing assessment:', error);
+      }
+    }
+    
+    function populateForm(assessment) {
+      if (assessment.assessment_type) {
+        document.getElementById('assessment-type').value = assessment.assessment_type;
+      }
+      if (assessment.assessment_date) {
+        const date = new Date(assessment.assessment_date);
+        const datetimeLocal = date.toISOString().slice(0, 16);
+        document.getElementById('assessment-datetime').value = datetimeLocal;
+      }
+      
+      const history = assessment.history_physical || {};
+      if (history.cc) document.getElementById('history-cc').value = history.cc;
+      if (history.hpi) document.getElementById('history-hpi').value = history.hpi;
+      if (history.pmh) document.getElementById('history-pmh').value = history.pmh;
+      if (history.physical_exam) document.getElementById('physical-exam').value = history.physical_exam;
+      
+      const risks = assessment.risk_scores || {};
+      if (risks.fall_score !== undefined) document.getElementById('risk-fall-score').value = risks.fall_score;
+      if (risks.fall_level) document.getElementById('risk-fall-level').value = risks.fall_level;
+      if (risks.fall_factors) {
+        risks.fall_factors.forEach(factor => {
+          const checkbox = document.getElementById(`risk-fall-${factor}`);
+          if (checkbox) checkbox.checked = true;
+        });
+      }
+      
+      if (risks.infection_level) document.getElementById('risk-infection-level').value = risks.infection_level;
+      if (risks.infection_current) document.getElementById('risk-infection-current').value = risks.infection_current;
+      if (risks.infection_factors) {
+        risks.infection_factors.forEach(factor => {
+          const checkbox = document.getElementById(`risk-infection-${factor}`);
+          if (checkbox) checkbox.checked = true;
+        });
+      }
+      
+      if (risks.pressure_score !== undefined) document.getElementById('risk-pressure-score').value = risks.pressure_score;
+      if (risks.pressure_level) document.getElementById('risk-pressure-level').value = risks.pressure_level;
+      
+      if (risks.dvt_level) document.getElementById('risk-dvt-level').value = risks.dvt_level;
+      if (risks.dvt_prophylaxis) document.getElementById('risk-dvt-prophylaxis').value = risks.dvt_prophylaxis;
+      
+      const functional = assessment.functional_status || {};
+      if (functional.mobility) document.getElementById('functional-mobility').value = functional.mobility;
+      if (functional.adl) document.getElementById('functional-adl').value = functional.adl;
+      if (functional.notes) document.getElementById('functional-notes').value = functional.notes;
+      
+      if (assessment.social_assessment) {
+        document.getElementById('social-assessment').value = assessment.social_assessment;
+      }
+      
+      const nutritional = assessment.nutritional_assessment || {};
+      if (nutritional.status) document.getElementById('nutritional-status').value = nutritional.status;
+      if (nutritional.appetite) document.getElementById('nutritional-appetite').value = nutritional.appetite;
+      if (nutritional.notes) document.getElementById('nutritional-notes').value = nutritional.notes;
+      
+      const pain = assessment.pain_assessment || {};
+      if (pain.score !== undefined) document.getElementById('pain-score').value = pain.score;
+      if (pain.location) document.getElementById('pain-location').value = pain.location;
+      if (pain.description) document.getElementById('pain-description').value = pain.description;
+      
+      if (assessment.notes) {
+        document.getElementById('assessment-notes').value = assessment.notes;
+      }
+    }
+    
+    async function handleAssessmentSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        // Collect risk scores
+        const fallFactors = [];
+        if (document.getElementById('risk-fall-history').checked) fallFactors.push('history');
+        if (document.getElementById('risk-fall-mobility').checked) fallFactors.push('mobility');
+        if (document.getElementById('risk-fall-medication').checked) fallFactors.push('medication');
+        if (document.getElementById('risk-fall-cognitive').checked) fallFactors.push('cognitive');
+        
+        const infectionFactors = [];
+        if (document.getElementById('risk-infection-wound').checked) infectionFactors.push('wound');
+        if (document.getElementById('risk-infection-catheter').checked) infectionFactors.push('catheter');
+        if (document.getElementById('risk-infection-immune').checked) infectionFactors.push('immune');
+        
+        const assessmentData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          assessment_type: document.getElementById('assessment-type').value,
+          assessment_date: new Date(document.getElementById('assessment-datetime').value).toISOString(),
+          history_physical: {
+            cc: document.getElementById('history-cc').value.trim() || null,
+            hpi: document.getElementById('history-hpi').value.trim() || null,
+            pmh: document.getElementById('history-pmh').value.trim() || null,
+            physical_exam: document.getElementById('physical-exam').value.trim() || null
+          },
+          risk_scores: {
+            fall_score: parseInt(document.getElementById('risk-fall-score').value) || 0,
+            fall_level: document.getElementById('risk-fall-level').value,
+            fall_factors: fallFactors,
+            infection_level: document.getElementById('risk-infection-level').value,
+            infection_current: document.getElementById('risk-infection-current').value,
+            infection_factors: infectionFactors,
+            pressure_score: parseInt(document.getElementById('risk-pressure-score').value) || 23,
+            pressure_level: document.getElementById('risk-pressure-level').value,
+            dvt_level: document.getElementById('risk-dvt-level').value,
+            dvt_prophylaxis: document.getElementById('risk-dvt-prophylaxis').value
+          },
+          functional_status: {
+            mobility: document.getElementById('functional-mobility').value,
+            adl: document.getElementById('functional-adl').value,
+            notes: document.getElementById('functional-notes').value.trim() || null
+          },
+          social_assessment: document.getElementById('social-assessment').value.trim() || null,
+          nutritional_assessment: {
+            status: document.getElementById('nutritional-status').value,
+            appetite: document.getElementById('nutritional-appetite').value,
+            notes: document.getElementById('nutritional-notes').value.trim() || null
+          },
+          pain_assessment: {
+            score: parseInt(document.getElementById('pain-score').value) || 0,
+            location: document.getElementById('pain-location').value.trim() || null,
+            description: document.getElementById('pain-description').value.trim() || null
+          },
+          notes: document.getElementById('assessment-notes').value.trim() || null,
+          assessed_by: user.id || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('inpatient_assessments')
+            .insert(assessmentData)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          console.log('✅ Assessment saved to Supabase:', data);
+          alert('Assessment saved successfully!');
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`inpatient_assessments_${organizationId}`) || "[]";
+          const assessments = JSON.parse(stored);
+          assessments.push({ ...assessmentData, id: `assess_${Date.now()}`, created_at: new Date().toISOString() });
+          localStorage.setItem(`inpatient_assessments_${organizationId}`, JSON.stringify(assessments));
+          console.log('✅ Assessment saved to localStorage');
+          alert('Assessment saved successfully!');
+        }
+        
+        // Redirect back to dashboard
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } catch (error) {
+        console.error('Error saving assessment:', error);
+        alert('Error saving assessment: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function goBack() {
+      if (admissionId) {
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } else {
+        window.location.href = 'admissions-dashboard';
+      }
+    }
+
+    function getAdmissionIdForUrl() {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+  </script>
+</body>
+</html>
+

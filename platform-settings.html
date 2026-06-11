@@ -1,0 +1,894 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Platform Settings - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=268">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .settings-section {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    
+    .settings-section h2 {
+      margin: 0 0 20px 0;
+      color: #667eea;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    .plan-card {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      border: 2px solid #ddd;
+      margin-bottom: 20px;
+    }
+    
+    .plan-card.active {
+      border-color: #4CAF50;
+      background: #e8f5e9;
+    }
+    
+    .plan-card h3 {
+      margin: 0 0 15px 0;
+      color: #333;
+      font-size: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .form-group input, .form-group textarea, .form-group select {
+      width: 100%;
+      padding: 10px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus, .form-group textarea:focus, .form-group select:focus {
+      outline: none;
+      border-color: #667eea;
+      box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+    }
+    
+    .save-button {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 700;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .save-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(76, 175, 80, 0.3);
+    }
+    
+    .autofill-button {
+      background: linear-gradient(135deg, #2196F3, #1976D2);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+    }
+    
+    .autofill-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 15px rgba(33, 150, 243, 0.3);
+    }
+    
+    .pricing-grid {
+      display: none; /* Hidden by default */
+      grid-template-columns: repeat(auto-fill, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #e0e0e0;
+      padding: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    
+    .pricing-grid.expanded {
+      display: grid; /* Show when expanded */
+    }
+    
+    .pricing-item {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .pricing-item label {
+      min-width: 120px;
+      font-size: 13px;
+      margin: 0;
+    }
+    
+    .pricing-item input {
+      flex: 1;
+      padding: 6px 10px;
+      font-size: 13px;
+    }
+    
+    .info-box {
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .info-box strong {
+      color: #1976D2;
+    }
+    
+    .expand-button {
+      background: #fff;
+      border: 2px solid #ddd;
+      color: #333;
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      margin-top: 10px;
+      display: inline-flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .expand-button:hover {
+      border-color: #667eea;
+      color: #667eea;
+      background: #f5f7ff;
+    }
+    
+    .expand-button .arrow {
+      transition: transform 0.3s;
+    }
+    
+    .expand-button.expanded .arrow {
+      transform: rotate(180deg);
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1>Platform Settings</h1>
+  <button onclick="window.location.href='platform-dashboard'" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px;">
+    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Platform Dashboard
+  </button>
+  
+  <!-- Subscription Plans Configuration -->
+  <div class="settings-section">
+    <h2>Subscription Plans</h2>
+    <p style="color: #666; margin-bottom: 15px;">Configure pricing and features for each subscription tier</p>
+    
+    <div class="info-box">
+      <strong>Multi-Currency Pricing:</strong> Set a base price, then auto-fill all currencies or manually adjust prices for each region. Clinics will see prices in their default billing currency.
+    </div>
+    
+    <!-- Free Plan -->
+    <div class="plan-card active" id="free-plan-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3>Free Plan</h3>
+        <label style="margin: 0;">
+          <input type="checkbox" id="free-enabled" checked onchange="togglePlan('free')"> Enabled
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label>Plan Name (Display)</label>
+        <input type="text" id="free-name" value="Free Trial" placeholder="e.g., Free Trial">
+      </div>
+      
+      <div class="form-group">
+        <label>Patient Limit</label>
+        <input type="number" id="free-patient-limit" value="100" min="0" placeholder="100">
+      </div>
+      
+      <div class="form-group">
+        <label>User Limit</label>
+        <input type="number" id="free-user-limit" value="3" min="1" placeholder="3">
+      </div>
+      
+      <div class="form-group">
+        <label>Trial Period (days)</label>
+        <input type="number" id="free-trial-days" value="30" min="0" placeholder="30">
+      </div>
+      
+      <div class="form-group">
+        <label>Features (one per line)</label>
+        <textarea id="free-features" rows="5">Basic patient management
+Appointment scheduling
+Clinical notes
+Basic billing (up to 100 patients)
+3 user accounts</textarea>
+      </div>
+    </div>
+    
+    <!-- Basic Plan -->
+    <div class="plan-card active" id="basic-plan-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3><i class="fa-solid fa-layer-group" aria-hidden="true"></i> Basic Plan</h3>
+        <label style="margin: 0;">
+          <input type="checkbox" id="basic-enabled" checked onchange="togglePlan('basic')"> Enabled
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label>Plan Name (Display)</label>
+        <input type="text" id="basic-name" value="Basic Plan" placeholder="e.g., Professional">
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
+        <div class="form-group">
+          <label>Base Price (for auto-fill)</label>
+          <input type="number" id="basic-base-price" min="0" placeholder="30000">
+        </div>
+        
+        <div class="form-group">
+          <label>Base Currency</label>
+          <select id="basic-base-currency">
+            <option value="NGN" selected>₦ Nigerian Naira (₦)</option>
+            <option value="KES">KSh Kenyan Shilling (KSh)</option>
+            <option value="ZAR">R South African Rand (R)</option>
+            <option value="USD">$ US Dollar ($)</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="autofill-button" onclick="autoFillPrices('basic')">
+        Auto-Fill All Currency Prices
+      </button>
+      
+      <div class="form-group">
+        <label>Prices by Currency</label>
+        <button class="expand-button" id="basic-expand-btn" onclick="togglePricingGrid('basic')">
+          <span class="arrow">▼</span>
+          <span id="basic-expand-text">Show All Currency Prices (38)</span>
+        </button>
+        <div class="pricing-grid" id="basic-pricing-grid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Patient Limit</label>
+        <input type="number" id="basic-patient-limit" value="1000" min="0" placeholder="1000">
+      </div>
+      
+      <div class="form-group">
+        <label>User Limit</label>
+        <input type="number" id="basic-user-limit" value="10" min="1" placeholder="10">
+      </div>
+      
+      <div class="form-group">
+        <label>Features (one per line)</label>
+        <textarea id="basic-features" rows="8">All features from Free plan
+Up to 1,000 patients
+10 user accounts
+Advanced reporting & analytics
+Email support
+Priority updates
+Data export (CSV, PDF)
+Mobile app access</textarea>
+      </div>
+    </div>
+    
+    <!-- Premium Plan -->
+    <div class="plan-card active" id="premium-plan-card">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h3>Premium Plan</h3>
+        <label style="margin: 0;">
+          <input type="checkbox" id="premium-enabled" checked onchange="togglePlan('premium')"> Enabled
+        </label>
+      </div>
+      
+      <div class="form-group">
+        <label>Plan Name (Display)</label>
+        <input type="text" id="premium-name" value="Premium Plan" placeholder="e.g., Enterprise">
+      </div>
+      
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
+        <div class="form-group">
+          <label>Base Price (for auto-fill)</label>
+          <input type="number" id="premium-base-price" value="75000" min="0" placeholder="75000">
+        </div>
+        
+        <div class="form-group">
+          <label>Base Currency</label>
+          <select id="premium-base-currency">
+            <option value="NGN" selected>₦ Nigerian Naira (₦)</option>
+            <option value="KES">KSh Kenyan Shilling (KSh)</option>
+            <option value="ZAR">R South African Rand (R)</option>
+            <option value="USD">$ US Dollar ($)</option>
+          </select>
+        </div>
+      </div>
+      
+      <button class="autofill-button" onclick="autoFillPrices('premium')">
+        Auto-Fill All Currency Prices
+      </button>
+      
+      <div class="form-group">
+        <label>Prices by Currency</label>
+        <button class="expand-button" id="premium-expand-btn" onclick="togglePricingGrid('premium')">
+          <span class="arrow">▼</span>
+          <span id="premium-expand-text">Show All Currency Prices (38)</span>
+        </button>
+        <div class="pricing-grid" id="premium-pricing-grid">
+          <!-- Populated by JavaScript -->
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label>Patient Limit</label>
+        <input type="number" id="premium-patient-limit" value="-1" placeholder="-1 for unlimited">
+        <small style="color: #666;">Enter -1 for unlimited patients</small>
+      </div>
+      
+      <div class="form-group">
+        <label>User Limit</label>
+        <input type="number" id="premium-user-limit" value="-1" placeholder="-1 for unlimited">
+        <small style="color: #666;">Enter -1 for unlimited users</small>
+      </div>
+      
+      <div class="form-group">
+        <label>Features (one per line)</label>
+        <textarea id="premium-features" rows="10">All features from Basic plan
+Unlimited patients
+Unlimited users
+Priority phone support
+Dedicated account manager
+Custom integrations
+Advanced security features
+White-label options
+API access
+Custom reports
+Data migration assistance</textarea>
+      </div>
+    </div>
+    
+    <div style="text-align: center;">
+      <button class="save-button" onclick="saveAllPlans()">Save All Plans</button>
+    </div>
+  </div>
+  
+  <!-- Platform Configuration -->
+  <div class="settings-section">
+    <h2>Platform Configuration</h2>
+    
+    <div class="form-group">
+      <label>Platform Name</label>
+      <input type="text" id="platform-name" value="MediForge" placeholder="MediForge">
+    </div>
+    
+    <div class="form-group">
+      <label>Support Email</label>
+      <input type="email" id="support-email" value="support@mediforge.com" placeholder="support@mediforge.com">
+    </div>
+    
+    <div class="form-group">
+      <label>Support Phone</label>
+      <input type="tel" id="support-phone" value="+234 XXX XXX XXXX" placeholder="+234 XXX XXX XXXX">
+    </div>
+    
+    <div class="form-group">
+      <label>Default Trial Period (days)</label>
+      <input type="number" id="default-trial" value="30" min="0" placeholder="30">
+    </div>
+    
+    <div class="form-group">
+      <label>Auto-Suspend After Trial?</label>
+      <select id="auto-suspend">
+        <option value="yes">Yes - Suspend clinics after trial expires</option>
+        <option value="no" selected>No - Keep active after trial</option>
+      </select>
+    </div>
+    
+    <div style="text-align: center; margin-top: 30px;">
+      <button class="save-button" onclick="savePlatformSettings()">Save Platform Settings</button>
+    </div>
+  </div>
+  
+  <!-- Current Plans Summary -->
+  <div class="settings-section">
+    <h2>Current Plans Summary</h2>
+    <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="left">Plan Name</th>
+          <th class="center">Status</th>
+          <th class="center">Patients</th>
+          <th class="center">Users</th>
+          <th class="center">Trial Days</th>
+          <th class="center">Currencies Configured</th>
+        </tr>
+      </thead>
+      <tbody id="plans-summary">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  <script>
+  
+    let planPrices = {
+      basic: {},
+      premium: {}
+    };
+    
+    window.addEventListener('load', function() {
+      // Check platform admin auth
+      const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+      if (!platformAdmin) {
+        alert('Please login as platform admin');
+        window.location.href = 'platform-login';
+        return;
+      }
+      
+      loadPlanSettings();
+      loadPlatformSettings();
+      updatePlansSummary();
+    });
+    
+    function loadPlanSettings() {
+      const plans = JSON.parse(localStorage.getItem("platform_subscription_plans") || "null");
+      
+      console.log('[PLATFORM-SETTINGS] Loading subscription plans:', plans ? Object.keys(plans) : 'null');
+      if (plans) {
+        console.log('[Platform Settings] Basic plan price (NGN):', plans.basic?.prices?.NGN);
+      }
+      
+      if (!plans) {
+        console.log('[PLATFORM-SETTINGS] No plans found, initializing with defaults');
+        // Initialize with defaults - auto-fill prices
+        autoFillPrices('basic');
+        autoFillPrices('premium');
+        return;
+      }
+      
+      // Load Free plan
+      if (plans.free) {
+        document.getElementById('free-name').value = plans.free.name;
+        document.getElementById('free-trial-days').value = plans.free.trialDays || 30;
+        document.getElementById('free-patient-limit').value = plans.free.patientLimit;
+        document.getElementById('free-user-limit').value = plans.free.userLimit;
+        document.getElementById('free-features').value = plans.free.features.join('\n');
+        document.getElementById('free-enabled').checked = plans.free.enabled;
+      }
+      
+      // Load Basic plan
+      if (plans.basic) {
+        document.getElementById('basic-name').value = plans.basic.name;
+        document.getElementById('basic-patient-limit').value = plans.basic.patientLimit;
+        document.getElementById('basic-user-limit').value = plans.basic.userLimit;
+        document.getElementById('basic-features').value = plans.basic.features.join('\n');
+        document.getElementById('basic-enabled').checked = plans.basic.enabled;
+        
+        // Load base price and currency (always set if they exist, even if empty)
+        if (plans.basic.basePriceCurrency) {
+          document.getElementById('basic-base-currency').value = plans.basic.basePriceCurrency;
+        }
+        // Always load basePrice if it exists (even if 0, to preserve user's setting)
+        if (plans.basic.basePrice !== undefined && plans.basic.basePrice !== null) {
+          document.getElementById('basic-base-price').value = plans.basic.basePrice;
+        } else if (plans.basic.prices && plans.basic.prices.NGN) {
+          // Fallback: Use NGN price as base price if basePrice not set
+          document.getElementById('basic-base-price').value = plans.basic.prices.NGN;
+          console.log('[Platform Settings] Using NGN price as base price:', plans.basic.prices.NGN);
+        }
+        
+        if (plans.basic.prices) {
+          planPrices.basic = plans.basic.prices;
+          renderPricingGrid('basic', plans.basic.prices);
+        }
+      }
+      
+      // Load Premium plan
+      if (plans.premium) {
+        document.getElementById('premium-name').value = plans.premium.name;
+        document.getElementById('premium-patient-limit').value = plans.premium.patientLimit;
+        document.getElementById('premium-user-limit').value = plans.premium.userLimit;
+        document.getElementById('premium-features').value = plans.premium.features.join('\n');
+        document.getElementById('premium-enabled').checked = plans.premium.enabled;
+        
+        if (plans.premium.basePriceCurrency) {
+          document.getElementById('premium-base-currency').value = plans.premium.basePriceCurrency;
+          document.getElementById('premium-base-price').value = plans.premium.basePrice;
+        }
+        
+        if (plans.premium.prices) {
+          planPrices.premium = plans.premium.prices;
+          renderPricingGrid('premium', plans.premium.prices);
+        }
+      }
+    }
+    
+    function togglePricingGrid(planType) {
+      const grid = document.getElementById(`${planType}-pricing-grid`);
+      const button = document.getElementById(`${planType}-expand-btn`);
+      const text = document.getElementById(`${planType}-expand-text`);
+      
+      if (grid.classList.contains('expanded')) {
+        // Collapse
+        grid.classList.remove('expanded');
+        button.classList.remove('expanded');
+        text.textContent = 'Show All Currency Prices (38)';
+      } else {
+        // Expand
+        grid.classList.add('expanded');
+        button.classList.add('expanded');
+        text.textContent = 'Hide Currency Prices';
+      }
+    }
+    
+    function autoFillPrices(planType) {
+      const basePrice = parseFloat(document.getElementById(`${planType}-base-price`).value) || 0;
+      const baseCurrency = document.getElementById(`${planType}-base-currency`).value;
+      
+      if (basePrice === 0) {
+        alert('Please enter a base price first');
+        return;
+      }
+      
+      // Use the currency converter to generate all prices
+      const prices = window.autoFillCurrencyPrices(basePrice, baseCurrency);
+      planPrices[planType] = prices;
+      
+      renderPricingGrid(planType, prices);
+      
+      // Auto-expand the grid after filling
+      const grid = document.getElementById(`${planType}-pricing-grid`);
+      const button = document.getElementById(`${planType}-expand-btn`);
+      const text = document.getElementById(`${planType}-expand-text`);
+      grid.classList.add('expanded');
+      button.classList.add('expanded');
+      text.textContent = 'Hide Currency Prices';
+      
+      alert(`Auto-filled ${Object.keys(prices).length} currency prices from ${window.getCurrencySymbol(baseCurrency)} ${basePrice.toLocaleString()}`);
+    }
+    
+    function renderPricingGrid(planType, prices) {
+      const grid = document.getElementById(`${planType}-pricing-grid`);
+      grid.innerHTML = '';
+      
+      // Group currencies by region
+      const regions = {
+        'East Africa': ['KES', 'TZS', 'UGX', 'RWF', 'BIF', 'ETB', 'SOS'],
+        'West Africa': ['NGN', 'GHS', 'XOF', 'LRD', 'SLL', 'GMD'],
+        'Southern Africa': ['ZAR', 'BWP', 'NAD', 'MWK', 'ZMW', 'ZWL', 'MZN', 'SZL', 'LSL'],
+        'North Africa': ['EGP', 'MAD', 'TND', 'DZD', 'LYD'],
+        'Central Africa': ['XAF', 'CDF', 'AOA'],
+        'Island Nations': ['MUR', 'SCR', 'MGA', 'KMF', 'CVE'],
+        'International': ['USD', 'EUR', 'GBP']
+      };
+      
+      for (const [regionName, currencies] of Object.entries(regions)) {
+        // Add region header
+        const regionHeader = document.createElement('div');
+        regionHeader.style.gridColumn = '1 / -1';
+        regionHeader.style.fontWeight = 'bold';
+        regionHeader.style.marginTop = regionName === 'East Africa' ? '0' : '15px';
+        regionHeader.style.marginBottom = '5px';
+        regionHeader.style.color = '#667eea';
+        regionHeader.textContent = regionName;
+        grid.appendChild(regionHeader);
+        
+        // Add currency inputs
+        currencies.forEach(currency => {
+          const currencyInfo = window.getCurrencyInfo(currency);
+          const item = document.createElement('div');
+          item.className = 'pricing-item';
+          
+          const label = document.createElement('label');
+          label.textContent = `${currencyInfo.flag} ${currencyInfo.symbol} ${currency}`;
+          
+          const input = document.createElement('input');
+          input.type = 'number';
+          input.id = `${planType}-price-${currency}`;
+          input.value = prices[currency] || 0;
+          input.min = 0;
+          input.step = 'any';
+          input.onchange = function() {
+            if (!planPrices[planType]) {
+              planPrices[planType] = {};
+            }
+            planPrices[planType][currency] = parseFloat(this.value) || 0;
+            console.log(`[PLATFORM-SETTINGS] Updated ${planType} price for ${currency}:`, planPrices[planType][currency]);
+          };
+          input.oninput = function() {
+            // Update immediately as user types
+            if (!planPrices[planType]) {
+              planPrices[planType] = {};
+            }
+            planPrices[planType][currency] = parseFloat(this.value) || 0;
+          };
+          
+          item.appendChild(label);
+          item.appendChild(input);
+          grid.appendChild(item);
+        });
+      }
+    }
+    
+    function loadPlatformSettings() {
+      const settings = JSON.parse(localStorage.getItem("platform_settings") || "{}");
+      
+      document.getElementById('platform-name').value = settings.platformName || 'MediForge';
+      document.getElementById('support-email').value = settings.supportEmail || 'support@mediforge.com';
+      document.getElementById('support-phone').value = settings.supportPhone || '+234 XXX XXX XXXX';
+      document.getElementById('default-trial').value = settings.defaultTrialDays || 30;
+      document.getElementById('auto-suspend').value = settings.autoSuspend || 'no';
+    }
+    
+    function saveAllPlans() {
+      // CRITICAL: Collect all current input values directly (don't rely on planPrices object)
+      // This ensures all changes are captured, even if onchange didn't fire
+      // Also calculates missing currencies from basePrice if pricing grid hasn't been expanded
+      function collectAllPrices(planType) {
+        const prices = {};
+        const allCurrencies = window.getAllCurrencies();
+        const basePriceInput = document.getElementById(`${planType}-base-price`);
+        const baseCurrencySelect = document.getElementById(`${planType}-base-currency`);
+        const basePrice = basePriceInput ? parseFloat(basePriceInput.value) || 0 : 0;
+        const baseCurrency = baseCurrencySelect ? baseCurrencySelect.value : 'NGN';
+        
+        allCurrencies.forEach(currency => {
+          const input = document.getElementById(`${planType}-price-${currency}`);
+          if (input) {
+            // Input exists - use its value
+            prices[currency] = parseFloat(input.value) || 0;
+          } else if (planPrices[planType] && planPrices[planType][currency] !== undefined) {
+            // Fallback to planPrices if input doesn't exist but was set before
+            prices[currency] = planPrices[planType][currency];
+          } else if (basePrice > 0 && baseCurrency) {
+            // Calculate from basePrice using currency converter
+            if (typeof window.convertCurrency === 'function') {
+              const converted = window.convertCurrency(basePrice, baseCurrency, currency);
+              // Round to sensible amounts based on currency value
+              const exchangeRate = window.getExchangeRate ? window.getExchangeRate(currency) : 1;
+              if (exchangeRate > 100) {
+                prices[currency] = Math.round(converted / 100) * 100; // Round to nearest 100
+              } else if (exchangeRate > 10) {
+                prices[currency] = Math.round(converted / 10) * 10; // Round to nearest 10
+              } else {
+                prices[currency] = Math.round(converted); // Round to nearest 1
+              }
+            } else {
+              prices[currency] = 0;
+            }
+          } else {
+            prices[currency] = 0;
+          }
+        });
+        return prices;
+      }
+      
+      // Get base prices directly from inputs
+      const basicBasePriceInput = document.getElementById('basic-base-price');
+      const basicBasePrice = basicBasePriceInput ? parseFloat(basicBasePriceInput.value) || 0 : 0;
+      
+      const premiumBasePriceInput = document.getElementById('premium-base-price');
+      const premiumBasePrice = premiumBasePriceInput ? parseFloat(premiumBasePriceInput.value) || 0 : 0;
+      
+      const plans = {
+        free: {
+          id: 'free',
+          name: document.getElementById('free-name').value,
+          prices: { /* Free is always 0 for all currencies */ },
+          patientLimit: parseInt(document.getElementById('free-patient-limit').value) || 100,
+          userLimit: parseInt(document.getElementById('free-user-limit').value) || 3,
+          trialDays: parseInt(document.getElementById('free-trial-days').value) || 30,
+          features: document.getElementById('free-features').value.split('\n').filter(f => f.trim()),
+          enabled: document.getElementById('free-enabled').checked
+        },
+        basic: {
+          id: 'basic',
+          name: document.getElementById('basic-name').value,
+          basePrice: basicBasePrice,
+          basePriceCurrency: document.getElementById('basic-base-currency').value,
+          prices: collectAllPrices('basic'), // Collect all current prices from inputs
+          patientLimit: parseInt(document.getElementById('basic-patient-limit').value) || 1000,
+          userLimit: parseInt(document.getElementById('basic-user-limit').value) || 10,
+          features: document.getElementById('basic-features').value.split('\n').filter(f => f.trim()),
+          enabled: document.getElementById('basic-enabled').checked
+        },
+        premium: {
+          id: 'premium',
+          name: document.getElementById('premium-name').value,
+          basePrice: premiumBasePrice,
+          basePriceCurrency: document.getElementById('premium-base-currency').value,
+          prices: collectAllPrices('premium'), // Collect all current prices from inputs
+          patientLimit: parseInt(document.getElementById('premium-patient-limit').value),
+          userLimit: parseInt(document.getElementById('premium-user-limit').value),
+          features: document.getElementById('premium-features').value.split('\n').filter(f => f.trim()),
+          enabled: document.getElementById('premium-enabled').checked
+        }
+      };
+      
+      // Make free plan always 0 for all currencies
+      // Also ensure Basic and Premium have all currencies initialized
+      const allCurrencies = window.getAllCurrencies();
+      allCurrencies.forEach(currency => {
+        plans.free.prices[currency] = 0;
+        // Ensure Basic and Premium have all currencies (even if 0)
+        if (!plans.basic.prices[currency] && plans.basic.prices[currency] !== 0) {
+          plans.basic.prices[currency] = 0;
+        }
+        if (!plans.premium.prices[currency] && plans.premium.prices[currency] !== 0) {
+          plans.premium.prices[currency] = 0;
+        }
+      });
+      
+      // Update planPrices object to match what we're saving (for consistency)
+      planPrices.basic = plans.basic.prices;
+      planPrices.premium = plans.premium.prices;
+      
+      console.log('[PLATFORM-SETTINGS] Saving subscription plans:', plans);
+      console.log('[PLATFORM-SETTINGS] Basic plan basePrice:', plans.basic.basePrice);
+      console.log('[PLATFORM-SETTINGS] Basic plan price (NGN):', plans.basic.prices?.NGN);
+      console.log('[PLATFORM-SETTINGS] Basic plan features being saved:', plans.basic?.features);
+      console.log('[PLATFORM-SETTINGS] Basic plan patient limit being saved:', plans.basic?.patientLimit);
+      
+      localStorage.setItem("platform_subscription_plans", JSON.stringify(plans));
+      
+      // Clear session flag to allow re-initialization if needed
+      sessionStorage.removeItem('subscription_plans_initialized');
+      
+      // Verify save
+      const savedPlans = JSON.parse(localStorage.getItem("platform_subscription_plans") || '{}');
+      console.log('? Plans saved successfully:', Object.keys(savedPlans));
+      console.log('? Basic plan basePrice after save:', savedPlans.basic?.basePrice);
+      console.log('? Basic plan price (NGN) after save:', savedPlans.basic?.prices?.NGN);
+      console.log('? Basic plan features after save:', savedPlans.basic?.features);
+      console.log('? Basic plan patient limit after save:', savedPlans.basic?.patientLimit);
+      
+      // Log settings change
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('platform_plans_updated', {
+          updatedBy: JSON.parse(localStorage.getItem("platformAdmin") || "{}").username,
+          timestamp: new Date().toISOString()
+        });
+      }
+      
+      alert('Subscription plans saved successfully!');
+      updatePlansSummary();
+    }
+    
+    function savePlatformSettings() {
+      const settings = {
+        platformName: document.getElementById('platform-name').value,
+        supportEmail: document.getElementById('support-email').value,
+        supportPhone: document.getElementById('support-phone').value,
+        defaultTrialDays: parseInt(document.getElementById('default-trial').value) || 30,
+        autoSuspend: document.getElementById('auto-suspend').value,
+        updatedAt: new Date().toISOString(),
+        updatedBy: JSON.parse(localStorage.getItem("platformAdmin") || "{}").username
+      };
+      
+      localStorage.setItem("platform_settings", JSON.stringify(settings));
+      
+      // Log settings change
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('platform_settings_updated', {
+          updatedBy: settings.updatedBy,
+          timestamp: settings.updatedAt
+        });
+      }
+      
+      alert('Platform settings saved successfully!');
+    }
+    
+    function togglePlan(planType) {
+      const enabled = document.getElementById(`${planType}-enabled`).checked;
+      const card = document.getElementById(`${planType}-plan-card`);
+      
+      if (enabled) {
+        card.classList.add('active');
+      } else {
+        card.classList.remove('active');
+      }
+    }
+    
+    function updatePlansSummary() {
+      const plans = JSON.parse(localStorage.getItem("platform_subscription_plans") || "{}");
+      const tbody = document.getElementById('plans-summary');
+      tbody.innerHTML = '';
+      
+      ['free', 'basic', 'premium'].forEach(planId => {
+        if (plans[planId]) {
+          const plan = plans[planId];
+          const row = tbody.insertRow();
+          
+          const patientLimitText = plan.patientLimit === -1 ? 'Unlimited' : plan.patientLimit.toLocaleString();
+          const userLimitText = plan.userLimit === -1 ? 'Unlimited' : plan.userLimit;
+          const currencyCount = Object.keys(plan.prices || {}).length;
+          
+          row.innerHTML = `
+            <td class="left"><strong>${plan.name}</strong></td>
+            <td class="center">
+              <span style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 12px; font-weight: 600; background: ${plan.enabled ? '#d4edda' : '#f8d7da'}; color: ${plan.enabled ? '#155724' : '#721c24'};">
+                ${plan.enabled ? 'ENABLED' : 'DISABLED'}
+              </span>
+            </td>
+            <td class="center">${patientLimitText}</td>
+            <td class="center">${userLimitText}</td>
+            <td class="center">${plan.trialDays || 'N/A'}</td>
+            <td class="center"><strong style="color: #4CAF50;">${currencyCount} currencies</strong></td>
+          `;
+        }
+      });
+    }
+  </script>
+  
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">  
+
+  <!-- Currency converter (required for platform settings) -->
+  <script src="js/currency-converter.js"></script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+

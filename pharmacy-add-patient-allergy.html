@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add allergy – Pharmacy</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; margin: 0; padding: 20px; background: #f5f5dc; }
+    .container { max-width: 700px; margin: 0 auto; background: white; padding: 24px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.08); }
+    .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; padding-bottom: 16px; border-bottom: 2px solid #008753; }
+    .header h1 { margin: 0; color: #333; font-size: 22px; }
+    .patient-name { font-size: 16px; color: #555; margin-top: 4px; }
+    .back-btn { background: #008753; color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; text-decoration: none; display: inline-block; }
+    .back-btn:hover { background: #006b42; color: white; }
+    .allergies-list { margin-top: 20px; padding: 16px; background: #f8f9fa; border-radius: 8px; }
+    .allergies-list h3 { margin: 0 0 10px 0; font-size: 16px; }
+    .allergy-item { padding: 8px 0; border-bottom: 1px solid #eee; font-size: 14px; }
+    .allergy-item:last-child { border-bottom: none; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <div>
+        <h1>Add allergy to patient record</h1>
+        <p class="patient-name" id="patient-name">Loading patient…</p>
+      </div>
+      <a href="/pharmacy-dashboard" class="back-btn">← Back to Pharmacy Dashboard</a>
+    </div>
+    <p style="color:#555; margin-bottom:20px;">After interviewing the patient, add any new allergies here. Then return to the Pharmacy dashboard and approve the prescription.</p>
+    <div id="allergy-selector-container"></div>
+    <div class="allergies-list">
+      <h3>Current allergies</h3>
+      <div id="current-allergies-list">None recorded.</div>
+    </div>
+  </div>
+  <script src="js/utils.js"></script>
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/allergy-selector.js"></script>
+  <script>
+    (async function() {
+      const params = new URLSearchParams(window.location.search);
+      const patientId = params.get('patientId') || params.get('id');
+      if (!patientId) {
+        document.getElementById('patient-name').textContent = 'No patient ID in URL.';
+        return;
+      }
+      let patient = null;
+      if (typeof window.resolvePatientByIdentifier === 'function') {
+        patient = await window.resolvePatientByIdentifier(patientId);
+      }
+      if (!patient) {
+        document.getElementById('patient-name').textContent = 'Patient not found.';
+        return;
+      }
+      const name = [patient.first_name || patient.firstName, patient.last_name || patient.lastName].filter(Boolean).join(' ') || patient.id || patientId;
+      const pidShown =
+        typeof window.patientMrnDisplay === 'function'
+          ? window.patientMrnDisplay(patient, patientId)
+          : (patient.patient_id || patient.id || patientId);
+      document.getElementById('patient-name').textContent = name + ' (' + pidShown + ')';
+      function renderAllergies() {
+        const list = document.getElementById('current-allergies-list');
+        const allergies = patient.allergies || [];
+        if (allergies.length === 0) {
+          list.innerHTML = 'None recorded.';
+          return;
+        }
+        list.innerHTML = allergies.map(a => {
+          const allergen = a.allergen || a.allergy || '';
+          const reaction = a.reaction || '';
+          const severity = a.severity || '';
+          return '<div class="allergy-item"><strong>' + (allergen || '—') + '</strong>' + (severity ? ' · ' + severity : '') + (reaction ? ' · ' + reaction : '') + '</div>';
+        }).join('');
+      }
+      renderAllergies();
+      if (typeof createAllergySelector === 'function') {
+        createAllergySelector('allergy-selector-container', 'allergy-selector-container-allergen', 'allergy-selector-container-reaction');
+      }
+      window.addEventListener('patientDataUpdated', function(ev) {
+        if (ev.detail && ev.detail.action === 'allergyAdded' && patient) {
+          patient.allergies = patient.allergies || [];
+          patient.allergies.push(ev.detail.data);
+          renderAllergies();
+        }
+      });
+      const origAddAllergy = window.addAllergy;
+      if (origAddAllergy) {
+        window.addAllergy = function() {
+          origAddAllergy();
+          const patients = JSON.parse(localStorage.getItem(typeof getDataKey === 'function' ? getDataKey('patients') : 'patients') || '[]');
+          const p = patients.find(x => x.id === patientId || x.patient_id === patientId || x._supabaseUuid === patientId);
+          if (p && p.allergies) {
+            patient.allergies = p.allergies;
+            renderAllergies();
+          }
+        };
+      }
+    })();
+  </script>
+  <script src="js/logout-button.js"></script>
+</body>
+</html>

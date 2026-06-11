@@ -1,0 +1,342 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Cleanup Duplicate Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .button:hover { background: #0056b3; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        .success { background: #28a745; }
+        .success:hover { background: #218838; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Duplicate Data Cleanup Tool</h1>
+        
+        <div class="section">
+            <h3>Current Data Status</h3>
+            <button class="button" onclick="checkCurrentData()">Check Current Data</button>
+            <div id="current-data-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Cleanup Actions</h3>
+            <button class="button danger" onclick="cleanupPatientData()">?? Clean Duplicate Data</button>
+            <button class="button success" onclick="verifyCleanup()">? Verify Cleanup</button>
+            <div id="cleanup-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Vitals Fix</h3>
+            <button class="button" onclick="fixVitalsStructure()">?? Fix Vitals Structure</button>
+            <div id="vitals-log" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/supabase-client.js?v=20251018191427">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+    <script>
+        let logElement = null;
+
+        function log(message, logId = 'cleanup-log') {
+            const element = document.getElementById(logId);
+            element.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            element.scrollTop = element.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog(logId = 'cleanup-log') {
+            document.getElementById(logId).textContent = '';
+        }
+
+        // Initialize Supabase client directly
+        function initializeSupabaseClient() {
+            if (window.supabaseClient) {
+                return window.supabaseClient;
+            }
+            
+            // Create Supabase client directly
+            const supabaseUrl = ((window.__SUPABASE_CONFIG__||{}).url||'');
+            const supabaseKey = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+            
+            // Simple fetch-based approach
+            return {
+                from: (table) => ({
+                    select: (columns) => ({
+                        eq: (column, value) => ({
+                            single: () => fetch(`${supabaseUrl}/rest/v1/${table}?${column}=eq.${value}&select=${columns}`, {
+                                headers: {
+                                    'apikey': supabaseKey,
+                                    'Authorization': `Bearer ${supabaseKey}`,
+                                    'Content-Type': 'application/json'
+                                }
+                            }).then(res => res.json()).then(data => ({ data: Array.isArray(data) ? data[0] : data, error: null }))
+                        })
+                    }),
+                    update: (data) => ({
+                        eq: (column, value) => ({
+                            eq: (column2, value2) => fetch(`${supabaseUrl}/rest/v1/${table}?${column}=eq.${value}&${column2}=eq.${value2}`, {
+                                method: 'PATCH',
+                                headers: {
+                                    'apikey': supabaseKey,
+                                    'Authorization': `Bearer ${supabaseKey}`,
+                                    'Content-Type': 'application/json'
+                                },
+                                body: JSON.stringify(data)
+                            }).then(res => ({ error: null }))
+                        })
+                    })
+                })
+            };
+        }
+
+        async function checkCurrentData() {
+            clearLog('current-data-log');
+            log('?? Checking current data status...', 'current-data-log');
+            
+            try {
+                const supabaseClient = initializeSupabaseClient();
+                log('? Supabase client initialized', 'current-data-log');
+                
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const orgId = user.organizationId || '576522cc-e769-4fb4-9487-3d150857d970';
+                
+                const { data: patients, error } = await supabaseClient
+                    .from('patients')
+                    .select('patient_id, first_name, last_name, allergies, diagnoses, immunizations, medical_history')
+                    .eq('organization_id', orgId);
+                
+                if (error) {
+                    log('? Error fetching patients: ' + error.message, 'current-data-log');
+                    return;
+                }
+                
+                log(`?? Found ${patients.length} patients`, 'current-data-log');
+                
+                patients.forEach(patient => {
+                    try {
+                        const allergies = JSON.parse(patient.allergies || '[]');
+                        const diagnoses = JSON.parse(patient.diagnoses || '[]');
+                        const immunizations = JSON.parse(patient.immunizations || '[]');
+                        const medicalHistory = JSON.parse(patient.medical_history || '[]');
+                        
+                        log(`?? ${patient.patient_id} (${patient.first_name} ${patient.last_name}):`, 'current-data-log');
+                        log(`   Allergies: ${allergies.length} entries`, 'current-data-log');
+                        log(`   Diagnoses: ${diagnoses.length} entries`, 'current-data-log');
+                        log(`   Immunizations: ${immunizations.length} entries`, 'current-data-log');
+                        log(`   Medical History: ${medicalHistory.length} entries`, 'current-data-log');
+                        
+                        // Check for duplicates
+                        const allergyDuplicates = allergies.length - new Set(allergies.map(a => JSON.stringify(a))).size;
+                        const diagnosisDuplicates = diagnoses.length - new Set(diagnoses.map(d => JSON.stringify(d))).size;
+                        const immunizationDuplicates = immunizations.length - new Set(immunizations.map(i => JSON.stringify(i))).size;
+                        const historyDuplicates = medicalHistory.length - new Set(medicalHistory.map(h => JSON.stringify(h))).size;
+                        
+                        if (allergyDuplicates > 0 || diagnosisDuplicates > 0 || immunizationDuplicates > 0 || historyDuplicates > 0) {
+                            log(`   ?? DUPLICATES FOUND:`, 'current-data-log');
+                            if (allergyDuplicates > 0) log(`     Allergies: ${allergyDuplicates} duplicates`, 'current-data-log');
+                            if (diagnosisDuplicates > 0) log(`     Diagnoses: ${diagnosisDuplicates} duplicates`, 'current-data-log');
+                            if (immunizationDuplicates > 0) log(`     Immunizations: ${immunizationDuplicates} duplicates`, 'current-data-log');
+                            if (historyDuplicates > 0) log(`     Medical History: ${historyDuplicates} duplicates`, 'current-data-log');
+                        }
+                        
+                    } catch (e) {
+                        log(`? Error parsing data for ${patient.patient_id}: ${e.message}`, 'current-data-log');
+                    }
+                });
+                
+            } catch (error) {
+                log('? Error: ' + error.message, 'current-data-log');
+            }
+        }
+
+        async function cleanupPatientData() {
+            clearLog();
+            log('?? Starting duplicate cleanup...');
+            
+            try {
+                await waitForSupabaseClient();
+                
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const orgId = user.organizationId || '576522cc-e769-4fb4-9487-3d150857d970';
+                
+                const { data: patients, error } = await window.supabaseClient
+                    .from('patients')
+                    .select('patient_id, first_name, last_name, allergies, diagnoses, immunizations, medical_history')
+                    .eq('organization_id', orgId);
+                
+                if (error) {
+                    log('? Error fetching patients: ' + error.message);
+                    return;
+                }
+                
+                log(`?? Processing ${patients.length} patients...`);
+                
+                for (const patient of patients) {
+                    log(`?? Cleaning ${patient.patient_id} (${patient.first_name} ${patient.last_name})...`);
+                    
+                    try {
+                        // Parse and deduplicate each field
+                        const allergies = deduplicateArray(JSON.parse(patient.allergies || '[]'));
+                        const diagnoses = deduplicateArray(JSON.parse(patient.diagnoses || '[]'));
+                        const immunizations = deduplicateArray(JSON.parse(patient.immunizations || '[]'));
+                        const medicalHistory = deduplicateArray(JSON.parse(patient.medical_history || '[]'));
+                        
+                        // Update the patient in Supabase
+                        const { error: updateError } = await window.supabaseClient
+                            .from('patients')
+                            .update({
+                                allergies: JSON.stringify(allergies),
+                                diagnoses: JSON.stringify(diagnoses),
+                                immunizations: JSON.stringify(immunizations),
+                                medical_history: JSON.stringify(medicalHistory)
+                            })
+                            .eq('patient_id', patient.patient_id)
+                            .eq('organization_id', orgId);
+                        
+                        if (updateError) {
+                            log(`? Error updating ${patient.patient_id}: ${updateError.message}`);
+                        } else {
+                            log(`? Cleaned ${patient.patient_id}:`);
+                            log(`   Allergies: ${allergies.length} entries`);
+                            log(`   Diagnoses: ${diagnoses.length} entries`);
+                            log(`   Immunizations: ${immunizations.length} entries`);
+                            log(`   Medical History: ${medicalHistory.length} entries`);
+                        }
+                        
+                    } catch (e) {
+                        log(`? Error processing ${patient.patient_id}: ${e.message}`);
+                    }
+                }
+                
+                log('?? Cleanup completed!');
+                
+            } catch (error) {
+                log('? Error: ' + error.message);
+            }
+        }
+
+        function deduplicateArray(arr) {
+            const seen = new Set();
+            return arr.filter(item => {
+                const key = JSON.stringify(item);
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
+        }
+
+        async function verifyCleanup() {
+            clearLog();
+            log('? Verifying cleanup...');
+            await checkCurrentData();
+        }
+
+        async function fixVitalsStructure() {
+            clearLog('vitals-log');
+            log('?? Fixing vitals structure...', 'vitals-log');
+            
+            try {
+                await waitForSupabaseClient();
+                
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const orgId = user.organizationId || '576522cc-e769-4fb4-9487-3d150857d970';
+                
+                // Get patients from localStorage
+                const patients = JSON.parse(localStorage.getItem("Mecure Clinics_patients") || "[]");
+                
+                log(`?? Found ${patients.length} patients in localStorage`, 'vitals-log');
+                
+                for (const patient of patients) {
+                    if (!patient.visits) {
+                        patient.visits = [];
+                        log(`?? Added visits array to ${patient.id}`, 'vitals-log');
+                    }
+                    
+                    // Ensure each visit has proper SOAP structure
+                    patient.visits.forEach(visit => {
+                        if (!visit.soap) {
+                            visit.soap = {
+                                subjective: {},
+                                objective: {},
+                                assessment: {},
+                                plan: {}
+                            };
+                            log(`?? Added SOAP structure to visit ${visit.date} for ${patient.id}`, 'vitals-log');
+                        }
+                        
+                        if (!visit.soap.objective) {
+                            visit.soap.objective = {};
+                            log(`?? Added objective structure to visit ${visit.date} for ${patient.id}`, 'vitals-log');
+                        }
+                        
+                        if (!visit.soap.objective.vitals) {
+                            visit.soap.objective.vitals = [];
+                            log(`?? Added vitals array to visit ${visit.date} for ${patient.id}`, 'vitals-log');
+                        }
+                    });
+                }
+                
+                // Save back to localStorage
+                localStorage.setItem("Mecure Clinics_patients", JSON.stringify(patients));
+                log('? Vitals structure fixed in localStorage', 'vitals-log');
+                
+                // Also update Supabase
+                for (const patient of patients) {
+                    const { error } = await window.supabaseClient
+                        .from('patients')
+                        .update({
+                            visits: JSON.stringify(patient.visits)
+                        })
+                        .eq('patient_id', patient.id)
+                        .eq('organization_id', orgId);
+                    
+                    if (error) {
+                        log(`? Error updating visits for ${patient.id}: ${error.message}`, 'vitals-log');
+                    } else {
+                        log(`? Updated visits structure for ${patient.id} in Supabase`, 'vitals-log');
+                    }
+                }
+                
+                log('?? Vitals structure fix completed!', 'vitals-log');
+                
+            } catch (error) {
+                log('? Error: ' + error.message, 'vitals-log');
+            }
+        }
+
+        // Auto-check data on page load
+        window.addEventListener('load', async () => {
+            await checkCurrentData();
+        });
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

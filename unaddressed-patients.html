@@ -1,0 +1,205 @@
+<!-- Purpose: Lists unaddressed patients for a specific preventive intervention, with links to their details. Loads based on ?intIndex= query param. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Unaddressed Patients</title>
+  <link rel="stylesheet" href="css/styles.css?v=204">
+  <style>
+    /* Specific styles for unaddressed-patients-table */
+    .unaddressed-patients-table {
+      width: 100%;
+      border-collapse: collapse;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+      table-layout: fixed;
+    }
+    
+    .unaddressed-patients-table th {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 12px 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+      border: 1px solid #ddd;
+      box-sizing: border-box;
+    }
+    
+    .unaddressed-patients-table td {
+      padding: 12px 15px;
+      border: 1px solid #e0e0e0;
+      vertical-align: top;
+      text-align: left;
+      box-sizing: border-box;
+    }
+    
+    .unaddressed-patients-table tr:nth-child(even) {
+      background: #f8f9fa;
+    }
+    
+    .unaddressed-patients-table tr:hover {
+      background: #e8f5e8;
+    }
+    
+    /* Column widths for 2 columns */
+    .unaddressed-patients-table th:nth-child(1), 
+    .unaddressed-patients-table td:nth-child(1) { 
+      width: 70%;
+    }
+    
+    .unaddressed-patients-table th:nth-child(2), 
+    .unaddressed-patients-table td:nth-child(2) { 
+      width: 30%;
+      text-align: center;
+    }
+    
+    .unaddressed-patients-table th:nth-child(2) {
+      text-align: center;
+    }
+    
+    /* Override any flexbox interference */
+    .unaddressed-patients-table {
+      display: table !important;
+    }
+    .unaddressed-patients-table thead {
+      display: table-header-group !important;
+    }
+    .unaddressed-patients-table tbody {
+      display: table-row-group !important;
+    }
+    .unaddressed-patients-table tr {
+      display: table-row !important;
+    }
+    .unaddressed-patients-table th,
+    .unaddressed-patients-table td {
+      display: table-cell !important;
+    }
+    
+    .unaddressed-patients-table a {
+      color: #4CAF50;
+      text-decoration: none;
+      font-weight: 500;
+    }
+    
+    .unaddressed-patients-table a:hover {
+      text-decoration: underline;
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1 id="page-title">Unaddressed Patients for Intervention</h1>
+  <table class="unaddressed-patients-table">
+    <thead>
+      <tr>
+        <th>Patient Name</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="unaddressed-list"></tbody>
+  </table>
+  <a href="gaps-summary">Back to Preventive Gaps Summary</a>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+  </script>
+  <!-- Disable table alignment fix for this page -->
+  <!-- <script src="js/table-alignment-fix.js?v=1"></script> -->
+  <script>
+    window.addEventListener('load', function() {
+      // Load unaddressed patients for the specific intervention
+      const urlParams = new URLSearchParams(window.location.search);
+      const intIndex = parseInt(urlParams.get("intIndex"));
+      if (isNaN(intIndex)) {
+        document.getElementById("page-title").innerHTML = "No Index Specified";
+        return;
+      }
+      
+      const summary = aggregateGaps();
+      if (intIndex < 0 || intIndex >= summary.length) {
+        document.getElementById("page-title").innerHTML = "Invalid Index";
+        return;
+      }
+      const item = summary[intIndex];
+      const tbody = document.getElementById("unaddressed-list");
+      document.getElementById("page-title").innerHTML = `Unaddressed Patients for: ${item.intervention}`;
+      if (item.unaddressedPatients.length > 0) {
+        item.unaddressedPatients.forEach(p => {
+          const row = document.createElement("tr");
+          row.innerHTML = `
+            <td>${p.name}</td>
+            <td><a href="patient-details?id=${p.id}">View Details</a></td>
+          `;
+          tbody.appendChild(row);
+        });
+      } else {
+        const row = document.createElement("tr");
+        row.innerHTML = `<td colspan="2">No unaddressed patients for this intervention.</td>`;
+        tbody.appendChild(row);
+      }
+      
+      // Force table alignment after content is loaded
+      setTimeout(function() {
+        const table = document.querySelector('.unaddressed-patients-table');
+        if (table) {
+          // Force table display properties
+          table.style.setProperty('display', 'table', 'important');
+          const thead = table.querySelector('thead');
+          const tbody = table.querySelector('tbody');
+          if (thead) thead.style.setProperty('display', 'table-header-group', 'important');
+          if (tbody) tbody.style.setProperty('display', 'table-row-group', 'important');
+          
+          // Force row and cell display properties
+          const rows = table.querySelectorAll('tr');
+          rows.forEach(row => {
+            row.style.setProperty('display', 'table-row', 'important');
+            const cells = row.querySelectorAll('th, td');
+            cells.forEach(cell => {
+              cell.style.setProperty('display', 'table-cell', 'important');
+              
+              // Force text alignment for specific columns
+              const cellIndex = Array.from(cell.parentNode.children).indexOf(cell);
+              if (cellIndex === 1) { // Actions column
+                cell.style.setProperty('text-align', 'center', 'important');
+              }
+            });
+          });
+        }
+      }, 100);
+    });
+  </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+

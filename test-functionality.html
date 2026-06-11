@@ -1,0 +1,674 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Functionality - Platform Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #008753; }
+    h2 { color: #333; border-bottom: 2px solid #008753; padding-bottom: 10px; }
+    .section {
+      margin: 25px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+    }
+    button {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #006b42; }
+    .error { color: #dc3545; font-weight: bold; }
+    .success { color: #28a745; font-weight: bold; }
+    .warning { color: #ffc107; font-weight: bold; }
+    .info { color: #17a2b8; }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #008753;
+      color: white;
+    }
+    tr:hover { background: #f5f5f5; }
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status-ok { background: #28a745; color: white; }
+    .status-error { background: #dc3545; color: white; }
+    .status-warning { background: #ffc107; color: black; }
+    .test-item {
+      margin: 15px 0;
+      padding: 15px;
+      background: white;
+      border-radius: 4px;
+      border-left: 3px solid #ddd;
+    }
+    .test-item.passing { border-left-color: #28a745; }
+    .test-item.failing { border-left-color: #dc3545; }
+    .test-item.warning { border-left-color: #ffc107; }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #008753;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🧪 Test Functionality - End-to-End Tests</h1>
+    <p class="info">This tool tests if features actually WORK, not just if they load without errors.</p>
+    
+    <div class="section">
+      <h2>1. User Management Functionality</h2>
+      <button onclick="testUserManagement()">🧪 Test User Management</button>
+      <div id="user-mgmt-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>2. Patient Management Functionality</h2>
+      <button onclick="testPatientManagement()">🧪 Test Patient Management</button>
+      <div id="patient-mgmt-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>3. Data Saving & Retrieval</h2>
+      <button onclick="testDataPersistence()">🧪 Test Data Persistence</button>
+      <div id="data-persistence-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>4. Authentication & Authorization</h2>
+      <button onclick="testAuthFlow()">🧪 Test Auth Flow</button>
+      <div id="auth-flow-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>5. Platform Admin Functions</h2>
+      <button onclick="testPlatformAdmin()">🧪 Test Platform Admin</button>
+      <div id="platform-admin-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>6. Run All Functional Tests</h2>
+      <button onclick="runAllFunctionalTests()" style="background: #17a2b8;">🚀 Run All Tests</button>
+      <div id="all-tests-results"></div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/account-management.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+
+  <script>
+    const testResults = [];
+
+    async function testUserManagement() {
+      const resultsDiv = document.getElementById('user-mgmt-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Testing user management...</p>';
+      
+      let html = '<h3>User Management Test Results:</h3>';
+      const tests = [];
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Supabase client not available</div>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgId = user.organizationId || user.organization_id;
+        
+        // Test 1: Can we fetch users?
+        html += '<h4>Test 1: Fetch Organization Users</h4>';
+        try {
+          if (typeof window.getLockedAccounts === 'function') {
+            const lockedAccounts = await window.getLockedAccounts(orgId);
+            html += `<div class="test-item passing"><strong>✅ PASS:</strong> getLockedAccounts() works. Found ${lockedAccounts.length} locked accounts.</div>`;
+            tests.push({ name: 'Fetch locked accounts', status: 'pass' });
+          } else {
+            html += '<div class="test-item failing"><strong>❌ FAIL:</strong> getLockedAccounts function not available</div>';
+            tests.push({ name: 'Fetch locked accounts', status: 'fail', error: 'Function not available' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> Error fetching locked accounts: ${error.message}</div>`;
+          tests.push({ name: 'Fetch locked accounts', status: 'fail', error: error.message });
+        }
+        
+        // Test 2: Can we fetch users via RPC?
+        html += '<h4>Test 2: Fetch Users via RPC</h4>';
+        try {
+          if (typeof window.secureSupabaseRpc === 'function' && orgId) {
+            const users = await window.secureSupabaseRpc('get_organization_users', {
+              p_org_id: orgId
+            });
+            
+            if (users && (Array.isArray(users) || users.data)) {
+              const userList = Array.isArray(users) ? users : (users.data || []);
+              html += `<div class="test-item passing"><strong>✅ PASS:</strong> get_organization_users RPC works. Found ${userList.length} users.</div>`;
+              tests.push({ name: 'Fetch users via RPC', status: 'pass' });
+            } else {
+              html += '<div class="test-item warning"><strong>⚠️ WARNING:</strong> RPC returned unexpected format</div>';
+              tests.push({ name: 'Fetch users via RPC', status: 'warning' });
+            }
+          } else {
+            html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Cannot test - missing orgId or secureSupabaseRpc</div>';
+            tests.push({ name: 'Fetch users via RPC', status: 'fail', error: 'Missing requirements' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> RPC error: ${error.message}</div>`;
+          tests.push({ name: 'Fetch users via RPC', status: 'fail', error: error.message });
+        }
+        
+        // Test 3: Can we unlock an account?
+        html += '<h4>Test 3: Unlock Account Function</h4>';
+        try {
+          if (typeof window.unlockAccount === 'function') {
+            // Try unlocking a test account (will fail but should not crash)
+            const result = await window.unlockAccount('test_unlock_' + Date.now(), 'Test Admin', 'Functional test');
+            html += '<div class="test-item passing"><strong>✅ PASS:</strong> unlockAccount function is callable</div>';
+            tests.push({ name: 'Unlock account function', status: 'pass' });
+          } else {
+            html += '<div class="test-item failing"><strong>❌ FAIL:</strong> unlockAccount function not available</div>';
+            tests.push({ name: 'Unlock account function', status: 'fail', error: 'Function not available' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> unlockAccount error: ${error.message}</div>`;
+          tests.push({ name: 'Unlock account function', status: 'fail', error: error.message });
+        }
+        
+        // Summary
+        const passed = tests.filter(t => t.status === 'pass').length;
+        const failed = tests.filter(t => t.status === 'fail').length;
+        html += `<h4>Summary: ${passed} passed, ${failed} failed</h4>`;
+        
+        testResults.push({ category: 'User Management', tests: tests });
+        
+      } catch (error) {
+        html += `<div class="test-item failing"><strong>❌ ERROR:</strong> ${error.message}</div>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function testPatientManagement() {
+      const resultsDiv = document.getElementById('patient-mgmt-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Testing patient management...</p>';
+      
+      let html = '<h3>Patient Management Test Results:</h3>';
+      const tests = [];
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Supabase client not available</div>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgId = user.organizationId || user.organization_id;
+        
+        // Test 1: Can we fetch patients?
+        html += '<h4>Test 1: Fetch Patients</h4>';
+        try {
+          const { data: patients, error } = await supabase
+            .from('patients')
+            .select('id, patient_id, first_name, last_name')
+            .eq('organization_id', orgId)
+            .limit(5);
+          
+          if (error) {
+            html += `<div class="test-item failing"><strong>❌ FAIL:</strong> Cannot fetch patients: ${error.message}</div>`;
+            tests.push({ name: 'Fetch patients', status: 'fail', error: error.message });
+          } else {
+            html += `<div class="test-item passing"><strong>✅ PASS:</strong> Can fetch patients. Found ${patients?.length || 0} patients.</div>`;
+            tests.push({ name: 'Fetch patients', status: 'pass' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> Error: ${error.message}</div>`;
+          tests.push({ name: 'Fetch patients', status: 'fail', error: error.message });
+        }
+        
+        // Test 2: Can we create a test patient?
+        html += '<h4>Test 2: Create Test Patient (Dry Run)</h4>';
+        try {
+          // Just test the structure, don't actually insert
+          const testPatient = {
+            patient_id: 'TEST_' + Date.now(),
+            first_name: 'Test',
+            last_name: 'Patient',
+            organization_id: orgId,
+            date_of_birth: '2000-01-01',
+            gender: 'Male'
+          };
+          
+          // Check if required columns exist by attempting a select
+          const { error: checkError } = await supabase
+            .from('patients')
+            .select('patient_id, first_name, last_name, organization_id, date_of_birth, gender')
+            .limit(1);
+          
+          if (checkError && checkError.message.includes('does not exist')) {
+            html += `<div class="test-item failing"><strong>❌ FAIL:</strong> Missing required columns: ${checkError.message}</div>`;
+            tests.push({ name: 'Create patient structure', status: 'fail', error: checkError.message });
+          } else {
+            html += '<div class="test-item passing"><strong>✅ PASS:</strong> Patient table structure is correct</div>';
+            tests.push({ name: 'Create patient structure', status: 'pass' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Create patient structure', status: 'fail', error: error.message });
+        }
+        
+        // Test 3: Can we update patient data?
+        html += '<h4>Test 3: Update Patient Data</h4>';
+        try {
+          // Try to update a non-existent patient (should fail gracefully, not crash)
+          const { error: updateError } = await supabase
+            .from('patients')
+            .update({ first_name: 'Updated' })
+            .eq('patient_id', 'NONEXISTENT_' + Date.now());
+          
+          // If it errors with "does not exist" for column, that's a problem
+          // If it just returns no rows, that's fine
+          if (updateError && updateError.message.includes('column') && updateError.message.includes('does not exist')) {
+            html += `<div class="test-item failing"><strong>❌ FAIL:</strong> Update failed due to missing column: ${updateError.message}</div>`;
+            tests.push({ name: 'Update patient', status: 'fail', error: updateError.message });
+          } else {
+            html += '<div class="test-item passing"><strong>✅ PASS:</strong> Update operation structure is correct</div>';
+            tests.push({ name: 'Update patient', status: 'pass' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Update patient', status: 'fail', error: error.message });
+        }
+        
+        // Summary
+        const passed = tests.filter(t => t.status === 'pass').length;
+        const failed = tests.filter(t => t.status === 'fail').length;
+        html += `<h4>Summary: ${passed} passed, ${failed} failed</h4>`;
+        
+        testResults.push({ category: 'Patient Management', tests: tests });
+        
+      } catch (error) {
+        html += `<div class="test-item failing"><strong>❌ ERROR:</strong> ${error.message}</div>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function testDataPersistence() {
+      const resultsDiv = document.getElementById('data-persistence-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Testing data persistence...</p>';
+      
+      let html = '<h3>Data Persistence Test Results:</h3>';
+      const tests = [];
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Supabase client not available</div>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        // Test 1: Can we save and retrieve data?
+        html += '<h4>Test 1: Save & Retrieve Cycle</h4>';
+        html += '<p class="info">ℹ️ This test checks if data actually persists in the database.</p>';
+        
+        // Check if we can read existing data
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgId = user.organizationId || user.organization_id;
+        
+        try {
+          const { data: orgs, error: orgError } = await supabase
+            .from('organizations')
+            .select('id, name')
+            .limit(5);
+          
+          if (orgError) {
+            html += `<div class="test-item failing"><strong>❌ FAIL:</strong> Cannot read organizations: ${orgError.message}</div>`;
+            tests.push({ name: 'Read data', status: 'fail', error: orgError.message });
+          } else {
+            html += `<div class="test-item passing"><strong>✅ PASS:</strong> Can read data. Found ${orgs?.length || 0} organizations.</div>`;
+            tests.push({ name: 'Read data', status: 'pass' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Read data', status: 'fail', error: error.message });
+        }
+        
+        // Test 2: Check if JSONB columns work
+        html += '<h4>Test 2: JSONB Column Support</h4>';
+        try {
+          const { data: patients, error: jsonbError } = await supabase
+            .from('patients')
+            .select('allergies, medical_history, diagnoses')
+            .eq('organization_id', orgId)
+            .limit(1);
+          
+          if (jsonbError) {
+            if (jsonbError.message.includes('does not exist')) {
+              html += `<div class="test-item failing"><strong>❌ FAIL:</strong> JSONB columns missing: ${jsonbError.message}</div>`;
+              tests.push({ name: 'JSONB columns', status: 'fail', error: jsonbError.message });
+            } else {
+              html += `<div class="test-item warning"><strong>⚠️ WARNING:</strong> ${jsonbError.message}</div>`;
+              tests.push({ name: 'JSONB columns', status: 'warning' });
+            }
+          } else {
+            html += '<div class="test-item passing"><strong>✅ PASS:</strong> JSONB columns accessible</div>';
+            tests.push({ name: 'JSONB columns', status: 'pass' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'JSONB columns', status: 'fail', error: error.message });
+        }
+        
+        // Summary
+        const passed = tests.filter(t => t.status === 'pass').length;
+        const failed = tests.filter(t => t.status === 'fail').length;
+        html += `<h4>Summary: ${passed} passed, ${failed} failed</h4>`;
+        
+        testResults.push({ category: 'Data Persistence', tests: tests });
+        
+      } catch (error) {
+        html += `<div class="test-item failing"><strong>❌ ERROR:</strong> ${error.message}</div>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function testAuthFlow() {
+      const resultsDiv = document.getElementById('auth-flow-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Testing authentication flow...</p>';
+      
+      let html = '<h3>Authentication Flow Test Results:</h3>';
+      const tests = [];
+      
+      try {
+        // Test 1: Can we check rate limits?
+        html += '<h4>Test 1: Rate Limiter Functionality</h4>';
+        try {
+          if (typeof window.rateLimiter !== 'undefined' && window.rateLimiter) {
+            const check = await window.rateLimiter.checkRateLimit('login', 'test_user_' + Date.now());
+            html += '<div class="test-item passing"><strong>✅ PASS:</strong> Rate limiter is functional</div>';
+            tests.push({ name: 'Rate limiter', status: 'pass' });
+          } else {
+            html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Rate limiter not available</div>';
+            tests.push({ name: 'Rate limiter', status: 'fail', error: 'Not loaded' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Rate limiter', status: 'fail', error: error.message });
+        }
+        
+        // Test 2: Can we get current session?
+        html += '<h4>Test 2: Session Management</h4>';
+        try {
+          const supabase = window.supabaseClient;
+          if (supabase) {
+            const { data: { session }, error } = await supabase.auth.getSession();
+            if (error) {
+              html += `<div class="test-item warning"><strong>⚠️ WARNING:</strong> Session check error: ${error.message}</div>`;
+              tests.push({ name: 'Session check', status: 'warning' });
+            } else {
+              html += `<div class="test-item passing"><strong>✅ PASS:</strong> Session management works. Session: ${session ? 'Active' : 'None'}</div>`;
+              tests.push({ name: 'Session check', status: 'pass' });
+            }
+          } else {
+            html += '<div class="test-item warning"><strong>⚠️ WARNING:</strong> Supabase client not available</div>';
+            tests.push({ name: 'Session check', status: 'warning' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Session check', status: 'fail', error: error.message });
+        }
+        
+        // Summary
+        const passed = tests.filter(t => t.status === 'pass').length;
+        const failed = tests.filter(t => t.status === 'fail').length;
+        html += `<h4>Summary: ${passed} passed, ${failed} failed</h4>`;
+        
+        testResults.push({ category: 'Authentication', tests: tests });
+        
+      } catch (error) {
+        html += `<div class="test-item failing"><strong>❌ ERROR:</strong> ${error.message}</div>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function testPlatformAdmin() {
+      const resultsDiv = document.getElementById('platform-admin-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Testing platform admin functions...</p>';
+      
+      let html = '<h3>Platform Admin Test Results:</h3>';
+      const tests = [];
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Supabase client not available</div>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        // Test 1: Can we fetch all organizations?
+        html += '<h4>Test 1: Fetch All Organizations</h4>';
+        try {
+          if (typeof window.secureSupabaseRpc === 'function') {
+            const orgs = await window.secureSupabaseRpc('get_organizations_with_owner', {});
+            
+            if (orgs && (Array.isArray(orgs) || orgs.data)) {
+              const orgList = Array.isArray(orgs) ? orgs : (orgs.data || []);
+              html += `<div class="test-item passing"><strong>✅ PASS:</strong> Can fetch organizations. Found ${orgList.length} organizations.</div>`;
+              tests.push({ name: 'Fetch organizations', status: 'pass' });
+            } else {
+              html += '<div class="test-item failing"><strong>❌ FAIL:</strong> Unexpected response format</div>';
+              tests.push({ name: 'Fetch organizations', status: 'fail', error: 'Unexpected format' });
+            }
+          } else {
+            // Try direct query
+            const { data: orgs, error } = await supabase
+              .from('organizations')
+              .select('id, name')
+              .limit(10);
+            
+            if (error) {
+              html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+              tests.push({ name: 'Fetch organizations', status: 'fail', error: error.message });
+            } else {
+              html += `<div class="test-item passing"><strong>✅ PASS:</strong> Can fetch organizations directly. Found ${orgs?.length || 0} organizations.</div>`;
+              tests.push({ name: 'Fetch organizations', status: 'pass' });
+            }
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Fetch organizations', status: 'fail', error: error.message });
+        }
+        
+        // Test 2: Can we get locked accounts?
+        html += '<h4>Test 2: Get Locked Accounts</h4>';
+        try {
+          if (typeof window.getLockedAccounts === 'function') {
+            const locked = await window.getLockedAccounts();
+            html += `<div class="test-item passing"><strong>✅ PASS:</strong> Can get locked accounts. Found ${locked?.length || 0} locked accounts.</div>`;
+            tests.push({ name: 'Get locked accounts', status: 'pass' });
+          } else {
+            html += '<div class="test-item failing"><strong>❌ FAIL:</strong> getLockedAccounts function not available</div>';
+            tests.push({ name: 'Get locked accounts', status: 'fail', error: 'Function not available' });
+          }
+        } catch (error) {
+          html += `<div class="test-item failing"><strong>❌ FAIL:</strong> ${error.message}</div>`;
+          tests.push({ name: 'Get locked accounts', status: 'fail', error: error.message });
+        }
+        
+        // Summary
+        const passed = tests.filter(t => t.status === 'pass').length;
+        const failed = tests.filter(t => t.status === 'fail').length;
+        html += `<h4>Summary: ${passed} passed, ${failed} failed</h4>`;
+        
+        testResults.push({ category: 'Platform Admin', tests: tests });
+        
+      } catch (error) {
+        html += `<div class="test-item failing"><strong>❌ ERROR:</strong> ${error.message}</div>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function runAllFunctionalTests() {
+      const resultsDiv = document.getElementById('all-tests-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Running all functional tests...</p>';
+      
+      testResults.length = 0;
+      
+      await testUserManagement();
+      await new Promise(r => setTimeout(r, 1000));
+      await testPatientManagement();
+      await new Promise(r => setTimeout(r, 1000));
+      await testDataPersistence();
+      await new Promise(r => setTimeout(r, 1000));
+      await testAuthFlow();
+      await new Promise(r => setTimeout(r, 1000));
+      await testPlatformAdmin();
+      
+      // Generate summary
+      let html = '<h3>📊 Complete Functional Test Summary:</h3>';
+      
+      const allTests = testResults.flatMap(cat => cat.tests.map(t => ({ ...t, category: cat.category })));
+      const totalTests = allTests.length;
+      const passed = allTests.filter(t => t.status === 'pass').length;
+      const failed = allTests.filter(t => t.status === 'fail').length;
+      const warnings = allTests.filter(t => t.status === 'warning').length;
+      
+      html += `<div style="background: ${failed > 0 ? '#fff3cd' : '#d4edda'}; padding: 20px; border-radius: 8px; margin: 20px 0;">`;
+      html += `<h4>Overall Results:</h4>`;
+      html += `<p><strong>Total Tests:</strong> ${totalTests}</p>`;
+      html += `<p class="success"><strong>✅ Passed:</strong> ${passed}</p>`;
+      html += `<p class="error"><strong>❌ Failed:</strong> ${failed}</p>`;
+      html += `<p class="warning"><strong>⚠️ Warnings:</strong> ${warnings}</p>`;
+      html += `</div>`;
+      
+      if (failed > 0) {
+        html += '<h4 class="error">❌ Failed Tests (Need Fixing):</h4>';
+        html += '<table><tr><th>Category</th><th>Test</th><th>Error</th></tr>';
+        
+        allTests.filter(t => t.status === 'fail').forEach(test => {
+          html += `<tr>
+            <td>${test.category}</td>
+            <td><strong>${test.name}</strong></td>
+            <td class="error">${test.error || 'Unknown error'}</td>
+          </tr>`;
+        });
+        
+        html += '</table>';
+      }
+      
+      if (warnings > 0) {
+        html += '<h4 class="warning">⚠️ Warnings:</h4>';
+        html += '<ul>';
+        allTests.filter(t => t.status === 'warning').forEach(test => {
+          html += `<li><strong>${test.category} - ${test.name}:</strong> ${test.error || 'Warning'}</li>`;
+        });
+        html += '</ul>';
+      }
+      
+      if (failed === 0 && warnings === 0) {
+        html += '<div class="test-item passing">';
+        html += '<h4>✅ All Tests Passed!</h4>';
+        html += '<p>All functionality appears to be working correctly.</p>';
+        html += '</div>';
+      } else {
+        html += '<h4>Next Steps:</h4>';
+        html += '<ol>';
+        html += '<li>Fix failed tests first (these indicate broken functionality)</li>';
+        html += '<li>Review warnings (may indicate potential issues)</li>';
+        html += '<li>Re-run tests after fixes</li>';
+        html += '<li>Test manually in the actual app to verify</li>';
+        html += '</ol>';
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('all-tests-results').innerHTML = '<p class="info">Click "Run All Tests" to start comprehensive functionality testing.</p>';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

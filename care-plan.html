@@ -1,0 +1,959 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Care Plan - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=60">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .item-list {
+      margin-top: 15px;
+    }
+
+    .table-responsive {
+      width: 100%;
+      max-width: 100%;
+      overflow-x: auto;
+    }
+
+    .care-plan-table,
+    .care-plan-theme .care-plan-medications-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: auto;
+      background: var(--nigerian-white);
+    }
+
+    .care-plan-table th,
+    .care-plan-table td,
+    .care-plan-theme .care-plan-medications-table th,
+    .care-plan-theme .care-plan-medications-table td {
+      padding: 10px 12px;
+      text-align: left;
+      border: 1px solid rgba(54, 69, 79, 0.15);
+      word-break: break-word;
+    }
+
+    .care-plan-theme .care-plan-table th,
+    .care-plan-theme .care-plan-medications-table th {
+      background: var(--adire-blue) !important;
+      background-image: none !important;
+      color: #ffffff !important;
+    }
+
+    .care-plan-theme .care-plan-medications-table {
+      width: 100%;
+      max-width: 100%;
+    }
+
+    .care-plan-theme .care-plan-medications-table thead,
+    .care-plan-theme .care-plan-medications-table tbody,
+    .care-plan-theme .care-plan-medications-table tr,
+    .care-plan-theme .care-plan-medications-table th,
+    .care-plan-theme .care-plan-medications-table td {
+      display: table-row-group;
+    }
+    .care-plan-theme .care-plan-medications-table tr {
+      display: table-row;
+    }
+    .care-plan-theme .care-plan-medications-table th,
+    .care-plan-theme .care-plan-medications-table td {
+      display: table-cell;
+    }
+
+    .care-plan-theme .care-plan-medications-table td:last-child {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+    }
+
+    .care-plan-theme .care-plan-medications-table td:last-child button,
+    .care-plan-theme .care-plan-medications-table td:last-child a {
+      min-width: 64px;
+      height: 28px;
+      padding: 4px 10px;
+      margin: 0;
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .item-card {
+      background: var(--soft-white);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    .item-card-content {
+      flex: 1;
+    }
+    
+    .item-card-actions {
+      display: flex;
+      gap: 5px;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 5px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    
+    .add-item-form {
+      background: var(--soft-white);
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 2px dashed var(--primary-green);
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body class="care-plan-theme">
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Inpatient Dashboard</button>
+    
+    <h1>🎯 Care Plan</h1>
+    
+    <form id="care-plan-form" onsubmit="handleCarePlanSubmit(event)">
+      <!-- Problem List -->
+      <div class="form-section">
+        <h2>Problem List</h2>
+        <div class="item-list table-responsive">
+          <table id="problem-list-table" class="diagnoses-table care-plan-table">
+            <thead>
+              <tr>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Date</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Problem/Diagnosis</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Notes</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="problem-list">
+              <tr><td colspan="4" style="padding: 10px;">No problems added yet.</td></tr>
+            </tbody>
+          </table>
+        </div>
+        <button type="button" onclick="showAddProblemForm()">➕ Add Problem</button>
+        <div id="add-problem-form" class="add-item-form" style="display: none;">
+          <div class="form-group">
+            <label>Problem/Diagnosis *</label>
+            <div id="diagnosis-container">
+              <input type="text" id="diagnosis" placeholder="Search diagnosis or condition..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+              <div id="icd-results-diagnosis" style="border: 1px solid #ddd; max-height: 200px; overflow-y: auto; display: none;"></div>
+            </div>
+          </div>
+          <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Date</label>
+              <input type="date" id="diagnosis-date">
+            </div>
+            <div>
+              <label>Notes</label>
+              <input type="text" id="diagnosis-notes" placeholder="Optional notes">
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addProblem()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddProblemForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Medications -->
+      <div class="form-section">
+        <h2>Medications</h2>
+        <div id="active-prescription-medications" class="table-responsive">
+          <h5 style="color: #495057; margin-bottom: 10px;">Active Medications</h5>
+          <table class="care-plan-medications-table care-plan-table">
+            <thead>
+              <tr>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Medication Name</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Dosage</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Route</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Frequency</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Status</th>
+                <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Actions</th>
+              </tr>
+            </thead>
+            <tbody id="active-medications-list">
+              <!-- Active medications will be populated here -->
+            </tbody>
+          </table>
+          <div id="no-active-medications-message" style="display: none; text-align: center; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 10px;">
+            <p style="color: #666; font-style: italic; margin: 0; font-size: 14px;">
+              No active medications found.
+            </p>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Goals -->
+      <div class="form-section">
+        <h2>Goals</h2>
+        <div id="goals-list" class="item-list">
+          <p>No goals added yet.</p>
+        </div>
+        <button type="button" onclick="showAddGoalForm()">➕ Add Goal</button>
+        <div id="add-goal-form" class="add-item-form" style="display: none;">
+          <div class="form-group">
+            <label>Goal Description *</label>
+            <textarea id="new-goal-description" rows="2" placeholder="Specific, Measurable, Achievable, Relevant, Time-bound (SMART) goal" required></textarea>
+          </div>
+          <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Target Date</label>
+              <input type="date" id="new-goal-target-date">
+            </div>
+            <div>
+              <label>Status</label>
+              <select id="new-goal-status">
+                <option value="in-progress">In Progress</option>
+                <option value="achieved">Achieved</option>
+                <option value="not-achieved">Not Achieved</option>
+              </select>
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addGoal()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddGoalForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Interventions -->
+      <div class="form-section">
+        <h2>Interventions</h2>
+        <div id="interventions-list" class="item-list">
+          <p>No interventions added yet.</p>
+        </div>
+        <button type="button" onclick="showAddInterventionForm()">➕ Add Intervention</button>
+        <div id="add-intervention-form" class="add-item-form" style="display: none;">
+          <div class="form-group">
+            <label>Intervention Type *</label>
+            <select id="new-intervention-type" required>
+              <option value="nursing">Nursing</option>
+              <option value="medical">Medical</option>
+              <option value="therapy">Therapy</option>
+              <option value="pharmacy">Pharmacy</option>
+              <option value="nutrition">Nutrition</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Intervention Description *</label>
+            <textarea id="new-intervention-description" rows="3" placeholder="Detailed description of the intervention" required></textarea>
+          </div>
+          <div class="form-group" style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label>Frequency</label>
+              <input type="text" id="new-intervention-frequency" placeholder="e.g., Q4H, Daily, PRN">
+            </div>
+            <div>
+              <label>Assigned To</label>
+              <input type="text" id="new-intervention-assigned" placeholder="Role or person name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="new-intervention-status">
+              <option value="pending">Pending</option>
+              <option value="active">Active</option>
+              <option value="completed">Completed</option>
+              <option value="discontinued">Discontinued</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addIntervention()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddInterventionForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Expected Length of Stay -->
+      <div class="form-section">
+        <h2>Expected Length of Stay</h2>
+        <div class="form-group">
+          <label>Expected LOS (Days)</label>
+          <input type="number" id="expected-los" min="1" placeholder="e.g., 3, 5, 7">
+        </div>
+      </div>
+      
+      <!-- Submit Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="submit">💾 Save Care Plan</button>
+        <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let legacyPatientId = null;
+    let organizationId = null;
+    let problems = [];
+    let goals = [];
+    let interventions = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId = urlParams.get('patientId');
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+
+      await resolveLegacyPatientId();
+      
+      // Load existing care plan
+      await loadExistingCarePlan();
+    });
+
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && data?.patient_id) {
+            resolvedId = data.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+    
+    async function loadExistingCarePlan() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('care_plans')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          
+          if (data) {
+            problems = Array.isArray(data.problem_list) ? data.problem_list : [];
+            goals = Array.isArray(data.goals) ? data.goals : [];
+            interventions = Array.isArray(data.interventions) ? data.interventions : [];
+            
+            if (data.expected_los) {
+              document.getElementById('expected-los').value = data.expected_los;
+            }
+          }
+        }
+        
+        await loadPatientDiagnoses();
+        await loadPatientMedications();
+        
+        displayProblems();
+        displayGoals();
+        displayInterventions();
+      } catch (error) {
+        console.error('Error loading care plan:', error);
+      }
+    }
+
+    async function loadPatientDiagnoses() {
+      if (!legacyPatientId && !patientId) return;
+      let patient = null;
+      try {
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(legacyPatientId || patientId);
+        } else if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.patient_id === (legacyPatientId || patientId) || p.id === (legacyPatientId || patientId));
+        } else {
+          const stored = localStorage.getItem(getDataKey("patients"));
+          const patients = stored ? JSON.parse(stored) : [];
+          patient = patients.find(p => p.patient_id === (legacyPatientId || patientId) || p.id === (legacyPatientId || patientId));
+        }
+      } catch (error) {
+        console.warn('Unable to load patient diagnoses:', error);
+      }
+
+      const diagnoses = Array.isArray(patient?.diagnoses) ? patient.diagnoses : [];
+      if (!diagnoses.length) return;
+
+      const normalized = diagnoses.map(entry => ({
+        id: entry.id || `diag_${Date.now()}_${Math.random().toString(16).slice(2)}`,
+        diagnosis: entry.diagnosis || entry.name || entry,
+        date: entry.date || '',
+        notes: entry.notes || ''
+      })).filter(entry => entry.diagnosis);
+
+      if (!normalized.length) return;
+
+      const existingKeys = new Set((problems || []).map(item => {
+        return `${item.diagnosis || item.name || ''}|${item.date || ''}|${item.notes || ''}`.toLowerCase();
+      }));
+
+      normalized.forEach(entry => {
+        const key = `${entry.diagnosis}|${entry.date || ''}|${entry.notes || ''}`.toLowerCase();
+        if (!existingKeys.has(key)) {
+          problems.push(entry);
+          existingKeys.add(key);
+        }
+      });
+    }
+    
+    async function loadPatientMedications() {
+      if (!legacyPatientId && !patientId) return;
+      let patient = null;
+      try {
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(legacyPatientId || patientId);
+        } else if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.patient_id === (legacyPatientId || patientId) || p.id === (legacyPatientId || patientId));
+        } else {
+          const stored = localStorage.getItem(getDataKey("patients"));
+          const patients = stored ? JSON.parse(stored) : [];
+          patient = patients.find(p => p.patient_id === (legacyPatientId || patientId) || p.id === (legacyPatientId || patientId));
+        }
+      } catch (error) {
+        console.warn('Unable to load patient medications:', error);
+      }
+
+      const prescriptions = Array.isArray(patient?.prescriptions) ? patient.prescriptions : [];
+      if (typeof window.displayActiveMedicationsFromPrescriptions === 'function') {
+        await window.displayActiveMedicationsFromPrescriptions(prescriptions);
+      }
+    }
+    
+    function showAddProblemForm() {
+      document.getElementById('add-problem-form').style.display = 'block';
+      if (typeof setupIcdSearch === 'function') {
+        setupIcdSearch();
+      }
+    }
+    
+    function hideAddProblemForm() {
+      document.getElementById('add-problem-form').style.display = 'none';
+      const diagnosisInput = document.getElementById('diagnosis');
+      const diagnosisDate = document.getElementById('diagnosis-date');
+      const diagnosisNotes = document.getElementById('diagnosis-notes');
+      if (diagnosisInput) diagnosisInput.value = '';
+      if (diagnosisDate) diagnosisDate.value = '';
+      if (diagnosisNotes) diagnosisNotes.value = '';
+      const results = document.getElementById('icd-results-diagnosis');
+      if (results) results.style.display = 'none';
+    }
+    
+    function addProblem() {
+      const diagnosis = document.getElementById('diagnosis').value.trim();
+      if (!diagnosis) {
+        alert('Please enter a problem name.');
+        return;
+      }
+      
+      const entry = {
+        id: `prob_${Date.now()}`,
+        diagnosis: diagnosis,
+        date: document.getElementById('diagnosis-date').value || '',
+        notes: document.getElementById('diagnosis-notes').value.trim() || ''
+      };
+      
+      problems.push(entry);
+      syncPatientDiagnoses(entry);
+      
+      hideAddProblemForm();
+      displayProblems();
+    }
+    
+    function removeProblem(id) {
+      problems = problems.filter(p => p.id !== id);
+      displayProblems();
+    }
+    
+    function displayProblems() {
+      const container = document.getElementById('problem-list');
+      if (problems.length === 0) {
+      container.innerHTML = '<tr><td colspan="4" style="padding: 10px;">No problems added yet.</td></tr>';
+        return;
+      }
+      
+      container.innerHTML = problems.map(problem => `
+        <tr>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${problem.date || ''}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;"><strong>${problem.diagnosis || problem.name || ''}</strong></td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;">${problem.notes || ''}</td>
+        <td style="padding: 8px; border-bottom: 1px solid #ddd;">
+            <button onclick="removeProblem('${problem.id}')" class="btn-secondary btn-small">Remove</button>
+          </td>
+        </tr>
+      `).join('');
+    }
+
+    function emitPatientSyncEvent(action, entry) {
+      const syncEvent = {
+        type: 'patientDataUpdated',
+        patientId: legacyPatientId || patientId,
+        action: action,
+        data: entry,
+        timestamp: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem('patientDataSync', JSON.stringify(syncEvent));
+      } catch (error) {
+        console.warn('Unable to write patient sync event to localStorage:', error);
+      }
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: syncEvent
+      }));
+    }
+
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+
+    async function syncPatientDiagnoses(entry) {
+      const patientKey = legacyPatientId || patientId;
+      if (!patientKey) return;
+
+      let patients = [];
+      try {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      } catch (error) {
+        patients = [];
+      }
+
+      let patient = patients.find(p => p.patient_id === patientKey || p.id === patientKey || p._supabaseUuid === patientKey);
+      if (!patient && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          patient = await window.resolvePatientByIdentifier(patientKey);
+          if (patient) {
+            const existingIndex = patients.findIndex(p => p.id === patient.id || p.patient_id === patient.patient_id);
+            if (existingIndex === -1) {
+              patients.push(patient);
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient for diagnosis sync:', error);
+        }
+      }
+
+      if (!patient) return;
+
+      const diagnoses = Array.isArray(patient.diagnoses) ? patient.diagnoses : [];
+      const normalized = {
+        diagnosis: entry.diagnosis || entry.name || '',
+        date: entry.date || '',
+        notes: entry.notes || ''
+      };
+      const exists = diagnoses.some(d => `${d.diagnosis || d.name || ''}|${d.date || ''}|${d.notes || ''}`.toLowerCase() ===
+        `${normalized.diagnosis}|${normalized.date}|${normalized.notes}`.toLowerCase());
+      if (!exists) {
+        diagnoses.push(normalized);
+        patient.diagnoses = diagnoses;
+        try {
+          localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+        } catch (error) {
+          console.warn('Unable to update local patient diagnoses cache:', error);
+        }
+
+        if (window.supabaseClient) {
+          try {
+            await window.supabaseClient
+              .from('patients')
+              .update({ diagnoses: JSON.stringify(diagnoses) })
+              .eq(patient.id ? 'id' : 'patient_id', patient.id || patient.patient_id)
+              .eq('organization_id', organizationId);
+          } catch (error) {
+            console.warn('Unable to sync diagnoses to Supabase:', error);
+          }
+        }
+
+        emitPatientSyncEvent('diagnosisAdded', normalized);
+      }
+    }
+    
+    function showAddGoalForm() {
+      document.getElementById('add-goal-form').style.display = 'block';
+    }
+    
+    function hideAddGoalForm() {
+      document.getElementById('add-goal-form').style.display = 'none';
+      document.getElementById('new-goal-description').value = '';
+      document.getElementById('new-goal-target-date').value = '';
+      document.getElementById('new-goal-status').value = 'in-progress';
+    }
+    
+    function addGoal() {
+      const description = document.getElementById('new-goal-description').value.trim();
+      if (!description) {
+        alert('Please enter a goal description.');
+        return;
+      }
+      
+      goals.push({
+        id: `goal_${Date.now()}`,
+        description: description,
+        target_date: document.getElementById('new-goal-target-date').value || null,
+        status: document.getElementById('new-goal-status').value,
+        progress: ''
+      });
+      
+      hideAddGoalForm();
+      displayGoals();
+    }
+    
+    function removeGoal(id) {
+      goals = goals.filter(g => g.id !== id);
+      displayGoals();
+    }
+    
+    function displayGoals() {
+      const container = document.getElementById('goals-list');
+      if (goals.length === 0) {
+        container.innerHTML = '<p>No goals added yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = goals.map(goal => `
+        <div class="item-card">
+          <div class="item-card-content">
+            <strong>${goal.description}</strong>
+            <br><small>Target: ${goal.target_date ? new Date(goal.target_date).toLocaleDateString() : 'Not set'}</small>
+            <br><small>Status: ${goal.status}</small>
+          </div>
+          <div class="item-card-actions">
+            <button onclick="removeGoal('${goal.id}')" class="btn-secondary btn-small">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showAddInterventionForm() {
+      document.getElementById('add-intervention-form').style.display = 'block';
+    }
+    
+    function hideAddInterventionForm() {
+      document.getElementById('add-intervention-form').style.display = 'none';
+      document.getElementById('new-intervention-type').value = 'nursing';
+      document.getElementById('new-intervention-description').value = '';
+      document.getElementById('new-intervention-frequency').value = '';
+      document.getElementById('new-intervention-assigned').value = '';
+      document.getElementById('new-intervention-status').value = 'pending';
+    }
+    
+    function addIntervention() {
+      const description = document.getElementById('new-intervention-description').value.trim();
+      if (!description) {
+        alert('Please enter an intervention description.');
+        return;
+      }
+      
+      interventions.push({
+        id: `interv_${Date.now()}`,
+        type: document.getElementById('new-intervention-type').value,
+        description: description,
+        frequency: document.getElementById('new-intervention-frequency').value.trim() || null,
+        assigned_to: document.getElementById('new-intervention-assigned').value.trim() || null,
+        status: document.getElementById('new-intervention-status').value
+      });
+      
+      hideAddInterventionForm();
+      displayInterventions();
+    }
+    
+    function removeIntervention(id) {
+      interventions = interventions.filter(i => i.id !== id);
+      displayInterventions();
+    }
+    
+    function displayInterventions() {
+      const container = document.getElementById('interventions-list');
+      if (interventions.length === 0) {
+        container.innerHTML = '<p>No interventions added yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = interventions.map(intervention => `
+        <div class="item-card">
+          <div class="item-card-content">
+            <strong>[${intervention.type.toUpperCase()}] ${intervention.description}</strong>
+            ${intervention.frequency ? `<br><small>Frequency: ${intervention.frequency}</small>` : ''}
+            ${intervention.assigned_to ? `<br><small>Assigned to: ${intervention.assigned_to}</small>` : ''}
+            <br><small>Status: ${intervention.status}</small>
+          </div>
+          <div class="item-card-actions">
+            <button onclick="removeIntervention('${intervention.id}')" class="btn-secondary btn-small">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    async function handleCarePlanSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        const carePlanData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          problem_list: problems,
+          goals: goals,
+          interventions: interventions,
+          expected_los: document.getElementById('expected-los').value ? parseInt(document.getElementById('expected-los').value) : null,
+          created_by: user.id || null,
+          updated_by: user.id || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          // Check if care plan exists
+          const { data: existing } = await window.supabaseClient
+            .from('care_plans')
+            .select('id')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (existing) {
+            // Update existing
+            const { error } = await window.supabaseClient
+              .from('care_plans')
+              .update(carePlanData)
+              .eq('id', existing.id);
+            
+            if (error) throw error;
+            console.log('✅ Care plan updated in Supabase');
+          } else {
+            // Insert new
+            const { error } = await window.supabaseClient
+              .from('care_plans')
+              .insert(carePlanData);
+            
+            if (error) throw error;
+            console.log('✅ Care plan saved to Supabase');
+          }
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`care_plans_${organizationId}`) || "[]";
+          const carePlans = JSON.parse(stored);
+          const existingIndex = carePlans.findIndex(cp => cp.admission_id === admissionId);
+          
+          if (existingIndex !== -1) {
+            carePlans[existingIndex] = { ...carePlanData, id: carePlans[existingIndex].id, updated_at: new Date().toISOString() };
+          } else {
+            carePlans.push({ ...carePlanData, id: `cp_${Date.now()}`, created_at: new Date().toISOString() });
+          }
+          
+          localStorage.setItem(`care_plans_${organizationId}`, JSON.stringify(carePlans));
+          console.log('✅ Care plan saved to localStorage');
+        }
+        
+        alert('Care plan saved successfully!');
+        goBack();
+      } catch (error) {
+        console.error('Error saving care plan:', error);
+        alert('Error saving care plan: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function goBack() {
+      if (admissionId) {
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } else {
+        window.location.href = 'admissions-dashboard';
+      }
+    }
+
+    function getAdmissionIdForUrl() {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+  </script>
+</body>
+</html>
+

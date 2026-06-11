@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Compose Message - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #f5f5dc 0%, #fafafa 50%, #ffffff 100%);
+      min-height: 100vh;
+      padding: 20px;
+    }
+
+    .compose-container {
+      max-width: 900px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+
+    .compose-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 3px solid #008753;
+    }
+
+    .compose-header h1 {
+      margin: 0;
+      color: #008753;
+      font-size: 28px;
+    }
+
+    .back-btn {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      text-decoration: none;
+      display: inline-block;
+    }
+
+    .back-btn:hover {
+      background: #5a6268;
+    }
+
+    .form-group {
+      margin-bottom: 20px;
+    }
+
+    .form-group label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+
+    .form-group select,
+    .form-group input,
+    .form-group textarea {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+      font-family: inherit;
+      transition: border-color 0.3s;
+    }
+
+    .form-group select:focus,
+    .form-group input:focus,
+    .form-group textarea:focus {
+      outline: none;
+      border-color: #008753;
+    }
+
+    .form-group textarea {
+      min-height: 200px;
+      resize: vertical;
+    }
+
+    .recipient-search-container {
+      position: relative;
+    }
+
+    .recipient-search-input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      font-size: 14px;
+    }
+
+    .recipient-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-top: none;
+      border-radius: 0 0 6px 6px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+    }
+
+    .recipient-item {
+      padding: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #f0f0f0;
+      transition: background 0.2s;
+    }
+
+    .recipient-item:hover {
+      background: #f5f5f5;
+    }
+
+    .recipient-item:last-child {
+      border-bottom: none;
+    }
+
+    .form-actions {
+      display: flex;
+      gap: 10px;
+      justify-content: flex-end;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #e0e0e0;
+    }
+
+    .btn-send {
+      background: linear-gradient(135deg, #008753, #006b42);
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+    }
+
+    .btn-send:hover {
+      opacity: 0.9;
+    }
+
+    .btn-cancel {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+    }
+
+    .btn-cancel:hover {
+      background: #5a6268;
+    }
+
+    .error-message {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+
+    .success-message {
+      background: #d4edda;
+      color: #155724;
+      padding: 12px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="compose-container">
+    <div class="compose-header">
+      <h1>Compose Message</h1>
+      <a class='back-btn' href='/messages'>← Back to Messages</a>
+    </div>
+
+    <div id="error-message" class="error-message"></div>
+    <div id="success-message" class="success-message"></div>
+
+    <form id="compose-form">
+      <div class="form-group">
+        <label for="recipient-type">Recipient Type *</label>
+        <select id="recipient-type" required>
+          <option value="">Select type...</option>
+          <option value="staff">Staff</option>
+          <option value="patient">Patient</option>
+        </select>
+      </div>
+
+      <div class="form-group" id="recipient-select-group" style="display: none;">
+        <label for="recipient-search-input">Search & Select Recipient *</label>
+        <div class="recipient-search-container">
+          <input 
+            type="text" 
+            id="recipient-search-input" 
+            placeholder="Type to search for recipient..."
+            autocomplete="off"
+            required
+          />
+          <div id="recipient-dropdown" class="recipient-dropdown"></div>
+          <input type="hidden" id="message-recipient" required />
+        </div>
+      </div>
+
+      <div class="form-group">
+        <label for="message-type">Message Type *</label>
+        <select id="message-type" required>
+          <option value="message">Message</option>
+          <option value="task">Task</option>
+          <option value="announcement">Announcement</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="priority">Priority</label>
+        <select id="priority">
+          <option value="normal">Normal</option>
+          <option value="high">High</option>
+          <option value="urgent">Urgent</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="subject">Subject *</label>
+        <input type="text" id="subject" required placeholder="Enter message subject..." />
+      </div>
+
+      <div class="form-group">
+        <label for="body">Message Body *</label>
+        <textarea id="body" required placeholder="Enter your message..."></textarea>
+      </div>
+
+      <div class="form-group" id="task-due-date-group" style="display: none;">
+        <label for="task-due-date">Task Due Date</label>
+        <input type="datetime-local" id="task-due-date" />
+      </div>
+
+      <div class="form-actions">
+        <button type="button" class="btn-cancel" onclick="window.location.href='messages.html'">Cancel</button>
+        <button type="submit" class="btn-send">Send Message</button>
+      </div>
+    </form>
+  </div>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251019043800"></script>
+  
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <!-- Messages functionality -->
+  <script src="js/messages.js?v=2"></script>
+  <script>
+    let allStaff = [];
+    let allPatients = [];
+
+    // Load recipients on page load
+    async function loadRecipients() {
+      try {
+        // Load staff - ensure it's only staff (case-insensitive filtering)
+        if (typeof window.loadOrganizationUsers === 'function') {
+          const loadedStaff = await window.loadOrganizationUsers();
+          // Filter to ensure only staff (double-check, case-insensitive) and validate id exists
+          allStaff = (loadedStaff || []).filter(r => {
+            if (!r || !r.id) {
+              console.warn('⚠️ Invalid staff object (missing id):', r);
+              return false;
+            }
+            const role = (r.role || '').toLowerCase();
+            const isValid = r.type === 'staff' && role !== 'patient';
+            if (!isValid) {
+              console.warn('⚠️ Non-staff in staff list:', r);
+            }
+            return isValid;
+          });
+          console.log('✅ Loaded staff:', allStaff.length, 'items');
+          console.log('✅ Staff items:', allStaff.map(s => ({ id: s.id, name: s.name, role: s.role })));
+        } else {
+          allStaff = [];
+          console.warn('⚠️ loadOrganizationUsers function not available');
+        }
+        
+        // Load patients - ensure it's only patients
+        if (typeof window.loadOrganizationPatients === 'function') {
+          const loadedPatients = await window.loadOrganizationPatients();
+          // Filter to ensure only patients (double-check) and validate id exists
+          allPatients = (loadedPatients || []).filter(r => {
+            if (!r || !r.id) {
+              console.warn('⚠️ Invalid patient object (missing id):', r);
+              return false;
+            }
+            const isValid = r.type === 'patient';
+            if (!isValid) {
+              console.warn('⚠️ Non-patient in patient list:', r);
+            }
+            return isValid;
+          });
+          console.log('✅ Loaded patients:', allPatients.length, 'items');
+          console.log('✅ Patient items:', allPatients.map(p => ({ id: p.id, name: p.name })));
+        } else {
+          allPatients = [];
+          console.warn('⚠️ loadOrganizationPatients function not available');
+        }
+      } catch (error) {
+        console.error('Error loading recipients:', error);
+        allStaff = [];
+        allPatients = [];
+      }
+    }
+
+    // Switch between staff and patient recipients
+    function switchRecipientType() {
+      const type = document.getElementById('recipient-type').value;
+      const selectGroup = document.getElementById('recipient-select-group');
+      const searchInput = document.getElementById('recipient-search-input');
+      const hiddenInput = document.getElementById('message-recipient');
+      const dropdown = document.getElementById('recipient-dropdown');
+      
+      if (!type) {
+        selectGroup.style.display = 'none';
+        if (searchInput) searchInput.value = '';
+        if (hiddenInput) hiddenInput.value = '';
+        if (dropdown) dropdown.style.display = 'none';
+        return;
+      }
+      
+      // Show recipient select group
+      selectGroup.style.display = 'block';
+      
+      // Clear search input and hidden input
+      if (searchInput) {
+        searchInput.value = '';
+        searchInput.disabled = false;
+        searchInput.readOnly = false;
+        searchInput.focus();
+      }
+      if (hiddenInput) {
+        hiddenInput.value = '';
+      }
+      if (dropdown) {
+        dropdown.style.display = 'none';
+      }
+    }
+
+    // Show recipient dropdown
+    function showRecipientDropdown() {
+      const dropdown = document.getElementById('recipient-dropdown');
+      const searchInput = document.getElementById('recipient-search-input');
+      
+      if (!dropdown || !searchInput) {
+        console.warn('⚠️ Dropdown or search input not found');
+        return;
+      }
+      
+      console.log('🔍 showRecipientDropdown called, allStaff:', allStaff.length, 'allPatients:', allPatients.length);
+      
+      const searchTerm = searchInput.value.toLowerCase().trim();
+      const typeSelect = document.getElementById('recipient-type');
+      const type = typeSelect ? typeSelect.value : '';
+      
+      if (!type) {
+        dropdown.style.display = 'none';
+        return;
+      }
+      
+      // CRITICAL: Get the correct source based on type - use ONLY the correct array
+      let source = [];
+      if (type === 'staff') {
+        // ONLY use allStaff array - never use allPatients
+        source = Array.isArray(allStaff) ? allStaff : [];
+        // Filter to ensure ONLY staff with type === 'staff' AND role !== 'patient' (case-insensitive)
+        source = source.filter(r => {
+          if (!r) return false;
+          const role = (r.role || '').toLowerCase();
+          const isStaff = r.type === 'staff' && role !== 'patient';
+          if (!isStaff) {
+            console.error('❌ NON-STAFF FOUND IN STAFF LIST:', r);
+            return false;
+          }
+          return true;
+        });
+        console.log('📋 STAFF MODE - Showing:', source.length, 'staff from', allStaff?.length, 'total staff');
+      } else if (type === 'patient') {
+        // ONLY use allPatients array - never use allStaff
+        source = Array.isArray(allPatients) ? allPatients : [];
+        // Filter to ensure ONLY patients with type === 'patient'
+        source = source.filter(r => {
+          if (!r) return false;
+          const isPatient = r.type === 'patient';
+          if (!isPatient) {
+            console.error('❌ NON-PATIENT FOUND IN PATIENT LIST:', r);
+            return false;
+          }
+          return true;
+        });
+        console.log('📋 PATIENT MODE - Showing:', source.length, 'patients from', allPatients?.length, 'total patients');
+      } else {
+        source = [];
+      }
+      
+      if (!source || source.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 12px; color: #666; text-align: center;">No recipients found</div>';
+        dropdown.style.display = 'block';
+        return;
+      }
+      
+      // Filter recipients based on search term
+      let displayRecipients = source;
+      if (searchTerm) {
+        displayRecipients = source.filter(recipient => {
+          if (!recipient) return false;
+          // Double-check type matches
+          if (type === 'staff') {
+            const role = (recipient.role || '').toLowerCase();
+            if (recipient.type !== 'staff' || role === 'patient') return false;
+          }
+          if (type === 'patient' && recipient.type !== 'patient') return false;
+          
+          const name = (recipient.name || '').toLowerCase();
+          const role = (recipient.role || '').toLowerCase();
+          const email = (recipient.email || '').toLowerCase();
+          const patientId = (recipient.patientId || '').toLowerCase();
+          return name.includes(searchTerm) || 
+                 role.includes(searchTerm) || 
+                 email.includes(searchTerm) ||
+                 patientId.includes(searchTerm);
+        });
+      }
+      
+      // Populate dropdown
+      dropdown.innerHTML = '';
+      
+      // CRITICAL: Get current type one more time to ensure consistency
+      const currentType = document.getElementById('recipient-type').value;
+      
+      if (displayRecipients.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 12px; color: #666; text-align: center;">No recipients match your search</div>';
+      } else {
+        // Filter one more time to be absolutely sure
+        const finalRecipients = displayRecipients.filter(recipient => {
+          if (!recipient) return false;
+          if (currentType === 'staff') {
+            const role = (recipient.role || '').toLowerCase();
+            if (recipient.type !== 'staff' || role === 'patient') {
+              console.error('❌ REJECTED: Non-staff in staff mode:', recipient);
+              return false;
+            }
+          }
+          if (currentType === 'patient' && recipient.type !== 'patient') {
+            console.error('❌ REJECTED: Non-patient in patient mode:', recipient);
+            return false;
+          }
+          return true;
+        });
+        
+        finalRecipients.forEach((recipient, index) => {
+          // Final verification before displaying - MUST have id
+          if (!recipient) {
+            console.warn('⚠️ Null recipient at index', index);
+            return;
+          }
+          if (!recipient.id) {
+            console.error('❌ Recipient missing id at index', index, ':', recipient);
+            return;
+          }
+          if (!recipient.name) {
+            console.warn('⚠️ Recipient missing name at index', index, ':', recipient);
+            return;
+          }
+          
+          const item = document.createElement('div');
+          item.className = 'recipient-item';
+          item.onclick = function(e) {
+            e.stopPropagation();
+            selectRecipient(recipient);
+          };
+          
+          if (recipient.type === 'staff') {
+            item.innerHTML = `<strong>${escapeHtml(recipient.name)}</strong><br><span style="color: #666; font-size: 12px;">${escapeHtml(recipient.role || 'Staff')}</span>`;
+          } else if (recipient.type === 'patient') {
+            item.innerHTML = `<strong>${escapeHtml(recipient.name)}</strong>${recipient.patientId ? `<br><span style="color: #666; font-size: 12px;">ID: ${escapeHtml(recipient.patientId)}</span>` : ''}`;
+          } else {
+            console.error('❌ Recipient without valid type at index', index, ':', recipient);
+            return;
+          }
+          
+          dropdown.appendChild(item);
+        });
+      }
+      
+      dropdown.style.display = 'block';
+    }
+
+    // Select recipient from dropdown
+    function selectRecipient(recipient) {
+      const searchInput = document.getElementById('recipient-search-input');
+      const hiddenInput = document.getElementById('message-recipient');
+      const dropdown = document.getElementById('recipient-dropdown');
+      
+      if (searchInput) {
+        if (recipient.type === 'staff') {
+          searchInput.value = `${recipient.name} (${recipient.role || 'Staff'})`;
+        } else {
+          searchInput.value = `${recipient.name}${recipient.patientId ? ` (${recipient.patientId})` : ''}`;
+        }
+      }
+      
+      if (hiddenInput) {
+        hiddenInput.value = recipient.id;
+      }
+      
+      if (dropdown) {
+        dropdown.style.display = 'none';
+      }
+    }
+
+    // Escape HTML
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    // Wait for Supabase to initialize before loading recipients
+    async function waitForSupabase(maxWait = 5000) {
+      const startTime = Date.now();
+      while (!window.supabaseClient && (Date.now() - startTime) < maxWait) {
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      if (window.supabaseClient) {
+        console.log('✅ Supabase client ready');
+        return true;
+      } else {
+        console.warn('⚠️ Supabase client not available after waiting');
+        return false;
+      }
+    }
+
+    // Initialize page
+    window.addEventListener('load', async function() {
+      // Wait for Supabase to be ready (like dashboard does)
+      await waitForSupabase();
+      await loadRecipients();
+      
+      // Show task due date field when task type is selected
+      const messageTypeSelect = document.getElementById('message-type');
+      if (messageTypeSelect) {
+        messageTypeSelect.addEventListener('change', function() {
+          const taskGroup = document.getElementById('task-due-date-group');
+          if (taskGroup) {
+            taskGroup.style.display = this.value === 'task' ? 'block' : 'none';
+          }
+        });
+      }
+
+      // Recipient type change handler
+      const recipientTypeSelect = document.getElementById('recipient-type');
+      if (recipientTypeSelect) {
+        recipientTypeSelect.addEventListener('change', switchRecipientType);
+      }
+
+      // Search input handlers - show dropdown immediately on focus/click, debounce on input
+      const searchInput = document.getElementById('recipient-search-input');
+      let dropdownTimeout = null;
+      let isDropdownVisible = false;
+      
+      if (searchInput) {
+        const showDropdownDebounced = () => {
+          clearTimeout(dropdownTimeout);
+          dropdownTimeout = setTimeout(() => {
+            showRecipientDropdown();
+            isDropdownVisible = true;
+          }, 150); // Small delay for input to prevent excessive calls
+        };
+        
+        const showDropdownImmediate = () => {
+          clearTimeout(dropdownTimeout);
+          showRecipientDropdown();
+          isDropdownVisible = true;
+        };
+        
+        searchInput.addEventListener('focus', showDropdownImmediate);
+        searchInput.addEventListener('click', showDropdownImmediate);
+        searchInput.addEventListener('input', showDropdownDebounced);
+      }
+
+      // Close dropdown when clicking outside
+      document.addEventListener('click', function(e) {
+        const dropdown = document.getElementById('recipient-dropdown');
+        const searchContainer = document.querySelector('.recipient-search-container');
+        const searchInput = document.getElementById('recipient-search-input');
+        
+        // Don't close if clicking on search input or dropdown items
+        if (searchContainer && searchContainer.contains(e.target)) {
+          return;
+        }
+        
+        if (dropdown) {
+          dropdown.style.display = 'none';
+          isDropdownVisible = false;
+        }
+      });
+
+      // Handle form submission
+      const form = document.getElementById('compose-form');
+      if (form) {
+        form.addEventListener('submit', async function(e) {
+          e.preventDefault();
+          
+          const errorDiv = document.getElementById('error-message');
+          const successDiv = document.getElementById('success-message');
+          
+          // Hide previous messages
+          if (errorDiv) errorDiv.style.display = 'none';
+          if (successDiv) successDiv.style.display = 'none';
+          
+          const recipientId = document.getElementById('message-recipient').value;
+          if (!recipientId) {
+            if (errorDiv) {
+              errorDiv.textContent = 'Please select a recipient';
+              errorDiv.style.display = 'block';
+            }
+            return;
+          }
+          
+          const messageData = {
+            recipientId: recipientId,
+            subject: document.getElementById('subject').value,
+            body: document.getElementById('body').value,
+            messageType: document.getElementById('message-type').value,
+            priority: document.getElementById('priority').value
+          };
+          
+          const taskDueDate = document.getElementById('task-due-date').value;
+          if (taskDueDate && messageData.messageType === 'task') {
+            messageData.taskDueDate = taskDueDate;
+          }
+          
+          try {
+            if (typeof window.sendMessage === 'function') {
+              await window.sendMessage(messageData);
+              
+              if (successDiv) {
+                successDiv.textContent = 'Message sent successfully!';
+                successDiv.style.display = 'block';
+              }
+              
+              // Redirect after 1 second
+              setTimeout(() => {
+                window.location.href = 'messages.html';
+              }, 1000);
+            } else {
+              throw new Error('sendMessage function not available');
+            }
+          } catch (error) {
+            console.error('Error sending message:', error);
+            if (errorDiv) {
+              errorDiv.textContent = 'Error sending message: ' + (error.message || 'Unknown error');
+              errorDiv.style.display = 'block';
+            }
+          }
+        });
+      }
+
+      // Check if we're replying to a message (from URL params)
+      const urlParams = new URLSearchParams(window.location.search);
+      const replyTo = urlParams.get('replyTo');
+      const replySubject = urlParams.get('subject');
+      const replyRecipientId = urlParams.get('recipientId');
+      const replyRecipientType = urlParams.get('recipientType');
+      
+      if (replyTo || replySubject) {
+        if (replySubject) {
+          document.getElementById('subject').value = 'Re: ' + replySubject;
+        }
+        if (replyRecipientId && replyRecipientType) {
+          document.getElementById('recipient-type').value = replyRecipientType;
+          switchRecipientType();
+          // Find and select the recipient
+          const recipients = replyRecipientType === 'staff' ? allStaff : allPatients;
+          const recipient = recipients.find(r => r.id === replyRecipientId);
+          if (recipient) {
+            selectRecipient(recipient);
+          }
+        }
+      }
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,786 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Patient Portal Access</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #008751;
+      margin-bottom: 20px;
+    }
+    .info {
+      background: #e8f5e9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #008751;
+    }
+    .search-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 6px;
+    }
+    .search-section input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 16px;
+      margin-bottom: 15px;
+    }
+    .search-section input:focus {
+      outline: none;
+      border-color: #008751;
+    }
+    .patient-results {
+      margin-top: 20px;
+    }
+    .patient-card {
+      background: white;
+      border: 2px solid #e0e0e0;
+      border-radius: 6px;
+      padding: 15px;
+      margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .patient-card.has-portal {
+      border-color: #28a745;
+      background: #f0f9f0;
+    }
+    .patient-info {
+      flex: 1;
+    }
+    .patient-info h3 {
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+    .patient-info p {
+      margin: 5px 0;
+      color: #666;
+      font-size: 14px;
+    }
+    .patient-actions {
+      display: flex;
+      gap: 10px;
+    }
+    button {
+      background: #008751;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    button:hover {
+      background: #006B3F;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    button.secondary {
+      background: #6c757d;
+    }
+    button.secondary:hover {
+      background: #5a6268;
+    }
+    .credentials-box {
+      background: #fff3cd;
+      padding: 20px;
+      border-radius: 6px;
+      margin-top: 20px;
+      border: 2px solid #ffc107;
+      display: none;
+    }
+    .credentials-box h3 {
+      margin-top: 0;
+      color: #856404;
+    }
+    .credentials-box .credential-item {
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+    }
+    .credentials-box .credential-item label {
+      font-weight: 600;
+      color: #856404;
+      display: block;
+      margin-bottom: 5px;
+    }
+    .credentials-box .credential-item code {
+      background: #f5f5f5;
+      padding: 8px 12px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 16px;
+      display: block;
+      word-break: break-all;
+    }
+    .copy-btn {
+      background: #28a745;
+      margin-top: 10px;
+    }
+    .copy-btn:hover {
+      background: #218838;
+    }
+    .log {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+      display: none;
+    }
+    .success { color: #008751; }
+    .error { color: #d32f2f; }
+    .info-text { color: #1976d2; }
+    .warning { color: #ff8800; }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .status-badge.has-portal {
+      background: #28a745;
+      color: white;
+    }
+    .status-badge.no-portal {
+      background: #6c757d;
+      color: white;
+    }
+    .back-link {
+      display: inline-block;
+      margin-bottom: 20px;
+      color: #008751;
+      text-decoration: none;
+      font-weight: 600;
+    }
+    .back-link:hover {
+      text-decoration: underline;
+    }
+  </style>
+</head>
+<body>
+  <a href="dashboard" class="back-link">← Back to Dashboard</a>
+  
+  <div class="container">
+    <h1>Setup Patient Portal Access</h1>
+    
+    <div class="info">
+      <strong>Purpose:</strong> Create patient portal login credentials for your patients.
+      <br><br>
+      <strong>What this does:</strong>
+      <ul>
+        <li>Searches for patients by name or patient ID</li>
+        <li>Shows which patients already have portal access</li>
+        <li>Creates portal login credentials (username & temporary password)</li>
+        <li>Generates credentials that you can send to patients via email or SMS</li>
+        <li>Patients will be required to change password on first login</li>
+      </ul>
+      <strong>Duplicate records:</strong> If the same person appears in multiple patient records, we show one consolidated card. We prefer the record that already has portal access, or the lowest patient ID. Use <strong>View in Patient Details</strong> to verify you have the correct record before creating portal access.
+    </div>
+
+    <div class="search-section">
+      <h2>Search for Patient</h2>
+      <input 
+        type="text" 
+        id="patient-search" 
+        placeholder="Search by patient name or patient ID (e.g., MEC0006)..."
+        onkeyup="handleSearchInput(event)"
+      >
+      <div id="patient-results" class="patient-results"></div>
+    </div>
+
+    <div id="credentials-box" class="credentials-box">
+      <h3>Patient Portal Credentials Created!</h3>
+      <div class="credential-item">
+        <label>Username:</label>
+        <code id="cred-username"></code>
+      </div>
+      <div class="credential-item">
+        <label>Temporary Password:</label>
+        <code id="cred-password"></code>
+      </div>
+      <div class="info" style="margin-top: 15px;">
+        <strong>Important:</strong> 
+        <ul style="margin: 10px 0;">
+          <li>Patient will be prompted to change password on first login</li>
+          <li>Send these credentials to the patient via email or SMS</li>
+          <li>Store securely - credentials will not be shown again</li>
+        </ul>
+      </div>
+      <button class="copy-btn" onclick="copyCredentials()">Copy Credentials</button>
+    </div>
+
+    <div id="log" class="log"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  
+  <script>
+    // Check authentication - must be staff (not patient)
+    window.addEventListener('load', function() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.username || !user.role) {
+        alert('Please log in as staff to access this page.');
+        window.location.href = '/login';
+        return;
+      }
+      if (user.role === 'Patient') {
+        alert('This page is for staff only. Patients should use the patient portal.');
+        window.location.href = '/patient-dashboard';
+        return;
+      }
+    });
+
+    let searchTimeout;
+    let allPatientsWithPortalStatus = [];
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      logDiv.style.display = 'block';
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'error' ? 'error' : 
+                       type === 'success' ? 'success' : 
+                       type === 'warning' ? 'warning' : 'info-text';
+      logDiv.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(`[${timestamp}] ${message}`);
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+      document.getElementById('log').style.display = 'none';
+    }
+
+    async function handleSearchInput(event) {
+      if (event.key === 'Enter') {
+        await searchPatients();
+        return;
+      }
+
+      // Debounce search
+      clearTimeout(searchTimeout);
+      const searchTerm = event.target.value.trim();
+      
+      if (searchTerm.length < 2) {
+        document.getElementById('patient-results').innerHTML = '';
+        allPatientsWithPortalStatus = [];
+        return;
+      }
+
+      searchTimeout = setTimeout(async () => {
+        await searchPatients();
+      }, 500);
+    }
+
+    async function searchPatients() {
+      const searchTerm = document.getElementById('patient-search').value.trim();
+      
+      if (!searchTerm) {
+        document.getElementById('patient-results').innerHTML = '';
+        return;
+      }
+
+      if (!window.supabaseClient) {
+        log('❌ Supabase client not initialized', 'error');
+        return;
+      }
+
+      try {
+        log(`🔍 Searching for patients: "${searchTerm}"...`, 'info');
+        
+        // Get current user's organization
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const orgId = user.organizationId || user.organization_id || user.org;
+
+        // Search patients
+        let query = window.supabaseClient
+          .from('patients')
+          .select('*')
+          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,patient_id.ilike.%${searchTerm}%`)
+          .limit(50);
+
+        if (orgId && orgId.includes('-')) {
+          // Only filter by org if it's a UUID (not a name)
+          query = query.eq('organization_id', orgId);
+        }
+
+        const { data: patients, error } = await query;
+
+        if (error) {
+          log(`❌ Error searching patients: ${error.message}`, 'error');
+          return;
+        }
+
+        if (!patients || patients.length === 0) {
+          document.getElementById('patient-results').innerHTML = 
+            '<div class="info">No patients found matching your search.</div>';
+          return;
+        }
+
+        log(`✅ Found ${patients.length} patient(s)`, 'success');
+
+        // Check which patients have portal access
+        await loadPortalStatus(patients);
+        
+        // Deduplicate: same person (name + DOB) can exist as multiple records (e.g. MEC0006, MEC0028, MEC0032)
+        const deduplicated = deduplicatePatients(allPatientsWithPortalStatus, searchTerm);
+        if (deduplicated.length < allPatientsWithPortalStatus.length) {
+          log(`ℹ️ Consolidated ${allPatientsWithPortalStatus.length - deduplicated.length} duplicate record(s) – same person, different IDs`, 'info');
+        }
+        displayPatients(deduplicated);
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error('Search error:', error);
+      }
+    }
+
+    /**
+     * Deduplicate patients: same person (name + DOB) may exist as multiple DB records.
+     * When searching by name, collapse to one per unique person; when searching by patient ID, skip dedup.
+     */
+    function deduplicatePatients(patients, searchTerm) {
+      const looksLikePatientId = /^[A-Z]{2,5}[-]?\d{2,8}[A-Z0-9]*$/i.test((searchTerm || '').trim());
+      if (looksLikePatientId) return patients;
+
+      const normalizeDob = (d) => {
+        if (!d) return '';
+        const t = typeof d === 'string' ? d : (d.toISOString ? d.toISOString() : String(d));
+        const m = t.match(/(\d{4})-(\d{2})-(\d{2})/);
+        return m ? m[0] : t.split('T')[0] || '';
+      };
+
+      const getKey = (p) => {
+        const first = (p.first_name || '').toLowerCase().trim();
+        const last = (p.last_name || '').toLowerCase().trim();
+        const dob = normalizeDob(p.date_of_birth);
+        return `${first}|${last}|${dob}`;
+      };
+
+      const groups = new Map();
+      for (const p of patients) {
+        const key = getKey(p);
+        if (!groups.has(key)) groups.set(key, []);
+        groups.get(key).push(p);
+      }
+
+      const result = [];
+      for (const group of groups.values()) {
+        if (group.length === 1) {
+          result.push(group[0]);
+          continue;
+        }
+        group.sort((a, b) => {
+          const aHas = (a.portal && a.portal.hasPortal) ? 1 : 0;
+          const bHas = (b.portal && b.portal.hasPortal) ? 1 : 0;
+          if (aHas !== bHas) return bHas - aHas;
+          return (a.patient_id || '').localeCompare(b.patient_id || '');
+        });
+        const canonical = { ...group[0], duplicateIds: group.slice(1).map(p => p.patient_id).filter(Boolean) };
+        result.push(canonical);
+      }
+      return result;
+    }
+
+    async function loadPortalStatus(patients) {
+      if (!window.supabaseClient) return;
+
+      try {
+        // Get all patient IDs
+        const patientIds = patients.map(p => p.id);
+
+        // Check which ones have portal access
+        const { data: usersWithPortal, error } = await window.supabaseClient
+          .from('users')
+          .select('patient_id, username, password_reset_required')
+          .in('patient_id', patientIds)
+          .eq('role', 'Patient');
+
+        if (error && error.code !== 'PGRST116') {
+          log(`⚠️ Error checking portal status: ${error.message}`, 'warning');
+        }
+
+        const portalMap = new Map();
+        if (usersWithPortal) {
+          usersWithPortal.forEach(user => {
+            portalMap.set(user.patient_id, {
+              hasPortal: true,
+              username: user.username,
+              passwordResetRequired: user.password_reset_required
+            });
+          });
+        }
+
+        // Combine patient data with portal status
+        allPatientsWithPortalStatus = patients.map(patient => ({
+          ...patient,
+          portal: portalMap.get(patient.id) || { hasPortal: false }
+        }));
+
+      } catch (error) {
+        log(`⚠️ Error loading portal status: ${error.message}`, 'warning');
+        // Continue with patient data even if portal status fails
+        allPatientsWithPortalStatus = patients.map(patient => ({
+          ...patient,
+          portal: { hasPortal: false }
+        }));
+      }
+    }
+
+    function displayPatients(patients) {
+      const resultsDiv = document.getElementById('patient-results');
+      
+      if (patients.length === 0) {
+        resultsDiv.innerHTML = '<div class="info">No patients found.</div>';
+        return;
+      }
+
+      resultsDiv.innerHTML = patients.map(patient => {
+        const portalStatus = patient.portal.hasPortal
+          ? `<span class="status-badge has-portal">Has Portal Access</span>`
+          : `<span class="status-badge no-portal">No Portal Access</span>`;
+        
+        const actionButton = patient.portal.hasPortal
+          ? `<button onclick="resetPatientPortal('${patient.id}', '${patient.first_name}', '${patient.last_name}')"><i class="fa-solid fa-arrows-rotate" style="margin-right: 6px;"></i> Reset Portal Access</button>`
+          : `<button onclick="setupPatientPortal('${patient.id}', '${patient.first_name}', '${patient.last_name}')"><i class="fa-solid fa-user-plus" style="margin-right: 6px;"></i> Create Portal Access</button>`;
+
+        const duplicateNote = (patient.duplicateIds && patient.duplicateIds.length > 0)
+          ? `<p class="duplicate-warning"><strong>⚠️ Duplicate records:</strong> Same person also on file as ${patient.duplicateIds.join(', ')}. Consider merging in patient management.</p>`
+          : '';
+        const viewPatientId = patient.patient_id || patient.id;
+        const viewLink = viewPatientId
+          ? `<a href="patient-details?patientId=${encodeURIComponent(viewPatientId)}" target="_blank" rel="noopener" style="color:#008751;font-size:13px;margin-left:6px;">View in Patient Details ↗</a>`
+          : '';
+
+        return `
+          <div class="patient-card ${patient.portal.hasPortal ? 'has-portal' : ''}">
+            <div class="patient-info">
+              <h3>${patient.first_name} ${patient.last_name} ${portalStatus}</h3>
+              <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient || patient.patient_id || patient.id || '') : (patient.patient_id || 'N/A')} ${viewLink}</p>
+              ${duplicateNote}
+              <p><strong>Date of Birth:</strong> ${patient.date_of_birth ? new Date(patient.date_of_birth).toLocaleDateString() : 'N/A'}</p>
+              ${patient.portal.hasPortal ? `<p><strong>Username:</strong> ${patient.portal.username}</p>` : ''}
+            </div>
+            <div class="patient-actions">
+              ${actionButton}
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function generateUsername(firstName, lastName) {
+      const base = `${firstName}.${lastName}`.toLowerCase().replace(/\s+/g, '');
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      return `${base}${random}`;
+    }
+
+    function generatePassword() {
+      const length = 12;
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+      let password = '';
+      password += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)];
+      password += 'abcdefghijkmnpqrstuvwxyz'[Math.floor(Math.random() * 24)];
+      password += '23456789'[Math.floor(Math.random() * 8)];
+      for (let i = password.length; i < length; i++) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+      }
+      return password.split('').sort(() => Math.random() - 0.5).join('');
+    }
+
+    async function setupPatientPortal(patientId, firstName, lastName) {
+      clearLog();
+      log(`🔍 Setting up portal access for ${firstName} ${lastName}...`, 'info');
+
+      try {
+        // Get patient data
+        const { data: patient, error: patientError } = await window.supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('id', patientId)
+          .single();
+
+        if (patientError || !patient) {
+          throw new Error(`Patient not found: ${patientError?.message || 'Unknown error'}`);
+        }
+
+        log(`✅ Found patient: ${patient.first_name} ${patient.last_name} (${patient.patient_id})`, 'success');
+
+        // Generate credentials
+        const username = generateUsername(patient.first_name, patient.last_name);
+        const tempPassword = generatePassword();
+        
+        log(`ℹ️ Generated username: ${username}`, 'info');
+        log(`ℹ️ Generated password: ${tempPassword}`, 'info');
+
+        // Create Supabase Auth user
+        log(`ℹ️ Creating Supabase Auth user...`, 'info');
+        
+        const email = `${username}@patient.ehrapp.local`;
+        
+        const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
+          email: email,
+          password: tempPassword,
+          options: {
+            data: {
+              username: username,
+              first_name: patient.first_name,
+              last_name: patient.last_name,
+              role: 'Patient'
+            }
+          }
+        });
+
+        if (authError) {
+          if (authError.message.includes('already registered')) {
+            log('⚠️ Auth user already exists, attempting to get user...', 'warning');
+            const { data: signInData, error: signInError } = await window.supabaseClient.auth.signInWithPassword({
+              email: email,
+              password: tempPassword
+            });
+
+            if (signInError) {
+              throw new Error(`Auth user exists but password doesn't match. Please reset password manually.`);
+            }
+
+            authData.user = signInData.user;
+            log('✅ Using existing Auth user', 'success');
+          } else {
+            throw new Error(`Failed to create Auth user: ${authError.message}`);
+          }
+        } else {
+          log('✅ Auth user created successfully', 'success');
+        }
+
+        const authUserId = authData.user.id;
+
+        // Create user profile
+        log(`ℹ️ Creating user profile...`, 'info');
+        
+        const userProfileData = {
+          id: authUserId,
+          auth_user_id: authUserId,
+          username: username,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          role: 'Patient',
+          organization_id: patient.organization_id,
+          patient_id: patient.id,
+          password_reset_required: true,
+          temp_password: tempPassword,
+          gender: patient.gender || 'Not Specified'
+        };
+        
+        const { data: userProfile, error: profileError } = await window.supabaseClient
+          .from('users')
+          .insert({
+            ...userProfileData,
+            email: email
+          })
+          .select()
+          .single();
+
+        if (profileError) {
+          if (profileError.message.includes('email') || profileError.message.includes('schema cache')) {
+            log('⚠️ Email column issue, trying without email...', 'warning');
+            
+            const { data: userProfileRetry, error: retryError } = await window.supabaseClient
+              .from('users')
+              .insert(userProfileData)
+              .select()
+              .single();
+              
+            if (retryError) {
+              if (retryError.code === '23505') {
+                // Update existing
+                log('⚠️ User profile exists, updating...', 'warning');
+                const { data: updatedProfile, error: updateError } = await window.supabaseClient
+                  .from('users')
+                  .update({
+                    patient_id: patient.id,
+                    password_reset_required: true,
+                    temp_password: tempPassword,
+                    auth_user_id: authUserId
+                  })
+                  .eq('id', authUserId)
+                  .select()
+                  .single();
+
+                if (updateError) {
+                  throw new Error(`Failed to update user profile: ${updateError.message}`);
+                }
+
+                log('✅ User profile updated successfully', 'success');
+              } else {
+                throw new Error(`Failed to create user profile: ${retryError.message}`);
+              }
+            } else {
+              log('✅ User profile created (without email)', 'success');
+            }
+          } else if (profileError.code === '23505') {
+            // Update existing
+            log('⚠️ User profile exists, updating...', 'warning');
+            const { data: updatedProfile, error: updateError } = await window.supabaseClient
+              .from('users')
+              .update({
+                patient_id: patient.id,
+                password_reset_required: true,
+                temp_password: tempPassword,
+                auth_user_id: authUserId
+              })
+              .eq('id', authUserId)
+              .select()
+              .single();
+
+            if (updateError) {
+              throw new Error(`Failed to update user profile: ${updateError.message}`);
+            }
+
+            log('✅ User profile updated successfully', 'success');
+          } else {
+            throw new Error(`Failed to create user profile: ${profileError.message}`);
+          }
+        } else {
+          log('✅ User profile created successfully', 'success');
+        }
+
+        // Display credentials
+        displayCredentials(username, tempPassword);
+        log('✅ Portal access setup complete!', 'success');
+        log('ℹ️ Send these credentials to the patient via email or SMS.', 'info');
+
+        // Refresh patient list
+        await searchPatients();
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error('Setup error:', error);
+      }
+    }
+
+    async function resetPatientPortal(patientId, firstName, lastName) {
+      if (!confirm(`Reset portal access for ${firstName} ${lastName}? This will generate new credentials.`)) {
+        return;
+      }
+
+      clearLog();
+      log(`ℹ️ Resetting portal access for ${firstName} ${lastName}...`, 'info');
+
+      try {
+        // Get existing user
+        const { data: existingUser, error: userError } = await window.supabaseClient
+          .from('users')
+          .select('*')
+          .eq('patient_id', patientId)
+          .eq('role', 'Patient')
+          .single();
+
+        if (userError || !existingUser) {
+          throw new Error('Patient portal account not found. Please create new access instead.');
+        }
+
+        // Generate new credentials
+        const newPassword = generatePassword();
+        const authUserId = existingUser.auth_user_id || existingUser.id;
+
+        // Update password in Supabase Auth
+        if (authUserId) {
+          log('ℹ️ Updating password in Supabase Auth...', 'info');
+          // Note: We can't directly update password via Supabase client without admin privileges
+          // So we'll just update the temp_password in users table
+          // The patient will need to use password reset or contact support
+        }
+
+        // Update user profile
+        const { error: updateError } = await window.supabaseClient
+          .from('users')
+          .update({
+            password_reset_required: true,
+            temp_password: newPassword
+          })
+          .eq('id', existingUser.id);
+
+        if (updateError) {
+          throw new Error(`Failed to reset portal: ${updateError.message}`);
+        }
+
+        displayCredentials(existingUser.username, newPassword);
+        log('✅ Portal access reset successfully!', 'success');
+        log('ℹ️ Send these new credentials to the patient.', 'info');
+        log('⚠️ Patient will need to reset password via "Forgot Password" or contact support.', 'warning');
+
+        // Refresh patient list
+        await searchPatients();
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error('Reset error:', error);
+      }
+    }
+
+    function displayCredentials(username, password) {
+      document.getElementById('cred-username').textContent = username;
+      document.getElementById('cred-password').textContent = password;
+      document.getElementById('credentials-box').style.display = 'block';
+      
+      // Scroll to credentials
+      document.getElementById('credentials-box').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+    }
+
+    function copyCredentials() {
+      const username = document.getElementById('cred-username').textContent;
+      const password = document.getElementById('cred-password').textContent;
+      
+      const text = `Patient Portal Login Credentials\n\nUsername: ${username}\nPassword: ${password}\n\nℹ️ Patient will be required to change password on first login.\n\nLogin URL: ${window.location.origin}/patient-login`;
+      
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Credentials copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        alert('Failed to copy. Please copy manually.');
+      });
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

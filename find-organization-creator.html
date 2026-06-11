@@ -1,0 +1,567 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Find Organization Creator</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        #log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            border-radius: 6px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-info { color: #333; }
+        .log-success { color: #28a745; font-weight: bold; }
+        .log-error { color: #dc3545; font-weight: bold; }
+        .log-warning { color: #ffc107; font-weight: bold; }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        input {
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 14px;
+            width: 400px;
+            margin: 10px 5px;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Find Organization Creator</h1>
+        
+        <div class="info-box">
+            <strong>Purpose:</strong> Find who actually created an organization by checking:
+            <ul>
+                <li>Audit logs for organization creation events</li>
+                <li>Users created around the organization creation time</li>
+                <li>Supabase audit_logs table</li>
+                <li>Platform audit logs</li>
+            </ul>
+        </div>
+
+        <div>
+            <label for="orgId">Organization ID:</label>
+            <input type="text" id="orgId" value="75b55411-f595-4ac4-9c5a-746702fd2792" placeholder="Enter organization ID">
+            <button onclick="findCreator()">🔍 Find Creator</button>
+            <button onclick="clearLog()" style="background: #6c757d;">🗑️ Clear Log</button>
+        </div>
+
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = `log-${type}`;
+            logDiv.innerHTML += `<div class="log-entry ${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                log('✅ Supabase client initialized', 'success');
+            }
+            return supabase;
+        }
+
+        async function findCreator() {
+            clearLog();
+            initSupabase();
+            
+            const orgId = document.getElementById('orgId').value.trim();
+            if (!orgId) {
+                log('❌ Please enter an organization ID', 'error');
+                return;
+            }
+            
+            log(`🔍 Finding creator for organization: ${orgId}`, 'info');
+            log('─'.repeat(60), 'info');
+            
+            try {
+                // Step 1: Get organization details
+                log('📋 Step 1: Getting organization details...', 'info');
+                const { data: org, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .eq('id', orgId)
+                    .maybeSingle();
+
+                if (orgError || !org) {
+                    log(`❌ Organization not found: ${orgError?.message || 'Unknown error'}`, 'error');
+                    return;
+                }
+
+                log(`✅ Found organization: ${org.name}`, 'success');
+                log(`   Created: ${org.created_at}`, 'info');
+                log(`   Country: ${org.country || 'N/A'}`, 'info');
+
+                const orgCreatedAt = new Date(org.created_at);
+                log(`   Created timestamp: ${orgCreatedAt.toISOString()}`, 'info');
+                
+                // Step 2: Check Supabase audit_logs table
+                log('', 'info');
+                log('📋 Step 2: Checking Supabase audit_logs table...', 'info');
+                
+                // Check for organization creation events around that time
+                const timeWindow = 60 * 60 * 1000; // 1 hour window
+                const startTime = new Date(orgCreatedAt.getTime() - timeWindow);
+                const endTime = new Date(orgCreatedAt.getTime() + timeWindow);
+                
+                const { data: auditLogs, error: auditError } = await supabase
+                    .from('audit_logs')
+                    .select('*')
+                    .or(`action.ilike.%organization%,action.ilike.%register%,action.ilike.%create%`)
+                    .gte('timestamp', startTime.toISOString())
+                    .lte('timestamp', endTime.toISOString())
+                    .order('timestamp', { ascending: true });
+
+                if (auditError) {
+                    log(`   ⚠️ Error querying audit_logs: ${auditError.message}`, 'warning');
+                    log(`   (Table may not exist or have different structure)`, 'info');
+                } else if (auditLogs && auditLogs.length > 0) {
+                    log(`   ✅ Found ${auditLogs.length} audit log entry/entries:`, 'success');
+                    auditLogs.forEach((entry, idx) => {
+                        log(`   ${idx + 1}. Action: ${entry.action}`, 'info');
+                        log(`      User: ${entry.username || entry.user || 'Unknown'}`, 'info');
+                        log(`      Organization: ${entry.organization_name || entry.organization || 'Unknown'}`, 'info');
+                        log(`      Timestamp: ${entry.timestamp || entry.created_at}`, 'info');
+                        if (entry.details) {
+                            log(`      Details: ${JSON.stringify(entry.details, null, 2)}`, 'info');
+                        }
+                    });
+                    
+                    // Check if any match our organization
+                    const matchingLogs = auditLogs.filter(entry => 
+                        entry.organization_id === orgId ||
+                        entry.organization_name === org.name ||
+                        (entry.details && JSON.stringify(entry.details).includes(orgId))
+                    );
+                    
+                    if (matchingLogs.length > 0) {
+                        log(`   `, 'info');
+                        log(`   ✅ Found ${matchingLogs.length} log(s) matching this organization:`, 'success');
+                        matchingLogs.forEach(logEntry => {
+                            log(`   👤 Creator likely: ${logEntry.username || logEntry.user || 'Unknown'}`, 'success');
+                        });
+                    }
+                } else {
+                    log(`   ℹ️ No audit logs found in the time window`, 'info');
+                }
+
+                // Step 3: Check all users created around the same time (expanded search)
+                log('', 'info');
+                log('📋 Step 3: Checking users created around organization creation time...', 'info');
+                
+                // Expand search to same day (24 hours before and after)
+                const expandedStartTime = new Date(orgCreatedAt);
+                expandedStartTime.setDate(expandedStartTime.getDate() - 1);
+                expandedStartTime.setHours(0, 0, 0, 0);
+                const expandedEndTime = new Date(orgCreatedAt);
+                expandedEndTime.setDate(expandedEndTime.getDate() + 1);
+                expandedEndTime.setHours(23, 59, 59, 999);
+                
+                log(`   Narrow window (1 hour): ${startTime.toISOString()} to ${endTime.toISOString()}`, 'info');
+                log(`   Expanded window (same day): ${expandedStartTime.toISOString()} to ${expandedEndTime.toISOString()}`, 'info');
+                
+                // First try narrow window
+                let usersCreated = [];
+                const { data: usersNarrow, error: usersNarrowError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .gte('created_at', startTime.toISOString())
+                    .lte('created_at', endTime.toISOString())
+                    .order('created_at', { ascending: true });
+                
+                if (!usersNarrowError && usersNarrow) {
+                    usersCreated = usersNarrow;
+                }
+                
+                // If no users in narrow window, try expanded window
+                if (usersCreated.length === 0) {
+                    log(`   No users in narrow window, checking expanded window...`, 'info');
+                    const { data: usersExpanded, error: usersExpandedError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .gte('created_at', expandedStartTime.toISOString())
+                        .lte('created_at', expandedEndTime.toISOString())
+                        .order('created_at', { ascending: true });
+                    
+                    if (!usersExpandedError && usersExpanded) {
+                        usersCreated = usersExpanded;
+                    }
+                }
+                
+                // Also check ALL orphaned users to see if any match the date
+                log(`   Checking ALL orphaned users (organization_id IS NULL) for date match...`, 'info');
+                const { data: allOrphanedUsers, error: orphanError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .is('organization_id', null)
+                    .order('created_at', { ascending: false });
+                
+                if (!orphanError && allOrphanedUsers) {
+                    log(`   Found ${allOrphanedUsers.length} total orphaned users in database`, 'info');
+                    
+                    const orgDate = new Date(orgCreatedAt);
+                    const orgDateStr = orgDate.toISOString().split('T')[0]; // YYYY-MM-DD
+                    
+                    // Filter for same day AND verify they're truly orphaned
+                    const sameDayOrphans = allOrphanedUsers.filter(user => {
+                        if (!user.created_at) return false;
+                        if (user.organization_id) return false; // Double-check they're orphaned
+                        const userDateStr = user.created_at.split('T')[0];
+                        return userDateStr === orgDateStr;
+                    });
+                    
+                    if (sameDayOrphans.length > 0) {
+                        log(`   ✅ Found ${sameDayOrphans.length} ORPHANED user(s) created on the same day (${orgDateStr}):`, 'success');
+                        sameDayOrphans.forEach((user, idx) => {
+                            const userCreatedAt = new Date(user.created_at);
+                            const timeDiff = Math.abs(userCreatedAt - orgCreatedAt);
+                            const minutesDiff = Math.round(timeDiff / (1000 * 60));
+                            const hoursDiff = Math.round(timeDiff / (1000 * 60 * 60));
+                            
+                            log(`   ${idx + 1}. ${user.username} (${user.first_name || ''} ${user.last_name || ''})`, 'success');
+                            log(`      Email: ${user.email || 'N/A'}`, 'info');
+                            log(`      Role: ${user.role || 'N/A'}`, 'info');
+                            log(`      Created: ${user.created_at}`, 'info');
+                            log(`      Organization ID: ${user.organization_id || 'NULL (orphaned)'}`, 'success');
+                            log(`      Time difference: ${minutesDiff} minutes (${hoursDiff} hours) ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org creation`, 'info');
+                            
+                            if (minutesDiff < 60) {
+                                log(`      ⭐⭐ VERY LIKELY CREATOR (created ${minutesDiff} min ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org, ORPHANED)`, 'success');
+                            } else if (hoursDiff < 6) {
+                                log(`      ⭐ POSSIBLE CREATOR (created ${hoursDiff} hours ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org, ORPHANED)`, 'success');
+                            }
+                        });
+                        
+                        // Add to usersCreated for display below (only orphaned ones)
+                        usersCreated = [...usersCreated, ...sameDayOrphans];
+                    } else {
+                        log(`   ℹ️ No orphaned users found created on ${orgDateStr}`, 'info');
+                        log(`   Showing all orphaned users for reference:`, 'info');
+                        allOrphanedUsers.slice(0, 10).forEach((user, idx) => {
+                            log(`   ${idx + 1}. ${user.username} - Created: ${user.created_at}`, 'info');
+                        });
+                    }
+                }
+
+                if (usersCreated && usersCreated.length > 0) {
+                    // Filter out users already linked to OTHER organizations
+                    const orphanedOnly = usersCreated.filter(u => !u.organization_id);
+                    const linkedToOthers = usersCreated.filter(u => u.organization_id && u.organization_id !== orgId);
+                    
+                    if (orphanedOnly.length > 0) {
+                        log(`   ✅ Found ${orphanedOnly.length} ORPHANED user(s) created in the time window:`, 'success');
+                        orphanedOnly.forEach((user, idx) => {
+                            const userCreatedAt = new Date(user.created_at);
+                            const timeDiff = Math.abs(userCreatedAt - orgCreatedAt);
+                            const minutesDiff = Math.round(timeDiff / (1000 * 60));
+                            const hoursDiff = Math.round(timeDiff / (1000 * 60 * 60));
+                            
+                            log(`   ${idx + 1}. ${user.username} (${user.first_name || ''} ${user.last_name || ''})`, 
+                                minutesDiff < 60 ? 'success' : 'info');
+                            log(`      Email: ${user.email || 'N/A'}`, 'info');
+                            log(`      Role: ${user.role || 'N/A'}`, 'info');
+                            log(`      Created: ${user.created_at}`, 'info');
+                            log(`      Time difference: ${minutesDiff} minutes (${hoursDiff} hours) ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org`, 'info');
+                            log(`      Organization ID: NULL (orphaned) ✅`, 'success');
+                            
+                            if (minutesDiff < 60) {
+                                log(`      ⭐⭐ VERY LIKELY CREATOR (created ${minutesDiff} min ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org, ORPHANED)`, 'success');
+                            } else if (hoursDiff < 6) {
+                                log(`      ⭐ POSSIBLE CREATOR (created ${hoursDiff} hours ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org, ORPHANED)`, 'success');
+                            }
+                            log(`      `, 'info');
+                        });
+                    }
+                    
+                    if (linkedToOthers.length > 0) {
+                        log(`   `, 'info');
+                        log(`   ⚠️ Found ${linkedToOthers.length} user(s) created on same day but already linked to OTHER organizations:`, 'warning');
+                        linkedToOthers.forEach((user, idx) => {
+                            log(`   ${idx + 1}. ${user.username} - Linked to org: ${user.organization_id}`, 'warning');
+                            log(`      (This user created a DIFFERENT organization, not this one)`, 'warning');
+                        });
+                    }
+                } else {
+                    log(`   ℹ️ No users found created in the time window`, 'info');
+                    log(`   ⚠️ The creator may have been created BEFORE the organization was synced to Supabase`, 'warning');
+                    log(`   ⚠️ Or the creator may not exist in the database yet`, 'warning');
+                }
+
+                // Step 4: Check users with organization_id matching this org
+                log('', 'info');
+                log('📋 Step 4: Checking users currently linked to this organization...', 'info');
+                
+                const { data: linkedUsers, error: linkedError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('organization_id', orgId)
+                    .order('created_at', { ascending: true });
+
+                if (linkedError) {
+                    log(`   ❌ Error querying linked users: ${linkedError.message}`, 'error');
+                } else if (linkedUsers && linkedUsers.length > 0) {
+                    log(`   Found ${linkedUsers.length} user(s) currently linked:`, 'info');
+                    linkedUsers.forEach((user, idx) => {
+                        const userCreatedAt = new Date(user.created_at);
+                        const orgCreatedAtDate = new Date(org.created_at);
+                        const daysDiff = Math.round((orgCreatedAtDate - userCreatedAt) / (1000 * 60 * 60 * 24));
+                        
+                        log(`   ${idx + 1}. ${user.username} - Created: ${user.created_at}`, 
+                            daysDiff > 7 ? 'warning' : 'info');
+                        if (daysDiff > 7) {
+                            log(`      ⚠️ WARNING: This user was created ${daysDiff} days BEFORE the organization!`, 'warning');
+                            log(`      ⚠️ This is likely NOT the creator!`, 'warning');
+                        }
+                    });
+                } else {
+                    log(`   ℹ️ No users currently linked to this organization`, 'info');
+                }
+                
+                // Step 4.5: Unlink incorrect users
+                if (linkedUsers && linkedUsers.length > 0) {
+                    const incorrectUsers = linkedUsers.filter(user => {
+                        const userCreatedAt = new Date(user.created_at);
+                        const orgCreatedAtDate = new Date(org.created_at);
+                        const daysDiff = Math.round((orgCreatedAtDate - userCreatedAt) / (1000 * 60 * 60 * 24));
+                        return daysDiff > 7; // Created more than a week before org
+                    });
+                    
+                    if (incorrectUsers.length > 0) {
+                        log('', 'info');
+                        log('📋 Step 4.5: Unlinking incorrectly linked users...', 'warning');
+                        for (const wrongUser of incorrectUsers) {
+                            log(`   Unlinking ${wrongUser.username} (created ${Math.round((new Date(org.created_at) - new Date(wrongUser.created_at)) / (1000 * 60 * 60 * 24))} days before org)...`, 'warning');
+                            const { error: unlinkError } = await supabase
+                                .from('users')
+                                .update({ organization_id: null })
+                                .eq('id', wrongUser.id);
+                            
+                            if (!unlinkError) {
+                                log(`   ✅ Successfully unlinked ${wrongUser.username}`, 'success');
+                            } else {
+                                log(`   ❌ Failed to unlink ${wrongUser.username}: ${unlinkError.message}`, 'error');
+                            }
+                        }
+                    }
+                }
+
+                // Step 5: Check get_organizations_with_owner RPC
+                log('', 'info');
+                log('📋 Step 5: Checking get_organizations_with_owner RPC...', 'info');
+                
+                try {
+                    if (typeof window.secureSupabaseRpc === 'function') {
+                        const orgsResult = await window.secureSupabaseRpc('get_organizations_with_owner', {});
+                        let orgs = [];
+                        if (Array.isArray(orgsResult)) {
+                            orgs = orgsResult;
+                        } else if (orgsResult?.data && Array.isArray(orgsResult.data)) {
+                            orgs = orgsResult.data;
+                        }
+                        
+                        const thisOrg = orgs.find(o => o.id === orgId);
+                        if (thisOrg) {
+                            log(`   Owner information from RPC:`, 'info');
+                            log(`   Username: ${thisOrg.owner_username || 'NULL'}`, 
+                                thisOrg.owner_username ? 'success' : 'warning');
+                            log(`   Name: ${thisOrg.owner_first_name || ''} ${thisOrg.owner_last_name || ''}`, 'info');
+                            log(`   Email: ${thisOrg.owner_email || 'NULL'}`, 'info');
+                            log(`   Role: ${thisOrg.owner_role || 'NULL'}`, 'info');
+                            
+                            if (thisOrg.owner_username) {
+                                log(`   `, 'info');
+                                log(`   ✅ RPC indicates owner: ${thisOrg.owner_username}`, 'success');
+                            } else {
+                                log(`   ⚠️ RPC returned NULL owner (no users linked or wrong user linked)`, 'warning');
+                            }
+                        } else {
+                            log(`   ⚠️ Organization not found in RPC result`, 'warning');
+                        }
+                    } else {
+                        log(`   ⚠️ secureSupabaseRpc function not available`, 'warning');
+                    }
+                } catch (rpcError) {
+                    log(`   ⚠️ Error calling RPC: ${rpcError.message}`, 'warning');
+                }
+
+                // Step 6: Check ALL users created on Nov 29 (not just orphaned)
+                log('', 'info');
+                log('📋 Step 6: Checking ALL users created on Nov 29, 2025 (including linked ones)...', 'info');
+                
+                const nov29Start = new Date('2025-11-29T00:00:00.000Z');
+                const nov29End = new Date('2025-11-29T23:59:59.999Z');
+                
+                const { data: allNov29Users, error: nov29Error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .gte('created_at', nov29Start.toISOString())
+                    .lte('created_at', nov29End.toISOString())
+                    .order('created_at', { ascending: true });
+                
+                if (!nov29Error && allNov29Users && allNov29Users.length > 0) {
+                    log(`   Found ${allNov29Users.length} user(s) created on Nov 29, 2025:`, 'info');
+                    
+                    allNov29Users.forEach((user, idx) => {
+                        const userCreatedAt = new Date(user.created_at);
+                        const timeDiff = Math.abs(userCreatedAt - orgCreatedAt);
+                        const minutesDiff = Math.round(timeDiff / (1000 * 60));
+                        const hoursDiff = Math.round(timeDiff / (1000 * 60 * 60));
+                        
+                        const isOrphaned = !user.organization_id;
+                        const isThisOrg = user.organization_id === orgId;
+                        const isOtherOrg = user.organization_id && user.organization_id !== orgId;
+                        
+                        log(`   ${idx + 1}. ${user.username} (${user.first_name || ''} ${user.last_name || ''})`, 
+                            isOrphaned ? 'success' : isThisOrg ? 'success' : 'warning');
+                        log(`      Email: ${user.email || 'N/A'}`, 'info');
+                        log(`      Role: ${user.role || 'N/A'}`, 'info');
+                        log(`      Created: ${user.created_at}`, 'info');
+                        log(`      Time difference: ${minutesDiff} minutes (${hoursDiff} hours) ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org`, 'info');
+                        
+                        if (isOrphaned) {
+                            log(`      Organization ID: NULL (ORPHANED) ✅`, 'success');
+                            if (hoursDiff < 6) {
+                                log(`      ⭐⭐ LIKELY CREATOR (orphaned, created ${hoursDiff} hours ${userCreatedAt > orgCreatedAt ? 'after' : 'before'} org)`, 'success');
+                            }
+                        } else if (isThisOrg) {
+                            log(`      Organization ID: ${user.organization_id} (THIS ORG) ✅`, 'success');
+                            log(`      ✅ Already linked to this organization`, 'success');
+                        } else if (isOtherOrg) {
+                            log(`      Organization ID: ${user.organization_id} (OTHER ORG) ⚠️`, 'warning');
+                            log(`      ⚠️ Linked to a different organization`, 'warning');
+                        }
+                        log(`      `, 'info');
+                    });
+                } else {
+                    log(`   ℹ️ No users found created on Nov 29, 2025`, 'info');
+                }
+                
+                // Step 7: Check for users with email pattern matching organization
+                log('', 'info');
+                log('📋 Step 7: Checking for users with email patterns matching organization...', 'info');
+                
+                // Extract short org ID (first 8 chars without dashes)
+                const shortOrgId = orgId.replace(/-/g, '').substring(0, 8);
+                const emailPattern = `-${shortOrgId}@mediforge.app`;
+                
+                log(`   Looking for email pattern: *${emailPattern}`, 'info');
+                
+                const { data: patternUsers, error: patternError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .ilike('email', `%${emailPattern}%`)
+                    .order('created_at', { ascending: true });
+                
+                if (!patternError && patternUsers && patternUsers.length > 0) {
+                    log(`   ✅ Found ${patternUsers.length} user(s) with matching email pattern:`, 'success');
+                    patternUsers.forEach((user, idx) => {
+                        log(`   ${idx + 1}. ${user.username} - ${user.email}`, 'success');
+                        log(`      Created: ${user.created_at}`, 'info');
+                        log(`      Organization ID: ${user.organization_id || 'NULL (orphaned)'}`, 
+                            !user.organization_id ? 'success' : user.organization_id === orgId ? 'success' : 'warning');
+                        if (!user.organization_id) {
+                            log(`      ⭐⭐ VERY LIKELY CREATOR (email pattern matches, orphaned)`, 'success');
+                        }
+                    });
+                } else {
+                    log(`   ℹ️ No users found with email pattern ${emailPattern}`, 'info');
+                }
+
+                log('', 'info');
+                log('─'.repeat(60), 'info');
+                log('✅ Analysis complete!', 'success');
+                log('', 'info');
+                log('Summary:', 'info');
+                log('- No orphaned users found created on Nov 29, 2025', 'warning');
+                log('- The creator may not be in Supabase yet (created locally on tablet, not synced)', 'warning');
+                log('- OR the creator was created but immediately linked to a different organization', 'warning');
+                log('- OR there is a timezone mismatch (check users created on Nov 28 or Nov 30)', 'info');
+                log('', 'info');
+                log('Next steps:', 'info');
+                log('1. Check the tablet in Africa to see what username was used during registration', 'info');
+                log('2. Search for that username manually in Supabase users table', 'info');
+                log('3. Check if the user exists but with a different created_at date (timezone issue)', 'info');
+                log('4. The creator may need to be manually linked once identified', 'info');
+
+            } catch (error) {
+                log(`❌ Unexpected error: ${error.message}`, 'error');
+                log(`   Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        // Load secureSupabaseRpc if available
+        window.addEventListener('load', () => {
+            // Try to load the function from the page context
+            if (window.parent && window.parent.secureSupabaseRpc) {
+                window.secureSupabaseRpc = window.parent.secureSupabaseRpc;
+            }
+        });
+    </script>
+</body>
+</html>
+

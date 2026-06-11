@@ -1,0 +1,511 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Storage Usage Report</title>
+  <link rel="stylesheet" href="css/styles.css?v=217">
+  <style>
+    @media print {
+      .no-print {
+        display: none !important;
+      }
+      .print-break {
+        page-break-after: always;
+      }
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+    }
+    
+    .page-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .page-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 28px;
+    }
+    
+    .summary-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .summary-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      border-left: 4px solid #4CAF50;
+    }
+    
+    .summary-card.warning {
+      border-left-color: #ff9800;
+    }
+    
+    .summary-card.danger {
+      border-left-color: #f44336;
+    }
+    
+    .summary-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 16px;
+      color: #666;
+    }
+    
+    .summary-card .value {
+      font-size: 32px;
+      font-weight: bold;
+      color: #333;
+    }
+    
+    .summary-card .subtitle {
+      font-size: 12px;
+      color: #999;
+      margin-top: 5px;
+    }
+    
+    .storage-table {
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      overflow: hidden;
+      margin-bottom: 30px;
+    }
+    
+    .storage-table table {
+      width: 100%;
+      border-collapse: collapse;
+    }
+    
+    .storage-table th {
+      background: #f5f5f5;
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+    }
+    
+    .storage-table td {
+      padding: 12px 15px;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .storage-table tr:hover {
+      background: #f9f9f9;
+      cursor: pointer;
+    }
+    
+    .storage-table tr.item-row:hover {
+      background: #f0f7ff;
+    }
+    
+    .key-name {
+      font-family: monospace;
+      font-size: 13px;
+      color: #2196F3;
+      word-break: break-all;
+    }
+    
+    .size-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .size-small {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .size-medium {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    
+    .size-large {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+    }
+    
+    .item-details {
+      display: none;
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border-left: 4px solid #2196F3;
+    }
+    
+    .item-details.show {
+      display: block;
+    }
+    
+    .item-details pre {
+      background: white;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #999;
+    }
+    
+    .warning-box {
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      color: #856404;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="page-header">
+      <h1>💽 Storage Usage Report</h1>
+      <p style="margin: 0; opacity: 0.9;">Detailed analysis of browser localStorage usage</p>
+    </div>
+    
+    <div class="action-buttons no-print">
+      <button class="btn btn-primary" onclick="window.print()">🖨️ Print Report</button>
+      <button class="btn btn-secondary" onclick="window.location.href='dashboard'">← Back to Dashboard</button>
+      <button class="btn btn-secondary" onclick="refreshReport()">🔄 Refresh</button>
+    </div>
+    
+    <div id="summary-section"></div>
+    <div id="warning-section"></div>
+    <div id="storage-table-section"></div>
+  </div>
+  
+  <script src="js/backup.js?v=2"></script>
+  <script>
+    let currentUsage = null;
+    let expandedItems = new Set();
+    
+    function refreshReport() {
+      expandedItems.clear();
+      loadStorageReport();
+    }
+    
+    function loadStorageReport() {
+      const summarySection = document.getElementById('summary-section');
+      const warningSection = document.getElementById('warning-section');
+      const tableSection = document.getElementById('storage-table-section');
+      
+      summarySection.innerHTML = '<div class="loading">Loading storage report...</div>';
+      warningSection.innerHTML = '';
+      tableSection.innerHTML = '';
+      
+      try {
+        // Get storage usage data
+        currentUsage = window.checkStorageUsage();
+        
+        if (!currentUsage) {
+          summarySection.innerHTML = '<div class="empty-state">Unable to load storage usage data.</div>';
+          return;
+        }
+        
+        // Display summary cards
+        displaySummaryCards(currentUsage);
+        
+        // Display warnings if needed
+        if (currentUsage.warning) {
+          warningSection.innerHTML = `
+            <div class="warning-box">
+              <strong>⚠️ Warning:</strong> ${currentUsage.warning}
+            </div>
+          `;
+        }
+        
+        // Display storage items table
+        displayStorageTable(currentUsage);
+        
+      } catch (error) {
+        console.error('Error loading storage report:', error);
+        summarySection.innerHTML = `
+          <div class="empty-state">
+            <h2>Error Loading Report</h2>
+            <p>${error.message}</p>
+            <button class="btn btn-primary" onclick="refreshReport()">Try Again</button>
+          </div>
+        `;
+      }
+    }
+    
+    function displaySummaryCards(usage) {
+      const summarySection = document.getElementById('summary-section');
+      
+      const usagePercent = parseFloat(usage.usagePercent);
+      let cardClass = 'summary-card';
+      if (usagePercent > 80) {
+        cardClass += ' danger';
+      } else if (usagePercent > 60) {
+        cardClass += ' warning';
+      }
+      
+      summarySection.innerHTML = `
+        <div class="summary-cards">
+          <div class="${cardClass}">
+            <h3>Total Storage Used</h3>
+            <div class="value">${usage.totalMB} MB</div>
+            <div class="subtitle">of ~${usage.quotaMB} MB available</div>
+          </div>
+          <div class="summary-card">
+            <h3>Usage Percentage</h3>
+            <div class="value">${usage.usagePercent}%</div>
+            <div class="subtitle">Storage quota utilization</div>
+          </div>
+          <div class="summary-card">
+            <h3>Total Items</h3>
+            <div class="value">${usage.items.length}</div>
+            <div class="subtitle">localStorage entries</div>
+          </div>
+          <div class="summary-card">
+            <h3>Total Size</h3>
+            <div class="value">${(usage.totalSize / 1024).toFixed(2)} KB</div>
+            <div class="subtitle">Raw byte size</div>
+          </div>
+        </div>
+      `;
+    }
+    
+    function displayStorageTable(usage) {
+      const tableSection = document.getElementById('storage-table-section');
+      
+      if (!usage.items || usage.items.length === 0) {
+        tableSection.innerHTML = '<div class="empty-state">No storage items found.</div>';
+        return;
+      }
+      
+      let html = `
+        <div class="storage-table">
+          <table>
+            <thead>
+              <tr>
+                <th style="width: 5%;">#</th>
+                <th style="width: 40%;">Storage Key</th>
+                <th style="width: 15%;">Size (KB)</th>
+                <th style="width: 15%;">Size (MB)</th>
+                <th style="width: 15%;">Percentage</th>
+                <th style="width: 10%;">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+      `;
+      
+      usage.items.forEach((item, index) => {
+        const percentage = ((item.size / usage.totalSize) * 100).toFixed(2);
+        let sizeClass = 'size-small';
+        if (item.sizeMB > 0.5) {
+          sizeClass = 'size-large';
+        } else if (item.sizeMB > 0.1) {
+          sizeClass = 'size-medium';
+        }
+        
+        const isExpanded = expandedItems.has(item.key);
+        const itemId = `item-${index}`;
+        
+        html += `
+          <tr class="item-row" onclick="toggleItemDetails('${itemId}', '${item.key.replace(/'/g, "\\'")}')">
+            <td>${index + 1}</td>
+            <td>
+              <span class="key-name">${escapeHtml(item.key)}</span>
+              <div id="${itemId}" class="item-details ${isExpanded ? 'show' : ''}">
+                <strong>Full Key:</strong> <code>${escapeHtml(item.key)}</code><br><br>
+                <strong>Preview (first 500 chars):</strong>
+                <pre>${escapeHtml(getItemPreview(item.key))}</pre>
+                <button class="btn btn-secondary" style="margin-top: 10px; padding: 8px 16px;" onclick="event.stopPropagation(); viewFullItem('${item.key.replace(/'/g, "\\'")}')">
+                  View Full Content
+                </button>
+              </div>
+            </td>
+            <td><span class="size-badge ${sizeClass}">${item.sizeKB} KB</span></td>
+            <td>${item.sizeMB} MB</td>
+            <td>${percentage}%</td>
+            <td>
+              <button class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="event.stopPropagation(); copyToClipboard('${item.key.replace(/'/g, "\\'")}')">
+                Copy Key
+              </button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += `
+            </tbody>
+          </table>
+        </div>
+      `;
+      
+      tableSection.innerHTML = html;
+    }
+    
+    function toggleItemDetails(itemId, key) {
+      const detailsDiv = document.getElementById(itemId);
+      if (!detailsDiv) return;
+      
+      if (expandedItems.has(key)) {
+        expandedItems.delete(key);
+        detailsDiv.classList.remove('show');
+      } else {
+        expandedItems.add(key);
+        detailsDiv.classList.add('show');
+        // Load preview if not already loaded
+        if (!detailsDiv.querySelector('pre').textContent.trim()) {
+          detailsDiv.querySelector('pre').textContent = escapeHtml(getItemPreview(key));
+        }
+      }
+    }
+    
+    function getItemPreview(key) {
+      try {
+        const value = localStorage.getItem(key);
+        if (!value) return '(empty)';
+        
+        // Try to parse as JSON for better display
+        try {
+          const parsed = JSON.parse(value);
+          return JSON.stringify(parsed, null, 2).substring(0, 500);
+        } catch (e) {
+          return value.substring(0, 500);
+        }
+      } catch (error) {
+        return '(error reading item)';
+      }
+    }
+    
+    function viewFullItem(key) {
+      try {
+        const value = localStorage.getItem(key);
+        if (!value) {
+          alert('Item is empty or not found.');
+          return;
+        }
+        
+        let displayValue = value;
+        try {
+          const parsed = JSON.parse(value);
+          displayValue = JSON.stringify(parsed, null, 2);
+        } catch (e) {
+          // Not JSON, use as-is
+        }
+        
+        const newWindow = window.open('', '_blank', 'width=800,height=600');
+        newWindow.document.write(`
+          <html>
+            <head>
+              <title>Storage Item: ${escapeHtml(key)}</title>
+              <style>
+                body { font-family: monospace; padding: 20px; background: #f5f5f5; }
+                h1 { color: #333; }
+                pre { background: white; padding: 15px; border-radius: 4px; overflow-x: auto; }
+                button { padding: 10px 20px; margin-top: 10px; cursor: pointer; }
+              </style>
+            </head>
+            <body>
+              <h1>Storage Key: <code>${escapeHtml(key)}</code></h1>
+              <p><strong>Size:</strong> ${(value.length * 2 / 1024).toFixed(2)} KB</p>
+              <button onclick="window.print()">Print</button>
+              <button onclick="navigator.clipboard.writeText(\`${displayValue.replace(/`/g, '\\`').replace(/\$/g, '\\$')}\`)">Copy Content</button>
+              <pre>${escapeHtml(displayValue)}</pre>
+            </body>
+          </html>
+        `);
+        newWindow.document.close();
+      } catch (error) {
+        alert('Error viewing item: ' + error.message);
+      }
+    }
+    
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text).then(() => {
+        alert('Copied to clipboard: ' + text);
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback
+        const textarea = document.createElement('textarea');
+        textarea.value = text;
+        document.body.appendChild(textarea);
+        textarea.select();
+        document.execCommand('copy');
+        document.body.removeChild(textarea);
+        alert('Copied to clipboard: ' + text);
+      });
+    }
+    
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+    
+    // Load report on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      loadStorageReport();
+    });
+  </script>
+  
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>
+

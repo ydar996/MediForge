@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Referral - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --warm-orange: #FF8C00;
+      --charcoal: #36454F;
+      --ivory: #FFFFF0;
+    }
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: linear-gradient(135deg, #f5f5dc 0%, #fafafa 100%); min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; background: var(--nigerian-white); padding: 30px; border-radius: 12px; box-shadow: 0 8px 24px rgba(0,135,83,0.15); border: 2px solid var(--primary-green); }
+    h1 { color: var(--primary-green); margin-bottom: 10px; font-size: 1.8em; }
+    .patient-info { background: #f0f8f5; padding: 15px; border-radius: 8px; margin-bottom: 20px; border-left: 6px solid var(--primary-green); }
+    .back-button { background: linear-gradient(135deg, var(--charcoal), #5a6268); color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; margin-bottom: 20px; font-size: 14px; }
+    .back-button:hover { opacity: 0.9; }
+    .form-group { margin-bottom: 18px; }
+    .form-group label { display: block; font-weight: 600; margin-bottom: 6px; color: #333; }
+    .form-group select, .form-group textarea { width: 100%; max-width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box; }
+    .form-group textarea { min-height: 100px; resize: vertical; }
+    .btn-save { background: linear-gradient(135deg, var(--kente-gold), var(--warm-orange)); color: var(--nigerian-white); border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 15px; font-weight: 700; box-shadow: 0 3px 10px rgba(218,165,32,0.3); }
+    .btn-save:hover { opacity: 0.95; transform: translateY(-1px); }
+    .btn-save:disabled { background: #6c757d; cursor: not-allowed; transform: none; }
+  </style>
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/icd-selector.js"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Clinical Note</button>
+    <h1>📋 Add Referral</h1>
+    <div class="patient-info" id="patient-info"><strong>Loading patient information...</strong></div>
+
+    <form id="referral-form" onsubmit="return saveReferral(event);">
+      <div class="form-group">
+        <label for="referral-specialist">Select Specialist *</label>
+        <select id="referral-specialist" required>
+          <option value="">-- Select specialist --</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label>Select Diagnoses (reason for referral) *</label>
+        <div id="referral-diagnosis-container" style="margin-bottom: 8px;">
+          <input type="text" id="referral-diagnosis" placeholder="Search disease name..." style="width: 100%; padding: 10px; border: 1px solid #ccc; border-radius: 6px; font-size: 14px; box-sizing: border-box;">
+        </div>
+        <p style="margin: 0; font-size: 12px; color: #666;">Search above to add one or more diagnoses (ICD-11). You can add multiple.</p>
+      </div>
+      <div class="form-group">
+        <label for="referral-note">Reason for Referral *</label>
+        <textarea id="referral-note" required placeholder="Enter clinical reason for referral..."></textarea>
+      </div>
+      <div class="form-group">
+        <label for="referral-urgency">Priority / Urgency *</label>
+        <select id="referral-urgency" required>
+          <option value="routine">Routine</option>
+          <option value="urgent">Urgent</option>
+          <option value="emergency">Emergency</option>
+        </select>
+      </div>
+      <div style="margin-top: 24px;">
+        <button type="submit" class="btn-save" id="btn-save-referral">💾 Save Referral</button>
+      </div>
+    </form>
+  </div>
+
+  <script>
+    let patientIdParam = null;
+    let visitDate = null;
+    let resolvedPatient = null;
+
+    function getDataKey(key) {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        return (user.org || 'Default') + '_' + key;
+      } catch (e) {
+        return 'Default_' + key;
+      }
+    }
+
+    function getSpecialists() {
+      let specialists = JSON.parse(localStorage.getItem(getDataKey('specialists')) || '[]');
+      if (specialists.length === 0) {
+        const oldSpecialists = JSON.parse(localStorage.getItem('specialists') || '[]');
+        if (oldSpecialists.length > 0) {
+          localStorage.setItem(getDataKey('specialists'), JSON.stringify(oldSpecialists));
+          localStorage.removeItem('specialists');
+          specialists = oldSpecialists;
+        }
+      }
+      return specialists;
+    }
+
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      patientIdParam = urlParams.get('patientId');
+      visitDate = urlParams.get('visitDate');
+
+      if (!patientIdParam || !visitDate) {
+        alert('Missing patient ID or visit date. Redirecting back...');
+        goBack();
+        return;
+      }
+
+      await loadPatientInfo();
+      await loadSpecialists();
+      initReferralDiagnosisSelector();
+    });
+
+    async function loadPatientInfo() {
+      const el = document.getElementById('patient-info');
+      try {
+        let patient = null;
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientIdParam);
+        } else {
+          const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+          patient = patients.find(p => p.id === patientIdParam || p.patient_id === patientIdParam || p.patientNumber === patientIdParam);
+        }
+        resolvedPatient = patient;
+        if (patient) {
+          const name = [patient.firstName || patient.first_name, patient.lastName || patient.last_name].filter(Boolean).join(' ') || 'Unknown';
+          const legacyIdUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, patientIdParam) : ((typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || (patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id) ? patient.id : null) || patientIdParam);
+          el.innerHTML = `<strong>Patient:</strong> ${name}<br><strong>Patient ID:</strong> ${legacyIdUi}<br><strong>Visit Date:</strong> ${visitDate}`;
+        } else {
+          el.innerHTML = '<strong>Patient not found.</strong> Visit Date: ' + visitDate;
+        }
+      } catch (e) {
+        console.error('Error loading patient:', e);
+        el.innerHTML = '<strong>Error loading patient.</strong> Visit Date: ' + visitDate;
+      }
+    }
+
+    async function loadSpecialists() {
+      let specialists = getSpecialists();
+      if (specialists.length === 0 && typeof window.db !== 'undefined' && window.db.primary && typeof window.db.primary.getSpecialistsByOrganization === 'function') {
+        try {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const orgId = user.organizationId || user.organization_id || user.org;
+          if (orgId) {
+            const fromSupabase = await window.db.primary.getSpecialistsByOrganization(orgId);
+            if (fromSupabase && fromSupabase.length > 0) specialists = fromSupabase;
+          }
+        } catch (e) {
+          console.warn('Could not load specialists from Supabase:', e);
+        }
+      }
+      const select = document.getElementById('referral-specialist');
+      select.innerHTML = '<option value="">-- Select specialist --</option>';
+      specialists.forEach(s => {
+        const opt = document.createElement('option');
+        opt.value = s.id || s.specialty || '';
+        const first = (s.firstName || s.first_name || '').trim();
+        const last = (s.lastName || s.last_name || '').trim();
+        const specialty = (s.specialty || '').trim();
+        const namePart = [first, last].filter(Boolean).length ? 'Dr. ' + [first, last].filter(Boolean).join(' ') : '';
+        const label = namePart && specialty ? namePart + ' – ' + specialty : (specialty || namePart || s.details || 'Specialist');
+        opt.textContent = label;
+        select.appendChild(opt);
+      });
+      if (specialists.length === 0) {
+        const opt = document.createElement('option');
+        opt.value = '';
+        opt.textContent = 'No specialists configured. Add specialists in Settings.';
+        select.appendChild(opt);
+      }
+    }
+
+    function initReferralDiagnosisSelector() {
+      if (typeof window.createIcdSelector === 'function') {
+        window.createIcdSelector('referral-diagnosis', true, 'referral-diagnosis');
+      }
+    }
+
+    function getReferralDiagnosesFromList() {
+      const list = document.getElementById('referral-diagnosis-list');
+      if (!list) return [];
+      return Array.from(list.children).map(li => {
+        const spans = li.querySelectorAll('span');
+        const codeText = spans[0] ? spans[0].textContent : '';
+        const title = spans[1] ? spans[1].textContent : '';
+        const code = codeText.replace(' - ', '').trim();
+        return (code && title) ? (code + ' - ' + title) : title || codeText;
+      }).filter(Boolean);
+    }
+
+    function saveReferral(event) {
+      event.preventDefault();
+      if (!resolvedPatient) {
+        alert('Patient not found. Cannot save referral.');
+        return false;
+      }
+      const specialistSelect = document.getElementById('referral-specialist');
+      const specialistId = specialistSelect.value;
+      const specialistName = specialistSelect.options[specialistSelect.selectedIndex].text;
+      if (!specialistId || specialistName.includes('No specialists')) {
+        alert('Please select a specialist. If none are listed, add specialists in Settings.');
+        return false;
+      }
+      const diagnoses = getReferralDiagnosesFromList();
+      if (diagnoses.length === 0) {
+        alert('Please add at least one diagnosis (search and select from the list).');
+        return false;
+      }
+      const note = document.getElementById('referral-note').value.trim();
+      if (!note) {
+        alert('Please enter the reason for referral.');
+        return false;
+      }
+      const urgency = document.getElementById('referral-urgency').value || 'routine';
+
+      const referralData = {
+        specialistId,
+        specialistName,
+        diagnoses,
+        note,
+        urgency,
+        timestamp: new Date().toISOString()
+      };
+
+      const patientIdForSave = resolvedPatient.id || resolvedPatient._supabaseUuid || patientIdParam;
+      if (typeof saveGeneratedReferralToChart !== 'function') {
+        alert('Save function not available. Ensure patients.js is loaded.');
+        return false;
+      }
+      saveGeneratedReferralToChart(referralData, patientIdForSave, visitDate);
+      alert('Referral saved successfully.');
+      window.location.href = `clinical-note.html?patientId=${encodeURIComponent(patientIdParam)}&visitDate=${encodeURIComponent(visitDate)}`;
+      return false;
+    }
+
+    function goBack() {
+      window.location.href = `clinical-note.html?patientId=${encodeURIComponent(patientIdParam || '')}&visitDate=${encodeURIComponent(visitDate || '')}`;
+    }
+  </script>
+</body>
+</html>

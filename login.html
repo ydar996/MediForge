@@ -1,0 +1,258 @@
+<!-- Purpose: This page lets users log in with a username and password. It's the security gate. If correct, it goes to dashboard. Now includes a link to register. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="theme-color" content="#008753">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Login to MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <!-- Simple Auto-Refresh System (No Infinite Loops) -->
+  <script src="js/simple-auto-refresh.js?v=20251022120000"></script>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      min-height: 100vh;
+      margin: 0;
+      padding: 0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+    
+    .login-container {
+      background: white;
+      border-radius: 20px;
+      box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+      padding: 40px;
+      width: 100%;
+      max-width: 400px;
+      margin: 20px;
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .login-header h1 {
+      color: #008753;
+      font-size: 2.2rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+    }
+    
+    .login-header p {
+      color: #666;
+      font-size: 1rem;
+      margin: 0;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      color: #333;
+      font-weight: 500;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 12px 16px;
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: #008753;
+      box-shadow: 0 0 0 3px rgba(0, 135, 83, 0.1);
+    }
+    
+    .login-button {
+      width: 100%;
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      border: none;
+      padding: 14px 20px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 135, 83, 0.3);
+    }
+    
+    .login-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 135, 83, 0.4);
+    }
+    
+    .login-button:active {
+      transform: translateY(0);
+    }
+    
+    .register-link {
+      text-align: center;
+      margin: 25px 0;
+    }
+    
+    .register-link a {
+      color: #008753;
+      text-decoration: none;
+      font-weight: 500;
+      transition: color 0.3s ease;
+    }
+    
+    .register-link a:hover {
+      color: #006b42;
+    }
+    
+    .navigation-buttons {
+      text-align: center;
+      margin: 25px 0 15px 0;
+    }
+    
+    .nav-button {
+      background: #008753;
+      color: white;
+      padding: 10px 20px;
+      border-radius: 20px;
+      text-decoration: none;
+      font-size: 14px;
+      font-weight: 500;
+      transition: all 0.3s ease;
+      box-shadow: 0 3px 10px rgba(0, 135, 83, 0.3);
+      margin: 0 5px;
+      display: inline-block;
+    }
+    
+    .nav-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 5px 15px rgba(0, 135, 83, 0.4);
+    }
+    
+    .nav-button.key-features {
+      background: #B8860B;
+      box-shadow: 0 3px 10px rgba(184, 134, 11, 0.3);
+    }
+    
+    .nav-button.key-features:hover {
+      box-shadow: 0 5px 15px rgba(184, 134, 11, 0.4);
+    }
+    
+    .platform-admin-link {
+      text-align: center;
+      margin-top: 20px;
+    }
+    
+    .platform-admin-link a {
+      color: #ccc;
+      text-decoration: none;
+      font-size: 10px;
+      opacity: 0.5;
+      transition: opacity 0.3s ease;
+    }
+    
+    .platform-admin-link a:hover {
+      opacity: 0.8;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>Login to MediForge</h1>
+      <p>The comprehensive healthcare management system for physicians and clinics.</p>
+    </div>
+    
+    <form id="login-form">
+      <div class="form-group">
+        <label for="username">Username:</label>
+        <input type="text" id="username" placeholder="Enter your username (email not required)" required>
+      </div>
+      <div class="form-group">
+        <label for="password">Password:</label>
+        <input type="password" id="password" required>
+      </div>
+      <button type="submit" class="login-button">Login</button>
+    </form>
+    
+    <div class="register-link">
+      <p>No account? <a href="register">Register here</a></p>
+    </div>
+    
+    <div class="navigation-buttons">
+      <a href="about-us" class="nav-button">About Us</a>
+      <a href="key-features" class="nav-button key-features">Key Features</a>
+      <a href="user-manual" class="nav-button" style="background:#4169E1;">User Manual</a>
+    </div>
+    
+    <!-- Platform admin link removed for security hardening -->
+    <!-- <div class="platform-admin-link">
+      <a href="platform-login">Platform Admin</a>
+    </div> -->
+  </div>
+  
+  <!-- Minimal Footer Attribution -->
+  <div style="position: fixed; bottom: 10px; left: 50%; transform: translateX(-50%); font-size: 10px; color: #999; text-align: center; z-index: 9999; white-space: nowrap;">
+    Powered by Work Chop Inc. | support@eworkchop.com
+  </div>
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251022120000"></script>
+  <script src="js/public-auth-rpc.js?v=20260416120000"></script>
+  <script src="js/data/medical-regulatory-bodies-africa.js?v=20251022120000"></script>
+  <script src="js/physician-verification-core.js?v=9"></script>
+  <script src="js/supabase-auth.js?v=20260416120000"></script>
+  <script src="js/legal-agreements.js?v=20250118000000"></script>  <!-- Legal agreements management -->
+  <script src="js/security.js?v=20251022120000"></script>  <!-- Security module -->
+  <script src="js/session-cookies.js?v=20250117"></script>  <!-- Secure session cookies with localStorage fallback -->
+  <script src="js/rate-limiter.js?v=20251115040000"></script>  <!-- Rate limiting module -->
+  <!-- <script src="js/auth.js?v=217"></script> DISABLED - using Supabase now -->
+  <script src="js/security-enhancements.js?v=20251022120000"></script>  <!-- NEW: Enhanced security -->
+  <script src="js/login-handler.js?v=20260416120000"></script>  <!-- New Supabase login handler -->
+  <script src="js/universal-data-loader.js?v=20251022120000"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=20251022120000"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=20251022120000')
+          .then(function(registration) {
+            console.log('[OK] Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+

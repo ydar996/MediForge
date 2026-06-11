@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Reset Auto-Refresh System</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .reset-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 40px;
+            max-width: 500px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+        }
+        
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 30px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .button.danger {
+            background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+        }
+        
+        .button.success {
+            background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="reset-container">
+        <h1>?? Reset Auto-Refresh System</h1>
+        
+        <div class="status">
+            <h3>? Current Status</h3>
+            <p><strong>Refresh Attempts:</strong> <span id="refresh-attempts">0</span></p>
+            <p><strong>Current URL:</strong> <span id="current-url"></span></p>
+            <p><strong>LocalStorage Version:</strong> <span id="stored-version">none</span></p>
+        </div>
+        
+        <div class="warning">
+            <h3>?? Reset Instructions</h3>
+            <p>If the auto-refresh system is stuck in a loop, use the buttons below to reset it.</p>
+        </div>
+        
+        <div>
+            <button class="button" onclick="clearAllCache()">Clear All Cache</button>
+            <button class="button danger" onclick="resetRefreshAttempts()">Reset Refresh Attempts</button>
+            <button class="button success" onclick="goToLogin()">Go to Login</button>
+        </div>
+        
+        <div id="log" style="background: #f8f9fa; border-radius: 8px; padding: 15px; margin: 20px 0; text-align: left; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto;">
+            <div>?? Reset page loaded...</div>
+        </div>
+    </div>
+    
+    <script>
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateStatus() {
+            const refreshAttempts = new URLSearchParams(window.location.search).get('refreshAttempts') || '0';
+            document.getElementById('refresh-attempts').textContent = refreshAttempts;
+            document.getElementById('current-url').textContent = window.location.href;
+            document.getElementById('stored-version').textContent = localStorage.getItem('ehrAppVersion') || 'none';
+        }
+        
+        function clearAllCache() {
+            log('??? Clearing all cache...');
+            
+            // Clear all caches
+            if ('caches' in window) {
+                caches.keys().then(function(cacheNames) {
+                    cacheNames.forEach(function(cacheName) {
+                        caches.delete(cacheName);
+                        log(`? Cleared cache: ${cacheName}`);
+                    });
+                });
+            }
+            
+            // Clear localStorage
+            localStorage.clear();
+            log('? Cleared localStorage');
+            
+            // Clear sessionStorage
+            sessionStorage.clear();
+            log('? Cleared sessionStorage');
+            
+            // Unregister service workers
+            if (navigator.serviceWorker) {
+                navigator.serviceWorker.getRegistrations().then(function(registrations) {
+                    registrations.forEach(function(registration) {
+                        registration.unregister();
+                        log(`? Unregistered service worker: ${registration.scope}`);
+                    });
+                });
+            }
+            
+            log('? All cache cleared successfully');
+            updateStatus();
+        }
+        
+        function resetRefreshAttempts() {
+            log('?? Resetting refresh attempts...');
+            
+            // Clear all cache first
+            clearAllCache();
+            
+            // Remove refresh attempts from URL
+            const url = new URL(window.location);
+            url.searchParams.delete('refreshAttempts');
+            url.searchParams.delete('v');
+            url.searchParams.delete('cb');
+            url.searchParams.delete('refresh');
+            url.searchParams.delete('t');
+            url.searchParams.delete('cache');
+            url.searchParams.delete('mobile');
+            url.searchParams.delete('force');
+            url.searchParams.delete('nocache');
+            url.searchParams.delete('timestamp');
+            url.searchParams.set('reset', 'true');
+            
+            log('?? Redirecting to clean URL...');
+            window.location.replace(url.toString());
+        }
+        
+        function goToLogin() {
+            log('?? Going to login page...');
+            window.location.href = '/login';
+        }
+        
+        // Initialize
+        updateStatus();
+        log('?? Reset page initialized');
+        
+        // Check if we're coming from a reset
+        const isReset = new URLSearchParams(window.location.search).get('reset');
+        if (isReset) {
+            log('? Reset completed successfully');
+        }
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

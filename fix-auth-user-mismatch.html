@@ -1,0 +1,234 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Fix Auth User ID Mismatch</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .critical { border-left: 4px solid #d32f2f; background: #ffebee; }
+        .success { border-left: 4px solid #388e3c; background: #e8f5e9; }
+        .warning { border-left: 4px solid #f57c00; background: #fff3e0; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+        button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Auth User ID Mismatch</h1>
+        <p><strong>Issue:</strong> Auth user ID doesn't match the users table record</p>
+        
+        <div class="section critical">
+            <h3>🚨 Problem Identified</h3>
+            <p><strong>Current Auth User ID:</strong> c49cd868-e403-4b94-9637-058ffad1ae79</p>
+            <p><strong>Users Table Auth User ID:</strong> 2041777a-2a4a-4418-aa4c-e2f07a287c58</p>
+            <p><strong>Solution:</strong> Update the users table to match the current auth user ID</p>
+        </div>
+
+        <div class="section">
+            <h3>🔧 Fix Actions</h3>
+            <button onclick="fixAuthUserMismatch()">Fix Auth User ID Mismatch</button>
+            <button onclick="testLoginAfterFix()">Test Login After Fix</button>
+            <button onclick="verifyUserProfile()">Verify User Profile</button>
+        </div>
+
+        <div class="section">
+            <h3>📋 Live Debug Log</h3>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function initSupabase() {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                log('✅ Supabase client initialized', 'success');
+                return true;
+            }
+            log('❌ Supabase not available', 'error');
+            return false;
+        }
+
+        async function fixAuthUserMismatch() {
+            log('🔧 Starting auth user ID mismatch fix...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // First, login to get the current auth user ID
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: 'ydar2@mecureclinics.com',
+                    password: 'ydar102'
+                });
+
+                if (authError) {
+                    log(`❌ Login failed: ${authError.message}`, 'error');
+                    return;
+                }
+
+                const currentAuthUserId = authData.user.id;
+                log(`✅ Current auth user ID: ${currentAuthUserId}`, 'success');
+
+                // Find the ydar2 user record
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar2')
+                    .single();
+
+                if (userError) {
+                    log(`❌ Error finding ydar2 user: ${userError.message}`, 'error');
+                    return;
+                }
+
+                log(`📊 Found ydar2 user with ID: ${userData.id}`, 'info');
+                log(`📊 Current auth_user_id in table: ${userData.auth_user_id}`, 'info');
+
+                // Update the auth_user_id to match the current auth user
+                const { data: updateData, error: updateError } = await supabase
+                    .from('users')
+                    .update({ 
+                        auth_user_id: currentAuthUserId,
+                        updated_at: new Date().toISOString()
+                    })
+                    .eq('id', userData.id)
+                    .select()
+                    .single();
+
+                if (updateError) {
+                    log(`❌ Error updating auth_user_id: ${updateError.message}`, 'error');
+                    return;
+                }
+
+                log(`✅ Successfully updated auth_user_id to: ${currentAuthUserId}`, 'success');
+                log(`📊 Updated user data: ${JSON.stringify(updateData, null, 2)}`, 'info');
+
+            } catch (error) {
+                log(`❌ Exception during fix: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLoginAfterFix() {
+            log('🧪 Testing login after auth user ID fix...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Login
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: 'ydar2@mecureclinics.com',
+                    password: 'ydar102'
+                });
+
+                if (authError) {
+                    log(`❌ Login failed: ${authError.message}`, 'error');
+                    return;
+                }
+
+                log(`✅ Login successful!`, 'success');
+
+                // Now try to get user profile
+                const { data: profile, error: profileError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('auth_user_id', authData.user.id)
+                    .single();
+
+                if (profileError) {
+                    log(`❌ Profile fetch failed: ${profileError.message}`, 'error');
+                } else {
+                    log(`✅ Profile fetch successful!`, 'success');
+                    log(`📊 Profile data: ${JSON.stringify(profile, null, 2)}`, 'info');
+                    
+                    // Store user data in localStorage for app compatibility
+                    const userSessionData = {
+                        firstName: profile.first_name,
+                        lastName: profile.last_name,
+                        username: profile.username,
+                        email: authData.user.email,
+                        gender: profile.gender || "Male",
+                        role: profile.role,
+                        org: profile.organization_id,
+                        medicalLicenseNumber: profile.medical_license_number || "",
+                        auth_user_id: authData.user.id
+                    };
+                    
+                    localStorage.setItem('user', JSON.stringify(userSessionData));
+                    localStorage.setItem('supabase.auth.token', JSON.stringify(authData.session));
+                    
+                    log(`✅ User session data stored in localStorage`, 'success');
+                    log(`🎉 Login fix completed successfully!`, 'success');
+                }
+            } catch (error) {
+                log(`❌ Exception during login test: ${error.message}`, 'error');
+            }
+        }
+
+        async function verifyUserProfile() {
+            log('🔍 Verifying user profile after fix...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Check if we can find the user by auth_user_id
+                const { data: profile, error: profileError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('auth_user_id', 'c49cd868-e403-4b94-9637-058ffad1ae79')
+                    .single();
+
+                if (profileError) {
+                    log(`❌ Profile verification failed: ${profileError.message}`, 'error');
+                } else {
+                    log(`✅ Profile verification successful!`, 'success');
+                    log(`📊 Verified profile: ${JSON.stringify(profile, null, 2)}`, 'info');
+                }
+            } catch (error) {
+                log(`❌ Exception during verification: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('🚀 Auth user ID mismatch fix tool loaded');
+            log('💡 Click "Fix Auth User ID Mismatch" to resolve the issue');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113100113101310"></script>
+
+</html>
+
+
+
+
+
+
+
+

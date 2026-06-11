@@ -1,0 +1,311 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test Dashboard Organization Display</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .test-result { padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .test-pass { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .test-fail { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Dashboard Organization Display</h1>
+        <p><strong>Purpose:</strong> Test that dashboard properly displays organization names instead of UUIDs</p>
+        
+        <div class="test-section">
+            <h3>🔍 Check Current User Data</h3>
+            <button onclick="checkUserData()">Check User Data</button>
+            <button onclick="checkSupabaseConnection()">Test Supabase Connection</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🏥 Test Organization Name Fetch</h3>
+            <button onclick="testOrgNameFetch()">Test Organization Name Fetch</button>
+            <button onclick="testDashboardTitleUpdate()">Test Dashboard Title Update</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🧪 Simulate Dashboard Functions</h3>
+            <button onclick="simulateDashboardLoad()">Simulate Dashboard Load</button>
+            <button onclick="testAllDashboardFunctions()">Test All Dashboard Functions</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Results</h3>
+            <div id="testResults"></div>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+        let testResults = [];
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+            testResults = [];
+            updateTestResults();
+        }
+
+        function addTestResult(testName, passed, message) {
+            testResults.push({ name: testName, passed, message });
+            updateTestResults();
+        }
+
+        function updateTestResults() {
+            const resultsDiv = document.getElementById('testResults');
+            resultsDiv.innerHTML = '';
+            
+            testResults.forEach(result => {
+                const div = document.createElement('div');
+                div.className = `test-result ${result.passed ? 'test-pass' : 'test-fail'}`;
+                div.innerHTML = `<strong>${result.passed ? '✅' : '❌'} ${result.name}</strong><br>${result.message}`;
+                resultsDiv.appendChild(div);
+            });
+        }
+
+        async function initSupabase() {
+            if (!supabase) {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    log('✅ Supabase client initialized', 'success');
+                    return true;
+                } catch (error) {
+                    log('❌ Error initializing Supabase: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function checkUserData() {
+            log('🔍 Checking current user data...');
+            
+            try {
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                log(`📊 User data: ${JSON.stringify(user, null, 2)}`);
+                
+                if (user.username && user.role && user.org) {
+                    log(`✅ User found: ${user.username} (${user.role})`, 'success');
+                    log(`📊 Organization ID: ${user.org}`);
+                    
+                    if (user.org.includes('-') && user.org.length > 30) {
+                        log('✅ Organization ID is a UUID format', 'success');
+                        addTestResult('User Data Check', true, `User ${user.username} found with UUID org ID`);
+                    } else {
+                        log('⚠️ Organization ID is not UUID format', 'warning');
+                        addTestResult('User Data Check', false, 'Organization ID is not UUID format');
+                    }
+                } else {
+                    log('❌ Incomplete user data', 'error');
+                    addTestResult('User Data Check', false, 'Incomplete user data in localStorage');
+                }
+            } catch (error) {
+                log(`❌ Error checking user data: ${error.message}`, 'error');
+                addTestResult('User Data Check', false, `Error: ${error.message}`);
+            }
+        }
+
+        async function checkSupabaseConnection() {
+            log('🔍 Testing Supabase connection...');
+            
+            if (!await initSupabase()) {
+                addTestResult('Supabase Connection', false, 'Failed to initialize Supabase client');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabase
+                    .from('organizations')
+                    .select('count')
+                    .limit(1);
+
+                if (error) {
+                    log(`❌ Supabase connection failed: ${error.message}`, 'error');
+                    addTestResult('Supabase Connection', false, `Connection failed: ${error.message}`);
+                } else {
+                    log('✅ Supabase connection successful', 'success');
+                    addTestResult('Supabase Connection', true, 'Successfully connected to Supabase');
+                }
+            } catch (e) {
+                log(`❌ Supabase connection exception: ${e.message}`, 'error');
+                addTestResult('Supabase Connection', false, `Exception: ${e.message}`);
+            }
+        }
+
+        async function testOrgNameFetch() {
+            log('🏥 Testing organization name fetch...');
+            
+            if (!await initSupabase()) {
+                addTestResult('Organization Name Fetch', false, 'Supabase not initialized');
+                return;
+            }
+            
+            try {
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const orgId = user.org;
+                
+                if (!orgId || !orgId.includes('-') || orgId.length <= 30) {
+                    log('⚠️ No valid UUID organization ID found', 'warning');
+                    addTestResult('Organization Name Fetch', false, 'No valid UUID organization ID');
+                    return;
+                }
+                
+                log(`🔍 Fetching organization name for ID: ${orgId}`);
+                
+                const { data: orgData, error } = await supabase
+                    .from('organizations')
+                    .select('name')
+                    .eq('id', orgId)
+                    .single();
+                
+                if (error || !orgData) {
+                    log(`❌ Could not fetch organization name: ${error?.message}`, 'error');
+                    addTestResult('Organization Name Fetch', false, `Fetch failed: ${error?.message}`);
+                } else {
+                    log(`✅ Organization name found: ${orgData.name}`, 'success');
+                    addTestResult('Organization Name Fetch', true, `Successfully fetched: ${orgData.name}`);
+                }
+            } catch (e) {
+                log(`❌ Exception during org name fetch: ${e.message}`, 'error');
+                addTestResult('Organization Name Fetch', false, `Exception: ${e.message}`);
+            }
+        }
+
+        async function testDashboardTitleUpdate() {
+            log('🧪 Testing dashboard title update function...');
+            
+            try {
+                // Simulate the dashboard title update function
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const orgId = user.org || 'Unknown Organization';
+                
+                if (orgId && orgId.includes('-') && orgId.length > 30) {
+                    if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+                        log('⚠️ Supabase not available for title update', 'warning');
+                        addTestResult('Dashboard Title Update', false, 'Supabase not available');
+                        return;
+                    }
+                    
+                    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    
+                    const { data: orgData, error } = await supabase
+                        .from('organizations')
+                        .select('name')
+                        .eq('id', orgId)
+                        .single();
+                    
+                    if (error || !orgData) {
+                        log(`❌ Title update failed: ${error?.message}`, 'error');
+                        addTestResult('Dashboard Title Update', false, `Update failed: ${error?.message}`);
+                    } else {
+                        const expectedTitle = `EHR Dashboard for ${orgData.name}`;
+                        log(`✅ Title update successful: ${expectedTitle}`, 'success');
+                        addTestResult('Dashboard Title Update', true, `Would display: ${expectedTitle}`);
+                    }
+                } else {
+                    log('⚠️ No UUID organization ID for title update', 'warning');
+                    addTestResult('Dashboard Title Update', false, 'No UUID organization ID');
+                }
+            } catch (e) {
+                log(`❌ Exception during title update: ${e.message}`, 'error');
+                addTestResult('Dashboard Title Update', false, `Exception: ${e.message}`);
+            }
+        }
+
+        async function simulateDashboardLoad() {
+            log('🧪 Simulating dashboard load process...');
+            
+            // Test the waitForSupabaseAndUpdate function logic
+            let supabaseReady = false;
+            let attempts = 0;
+            const maxAttempts = 50; // 5 seconds max
+            
+            while (!supabaseReady && attempts < maxAttempts) {
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    supabaseReady = true;
+                    log('✅ Supabase ready after ' + attempts + ' attempts', 'success');
+                } else {
+                    attempts++;
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+            }
+            
+            if (supabaseReady) {
+                addTestResult('Dashboard Load Simulation', true, `Supabase ready after ${attempts} attempts`);
+                
+                // Now test the actual update functions
+                await testDashboardTitleUpdate();
+            } else {
+                log('❌ Supabase never became ready', 'error');
+                addTestResult('Dashboard Load Simulation', false, 'Supabase never became ready');
+            }
+        }
+
+        async function testAllDashboardFunctions() {
+            log('🧪 Running all dashboard function tests...');
+            
+            await checkUserData();
+            await checkSupabaseConnection();
+            await testOrgNameFetch();
+            await simulateDashboardLoad();
+            
+            const passedTests = testResults.filter(r => r.passed).length;
+            const totalTests = testResults.length;
+            
+            log(`📊 Test Summary: ${passedTests}/${totalTests} tests passed`, passedTests === totalTests ? 'success' : 'warning');
+            
+            if (passedTests === totalTests) {
+                log('🎉 All tests passed! Dashboard should work correctly.', 'success');
+            } else {
+                log('⚠️ Some tests failed. Dashboard may have issues.', 'warning');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('🚀 Dashboard organization display test tool loaded');
+            log('💡 Use this tool to test dashboard functions before deployment');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+
+
+

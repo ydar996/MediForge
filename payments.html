@@ -1,0 +1,521 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Record Payment - MediForge</title>
+    <link rel="stylesheet" href="css/styles.css?v=225">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113120113121312"></script>
+  
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=289"></script>
+  <script src="js/payments.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>
+</head>
+<body>
+  <h1>&#128176; Record Payment</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">&#8592; Back</button>
+
+  <div style="max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px;">
+    <h2>Payment Details</h2>
+    
+    <label for="invoice-number">Invoice Number (Optional):</label>
+    <div style="position: relative; width: 100%;">
+      <div style="position: relative; width: 100%;">
+        <input type="text" id="invoice-number" placeholder="Click to see unpaid invoices or type to search..." 
+               onfocus="showInvoiceDropdown()" 
+               onclick="showInvoiceDropdown()"
+               oninput="filterInvoiceDropdown(this.value)"
+               autocomplete="off"
+               style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+        <div id="invoice-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; z-index: 10000; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-top: 2px;">
+          <!-- Dropdown items will be populated here -->
+        </div>
+      </div>
+      <button onclick="loadInvoice()" style="margin-top: 8px; padding: 10px 20px; background: #2196F3; color: white; border: none; border-radius: 4px; cursor: pointer; width: 100%;">Load Invoice</button>
+    </div>
+    
+    <div id="invoice-info" style="display: none; background: #e8f5e9; padding: 15px; margin: 15px 0; border-radius: 4px;">
+      <p><strong>Patient:</strong> <span id="inv-patient"></span></p>
+      <p><strong>Amount Due:</strong> <span id="inv-due"></span></p>
+    </div>
+
+    <label for="patient-name">Patient Name:</label>
+    <div style="position: relative; width: 100%;">
+      <input type="text" id="patient-name" 
+             placeholder="Click to see patients or type to search..." 
+             onfocus="showPatientDropdown()" 
+             onclick="showPatientDropdown()"
+             oninput="filterPatientDropdown(this.value)"
+             autocomplete="off"
+             required
+             style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+      <div id="patient-dropdown" style="display: none; position: absolute; top: 100%; left: 0; width: 100%; background: white; border: 1px solid #ddd; border-radius: 4px; max-height: 300px; overflow-y: auto; z-index: 10000; box-shadow: 0 4px 8px rgba(0,0,0,0.1); margin-top: 2px;">
+        <!-- Dropdown items will be populated here -->
+      </div>
+    </div>
+
+    <label for="amount">Payment Amount:</label>
+    <input type="number" id="amount" step="0.01" min="0" required>
+
+    <label for="payment-method">Payment Method:</label>
+    <select id="payment-method" required>
+      <option value="cash">Cash</option>
+      <option value="mobile_money">Mobile Money (M-Pesa, etc.)</option>
+      <option value="card">Card</option>
+      <option value="bank_transfer">Bank Transfer</option>
+      <option value="check">Check/Cheque</option>
+    </select>
+
+    <label for="method-details">Transaction Reference/Details:</label>
+    <input type="text" id="method-details" placeholder="M-Pesa code, last 4 digits, etc.">
+
+    <label for="payment-date">Payment Date:</label>
+    <input type="date" id="payment-date" required>
+
+    <label for="notes">Notes:</label>
+    <textarea id="notes" rows="3"></textarea>
+
+    <button onclick="savePayment()" style="background: #4CAF50; color: white; font-size: 18px; padding: 15px; margin-top: 20px; border: none; border-radius: 6px; cursor: pointer;">
+      &#10004; Record Payment
+    </button>
+  </div>
+
+  <script>
+    let currentInvoice = null;
+
+    
+    let unpaidInvoices = [];
+    let allPatients = [];
+    
+    // Define dropdown functions immediately so they're accessible from onclick/onfocus
+    function showInvoiceDropdown() {
+      const dropdown = document.getElementById('invoice-dropdown');
+      if (!dropdown) {
+        console.error('Invoice dropdown not found');
+        return;
+      }
+      
+      // Show loading message if data not yet loaded
+      if (unpaidInvoices.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">Loading unpaid invoices...</div>';
+        dropdown.style.display = 'block';
+        
+        // Try to load invoices if not loaded yet
+        loadUnpaidInvoices().then(() => {
+          populateInvoiceDropdown(unpaidInvoices);
+        }).catch(() => {
+          dropdown.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No unpaid invoices found</div>';
+          dropdown.style.display = 'block';
+        });
+        return;
+      }
+      
+      populateInvoiceDropdown(unpaidInvoices);
+      dropdown.style.display = 'block';
+    }
+
+    function showPatientDropdown() {
+      const dropdown = document.getElementById('patient-dropdown');
+      if (!dropdown) {
+        console.error('Patient dropdown not found');
+        return;
+      }
+      
+      // Show loading message if data not yet loaded
+      if (allPatients.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">Loading patients...</div>';
+        dropdown.style.display = 'block';
+        
+        // Try to load patients if not loaded yet
+        loadPatientsForDropdown().then(() => {
+          populatePatientDropdown(allPatients);
+        }).catch(() => {
+          dropdown.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No patients found</div>';
+          dropdown.style.display = 'block';
+        });
+        return;
+      }
+      
+      populatePatientDropdown(allPatients);
+      dropdown.style.display = 'block';
+    }
+
+    function filterInvoiceDropdown(searchTerm) {
+      const dropdown = document.getElementById('invoice-dropdown');
+      if (!dropdown) return;
+      
+      // If search term is empty, show all unpaid invoices
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        populateInvoiceDropdown(unpaidInvoices);
+        dropdown.style.display = 'block';
+        return;
+      }
+      
+      const filtered = unpaidInvoices.filter(inv => {
+        const search = searchTerm.toLowerCase();
+        return (inv.invoiceNumber || '').toLowerCase().includes(search) ||
+               (inv.patientName || '').toLowerCase().includes(search);
+      });
+      
+      populateInvoiceDropdown(filtered);
+      dropdown.style.display = 'block'; // Always show, even if no results
+    }
+
+    function filterPatientDropdown(searchTerm) {
+      const dropdown = document.getElementById('patient-dropdown');
+      if (!dropdown) return;
+      
+      // If search term is empty, show all patients
+      if (!searchTerm || searchTerm.trim().length === 0) {
+        populatePatientDropdown(allPatients);
+        dropdown.style.display = 'block';
+        return;
+      }
+      
+      const filtered = allPatients.filter(patient => {
+        const search = searchTerm.toLowerCase();
+        const fullName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.toLowerCase().trim();
+        const patientId = (patient.id || '').toLowerCase();
+        return fullName.includes(search) || patientId.includes(search);
+      });
+      
+      populatePatientDropdown(filtered);
+      dropdown.style.display = 'block'; // Always show, even if no results
+    }
+
+    // Make functions globally accessible
+    window.showInvoiceDropdown = showInvoiceDropdown;
+    window.showPatientDropdown = showPatientDropdown;
+    window.filterInvoiceDropdown = filterInvoiceDropdown;
+    window.filterPatientDropdown = filterPatientDropdown;
+    
+    window.addEventListener('load', async function() {
+      
+      // Load unpaid invoices for dropdown
+      await loadUnpaidInvoices();
+      
+      // Load patients for dropdown
+      await loadPatientsForDropdown();
+      
+      // Close dropdowns when clicking outside
+      document.addEventListener('click', function(event) {
+        const invoiceDropdown = document.getElementById('invoice-dropdown');
+        const invoiceInput = document.getElementById('invoice-number');
+        const patientDropdown = document.getElementById('patient-dropdown');
+        const patientInput = document.getElementById('patient-name');
+        const loadInvoiceBtn = event.target.closest('button[onclick*="loadInvoice"]');
+        
+        // Don't close if clicking on the invoice input or its dropdown
+        if (invoiceDropdown && invoiceInput && 
+            !invoiceDropdown.contains(event.target) && 
+            event.target !== invoiceInput && 
+            !loadInvoiceBtn) {
+          invoiceDropdown.style.display = 'none';
+        }
+        
+        // Don't close if clicking on the patient input or its dropdown
+        if (patientDropdown && patientInput && 
+            !patientDropdown.contains(event.target) && 
+            event.target !== patientInput) {
+          patientDropdown.style.display = 'none';
+        }
+      });
+      
+      // Set today's date
+      document.getElementById('payment-date').valueAsDate = new Date();
+      
+      // Check if invoice ID in URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const invoiceId = urlParams.get('invoiceId');
+      if (invoiceId) {
+        if (typeof window.getInvoiceById === 'function') {
+          window.getInvoiceById(invoiceId).then(invoice => {
+            currentInvoice = invoice;
+            if (currentInvoice) {
+              displayInvoiceInfo();
+            }
+          }).catch(error => {
+            console.error('Error loading invoice:', error);
+          });
+        }
+      }
+      
+      // Payment form page - no need to load payment list
+    });
+
+    async function loadUnpaidInvoices() {
+      try {
+        if (typeof window.getAllInvoices !== 'function') {
+          console.error('getAllInvoices function is not available');
+          return;
+        }
+        
+        const allInvoices = await window.getAllInvoices();
+        unpaidInvoices = Array.isArray(allInvoices) ? allInvoices.filter(inv => 
+          inv.status !== 'paid' && (inv.amountDue || 0) > 0
+        ) : [];
+      } catch (error) {
+        console.error('Error loading unpaid invoices:', error);
+        unpaidInvoices = [];
+      }
+    }
+
+    async function loadPatientsForDropdown() {
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const patientsKey = getDataKey("patients");
+        const localPatients = JSON.parse(localStorage.getItem(patientsKey) || "[]");
+        
+        if (localPatients.length > 0) {
+          allPatients = localPatients;
+        } else {
+          // Try to load from Supabase if available
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            allPatients = await window.loadPatientsWithSupabasePriority() || [];
+          } else {
+            allPatients = [];
+          }
+        }
+      } catch (error) {
+        console.error('Error loading patients:', error);
+        allPatients = [];
+      }
+    }
+
+    function populatePatientDropdown(patients) {
+      const dropdown = document.getElementById('patient-dropdown');
+      if (!dropdown) return;
+      
+      dropdown.innerHTML = '';
+      
+      if (patients.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No patients found</div>';
+        dropdown.style.display = 'block'; // Still show the dropdown even if empty
+        return;
+      }
+      
+      patients.forEach(patient => {
+        const item = document.createElement('div');
+        item.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;';
+        item.onmouseover = () => item.style.background = '#f5f5f5';
+        item.onmouseout = () => item.style.background = 'white';
+        item.onclick = () => {
+          selectPatient(patient);
+          dropdown.style.display = 'none';
+        };
+        
+        const fullName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.trim() || 'Unknown Patient';
+        const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || (patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id) ? patient.id : null);
+        const displayName = fullName || displayId || 'Unknown Patient';
+        
+        item.innerHTML = `
+          <div style="font-weight: bold;">${displayName}</div>
+          ${displayId ? `<div style="font-size: 12px; color: #666;">ID: ${displayId}</div>` : ''}
+          ${patient.phone ? `<div style="font-size: 12px; color: #666;">Phone: ${patient.phone}</div>` : ''}
+        `;
+        
+        dropdown.appendChild(item);
+      });
+      
+      dropdown.style.display = 'block'; // Ensure dropdown is visible
+    }
+
+    function selectPatient(patient) {
+      const fullName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.trim();
+      const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || (patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id) ? patient.id : null);
+      document.getElementById('patient-name').value = fullName || displayId || '';
+    }
+
+    function populateInvoiceDropdown(invoices) {
+      const dropdown = document.getElementById('invoice-dropdown');
+      if (!dropdown) return;
+      
+      dropdown.innerHTML = '';
+      
+      if (invoices.length === 0) {
+        dropdown.innerHTML = '<div style="padding: 10px; color: #666; text-align: center;">No unpaid invoices found</div>';
+        dropdown.style.display = 'block'; // Still show the dropdown even if empty
+        return;
+      }
+      
+      invoices.forEach(inv => {
+        const item = document.createElement('div');
+        item.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;';
+        item.onmouseover = () => item.style.background = '#f5f5f5';
+        item.onmouseout = () => item.style.background = 'white';
+        item.onclick = () => {
+          selectInvoice(inv);
+          dropdown.style.display = 'none';
+        };
+        
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+        };
+        
+        item.innerHTML = `
+          <div style="font-weight: bold;">${inv.invoiceNumber || inv.id}</div>
+          <div style="font-size: 12px; color: #666;">${inv.patientName || 'Unknown Patient'}</div>
+          <div style="font-size: 12px; color: #4CAF50;">Due: ${formatCurrencyFn(inv.amountDue || 0, inv.currency || 'CAD')}</div>
+        `;
+        
+        dropdown.appendChild(item);
+      });
+      
+      dropdown.style.display = 'block'; // Ensure dropdown is visible
+    }
+
+    function selectInvoice(invoice) {
+      currentInvoice = invoice;
+      document.getElementById('invoice-number').value = invoice.invoiceNumber || invoice.id;
+      displayInvoiceInfo();
+    }
+
+    async function loadInvoice() {
+      const invoiceNumber = document.getElementById('invoice-number').value.trim();
+      if (!invoiceNumber) {
+        alert('Please enter an invoice number');
+        return;
+      }
+      
+      try {
+        if (typeof window.getAllInvoices !== 'function') {
+          alert('Billing system is not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        const allInvoices = await window.getAllInvoices();
+        currentInvoice = Array.isArray(allInvoices) ? 
+          allInvoices.find(inv => inv.invoiceNumber === invoiceNumber || inv.id === invoiceNumber) : null;
+        
+      if (!currentInvoice) {
+        alert('Invoice not found');
+        return;
+      }
+      
+      displayInvoiceInfo();
+      } catch (error) {
+        console.error('Error loading invoice:', error);
+        alert('Error loading invoice. Please try again.');
+      }
+    }
+
+    function displayInvoiceInfo() {
+      if (!currentInvoice) return;
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+      };
+      
+      document.getElementById('inv-patient').textContent = currentInvoice.patientName || 'Unknown Patient';
+      document.getElementById('inv-due').textContent = formatCurrencyFn(currentInvoice.amountDue || 0, currentInvoice.currency || 'CAD');
+      document.getElementById('invoice-info').style.display = 'block';
+      
+      document.getElementById('patient-name').value = currentInvoice.patientName || '';
+      document.getElementById('amount').value = currentInvoice.amountDue || 0;
+      document.getElementById('invoice-number').value = currentInvoice.invoiceNumber || currentInvoice.id || '';
+    }
+
+    async function savePayment() {
+      const amount = parseFloat(document.getElementById('amount').value);
+      const method = document.getElementById('payment-method').value;
+      const patientName = document.getElementById('patient-name').value.trim();
+      
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      if (!patientName) {
+        alert('Please enter patient name');
+        return;
+      }
+      
+      const getDefaultCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+      
+      const paymentData = {
+        invoiceId: currentInvoice ? currentInvoice.id : null,
+        patientId: currentInvoice ? currentInvoice.patientId : null,
+        patientName: patientName,
+        amount: amount,
+        currency: currentInvoice ? currentInvoice.currency : getDefaultCurrencyFn(),
+        method: method,
+        methodDetails: document.getElementById('method-details').value,
+        date: document.getElementById('payment-date').value,
+        status: 'completed',
+        notes: document.getElementById('notes').value
+      };
+      
+      try {
+        if (typeof window.recordPayment !== 'function') {
+          alert('Payment system is not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        const payment = await window.recordPayment(paymentData);
+        
+        if (!payment || !payment.id) {
+          alert('Failed to record payment. Please try again.');
+          return;
+        }
+      
+      // Auto-record in cash register if cash
+        if (method === 'cash' && typeof autoRecordCashPayment === 'function') {
+          try {
+        autoRecordCashPayment(payment);
+          } catch (error) {
+            console.error('Error recording to cash register:', error);
+          }
+        }
+        
+        alert('Payment recorded successfully!');
+        
+        if (confirm('Print receipt?')) {
+          if (typeof printReceipt === 'function') {
+            printReceipt(payment.id);
+          }
+        }
+        
+        // Reset form
+        document.getElementById('amount').value = '';
+        document.getElementById('method-details').value = '';
+        document.getElementById('notes').value = '';
+        document.getElementById('invoice-number').value = '';
+        currentInvoice = null;
+        document.getElementById('invoice-info').style.display = 'none';
+        
+        // Reload unpaid invoices
+        await loadUnpaidInvoices();
+      } catch (error) {
+        console.error('Error saving payment:', error);
+        alert('Error saving payment. Please try again.');
+      }
+    }
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

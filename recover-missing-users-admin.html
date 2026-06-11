@@ -1,0 +1,700 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recover Missing Users (Platform Admin) - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f7f6;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #007bff;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background-color: #fdfdfd;
+    }
+    input, select, textarea {
+      width: 100%;
+      padding: 8px;
+      margin: 5px 0;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      box-sizing: border-box;
+    }
+    .user-form {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    .full-width {
+      grid-column: 1 / -1;
+    }
+    .log-entry {
+      border-bottom: 1px dotted #eee;
+      padding: 5px 0;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .warning {
+      color: orange;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔧 Recover Missing Users (Platform Admin)</h1>
+    <p>This tool allows platform administrators to manually create users in Supabase for organizations where users were created locally but not synced.</p>
+
+    <div class="section">
+      <h2>Step 1: Select Organization</h2>
+      <label for="org-select">Organization:</label>
+      <select id="org-select" onchange="loadOrganizationUsers()">
+        <option value="">-- Select Organization --</option>
+      </select>
+      <div id="org-info" style="margin-top: 10px; padding: 10px; background: #e3f2fd; border-radius: 5px; display: none;"></div>
+    </div>
+
+    <div class="section">
+      <h2>Step 2: Create Missing User</h2>
+      <p>Enter the user details below. This will create the user in Supabase Auth and link them to the selected organization.</p>
+      
+      <form id="user-form" class="user-form" onsubmit="createUserManually(event)">
+        <div>
+          <label for="username">Username *</label>
+          <input type="text" id="username" required placeholder="e.g., jdoe">
+        </div>
+        
+        <div>
+          <label for="password">Password *</label>
+          <input type="password" id="password" required placeholder="Temporary password (user must change)">
+        </div>
+        
+        <div>
+          <label for="first-name">First Name *</label>
+          <input type="text" id="first-name" required>
+        </div>
+        
+        <div>
+          <label for="last-name">Last Name *</label>
+          <input type="text" id="last-name" required>
+        </div>
+        
+        <div>
+          <label for="gender">Gender</label>
+          <select id="gender">
+            <option value="Male">Male</option>
+            <option value="Female">Female</option>
+          </select>
+        </div>
+        
+        <div>
+          <label for="role">Role *</label>
+          <select id="role" required>
+            <option value="Doctor">Doctor</option>
+            <option value="Nurse">Nurse</option>
+            <option value="Admin">Admin</option>
+            <option value="Physician Assistant">Physician Assistant</option>
+            <option value="Patient">Patient</option>
+          </select>
+        </div>
+        
+        <div class="full-width">
+          <label for="medical-license">Medical License Number (if applicable)</label>
+          <input type="text" id="medical-license" placeholder="Leave empty if not applicable">
+        </div>
+        
+        <div class="full-width">
+          <button type="submit" style="background: #28a745;">✅ Create User in Supabase</button>
+          <button type="button" onclick="generatePassword()" style="background: #ffc107; color: #000;">🔑 Generate Secure Password</button>
+        </div>
+      </form>
+    </div>
+
+    <div class="section">
+      <h2>Step 3: Recently Created Users & Passwords</h2>
+      <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+        Passwords for recently created users are stored here for easy retrieval. They are only stored in your browser's session.
+      </p>
+      <div id="recent-users-list">
+        <p>No users created yet in this session.</p>
+      </div>
+      <button onclick="clearRecentUsers()" style="background: #dc3545; margin-top: 10px;">Clear Recent Users List</button>
+    </div>
+
+    <div class="section">
+      <h2>Step 4: Activity Log</h2>
+      <div id="activity-log-content">
+        <p>No activity yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=1"></script>
+  <script src="js/supabase-auth.js?v=1"></script>
+  <script>
+    // Check if user is platform admin
+    async function checkPlatformAdmin() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const isPlatformAdmin = user.role === 'Platform Admin' || user.username === 'platform_admin';
+      
+      if (!isPlatformAdmin) {
+        document.body.innerHTML = `
+          <div class="container">
+            <h1>⚠️ Access Denied</h1>
+            <p>This tool is only available to Platform Administrators.</p>
+            <p>You are logged in as: ${user.username || 'Unknown'} (${user.role || 'Unknown'})</p>
+            <a href="dashboard">← Back to Dashboard</a>
+          </div>
+        `;
+        return false;
+      }
+      return true;
+    }
+
+    // Load organizations
+    async function loadOrganizations() {
+      const orgSelect = document.getElementById('org-select');
+      
+      try {
+        if (typeof window.secureSupabaseRpc === 'function') {
+          const orgs = await window.secureSupabaseRpc('get_organizations_with_owner');
+          
+          if (Array.isArray(orgs) && orgs.length > 0) {
+            orgs.forEach(org => {
+              const option = document.createElement('option');
+              option.value = org.id;
+              option.textContent = `${org.name} (${org.org_code || 'No code'})`;
+              option.dataset.orgName = org.name;
+              orgSelect.appendChild(option);
+            });
+          }
+        } else if (window.supabaseClient) {
+          const { data: orgs, error } = await window.supabaseClient
+            .from('organizations')
+            .select('id, name, org_code')
+            .order('name');
+          
+          if (error) throw error;
+          
+          if (orgs && orgs.length > 0) {
+            orgs.forEach(org => {
+              const option = document.createElement('option');
+              option.value = org.id;
+              option.textContent = `${org.name} (${org.org_code || 'No code'})`;
+              option.dataset.orgName = org.name;
+              orgSelect.appendChild(option);
+            });
+          }
+        }
+      } catch (error) {
+        appendLog(`Error loading organizations: ${error.message}`, 'error');
+      }
+    }
+
+    // Load existing users for organization
+    async function loadOrganizationUsers() {
+      const orgSelect = document.getElementById('org-select');
+      const orgId = orgSelect.value;
+      const orgName = orgSelect.options[orgSelect.selectedIndex]?.dataset.orgName;
+      
+      if (!orgId) {
+        document.getElementById('org-info').style.display = 'none';
+        return;
+      }
+      
+      document.getElementById('org-info').innerHTML = `
+        <strong>Selected Organization:</strong> ${orgName}<br>
+        <strong>Organization ID:</strong> ${orgId}
+      `;
+      document.getElementById('org-info').style.display = 'block';
+      
+      // Load existing users
+      try {
+        let users = [];
+        if (typeof window.secureSupabaseRpc === 'function') {
+          const result = await window.secureSupabaseRpc('get_organization_users', {
+            p_org_id: orgId
+          });
+          users = Array.isArray(result) ? result : (result?.data || []);
+        } else if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('users')
+            .select('id, username, first_name, last_name, role')
+            .eq('organization_id', orgId);
+          
+          if (error) throw error;
+          users = data || [];
+        }
+        
+        appendLog(`Found ${users.length} existing users in ${orgName}`, 'success');
+        
+        // Display users with delete option
+        if (users.length > 0) {
+          let usersHtml = '<div style="margin-top: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px;"><strong style="display: block; margin-bottom: 10px;">Existing Users (click Delete to remove):</strong><ul style="margin: 10px 0; padding-left: 20px; list-style: none;">';
+          users.forEach((user) => {
+            const fullName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username;
+            const safeFullName = fullName.replace(/'/g, "\\'").replace(/"/g, '&quot;');
+            usersHtml += `<li style="margin: 8px 0; padding: 8px; background: white; border-radius: 4px; border: 1px solid #ddd;">
+              <strong>${fullName}</strong> (${user.username}) - ${user.role}
+              <button onclick="deleteUserFromSupabase('${user.id}', '${user.username}', '${safeFullName}')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;">🗑️ Delete</button>
+            </li>`;
+          });
+          usersHtml += '</ul></div>';
+          document.getElementById('org-info').innerHTML += usersHtml;
+        }
+      } catch (error) {
+        appendLog(`Error loading users: ${error.message}`, 'error');
+      }
+    }
+
+    // Generate secure password
+    function generatePassword() {
+      const length = 12;
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      let password = '';
+      const values = new Uint32Array(length);
+      crypto.getRandomValues(values);
+      
+      for (let i = 0; i < length; i++) {
+        password += charset[values[i] % charset.length];
+      }
+      
+      // Ensure at least one of each type
+      if (!/[a-z]/.test(password)) password = password.slice(0, -1) + 'a';
+      if (!/[A-Z]/.test(password)) password = password.slice(0, -1) + 'A';
+      if (!/[0-9]/.test(password)) password = password.slice(0, -1) + '1';
+      if (!/[!@#$%^&*]/.test(password)) password = password.slice(0, -1) + '!';
+      
+      document.getElementById('password').value = password;
+      appendLog('Generated secure password', 'success');
+    }
+
+    // Create user manually
+    async function createUserManually(event) {
+      event.preventDefault();
+      
+      const orgSelect = document.getElementById('org-select');
+      const orgId = orgSelect.value;
+      
+      if (!orgId) {
+        appendLog('Please select an organization first', 'error');
+        return;
+      }
+      
+      const userData = {
+        username: document.getElementById('username').value.trim(),
+        password: document.getElementById('password').value,
+        firstName: document.getElementById('first-name').value.trim(),
+        lastName: document.getElementById('last-name').value.trim(),
+        gender: document.getElementById('gender').value,
+        role: document.getElementById('role').value,
+        organizationId: orgId,
+        medicalLicenseNumber: document.getElementById('medical-license').value.trim() || null
+      };
+      
+      // Validate
+      if (!userData.username || !userData.password || !userData.firstName || !userData.lastName) {
+        appendLog('Please fill in all required fields', 'error');
+        return;
+      }
+      
+      appendLog(`Creating user: ${userData.username}...`, 'info');
+      
+      try {
+        // Check if user already exists
+        if (window.supabaseClient) {
+          const { data: existing, error: checkError } = await window.supabaseClient
+            .from('users')
+            .select('id, username')
+            .eq('username', userData.username)
+            .eq('organization_id', orgId)
+            .maybeSingle();
+          
+          if (checkError && checkError.code !== 'PGRST116') {
+            throw checkError;
+          }
+          
+          if (existing) {
+            appendLog(`User ${userData.username} already exists in this organization`, 'error');
+            return;
+          }
+        }
+        
+        // Register user in Supabase
+        if (typeof window.registerWithSupabase === 'function') {
+          const result = await window.registerWithSupabase(userData);
+          
+          if (result.success) {
+            appendLog(`✅ User ${userData.username} created successfully!`, 'success');
+            
+            // Store password in recent users list
+            storeRecentUser({
+              username: userData.username,
+              firstName: userData.firstName,
+              lastName: userData.lastName,
+              role: userData.role,
+              password: userData.password,
+              createdAt: new Date().toISOString(),
+              organizationId: orgSelect.value,
+              organizationName: orgSelect.options[orgSelect.selectedIndex]?.dataset.orgName
+            });
+            
+            // Show modal with username and password
+            showUserCreatedModal(userData.username, userData.password, userData.firstName, userData.lastName);
+            
+            // Clear form
+            document.getElementById('user-form').reset();
+            
+            // Reload users
+            await loadOrganizationUsers();
+          } else {
+            appendLog(`❌ Failed to create user: ${result.error}`, 'error');
+          }
+        } else {
+          throw new Error('registerWithSupabase function not available');
+        }
+      } catch (error) {
+        appendLog(`❌ Error creating user: ${error.message}`, 'error');
+        console.error('Error:', error);
+      }
+    }
+
+    // Store recently created user with password
+    function storeRecentUser(userData) {
+      let recentUsers = JSON.parse(sessionStorage.getItem('recentlyCreatedUsers') || '[]');
+      recentUsers.unshift(userData); // Add to beginning
+      recentUsers = recentUsers.slice(0, 10); // Keep only last 10
+      sessionStorage.setItem('recentlyCreatedUsers', JSON.stringify(recentUsers));
+      displayRecentUsers();
+    }
+
+    // Display recently created users
+    function displayRecentUsers() {
+      const recentUsers = JSON.parse(sessionStorage.getItem('recentlyCreatedUsers') || '[]');
+      const listDiv = document.getElementById('recent-users-list');
+      
+      if (recentUsers.length === 0) {
+        listDiv.innerHTML = '<p>No users created yet in this session.</p>';
+        return;
+      }
+      
+      let html = '<table style="width: 100%; border-collapse: collapse; margin-top: 10px;">';
+      html += '<thead><tr style="background: #f2f2f2;"><th style="padding: 10px; border: 1px solid #ddd;">Name</th><th style="padding: 10px; border: 1px solid #ddd;">Username</th><th style="padding: 10px; border: 1px solid #ddd;">Role</th><th style="padding: 10px; border: 1px solid #ddd;">Password</th><th style="padding: 10px; border: 1px solid #ddd;">Created</th><th style="padding: 10px; border: 1px solid #ddd;">Actions</th></tr></thead><tbody>';
+      
+      recentUsers.forEach((user, index) => {
+        const fullName = `${user.firstName} ${user.lastName}`.trim();
+        const createdDate = new Date(user.createdAt).toLocaleString();
+        html += `
+          <tr style="border-bottom: 1px solid #ddd;">
+            <td style="padding: 10px;">${fullName}</td>
+            <td style="padding: 10px;"><strong>${user.username}</strong></td>
+            <td style="padding: 10px;">${user.role}</td>
+            <td style="padding: 10px;">
+              <div style="display: flex; gap: 5px; align-items: center;">
+                <input type="password" id="pwd-${index}" value="${user.password}" readonly style="flex: 1; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-family: monospace;">
+                <button onclick="togglePassword(${index})" style="background: #6c757d; padding: 5px 10px; font-size: 12px;">👁️</button>
+                <button onclick="copyPassword('${user.password}', ${index})" style="background: #28a745; padding: 5px 10px; font-size: 12px;">📋</button>
+              </div>
+            </td>
+            <td style="padding: 10px; font-size: 12px; color: #666;">${createdDate}</td>
+            <td style="padding: 10px;">
+              <button onclick="removeRecentUser(${index})" style="background: #dc3545; padding: 5px 10px; font-size: 12px;">Remove</button>
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      listDiv.innerHTML = html;
+    }
+
+    // Toggle password visibility
+    function togglePassword(index) {
+      const input = document.getElementById(`pwd-${index}`);
+      if (input.type === 'password') {
+        input.type = 'text';
+      } else {
+        input.type = 'password';
+      }
+    }
+
+    // Delete user from Supabase
+    async function deleteUserFromSupabase(userId, username, fullName) {
+      if (!confirm(`Are you sure you want to delete user "${fullName}" (${username})?\n\nThis will:\n1. Delete the user from Supabase Auth\n2. Delete the user profile from the database\n\nThis action cannot be undone!`)) {
+        return;
+      }
+      
+      try {
+        appendLog(`Deleting user ${username}...`, 'info');
+        
+        // First, get the auth_user_id
+        if (window.supabaseClient) {
+          const { data: userData, error: fetchError } = await window.supabaseClient
+            .from('users')
+            .select('auth_user_id')
+            .eq('id', userId)
+            .single();
+          
+          if (fetchError) {
+            throw fetchError;
+          }
+          
+          // Delete from users table first
+          const { error: deleteError } = await window.supabaseClient
+            .from('users')
+            .delete()
+            .eq('id', userId);
+          
+          if (deleteError) {
+            throw deleteError;
+          }
+          
+          // Try to delete from auth (may require admin API)
+          if (userData.auth_user_id) {
+            try {
+              // Note: This may require admin privileges
+              if (window.supabaseClient.auth.admin) {
+                await window.supabaseClient.auth.admin.deleteUser(userData.auth_user_id);
+              } else {
+                appendLog(`⚠️ User profile deleted, but auth user may still exist (requires admin API)`, 'warning');
+              }
+            } catch (authErr) {
+              appendLog(`⚠️ User profile deleted, but auth deletion failed: ${authErr.message}`, 'warning');
+            }
+          }
+          
+          appendLog(`✅ User ${username} deleted successfully`, 'success');
+          
+          // Reload users
+          await loadOrganizationUsers();
+        } else {
+          throw new Error('Supabase client not available');
+        }
+      } catch (error) {
+        appendLog(`❌ Error deleting user: ${error.message}`, 'error');
+        console.error('Delete error:', error);
+      }
+    }
+
+    // Copy password to clipboard
+    function copyPassword(password, index) {
+      navigator.clipboard.writeText(password).then(() => {
+        const btn = event.target;
+        const originalText = btn.textContent;
+        btn.textContent = '✅';
+        btn.style.background = '#28a745';
+        setTimeout(() => {
+          btn.textContent = originalText;
+          btn.style.background = '#28a745';
+        }, 2000);
+      }).catch(err => {
+        alert('Failed to copy. Password: ' + password);
+      });
+    }
+
+    // Remove user from recent list
+    function removeRecentUser(index) {
+      let recentUsers = JSON.parse(sessionStorage.getItem('recentlyCreatedUsers') || '[]');
+      recentUsers.splice(index, 1);
+      sessionStorage.setItem('recentlyCreatedUsers', JSON.stringify(recentUsers));
+      displayRecentUsers();
+    }
+
+    // Clear all recent users
+    function clearRecentUsers() {
+      if (confirm('Clear all recently created users from the list?')) {
+        sessionStorage.removeItem('recentlyCreatedUsers');
+        displayRecentUsers();
+      }
+    }
+
+    // Show modal with username and password after user creation
+    function showUserCreatedModal(username, password, firstName, lastName) {
+      const fullName = `${firstName} ${lastName}`.trim() || username;
+      const modalHtml = `
+        <div id="user-created-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="if(event.target.id === 'user-created-modal') closeUserCreatedModal()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 600px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3); position: relative;" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2 style="margin: 0; color: #28a745; font-size: 24px;">✅ User Created Successfully!</h2>
+              <button onclick="closeUserCreatedModal()" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; line-height: 1;">×</button>
+            </div>
+            
+            <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin: 0 0 10px 0; color: #1976d2; font-weight: 600;">User: ${fullName}</p>
+              <p style="margin: 0; color: #666; font-size: 14px;">⚠️ Please share these credentials securely with the user. They will be required to reset their password on first login.</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Username:</label>
+              <div style="display: flex; gap: 10px;">
+                <input type="text" id="modal-username" value="${username}" readonly style="flex: 1; padding: 12px; border: 2px solid #007bff; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: 600; background: #f8f9fa; color: #333;">
+                <button onclick="copyToClipboard('modal-username', 'username-copy-btn')" id="username-copy-btn" style="background: #007bff; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                  📋 Copy
+                </button>
+              </div>
+              <p id="username-copy-feedback" style="margin: 8px 0 0 0; color: #28a745; font-size: 14px; display: none;">✅ Username copied to clipboard!</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Password:</label>
+              <div style="display: flex; gap: 10px;">
+                <input type="password" id="modal-password" value="${password}" readonly style="flex: 1; padding: 12px; border: 2px solid #28a745; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: 600; background: #f8f9fa; color: #333;">
+                <button onclick="toggleModalPassword()" id="toggle-pwd-btn" style="background: #6c757d; color: white; border: none; padding: 12px 15px; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                  👁️ Show
+                </button>
+                <button onclick="copyToClipboard('modal-password', 'password-copy-btn')" id="password-copy-btn" style="background: #28a745; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                  📋 Copy
+                </button>
+              </div>
+              <p id="password-copy-feedback" style="margin: 8px 0 0 0; color: #28a745; font-size: 14px; display: none;">✅ Password copied to clipboard!</p>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+              <p style="margin: 0; color: #856404; font-size: 13px;">
+                <strong>Security Requirements:</strong> The user must create a new password that meets the highest security standards:
+                <ul style="margin: 8px 0 0 20px; padding: 0; color: #856404; font-size: 12px;">
+                  <li>Minimum 12 characters (required)</li>
+                  <li>At least one uppercase letter</li>
+                  <li>At least one lowercase letter</li>
+                  <li>At least one number</li>
+                  <li>At least one special character</li>
+                  <li>Cannot be a common password pattern</li>
+                </ul>
+              </p>
+            </div>
+            
+            <div style="text-align: right;">
+              <button onclick="closeUserCreatedModal()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+
+    // Close user created modal
+    function closeUserCreatedModal() {
+      const modal = document.getElementById('user-created-modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    // Toggle password visibility in modal
+    function toggleModalPassword() {
+      const input = document.getElementById('modal-password');
+      const btn = document.getElementById('toggle-pwd-btn');
+      if (input.type === 'password') {
+        input.type = 'text';
+        btn.textContent = '🙈 Hide';
+      } else {
+        input.type = 'password';
+        btn.textContent = '👁️ Show';
+      }
+    }
+
+    // Copy to clipboard helper
+    function copyToClipboard(inputId, feedbackId) {
+      const input = document.getElementById(inputId);
+      const feedback = document.getElementById(inputId.replace('modal-', '') + '-copy-feedback');
+      const btn = document.getElementById(feedbackId);
+      
+      if (!input) return;
+      
+      navigator.clipboard.writeText(input.value).then(() => {
+        if (feedback) {
+          feedback.style.display = 'block';
+          setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 3000);
+        }
+        if (btn) {
+          const originalText = btn.textContent;
+          btn.textContent = '✅ Copied!';
+          btn.style.background = '#28a745';
+          setTimeout(() => {
+            btn.textContent = originalText;
+            btn.style.background = inputId.includes('username') ? '#007bff' : '#28a745';
+          }, 2000);
+        }
+      }).catch(err => {
+        // Fallback: select text
+        input.select();
+        input.setSelectionRange(0, 99999);
+        document.execCommand('copy');
+        if (feedback) {
+          feedback.style.display = 'block';
+          feedback.textContent = '✅ Copied to clipboard!';
+          setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 3000);
+        }
+      });
+    }
+
+    function appendLog(message, type = 'info') {
+      const logContent = document.getElementById('activity-log-content');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      logContent.prepend(entry);
+      if (logContent.children.length > 50) {
+        logContent.removeChild(logContent.lastChild);
+      }
+    }
+
+    // Initialize
+    window.addEventListener('DOMContentLoaded', async () => {
+      const hasAccess = await checkPlatformAdmin();
+      if (!hasAccess) return;
+      
+      appendLog('Platform Admin tool loaded', 'success');
+      await loadOrganizations();
+      displayRecentUsers(); // Load recent users on page load
+    });
+  </script>
+</body>
+</html>
+

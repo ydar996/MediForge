@@ -1,0 +1,247 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Mobile Sync</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .sync-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+    </style>
+</head>
+<body>
+    <h1>?? Direct Mobile Sync</h1>
+    <p>This tool will directly sync OOO Health and any other mobile registrations to Supabase.</p>
+    
+    <button onclick="syncAllMobileData()" class="btn-success">?? Sync All Mobile Data</button>
+    <button onclick="checkData()" class="btn-primary">?? Check Data First</button>
+    
+    <div id="results"></div>
+    
+    <!-- Load Supabase SDK directly for mobile compatibility -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+    <script>
+        // Initialize Supabase client
+        let supabaseClient = null;
+        
+        async function initializeSupabase() {
+            if (supabaseClient) return true;
+            
+            try {
+                const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+                const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+                
+                supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    },
+                    global: {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                });
+                
+                console.log('? Supabase client initialized');
+                return true;
+            } catch (error) {
+                console.error('? Supabase initialization failed:', error);
+                return false;
+            }
+        }
+        
+        async function checkData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Checking localStorage data...</p>';
+            
+            try {
+                const orgsData = localStorage.getItem('organizations');
+                const usersData = localStorage.getItem('users');
+                
+                let html = '<h2>?? localStorage Data Check</h2>';
+                
+                if (orgsData) {
+                    const orgs = JSON.parse(orgsData);
+                    html += `<div class="sync-section info"><h3>Organizations (${Object.keys(orgs).length}):</h3>`;
+                    Object.entries(orgs).forEach(([name, org]) => {
+                        const status = org.id ? '? Already synced' : '? Not synced';
+                        html += `<p><strong>${name}</strong> - ${status}</p>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div class="sync-section error"><h3>? No organizations found</h3></div>';
+                }
+                
+                if (usersData) {
+                    const users = JSON.parse(usersData);
+                    html += `<div class="sync-section info"><h3>Users (${users.length}):</h3>`;
+                    users.forEach(user => {
+                        const status = user.organizationId ? '? Already synced' : '? Not synced';
+                        html += `<p><strong>${user.firstName} ${user.lastName}</strong> (${user.username}) - ${status}</p>`;
+                    });
+                    html += '</div>';
+                } else {
+                    html += '<div class="sync-section error"><h3>? No users found</h3></div>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="sync-section error"><h3>? Error:</h3><p>${error.message}</p></div>`;
+            }
+        }
+        
+        async function syncAllMobileData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Starting direct sync...</p>';
+            
+            try {
+                // Initialize Supabase
+                const supabaseReady = await initializeSupabase();
+                if (!supabaseReady) {
+                    resultsDiv.innerHTML = '<div class="sync-section error"><h3>? Supabase initialization failed</h3></div>';
+                    return;
+                }
+                
+                const orgsData = localStorage.getItem('organizations');
+                const usersData = localStorage.getItem('users');
+                
+                if (!orgsData) {
+                    resultsDiv.innerHTML = '<div class="sync-section error"><h3>? No organizations found in localStorage</h3></div>';
+                    return;
+                }
+                
+                const orgs = JSON.parse(orgsData);
+                const users = JSON.parse(usersData || '[]');
+                
+                let html = '<h2>?? Direct Sync Results</h2>';
+                let syncCount = 0;
+                
+                // Sync organizations
+                for (const [orgName, org] of Object.entries(orgs)) {
+                    if (!org.id) {
+                        try {
+                            html += `<p>?? Syncing ${orgName}...</p>`;
+                            
+                            const { data: orgResult, error: orgError } = await supabaseClient
+                                .from('organizations')
+                                .insert([{
+                                    name: org.name,
+                                    country: org.country,
+                                    state: org.state,
+                                    city: org.city,
+                                    address_line1: org.addressLine1,
+                                    address_line2: org.addressLine2,
+                                    phone: org.phone,
+                                    after_hours_phone: org.afterHoursPhone,
+                                    org_code: org.orgCode,
+                                    created_at: org.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (orgError) {
+                                html += `<div class="sync-section error"><h3>? Failed to sync ${orgName}:</h3><p>${orgError.message}</p></div>`;
+                            } else {
+                                const orgId = orgResult[0].id;
+                                org.id = orgId;
+                                localStorage.setItem('organizations', JSON.stringify(orgs));
+                                html += `<div class="sync-section success"><h3>? Synced ${orgName} to Supabase</h3><p>Organization ID: ${orgId}</p></div>`;
+                                syncCount++;
+                            }
+                        } catch (error) {
+                            html += `<div class="sync-section error"><h3>? Error syncing ${orgName}:</h3><p>${error.message}</p></div>`;
+                        }
+                    } else {
+                        html += `<p>?? ${orgName} already synced (ID: ${org.id})</p>`;
+                    }
+                }
+                
+                // Sync users
+                for (const user of users) {
+                    if (!user.organizationId) {
+                        try {
+                            html += `<p>?? Syncing user ${user.firstName} ${user.lastName}...</p>`;
+                            
+                            // Find the organization for this user
+                            const userOrg = Object.values(orgs).find(org => org.name === user.org);
+                            if (!userOrg || !userOrg.id) {
+                                html += `<p>?? Skipping user ${user.firstName} ${user.lastName} - organization not synced yet</p>`;
+                                continue;
+                            }
+                            
+                            const { data: userResult, error: userError } = await supabaseClient
+                                .from('users')
+                                .insert([{
+                                    first_name: user.firstName,
+                                    last_name: user.lastName,
+                                    username: user.username,
+                                    gender: user.gender,
+                                    role: user.role,
+                                    organization_id: userOrg.id,
+                                    created_at: user.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (userError) {
+                                html += `<div class="sync-section error"><h3>? Failed to sync user ${user.firstName} ${user.lastName}:</h3><p>${userError.message}</p></div>`;
+                            } else {
+                                const userId = userResult[0].id;
+                                user.organizationId = userOrg.id;
+                                localStorage.setItem('users', JSON.stringify(users));
+                                html += `<div class="sync-section success"><h3>? Synced user ${user.firstName} ${user.lastName}</h3><p>User ID: ${userId}</p></div>`;
+                                syncCount++;
+                            }
+                        } catch (error) {
+                            html += `<div class="sync-section error"><h3>? Error syncing user ${user.firstName} ${user.lastName}:</h3><p>${error.message}</p></div>`;
+                        }
+                    } else {
+                        html += `<p>?? User ${user.firstName} ${user.lastName} already synced</p>`;
+                    }
+                }
+                
+                html += `<div class="sync-section success"><h3>?? Sync Complete!</h3><p>Successfully synced ${syncCount} items to Supabase</p></div>`;
+                html += '<p><strong>Next steps:</strong> Go to the platform dashboard and click "Force Refresh All Data" to see the synced organizations.</p>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="sync-section error"><h3>? Sync failed:</h3><p>${error.message}</p></div>`;
+            }
+        }
+        
+        // Auto-initialize on page load
+        document.addEventListener('DOMContentLoaded', initializeSupabase);
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

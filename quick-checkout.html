@@ -1,0 +1,759 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Quick Checkout - MediForge</title>
+    <link rel="stylesheet" href="css/styles.css?v=215">
+  <link rel="stylesheet" href="css/mobile.css?v=1">
+  <style>
+    .checkout-container {
+      max-width: 900px;
+      margin: 0 auto;
+    }
+    .checkout-form {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    .form-section {
+      margin-bottom: 25px;
+      padding-bottom: 20px;
+      border-bottom: 1px solid #ddd;
+    }
+    .form-section:last-child {
+      border-bottom: none;
+    }
+    .form-section h3 {
+      margin-top: 0;
+      color: #4CAF50;
+    }
+    .service-item {
+      display: grid;
+      grid-template-columns: 2fr 1fr 1fr auto;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #f5f5f5;
+      border-radius: 4px;
+    }
+    .quick-service-btns {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .quick-service-btns button {
+      padding: 10px;
+      font-size: 13px;
+    }
+    .total-section {
+      background: #f0f8ff;
+      padding: 20px;
+      border-radius: 8px;
+      margin-top: 20px;
+    }
+    .total-row {
+      display: flex;
+      justify-content: space-between;
+      margin: 10px 0;
+      font-size: 16px;
+    }
+    .total-row.grand-total {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+      border-top: 2px solid #4CAF50;
+      padding-top: 15px;
+      margin-top: 15px;
+    }
+    .payment-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 20px;
+    }
+    .payment-buttons button {
+      padding: 20px;
+      font-size: 18px;
+      font-weight: bold;
+    }
+  </style>
+</head>
+<body>
+  <div class="checkout-container">
+    <h1>&#128176; Quick Checkout</h1>
+    <div style="margin-bottom: 20px;">
+      <button onclick="window.location.href='billing-dashboard'" style="background: #666; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">&#8592; Back to Billing</button>
+    </div>
+
+    <div class="checkout-form">
+      <!-- Patient Selection -->
+      <div class="form-section">
+        <h3>1. Select Patient</h3>
+        <label for="patient-search">Search Patient:</label>
+        <input type="text" id="patient-search" placeholder="Type patient name or ID..." oninput="searchPatients()">
+        <div id="patient-results" style="margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; display: none;"></div>
+        <div id="selected-patient" style="margin-top: 10px; padding: 10px; background: #e8f5e9; border-radius: 4px; display: none;">
+          <strong>Selected:</strong> <span id="selected-patient-name"></span>
+          <button onclick="clearPatient()" style="float: right; font-size: 12px; padding: 5px 10px; background: #f44336;">Change</button>
+        </div>
+      </div>
+
+      <!-- Services Selection -->
+      <div class="form-section">
+        <h3>2. Add Services</h3>
+        
+        <!-- Quick Service Buttons -->
+        <p style="font-weight: bold; margin-bottom: 10px;">Quick Add:</p>
+        <div class="quick-service-btns" id="quick-services">
+          <!-- Populated by JS -->
+        </div>
+
+        <!-- Manual Service Add -->
+        <div style="margin-top: 20px;">
+          <label for="service-search">Or Search Service:</label>
+          <input type="text" id="service-search" placeholder="Type service name or press spacebar to see all..." oninput="searchServicesInput()" onfocus="showAllServicesOnFocus()" onkeydown="handleServiceSearchKey(event)">
+          <div id="service-results" style="margin-top: 10px; max-height: 200px; overflow-y: auto; border: 1px solid #ddd; display: none; background: white;"></div>
+        </div>
+
+        <!-- Selected Services -->
+        <div id="selected-services" style="margin-top: 20px;">
+          <p style="font-weight: bold;">Selected Services:</p>
+          <div id="services-list"></div>
+        </div>
+      </div>
+
+      <!-- Discount (Optional) -->
+      <div class="form-section">
+        <h3>3. Discount (Optional)</h3>
+        <label for="discount-amount">Discount Amount:</label>
+        <input type="number" id="discount-amount" value="0" min="0" step="0.01" oninput="updateTotal()">
+        <label for="discount-reason">Reason:</label>
+        <input type="text" id="discount-reason" placeholder="e.g., Senior citizen, Staff">
+      </div>
+
+      <!-- Total Calculation -->
+      <div class="total-section">
+        <div class="total-row">
+          <span>Subtotal:</span>
+          <span id="subtotal-display">$0.00</span>
+        </div>
+        <div class="total-row">
+          <span>Tax (<span id="tax-rate-display">0</span>%):</span>
+          <span id="tax-display">$0.00</span>
+        </div>
+        <div class="total-row">
+          <span>Discount:</span>
+          <span id="discount-display">$0.00</span>
+        </div>
+        <div class="total-row grand-total">
+          <span>TOTAL:</span>
+          <span id="total-display">$0.00</span>
+        </div>
+      </div>
+
+      <!-- Payment Methods -->
+      <div class="form-section">
+        <h3>4. Payment Method</h3>
+        <div class="payment-buttons">
+          <button onclick="processCashPayment()" style="background: #4CAF50; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            &#128176; Cash Payment
+          </button>
+          <button onclick="processMobileMoneyPayment()" style="background: #FF9800; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            &#128241; Mobile Money
+          </button>
+          <button onclick="processCardPayment()" style="background: #2196F3; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            &#128179; Card Payment
+          </button>
+          <button onclick="createInvoiceOnly()" style="background: #9C27B0; color: white; border: none; border-radius: 6px; cursor: pointer;">
+            &#128424; Invoice Only (Pay Later)
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113130113131313"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113130113131313"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=286"></script>
+  <script src="js/gl.js?v=1"></script>
+  <script src="js/pricing.js?v=1"></script>
+  <script src="js/payments.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>
+  
+  <script>
+    // 🔧 TRACE: quick-checkout.html loaded - payment buttons fix v215
+    console.log('🔧 TRACE: Fixed payment buttons - made functions async');
+    console.log('🔧 TRACE: Fixed billing.js TypeError - invoices.forEach is not a function');
+    console.log('🔧 TRACE: Added complete Supabase setup for quick checkout');
+    console.log('🔧 TRACE: Added connection status notifier for real-time sync');
+    console.log('🔧 TRACE: Enhanced getAllInvoices with better error handling');
+    console.log('🔧 TRACE: Added comprehensive trace logging for invoice creation');
+    console.log('🔧 TRACE: Enhanced generateInvoiceNumber with aggressive error handling');
+    console.log('🔧 TRACE: Added fallback invoice number generation');
+    console.log('🔧 TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('🔧 TRACE: CSS version updated to v215 for cache busting');
+    
+    let selectedPatient = null;
+    let selectedServices = [];
+    let taxRate = 0; // Will be loaded from settings
+    let defaultCurrency = 'USD'; // Will be loaded from settings
+
+    // Initialize
+    window.addEventListener('load', async function() {
+      console.log('🔧 TRACE: Quick checkout page loaded - initializing');
+      loadQuickServices();
+      loadSettings();
+      
+      // Check for URL parameters to pre-fill patient and service
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('patientId');
+      const appointmentType = urlParams.get('appointmentType');
+      const appointmentId = urlParams.get('appointmentId');
+      
+      if (patientId) {
+        await preSelectPatient(patientId);
+      }
+      
+      if (appointmentType) {
+        preSelectServiceByAppointmentType(appointmentType, appointmentId);
+      }
+    });
+
+    function loadSettings() {
+      // Load tax rate and currency from settings
+      if (typeof window.getDefaultTaxRate === 'function') {
+        taxRate = window.getDefaultTaxRate();
+      }
+      if (typeof window.getDefaultCurrency === 'function') {
+        defaultCurrency = window.getDefaultCurrency();
+      }
+      document.getElementById('tax-rate-display').textContent = taxRate || 0;
+      updateTotal(); // Update display with correct currency
+    }
+
+    function loadQuickServices() {
+      const frequentServices = window.getFrequentServices ? window.getFrequentServices() : [];
+      const container = document.getElementById('quick-services');
+      container.innerHTML = '';
+      
+      if (frequentServices.length === 0) {
+        // Fallback: show some common services if getFrequentServices is not available
+        const allServices = window.getActiveServices ? window.getActiveServices() : [];
+        const commonServices = allServices.slice(0, 6); // Show first 6 active services
+        
+        commonServices.forEach(service => {
+          const btn = document.createElement('button');
+          const priceText = window.formatCurrency ? window.formatCurrency(service.price, service.currency) : `${service.currency} ${service.price}`;
+          btn.textContent = `${service.name} (${priceText})`;
+          btn.onclick = () => addService(service);
+          btn.style.cssText = 'background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;';
+          container.appendChild(btn);
+        });
+      } else {
+        frequentServices.forEach(service => {
+          const btn = document.createElement('button');
+          const priceText = window.formatCurrency ? window.formatCurrency(service.price, service.currency) : `${service.currency} ${service.price}`;
+          btn.textContent = `${service.name} (${priceText})`;
+          btn.onclick = () => addService(service);
+          btn.style.cssText = 'background: #4CAF50; color: white; border: none; border-radius: 4px; cursor: pointer;';
+          container.appendChild(btn);
+        });
+      }
+    }
+
+    async function searchPatients() {
+      const query = document.getElementById('patient-search').value.trim();
+      const resultsDiv = document.getElementById('patient-results');
+      
+      if (query.length < 2) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      
+      const getDataKeyFn = window.getDataKey || function(key) {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const org = user.org || "Default";
+        return `${org}_${key}`;
+      };
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKeyFn("patients")) || "[]");
+        }
+      } catch (error) {
+        patients = JSON.parse(localStorage.getItem(getDataKeyFn("patients")) || "[]");
+      }
+      const filtered = patients.filter(p => 
+        `${p.firstName} ${p.lastName}`.toLowerCase().includes(query.toLowerCase()) ||
+        p.id.toLowerCase().includes(query.toLowerCase())
+      ).slice(0, 10);
+      
+      resultsDiv.innerHTML = '';
+      if (filtered.length === 0) {
+        resultsDiv.innerHTML = '<p style="padding: 10px;">No patients found</p>';
+      } else {
+        filtered.forEach(patient => {
+          const div = document.createElement('div');
+          div.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;';
+          div.textContent = `${patient.firstName} ${patient.lastName} - ${patient.dob} - ${patient.gender}`;
+          div.onmouseover = () => div.style.background = '#f5f5f5';
+          div.onmouseout = () => div.style.background = 'white';
+          div.onclick = () => selectPatient(patient);
+          resultsDiv.appendChild(div);
+        });
+      }
+      
+      resultsDiv.style.display = 'block';
+    }
+
+    function selectPatient(patient) {
+      selectedPatient = patient;
+      const patientName = `${patient.firstName || patient.first_name || ''} ${patient.lastName || patient.last_name || ''}`.trim();
+      const patientId = patient.id || patient.patient_id;
+      document.getElementById('selected-patient-name').textContent = `${patientName} (${patientId})`;
+      document.getElementById('selected-patient').style.display = 'block';
+      document.getElementById('patient-results').style.display = 'none';
+      document.getElementById('patient-search').value = '';
+    }
+    
+    async function preSelectPatient(patientId) {
+      try {
+        // Load patients
+        let patients = [];
+        const getDataKeyFn = window.getDataKey || function(key) {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const org = user.org || "Default";
+          return `${org}_${key}`;
+        };
+        
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKeyFn("patients")) || "[]");
+        }
+        
+        // Find patient by ID
+        const patient = patients.find(p => 
+          p.id === patientId || 
+          p.patient_id === patientId ||
+          String(p.id) === String(patientId) ||
+          String(p.patient_id) === String(patientId)
+        );
+        
+        if (patient) {
+          selectPatient(patient);
+        } else {
+          console.warn('Patient not found for ID:', patientId);
+        }
+      } catch (error) {
+        console.error('Error pre-selecting patient:', error);
+      }
+    }
+    
+    function preSelectServiceByAppointmentType(appointmentType, appointmentId) {
+      if (!appointmentType || typeof window.getPricingCatalog !== 'function') {
+        return;
+      }
+      
+      const appointmentTypeLower = appointmentType.toLowerCase();
+      let serviceCode = 'CONS-001'; // Default to General Consultation
+      
+      if (appointmentTypeLower.includes('follow') || appointmentTypeLower.includes('follow-up')) {
+        serviceCode = 'CONS-003'; // Follow-up Visit
+      } else if (appointmentTypeLower.includes('specialist')) {
+        serviceCode = 'CONS-002'; // Specialist Consultation
+      } else {
+        serviceCode = 'CONS-001'; // General Consultation
+      }
+      
+      const catalog = window.getPricingCatalog();
+      const service = catalog.find(s => s.code === serviceCode);
+      
+      if (service) {
+        // Add the service to selected services
+        addService(service);
+        
+        // If appointmentId is provided, we can add it as a note
+        if (appointmentId) {
+          // Store appointmentId for later use in invoice creation
+          window._appointmentIdForInvoice = appointmentId;
+        }
+      }
+    }
+
+    function clearPatient() {
+      selectedPatient = null;
+      document.getElementById('selected-patient').style.display = 'none';
+    }
+
+    function handleServiceSearchKey(event) {
+      // If spacebar is pressed and field is empty, show all services
+      if (event.key === ' ' && document.getElementById('service-search').value === '') {
+        event.preventDefault(); // Prevent space from being added
+        showAllServices();
+      }
+    }
+
+    function searchServicesInput() {
+      const query = document.getElementById('service-search').value.trim();
+      const resultsDiv = document.getElementById('service-results');
+      
+      // Show all services if user presses spacebar or has empty input
+      if (query === ' ' || query === '') {
+        showAllServices();
+        return;
+      }
+      
+      if (query.length < 1) {
+        resultsDiv.style.display = 'none';
+        return;
+      }
+      
+      // Use the global searchServices function from pricing.js
+      const services = window.searchServices ? window.searchServices(query) : [];
+      
+      displayServiceResults(services);
+    }
+
+    function showAllServicesOnFocus() {
+      const query = document.getElementById('service-search').value.trim();
+      if (query === '') {
+        showAllServices();
+      }
+    }
+
+    function showAllServices() {
+      const allServices = window.getActiveServices ? window.getActiveServices() : [];
+      displayServiceResults(allServices);
+    }
+
+    function displayServiceResults(services) {
+      const resultsDiv = document.getElementById('service-results');
+      resultsDiv.innerHTML = '';
+      
+      if (services.length === 0) {
+        resultsDiv.innerHTML = '<p style="padding: 10px;">No services found</p>';
+      } else {
+        services.forEach(service => {
+          const div = document.createElement('div');
+          div.style.cssText = 'padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;';
+          const priceText = window.formatCurrency ? window.formatCurrency(service.price, service.currency) : `${service.currency} ${service.price}`;
+          div.textContent = `${service.name} - ${service.category} - ${priceText}`;
+          div.onmouseover = () => div.style.background = '#f5f5f5';
+          div.onmouseout = () => div.style.background = 'white';
+          div.onclick = () => {
+            addService(service);
+            resultsDiv.style.display = 'none';
+            document.getElementById('service-search').value = '';
+          };
+          resultsDiv.appendChild(div);
+        });
+      }
+      
+      resultsDiv.style.display = 'block';
+    }
+
+    function addService(service) {
+      // Check if already added
+      const existing = selectedServices.find(s => s.id === service.id);
+      if (existing) {
+        existing.quantity++;
+      } else {
+        selectedServices.push({
+          ...service,
+          quantity: 1
+        });
+      }
+      
+      updateServicesDisplay();
+      updateTotal();
+    }
+
+    function updateServicesDisplay() {
+      const container = document.getElementById('services-list');
+      container.innerHTML = '';
+      
+      if (selectedServices.length === 0) {
+        container.innerHTML = '<p style="color: #999;">No services added yet</p>';
+        return;
+      }
+      
+      selectedServices.forEach((service, index) => {
+        const div = document.createElement('div');
+        div.className = 'service-item';
+        const priceText = window.formatCurrency ? window.formatCurrency(service.price * service.quantity, service.currency) : `${service.currency} ${(service.price * service.quantity).toFixed(2)}`;
+        div.innerHTML = `
+          <span>${service.name}</span>
+          <input type="number" value="${service.quantity}" min="1" 
+                 onchange="updateServiceQuantity(${index}, this.value)" 
+                 style="width: 60px; text-align: center;">
+          <span>${priceText}</span>
+          <button onclick="removeService(${index})" style="background: #f44336; color: white; border: none; padding: 5px 10px; font-size: 12px; border-radius: 4px; cursor: pointer;">Remove</button>
+        `;
+        container.appendChild(div);
+      });
+    }
+
+    function updateServiceQuantity(index, quantity) {
+      selectedServices[index].quantity = parseInt(quantity) || 1;
+      updateServicesDisplay();
+      updateTotal();
+    }
+
+    function removeService(index) {
+      selectedServices.splice(index, 1);
+      updateServicesDisplay();
+      updateTotal();
+    }
+
+    function updateTotal() {
+      const subtotal = selectedServices.reduce((sum, s) => sum + (s.price * s.quantity), 0);
+      const tax = subtotal * (taxRate / 100);
+      const discount = parseFloat(document.getElementById('discount-amount').value) || 0;
+      const total = subtotal + tax - discount;
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
+      
+      document.getElementById('subtotal-display').textContent = formatCurrencyFn(subtotal, defaultCurrency);
+      document.getElementById('tax-display').textContent = formatCurrencyFn(tax, defaultCurrency);
+      document.getElementById('discount-display').textContent = formatCurrencyFn(discount, defaultCurrency);
+      document.getElementById('total-display').textContent = formatCurrencyFn(total, defaultCurrency);
+    }
+
+    function validateCheckout() {
+      if (!selectedPatient) {
+        alert('Please select a patient');
+        return false;
+      }
+      
+      if (selectedServices.length === 0) {
+        alert('Please add at least one service');
+        return false;
+      }
+      
+      return true;
+    }
+
+    async function processCashPayment() {
+      if (!validateCheckout()) return;
+      
+      if (typeof window.createInvoice !== 'function') {
+        alert('Billing system is not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      try {
+        console.log('🔧 TRACE: Starting cash payment process');
+        
+        // Create invoice
+        const invoice = createInvoiceData();
+        console.log('🔧 TRACE: Invoice data created:', invoice);
+        
+        const savedInvoice = await window.createInvoice(invoice);
+        console.log('🔧 TRACE: Invoice created successfully:', savedInvoice);
+        
+        if (!savedInvoice || !savedInvoice.id) {
+          alert('Failed to create invoice. Please try again.');
+          return;
+        }
+        
+        // Redirect to collect payment page
+        window.location.href = `/collect-payment?invoiceId=${savedInvoice.id}`;
+      } catch (error) {
+        console.error('❌ Error creating invoice:', error);
+        alert(`Error creating invoice: ${error.message || 'Unknown error'}. Please try again.`);
+      }
+    }
+
+    async function processMobileMoneyPayment() {
+      if (!validateCheckout()) return;
+      
+      if (typeof window.createInvoice !== 'function') {
+        alert('Billing system is not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      try {
+        // Create invoice
+        const invoice = createInvoiceData();
+        const savedInvoice = await window.createInvoice(invoice);
+        
+        if (!savedInvoice || !savedInvoice.id) {
+          alert('Failed to create invoice. Please try again.');
+          return;
+        }
+        
+        // Redirect to collect payment page
+        window.location.href = `/collect-payment?invoiceId=${savedInvoice.id}`;
+      } catch (error) {
+        console.error('❌ Error creating invoice:', error);
+        alert('Error creating invoice. Please try again.');
+      }
+    }
+
+    async function processCardPayment() {
+      if (!validateCheckout()) return;
+      
+      if (typeof window.createInvoice !== 'function') {
+        alert('Billing system is not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      try {
+        // Create invoice
+        const invoice = createInvoiceData();
+        const savedInvoice = await window.createInvoice(invoice);
+        
+        if (!savedInvoice || !savedInvoice.id) {
+          alert('Failed to create invoice. Please try again.');
+          return;
+        }
+        
+        // Redirect to collect payment page
+        window.location.href = `/collect-payment?invoiceId=${savedInvoice.id}`;
+      } catch (error) {
+        console.error('❌ Error creating invoice:', error);
+        alert('Error creating invoice. Please try again.');
+      }
+    }
+
+    async function createInvoiceOnly() {
+      if (!validateCheckout()) return;
+      
+      if (typeof window.createInvoice !== 'function') {
+        alert('Billing system is not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      const dueDays = prompt('Payment due in how many days? (e.g., 30)', '30');
+      if (!dueDays || isNaN(dueDays) || parseInt(dueDays) < 0) {
+        return;
+      }
+      
+      try {
+        // Create invoice
+        const invoice = createInvoiceData();
+        invoice.dueDate = new Date(Date.now() + parseInt(dueDays) * 24 * 60 * 60 * 1000).toISOString().split('T')[0];
+        const savedInvoice = await window.createInvoice(invoice);
+        
+        if (!savedInvoice || !savedInvoice.invoiceNumber) {
+          alert('Failed to create invoice. Please try again.');
+          return;
+        }
+        
+        console.log('✅ Invoice created, ID:', savedInvoice.id, 'Invoice Number:', savedInvoice.invoiceNumber);
+        
+        // CRITICAL: Wait a moment for Supabase to fully persist the invoice
+        // Then verify it's accessible before redirecting
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Verify invoice is accessible
+        if (typeof window.getInvoiceById === 'function') {
+          const verifyInvoice = await window.getInvoiceById(savedInvoice.id);
+          if (!verifyInvoice) {
+            console.warn('⚠️ Invoice not immediately accessible, waiting a bit longer...');
+            await new Promise(resolve => setTimeout(resolve, 1000));
+            const verifyInvoice2 = await window.getInvoiceById(savedInvoice.id);
+            if (!verifyInvoice2) {
+              console.error('❌ Invoice still not accessible after wait. ID:', savedInvoice.id);
+              alert(`Invoice ${savedInvoice.invoiceNumber} was created, but there may be a delay. Please try viewing it from the billing dashboard in a moment.`);
+              resetForm();
+              return;
+            }
+          }
+        }
+        
+        // Redirect to invoice details
+        window.location.href = `/invoice-details?id=${savedInvoice.id}`;
+      } catch (error) {
+        console.error('❌ Error creating invoice:', error);
+        alert('Error creating invoice. Please try again.');
+      }
+    }
+
+    function createInvoiceData() {
+      const subtotal = selectedServices.reduce((sum, s) => sum + (s.price * s.quantity), 0);
+      const discount = parseFloat(document.getElementById('discount-amount').value) || 0;
+      
+      // Get appointmentId from URL parameters to link invoice to appointment
+      const urlParams = new URLSearchParams(window.location.search);
+      const appointmentId = urlParams.get('appointmentId');
+      const appointmentType = urlParams.get('appointmentType');
+      
+      const invoiceData = {
+        patientId: selectedPatient.id || selectedPatient.patient_id,
+        patientName: `${selectedPatient.firstName || selectedPatient.first_name || ''} ${selectedPatient.lastName || selectedPatient.last_name || ''}`.trim(),
+        services: selectedServices.map(s => ({
+          id: s.id,
+          code: s.code,
+          name: s.name,
+          quantity: s.quantity,
+          price: s.price,
+          total: s.price * s.quantity
+        })),
+        currency: defaultCurrency,
+        taxRate: taxRate,
+        discountAmount: discount,
+        discountReason: document.getElementById('discount-reason').value
+      };
+      
+      // CRITICAL: Link invoice to appointment if appointmentId is in URL
+      // This ensures the invoice is directly connected to the specific visit/appointment
+      if (appointmentId) {
+        invoiceData.encounterId = appointmentId;
+        invoiceData.notes = appointmentType ? `Invoice for ${appointmentType} appointment` : 'Invoice for appointment';
+      }
+      
+      return invoiceData;
+    }
+
+    function resetForm() {
+      selectedPatient = null;
+      selectedServices = [];
+      document.getElementById('selected-patient').style.display = 'none';
+      document.getElementById('discount-amount').value = '0';
+      document.getElementById('discount-reason').value = '';
+      updateServicesDisplay();
+      updateTotal();
+    }
+    
+    console.log('🔧 TRACE: Quick checkout page initialization complete');
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

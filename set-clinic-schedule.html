@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Set Clinic Schedule</title>
+  <link rel="stylesheet" href="css/styles.css?v=52">
+</head>
+<body>
+  <div style="margin-bottom: 20px;">
+    <button onclick="window.location.href='dashboard'" style="margin-right: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">&larr; Back to Dashboard</button>
+    <button onclick="window.location.href='schedule'" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">&larr; Back to Schedule</button>
+  </div>
+  
+  <h1>Clinic Schedule Configuration</h1>
+  
+  <form id="schedule-config-form">
+    <div class="config-section">
+      <h2>Working Hours</h2>
+      <div class="form-group">
+        <label for="start-time">Start Time:</label>
+        <input type="time" id="start-time" required>
+      </div>
+      <div class="form-group">
+        <label for="end-time">End Time:</label>
+        <input type="time" id="end-time" required>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h2>Lunch Break (Optional)</h2>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="enable-lunch-break"> Enable Lunch Break
+        </label>
+      </div>
+      <div id="lunch-break-config" style="display: none;">
+        <div class="form-group">
+          <label for="lunch-start">Lunch Start Time:</label>
+          <input type="time" id="lunch-start">
+        </div>
+        <div class="form-group">
+          <label for="lunch-duration">Lunch Duration (minutes):</label>
+          <input type="number" id="lunch-duration" min="30" max="60" value="60" required>
+          <small style="color: #666; font-size: 12px;">Enter minutes between 30-60 (inclusive)</small>
+        </div>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h2>Appointment Slot Duration</h2>
+      <div class="form-group">
+        <label for="slot-duration">Default Slot Duration:</label>
+        <select id="slot-duration" required>
+          <option value="15">15 minutes</option>
+          <option value="20" selected>20 minutes</option>
+          <option value="30">30 minutes</option>
+          <option value="45">45 minutes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="regular-visit-duration">Regular Follow-up Visit Duration:</label>
+        <select id="regular-visit-duration" required>
+          <option value="15">15 minutes</option>
+          <option value="20" selected>20 minutes</option>
+          <option value="30">30 minutes</option>
+        </select>
+      </div>
+      <div class="form-group">
+        <label for="initial-visit-duration">Initial Visit Duration:</label>
+        <select id="initial-visit-duration" required>
+          <option value="30">30 minutes</option>
+          <option value="45" selected>45 minutes</option>
+          <option value="60">60 minutes</option>
+        </select>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h2>Working Days</h2>
+      <div class="form-group">
+        <label>
+          <input type="checkbox" id="monday" checked> Monday
+        </label>
+        <label>
+          <input type="checkbox" id="tuesday" checked> Tuesday
+        </label>
+        <label>
+          <input type="checkbox" id="wednesday" checked> Wednesday
+        </label>
+        <label>
+          <input type="checkbox" id="thursday" checked> Thursday
+        </label>
+        <label>
+          <input type="checkbox" id="friday" checked> Friday
+        </label>
+        <label>
+          <input type="checkbox" id="saturday"> Saturday
+        </label>
+        <label>
+          <input type="checkbox" id="sunday"> Sunday
+        </label>
+      </div>
+    </div>
+
+    <button type="submit" style="margin-top: 20px; padding: 12px 24px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 500;">Save Schedule Configuration</button>
+  </form>
+
+  <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">
+    <h3>Current Schedule Preview</h3>
+    <div id="schedule-preview"></div>
+  </div>
+
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <script>
+    // TRACE LOGGING: Set clinic schedule page complete Supabase setup fix v52
+    console.log('?? TRACE: set-clinic-schedule.html loaded - Complete Supabase setup fix v52');
+    console.log('?? TRACE: Added Supabase CDN library, client, and data loader');
+    console.log('?? TRACE: Set clinic schedule page now has complete Supabase setup');
+    console.log('?? TRACE: Deployment timestamp:', new Date().toISOString());
+    console.log('?? TRACE: CSS version updated to v52 for cache busting');
+    
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+  </script>
+  
+  <script src="js/vendor/supabase.min.js"></script>  <!-- Supabase CDN library -->
+  <script src="js/supabase-client.js?v=202510220113130113131313"></script>  <!-- Supabase client initialization -->
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/main.js?v=202510220113130113131313"></script>  <!-- General helpers -->
+  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>  <!-- Universal sync status indicator -->
+  
+  <script>
+    // Load current configuration
+    function loadCurrentConfig() {
+      const config = JSON.parse(localStorage.getItem(getDataKey("clinic-schedule")) || '{}');
+      
+      // Set working hours
+      document.getElementById("start-time").value = config.startTime || "08:00";
+      document.getElementById("end-time").value = config.endTime || "18:00";
+      
+      // Set lunch break
+      if (config.lunchBreak && config.lunchBreak.enabled) {
+        document.getElementById("enable-lunch-break").checked = true;
+        document.getElementById("lunch-start").value = config.lunchBreak.startTime || "12:00";
+        document.getElementById("lunch-duration").value = config.lunchBreak.duration || 60;
+        document.getElementById("lunch-break-config").style.display = "block";
+      }
+      
+      // Set slot durations
+      document.getElementById("slot-duration").value = config.slotDuration || 20;
+      document.getElementById("regular-visit-duration").value = config.regularVisitDuration || 20;
+      document.getElementById("initial-visit-duration").value = config.initialVisitDuration || 45;
+      
+      // Set working days
+      const workingDays = config.workingDays || ["monday", "tuesday", "wednesday", "thursday", "friday"];
+      workingDays.forEach(day => {
+        const checkbox = document.getElementById(day);
+        if (checkbox) checkbox.checked = true;
+      });
+      
+      updatePreview();
+    }
+
+    // Toggle lunch break configuration
+    document.getElementById("enable-lunch-break").addEventListener("change", function() {
+      const configDiv = document.getElementById("lunch-break-config");
+      configDiv.style.display = this.checked ? "block" : "none";
+      updatePreview();
+    });
+
+    // Update preview when any setting changes
+    document.querySelectorAll("input, select").forEach(element => {
+      element.addEventListener("change", updatePreview);
+    });
+
+    // Add validation for lunch duration input
+    document.getElementById("lunch-duration").addEventListener("input", function() {
+      const value = parseInt(this.value);
+      if (value < 30 || value > 60) {
+        this.setCustomValidity("Lunch duration must be between 30 and 60 minutes");
+      } else {
+        this.setCustomValidity("");
+      }
+      updatePreview();
+    });
+
+    // Generate time slots
+    function generateTimeSlots(startTime, endTime, slotDuration, lunchBreak = null) {
+      const slots = [];
+      const start = new Date(`2000-01-01T${startTime}`);
+      const end = new Date(`2000-01-01T${endTime}`);
+      
+      let current = new Date(start);
+      
+      while (current < end) {
+        const timeStr = current.toTimeString().substr(0, 5);
+        
+        // Check if this slot conflicts with lunch break
+        if (lunchBreak && lunchBreak.enabled) {
+          const lunchStart = new Date(`2000-01-01T${lunchBreak.startTime}`);
+          const lunchEnd = new Date(lunchStart.getTime() + lunchBreak.duration * 60000);
+          
+          if (current >= lunchStart && current < lunchEnd) {
+            current.setMinutes(current.getMinutes() + slotDuration);
+            continue;
+          }
+        }
+        
+        slots.push(timeStr);
+        current.setMinutes(current.getMinutes() + slotDuration);
+      }
+      
+      return slots;
+    }
+
+    // Update schedule preview
+    function updatePreview() {
+      const startTime = document.getElementById("start-time").value || "08:00";
+      const endTime = document.getElementById("end-time").value || "18:00";
+      const slotDuration = parseInt(document.getElementById("slot-duration").value) || 20;
+      const enableLunch = document.getElementById("enable-lunch-break").checked;
+      
+      let lunchBreak = null;
+      if (enableLunch) {
+        lunchBreak = {
+          enabled: true,
+          startTime: document.getElementById("lunch-start").value || "12:00",
+          duration: parseInt(document.getElementById("lunch-duration").value) || 60
+        };
+      }
+      
+      const slots = generateTimeSlots(startTime, endTime, slotDuration, lunchBreak);
+      
+      const preview = document.getElementById("schedule-preview");
+      preview.innerHTML = `
+        <p><strong>Working Hours:</strong> ${startTime} - ${endTime}</p>
+        <p><strong>Slot Duration:</strong> ${slotDuration} minutes</p>
+        ${lunchBreak ? `<p><strong>Lunch Break:</strong> ${lunchBreak.startTime} (${lunchBreak.duration} minutes)</p>` : '<p><strong>Lunch Break:</strong> None</p>'}
+        <p><strong>Total Available Slots:</strong> ${slots.length}</p>
+        <p><strong>Sample Slots:</strong> ${slots.slice(0, 5).join(', ')}${slots.length > 5 ? '...' : ''}</p>
+      `;
+    }
+
+    // Form submission
+    document.getElementById("schedule-config-form").addEventListener("submit", function(e) {
+      e.preventDefault();
+      
+      const config = {
+        startTime: document.getElementById("start-time").value,
+        endTime: document.getElementById("end-time").value,
+        slotDuration: parseInt(document.getElementById("slot-duration").value),
+        regularVisitDuration: parseInt(document.getElementById("regular-visit-duration").value),
+        initialVisitDuration: parseInt(document.getElementById("initial-visit-duration").value),
+        workingDays: []
+      };
+      
+      // Get working days
+      const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
+      days.forEach(day => {
+        if (document.getElementById(day).checked) {
+          config.workingDays.push(day);
+        }
+      });
+      
+      // Get lunch break configuration
+      if (document.getElementById("enable-lunch-break").checked) {
+        config.lunchBreak = {
+          enabled: true,
+          startTime: document.getElementById("lunch-start").value,
+          duration: parseInt(document.getElementById("lunch-duration").value)
+        };
+      } else {
+        config.lunchBreak = { enabled: false };
+      }
+      
+      // Save configuration
+      localStorage.setItem(getDataKey("clinic-schedule"), JSON.stringify(config));
+      
+      alert("Schedule configuration saved successfully!");
+      
+      // Dispatch custom event to notify other pages
+      window.dispatchEvent(new CustomEvent('scheduleConfigUpdated', { detail: config }));
+    });
+
+    // Load configuration on page load
+    window.addEventListener('load', loadCurrentConfig);
+  </script>
+  
+  <style>
+    .config-section {
+      margin-bottom: 30px;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      background-color: #f9f9f9;
+    }
+    
+    .config-section h2 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #007bff;
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 500;
+    }
+    
+    .form-group input[type="time"],
+    .form-group select {
+      width: 200px;
+      padding: 8px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .form-group input[type="checkbox"] {
+      margin-right: 8px;
+    }
+    
+    .form-group label input[type="checkbox"] {
+      display: inline;
+      width: auto;
+      margin-right: 5px;
+    }
+  </style>  
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+

@@ -1,0 +1,1044 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Missing Clinic - Diagnostic Tool</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    .search-box {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      margin-bottom: 20px;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .result-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    .result-table th,
+    .result-table td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    .result-table th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+    .result-table tr:hover {
+      background: #f8f9fa;
+    }
+    .match {
+      background: #d4edda;
+      color: #155724;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .no-match {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 2px 6px;
+      border-radius: 4px;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .success {
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .info {
+      background: #d1ecf1;
+      border-left: 4px solid #17a2b8;
+      padding: 15px;
+      margin: 15px 0;
+      border-radius: 4px;
+    }
+    .code-block {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      font-family: monospace;
+      font-size: 12px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>?? Find Missing Clinic - Diagnostic Tool</h1>
+  
+  <div class="section">
+    <h2>Problem Description</h2>
+    <p>A clinic says they registered and logged in, but they don't appear in:</p>
+    <ul>
+      <li>Platform dashboard organization list</li>
+      <li>Audit logs</li>
+      <li>Supabase organizations table</li>
+    </ul>
+    <p><strong>Yet they can log in and see their dashboard.</strong></p>
+  </div>
+
+  <div class="section">
+    <h2>?? Search for Clinic</h2>
+    <input type="text" id="clinic-name" class="search-box" placeholder="Enter clinic name or organization code...">
+    <button onclick="searchEverywhere()">?? Search Everywhere</button>
+    <button onclick="scanAllLocalStorage()">?? Scan All localStorage</button>
+    <button onclick="checkSupabase()">?? Check Supabase Only</button>
+    <button onclick="findOrphanedUsers()">?? Find Orphaned Users</button>
+    <button onclick="exportDiagnostics()">?? Export Diagnostics</button>
+  </div>
+
+  <div id="results" class="section" style="display: none;">
+    <h2>?? Search Results</h2>
+    <div id="results-content"></div>
+  </div>
+
+  <div class="section">
+    <h2>?? System Status</h2>
+    <div id="system-status"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script>
+    // Use existing Supabase client from supabase-client.js if available
+    // Otherwise, initialize our own using the constants from that file
+    let supabaseClient = null;
+    
+    // Try to use the existing client from supabase-client.js
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+      supabaseClient = window.supabaseClient;
+      console.log('? Using existing Supabase client from supabase-client.js');
+    } else if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+      // Fallback: Use the constants from supabase-client.js if available
+      const SUPABASE_URL = window.__SUPABASE_CONFIG__?.url || ((window.__SUPABASE_CONFIG__||{}).url||'');
+      const SUPABASE_ANON_KEY = window.__SUPABASE_CONFIG__?.anonKey || ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+      supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+      console.log('? Created new Supabase client');
+    } else {
+      console.warn('?? Supabase client not available');
+    }
+
+    // Show system status
+    async function showSystemStatus() {
+      const statusDiv = document.getElementById('system-status');
+      let html = '';
+
+      // Check Supabase connection
+      html += '<div class="info"><strong>Supabase Connection:</strong> ';
+      try {
+        if (supabaseClient) {
+          const { data, error } = await supabaseClient.from('organizations').select('id', { count: 'exact' }).limit(1);
+          if (error) {
+            html += `<span class="no-match">? Error: ${error.message}</span>`;
+          } else {
+            html += '<span class="match">? Connected</span>';
+          }
+        } else {
+          html += '<span class="no-match">? Not initialized</span>';
+        }
+      } catch (e) {
+        html += `<span class="no-match">? Error: ${e.message}</span>`;
+      }
+      html += '</div>';
+
+      // Count localStorage keys
+      html += '<div class="info"><strong>localStorage Keys:</strong> ' + localStorage.length + ' keys</div>';
+
+      // Count Supabase organizations
+      if (supabaseClient) {
+        try {
+          const { count, error } = await supabaseClient.from('organizations').select('*', { count: 'exact', head: true });
+          if (!error) {
+            html += `<div class="info"><strong>Supabase Organizations:</strong> ${count || 0} organizations</div>`;
+          }
+        } catch (e) {
+          html += `<div class="warning">Could not count Supabase organizations: ${e.message}</div>`;
+        }
+      }
+
+      statusDiv.innerHTML = html;
+    }
+
+    // Search everywhere
+    async function searchEverywhere() {
+      const searchTerm = document.getElementById('clinic-name').value.trim().toLowerCase();
+      if (!searchTerm) {
+        alert('Please enter a clinic name or organization code');
+        return;
+      }
+
+      const resultsDiv = document.getElementById('results');
+      const contentDiv = document.getElementById('results-content');
+      resultsDiv.style.display = 'block';
+      contentDiv.innerHTML = '<p>?? Searching everywhere...</p>';
+
+      let results = {
+        supabase: [],
+        localStorage: [],
+        users: [],
+        auditLogs: [],
+        localStorageKeys: []
+      };
+
+      // 1. Search Supabase
+      if (supabaseClient) {
+        try {
+          const { data: orgs, error } = await supabaseClient
+            .from('organizations')
+            .select('*')
+            .ilike('name', `%${searchTerm}%`);
+          
+          if (!error && orgs) {
+            results.supabase = orgs;
+          }
+
+          // Also search by org_code
+          const { data: orgsByCode } = await supabaseClient
+            .from('organizations')
+            .select('*')
+            .ilike('org_code', `%${searchTerm}%`);
+          
+          if (orgsByCode) {
+            results.supabase = [...results.supabase, ...orgsByCode].filter((org, index, self) =>
+              index === self.findIndex(o => o.id === org.id)
+            );
+          }
+        } catch (e) {
+          console.error('Supabase search error:', e);
+        }
+      }
+
+      // 2. Search localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        
+        // Check if key or value contains search term
+        if (key.toLowerCase().includes(searchTerm) || value.toLowerCase().includes(searchTerm)) {
+          try {
+            const parsed = JSON.parse(value);
+            if (typeof parsed === 'object') {
+              // Check if it's an organization
+              if (parsed.name && parsed.name.toLowerCase().includes(searchTerm)) {
+                results.localStorage.push({ key, data: parsed });
+              }
+              // Check if it's a user with matching org
+              if (parsed.org && parsed.org.toLowerCase().includes(searchTerm)) {
+                results.users.push({ key, data: parsed });
+              }
+            }
+          } catch (e) {
+            // Not JSON, but key or raw value matches
+            if (key.toLowerCase().includes(searchTerm)) {
+              results.localStorageKeys.push({ key, value: value.substring(0, 100) });
+            }
+          }
+        }
+      }
+
+      // 3. Search audit logs
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && key.includes('auditLog')) {
+          try {
+            const logs = JSON.parse(localStorage.getItem(key) || '[]');
+            const matchingLogs = logs.filter(log => 
+              JSON.stringify(log).toLowerCase().includes(searchTerm)
+            );
+            if (matchingLogs.length > 0) {
+              results.auditLogs.push({ key, logs: matchingLogs });
+            }
+          } catch (e) {
+            // Skip invalid JSON
+          }
+        }
+      }
+
+      // 4. Search users in Supabase
+      if (supabaseClient) {
+        try {
+          const { data: users } = await supabaseClient
+            .from('users')
+            .select('*, organizations(*)')
+            .or(`username.ilike.%${searchTerm}%,email.ilike.%${searchTerm}%`);
+          
+          if (users) {
+            results.users.push(...users.map(u => ({ key: 'supabase', data: u })));
+          }
+
+          // Also search by organization name in user records
+          const { data: usersByOrg } = await supabaseClient
+            .from('users')
+            .select('*, organizations(*)')
+            .ilike('organization_id::text', `%${searchTerm}%`);
+          
+          if (usersByOrg) {
+            results.users.push(...usersByOrg.map(u => ({ key: 'supabase-org', data: u })));
+          }
+        } catch (e) {
+          console.error('User search error:', e);
+        }
+      }
+
+      // 5. Check if there are users with organization_id but no matching organization
+      if (supabaseClient) {
+        try {
+          const { data: allUsers } = await supabaseClient
+            .from('users')
+            .select('id, username, email, organization_id, organizations(*)');
+          
+          if (allUsers) {
+            const orphanedUsers = allUsers.filter(user => 
+              user.organization_id && !user.organizations
+            );
+            
+            if (orphanedUsers.length > 0) {
+              results.users.push(...orphanedUsers.map(u => ({ 
+                key: 'orphaned', 
+                data: {
+                  ...u,
+                  _isOrphaned: true,
+                  _missingOrgId: u.organization_id
+                }
+              })));
+              
+              // Check if any orphaned user matches search term
+              const matchingOrphaned = orphanedUsers.filter(u => 
+                JSON.stringify(u).toLowerCase().includes(searchTerm)
+              );
+              
+              if (matchingOrphaned.length > 0) {
+                results.warnings = results.warnings || [];
+                results.warnings.push({
+                  type: 'orphaned_users',
+                  message: `Found ${matchingOrphaned.length} orphaned user(s) matching search - they have organization_id but no matching organization in Supabase!`,
+                  users: matchingOrphaned
+                });
+              }
+            }
+          }
+        } catch (e) {
+          console.error('Orphaned user check error:', e);
+        }
+      }
+
+      // Display results
+      displayResults(searchTerm, results);
+    }
+
+    // Display search results
+    function displayResults(searchTerm, results) {
+      const contentDiv = document.getElementById('results-content');
+      let html = '';
+
+      html += `<h3>Search Results for: "${searchTerm}"</h3>`;
+
+      // Supabase organizations
+      html += `<h4>?? Supabase Organizations (${results.supabase.length})</h4>`;
+      if (results.supabase.length > 0) {
+        html += '<table class="result-table"><tr><th>ID</th><th>Name</th><th>Org Code</th><th>Country</th><th>Status</th><th>Created</th></tr>';
+        results.supabase.forEach(org => {
+          html += `<tr>
+            <td>${org.id}</td>
+            <td><strong>${org.name}</strong></td>
+            <td>${org.org_code || 'N/A'}</td>
+            <td>${org.country || 'N/A'}</td>
+            <td>${org.status || 'active'}</td>
+            <td>${org.created_at ? new Date(org.created_at).toLocaleString() : 'N/A'}</td>
+          </tr>`;
+        });
+        html += '</table>';
+      } else {
+        html += '<div class="warning">? No matching organizations found in Supabase</div>';
+      }
+
+      // localStorage organizations
+      html += `<h4>?? localStorage Organizations (${results.localStorage.length})</h4>`;
+      if (results.localStorage.length > 0) {
+        html += '<table class="result-table"><tr><th>Key</th><th>Name</th><th>Data</th></tr>';
+        results.localStorage.forEach(item => {
+          html += `<tr>
+            <td><code>${item.key}</code></td>
+            <td><strong>${item.data.name || 'N/A'}</strong></td>
+            <td><pre class="code-block">${JSON.stringify(item.data, null, 2).substring(0, 500)}</pre></td>
+          </tr>`;
+        });
+        html += '</table>';
+      } else {
+        html += '<div class="info">No matching organizations found in localStorage</div>';
+      }
+
+      // Users
+      html += `<h4>?? Matching Users (${results.users.length})</h4>`;
+      if (results.users.length > 0) {
+        html += '<table class="result-table"><tr><th>Source</th><th>Username</th><th>Organization</th><th>Role</th><th>Data</th></tr>';
+        results.users.forEach(item => {
+          const user = item.data;
+          html += `<tr>
+            <td>${item.key}</td>
+            <td><strong>${user.username || user.email || 'N/A'}</strong></td>
+            <td>${user.org || user.organizations?.name || user.organization_id || 'N/A'}</td>
+            <td>${user.role || 'N/A'}</td>
+            <td><pre class="code-block">${JSON.stringify(user, null, 2).substring(0, 300)}</pre></td>
+          </tr>`;
+        });
+        html += '</table>';
+      } else {
+        html += '<div class="info">No matching users found</div>';
+      }
+
+      // Audit logs
+      html += `<h4>?? Audit Logs (${results.auditLogs.length} matching entries)</h4>`;
+      if (results.auditLogs.length > 0) {
+        results.auditLogs.forEach(item => {
+          html += `<div><strong>Key:</strong> <code>${item.key}</code></div>`;
+          html += '<table class="result-table"><tr><th>Timestamp</th><th>Action</th><th>User</th><th>Organization</th><th>Details</th></tr>';
+          item.logs.slice(0, 10).forEach(log => {
+            html += `<tr>
+              <td>${log.timestamp || 'N/A'}</td>
+              <td>${log.action || 'N/A'}</td>
+              <td>${log.user || 'N/A'}</td>
+              <td>${log.organization || 'N/A'}</td>
+              <td><pre class="code-block">${JSON.stringify(log.details || {}, null, 2).substring(0, 200)}</pre></td>
+            </tr>`;
+          });
+          html += '</table>';
+        });
+      } else {
+        html += '<div class="info">No matching audit log entries found</div>';
+      }
+
+      // localStorage keys
+      if (results.localStorageKeys.length > 0) {
+        html += `<h4>?? Matching localStorage Keys (${results.localStorageKeys.length})</h4>`;
+        html += '<table class="result-table"><tr><th>Key</th><th>Value Preview</th></tr>';
+        results.localStorageKeys.forEach(item => {
+          html += `<tr>
+            <td><code>${item.key}</code></td>
+            <td>${item.value}</td>
+          </tr>`;
+        });
+        html += '</table>';
+      }
+
+      // Warnings
+      if (results.warnings && results.warnings.length > 0) {
+        html += '<h4>?? Warnings</h4>';
+        results.warnings.forEach(warning => {
+          html += `<div class="warning"><strong>${warning.type}:</strong> ${warning.message}</div>`;
+          if (warning.users && warning.users.length > 0) {
+            html += '<table class="result-table"><tr><th>Username</th><th>Email</th><th>Organization ID</th><th>Status</th></tr>';
+            warning.users.forEach(user => {
+              html += `<tr>
+                <td><strong>${user.username || 'N/A'}</strong></td>
+                <td>${user.email || 'N/A'}</td>
+                <td><code>${user.organization_id || 'N/A'}</code></td>
+                <td><span class="no-match">?? Orphaned</span></td>
+              </tr>`;
+            });
+            html += '</table>';
+          }
+        });
+      }
+
+      // Summary
+      html += '<div class="section"><h4>?? Summary</h4>';
+      html += `<ul>
+        <li>Supabase Organizations: ${results.supabase.length}</li>
+        <li>localStorage Organizations: ${results.localStorage.length}</li>
+        <li>Matching Users: ${results.users.length}</li>
+        <li>Audit Log Entries: ${results.auditLogs.reduce((sum, item) => sum + item.logs.length, 0)}</li>
+        ${results.warnings ? `<li>?? Warnings: ${results.warnings.length}</li>` : ''}
+      </ul>`;
+
+      if (results.localStorage.length > 0 && results.supabase.length === 0) {
+        html += '<div class="warning"><strong>?? ISSUE DETECTED:</strong> Organization found in localStorage but NOT in Supabase. This is likely a sync failure.</div>';
+        html += '<div class="info"><strong>?? Solution:</strong> The organization exists locally but never synced to Supabase. You may need to manually create it in Supabase or trigger a sync.</div>';
+      }
+
+      if (results.users.length > 0 && results.supabase.length === 0) {
+        html += '<div class="warning"><strong>?? ISSUE DETECTED:</strong> Users found but no organization in Supabase. This could be orphaned data.</div>';
+        html += '<div class="info"><strong>?? Solution:</strong> Check if these users have an organization_id that references a deleted or missing organization.</div>';
+      }
+
+      // Check for orphaned users specifically
+      const orphanedUsers = results.users.filter(u => u.data._isOrphaned);
+      if (orphanedUsers.length > 0) {
+        html += '<div class="warning"><strong>?? ORPHANED USERS DETECTED:</strong> ';
+        html += `Found ${orphanedUsers.length} user(s) with organization_id but no matching organization. `;
+        html += `Organization IDs: ${[...new Set(orphanedUsers.map(u => u.data._missingOrgId))].join(', ')}`;
+        html += '</div>';
+        html += '<div class="info"><strong>?? Solution:</strong> These users can log in, but their organization is missing from Supabase. The organization might have been deleted, or registration failed partway through.</div>';
+      }
+
+      html += '</div>';
+
+      contentDiv.innerHTML = html;
+    }
+
+    // Scan all localStorage
+    function scanAllLocalStorage() {
+      const contentDiv = document.getElementById('results-content');
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      
+      let html = '<h3>?? All localStorage Contents</h3>';
+      
+      const organizations = [];
+      const users = [];
+      const auditLogs = [];
+      const other = [];
+
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        
+        try {
+          const parsed = JSON.parse(value);
+          
+          if (key.includes('organization') || key.includes('org') || (parsed && parsed.name && parsed.country)) {
+            organizations.push({ key, data: parsed });
+          } else if (key.includes('user') || (parsed && parsed.username && parsed.org)) {
+            users.push({ key, data: parsed });
+          } else if (key.includes('auditLog')) {
+            auditLogs.push({ key, count: Array.isArray(parsed) ? parsed.length : 0 });
+          } else {
+            other.push({ key, preview: JSON.stringify(parsed).substring(0, 100) });
+          }
+        } catch (e) {
+          other.push({ key, preview: value.substring(0, 100) });
+        }
+      }
+
+      html += `<h4>?? Organizations (${organizations.length})</h4>`;
+      if (organizations.length > 0) {
+        html += '<table class="result-table"><tr><th>Key</th><th>Name</th><th>Country</th><th>Data</th></tr>';
+        organizations.forEach(item => {
+          const org = item.data;
+          html += `<tr>
+            <td><code>${item.key}</code></td>
+            <td><strong>${org.name || 'N/A'}</strong></td>
+            <td>${org.country || 'N/A'}</td>
+            <td><pre class="code-block">${JSON.stringify(org, null, 2).substring(0, 300)}</pre></td>
+          </tr>`;
+        });
+        html += '</table>';
+      }
+
+      html += `<h4>?? Users (${users.length})</h4>`;
+      if (users.length > 0) {
+        html += '<table class="result-table"><tr><th>Key</th><th>Username</th><th>Organization</th><th>Role</th></tr>';
+        users.forEach(item => {
+          const user = item.data;
+          html += `<tr>
+            <td><code>${item.key}</code></td>
+            <td>${user.username || user.email || 'N/A'}</td>
+            <td>${user.org || user.organization || 'N/A'}</td>
+            <td>${user.role || 'N/A'}</td>
+          </tr>`;
+        });
+        html += '</table>';
+      }
+
+      html += `<h4>?? Audit Logs (${auditLogs.length})</h4>`;
+      if (auditLogs.length > 0) {
+        html += '<table class="result-table"><tr><th>Key</th><th>Entry Count</th></tr>';
+        auditLogs.forEach(item => {
+          html += `<tr>
+            <td><code>${item.key}</code></td>
+            <td>${item.count}</td>
+          </tr>`;
+        });
+        html += '</table>';
+      }
+
+      html += `<h4>?? Other Keys (${other.length})</h4>`;
+      if (other.length > 0) {
+        html += '<table class="result-table"><tr><th>Key</th><th>Preview</th></tr>';
+        other.slice(0, 50).forEach(item => {
+          html += `<tr>
+            <td><code>${item.key}</code></td>
+            <td>${item.preview}</td>
+          </tr>`;
+        });
+        html += '</table>';
+        if (other.length > 50) {
+          html += `<p>... and ${other.length - 50} more keys</p>`;
+        }
+      }
+
+      contentDiv.innerHTML = html;
+    }
+
+    // Check Supabase only (DIRECT QUERY - bypasses RPC)
+    async function checkSupabase() {
+      if (!supabaseClient) {
+        alert('Supabase client not initialized');
+        return;
+      }
+
+      const contentDiv = document.getElementById('results-content');
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      contentDiv.innerHTML = '<p>?? Checking Supabase (DIRECT QUERY - bypassing RPC)...</p>';
+
+      try {
+        // DIRECT QUERY: Get all organizations directly (bypasses RPC)
+        // This is important because the RPC might have RLS issues
+        const { data: orgs, error: orgError } = await supabaseClient
+          .from('organizations')
+          .select('*')
+          .order('created_at', { ascending: false });
+
+        // Also try via RPC to compare
+        let rpcOrgs = [];
+        let rpcError = null;
+        if (typeof window.secureSupabaseRpc === 'function') {
+          try {
+            rpcOrgs = await window.secureSupabaseRpc('get_organizations_with_owner') || [];
+          } catch (e) {
+            rpcError = e.message;
+          }
+        }
+
+        // Get all users
+        const { data: users, error: userError } = await supabaseClient
+          .from('users')
+          .select('*, organizations(*)')
+          .order('created_at', { ascending: false });
+
+        // Get recent audit logs
+        const { data: auditLogs, error: auditError } = await supabaseClient
+          .from('audit_logs')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(100);
+
+        let html = '<h3>?? Supabase Database Contents</h3>';
+
+        // Compare direct query vs RPC
+        if (rpcError || (orgs && orgs.length !== rpcOrgs.length)) {
+          html += '<div class="warning"><strong>?? MISMATCH DETECTED:</strong> ';
+          html += `Direct query: ${orgs?.length || 0} organizations, RPC: ${rpcOrgs.length} organizations`;
+          if (rpcError) {
+            html += `<br>RPC Error: ${rpcError}`;
+          }
+          html += '<br>This indicates the RPC might not be returning all organizations!</div>';
+        }
+
+        html += `<h4>?? Organizations - DIRECT QUERY (${orgs?.length || 0})</h4>`;
+        if (orgError) {
+          html += `<div class="warning">Error: ${orgError.message}</div>`;
+          if (orgError.message.includes('permission') || orgError.message.includes('RLS')) {
+            html += '<div class="warning"><strong>?? RLS ISSUE:</strong> You might not have permission to view all organizations. Try using the secure proxy function.</div>';
+          }
+        } else if (orgs && orgs.length > 0) {
+          html += '<table class="result-table"><tr><th>ID</th><th>Name</th><th>Org Code</th><th>Country</th><th>Status</th><th>Created</th><th>Owner</th></tr>';
+          orgs.forEach(org => {
+            html += `<tr>
+              <td>${org.id}</td>
+              <td><strong>${org.name}</strong></td>
+              <td>${org.org_code || 'N/A'}</td>
+              <td>${org.country || 'N/A'}</td>
+              <td>${org.status || 'active'}</td>
+              <td>${org.created_at ? new Date(org.created_at).toLocaleString() : 'N/A'}</td>
+              <td>${org.owner_email || org.created_by || 'N/A'}</td>
+            </tr>`;
+          });
+          html += '</table>';
+        } else {
+          html += '<div class="warning">? No organizations found in Supabase via direct query!</div>';
+        }
+
+        // Show RPC results for comparison
+        html += `<h4>?? Organizations - RPC QUERY (${rpcOrgs.length})</h4>`;
+        if (rpcError) {
+          html += `<div class="warning">RPC Error: ${rpcError}</div>`;
+        } else if (rpcOrgs && rpcOrgs.length > 0) {
+          html += '<table class="result-table"><tr><th>ID</th><th>Name</th><th>Org Code</th><th>Country</th><th>Status</th><th>Created</th></tr>';
+          rpcOrgs.forEach(org => {
+            html += `<tr>
+              <td>${org.id}</td>
+              <td><strong>${org.name}</strong></td>
+              <td>${org.org_code || 'N/A'}</td>
+              <td>${org.country || 'N/A'}</td>
+              <td>${org.status || 'active'}</td>
+              <td>${org.created_at ? new Date(org.created_at).toLocaleString() : 'N/A'}</td>
+            </tr>`;
+          });
+          html += '</table>';
+        } else {
+          html += '<div class="info">No organizations found via RPC (this is expected if RPC has RLS restrictions)</div>';
+        }
+
+        html += `<h4>?? Users (${users?.length || 0})</h4>`;
+        if (userError) {
+          html += `<div class="warning">Error: ${userError.message}</div>`;
+        } else if (users && users.length > 0) {
+          html += '<table class="result-table"><tr><th>ID</th><th>Username</th><th>Email</th><th>Organization</th><th>Role</th><th>Created</th></tr>';
+          users.forEach(user => {
+            html += `<tr>
+              <td>${user.id || user.auth_user_id || 'N/A'}</td>
+              <td><strong>${user.username || 'N/A'}</strong></td>
+              <td>${user.email || 'N/A'}</td>
+              <td>${user.organizations?.name || user.organization_id || 'N/A'}</td>
+              <td>${user.role || 'N/A'}</td>
+              <td>${user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A'}</td>
+            </tr>`;
+          });
+          html += '</table>';
+        } else {
+          html += '<div class="info">No users found in Supabase</div>';
+        }
+
+        html += `<h4>?? Recent Audit Logs (${auditLogs?.length || 0})</h4>`;
+        if (auditError) {
+          html += `<div class="warning">Error: ${auditError.message}</div>`;
+        } else if (auditLogs && auditLogs.length > 0) {
+          html += '<table class="result-table"><tr><th>Timestamp</th><th>Action</th><th>Username</th><th>Organization</th><th>Details</th></tr>';
+          auditLogs.forEach(log => {
+            html += `<tr>
+              <td>${log.timestamp ? new Date(log.timestamp).toLocaleString() : 'N/A'}</td>
+              <td>${log.action || 'N/A'}</td>
+              <td>${log.username || 'N/A'}</td>
+              <td>${log.organization_name || log.organization_id || 'N/A'}</td>
+              <td><pre class="code-block">${JSON.stringify(log.details || {}, null, 2).substring(0, 200)}</pre></td>
+            </tr>`;
+          });
+          html += '</table>';
+        } else {
+          html += '<div class="info">No audit logs found in Supabase</div>';
+        }
+
+        contentDiv.innerHTML = html;
+      } catch (e) {
+        contentDiv.innerHTML = `<div class="warning">Error: ${e.message}</div>`;
+      }
+    }
+
+    // Find orphaned users (users without organizations)
+    async function findOrphanedUsers() {
+      if (!supabaseClient) {
+        alert('Supabase client not initialized');
+        return;
+      }
+
+      const contentDiv = document.getElementById('results-content');
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      contentDiv.innerHTML = '<p>?? Finding orphaned users...</p>';
+
+      try {
+        // Get all users
+        const { data: users, error } = await supabaseClient
+          .from('users')
+          .select('*, organizations(*)');
+
+        if (error) {
+          contentDiv.innerHTML = `<div class="warning">Error: ${error.message}</div>`;
+          return;
+        }
+
+        // Find users with missing organizations
+        const orphanedUsers = users.filter(user => !user.organizations && user.organization_id);
+
+        let html = '<h3>?? Orphaned Users Analysis</h3>';
+        html += `<div class="info">Total users: ${users.length}</div>`;
+        html += `<div class="warning">Orphaned users (missing organization): ${orphanedUsers.length}</div>`;
+
+        if (orphanedUsers.length > 0) {
+          html += '<h4>?? Orphaned Users</h4>';
+          html += '<table class="result-table"><tr><th>ID</th><th>Username</th><th>Email</th><th>Organization ID</th><th>Role</th><th>Created</th></tr>';
+          orphanedUsers.forEach(user => {
+            html += `<tr>
+              <td>${user.id || user.auth_user_id || 'N/A'}</td>
+              <td><strong>${user.username || 'N/A'}</strong></td>
+              <td>${user.email || 'N/A'}</td>
+              <td><code>${user.organization_id || 'N/A'}</code></td>
+              <td>${user.role || 'N/A'}</td>
+              <td>${user.created_at ? new Date(user.created_at).toLocaleString() : 'N/A'}</td>
+            </tr>`;
+          });
+          html += '</table>';
+
+          html += '<div class="warning"><strong>?? ISSUE:</strong> These users reference an organization_id that does not exist in the organizations table. This could be the missing clinic!</div>';
+        } else {
+          html += '<div class="success">? No orphaned users found</div>';
+        }
+
+        contentDiv.innerHTML = html;
+      } catch (e) {
+        contentDiv.innerHTML = `<div class="warning">Error: ${e.message}</div>`;
+      }
+    }
+
+    // Sync localStorage organization to Supabase
+    async function syncLocalStorageToSupabase() {
+      if (!supabaseClient) {
+        alert('Supabase client not initialized');
+        return;
+      }
+
+      const searchTerm = document.getElementById('clinic-name').value.trim();
+      if (!searchTerm) {
+        alert('Please enter a clinic name to sync');
+        return;
+      }
+
+      const contentDiv = document.getElementById('results-content');
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.style.display = 'block';
+      contentDiv.innerHTML = '<p>?? Syncing localStorage organization to Supabase...</p>';
+
+      try {
+        // Find organization in localStorage
+        let localOrg = null;
+        let localOrgKey = null;
+
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          if (key.includes('organization') || key.includes('org')) {
+            try {
+              const value = JSON.parse(localStorage.getItem(key));
+              if (value && value.name && value.name.toLowerCase().includes(searchTerm.toLowerCase())) {
+                localOrg = value;
+                localOrgKey = key;
+                break;
+              }
+            } catch (e) {
+              // Skip invalid JSON
+            }
+          }
+        }
+
+        // Also check the main organizations object
+        if (!localOrg) {
+          const orgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+          for (const orgName in orgs) {
+            if (orgName.toLowerCase().includes(searchTerm.toLowerCase())) {
+              localOrg = orgs[orgName];
+              break;
+            }
+          }
+        }
+
+        if (!localOrg) {
+          contentDiv.innerHTML = '<div class="warning">? Organization not found in localStorage. Nothing to sync.</div>';
+          return;
+        }
+
+        // Check if it already exists in Supabase
+        const { data: existingOrg } = await supabaseClient
+          .from('organizations')
+          .select('*')
+          .eq('name', localOrg.name)
+          .maybeSingle();
+
+        if (existingOrg) {
+          contentDiv.innerHTML = `<div class="info">?? Organization "${localOrg.name}" already exists in Supabase (ID: ${existingOrg.id}). No sync needed.</div>`;
+          return;
+        }
+
+        // Confirm sync
+        if (!confirm(`Sync organization "${localOrg.name}" from localStorage to Supabase?\n\nThis will create the organization in Supabase.`)) {
+          return;
+        }
+
+        // Generate org code if missing
+        const orgCode = localOrg.org_code || localOrg.orgCode || 
+          (localOrg.name.substring(0, 3).toUpperCase() + '-' + 
+           new Date().getFullYear() + '-' + 
+           Math.random().toString(36).substring(2, 6).toUpperCase());
+
+        // Prepare organization data for Supabase
+        const orgData = {
+          name: localOrg.name,
+          org_code: orgCode,
+          country: localOrg.country || 'Unknown',
+          state: localOrg.state || '',
+          city: localOrg.city || '',
+          address_line1: localOrg.addressLine1 || localOrg.address_line1 || '',
+          address_line2: localOrg.addressLine2 || localOrg.address_line2 || '',
+          phone: localOrg.phone || '',
+          after_hours_phone: localOrg.afterHoursPhone || localOrg.after_hours_phone || '',
+          currency: localOrg.currency || localOrg.defaultCurrency || 'USD',
+          status: localOrg.status || 'active',
+          created_by: localOrg.created_by || localOrg.createdBy || 'platform_admin'
+        };
+
+        // Try direct insert first (if RLS allows)
+        const { data: newOrg, error: directError } = await supabaseClient
+          .from('organizations')
+          .insert(orgData)
+          .select()
+          .single();
+
+        if (directError && directError.code === '42501') {
+          // Permission denied - try via secure proxy
+          contentDiv.innerHTML = '<div class="warning">?? Direct insert failed due to RLS. Trying via secure proxy...</div>';
+          
+          if (typeof window.secureSupabaseInsert === 'function') {
+            try {
+              const result = await window.secureSupabaseInsert('organizations', [orgData]);
+              if (result && result[0]) {
+                contentDiv.innerHTML = `
+                  <div class="success">
+                    <h3>? Organization Synced Successfully!</h3>
+                    <p><strong>Organization:</strong> ${result[0].name}</p>
+                    <p><strong>Org Code:</strong> ${result[0].org_code}</p>
+                    <p><strong>Supabase ID:</strong> ${result[0].id}</p>
+                    <p><strong>Status:</strong> ${result[0].status}</p>
+                  </div>
+                  <div class="info">
+                    ?? The organization has been synced to Supabase. You should now be able to see it in the platform dashboard.
+                  </div>
+                `;
+                return;
+              }
+            } catch (proxyError) {
+              contentDiv.innerHTML = `<div class="warning">? Failed to sync via secure proxy: ${proxyError.message}</div>`;
+              return;
+            }
+          } else {
+            contentDiv.innerHTML = '<div class="warning">? secureSupabaseInsert function not available. Cannot sync via proxy.</div>';
+            return;
+          }
+        }
+
+        if (directError) {
+          contentDiv.innerHTML = `<div class="warning">? Failed to sync: ${directError.message}</div>`;
+          return;
+        }
+
+        if (newOrg) {
+          contentDiv.innerHTML = `
+            <div class="success">
+              <h3>? Organization Synced Successfully!</h3>
+              <p><strong>Organization:</strong> ${newOrg.name}</p>
+              <p><strong>Org Code:</strong> ${newOrg.org_code}</p>
+              <p><strong>Supabase ID:</strong> ${newOrg.id}</p>
+              <p><strong>Status:</strong> ${newOrg.status}</p>
+            </div>
+            <div class="info">
+              ?? The organization has been synced to Supabase. You should now be able to see it in the platform dashboard.
+            </div>
+          `;
+        }
+
+      } catch (e) {
+        contentDiv.innerHTML = `<div class="warning">? Error: ${e.message}</div>`;
+      }
+    }
+
+    // Export diagnostics
+    function exportDiagnostics() {
+      const diagnostics = {
+        timestamp: new Date().toISOString(),
+        localStorage: {},
+        supabase: {
+          organizations: null,
+          users: null,
+          auditLogs: null
+        }
+      };
+
+      // Export localStorage
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        const value = localStorage.getItem(key);
+        try {
+          diagnostics.localStorage[key] = JSON.parse(value);
+        } catch (e) {
+          diagnostics.localStorage[key] = value;
+        }
+      }
+
+      // Export as JSON
+      const json = JSON.stringify(diagnostics, null, 2);
+      const blob = new Blob([json], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `diagnostics-${new Date().toISOString().split('T')[0]}.json`;
+      a.click();
+      URL.revokeObjectURL(url);
+
+      alert('Diagnostics exported successfully!');
+    }
+
+    // Make functions globally accessible
+    window.searchEverywhere = searchEverywhere;
+    window.scanAllLocalStorage = scanAllLocalStorage;
+    window.checkSupabase = checkSupabase;
+    window.findOrphanedUsers = findOrphanedUsers;
+    window.syncLocalStorageToSupabase = syncLocalStorageToSupabase;
+    window.exportDiagnostics = exportDiagnostics;
+
+    // Initialize
+    window.addEventListener('load', async function() {
+      await showSystemStatus();
+    });
+
+    // Allow Enter key to search
+    document.addEventListener('DOMContentLoaded', function() {
+      const clinicNameInput = document.getElementById('clinic-name');
+      if (clinicNameInput) {
+        clinicNameInput.addEventListener('keypress', function(e) {
+          if (e.key === 'Enter') {
+            searchEverywhere();
+          }
+        });
+      }
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

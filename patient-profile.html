@@ -1,0 +1,508 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#008751">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>My Profile - Patient Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    :root {
+      --nigerian-green: #008751;
+      --nigerian-green-dark: #006B3F;
+      --nigerian-white: #FFFFFF;
+      --nigerian-gold: #FFD700;
+      --warm-beige: #F5F5DC;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--warm-beige);
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--nigerian-green) 0%, var(--nigerian-green-dark) 100%);
+      color: var(--nigerian-white);
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    
+    .header .subtitle {
+      opacity: 0.9;
+      font-size: 0.9rem;
+    }
+    
+    .nav-bar {
+      background: var(--nigerian-white);
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .nav-bar a {
+      color: var(--nigerian-green);
+      text-decoration: none;
+      font-weight: 500;
+      padding: 8px 15px;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    
+    .nav-bar a:hover {
+      background: var(--warm-beige);
+    }
+    
+    .nav-bar a.active {
+      background: var(--nigerian-green);
+      color: var(--nigerian-white);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    
+    .profile-card {
+      background: var(--nigerian-white);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      padding: 30px;
+      margin-bottom: 20px;
+      border-top: 4px solid var(--nigerian-green);
+    }
+    
+    .profile-header {
+      display: flex;
+      align-items: center;
+      gap: 20px;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid var(--warm-beige);
+    }
+    
+    .profile-avatar {
+      width: 80px;
+      height: 80px;
+      border-radius: 50%;
+      background: linear-gradient(135deg, var(--nigerian-green) 0%, var(--nigerian-green-dark) 100%);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      color: var(--nigerian-white);
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    
+    .profile-info h2 {
+      color: var(--nigerian-green);
+      font-size: 1.5rem;
+      margin-bottom: 5px;
+    }
+    
+    .profile-info p {
+      color: #666;
+      font-size: 0.95rem;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(300px, 1fr));
+      gap: 20px;
+      margin-bottom: 20px;
+    }
+    
+    .info-section {
+      background: var(--warm-beige);
+      padding: 20px;
+      border-radius: 8px;
+      border-left: 4px solid var(--nigerian-green);
+    }
+    
+    .info-section h3 {
+      color: var(--nigerian-green);
+      font-size: 1.1rem;
+      margin-bottom: 15px;
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .info-item {
+      margin-bottom: 12px;
+    }
+    
+    .info-item label {
+      display: block;
+      color: #666;
+      font-size: 0.85rem;
+      font-weight: 600;
+      margin-bottom: 4px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .info-item .value {
+      color: #333;
+      font-size: 1rem;
+      font-weight: 500;
+    }
+    
+    .info-item .value:empty::before {
+      content: 'Not provided';
+      color: #999;
+      font-style: italic;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--nigerian-green);
+    }
+    
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px;
+      border-left: 4px solid #c33;
+    }
+    
+    .contact-notice {
+      background: var(--warm-beige);
+      border-left: 4px solid var(--nigerian-gold);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>👤 My Profile</h1>
+    <p class="subtitle">View your personal information and demographics</p>
+  </div>
+  
+  <div class="nav-bar">
+    <a href="patient-dashboard">🏠 Dashboard</a>
+    <a href="patient-profile" class="active">👤 Profile</a>
+    <a href="patient-appointments">📅 Appointments</a>
+    <a href="patient-medications">💊 Medications</a>
+    <a href="patient-results">🧪 Results</a>
+    <a href="patient-summary">📋 Summary</a>
+    <a href="#" onclick="logout(); return false;" style="margin-left: auto; color: #c33;">🚪 Logout</a>
+  </div>
+  
+  <div class="container">
+    <div id="loading" class="loading">
+      <p>Loading your profile...</p>
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="profileContent" style="display: none;">
+      <div class="profile-card">
+        <div class="profile-header">
+          <div class="profile-avatar" id="avatar">P</div>
+          <div class="profile-info">
+            <h2 id="patientName">Loading...</h2>
+            <p id="patientId">Patient ID: Loading...</p>
+          </div>
+        </div>
+        
+        <div class="info-grid">
+          <div class="info-section">
+            <h3>📋 Personal Information</h3>
+            <div class="info-item">
+              <label>Full Name</label>
+              <div class="value" id="fullName"></div>
+            </div>
+            <div class="info-item">
+              <label>Date of Birth</label>
+              <div class="value" id="dob"></div>
+            </div>
+            <div class="info-item">
+              <label>Age</label>
+              <div class="value" id="age"></div>
+            </div>
+            <div class="info-item">
+              <label>Gender</label>
+              <div class="value" id="gender"></div>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>📞 Contact Information</h3>
+            <div class="info-item">
+              <label>Phone Number</label>
+              <div class="value" id="phone"></div>
+            </div>
+            <div class="info-item">
+              <label>Email Address</label>
+              <div class="value" id="email"></div>
+            </div>
+            <div class="info-item">
+              <label>Address</label>
+              <div class="value" id="address"></div>
+            </div>
+            <div class="info-item">
+              <label>City / State</label>
+              <div class="value" id="cityState"></div>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>🏥 Medical Information</h3>
+            <div class="info-item">
+              <label>Patient ID</label>
+              <div class="value" id="mrn"></div>
+            </div>
+            <div class="info-item">
+              <label>Blood Type</label>
+              <div class="value" id="bloodType"></div>
+            </div>
+            <div class="info-item">
+              <label>Allergies</label>
+              <div class="value" id="allergies"></div>
+            </div>
+            <div class="info-item">
+              <label>Medical Conditions</label>
+              <div class="value" id="conditions"></div>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>💳 Insurance Information</h3>
+            <div class="info-item">
+              <label>Insurance Provider</label>
+              <div class="value" id="insuranceProvider"></div>
+            </div>
+            <div class="info-item">
+              <label>Policy Number</label>
+              <div class="value" id="insurancePolicy"></div>
+            </div>
+          </div>
+          
+          <div class="info-section">
+            <h3>🚨 Emergency Contact</h3>
+            <div class="info-item">
+              <label>Emergency Contact Name</label>
+              <div class="value" id="emergencyContactName"></div>
+            </div>
+            <div class="info-item">
+              <label>Emergency Contact Phone</label>
+              <div class="value" id="emergencyContactPhone"></div>
+            </div>
+            <div class="info-item">
+              <label>Emergency Contact Relationship</label>
+              <div class="value" id="emergencyContactRelation"></div>
+            </div>
+          </div>
+        </div>
+        
+        <div class="contact-notice">
+          <strong>📝 Note:</strong> To update any information, please contact your clinic directly. Patient portal access is read-only for security purposes.
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-auth.js"></script>
+  <script src="js/patient-data-loader.js"></script>
+  <script src="js/security.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  
+  <script>
+    // Ensure patient is authenticated
+    window.ensurePatientAccess();
+    
+    async function loadProfile() {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const content = document.getElementById('profileContent');
+      
+      try {
+        const demographics = await window.getPatientDemographics();
+        
+        // Set avatar initial
+        const firstName = demographics.first_name || '';
+        const lastName = demographics.last_name || '';
+        const initial = (firstName.charAt(0) || lastName.charAt(0) || 'P').toUpperCase();
+        document.getElementById('avatar').textContent = initial;
+        
+        // Set patient name
+        const fullName = `${firstName} ${demographics.middle_name || ''} ${lastName}`.trim();
+        document.getElementById('patientName').textContent = fullName || 'Patient';
+        document.getElementById('fullName').textContent = fullName || 'Not provided';
+        
+        let displayPatientId = 'N/A';
+        if (demographics && typeof window.patientMrnDisplay === 'function') {
+          displayPatientId = window.patientMrnDisplay(demographics);
+        } else if (demographics && typeof window.getPatientIdentifier === 'function') {
+          displayPatientId = window.getPatientIdentifier(demographics) || 'N/A';
+        } else if (demographics) {
+          displayPatientId = demographics.patient_id || demographics.patientNumber ||
+            (demographics.id && !demographics.id.includes('-') && demographics.id.length < 36 ? demographics.id : 'N/A');
+        }
+        document.getElementById('patientId').textContent = `Patient ID: ${displayPatientId}`;
+        document.getElementById('mrn').textContent = displayPatientId;
+        
+        // Personal Information
+        if (demographics.date_of_birth) {
+          const dob = new Date(demographics.date_of_birth);
+          document.getElementById('dob').textContent = dob.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'long',
+            day: 'numeric'
+          });
+        }
+        
+        if (demographics.age) {
+          document.getElementById('age').textContent = `${demographics.age} years`;
+        } else if (demographics.date_of_birth) {
+          const dob = new Date(demographics.date_of_birth);
+          const today = new Date();
+          const age = Math.floor((today - dob) / (365.25 * 24 * 60 * 60 * 1000));
+          document.getElementById('age').textContent = `${age} years`;
+        }
+        
+        document.getElementById('gender').textContent = demographics.gender || 'Not specified';
+        
+        // Contact Information
+        document.getElementById('phone').textContent = demographics.phone || 'Not provided';
+        document.getElementById('email').textContent = demographics.email || 'Not provided';
+        
+        const addressParts = [];
+        // Handle both camelCase (localStorage) and snake_case (Supabase) formats
+        const addr = demographics.address || demographics.addressLine1 || demographics.address_line1 || '';
+        const addr2 = demographics.addressLine2 || demographics.address_line2 || '';
+        if (addr) addressParts.push(addr);
+        if (addr2) addressParts.push(addr2);
+        document.getElementById('address').textContent = addressParts.join(', ') || 'Not provided';
+        
+        const cityState = [];
+        const city = demographics.city || '';
+        const state = demographics.state || '';
+        const country = demographics.country || '';
+        if (city) cityState.push(city);
+        if (state) cityState.push(state);
+        if (country) cityState.push(country);
+        document.getElementById('cityState').textContent = cityState.join(', ') || 'Not provided';
+        
+        // Medical Information
+        document.getElementById('bloodType').textContent = demographics.blood_type || demographics.bloodType || 'Not specified';
+        
+        // Format allergies - handle JSON string or array
+        let allergiesData = demographics.allergies;
+        if (typeof allergiesData === 'string') {
+          try {
+            allergiesData = JSON.parse(allergiesData);
+          } catch (e) {
+            // If parsing fails, treat as plain text
+            allergiesData = allergiesData;
+          }
+        }
+        
+        if (Array.isArray(allergiesData) && allergiesData.length > 0) {
+          // Format as a nice list
+          const allergiesHTML = allergiesData.map(allergy => {
+            const allergen = typeof allergy === 'string' ? allergy : (allergy.allergen || allergy.name || 'Unknown');
+            const severity = typeof allergy === 'object' ? (allergy.severity ? ` (${allergy.severity})` : '') : '';
+            return `• ${allergen}${severity}`;
+          }).join('<br>');
+          document.getElementById('allergies').innerHTML = allergiesHTML;
+        } else if (allergiesData && !Array.isArray(allergiesData)) {
+          // Single allergy or plain text
+          document.getElementById('allergies').textContent = allergiesData;
+        } else {
+          document.getElementById('allergies').textContent = 'None recorded';
+        }
+        
+        // Format medical conditions
+        let conditionsData = demographics.conditions || demographics.medical_history || demographics.chronic_conditions;
+        if (typeof conditionsData === 'string') {
+          try {
+            conditionsData = JSON.parse(conditionsData);
+          } catch (e) {
+            // If parsing fails, treat as plain text
+            conditionsData = conditionsData;
+          }
+        }
+        
+        if (Array.isArray(conditionsData) && conditionsData.length > 0) {
+          const conditionsHTML = conditionsData.map(condition => {
+            const conditionName = typeof condition === 'string' ? condition : (condition.name || condition.diagnosis || condition.description || 'Unknown');
+            return `• ${conditionName}`;
+          }).join('<br>');
+          document.getElementById('conditions').innerHTML = conditionsHTML;
+        } else if (conditionsData && !Array.isArray(conditionsData) && conditionsData !== '[]') {
+          document.getElementById('conditions').textContent = conditionsData;
+        } else {
+          document.getElementById('conditions').textContent = 'None recorded';
+        }
+        
+        // Insurance
+        document.getElementById('insuranceProvider').textContent = demographics.insurance_provider || demographics.insuranceProvider || 'Not provided';
+        document.getElementById('insurancePolicy').textContent = demographics.insurance_policy_number || demographics.insurancePolicyNumber || 'Not provided';
+        
+        // Emergency Contact
+        document.getElementById('emergencyContactName').textContent = demographics.emergency_contact_name || demographics.emergencyContactName || 'Not provided';
+        document.getElementById('emergencyContactPhone').textContent = demographics.emergency_contact_phone || demographics.emergencyContactPhone || 'Not provided';
+        document.getElementById('emergencyContactRelation').textContent = demographics.emergency_contact_relationship || demographics.emergencyContactRelation || 'Not specified';
+        
+        loading.style.display = 'none';
+        content.style.display = 'block';
+        
+      } catch (err) {
+        console.error('Error loading profile:', err);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = `Error loading profile: ${err.message}`;
+      }
+    }
+    
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('user');
+        window.location.href = '/patient-login';
+      }
+    }
+    
+    // Load profile on page load
+    window.addEventListener('load', loadProfile);
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

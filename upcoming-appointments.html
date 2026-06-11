@@ -1,0 +1,168 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Upcoming Appointments - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%); min-height: 100vh; }
+    .container { max-width: 1100px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,135,83,0.15); border: 2px solid #008753; }
+    h1 { color: #008753; margin-bottom: 8px; }
+    .subtitle { color: #666; margin-bottom: 20px; font-size: 14px; }
+    .back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: linear-gradient(135deg, #008753, #006b42); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; }
+    .back-btn:hover { opacity: 0.9; color: white; }
+    .action-bar { display: flex; flex-wrap: wrap; gap: 12px; align-items: center; margin-bottom: 20px; }
+    .action-bar a, .action-bar button { padding: 10px 18px; background: #008753; color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 13px; text-decoration: none; }
+    .action-bar a:hover, .action-bar button:hover { background: #006b42; color: white; }
+    .action-bar a.secondary { background: #2196F3; }
+    .action-bar a.secondary:hover { background: #1976D2; color: white; }
+    table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: 13px; }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #e0e0e0; }
+    th { background: #008753; color: white; font-weight: 600; }
+    tr:hover { background: #f5f5f5; }
+    .sms-btn { background: #008753; color: white; padding: 6px 14px; border-radius: 6px; text-decoration: none; font-size: 12px; font-weight: 600; display: inline-block; }
+    .sms-btn:hover { background: #006b42; color: white; }
+    .empty-state { padding: 40px 20px; text-align: center; background: #f8f9fa; border-radius: 12px; border: 1px dashed #ddd; color: #666; }
+    .days-select { padding: 8px 12px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+  </style>
+</head>
+<body>
+  <button type="button" class="back-btn" onclick="window.location.href='dashboard'">← Back to Dashboard</button>
+  <div class="container">
+    <h1>📅 Upcoming Appointments</h1>
+    <p class="subtitle">Scheduled and confirmed appointments in the next 14 days. Same data as your Appointments list and Schedule calendar.</p>
+    
+    <div class="action-bar">
+      <a href="add-appointment">➕ Add Appointment</a>
+      <a href="appointments">📋 Full Appointment List</a>
+      <a href="schedule">📆 Schedule Calendar</a>
+      <a href="appointment-sms-reminders" class="secondary">📱 Copy SMS Messages</a>
+      <label style="margin-left:auto;display:flex;align-items:center;gap:8px;">
+        <span>Show next</span>
+        <select id="days-ahead" class="days-select" onchange="loadAppointments()">
+          <option value="7">7 days</option>
+          <option value="14" selected>14 days</option>
+          <option value="30">30 days</option>
+        </select>
+      </label>
+      <button type="button" onclick="loadAppointments()">🔄 Refresh</button>
+    </div>
+    
+    <div id="appointments-list">
+      <p style="text-align:center;color:#666;">Loading...</p>
+    </div>
+  </div>
+  
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/logout-button.js"></script>
+  
+  <script>
+    async function loadAppointments() {
+      const listEl = document.getElementById('appointments-list');
+      if (!listEl) return;
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgId = user.organizationId || user.organization_id;
+      if (!orgId || !orgId.includes('-')) {
+        listEl.innerHTML = '<p class="empty-state">Organization not found. Please log in.</p>';
+        return;
+      }
+      if (!window.supabaseClient) {
+        listEl.innerHTML = '<p class="empty-state">Loading... Please wait or refresh the page.</p>';
+        setTimeout(loadAppointments, 500);
+        return;
+      }
+      try {
+        // Same source as appointments page and schedule: loadAppointmentsWithSupabasePriority
+        let appointments = [];
+        if (typeof window.loadAppointmentsWithSupabasePriority === 'function') {
+          appointments = await window.loadAppointmentsWithSupabasePriority(true);
+        } else {
+          const { data, error } = await window.supabaseClient.from('appointments').select('*').eq('organization_id', orgId);
+          if (error) throw error;
+          appointments = (data || []).map(sa => ({
+            patientId: sa.patient_id,
+            patientName: sa.patient_name || 'Unknown',
+            date: sa.appointment_date,
+            time: sa.appointment_time,
+            appointment_type: sa.appointment_type || 'General Consultation',
+            status: sa.status || 'scheduled'
+          }));
+        }
+        const days = parseInt(document.getElementById('days-ahead').value, 10) || 14;
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        const endDate = new Date(today);
+        endDate.setDate(endDate.getDate() + days);
+        const startStr = today.toISOString().split('T')[0];
+        const endStr = endDate.toISOString().split('T')[0];
+        
+        const upcoming = (appointments || []).filter(a => {
+          const d = a.date || a.appointment_date;
+          const status = (a.status || 'scheduled').toLowerCase();
+          if (status !== 'scheduled' && status !== 'confirmed') return false;
+          if (!d) return false;
+          return d >= startStr && d <= endStr;
+        }).sort((a, b) => {
+          const da = (a.date || a.appointment_date) + 'T' + (a.time || a.appointment_time || '00:00');
+          const db = (b.date || b.appointment_date) + 'T' + (b.time || b.appointment_time || '00:00');
+          return da.localeCompare(db);
+        });
+
+        if (upcoming.length === 0) {
+          listEl.innerHTML = '<div class="empty-state"><p style="font-size:16px;margin-bottom:12px;">No upcoming appointments in the next ' + days + ' days.</p><p>Add appointments via <a href="add-appointment" style="color:#008753;font-weight:600;">Add Appointment</a> or view your <a href="appointments" style="color:#008753;font-weight:600;">Full Appointment List</a>.</p></div>';
+          return;
+        }
+
+        const patientIds = [...new Set(upcoming.map(a => a.patientId || a.patient_id).filter(Boolean))];
+        const uuids = patientIds.filter(p => /^[0-9a-f-]{36}$/i.test(p));
+        const legacies = patientIds.filter(p => !/^[0-9a-f-]{36}$/i.test(p));
+        let patients = [];
+        if (patientIds.length > 0) {
+          let pq = window.supabaseClient.from('patients').select('id, patient_id, first_name, last_name, date_of_birth').eq('organization_id', orgId);
+          if (uuids.length > 0 && legacies.length > 0) {
+            pq = pq.or('id.in.(' + uuids.join(',') + '),patient_id.in.(' + legacies.map(l => '"' + String(l).replace(/"/g, '\\"') + '"').join(',') + ')');
+          } else if (uuids.length > 0) {
+            pq = pq.in('id', uuids);
+          } else {
+            pq = pq.in('patient_id', legacies);
+          }
+          const res = await pq;
+          patients = res.data || [];
+        }
+        const patientMap = new Map();
+        patients.forEach(p => { patientMap.set(p.id, p); patientMap.set(p.patient_id, p); });
+
+        let html = '<table><thead><tr><th>Patient</th><th>ID</th><th>DOB</th><th>Date</th><th>Time</th><th>Appointment type</th><th>Action</th></tr></thead><tbody>';
+        for (const apt of upcoming) {
+          const pid = apt.patientId || apt.patient_id;
+          const p = patientMap.get(pid) || patients.find(x => x.id === pid || x.patient_id === pid);
+          const patientName = apt.patientName || (p ? ((p.first_name || '') + ' ' + (p.last_name || '')).trim() || 'Unknown' : 'Unknown');
+          const patientId = (p && p.patient_id) || pid || '—';
+          const dob = (p && p.date_of_birth) ? new Date(p.date_of_birth).toLocaleDateString() : '—';
+          const dateStr = (apt.date || apt.appointment_date) ? new Date(apt.date || apt.appointment_date).toLocaleDateString() : '—';
+          const timeStr = apt.time ? String(apt.time).slice(0, 5) : (apt.appointment_time ? String(apt.appointment_time).slice(0, 5) : '—');
+          const aptType = apt.appointment_type || '—';
+          const aptDate = apt.date || apt.appointment_date || '';
+          const smsUrl = 'appointment-sms-reminders?patient=' + encodeURIComponent(patientId) + '&date=' + encodeURIComponent(aptDate);
+          html += '<tr><td>' + (patientName || '—') + '</td><td>' + (patientId || '—') + '</td><td>' + dob + '</td><td>' + dateStr + '</td><td>' + timeStr + '</td><td>' + (aptType || '—') + '</td><td><a href="' + smsUrl + '" class="sms-btn">Send SMS</a></td></tr>';
+        }
+        html += '</tbody></table>';
+        listEl.innerHTML = html;
+      } catch (e) {
+        console.error('Load upcoming appointments:', e);
+        listEl.innerHTML = '<p class="empty-state" style="color:#d32f2f;">Error loading appointments. Please try refreshing.</p>';
+      }
+    }
+
+    window.addEventListener('load', loadAppointments);
+  </script>
+</body>
+</html>

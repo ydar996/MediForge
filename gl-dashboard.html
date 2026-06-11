@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>General Ledger - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=225">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/main.js?v=20251101160000"></script>
+  <script src="js/billing.js?v=290"></script>
+  <script src="js/gl.js?v=3"></script>
+  <script src="js/logout-button.js"></script>
+</head>
+<body>
+  <h1>📒 General Ledger</h1>
+  <div style="margin-bottom: 20px;">
+    <button onclick="window.location.href='billing-dashboard'" style="background: #666; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">← Back to Billing</button>
+  </div>
+
+  <div style="max-width: 1000px; margin: 0 auto;">
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1); margin-bottom: 20px;">
+      <h2>Income Summary</h2>
+      <p style="color: #666; font-size: 14px;">Revenue by account (from payments). Totals match the Billing Dashboard. Use "All time" for full history; "Sync from payments" updates journal entries for audit.</p>
+      <div style="margin: 15px 0;">
+        <label>From:</label>
+        <input type="date" id="gl-start" style="margin: 0 10px 0 5px;">
+        <label>To:</label>
+        <input type="date" id="gl-end" style="margin: 0 10px 0 5px;">
+        <button onclick="loadGLSummary()" style="background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer;">Refresh</button>
+        <button onclick="forceRefreshFromSupabase()" style="background: #9C27B0; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">Force refresh from Supabase</button>
+        <button onclick="setAllTime()" style="background: #2196F3; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">All time</button>
+        <button onclick="syncFromPayments()" style="background: #FF9800; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">Sync from payments</button>
+      </div>
+      <table style="width: 100%; margin-top: 15px;">
+        <thead>
+          <tr><th>Account</th><th>Total</th><th>Count</th></tr>
+        </thead>
+        <tbody id="gl-summary-body">
+          <tr><td colspan="3" style="text-align: center; padding: 20px;">Loading...</td></tr>
+        </tbody>
+      </table>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.1);">
+      <h2>Cost Centers</h2>
+      <p style="color: #666; font-size: 14px;">OPD, Lab, Pharmacy, Admin. Used for revenue allocation.</p>
+      <div id="gl-cost-centers" style="margin-top: 10px;"></div>
+    </div>
+  </div>
+
+  <script>
+    const fmt = window.formatCurrency || ((a,v) => `${v|| 'CAD'} ${(a||0).toFixed(2)}`);
+    const curr = () => (window.getDefaultCurrency && window.getDefaultCurrency()) || 'CAD';
+
+    async function forceRefreshFromSupabase() {
+      const tbody = document.getElementById('gl-summary-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">Refreshing from Supabase...</td></tr>';
+      try {
+        if (typeof window.forceSyncWithSupabase === 'function') {
+          await window.forceSyncWithSupabase({ clearStaleLocalStorage: false });
+        }
+        await loadGLSummary();
+      } catch (e) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #f44336;">Refresh failed</td></tr>';
+      }
+    }
+
+    function setAllTime() {
+      const startEl = document.getElementById('gl-start');
+      const endEl = document.getElementById('gl-end');
+      if (startEl) startEl.value = '';
+      if (endEl) endEl.value = '';
+      loadGLSummary();
+    }
+
+    async function syncFromPayments() {
+      const tbody = document.getElementById('gl-summary-body');
+      if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px;">Syncing from payments...</td></tr>';
+      try {
+        const start = document.getElementById('gl-start')?.value || '';
+        const end = document.getElementById('gl-end')?.value || '';
+        await window.getGLIncomeSummary(start, end, true);
+        await loadGLSummary();
+      } catch (e) {
+        if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #f44336;">Sync failed: ' + (e.message || 'Unknown error') + '</td></tr>';
+      }
+    }
+
+    async function loadGLSummary() {
+      const start = document.getElementById('gl-start')?.value || '';
+      const end = document.getElementById('gl-end')?.value || '';
+      const tbody = document.getElementById('gl-summary-body');
+      if (!tbody) return;
+      try {
+        // ALWAYS use getBillingStats as source of truth (same as billing dashboard)
+        const billingStats = typeof window.getBillingStats === 'function' ? await window.getBillingStats(start || null, end || null) : null;
+        const billingTotal = billingStats ? parseFloat(billingStats.totalPaid || 0) : 0;
+        const summary = await window.getGLIncomeSummary(start, end);
+        if (!summary || summary.length === 0) {
+          if (billingTotal > 0) {
+            tbody.innerHTML = `<tr><td colspan="3" style="text-align: center; padding: 20px; color: #666;">Breakdown unavailable</td></tr><tr style="font-weight: bold; background: #e8f5e9;"><td>Total Revenue (matches Billing Dashboard)</td><td>${fmt(billingTotal, curr())}</td><td></td></tr>`;
+          } else {
+            tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #666;">No payments in date range</td></tr>';
+          }
+          return;
+        }
+        const grandTotal = summary.reduce((sum, s) => sum + (parseFloat(s.total) || 0), 0);
+        const rows = summary.map(s => `
+          <tr><td>${s.name || s.code}</td><td>${fmt(s.total, curr())}</td><td>${s.count || 0}</td></tr>
+        `).join('');
+        // Use billingTotal as the authoritative total (matches billing dashboard)
+        tbody.innerHTML = rows + `<tr style="font-weight: bold; background: #e8f5e9;"><td>Total Revenue (matches Billing Dashboard)</td><td>${fmt(billingTotal, curr())}</td><td></td></tr>`;
+      } catch (e) {
+        tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #f44336;">Error loading</td></tr>';
+      }
+    }
+
+    async function loadCostCenters() {
+      const div = document.getElementById('gl-cost-centers');
+      if (!div) return;
+      try {
+        const cc = await window.getGLCostCenters();
+        div.innerHTML = cc.length ? cc.map(c => `<span style="display: inline-block; margin: 5px; padding: 8px 12px; background: #e8f5e9; border-radius: 4px;">${c.code}: ${c.name}</span>`).join('') : '<p style="color: #666;">No cost centers configured.</p>';
+      } catch (e) {
+        div.innerHTML = '<p style="color: #f44336;">Error loading</p>';
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      const today = new Date().toISOString().split('T')[0];
+      const firstOfYear = new Date(new Date().getFullYear(), 0, 1).toISOString().split('T')[0];
+      const startEl = document.getElementById('gl-start');
+      const endEl = document.getElementById('gl-end');
+      if (startEl) startEl.value = firstOfYear;
+      if (endEl) endEl.value = today;
+      // Sync billing data first (same as forceSync), then load
+      setTimeout(async () => {
+        try {
+          if (typeof window.forceSyncWithSupabase === 'function') {
+            await window.forceSyncWithSupabase({ clearStaleLocalStorage: false });
+          }
+          await loadGLSummary();
+          await loadCostCenters();
+        } catch (e) {
+          console.error('GL load error:', e);
+          const tbody = document.getElementById('gl-summary-body');
+          if (tbody) tbody.innerHTML = '<tr><td colspan="3" style="text-align: center; padding: 20px; color: #f44336;">Error: ' + (e.message || 'Failed to load') + '</td></tr>';
+        }
+      }, 500);
+    });
+  </script>
+</body>
+</html>

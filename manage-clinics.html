@@ -1,0 +1,841 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Manage Clinics - Platform Admin</title>
+  <link rel="stylesheet" href="css/styles.css?v=260">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    .status-badge {
+      display: inline-block;
+    }
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-trial {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-suspended {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <h1>Manage Clinics</h1>
+  <button onclick="window.location.href='platform-dashboard'" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px;">
+    <i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Back to Platform Dashboard
+  </button>
+  
+  <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px;">
+    <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+      <h2 style="margin: 0;">Registered Clinics</h2>
+      <button onclick="window.location.href='register-clinic'" style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+        <i class="fa-solid fa-plus" style="margin-right: 6px;"></i> Register New Clinic
+      </button>
+    </div>
+    
+    <!-- Search & Filter -->
+    <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+    <div style="display: flex; gap: 15px; align-items: center; margin-bottom: 15px;">
+      <input type="text" id="search-clinics" placeholder="Search clinics..." style="flex: 1; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 16px;" oninput="filterClinics()">
+    </div>
+    </div>
+    
+    <!-- Clinics Table -->
+    <table class="billing-table" id="clinics-table">
+      <thead>
+        <tr>
+          <th class="left">Clinic Name</th>
+          <th class="center">Org Code</th>
+          <th class="center">Status</th>
+          <th class="center">Country</th>
+          <th class="center">Patients</th>
+          <th class="center">Users</th>
+          <th class="right">Revenue</th>
+          <th class="center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="clinics-tbody">
+        <tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;">Loading clinics...</td></tr>
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113110113111311"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113110113111311"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=1"></script>
+  
+  <!-- Platform Admin functionality -->
+  <script src="js/platform-admin.js?v=4"></script>
+  
+  <script>
+    // Script execution started
+    
+    let allClinicsData = [];
+    
+    window.addEventListener('load', async function() {
+      // Page load event triggered
+      
+      // Check platform admin auth (bypassed for local testing)
+      const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+      if (!platformAdmin) {
+        console.log('[MANAGE-CLINICS] No platform admin found, but continuing for local testing');
+        // alert('Please login as platform admin');
+        // window.location.href = 'platform-login';
+        // return;
+      }
+      
+      console.log('[MANAGE-CLINICS] Platform admin found, loading clinics');
+      await loadAllClinics();
+    });
+    
+    async function loadAllClinics() {
+      console.log('[MANAGE-CLINICS] loadAllClinics called');
+      
+      try {
+        // Check if getAllOrganizations function exists
+        if (typeof getAllOrganizations !== 'function') {
+          console.error('[MANAGE-CLINICS] getAllOrganizations function not available');
+          throw new Error('getAllOrganizations function not available');
+        }
+        
+        const orgs = await getAllOrganizations();
+        console.log('[MANAGE-CLINICS] Organizations loaded:', Object.keys(orgs).length);
+        console.log('[MANAGE-CLINICS] Organizations data:', orgs);
+        
+        const orgNames = Object.keys(orgs);
+        
+        if (orgNames.length === 0) {
+          console.log('[MANAGE-CLINICS] No organizations found');
+          displayClinics([]);
+          return;
+        }
+        
+        allClinicsData = await Promise.all(orgNames.map(async orgName => {
+          const org = orgs[orgName];
+          console.log('[MANAGE-CLINICS] Processing organization:', orgName, org);
+          
+          let stats = { patientCount: 0, userCount: 0, totalRevenue: 0 };
+          try {
+            if (typeof getOrganizationStats === 'function') {
+              stats = await getOrganizationStats(orgName);
+            } else {
+              console.log('[MANAGE-CLINICS] getOrganizationStats not available, using default stats');
+            }
+          } catch (statsError) {
+            console.error('[MANAGE-CLINICS] Error getting stats for', orgName, statsError);
+          }
+          
+          return {
+            name: orgName,
+            org: org,
+            stats: stats
+          };
+        }));
+        
+        console.log('[MANAGE-CLINICS] Clinics data prepared:', allClinicsData.length);
+        displayClinics(allClinicsData);
+      } catch (error) {
+        console.error('[MANAGE-CLINICS] Error loading clinics:', error);
+        console.error('[MANAGE-CLINICS] Error details:', error.message, error.stack);
+        
+        // Try to load from localStorage as fallback
+        // Supabase attempt above: getAllOrganizations() called, falling back to localStorage
+        try {
+          console.log('[MANAGE-CLINICS] Attempting localStorage fallback');
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          console.log('[MANAGE-CLINICS] localStorage organizations:', Object.keys(organizations).length);
+          
+          if (Object.keys(organizations).length > 0) {
+            allClinicsData = Object.keys(organizations).map(orgName => ({
+              name: orgName,
+              org: organizations[orgName],
+              stats: { patientCount: 0, userCount: 0, totalRevenue: 0 }
+            }));
+            console.log('[MANAGE-CLINICS] Loaded from localStorage:', allClinicsData.length);
+            displayClinics(allClinicsData);
+            return;
+          }
+        } catch (localStorageError) {
+          console.error('[MANAGE-CLINICS] localStorage fallback failed:', localStorageError);
+        }
+        
+        const tbody = document.getElementById('clinics-tbody');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;">Error loading clinics. Please try again.</td></tr>';
+        }
+      }
+    }
+    
+    function displayClinics(clinics) {
+      console.log('[MANAGE-CLINICS] displayClinics called with:', clinics.length, 'clinics');
+      
+      const tbody = document.getElementById('clinics-tbody');
+      if (!tbody) {
+        console.error('[MANAGE-CLINICS] clinics-tbody element not found!');
+        return;
+      }
+      
+      tbody.innerHTML = '';
+      
+      if (clinics.length === 0) {
+        console.log('[MANAGE-CLINICS] No clinics found, displaying message');
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 40px; color: #999;">No clinics found</td></tr>';
+        return;
+      }
+      
+      clinics.forEach(clinic => {
+        const status = clinic.org.status || 'active';
+        const statusClass = status === 'active' ? 'status-active' : status === 'trial' ? 'status-trial' : 'status-suspended';
+        
+        const row = tbody.insertRow();
+        const orgCode = clinic.org.org_code || clinic.org.orgCode || 'N/A';
+        const copyCodeBtn = orgCode !== 'N/A' ? `<button onclick="copyToClipboard('${orgCode}')" style="background: #4CAF50; color: white; border: none; padding: 2px 6px; border-radius: 3px; cursor: pointer; font-size: 10px; margin-left: 5px;">Copy</button>` : '';
+        
+        row.innerHTML = `
+          <td class="left"><strong>${clinic.name}</strong></td>
+          <td class="center">
+            <code style="background: #f0f0f0; padding: 4px 8px; border-radius: 4px; font-family: monospace; font-size: 12px; font-weight: 600;">
+              ${orgCode}
+            </code>
+            ${copyCodeBtn}
+          </td>
+          <td class="center">
+            <span class="status-badge ${statusClass}">${status.toUpperCase()}</span>
+          </td>
+          <td class="center">${clinic.org.country || 'N/A'}</td>
+          <td class="center"><strong>${clinic.stats.patientCount}</strong></td>
+          <td class="center"><strong>${clinic.stats.userCount}</strong></td>
+          <td class="right amount">${formatCurrency(clinic.stats.totalRevenue, 'NGN')}</td>
+          <td class="center actions">
+            <button onclick="viewClinicDetails('${clinic.name}')" style="background: #2196F3; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              View
+            </button>
+            <button onclick="switchToOrganization('${clinic.name}')" style="background: #667eea; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              Switch
+            </button>
+            <button onclick="toggleClinicStatus('${clinic.name}', '${status}')" style="background: ${status === 'active' ? '#ff9800' : '#4CAF50'}; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              ${status === 'active' ? 'Suspend' : 'Activate'}
+            </button>
+            <button onclick="exportClinic('${clinic.name}')" style="background: #9C27B0; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              Export
+            </button>
+            <button onclick="resetClinicAdminPassword('${clinic.name}')" style="background: #FF5722; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              Reset Pwd
+            </button>
+            <button onclick="archiveClinic('${clinic.name}', ${clinic.org.archived || false})" style="background: ${clinic.org.archived ? '#4CAF50' : '#607D8B'}; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              ${clinic.org.archived ? 'Unarchive' : 'Archive'}
+            </button>
+            <button onclick="deleteSingleOrganization('${clinic.name}', ${clinic.stats.userCount})" style="background: #F44336; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; margin: 2px;">
+              Delete
+            </button>
+          </td>
+        `;
+      });
+    }
+    
+    function filterClinics() {
+      console.log('[MANAGE-CLINICS] filterClinics called');
+      const searchTerm = document.getElementById('search-clinics').value.toLowerCase();
+      console.log('[MANAGE-CLINICS] Search term:', searchTerm);
+      const filtered = allClinicsData.filter(clinic => 
+        clinic.name.toLowerCase().includes(searchTerm) || 
+        (clinic.org.country || '').toLowerCase().includes(searchTerm)
+      );
+      console.log('[MANAGE-CLINICS] Filtered results:', filtered.length);
+      displayClinics(filtered);
+    }
+    
+    function viewClinicDetails(orgName) {
+      console.log('[MANAGE-CLINICS] viewClinicDetails called with:', orgName);
+      window.location.href = `/clinic-details?clinic=${encodeURIComponent(orgName)}`;
+    }
+    
+    function toggleClinicStatus(orgName, currentStatus) {
+      console.log('[MANAGE-CLINICS] toggleClinicStatus called with:', orgName, currentStatus);
+      const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+      const action = newStatus === 'active' ? 'activate' : 'suspend';
+      
+      console.log('[MANAGE-CLINICS] Would change status from', currentStatus, 'to', newStatus);
+      
+      if (!confirm(`Are you sure you want to ${action} ${orgName}?`)) {
+        console.log('[MANAGE-CLINICS] User cancelled status change');
+        return;
+      }
+      
+      console.log('[MANAGE-CLINICS] Status change confirmed');
+      
+      // Check if updateOrganizationStatus function exists
+      if (typeof updateOrganizationStatus === 'function') {
+        updateOrganizationStatus(orgName, newStatus);
+        alert(`${orgName} has been ${newStatus === 'active' ? 'activated' : 'suspended'}`);
+        loadAllClinics();
+      } else {
+        console.log('[MANAGE-CLINICS] updateOrganizationStatus function not available');
+        alert(`Status change for ${orgName} would be: ${currentStatus} ? ${newStatus} (function not available in test mode)`);
+      }
+    }
+    
+    function exportClinic(orgName) {
+      console.log('[MANAGE-CLINICS] exportClinic called with:', orgName);
+      
+      if (typeof exportOrganizationData === 'function') {
+        exportOrganizationData(orgName);
+        alert(`Data for ${orgName} has been exported to a JSON file`);
+      } else {
+        console.log('[MANAGE-CLINICS] exportOrganizationData function not available');
+        alert(`Export for ${orgName} would be triggered (function not available in test mode)`);
+      }
+    }
+    
+    function resetClinicAdminPassword(orgName) {
+      console.log('[MANAGE-CLINICS] resetClinicAdminPassword called with:', orgName);
+      
+      // Find admin user for this clinic
+      const users = JSON.parse(localStorage.getItem("users") || "[]").filter(u => u.org === orgName);
+      const adminUser = users.find(u => u.role === 'Admin' || u.role === 'Doctor');
+      
+      if (!adminUser) {
+        alert(`No admin user found for ${orgName}`);
+        return;
+      }
+      
+      const newPassword = prompt(`Reset password for: ${adminUser.username} (${adminUser.firstName} ${adminUser.lastName})\n\nEnter new password:\n\nRequirements:\n- Minimum 8 characters\n- At least one uppercase letter\n- At least one lowercase letter\n- At least one number`);
+      
+      if (!newPassword) {
+        return; // User canceled
+      }
+      
+      // Validate password
+      if (newPassword.length < 8) {
+        alert('Password must be at least 8 characters long');
+        return;
+      }
+      
+      if (!/[A-Z]/.test(newPassword)) {
+        alert('Password must contain at least one uppercase letter');
+        return;
+      }
+      
+      if (!/[a-z]/.test(newPassword)) {
+        alert('Password must contain at least one lowercase letter');
+        return;
+      }
+      
+      if (!/[0-9]/.test(newPassword)) {
+        alert('Password must contain at least one number');
+        return;
+      }
+      
+      const result = forceResetPassword(adminUser.username, newPassword);
+      
+      if (result.success) {
+        alert(`Password reset successful!\n\nClinic: ${orgName}\nUser: ${adminUser.username}\nNew Password: ${newPassword}\n\nPlease notify the clinic admin of their new password.`);
+      } else {
+        alert(`Password reset failed: ${result.error}`);
+      }
+    }
+    
+    async function archiveClinic(orgName, isCurrentlyArchived) {
+      console.log('[MANAGE-CLINICS] archiveClinic called with:', orgName, isCurrentlyArchived);
+      const action = isCurrentlyArchived ? 'unarchive' : 'archive';
+      const actionText = isCurrentlyArchived ? 'unarchive' : 'archive';
+      
+      if (!confirm(`Are you sure you want to ${actionText} ${orgName}?\n\n${isCurrentlyArchived ? 'This will restore the clinic to active status.' : 'This will hide the clinic but preserve all data for future reference.'}`)) {
+        return;
+      }
+      
+      // Get organizations
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      
+      if (!organizations[orgName]) {
+        alert('Organization not found');
+        return;
+      }
+      
+      // Supabase-first: Update Supabase first, then cache in localStorage
+      const orgData = organizations[orgName];
+      const newArchivedStatus = !isCurrentlyArchived;
+      
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+        try {
+          const { error } = await window.supabaseClient
+            .from('organizations')
+            .update({
+              archived: newArchivedStatus,
+              archived_at: newArchivedStatus ? new Date().toISOString() : null,
+              archived_by: newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null
+            })
+            .eq('id', orgData.id);
+          
+          if (error) {
+            console.error('? Error updating archive status in Supabase:', error);
+            // Fallback: Cache to localStorage even if Supabase write failed
+            organizations[orgName].archived = newArchivedStatus;
+            organizations[orgName].archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+            organizations[orgName].archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+          } else {
+            console.log('? Updated archive status in Supabase');
+            // Cache to localStorage immediately after successful Supabase write
+            // Supabase write: supabaseClient.update() completed above
+            organizations[orgName].archived = newArchivedStatus;
+            organizations[orgName].archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+            organizations[orgName].archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+            localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+          }
+        } catch (error) {
+          console.error('? Exception updating archive status in Supabase:', error);
+          // Fallback: Cache to localStorage if Supabase exception
+          organizations[orgName].archived = newArchivedStatus;
+          organizations[orgName].archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+          organizations[orgName].archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+          localStorage.setItem('organizations', JSON.stringify(organizations));
+        }
+      } else {
+        // Supabase not available - fallback to localStorage only
+        organizations[orgName].archived = newArchivedStatus;
+        organizations[orgName].archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+        organizations[orgName].archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+        localStorage.setItem('organizations', JSON.stringify(organizations));
+      }
+      
+      alert(`${orgName} has been ${isCurrentlyArchived ? 'unarchived' : 'archived'}`);
+      
+      // Reload clinics list to show updated status
+      await loadAllClinics();
+      loadAllClinics();
+    }
+    
+    function formatCurrency(amount, currency = 'NGN') {
+      const symbols = {
+        'NGN': '₦',
+        'KES': 'KSh',
+        'ZAR': 'R',
+        'GHS': 'GH₵',
+        'USD': '$'
+      };
+      
+      const symbol = symbols[currency] || currency;
+      return `${symbol}${amount.toLocaleString()}`;
+    }
+    
+    // Copy to clipboard function
+    function copyToClipboard(text) {
+      console.log('[MANAGE-CLINICS] copyToClipboard called with:', text);
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(text).then(() => {
+          alert('Organization code copied: ' + text);
+        }).catch(() => {
+          prompt('Copy this organization code:', text);
+        });
+      } else {
+        prompt('Copy this organization code:', text);
+      }
+    }
+    
+    // Define switchToOrganization function globally
+    window.switchToOrganization = function(orgName) {
+      console.log('[MANAGE-CLINICS] switchToOrganization called with:', orgName);
+      alert(`Switch to organization: ${orgName} (function called successfully)`);
+      // This would typically redirect to the organization's dashboard
+      // window.location.href = `/dashboard?org=${encodeURIComponent(orgName)}`;
+    };
+    
+    // Verify function is defined
+    console.log('[MANAGE-CLINICS] switchToOrganization function defined:', typeof window.switchToOrganization);
+    
+    // Create missing functions if they don't exist
+    if (typeof getAllOrganizations !== 'function') {
+      console.log('[MANAGE-CLINICS] Creating getAllOrganizations function');
+      window.getAllOrganizations = async function() {
+        console.log('[MANAGE-CLINICS] getAllOrganizations called');
+        try {
+          // Check different ways to access Supabase
+          console.log('[MANAGE-CLINICS] Checking Supabase access methods:');
+          console.log('[MANAGE-CLINICS] window.supabase:', typeof window.supabase);
+          console.log('[MANAGE-CLINICS] window.supabase.from:', typeof window.supabase?.from);
+          console.log('[MANAGE-CLINICS] window.supabaseClient:', typeof window.supabaseClient);
+          
+          let supabaseClient = null;
+          if (window.supabase && typeof window.supabase.from === 'function') {
+            supabaseClient = window.supabase;
+          } else if (window.supabaseClient && typeof window.supabaseClient.from === 'function') {
+            supabaseClient = window.supabaseClient;
+          } else {
+            console.log('[MANAGE-CLINICS] No valid Supabase client found');
+            return {};
+          }
+          
+          console.log('[MANAGE-CLINICS] Using Supabase client:', supabaseClient);
+          const { data, error } = await supabaseClient
+            .from('organizations')
+            .select('*');
+          
+          if (error) {
+            console.error('[MANAGE-CLINICS] Supabase error:', error);
+            return {};
+          }
+          
+          console.log('[MANAGE-CLINICS] Supabase organizations loaded:', data.length);
+          console.log('[MANAGE-CLINICS] Organizations data:', data);
+          
+          // Convert array to object format
+          const orgs = {};
+          data.forEach(org => {
+            orgs[org.name] = org;
+          });
+          
+          return orgs;
+        } catch (error) {
+          console.error('[MANAGE-CLINICS] Error in getAllOrganizations:', error);
+          return {};
+        }
+      };
+    }
+    
+    if (typeof getOrganizationStats !== 'function') {
+      console.log('[MANAGE-CLINICS] Creating getOrganizationStats function');
+      window.getOrganizationStats = async function(orgName) {
+        console.log('[MANAGE-CLINICS] getOrganizationStats called for:', orgName);
+        return {
+          patientCount: 0,
+          userCount: 0,
+          totalRevenue: 0
+        };
+      };
+    }
+    
+    // ==================== SINGLE ORGANIZATION DELETE FUNCTION ====================
+    
+    // Delete a single organization
+    async function deleteSingleOrganization(orgName, userCount) {
+      console.log(`[MANAGE-CLINICS] deleteSingleOrganization called for: ${orgName} (${userCount} users)`);
+      
+      try {
+        // Safety check: Warn if organization has users
+        if (userCount > 0) {
+          const confirmMessage = `WARNING: ${orgName} has ${userCount} user(s)!\n\nDeleting this organization will:\n- Remove ALL users from this organization\n- Delete ALL patient data\n- Delete ALL appointments\n- Delete ALL billing records\n\nThis action CANNOT be undone!\n\nAre you absolutely sure you want to proceed?`;
+          
+          if (!confirm(confirmMessage)) {
+            console.log('[MANAGE-CLINICS] User cancelled deletion due to users present');
+            return;
+          }
+          
+          // Final confirmation for organizations with users
+          if (!confirm(`FINAL CONFIRMATION: Delete ${orgName} with ${userCount} users?\n\nThis will permanently remove ALL data for this organization.`)) {
+            console.log('[MANAGE-CLINICS] User cancelled final confirmation');
+            return;
+          }
+        } else {
+          // For organizations with zero users, simpler confirmation
+          const confirmMessage = `Delete ${orgName}?\n\nThis organization has no users, so it's safe to delete.\n\nThis action cannot be undone.`;
+          
+          if (!confirm(confirmMessage)) {
+            console.log('[MANAGE-CLINICS] User cancelled deletion');
+            return;
+          }
+        }
+        
+        console.log(`[MANAGE-CLINICS] Proceeding with deletion of: ${orgName}`);
+        
+        // Check if function exists, if not create a fallback
+        if (typeof deleteOrganizationWithZeroUsers !== 'function') {
+          console.error('? deleteOrganizationWithZeroUsers function not found, creating fallback');
+          
+          // Create fallback delete function
+          window.deleteOrganizationWithZeroUsers = async function(orgName) {
+            console.log(`[MANAGE-CLINICS] Fallback delete function called for: ${orgName}`);
+            
+            try {
+              // Force fresh query from Supabase instead of using cache
+              console.log('[MANAGE-CLINICS] Fetching fresh organization data from Supabase...');
+              const { data: freshOrgs, error: fetchError } = await supabaseClient
+                .from('organizations')
+                .select('*')
+                .eq('name', orgName);
+              
+              if (fetchError) {
+                console.error('? Error fetching organization:', fetchError);
+                return { success: false, error: "Database fetch error: " + fetchError.message };
+              }
+              
+              if (!freshOrgs || freshOrgs.length === 0) {
+                console.log('? Organization not found in fresh database query');
+                return { success: false, error: "Organization not found in database" };
+              }
+              
+              const org = freshOrgs[0];
+              console.log('? Found organization in fresh query:', org);
+              
+              const orgId = org.id;
+              
+              // Delete related records first (cascade deletion)
+              console.log(`[MANAGE-CLINICS] Attempting cascade deletion for organization ${orgName} with ID: ${orgId}`);
+              
+              // Delete users first
+              console.log('[MANAGE-CLINICS] Deleting users...');
+              const { error: usersError } = await supabaseClient
+                .from('users')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              if (usersError) {
+                console.warn('[MANAGE-CLINICS] Error deleting users:', usersError);
+              } else {
+                console.log('? Users deleted');
+              }
+              
+              // Delete patients
+              console.log('[MANAGE-CLINICS] Deleting patients...');
+              const { error: patientsError } = await supabaseClient
+                .from('patients')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              if (patientsError) {
+                console.warn('[MANAGE-CLINICS] Error deleting patients:', patientsError);
+              } else {
+                console.log('? Patients deleted');
+              }
+              
+              // Delete appointments
+              console.log('[MANAGE-CLINICS] Deleting appointments...');
+              const { error: appointmentsError } = await supabaseClient
+                .from('appointments')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              if (appointmentsError) {
+                console.warn('[MANAGE-CLINICS] Error deleting appointments:', appointmentsError);
+              } else {
+                console.log('? Appointments deleted');
+              }
+              
+              // Delete clinical notes
+              console.log('[MANAGE-CLINICS] Deleting clinical notes...');
+              const { error: notesError } = await supabaseClient
+                .from('clinical_notes')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              if (notesError) {
+                console.warn('[MANAGE-CLINICS] Error deleting clinical notes:', notesError);
+              } else {
+                console.log('? Clinical notes deleted');
+              }
+              
+              // Delete invoices
+              console.log('[MANAGE-CLINICS] Deleting invoices...');
+              const { error: invoicesError } = await supabaseClient
+                .from('invoices')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              if (invoicesError) {
+                console.warn('[MANAGE-CLINICS] Error deleting invoices:', invoicesError);
+              } else {
+                console.log('? Invoices deleted');
+              }
+              
+              // Delete payments
+              console.log('[MANAGE-CLINICS] Deleting payments...');
+              const { error: paymentsError } = await supabaseClient
+                .from('payments')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              if (paymentsError) {
+                console.warn('[MANAGE-CLINICS] Error deleting payments:', paymentsError);
+              } else {
+                console.log('? Payments deleted');
+              }
+              
+              // Finally delete the organization
+              console.log(`[MANAGE-CLINICS] Deleting organization ${orgName}...`);
+              
+              // Try to delete with different approaches
+              let deleteSuccess = false;
+              let deleteError = null;
+              
+              // Approach 1: Direct delete
+              console.log('[MANAGE-CLINICS] Attempting direct delete...');
+              const { data: deleteData1, error: error1 } = await supabaseClient
+                .from('organizations')
+                .delete()
+                .eq('id', orgId)
+                .select();
+              
+              console.log('[MANAGE-CLINICS] Direct delete result:', { deleteData1, error1 });
+              
+              if (!error1 && deleteData1 && deleteData1.length > 0) {
+                deleteSuccess = true;
+                console.log('? Direct delete successful');
+              } else {
+                // Approach 2: Try with name match
+                console.log('[MANAGE-CLINICS] Attempting delete by name...');
+                const { data: deleteData2, error: error2 } = await supabaseClient
+                  .from('organizations')
+                  .delete()
+                  .eq('name', orgName)
+                  .select();
+                
+                console.log('[MANAGE-CLINICS] Name delete result:', { deleteData2, error2 });
+                
+                if (!error2 && deleteData2 && deleteData2.length > 0) {
+                  deleteSuccess = true;
+                  console.log('? Name delete successful');
+                } else {
+                  // Approach 3: Try with org_code
+                  console.log('[MANAGE-CLINICS] Attempting delete by org_code...');
+                  const { data: deleteData3, error: error3 } = await supabaseClient
+                    .from('organizations')
+                    .delete()
+                    .eq('org_code', freshOrgs[0].org_code)
+                    .select();
+                  
+                  console.log('[MANAGE-CLINICS] Org code delete result:', { deleteData3, error3 });
+                  
+                  if (!error3 && deleteData3 && deleteData3.length > 0) {
+                    deleteSuccess = true;
+                    console.log('? Org code delete successful');
+                  } else {
+                    deleteError = error3 || error2 || error1;
+                    console.error('? All delete approaches failed');
+                  }
+                }
+              }
+              
+              if (!deleteSuccess) {
+                console.error('? Failed to delete organization with all approaches');
+                return { success: false, error: "Database deletion failed: " + (deleteError?.message || "Unknown error") };
+              }
+              
+              console.log(`? Organization ${orgName} deleted from Supabase`);
+              
+              // Clear cache and force refresh
+              if (typeof clearOrganizationsCache === 'function') {
+                clearOrganizationsCache();
+              }
+              
+              // Force refresh the page data
+              console.log('[MANAGE-CLINICS] Forcing page refresh after deletion...');
+              setTimeout(() => {
+                window.location.reload();
+              }, 1000);
+              
+              return { 
+                success: true, 
+                message: `Organization "${orgName}" deleted successfully` 
+              };
+            } catch (error) {
+              console.error('? Exception deleting organization:', error);
+              return { success: false, error: "Unexpected error: " + error.message };
+            }
+          };
+        }
+        
+        // Show loading message
+        const infoDiv = document.getElementById('zero-user-orgs-info');
+        if (infoDiv) {
+          infoDiv.innerHTML = `
+            <div style="color: #2196F3; font-weight: 600;">
+              Deleting organization "${orgName}"... Please wait...
+            </div>
+          `;
+          infoDiv.style.display = 'block';
+        }
+        
+        // Perform deletion
+        const result = await deleteOrganizationWithZeroUsers(orgName);
+        
+        if (result.success) {
+          const successMessage = `Organization "${orgName}" deleted successfully!`;
+          
+          if (infoDiv) {
+            infoDiv.innerHTML = `
+              <div style="color: #4CAF50; font-weight: 600;">
+                Organization "${orgName}" deleted successfully!
+              </div>
+            `;
+          }
+          
+          alert(successMessage);
+          
+          // Reload the clinics list
+          await loadAllClinics();
+        } else {
+          const errorMessage = `Failed to delete "${orgName}": ${result.error}`;
+          
+          if (infoDiv) {
+            infoDiv.innerHTML = `
+              <div style="color: #F44336; font-weight: 600;">
+                Failed to delete "${orgName}": ${result.error}
+              </div>
+            `;
+          }
+          
+          alert(errorMessage);
+        }
+        
+      } catch (error) {
+        console.error('? Error in deleteSingleOrganization:', error);
+        alert('Error deleting organization: ' + error.message);
+      }
+    }
+    
+    
+    console.log('[MANAGE-CLINICS] Script execution completed');
+  </script>
+  
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=202510220113110113111311"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=202510220113110113111311"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('[OK] Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

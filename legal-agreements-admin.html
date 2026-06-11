@@ -1,0 +1,615 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Agreements - Platform Admin - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/legal-agreements.js?v=20250118000000"></script>
+  
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+    }
+    
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+    
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #008753, #006b42);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.2);
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .summary-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border: 3px solid #008753;
+    }
+    
+    .summary-stats {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-top: 20px;
+    }
+    
+    .stat-item {
+      text-align: center;
+      padding: 15px;
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05));
+      border-radius: 8px;
+      border: 2px solid #008753;
+    }
+    
+    .stat-item .number {
+      font-size: 32px;
+      font-weight: 800;
+      color: #008753;
+      display: block;
+    }
+    
+    .stat-item .label {
+      font-size: 14px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .org-section {
+      background: white;
+      border: 3px solid #008753;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.15);
+    }
+    
+    .org-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 3px solid #008753;
+    }
+    
+    .org-header h2 {
+      color: #008753;
+      margin: 0;
+      font-size: 24px;
+      font-weight: 800;
+    }
+    
+    .org-stats {
+      color: #666;
+      font-size: 15px;
+    }
+    
+    .user-card {
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.05), rgba(0, 107, 66, 0.03));
+      border: 2px solid #008753;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 15px;
+    }
+    
+    .user-header {
+      margin-bottom: 15px;
+      padding-bottom: 10px;
+      border-bottom: 2px solid rgba(0, 135, 83, 0.3);
+    }
+    
+    .user-header h3 {
+      color: #008753;
+      margin: 0;
+      font-size: 18px;
+      font-weight: 700;
+    }
+    
+    .user-info {
+      color: #666;
+      margin: 5px 0 0 0;
+      font-size: 14px;
+    }
+    
+    .agreement-card {
+      background: white;
+      border: 2px solid #008753;
+      border-radius: 8px;
+      padding: 15px;
+      margin-bottom: 10px;
+    }
+    
+    .agreement-header {
+      font-weight: 700;
+      color: #008753;
+      margin-bottom: 12px;
+      font-size: 15px;
+      border-bottom: 1px solid #008753;
+      padding-bottom: 8px;
+    }
+    
+    .agreement-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-bottom: 12px;
+      font-size: 13px;
+      color: #666;
+    }
+    
+    .agreement-details strong {
+      color: #008753;
+    }
+    
+    .download-btn {
+      background: linear-gradient(135deg, #008753, #006b42);
+      color: white;
+      border: none;
+      padding: 8px 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 13px;
+      transition: all 0.3s;
+    }
+    
+    .download-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 135, 83, 0.3);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 18px;
+    }
+    
+    .error {
+      background: #fee;
+      border: 2px solid #fcc;
+      border-radius: 8px;
+      padding: 20px;
+      color: #c33;
+      text-align: center;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .empty-state p {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <a href="platform-dashboard" class="back-button">&larr; Back to Platform Dashboard</a>
+  
+  <div class="header">
+    <h1>&#128737; Legal Agreements - Compliance View</h1>
+    <p>All signed legal agreements organized by organization for compliance and audit purposes</p>
+  </div>
+  
+  <div id="loading" class="loading">Loading legal agreements...</div>
+  <div id="content" style="display: none;"></div>
+  
+  <a href="platform-dashboard" class="back-button" style="margin-top: 30px;">&larr; Back to Platform Dashboard</a>
+  
+  <script>
+    // Check if user is platform admin
+    async function checkPlatformAdmin() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user || !user.role || (user.role !== 'PlatformAdmin' && user.role !== 'PlatformOwner')) {
+        window.location.href = '/dashboard';
+        return false;
+      }
+      return true;
+    }
+    
+    // Load all legal agreements
+    async function loadAllLegalAgreements() {
+      const loadingDiv = document.getElementById('loading');
+      const contentDiv = document.getElementById('content');
+      
+      try {
+        if (!await checkPlatformAdmin()) {
+          return;
+        }
+        
+        if (typeof window.getAllLegalAgreements === 'undefined') {
+          throw new Error('Legal agreements module not loaded');
+        }
+        
+        const { success, agreements, error } = await window.getAllLegalAgreements();
+        
+        if (!success) {
+          throw new Error(error || 'Failed to load legal agreements');
+        }
+        
+        loadingDiv.style.display = 'none';
+        contentDiv.style.display = 'block';
+        
+        if (!agreements || agreements.length === 0) {
+          contentDiv.innerHTML = `
+            <div class="empty-state">
+              <p style="font-size: 18px; margin-bottom: 10px;">No signed legal agreements found.</p>
+              <p style="font-size: 14px;">Agreements will appear here once users sign them during registration or login.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Group agreements by organization
+        const agreementsByOrg = {};
+        const totalUsers = new Set();
+        
+        agreements.forEach(agreement => {
+          const orgId = agreement.organization_id || 'no-org';
+          const orgName = agreement.organizations?.name || 'Unknown Organization';
+          const userId = agreement.user_id;
+          totalUsers.add(userId);
+          
+          if (!agreementsByOrg[orgId]) {
+            agreementsByOrg[orgId] = {
+              organization: { id: orgId, name: orgName },
+              users: {}
+            };
+          }
+          
+          if (!agreementsByOrg[orgId].users[userId]) {
+            const user = agreement.users || { username: 'Unknown', first_name: '', last_name: '', role: 'Unknown' };
+            agreementsByOrg[orgId].users[userId] = {
+              user: user,
+              agreements: []
+            };
+          }
+          
+          agreementsByOrg[orgId].users[userId].agreements.push(agreement);
+        });
+        
+        // Summary card
+        let html = `
+          <div class="summary-card">
+            <h2 style="color: #008753; margin: 0 0 20px 0; font-size: 24px; font-weight: 800;">&#128202; Summary</h2>
+            <div class="summary-stats">
+              <div class="stat-item">
+                <span class="number">${agreements.length}</span>
+                <span class="label">Total Agreements</span>
+              </div>
+              <div class="stat-item">
+                <span class="number">${Object.keys(agreementsByOrg).length}</span>
+                <span class="label">Organizations</span>
+              </div>
+              <div class="stat-item">
+                <span class="number">${totalUsers.size}</span>
+                <span class="label">Users</span>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Display agreements grouped by organization
+        Object.values(agreementsByOrg).forEach((orgGroup) => {
+          const org = orgGroup.organization;
+          const userCount = Object.keys(orgGroup.users).length;
+          const totalAgreements = Object.values(orgGroup.users).reduce((sum, u) => sum + u.agreements.length, 0);
+          
+          html += `
+            <div class="org-section">
+              <div class="org-header">
+                <div>
+                  <h2>&#127976; ${org.name}</h2>
+                  <div class="org-stats">
+                    <strong>Organization ID:</strong> ${org.id.substring(0, 8)}... | 
+                    <strong>Users:</strong> ${userCount} | 
+                    <strong>Total Agreements:</strong> ${totalAgreements}
+                  </div>
+                </div>
+                <div style="background: linear-gradient(135deg, #008753, #006b42); color: white; padding: 10px 20px; border-radius: 8px; font-weight: 700; font-size: 14px;">
+                  ? Compliance Verified
+                </div>
+              </div>
+          `;
+          
+          // Display users within this organization
+          Object.values(orgGroup.users).forEach((userGroup) => {
+            const user = userGroup.user;
+            const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown User';
+            
+            html += `
+              <div class="user-card">
+                <div class="user-header">
+                  <h3>&#128100; ${userName}</h3>
+                  <div class="user-info">
+                    <strong>Role:</strong> ${user.role || 'Unknown'} | 
+                    <strong>Username:</strong> ${user.username || 'N/A'} |
+                    <strong>Agreements:</strong> ${userGroup.agreements.length}
+                  </div>
+                </div>
+                
+                <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 15px;">
+            `;
+            
+            userGroup.agreements.forEach(agreement => {
+              const agreementTypeLabel = agreement.agreement_type === 'service_agreement' 
+                ? 'Service Subscription Agreement' 
+                : agreement.agreement_type === 'baa' 
+                ? 'Business Associate Agreement (BAA)' 
+                : agreement.agreement_type;
+              
+              const signedDate = agreement.signed_at 
+                ? new Date(agreement.signed_at).toLocaleString() 
+                : 'Unknown';
+              
+              html += `
+                <div class="agreement-card">
+                  <div class="agreement-header">${agreementTypeLabel}</div>
+                  <div class="agreement-details">
+                    <div><strong>Version:</strong> ${agreement.agreement_version || 'N/A'}</div>
+                    <div><strong>Signed:</strong> ${signedDate}</div>
+                    <div><strong>IP Address:</strong> ${agreement.ip_address || 'N/A'}</div>
+                    <div><strong>User Email:</strong> ${agreement.user_email || 'N/A'}</div>
+                  </div>
+                  <button class="download-btn" onclick="downloadAgreementPDF('${agreement.id}', '${agreementTypeLabel.replace(/'/g, "\\'")}', '${userName.replace(/'/g, "\\'")}', '${signedDate.replace(/'/g, "\\'")}', '${agreement.agreement_version || 'N/A'}')">
+                    &#128229; Download PDF Copy
+                  </button>
+                </div>
+              `;
+            });
+            
+            html += `
+                </div>
+              </div>
+            `;
+          });
+          
+          html += `
+            </div>
+          `;
+        });
+        
+        contentDiv.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading legal agreements:', error);
+        loadingDiv.style.display = 'none';
+        contentDiv.style.display = 'block';
+        contentDiv.innerHTML = `
+          <div class="error">
+            <h3>Error Loading Legal Agreements</h3>
+            <p>${error.message}</p>
+            <button onclick="loadAllLegalAgreements()" style="margin-top: 20px; padding: 10px 20px; background: #008753; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              Try Again
+            </button>
+          </div>
+        `;
+      }
+    }
+    
+    // Download agreement as PDF
+    async function downloadAgreementPDF(agreementId, agreementType, userName, signedDate, version) {
+      try {
+        // Wait for jsPDF to be available (check multiple ways it might be exposed)
+        let jsPDFLib = null;
+        let attempts = 0;
+        const maxAttempts = 100; // 10 seconds max wait
+        
+        while (!jsPDFLib && attempts < maxAttempts) {
+          // Method 1: UMD format (window.jsPDF.jsPDF) - most common for UMD builds
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.jsPDF;
+            console.log('? Found jsPDF via UMD format (window.jsPDF.jsPDF)');
+            break;
+          }
+          // Method 2: UMD format with default (window.jsPDF.default.jsPDF)
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.default.jsPDF;
+            console.log('? Found jsPDF via UMD default format');
+            break;
+          }
+          // Method 3: Direct global function
+          if (typeof window.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF;
+            console.log('? Found jsPDF via direct global function');
+            break;
+          }
+          // Method 4: Check if it's an object with constructor
+          if (window.jsPDF && typeof window.jsPDF === 'object' && window.jsPDF.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.jsPDF;
+            console.log('? Found jsPDF via object property');
+            break;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        // If still not found, try loading dynamically
+        if (!jsPDFLib) {
+          console.log('?? jsPDF not found after waiting, attempting to load dynamically...');
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js';
+          script.async = false;
+          
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Timeout waiting for jsPDF to load'));
+            }, 5000);
+            
+            script.onload = () => {
+              // Wait a bit for library to initialize
+              setTimeout(() => {
+                clearTimeout(timeout);
+                // Try all methods again after load
+                if (window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF.jsPDF;
+                  console.log('? Found jsPDF after dynamic load (UMD format)');
+                  resolve();
+                } else if (window.jsPDF && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF.default.jsPDF;
+                  console.log('? Found jsPDF after dynamic load (UMD default)');
+                  resolve();
+                } else if (typeof window.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF;
+                  console.log('? Found jsPDF after dynamic load (direct function)');
+                  resolve();
+                } else {
+                  console.error('? Library loaded but constructor not found:', typeof window.jsPDF, window.jsPDF);
+                  reject(new Error('Library loaded but constructor not accessible'));
+                }
+              }, 200);
+            };
+            script.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error('Failed to load jsPDF from CDN'));
+            };
+            document.head.appendChild(script);
+          });
+        }
+        
+        if (!jsPDFLib) {
+          alert('PDF library failed to load. Please refresh the page and try again.');
+          console.error('? jsPDF library not available after all attempts');
+          console.error('window.jsPDF type:', typeof window.jsPDF);
+          console.error('window.jsPDF value:', window.jsPDF);
+          return;
+        }
+        
+        console.log('? jsPDF library ready, creating PDF...');
+        
+        // Fetch the full agreement text from legal-agreement.html
+        let agreementText = '';
+        try {
+          const response = await fetch('legal-agreement.html');
+          if (response.ok) {
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.legal-content') || doc.body;
+            agreementText = content.innerText || content.textContent || '';
+          }
+        } catch (fetchError) {
+          console.warn('Could not fetch agreement text:', fetchError);
+          agreementText = `${agreementType}\n\nVersion: ${version}\nSigned By: ${userName}\nSigned Date: ${signedDate}\n\nThis is a copy of your signed legal agreement.`;
+        }
+        
+        const doc = new jsPDFLib({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        // Set font
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text(agreementType, 20, 20);
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Version: ${version}`, 20, 30);
+        doc.text(`Signed By: ${userName}`, 20, 35);
+        doc.text(`Signed Date: ${signedDate}`, 20, 40);
+        
+        // Add agreement text
+        doc.setFontSize(9);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
+        const maxWidth = pageWidth - (margin * 2);
+        
+        let yPos = 50;
+        const lines = doc.splitTextToSize(agreementText || 'Agreement text not available', maxWidth);
+        
+        lines.forEach((line) => {
+          if (yPos > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(line, margin, yPos);
+          yPos += 5;
+        });
+        
+        // Add footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+          doc.text('MediForge Legal Agreement Copy', pageWidth / 2, pageHeight - 5, { align: 'center' });
+        }
+        
+        // Generate filename
+        const filename = `${agreementType.replace(/[^a-z0-9]/gi, '_')}_${userName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        // Save PDF
+        doc.save(filename);
+        
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF: ' + error.message);
+      }
+    }
+    
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadAllLegalAgreements();
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#dc3545">
+  <title>Blood Pressure Alerts - MediForge [trace v3]</title>
+  <link rel="stylesheet" href="css/styles.css?v=242">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --light-green: rgba(0, 135, 83, 0.1);
+      --nigerian-white: #FFFFFF;
+      --nigerian-green: #008753;
+      --gold: #FFD700;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --ivory: #FFFFF0;
+      --soft-white: #FAFAFA;
+      --charcoal: #36454F;
+      --critical-red: #dc3545;
+      --critical-bg: rgba(220, 53, 69, 0.08);
+      --warm-orange: #FF8C00;
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, var(--soft-white) 0%, var(--ivory) 100%); color: var(--charcoal); }
+    .container { background: var(--nigerian-white); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15), 0 0 30px rgba(218, 165, 32, 0.08); border: 1px solid rgba(0, 135, 83, 0.2); }
+    h1 { color: var(--primary-green); margin-bottom: 10px; text-shadow: 1px 1px 2px rgba(0, 135, 83, 0.2); border-bottom: 3px solid var(--kente-gold); padding-bottom: 12px; }
+    .subtitle { color: var(--dark-green); margin-bottom: 25px; font-size: 14px; opacity: 0.9; }
+    .back-button { background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%); color: white; border: 2px solid var(--kente-gold); padding: 10px 20px; border-radius: 8px; cursor: pointer; margin-bottom: 20px; font-weight: 600; box-shadow: 0 2px 8px rgba(0, 135, 83, 0.3); transition: all 0.3s ease; }
+    .back-button:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4); border-color: var(--gold); }
+    .alert-card {
+      padding: 16px 20px;
+      margin-bottom: 12px;
+      border-radius: 10px;
+      background: linear-gradient(135deg, var(--light-green) 0%, rgba(218, 165, 32, 0.05) 100%);
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: space-between;
+      gap: 15px;
+      border: 1px solid rgba(0, 135, 83, 0.2);
+      border-left: 5px solid var(--primary-green);
+      box-shadow: 0 2px 10px rgba(0, 135, 83, 0.1);
+      transition: all 0.3s ease;
+    }
+    .alert-card:hover { background: linear-gradient(135deg, rgba(0, 135, 83, 0.15) 0%, rgba(218, 165, 32, 0.1) 100%); box-shadow: 0 4px 15px rgba(0, 135, 83, 0.2); border-left-color: var(--kente-gold); }
+    .alert-patient { font-weight: 700; font-size: 16px; color: var(--dark-green); }
+    .alert-bp { font-size: 18px; font-weight: 700; color: var(--primary-green); }
+    .alert-meta { color: var(--charcoal); font-size: 13px; opacity: 0.85; }
+    .alert-actions button {
+      background: linear-gradient(135deg, var(--adire-blue) 0%, #2E4BC6 100%);
+      color: white;
+      border: 2px solid var(--kente-gold);
+      padding: 8px 16px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      box-shadow: 0 2px 6px rgba(65, 105, 225, 0.3);
+    }
+    .alert-actions button:hover { box-shadow: 0 4px 10px rgba(65, 105, 225, 0.4); transform: translateY(-1px); }
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--dark-green); font-style: italic; background: linear-gradient(135deg, var(--light-green) 0%, var(--ivory) 100%); border-radius: 10px; border: 2px dashed var(--primary-green); }
+    .refresh-bar { display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; flex-wrap: wrap; gap: 10px; }
+    .stats-badge { background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%); color: white; padding: 6px 14px; border-radius: 8px; font-weight: 600; border: 2px solid var(--kente-gold); box-shadow: 0 2px 8px rgba(0, 135, 83, 0.3); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="window.location.href='dashboard'">← Back to Dashboard</button>
+    <h1>🩺 Blood Pressure Alerts</h1>
+    <p class="subtitle">Patients with elevated or critical blood pressure (≥140/90 mmHg) in your clinic. Doctors and nurses can see this dashboard.</p>
+    <div class="refresh-bar">
+      <span class="stats-badge" id="alert-count">0 readings</span>
+      <button class="back-button" onclick="loadCriticalBpAlerts()">🔄 Refresh</button>
+      <span style="font-size:10px;color:#999;margin-left:8px;">BPA trace v3</span>
+    </div>
+    <div id="alerts-list"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/logout-button.js"></script>
+
+  <script>
+    console.log('[BPA Trace] Script loaded at parse time');
+    // Use getDataKey from main.js (do not redefine - would overwrite and cause recursion)
+    // Critical: crisis level (systolic ≥180 or ≤90, diastolic ≥120 or ≤60)
+    function isCriticalBp(systolic, diastolic) {
+      if (systolic == null && diastolic == null) return false;
+      const s = parseInt(systolic, 10);
+      const d = parseInt(diastolic, 10);
+      if (isNaN(s) && isNaN(d)) return false;
+      return (s >= 180 || s <= 90 || d >= 120 || d <= 60);
+    }
+    // Elevated: Stage 2 hypertension (systolic ≥140 or diastolic ≥90) - shown on dashboard alongside critical
+    function isElevatedBp(systolic, diastolic) {
+      if (systolic == null && diastolic == null) return false;
+      const s = parseInt(systolic, 10);
+      const d = parseInt(diastolic, 10);
+      if (isNaN(s) && isNaN(d)) return false;
+      return (s >= 140 || d >= 90);
+    }
+
+    const BPA_TRACE = true; // Set to false to disable trace logs
+
+    async function loadCriticalBpAlerts() {
+      const list = document.getElementById("alerts-list");
+      const countEl = document.getElementById("alert-count");
+      list.innerHTML = '<p style="text-align:center; color:#888;">Loading...</p>';
+
+      if (BPA_TRACE) console.log('[BPA Trace] 1. Starting loadCriticalBpAlerts');
+
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      let orgId = user.organizationId || user.organization_id;
+      if (!orgId && typeof window.resolveOrganizationId === 'function') {
+        try { orgId = await window.resolveOrganizationId(); } catch (_) {}
+      }
+      if (BPA_TRACE) console.log('[BPA Trace] 2. orgId =', orgId, 'user.org =', user.org, 'patientsKey =', typeof getDataKey === 'function' ? getDataKey('patients') : 'N/A');
+      if (!orgId) {
+        list.innerHTML = '<div class="empty-state">Could not determine organization. Please ensure you are logged in.</div>';
+        countEl.textContent = '0 critical readings';
+        return;
+      }
+      if (BPA_TRACE) console.log('[BPA Trace] 2b. getDataKey(patients)=', typeof getDataKey === 'function' ? getDataKey('patients') : 'N/A');
+
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority(true);
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (e) {
+        if (BPA_TRACE) console.warn('[BPA Trace] Load error:', e);
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      if (BPA_TRACE) console.log('[BPA Trace] 3. patients loaded:', patients.length, 'getDataKey(patients)=', typeof getDataKey === 'function' ? getDataKey('patients') : 'N/A', '| sample:', patients[0] ? { id: patients[0].id, patient_id: patients[0].patient_id, orgId: patients[0].organization_id || patients[0].organizationId, vitalsCount: (patients[0].vitals || []).length, visitsCount: (patients[0].visits || []).length } : 'none');
+
+      // Filter by clinic (organization)
+      const orgPatients = patients.filter(p => {
+        const pid = p.organization_id || p.organizationId;
+        const pass = pid === orgId || !pid;
+        if (BPA_TRACE && !pass && patients.indexOf(p) < 3) console.log('[BPA Trace] Patient filtered out (org):', p.patient_id || p.id, 'pid=', pid, 'orgId=', orgId);
+        return pass;
+      });
+      if (BPA_TRACE) console.log('[BPA Trace] 4. orgPatients after filter:', orgPatients.length);
+      const withVitals = orgPatients.filter(p => (p.vitals || []).length > 0);
+      const withBpReadings = orgPatients.filter(p => (p.visits || []).some(v => (v?.bloodPressureCheck?.bpReadings || []).length > 0));
+      if (BPA_TRACE) console.log('[BPA Trace] 4b. Patients with vitals:', withVitals.length, 'with bpReadings in visits:', withBpReadings.length, 'ids:', withVitals.slice(0,3).map(p=>p.patient_id||p.id), withBpReadings.slice(0,3).map(p=>p.patient_id||p.id));
+
+      const alerts = [];
+      const seenAlertKeys = new Set(); // Dedupe across vitals and bpReadings
+      const cutoff = new Date();
+      cutoff.setDate(cutoff.getDate() - 7);
+      if (BPA_TRACE) console.log('[BPA Trace] 5. cutoff (7d ago):', cutoff.toISOString());
+
+      let rejectReasons = { noSysDia: 0, tooOld: 0, notCritical: 0 };
+      const rejectSamples = []; // First few rejected for trace
+      function addCriticalReading(patient, v, visitDate) {
+        if (!v.systolic && !v.diastolic) { rejectReasons.noSysDia++; return; }
+        const tsVal = v.timestamp || visitDate;
+        const ts = tsVal ? new Date(tsVal) : new Date();
+        if (ts < cutoff) {
+          rejectReasons.tooOld++;
+          if (rejectSamples.length < 3) rejectSamples.push({ reason: 'tooOld', sys: v.systolic, dia: v.diastolic, ts: tsVal, cutoff: cutoff.toISOString() });
+          return;
+        }
+        const critical = v.isCritical === true || isCriticalBp(v.systolic, v.diastolic) || isElevatedBp(v.systolic, v.diastolic);
+        if (!critical) {
+          rejectReasons.notCritical++;
+          if (rejectSamples.length < 3) rejectSamples.push({ reason: 'notCritical', sys: v.systolic, dia: v.diastolic, ts: tsVal });
+          return;
+        }
+        const key = `${patient.id || patient.patient_id}-${visitDate || tsVal}-${v.systolic}-${v.diastolic}`;
+        if (seenAlertKeys.has(key)) return;
+        seenAlertKeys.add(key);
+        const displayId =
+          typeof window.patientMrnDisplay === 'function'
+            ? window.patientMrnDisplay(patient)
+            : (typeof window.getPatientIdentifier === 'function'
+                ? window.getPatientIdentifier(patient)
+                : null) ||
+              patient.patient_id ||
+              patient.patientNumber ||
+              'N/A';
+        alerts.push({
+          patient,
+          displayId,
+          systolic: v.systolic,
+          diastolic: v.diastolic,
+          hr: v.hr,
+          timestamp: v.timestamp || visitDate,
+          visitDate: visitDate || v.visitDate
+        });
+      }
+
+      orgPatients.forEach((patient, idx) => {
+        const vCount = (patient.vitals || []).length;
+        const bpFromVisits = (patient.visits || []).reduce((sum, v) => sum + (Array.isArray(v?.bloodPressureCheck?.bpReadings) ? v.bloodPressureCheck.bpReadings.length : 0), 0);
+        if (BPA_TRACE && (vCount || bpFromVisits) && idx < 5) console.log('[BPA Trace] Patient', patient.patient_id || patient.id, 'vitals:', vCount, 'bpReadings from visits:', bpFromVisits);
+        // 1. From patient.vitals (merged from localStorage or Supabase)
+        (patient.vitals || []).forEach(v => {
+          const visitDate = v.visitDate || v.timestamp;
+          addCriticalReading(patient, v, visitDate);
+        });
+        // 2. Fallback: from visit.bloodPressureCheck.bpReadings (visits are merged from localStorage)
+        (patient.visits || []).forEach(visit => {
+          const visitDate = visit.date;
+          const readings = visit?.bloodPressureCheck?.bpReadings;
+          if (Array.isArray(readings) && readings.length) {
+            readings.forEach(r => addCriticalReading(patient, r, visitDate));
+          }
+        });
+      });
+
+      if (BPA_TRACE) console.log('[BPA Trace] 6. Rejection reasons:', rejectReasons, '| alerts found:', alerts.length);
+      alerts.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp));
+
+      // Group by patient: one card per patient
+      const byPatient = new Map();
+      alerts.forEach(a => {
+        const key = a.patient.id || a.patient.patient_id;
+        if (!byPatient.has(key)) {
+          byPatient.set(key, { patient: a.patient, displayId: a.displayId, readings: [] });
+        }
+        byPatient.get(key).readings.push(a);
+      });
+      const patientSummaries = Array.from(byPatient.values()).map(s => ({
+        ...s,
+        latest: s.readings[0],
+        count: s.readings.length
+      })).sort((a, b) => new Date(b.latest.timestamp) - new Date(a.latest.timestamp));
+
+      countEl.textContent = `${patientSummaries.length} patient${patientSummaries.length !== 1 ? 's' : ''}`;
+
+      if (patientSummaries.length === 0) {
+        const traceHtml = BPA_TRACE ? `<details style="margin-top:20px;padding:15px;background:#f0f0f0;border-radius:8px;font-size:12px;font-family:monospace;"><summary>BPA Trace (click to expand)</summary><pre>orgId=${orgId}
+patients=${patients.length} orgPatients=${orgPatients.length}
+withVitals=${withVitals.length} withBpReadings=${withBpReadings.length}
+rejectReasons=${JSON.stringify(rejectReasons)}
+rejectSamples=${JSON.stringify(rejectSamples)}</pre></details>` : '';
+        list.innerHTML = '<div class="empty-state">No elevated or critical blood pressure readings in the last 7 days.</div>' + traceHtml;
+        return;
+      }
+
+      list.innerHTML = patientSummaries.map(s => {
+        const name = `${s.patient.firstName || ''} ${(s.patient.middleName || '')} ${s.patient.lastName || ''}`.replace(/\s+/g, ' ').trim() || 'Unknown';
+        const latest = s.latest;
+        const timeStr = latest.timestamp ? new Date(latest.timestamp).toLocaleString() : 'N/A';
+        const patientId = s.patient.id || s.patient.patient_id;
+        return `
+          <div class="alert-card" style="cursor:pointer;" onclick="window.location.href='blood-pressure-alerts-patient.html?patientId=${encodeURIComponent(patientId)}'">
+            <div>
+              <div class="alert-patient">${name} (ID: ${s.displayId})</div>
+              <div class="alert-bp">${s.count} elevated reading${s.count !== 1 ? 's' : ''} — latest: ${latest.systolic}/${latest.diastolic} mmHg</div>
+              <div class="alert-meta">${timeStr}${latest.hr ? ' | HR: ' + latest.hr + ' bpm' : ''}</div>
+            </div>
+            <div class="alert-actions" onclick="event.stopPropagation();">
+              <button onclick="event.stopPropagation(); window.location.href='blood-pressure-alerts-patient.html?patientId=${encodeURIComponent(patientId)}'">View details</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    window.addEventListener('load', loadCriticalBpAlerts);
+    window.addEventListener('criticalBpRecorded', () => loadCriticalBpAlerts());
+    setInterval(loadCriticalBpAlerts, 60000);
+  </script>
+</body>
+</html>

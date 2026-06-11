@@ -1,0 +1,328 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Medical Specialty</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: #f5f7fa;
+      display: flex;
+      justify-content: center;
+      align-items: center;
+      min-height: 100vh;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 8px 20px rgba(0,0,0,0.1);
+      text-align: center;
+      max-width: 600px;
+      width: 100%;
+    }
+    h1 {
+      color: #008751;
+      margin-bottom: 10px;
+      font-size: 2rem;
+    }
+    .subtitle {
+      color: #666;
+      margin-bottom: 30px;
+      line-height: 1.6;
+      font-size: 1rem;
+    }
+    .specialty-select-wrapper {
+      margin-bottom: 20px;
+      text-align: left;
+    }
+    label {
+      display: block;
+      margin-bottom: 8px;
+      color: #333;
+      font-weight: 600;
+      font-size: 0.95rem;
+    }
+    select {
+      width: 100%;
+      padding: 12px 15px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-size: 1rem;
+      background-color: #fdfdfd;
+      appearance: none;
+      background-image: url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%22292.4%22%20height%3D%22292.4%22%3E%3Cpath%20fill%3D%22%23008751%22%20d%3D%22M287%20197.3L159.9%2069.2c-3.2-3.2-8.3-3.2-11.6%200L5.4%20197.3c-3.2%203.2-3.2%208.3%200%2011.6l11.6%2011.6c3.2%203.2%208.3%203.2%2011.6%200l120.1-120.1c3.2-3.2%208.3-3.2%2011.6%200l120.1%20120.1c3.2%203.2%208.3%203.2%2011.6%200l11.6-11.6c3.2-3.2%203.2-8.4%200-11.6z%22%2F%3E%3C%2Fsvg%3E');
+      background-repeat: no-repeat;
+      background-position: right 15px center;
+      background-size: 12px;
+      cursor: pointer;
+    }
+    select:focus {
+      border-color: #008751;
+      box-shadow: 0 0 0 3px rgba(0, 135, 81, 0.2);
+      outline: none;
+    }
+    .description {
+      margin-top: 12px;
+      padding: 12px;
+      background: #e8f5e8;
+      border-left: 4px solid #008751;
+      border-radius: 4px;
+      text-align: left;
+      font-size: 0.9rem;
+      color: #555;
+      min-height: 40px;
+    }
+    .description.empty {
+      color: #999;
+      font-style: italic;
+    }
+    .button-group {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      flex-wrap: wrap;
+      margin-top: 30px;
+    }
+    button {
+      padding: 12px 30px;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 1.1rem;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      min-width: 150px;
+    }
+    .save-button {
+      background: linear-gradient(135deg, #008751, #006B3F);
+      color: white;
+    }
+    .save-button:hover {
+      background: linear-gradient(135deg, #006B3F, #004D2A);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 10px rgba(0, 135, 81, 0.3);
+    }
+    .skip-button {
+      background: none;
+      color: #008751;
+      border: 1px solid #008751;
+      font-weight: 500;
+    }
+    .skip-button:hover {
+      background: #e8f5e8;
+      transform: translateY(-1px);
+    }
+    .skip-button.hidden {
+      display: none;
+    }
+    .loading {
+      opacity: 0.6;
+      pointer-events: none;
+    }
+    .error-message {
+      margin-top: 15px;
+      padding: 12px;
+      background: #ffebee;
+      border-left: 4px solid #f44336;
+      border-radius: 4px;
+      color: #c62828;
+      display: none;
+    }
+    .error-message.show {
+      display: block;
+    }
+    .success-message {
+      margin-top: 15px;
+      padding: 12px;
+      background: #e8f5e8;
+      border-left: 4px solid #008751;
+      border-radius: 4px;
+      color: #2e7d32;
+      display: none;
+    }
+    .success-message.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Select Your Medical Specialty</h1>
+    <p class="subtitle" id="subtitle">Please select your primary medical specialty. This helps tailor your experience in the EHR system. You can change this later from your dashboard.</p>
+    
+    <div class="specialty-select-wrapper">
+      <label for="specialty-select">Medical Specialty:</label>
+      <select id="specialty-select">
+        <option value="">Loading specialties...</option>
+      </select>
+      <div class="description" id="specialty-description">
+        Select a specialty to see its description.
+      </div>
+    </div>
+    
+    <div class="error-message" id="error-message"></div>
+    <div class="success-message" id="success-message"></div>
+    
+    <div class="button-group">
+      <button id="save-specialty-btn" class="save-button">Save Specialty</button>
+      <button id="skip-button" class="skip-button">Skip for now (Default to Primary Care)</button>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/medical-specialties.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', async () => {
+      const specialtySelect = document.getElementById('specialty-select');
+      const saveButton = document.getElementById('save-specialty-btn');
+      const skipButton = document.getElementById('skip-button');
+      const descriptionDiv = document.getElementById('description');
+      const errorMessage = document.getElementById('error-message');
+      const successMessage = document.getElementById('success-message');
+      const subtitle = document.getElementById('subtitle');
+
+      // Check if this is first login or change later
+      const urlParams = new URLSearchParams(window.location.search);
+      const isFirstLogin = urlParams.get('firstLogin') === 'true';
+      const isChangeLater = !isFirstLogin;
+
+      // Update UI based on context
+      if (isFirstLogin) {
+        subtitle.textContent = 'Welcome! Please select your primary medical specialty. This helps tailor your experience in the EHR system.';
+        skipButton.classList.add('hidden'); // Hide skip on first login
+      } else {
+        subtitle.textContent = 'Select your primary medical specialty. You can change this later from your dashboard.';
+        skipButton.classList.remove('hidden'); // Show skip when changing later
+      }
+
+      // Populate specialties from js/medical-specialties.js
+      specialtySelect.innerHTML = '';
+      MEDICAL_SPECIALTIES.forEach(spec => {
+        const option = document.createElement('option');
+        option.value = spec.name;
+        option.textContent = spec.name;
+        specialtySelect.appendChild(option);
+      });
+
+      // Get current user and organization
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Check if user is logged in (more lenient check)
+      if (!user || (!user.username && !user.email && !user.id)) {
+        console.error('User not logged in. Redirecting to login.');
+        window.location.href = '/login';
+        return;
+      }
+
+      // Get organization ID (can be UUID or name string)
+      const orgId = user.organizationId || user.organization_id || user.org;
+      
+      // If no orgId, try to continue anyway (might be able to work without it)
+      if (!orgId) {
+        console.warn('No organization ID found, but continuing anyway. User:', user);
+        // Don't redirect - let the page load and see if it works
+      }
+
+      // Load existing specialty if set
+      try {
+        const currentSpecialty = await window.getOrganizationSpecialty();
+        if (currentSpecialty) {
+          specialtySelect.value = currentSpecialty;
+          updateDescription(currentSpecialty);
+        }
+      } catch (error) {
+        console.warn('Could not load current specialty:', error);
+      }
+
+      // Update description when specialty changes
+      specialtySelect.addEventListener('change', function() {
+        updateDescription(this.value);
+      });
+
+      function updateDescription(specialtyName) {
+        const descriptionDiv = document.getElementById('specialty-description');
+        if (specialtyName) {
+          const description = window.getSpecialtyDescription(specialtyName);
+          if (description) {
+            descriptionDiv.textContent = description;
+            descriptionDiv.classList.remove('empty');
+          } else {
+            descriptionDiv.textContent = 'No description available.';
+            descriptionDiv.classList.add('empty');
+          }
+        } else {
+          descriptionDiv.textContent = 'Select a specialty to see its description.';
+          descriptionDiv.classList.add('empty');
+        }
+      }
+
+      // Save specialty
+      saveButton.addEventListener('click', async () => {
+        const selectedSpecialty = specialtySelect.value;
+        if (!selectedSpecialty) {
+          showError('Please select a specialty.');
+          return;
+        }
+        await saveSpecialty(selectedSpecialty);
+      });
+
+      // Skip button (only shown when changing later)
+      skipButton.addEventListener('click', async () => {
+        await saveSpecialty('Primary Care'); // Save default
+      });
+
+      async function saveSpecialty(specialty) {
+        // Show loading state
+        saveButton.classList.add('loading');
+        skipButton.classList.add('loading');
+        errorMessage.classList.remove('show');
+        successMessage.classList.remove('show');
+
+        try {
+          // Save specialty
+          const saved = await window.saveOrganizationSpecialty(specialty);
+          
+          if (saved) {
+            // Mark as set
+            await window.markSpecialtyAsSet();
+            
+            // Show success message
+            successMessage.textContent = 'Specialty saved successfully! Redirecting...';
+            successMessage.classList.add('show');
+            
+            // Redirect to dashboard after short delay
+            setTimeout(() => {
+              window.location.href = '/dashboard';
+            }, 1000);
+          } else {
+            showError('Failed to save specialty. Please try again.');
+            saveButton.classList.remove('loading');
+            skipButton.classList.remove('loading');
+          }
+        } catch (error) {
+          console.error('Error saving specialty:', error);
+          showError('An error occurred while saving. Please try again.');
+          saveButton.classList.remove('loading');
+          skipButton.classList.remove('loading');
+        }
+      }
+
+      function showError(message) {
+        errorMessage.textContent = message;
+        errorMessage.classList.add('show');
+      }
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

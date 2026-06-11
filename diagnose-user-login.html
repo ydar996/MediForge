@@ -1,0 +1,444 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Diagnose User Login Issues</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1000px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #dc3545;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .result-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .result-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .result-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        .result-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Diagnose User Login Issues</h1>
+        <p><strong>Purpose:</strong> Comprehensive diagnosis of login problems including password verification, rate limits, and account status.</p>
+        
+        <div class="form-group">
+            <label for="username">Username*:</label>
+            <input type="text" id="username" placeholder="Enter username (e.g., MisMuse)" required>
+        </div>
+        
+        <button onclick="diagnoseUser()">🔍 Diagnose User</button>
+        <button onclick="clearAllLocks()">🔓 Clear All Locks & Rate Limits</button>
+        <button onclick="testPassword()">🔐 Test Password</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            return supabase;
+        }
+
+        function logResult(message, type = 'info') {
+            const div = document.getElementById('result');
+            div.className = `result result-${type}`;
+            div.textContent = message;
+        }
+
+        async function diagnoseUser() {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                logResult('Please enter a username.', 'error');
+                return;
+            }
+            
+            logResult('🔍 Starting comprehensive diagnosis...', 'info');
+            
+            try {
+                initSupabase();
+                
+                let report = `═══════════════════════════════════════════════════════\n`;
+                report += `USER LOGIN DIAGNOSIS REPORT\n`;
+                report += `Username: ${username}\n`;
+                report += `Timestamp: ${new Date().toISOString()}\n`;
+                report += `═══════════════════════════════════════════════════════\n\n`;
+                
+                // Step 1: Find user in database
+                report += `📋 STEP 1: Finding user in database...\n`;
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id, username, email, auth_user_id, temp_password, password_reset_required, organization_id')
+                    .eq('username', username)
+                    .maybeSingle();
+                
+                if (userError || !userData) {
+                    report += `❌ ERROR: User not found!\n`;
+                    report += `   Error: ${userError?.message || 'User does not exist'}\n\n`;
+                    logResult(report, 'error');
+                    return;
+                }
+                
+                report += `✅ User found in database:\n`;
+                report += `   User ID: ${userData.id}\n`;
+                report += `   Username: ${userData.username}\n`;
+                report += `   Email: ${userData.email || 'NOT SET'}\n`;
+                report += `   Auth User ID: ${userData.auth_user_id || 'MISSING - CRITICAL!'}\n`;
+                report += `   Temp Password Set: ${userData.temp_password ? 'YES' : 'NO'}\n`;
+                report += `   Password Reset Required: ${userData.password_reset_required ? 'YES' : 'NO'}\n\n`;
+                
+                if (!userData.auth_user_id) {
+                    report += `❌ CRITICAL: User has no auth_user_id!\n`;
+                    report += `   This user cannot login via Supabase Auth.\n`;
+                    report += `   Solution: User needs to be properly registered in Supabase Auth.\n\n`;
+                    logResult(report, 'error');
+                    return;
+                }
+                
+                // Step 2: Check Supabase Auth user
+                report += `📋 STEP 2: Checking Supabase Auth user...\n`;
+                try {
+                    const authResponse = await fetch('/.netlify/functions/secure-supabase', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            kind: 'rpc',
+                            identifier: 'diagnose_user_auth',
+                            payload: {
+                                p_username: username,
+                                p_auth_user_id: userData.auth_user_id,
+                                p_user_id: userData.id
+                            }
+                        })
+                    });
+                    
+                    const authResult = await authResponse.json();
+                    if (authResult.success && authResult.diagnosis) {
+                        const d = authResult.diagnosis;
+                        report += `✅ Auth user found:\n`;
+                        report += `   Auth ID: ${d.authUser.id}\n`;
+                        report += `   Email in Auth: ${d.authUser.email}\n`;
+                        report += `   Email Confirmed: ${d.authUser.emailConfirmed ? 'YES' : 'NO'}\n`;
+                        report += `   Expected Email: ${d.expectedEmail || 'N/A'}\n`;
+                        report += `   Email Matches: ${d.emailMatchesExpected ? 'YES ✅' : 'NO ❌'}\n`;
+                        if (d.recommendations && d.recommendations.length > 0) {
+                            report += `   Recommendations:\n`;
+                            d.recommendations.forEach(r => report += `     - ${r}\n`);
+                        }
+                    } else {
+                        report += `⚠️ Could not get Auth details: ${authResult.error || 'Unknown error'}\n`;
+                    }
+                } catch (authErr) {
+                    report += `⚠️ Error checking Auth: ${authErr.message}\n`;
+                }
+                report += `\n`;
+                
+                // Step 3: Check rate limits for all variations
+                report += `📋 STEP 3: Checking rate limits (all identifier variations)...\n`;
+                const variations = [
+                    username,
+                    `${username}@mediforge.app`,
+                    username.toLowerCase(),
+                    `${username}@mediforge.app`.toLowerCase()
+                ];
+                
+                let totalAttempts = 0;
+                let isLocked = false;
+                let lockSource = null;
+                
+                for (const identifier of variations) {
+                    try {
+                        const { data: rateLimit, error: rlError } = await supabase
+                            .from('rate_limits')
+                            .select('*')
+                            .eq('type', 'login')
+                            .eq('identifier', identifier)
+                            .maybeSingle();
+                        
+                        if (!rlError && rateLimit) {
+                            const attempts = rateLimit.attempts || 0;
+                            const locked = rateLimit.locked === true || rateLimit.permanent_lock === true;
+                            totalAttempts += attempts;
+                            
+                            report += `   Identifier: ${identifier}\n`;
+                            report += `     Attempts: ${attempts}/5\n`;
+                            report += `     Locked: ${locked ? 'YES ❌' : 'NO ✅'}\n`;
+                            report += `     Permanent Lock: ${rateLimit.permanent_lock ? 'YES ❌' : 'NO ✅'}\n`;
+                            if (rateLimit.locked_at) {
+                                report += `     Locked At: ${rateLimit.locked_at}\n`;
+                            }
+                            
+                            if (locked) {
+                                isLocked = true;
+                                lockSource = identifier;
+                            }
+                        }
+                    } catch (err) {
+                        // Ignore
+                    }
+                }
+                
+                report += `\n   Total Failed Attempts: ${totalAttempts}\n`;
+                report += `   Account Status: ${isLocked ? 'LOCKED ❌' : 'UNLOCKED ✅'}\n`;
+                if (isLocked) {
+                    report += `   Lock Source: ${lockSource}\n`;
+                }
+                report += `\n`;
+                
+                // Step 4: Check localStorage locks
+                report += `📋 STEP 4: Checking localStorage locks...\n`;
+                let localStorageLocks = 0;
+                for (const identifier of variations) {
+                    const lockoutKey = `rate_limit_lockout_login_${identifier}`;
+                    const lockoutData = localStorage.getItem(lockoutKey);
+                    if (lockoutData) {
+                        try {
+                            const lockout = JSON.parse(lockoutData);
+                            if (lockout.locked === true || lockout.permanentLock === true) {
+                                localStorageLocks++;
+                                report += `   ❌ Lock found in localStorage: ${identifier}\n`;
+                            }
+                        } catch (e) {
+                            // Invalid JSON
+                        }
+                    }
+                }
+                if (localStorageLocks === 0) {
+                    report += `   ✅ No localStorage locks found\n`;
+                }
+                report += `\n`;
+                
+                // Step 5: Summary and recommendations
+                report += `═══════════════════════════════════════════════════════\n`;
+                report += `SUMMARY & RECOMMENDATIONS\n`;
+                report += `═══════════════════════════════════════════════════════\n\n`;
+                
+                if (isLocked || localStorageLocks > 0) {
+                    report += `❌ PROBLEM: Account is LOCKED\n\n`;
+                    report += `SOLUTION:\n`;
+                    report += `1. Click "Clear All Locks & Rate Limits" button above\n`;
+                    report += `2. This will clear all rate limit records and localStorage locks\n`;
+                    report += `3. User can then try logging in again\n\n`;
+                }
+                
+                if (totalAttempts > 0) {
+                    report += `⚠️ WARNING: ${totalAttempts} failed login attempt(s) recorded\n`;
+                    report += `   This may cause account to lock after ${5 - totalAttempts} more failed attempts\n\n`;
+                }
+                
+                if (userData.temp_password) {
+                    report += `ℹ️ INFO: User has a temporary password set\n`;
+                    report += `   This suggests password was recently reset\n`;
+                    report += `   User should use this temp password to login\n\n`;
+                }
+                
+                report += `✅ NEXT STEPS:\n`;
+                report += `1. Clear all locks using the button above\n`;
+                report += `2. Verify password is correct (use "Test Password" button)\n`;
+                report += `3. If password is wrong, use force-password-reset.html to set a new one\n`;
+                report += `4. User should login with USERNAME only (no email needed)\n\n`;
+                
+                logResult(report, isLocked ? 'error' : 'info');
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+        
+        async function clearAllLocks() {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                logResult('Please enter a username first.', 'error');
+                return;
+            }
+            
+            logResult('🔓 Clearing all locks and rate limits...', 'info');
+            
+            try {
+                initSupabase();
+                
+                const variations = [
+                    username,
+                    `${username}@mediforge.app`,
+                    username.toLowerCase(),
+                    `${username}@mediforge.app`.toLowerCase()
+                ];
+                
+                let cleared = 0;
+                let report = `Clearing locks for ${variations.length} identifier variations...\n\n`;
+                
+                // Clear Supabase rate limits
+                for (const identifier of variations) {
+                    try {
+                        const { error } = await supabase.rpc('clear_rate_limit', {
+                            p_type: 'login',
+                            p_identifier: identifier
+                        });
+                        if (!error) {
+                            cleared++;
+                            report += `✅ Cleared: ${identifier}\n`;
+                        }
+                    } catch (err) {
+                        report += `⚠️ Error clearing ${identifier}: ${err.message}\n`;
+                    }
+                }
+                
+                // Clear localStorage
+                for (const identifier of variations) {
+                    localStorage.removeItem(`rate_limit_lockout_login_${identifier}`);
+                    localStorage.removeItem(`rate_limit_login_${identifier}`);
+                }
+                report += `✅ Cleared localStorage locks\n\n`;
+                
+                report += `✅ COMPLETE: Cleared ${cleared} rate limit records\n`;
+                report += `✅ All localStorage locks cleared\n`;
+                report += `✅ Account is now UNLOCKED\n\n`;
+                report += `User can now try logging in again.`;
+                
+                logResult(report, 'success');
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+        
+        async function testPassword() {
+            const username = document.getElementById('username').value.trim();
+            const password = prompt('Enter the password to test:');
+            
+            if (!username || !password) {
+                return;
+            }
+            
+            logResult('🔐 Testing password...', 'info');
+            
+            try {
+                initSupabase();
+                
+                // Get user email
+                const { data: userData } = await supabase
+                    .from('users')
+                    .select('email, auth_user_id')
+                    .eq('username', username)
+                    .maybeSingle();
+                
+                if (!userData || !userData.email) {
+                    logResult('❌ User not found or email not set', 'error');
+                    return;
+                }
+                
+                // Try to login
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: userData.email,
+                    password: password
+                });
+                
+                if (error) {
+                    logResult(
+                        `❌ PASSWORD TEST FAILED\n\n` +
+                        `Error: ${error.message}\n\n` +
+                        `This password is INCORRECT.\n` +
+                        `Use force-password-reset.html to set a new password.`,
+                        'error'
+                    );
+                } else {
+                    // Sign out immediately
+                    await supabase.auth.signOut();
+                    
+                    logResult(
+                        `✅ PASSWORD TEST SUCCESSFUL\n\n` +
+                        `The password is CORRECT.\n` +
+                        `If user still can't login, the issue is likely:\n` +
+                        `1. Account is locked (clear locks first)\n` +
+                        `2. User is entering wrong username\n` +
+                        `3. Browser cache issues`,
+                        'success'
+                    );
+                }
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+

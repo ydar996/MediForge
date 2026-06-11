@@ -1,0 +1,253 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Fix Locked Account - MisturaM</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #008753; }
+    .section {
+      margin: 20px 0;
+      padding: 15px;
+      background: #f9f9f9;
+      border-left: 4px solid #008753;
+    }
+    button {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #006b42; }
+    .error { color: #dc3545; }
+    .success { color: #28a745; }
+    .info { color: #17a2b8; }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔓 Fix Locked Account: MisturaM</h1>
+    
+    <div class="section">
+      <h2>Step 1: Check Account Lock Status</h2>
+      <button onclick="checkLockStatus()">Check Lock Status</button>
+      <div id="status-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 2: Unlock Account</h2>
+      <p><strong>Username:</strong> MisturaM</p>
+      <p><strong>Email variations:</strong> MisturaM@mediforge.app</p>
+      <button onclick="unlockAccount()">Unlock Account</button>
+      <div id="unlock-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 3: Verify Unlock</h2>
+      <button onclick="verifyUnlock()">Verify Account is Unlocked</button>
+      <div id="verify-results"></div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/account-management.js"></script>
+  <script src="js/rate-limiter.js"></script>
+
+  <script>
+    const username = 'MisturaM';
+    const emailVariations = [
+      'MisturaM',
+      'MisturaM@mediforge.app',
+      'misturam',
+      'misturam@mediforge.app'
+    ];
+
+    async function checkLockStatus() {
+      const resultsDiv = document.getElementById('status-results');
+      resultsDiv.innerHTML = '<p class="info">Checking lock status...</p>';
+      
+      let html = '<h3>Lock Status Check Results:</h3>';
+      
+      // Check localStorage
+      html += '<h4>localStorage Lock Status:</h4>';
+      let foundLocalStorageLock = false;
+      emailVariations.forEach(variation => {
+        const lockoutKey = `rate_limit_lockout_login_${variation}`;
+        const storageKey = `rate_limit_login_${variation}`;
+        const lockoutData = localStorage.getItem(lockoutKey);
+        const storageData = localStorage.getItem(storageKey);
+        
+        if (lockoutData || storageData) {
+          foundLocalStorageLock = true;
+          html += `<p class="error">❌ Found lock in localStorage for: ${variation}</p>`;
+          html += `<pre>lockoutKey: ${lockoutData || 'null'}\nstorageKey: ${storageData || 'null'}</pre>`;
+        } else {
+          html += `<p class="success">✅ No lock in localStorage for: ${variation}</p>`;
+        }
+      });
+      
+      if (!foundLocalStorageLock) {
+        html += '<p class="success">✅ No locks found in localStorage</p>';
+      }
+      
+      // Check Supabase
+      html += '<h4>Supabase Lock Status:</h4>';
+      try {
+        if (typeof window.getLockedAccounts === 'function') {
+          const lockedAccounts = await window.getLockedAccounts();
+          const misturamLocked = lockedAccounts.find(acc => 
+            acc.identifier === username || 
+            acc.identifier === emailVariations[1] ||
+            acc.identifier.toLowerCase() === username.toLowerCase()
+          );
+          
+          if (misturamLocked) {
+            html += `<p class="error">❌ Found lock in Supabase:</p>`;
+            html += `<pre>${JSON.stringify(misturamLocked, null, 2)}</pre>`;
+          } else {
+            html += '<p class="success">✅ No lock found in Supabase</p>';
+            html += `<p class="info">Total locked accounts in Supabase: ${lockedAccounts.length}</p>`;
+          }
+        } else {
+          html += '<p class="error">❌ getLockedAccounts function not available</p>';
+        }
+      } catch (error) {
+        html += `<p class="error">❌ Error checking Supabase: ${error.message}</p>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function unlockAccount() {
+      const resultsDiv = document.getElementById('unlock-results');
+      resultsDiv.innerHTML = '<p class="info">Unlocking account...</p>';
+      
+      let html = '<h3>Unlock Results:</h3>';
+      
+      // Try unlocking via Supabase RPC
+      html += '<h4>Supabase Unlock:</h4>';
+      try {
+        if (typeof window.unlockAccount === 'function') {
+          // Try username first
+          const result1 = await window.unlockAccount(username, 'Platform Admin', 'Unlocked via diagnostic tool');
+          if (result1.success) {
+            html += `<p class="success">✅ Successfully unlocked via Supabase (username)</p>`;
+          } else {
+            html += `<p class="error">❌ Failed to unlock via Supabase (username): ${result1.error}</p>`;
+          }
+          
+          // Try email variation
+          const result2 = await window.unlockAccount(emailVariations[1], 'Platform Admin', 'Unlocked via diagnostic tool');
+          if (result2.success) {
+            html += `<p class="success">✅ Successfully unlocked via Supabase (email)</p>`;
+          } else {
+            html += `<p class="info">ℹ️ Email unlock result: ${result2.error || 'No error (may not have been locked)'}</p>`;
+          }
+        } else {
+          html += '<p class="error">❌ unlockAccount function not available</p>';
+        }
+      } catch (error) {
+        html += `<p class="error">❌ Error unlocking via Supabase: ${error.message}</p>`;
+      }
+      
+      // Clear localStorage locks
+      html += '<h4>localStorage Cleanup:</h4>';
+      let clearedCount = 0;
+      emailVariations.forEach(variation => {
+        const lockoutKey = `rate_limit_lockout_login_${variation}`;
+        const storageKey = `rate_limit_login_${variation}`;
+        
+        if (localStorage.getItem(lockoutKey) || localStorage.getItem(storageKey)) {
+          localStorage.removeItem(lockoutKey);
+          localStorage.removeItem(storageKey);
+          clearedCount++;
+          html += `<p class="success">✅ Cleared localStorage for: ${variation}</p>`;
+        }
+      });
+      
+      // Also try rate limiter clear function if available
+      if (typeof window.rateLimiter !== 'undefined' && window.rateLimiter && window.rateLimiter.clearLocalStorageLockout) {
+        emailVariations.forEach(variation => {
+          try {
+            window.rateLimiter.clearLocalStorageLockout('login', variation);
+            html += `<p class="success">✅ Used rateLimiter.clearLocalStorageLockout for: ${variation}</p>`;
+          } catch (e) {
+            html += `<p class="info">ℹ️ Rate limiter clear for ${variation}: ${e.message}</p>`;
+          }
+        });
+      }
+      
+      if (clearedCount === 0) {
+        html += '<p class="info">ℹ️ No localStorage locks found to clear</p>';
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function verifyUnlock() {
+      const resultsDiv = document.getElementById('verify-results');
+      resultsDiv.innerHTML = '<p class="info">Verifying unlock...</p>';
+      
+      // Re-run check
+      await checkLockStatus();
+      
+      const verifyDiv = document.createElement('div');
+      verifyDiv.innerHTML = '<h3>Final Verification:</h3>';
+      verifyDiv.innerHTML += '<p class="success">✅ Please check the status above. If no locks are shown, the account should be unlocked.</p>';
+      verifyDiv.innerHTML += '<p class="info">ℹ️ Ask MisturaM to try logging in again.</p>';
+      
+      resultsDiv.appendChild(verifyDiv);
+    }
+
+    // Auto-run check on load
+    window.addEventListener('load', () => {
+      setTimeout(checkLockStatus, 1000);
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

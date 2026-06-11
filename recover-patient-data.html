@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Recover Patient Data from localStorage</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        button.success {
+            background: #388e3c;
+        }
+        button.success:hover {
+            background: #2e7d32;
+        }
+        #log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-success {
+            color: #388e3c;
+        }
+        .log-error {
+            color: #d32f2f;
+        }
+        .log-warning {
+            color: #f57c00;
+        }
+        .patient-preview {
+            margin: 10px 0;
+            padding: 10px;
+            background: #f9f9f9;
+            border-left: 3px solid #2196f3;
+        }
+        .patient-preview h3 {
+            margin: 0 0 10px 0;
+            color: #1976d2;
+        }
+        .patient-preview .data-counts {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 10px;
+            margin-top: 10px;
+        }
+        .data-count {
+            padding: 5px;
+            background: white;
+            border-radius: 3px;
+        }
+        .data-count.has-data {
+            background: #c8e6c9;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🚨 URGENT: Recover Patient Data</h1>
+        
+        <div class="warning">
+            <strong>⚠️ CRITICAL:</strong> Your Supabase data shows 0 counts for all clinical data. 
+            This script will restore data from your browser's localStorage back to Supabase.
+        </div>
+        
+        <div class="info">
+            <strong>ℹ️ How it works:</strong>
+            <ol>
+                <li>Reads patient data from localStorage (where your original data should still be)</li>
+                <li>Shows you a preview of what will be restored</li>
+                <li>Updates Supabase with the localStorage data (only if localStorage has more data)</li>
+                <li>Preserves existing Supabase data if it's better than localStorage</li>
+            </ol>
+        </div>
+
+        <div>
+            <button onclick="previewData()">📊 Preview Data in localStorage</button>
+            <button class="success" onclick="recoverData()">🔄 Recover Data to Supabase</button>
+            <button onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+
+        <div id="preview"></div>
+        <div id="log"></div>
+    </div>
+
+    <script src="js/supabase-client.js"></script>
+    <script>
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970'; // Mecure Clinics
+
+        function getDataKey(key) {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            return user.org ? `${user.org}_${key}` : key;
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : type === 'warning' ? 'log-warning' : '';
+            logDiv.innerHTML += `<div class="log-entry ${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('preview').innerHTML = '';
+        }
+
+        async function previewData() {
+            clearLog();
+            log('📊 Checking localStorage for patient data...', 'info');
+            
+            const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            log(`Found ${patients.length} patients in localStorage`, 'info');
+            
+            if (patients.length === 0) {
+                log('❌ ERROR: No patients found in localStorage!', 'error');
+                log('Your data may have been lost. Check browser console for more details.', 'error');
+                return;
+            }
+
+            const previewDiv = document.getElementById('preview');
+            previewDiv.innerHTML = '<h2>📋 Data Preview (localStorage)</h2>';
+
+            patients.forEach(patient => {
+                const allergies = Array.isArray(patient.allergies) ? patient.allergies.length : 0;
+                const diagnoses = Array.isArray(patient.diagnoses) ? patient.diagnoses.length : 0;
+                const medicalHistory = Array.isArray(patient.medicalHistory) ? patient.medicalHistory.length : 0;
+                const medications = Array.isArray(patient.medications) ? patient.medications.length : 0;
+                const immunizations = Array.isArray(patient.immunizations) ? patient.immunizations.length : 0;
+                const vitals = Array.isArray(patient.vitals) ? patient.vitals.length : 0;
+                
+                // Check visits data (SOAP notes, orders, etc.)
+                const visits = Array.isArray(patient.visits) ? patient.visits : [];
+                const visitsCount = visits.length;
+                let visitsWithData = 0;
+                let totalOrders = 0;
+                let visitsWithSOAP = 0;
+                
+                visits.forEach(visit => {
+                    const hasOrders = visit.orders && Array.isArray(visit.orders) && visit.orders.length > 0;
+                    // More thorough SOAP detection - check nested objects
+                    const soap = visit.soap || {};
+                    const hasSOAP = (
+                        (soap.subjective && (soap.subjective.cc || soap.subjective.hpi || soap.subjective.fh || soap.subjective.sh || soap.subjective.ros)) ||
+                        (soap.objective && (soap.objective.physical || soap.objective.labs || (soap.objective.vitals && Array.isArray(soap.objective.vitals) && soap.objective.vitals.length > 0))) ||
+                        (soap.assessment && (soap.assessment.differential || soap.assessment.status)) ||
+                        (soap.plan && (soap.plan.medications || soap.plan.treatments || soap.plan.followup || soap.plan.testing))
+                    );
+                    if (hasOrders || hasSOAP) {
+                        visitsWithData++;
+                        if (hasOrders) totalOrders += visit.orders.length;
+                        if (hasSOAP) visitsWithSOAP++;
+                    }
+                });
+
+                const totalData = allergies + diagnoses + medicalHistory + medications + immunizations + vitals + (visitsWithData > 0 ? 1 : 0);
+                const hasData = totalData > 0;
+
+                previewDiv.innerHTML += `
+                    <div class="patient-preview">
+                        <h3>${patient.firstName} ${patient.lastName} (${patient.id})</h3>
+                        <div class="data-counts">
+                            <div class="data-count ${allergies > 0 ? 'has-data' : ''}">Allergies: ${allergies}</div>
+                            <div class="data-count ${diagnoses > 0 ? 'has-data' : ''}">Diagnoses: ${diagnoses}</div>
+                            <div class="data-count ${medicalHistory > 0 ? 'has-data' : ''}">Medical History: ${medicalHistory}</div>
+                            <div class="data-count ${medications > 0 ? 'has-data' : ''}">Medications: ${medications}</div>
+                            <div class="data-count ${immunizations > 0 ? 'has-data' : ''}">Immunizations: ${immunizations}</div>
+                            <div class="data-count ${vitals > 0 ? 'has-data' : ''}">Vitals: ${vitals}</div>
+                            <div class="data-count ${visitsCount > 0 ? 'has-data' : ''}">Visits: ${visitsCount}</div>
+                            ${totalOrders > 0 ? `<div class="data-count has-data">Orders: ${totalOrders}</div>` : ''}
+                            ${visitsWithSOAP > 0 ? `<div class="data-count has-data">SOAP Notes: ${visitsWithSOAP}</div>` : ''}
+                        </div>
+                        ${hasData ? '<p style="color: #388e3c; margin-top: 10px;">✅ Has data to recover</p>' : '<p style="color: #f57c00; margin-top: 10px;">⚠️ No data in localStorage</p>'}
+                        ${visitsWithData > 0 ? `<p style="color: #1976d2; margin-top: 5px;">📋 Has ${visitsWithData} visit(s) with SOAP notes and/or orders</p>` : ''}
+                    </div>
+                `;
+
+                if (hasData) {
+                    // Extract quick counts from visits for logging
+                    let dxFromVisits = 0;
+                    let medsFromVisits = 0;
+                    visits.forEach(v => {
+                        if (v.soap && v.soap.assessment && v.soap.assessment.differential) dxFromVisits++;
+                        if (v.soap && v.soap.plan && v.soap.plan.medications) medsFromVisits++;
+                    });
+                    log(`✅ ${patient.id}: ${allergies} allergies, ${diagnoses} diagnoses (${dxFromVisits} in visits), ${medicalHistory} history, ${medications} medications (${medsFromVisits} in visits), ${visitsCount} visits (${visitsWithSOAP} with SOAP, ${totalOrders} orders)`, 'success');
+                } else {
+                    log(`⚠️ ${patient.id}: No data in localStorage`, 'warning');
+                }
+            });
+        }
+
+        async function recoverData() {
+            // Check Supabase client
+            if (!window.supabaseClient) {
+                log('❌ ERROR: Supabase client not available!', 'error');
+                log('⚠️ ACTION REQUIRED: You must be logged into the EHR app first!', 'error');
+                log('1. Open a new tab and go to: https://mediforge.netlify.app (or localhost:5500)', 'error');
+                log('2. Log in with your credentials (ydar2@mecureclinics.com)', 'error');
+                log('3. Come back to this tab and click "Recover Data" again', 'error');
+                log('', 'info');
+                log('OR: If you are already logged in, wait 5 seconds and try again...', 'warning');
+                setTimeout(() => {
+                    if (window.supabaseClient) {
+                        log('✅ Supabase client now available! Click "Recover Data" again.', 'success');
+                    }
+                }, 5000);
+                return;
+            }
+
+            clearLog();
+            log('🔄 Starting data recovery...', 'info');
+
+            const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            
+            if (patients.length === 0) {
+                log('❌ ERROR: No patients found in localStorage!', 'error');
+                return;
+            }
+
+            log(`Found ${patients.length} patients in localStorage`, 'info');
+
+            let recovered = 0;
+            let skipped = 0;
+            let errors = 0;
+
+            for (const patient of patients) {
+                try {
+                    log(`Processing ${patient.firstName} ${patient.lastName} (${patient.id})...`, 'info');
+
+                    // Get current Supabase data
+                    const { data: supabasePatient, error: fetchError } = await window.supabaseClient
+                        .from('patients')
+                        .select('allergies, diagnoses, medical_history, medications, immunizations, vitals')
+                        .eq('patient_id', patient.id)
+                        .eq('organization_id', ORG_ID)
+                        .single();
+
+                    if (fetchError && fetchError.code !== 'PGRST116') {
+                        log(`⚠️ Could not fetch Supabase data for ${patient.id}: ${fetchError.message}`, 'warning');
+                    }
+
+                    // Prepare data to restore - only restore if localStorage has more data
+                    const allergies = Array.isArray(patient.allergies) ? patient.allergies : [];
+                    const diagnoses = Array.isArray(patient.diagnoses) ? patient.diagnoses : [];
+                    const medicalHistory = Array.isArray(patient.medicalHistory) ? patient.medicalHistory : [];
+                    const medications = Array.isArray(patient.medications) ? patient.medications : [];
+                    const immunizations = Array.isArray(patient.immunizations) ? patient.immunizations : [];
+                    const vitals = Array.isArray(patient.vitals) ? patient.vitals : [];
+                    const visits = Array.isArray(patient.visits) ? patient.visits : [];
+
+                    // CRITICAL: Extract diagnoses and medications from visits (SOAP notes)
+                    const diagnosesFromVisits = [];
+                    const medicationsFromVisits = [];
+                    
+                    visits.forEach(visit => {
+                        const visitDate = visit.date || new Date().toISOString().split('T')[0];
+                        
+                        // Extract diagnoses from SOAP assessment
+                        if (visit.soap && visit.soap.assessment) {
+                            const diff = visit.soap.assessment.differential;
+                            const status = visit.soap.assessment.status;
+                            if (diff && diff.trim()) {
+                                diagnosesFromVisits.push({
+                                    date: visitDate,
+                                    diagnosis: diff,
+                                    notes: status || 'Extracted from SOAP note',
+                                    source: 'visit'
+                                });
+                            }
+                            if (status && status.trim() && status !== diff) {
+                                diagnosesFromVisits.push({
+                                    date: visitDate,
+                                    diagnosis: status,
+                                    notes: 'Extracted from SOAP assessment status',
+                                    source: 'visit'
+                                });
+                            }
+                        }
+                        
+                        // Extract medications from SOAP plan
+                        if (visit.soap && visit.soap.plan) {
+                            const planMeds = visit.soap.plan.medications;
+                            if (planMeds && typeof planMeds === 'string' && planMeds.trim()) {
+                                // Parse medication string if it's text
+                                medicationsFromVisits.push({
+                                    date: visitDate,
+                                    medication: planMeds,
+                                    dosage: '',
+                                    frequency: '',
+                                    notes: 'Extracted from SOAP plan',
+                                    source: 'visit'
+                                });
+                            } else if (Array.isArray(planMeds)) {
+                                planMeds.forEach(med => {
+                                    if (med && typeof med === 'object') {
+                                        medicationsFromVisits.push({
+                                            ...med,
+                                            date: visitDate,
+                                            source: 'visit'
+                                        });
+                                    }
+                                });
+                            }
+                        }
+                    });
+                    
+                    // Merge diagnoses from visits into top-level diagnoses
+                    const mergedDiagnoses = [...diagnoses];
+                    diagnosesFromVisits.forEach(dx => {
+                        const exists = mergedDiagnoses.some(d => 
+                            (typeof d === 'object' && d.diagnosis === dx.diagnosis && d.date === dx.date) || 
+                            (typeof d === 'string' && d === dx.diagnosis)
+                        );
+                        if (!exists) {
+                            mergedDiagnoses.push(dx);
+                        }
+                    });
+                    
+                    // Merge medications from visits
+                    const mergedMedications = [...medications];
+                    medicationsFromVisits.forEach(med => {
+                        const exists = mergedMedications.some(m => 
+                            (typeof m === 'object' && (m.medication || m.name) === (med.medication || med.name) && m.date === med.date) ||
+                            (typeof m === 'string' && m === (med.medication || med.name))
+                        );
+                        if (!exists) {
+                            mergedMedications.push(med);
+                        }
+                    });
+
+                    // Check if we should update (only if localStorage has data)
+                    const hasVisitsData = visits.some(v => {
+                        const hasOrders = v.orders && Array.isArray(v.orders) && v.orders.length > 0;
+                        const soap = v.soap || {};
+                        const hasSOAP = (
+                            (soap.subjective && (soap.subjective.cc || soap.subjective.hpi)) ||
+                            (soap.objective && (soap.objective.physical || soap.objective.labs)) ||
+                            (soap.assessment && (soap.assessment.differential || soap.assessment.status)) ||
+                            (soap.plan && (soap.plan.medications || soap.plan.treatments))
+                        );
+                        return hasOrders || hasSOAP;
+                    });
+                    const shouldUpdate = allergies.length > 0 || mergedDiagnoses.length > 0 || medicalHistory.length > 0 || 
+                                        mergedMedications.length > 0 || immunizations.length > 0 || vitals.length > 0 || hasVisitsData;
+
+                    if (!shouldUpdate) {
+                        log(`⏭️ Skipping ${patient.id}: No data in localStorage`, 'warning');
+                        skipped++;
+                        continue;
+                    }
+
+                    // Update Supabase
+                    const updateData = {};
+                    if (allergies.length > 0) updateData.allergies = JSON.stringify(allergies);
+                    // Use merged diagnoses (includes diagnoses from visits)
+                    if (mergedDiagnoses.length > 0) updateData.diagnoses = JSON.stringify(mergedDiagnoses);
+                    if (medicalHistory.length > 0) updateData.medical_history = JSON.stringify(medicalHistory);
+                    // Use merged medications (includes medications from visits)
+                    if (mergedMedications.length > 0) updateData.medications = JSON.stringify(mergedMedications);
+                    if (immunizations.length > 0) updateData.immunizations = JSON.stringify(immunizations);
+                    if (vitals.length > 0) updateData.vitals = JSON.stringify(vitals);
+
+                    const { error: updateError } = await window.supabaseClient
+                        .from('patients')
+                        .update(updateData)
+                        .eq('patient_id', patient.id)
+                        .eq('organization_id', ORG_ID);
+
+                    if (updateError) {
+                        log(`❌ Error updating ${patient.id}: ${updateError.message}`, 'error');
+                        errors++;
+                    } else {
+                        const visitsInfo = visits.length > 0 ? `, ${visits.length} visits (${visitsWithSOAP} with SOAP notes)` : '';
+                        log(`✅ Recovered ${patient.id}: ${allergies.length} allergies, ${mergedDiagnoses.length} diagnoses (${diagnoses.length} direct + ${diagnosesFromVisits.length} from visits), ${medicalHistory.length} history, ${mergedMedications.length} medications (${medications.length} direct + ${medicationsFromVisits.length} from visits)${visitsInfo}`, 'success');
+                        recovered++;
+                    }
+
+                } catch (error) {
+                    log(`❌ Error processing ${patient.id}: ${error.message}`, 'error');
+                    errors++;
+                }
+            }
+
+            log('', 'info');
+            log('═══════════════════════════════════════', 'info');
+            log(`✅ Recovery Complete!`, 'success');
+            log(`   Recovered: ${recovered} patients`, 'success');
+            log(`   Skipped: ${skipped} patients (no data)`, 'warning');
+            log(`   Errors: ${errors} patients`, errors > 0 ? 'error' : 'success');
+            log('═══════════════════════════════════════', 'info');
+            log('🔄 Refresh your Netlify app to see the restored data!', 'info');
+        }
+
+        // Auto-check on load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('📋 Recovery tool loaded. Click "Preview Data" to see what can be recovered.', 'info');
+            log('⚠️ Make sure you are logged in to the EHR app first!', 'warning');
+        });
+    </script>
+</body>
+</html>

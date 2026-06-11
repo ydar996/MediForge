@@ -1,0 +1,293 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug DOB Tool</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .section { background: #f5f5f5; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .log { background: #000; color: #0f0; padding: 10px; font-family: monospace; height: 300px; overflow-y: auto; }
+        .error { color: #f00; }
+        .success { color: #0f0; }
+        .warning { color: #ff0; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 4px; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug DOB Migration Tool</h1>
+    
+    <div class="section">
+        <h3>Step 1: Test Supabase Connection</h3>
+        <button class="btn" onclick="testSupabaseConnection()">Test Connection</button>
+        <div id="connection-status"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 2: Get Organization ID</h3>
+        <button class="btn" onclick="getOrganizations()">Get Organizations</button>
+        <div id="org-list"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 3: Test Patient Query</h3>
+        <input type="text" id="org-id-input" placeholder="Enter Organization ID" style="width: 300px;">
+        <button class="btn" onclick="testPatientQuery()">Test Patient Query</button>
+        <div id="patient-query-result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Step 4: Test File Upload</h3>
+        <input type="file" id="backup-file" accept=".json">
+        <button class="btn" onclick="testFileUpload()">Test File Upload</button>
+        <div id="file-upload-result"></div>
+    </div>
+    
+    <div class="section">
+        <h3>Debug Log</h3>
+        <div id="debug-log" class="log"></div>
+        <button class="btn" onclick="clearLog()">Clear Log</button>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        let supabaseClient;
+        
+        // Initialize Supabase
+        function initSupabase() {
+            try {
+                supabaseClient = supabase.createClient(
+                    ((window.__SUPABASE_CONFIG__||{}).url||''),
+                    ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+                );
+                log('✅ Supabase client initialized', 'success');
+                return true;
+            } catch (error) {
+                log(`❌ Failed to initialize Supabase: ${error.message}`, 'error');
+                return false;
+            }
+        }
+        
+        // Test Supabase connection
+        async function testSupabaseConnection() {
+            log('🔍 Testing Supabase connection...', 'warning');
+            
+            if (!initSupabase()) {
+                document.getElementById('connection-status').innerHTML = '<span class="error">❌ Failed to initialize</span>';
+                return;
+            }
+            
+            try {
+                // Test with a simple query
+                const { data, error } = await supabaseClient
+                    .from('organizations')
+                    .select('id', { count: 'exact' });
+                
+                if (error) {
+                    log(`❌ Connection test failed: ${error.message}`, 'error');
+                    log(`   Error code: ${error.code}`, 'error');
+                    log(`   Error details: ${JSON.stringify(error)}`, 'error');
+                    document.getElementById('connection-status').innerHTML = '<span class="error">❌ Connection failed</span>';
+                } else {
+                    log(`✅ Connection successful! Found ${data?.length || 0} organizations`, 'success');
+                    document.getElementById('connection-status').innerHTML = '<span class="success">✅ Connection successful</span>';
+                }
+            } catch (error) {
+                log(`❌ Unexpected error: ${error.message}`, 'error');
+                document.getElementById('connection-status').innerHTML = '<span class="error">❌ Unexpected error</span>';
+            }
+        }
+        
+        // Get organizations
+        async function getOrganizations() {
+            log('🔍 Getting organizations...', 'warning');
+            
+            if (!supabaseClient) {
+                log('❌ Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('organizations')
+                    .select('*')
+                    .order('name');
+                
+                if (error) {
+                    log(`❌ Failed to get organizations: ${error.message}`, 'error');
+                    document.getElementById('org-list').innerHTML = '<span class="error">❌ Failed to load organizations</span>';
+                } else {
+                    log(`✅ Found ${data?.length || 0} organizations`, 'success');
+                    
+                    let html = '<h4>Organizations:</h4>';
+                    if (data && data.length > 0) {
+                        data.forEach(org => {
+                            html += `
+                                <div style="margin: 10px 0; padding: 10px; border: 1px solid #ddd; border-radius: 4px;">
+                                    <strong>Name:</strong> ${org.name}<br>
+                                    <strong>ID:</strong> <code>${org.id}</code><br>
+                                    <strong>Created:</strong> ${org.created_at}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<p>No organizations found.</p>';
+                    }
+                    document.getElementById('org-list').innerHTML = html;
+                }
+            } catch (error) {
+                log(`❌ Unexpected error: ${error.message}`, 'error');
+                document.getElementById('org-list').innerHTML = '<span class="error">❌ Unexpected error</span>';
+            }
+        }
+        
+        // Test patient query
+        async function testPatientQuery() {
+            const orgId = document.getElementById('org-id-input').value.trim();
+            
+            if (!orgId) {
+                log('❌ Please enter an organization ID', 'error');
+                return;
+            }
+            
+            log(`🔍 Testing patient query for org: ${orgId}`, 'warning');
+            
+            if (!supabaseClient) {
+                log('❌ Supabase client not initialized', 'error');
+                return;
+            }
+            
+            try {
+                const { data, error } = await supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', orgId);
+                
+                if (error) {
+                    log(`❌ Patient query failed: ${error.message}`, 'error');
+                    log(`   Error code: ${error.code}`, 'error');
+                    document.getElementById('patient-query-result').innerHTML = '<span class="error">❌ Query failed</span>';
+                } else {
+                    log(`✅ Patient query successful! Found ${data?.length || 0} patients`, 'success');
+                    
+                    let html = `<h4>Patients (${data?.length || 0}):</h4>`;
+                    if (data && data.length > 0) {
+                        data.forEach(patient => {
+                            html += `
+                                <div style="margin: 5px 0; padding: 5px; border: 1px solid #ddd; border-radius: 4px; font-size: 12px;">
+                                    <strong>ID:</strong> ${patient.patient_id} | 
+                                    <strong>Name:</strong> ${patient.first_name} ${patient.last_name} | 
+                                    <strong>DOB:</strong> ${patient.date_of_birth || 'MISSING'}
+                                </div>
+                            `;
+                        });
+                    } else {
+                        html += '<p>No patients found for this organization.</p>';
+                    }
+                    document.getElementById('patient-query-result').innerHTML = html;
+                }
+            } catch (error) {
+                log(`❌ Unexpected error: ${error.message}`, 'error');
+                document.getElementById('patient-query-result').innerHTML = '<span class="error">❌ Unexpected error</span>';
+            }
+        }
+        
+        // Test file upload
+        async function testFileUpload() {
+            const fileInput = document.getElementById('backup-file');
+            
+            if (!fileInput.files || fileInput.files.length === 0) {
+                log('❌ Please select a file first', 'error');
+                return;
+            }
+            
+            log('🔍 Testing file upload...', 'warning');
+            
+            try {
+                const file = fileInput.files[0];
+                log(`📁 File selected: ${file.name} (${file.size} bytes)`, 'warning');
+                
+                const fileContent = await readFileAsText(file);
+                log(`✅ File read successfully (${fileContent.length} characters)`, 'success');
+                
+                const jsonData = JSON.parse(fileContent);
+                log(`✅ JSON parsed successfully`, 'success');
+                
+                // Check for Mecure Clinics data
+                const mecurPatients = jsonData.organizationData?.['Mecure Clinics']?.patients || [];
+                log(`✅ Found ${mecurPatients.length} patients in Mecure Clinics`, 'success');
+                
+                // Check for DOB data
+                const patientsWithDOB = mecurPatients.filter(p => p.dob);
+                log(`✅ Found ${patientsWithDOB.length} patients with DOB data`, 'success');
+                
+                let html = `
+                    <h4>File Analysis:</h4>
+                    <p><strong>Total patients:</strong> ${mecurPatients.length}</p>
+                    <p><strong>Patients with DOB:</strong> ${patientsWithDOB.length}</p>
+                    <p><strong>Patients without DOB:</strong> ${mecurPatients.length - patientsWithDOB.length}</p>
+                `;
+                
+                if (patientsWithDOB.length > 0) {
+                    html += '<h5>Sample DOB data:</h5>';
+                    patientsWithDOB.slice(0, 5).forEach(patient => {
+                        html += `<div style="font-size: 12px;">${patient.id}: ${patient.dob}</div>`;
+                    });
+                }
+                
+                document.getElementById('file-upload-result').innerHTML = html;
+                
+            } catch (error) {
+                log(`❌ File upload test failed: ${error.message}`, 'error');
+                document.getElementById('file-upload-result').innerHTML = '<span class="error">❌ File test failed</span>';
+            }
+        }
+        
+        // Read file as text
+        function readFileAsText(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onload = e => resolve(e.target.result);
+                reader.onerror = e => reject(e);
+                reader.readAsText(file);
+            });
+        }
+        
+        // Logging function
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('debug-log');
+            const timestamp = new Date().toLocaleTimeString();
+            const entry = document.createElement('div');
+            entry.className = type;
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Clear log
+        function clearLog() {
+            document.getElementById('debug-log').innerHTML = '';
+        }
+        
+        // Initialize on load
+        window.addEventListener('load', () => {
+            log('🚀 Debug tool ready', 'success');
+            log('💡 Start with Step 1: Test Supabase Connection', 'warning');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+
+</html>
+
+
+
+
+
+

@@ -1,0 +1,203 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pricing Catalog - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=221">
+
+  <!-- Supabase - self-hosted to avoid tracking prevention -->
+  <script src="js/vendor/supabase.min.js"></script>
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1>&#128176; Pricing Catalog</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666;">&larr; Back</button>
+  <button onclick="showAddServiceForm()">+ Add New Service</button>
+
+  <div id="add-form" style="max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px; display: none;">
+    <h2>Add/Edit Service</h2>
+    <input type="hidden" id="service-id">
+    <label>Service Code:</label>
+    <input type="text" id="service-code" placeholder="e.g., CONS-001">
+    <label>Service Name:</label>
+    <input type="text" id="service-name" required>
+    <label>Category:</label>
+    <select id="service-category">
+      <option>Consultation</option>
+      <option>Procedure</option>
+      <option>Laboratory</option>
+      <option>Imaging</option>
+      <option>Vaccination</option>
+      <option>Prescription</option>
+      <option>Documentation</option>
+      <option>Other</option>
+    </select>
+    <label>Price:</label>
+    <input type="number" id="service-price" step="0.01" required>
+    <label>Description:</label>
+    <textarea id="service-description" rows="2"></textarea>
+    <label><input type="checkbox" id="service-taxable" checked> Taxable</label>
+    <label><input type="checkbox" id="service-active" checked> Active</label>
+    <button onclick="saveService()" style="background: #4CAF50;">Save Service</button>
+    <button onclick="cancelEdit()" style="background: #666;">Cancel</button>
+  </div>
+
+  <div style="max-width: 1000px; margin: 20px auto;">
+    <input type="text" id="search" placeholder="Search services..." oninput="filterServices()" style="margin-bottom: 15px;">
+    <table>
+      <thead>
+        <tr>
+          <th>Code</th>
+          <th>Name</th>
+          <th>Category</th>
+          <th>Price</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="services-list"></tbody>
+    </table>
+  </div>
+
+  
+  </script>
+
+  
+  
+    window.addEventListener('load', function() {
+      loadServices();
+    });
+
+    function loadServices() {
+      const services = getPricingCatalog();
+      displayServices(services);
+    }
+
+    function displayServices(services) {
+      const tbody = document.getElementById('services-list');
+      tbody.innerHTML = '';
+      
+      services.forEach(service => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td>${service.code}</td>
+          <td>${service.name}</td>
+          <td>${service.category}</td>
+          <td>${formatCurrency(service.price, service.currency)}</td>
+          <td style="color: ${service.active ? 'green' : 'red'};">${service.active ? 'Active' : 'Inactive'}</td>
+          <td>
+            <button onclick="editService('${service.id}')" style="padding: 5px 10px;">Edit</button>
+            <button onclick="toggleServiceStatus('${service.id}')" style="padding: 5px 10px; background: ${service.active ? '#f44336' : '#4CAF50'};">
+              ${service.active ? 'Deactivate' : 'Activate'}
+            </button>
+          </td>
+        `;
+      });
+    }
+
+    function filterServices() {
+      const query = document.getElementById('search').value.toLowerCase();
+      const services = getPricingCatalog().filter(s => 
+        s.name.toLowerCase().includes(query) ||
+        s.code.toLowerCase().includes(query) ||
+        s.category.toLowerCase().includes(query)
+      );
+      displayServices(services);
+    }
+
+    function showAddServiceForm() {
+      document.getElementById('add-form').style.display = 'block';
+      document.getElementById('service-id').value = '';
+      document.getElementById('service-code').value = '';
+      document.getElementById('service-name').value = '';
+      document.getElementById('service-price').value = '';
+      document.getElementById('service-description').value = '';
+      document.getElementById('service-taxable').checked = true;
+      document.getElementById('service-active').checked = true;
+    }
+
+    function editService(serviceId) {
+      const service = getServiceById(serviceId);
+      if (!service) return;
+      
+      document.getElementById('add-form').style.display = 'block';
+      document.getElementById('service-id').value = service.id;
+      document.getElementById('service-code').value = service.code;
+      document.getElementById('service-name').value = service.name;
+      document.getElementById('service-category').value = service.category;
+      document.getElementById('service-price').value = service.price;
+      document.getElementById('service-description').value = service.description;
+      document.getElementById('service-taxable').checked = service.taxable;
+      document.getElementById('service-active').checked = service.active;
+    }
+
+    function saveService() {
+      const serviceId = document.getElementById('service-id').value;
+      const serviceData = {
+        code: document.getElementById('service-code').value,
+        name: document.getElementById('service-name').value,
+        category: document.getElementById('service-category').value,
+        price: parseFloat(document.getElementById('service-price').value),
+        description: document.getElementById('service-description').value,
+        taxable: document.getElementById('service-taxable').checked,
+        active: document.getElementById('service-active').checked
+      };
+      
+      if (!serviceData.name || !serviceData.price) {
+        alert('Please fill in required fields');
+        return;
+      }
+      
+      if (serviceId) {
+        updateServiceInCatalog(serviceId, serviceData);
+        alert('Service updated successfully');
+      } else {
+        addServiceToCatalog(serviceData);
+        alert('Service added successfully');
+      }
+      
+      cancelEdit();
+      loadServices();
+    }
+
+    function toggleServiceStatus(serviceId) {
+      const service = getServiceById(serviceId);
+      if (!service) return;
+      
+      updateServiceInCatalog(serviceId, { active: !service.active });
+      loadServices();
+    }
+
+    function cancelEdit() {
+      document.getElementById('add-form').style.display = 'none';
+    }
+  </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

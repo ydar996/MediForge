@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Get Organization ID</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; }
+        .result { background: #f0f0f0; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <h1>Get Mecure Clinics Organization ID</h1>
+    <button class="btn" onclick="getOrgId()">Get Organization ID</button>
+    <div id="result" class="result"></div>
+
+    
+  </script>
+    
+  
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+
+        async function getOrgId() {
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = 'Loading...';
+            
+            try {
+                const { data, error } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .ilike('name', '%Mecure%');
+                
+                if (error) throw error;
+                
+                if (data && data.length > 0) {
+                    resultDiv.innerHTML = `
+                        <h3>Found Organizations:</h3>
+                        ${data.map(org => `
+                            <div>
+                                <strong>Name:</strong> ${org.name}<br>
+                                <strong>ID:</strong> ${org.id}<br>
+                                <strong>Created:</strong> ${org.created_at}
+                            </div>
+                        `).join('<hr>')}
+                    `;
+                } else {
+                    resultDiv.innerHTML = 'No organizations found with "Mecure" in the name.';
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `Error: ${error.message}`;
+            }
+        }
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+

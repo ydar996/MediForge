@@ -1,0 +1,3055 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Clinical Note</title>
+  <link rel="stylesheet" href="css/styles.css?v=241">
+  <style>
+    /* Mobile Responsive Design */
+    @media (max-width: 768px) {
+      .container {
+        padding: 10px !important;
+        margin: 0 !important;
+      }
+      
+      .nav-buttons {
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+      
+      .nav-btn {
+        width: 100% !important;
+        min-width: auto !important;
+        padding: 12px 16px !important;
+        font-size: 16px !important;
+      }
+      
+      .prescription-form {
+        grid-template-columns: 1fr !important;
+        gap: 20px !important;
+        padding: 15px !important;
+      }
+      
+      
+      .medication-item {
+        padding: 10px !important;
+        margin-bottom: 10px !important;
+      }
+      
+      .medication-header {
+        flex-direction: column !important;
+        align-items: flex-start !important;
+        gap: 10px !important;
+      }
+      
+      .medication-fields {
+        grid-template-columns: 1fr !important;
+        gap: 10px !important;
+      }
+      
+      .action-buttons {
+        flex-direction: column !important;
+        gap: 10px !important;
+      }
+      
+      .action-buttons button {
+        width: 100% !important;
+        padding: 12px !important;
+        font-size: 14px !important;
+      }
+      
+      .signature-pad {
+        min-height: 120px !important;
+      }
+      
+      .signature-canvas {
+        width: 100% !important;
+        height: 100px !important;
+      }
+      
+      table {
+        font-size: 12px !important;
+      }
+      
+      table th,
+      table td {
+        padding: 6px 4px !important;
+        word-wrap: break-word !important;
+      }
+      
+      .table-responsive {
+        overflow-x: auto !important;
+        -webkit-overflow-scrolling: touch !important;
+      }
+      
+      .btn {
+        padding: 10px 12px !important;
+        font-size: 14px !important;
+        min-height: 44px !important;
+      }
+      
+      input, select, textarea {
+        font-size: 16px !important;
+        padding: 12px !important;
+        min-height: 44px !important;
+      }
+      
+      .icd-search-container,
+      .medication-search-container {
+        position: relative !important;
+      }
+      
+      .icd-dropdown,
+      .medication-dropdown {
+        max-height: 200px !important;
+        font-size: 14px !important;
+      }
+      
+      .icd-dropdown li,
+      .medication-dropdown li {
+        padding: 8px 12px !important;
+        font-size: 14px !important;
+      }
+    }
+    
+    @media (max-width: 480px) {
+      .container {
+        padding: 5px !important;
+      }
+      
+      .medication-item {
+        padding: 8px !important;
+      }
+      
+      table {
+        font-size: 11px !important;
+      }
+      
+      table th,
+      table td {
+        padding: 4px 2px !important;
+      }
+      
+      .btn {
+        padding: 8px 10px !important;
+        font-size: 13px !important;
+      }
+    }
+    
+    @keyframes slideIn {
+      from {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+      to {
+        transform: translateX(0);
+        opacity: 1;
+      }
+    }
+    
+    @keyframes slideOut {
+      from {
+        transform: translateX(0);
+        opacity: 1;
+      }
+      to {
+        transform: translateX(100%);
+        opacity: 0;
+      }
+    }
+    
+    .view-details-btn {
+      background-color: #007bff;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+      font-weight: 500;
+      min-width: 80px;
+      transition: background-color 0.2s ease;
+    }
+    
+    .view-details-btn:hover {
+      background-color: #0056b3;
+    }
+    
+    /* Navigation Button Styles */
+    .nav-btn {
+      padding: 10px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 500;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      min-width: 140px;
+      text-align: center;
+      white-space: nowrap;
+    }
+    
+    .back-btn {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: white;
+    }
+    
+    .back-btn:hover {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      transform: translateY(-1px);
+    }
+    
+    .dashboard-btn {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+    }
+    
+    .dashboard-btn:hover {
+      background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+      transform: translateY(-1px);
+    }
+    
+    .download-btn:hover {
+      background: linear-gradient(135deg, #F57C00 0%, #E65100 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(255, 152, 0, 0.3);
+    }
+    
+    /* Professional Order Actions Styling */
+    .order-actions-container,
+    .order-results-container {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    
+    .action-btn {
+      padding: 6px 12px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 500;
+      transition: all 0.2s ease;
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      text-decoration: none;
+      white-space: nowrap;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .action-btn:hover {
+      transform: translateY(-1px);
+      box-shadow: 0 4px 8px rgba(0,0,0,0.15);
+    }
+    
+    .action-btn:active {
+      transform: translateY(0);
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    
+    .primary-btn {
+      background: linear-gradient(135deg, #007bff, #0056b3);
+      color: white;
+    }
+    
+    .primary-btn:hover {
+      background: linear-gradient(135deg, #0056b3, #004085);
+    }
+    
+    .danger-btn {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+    }
+    
+    .danger-btn:hover {
+      background: linear-gradient(135deg, #c82333, #bd2130);
+    }
+    
+    .success-btn {
+      background: linear-gradient(135deg, #28a745, #1e7e34);
+      color: white;
+    }
+    
+    .success-btn:hover {
+      background: linear-gradient(135deg, #1e7e34, #155724);
+    }
+    
+    .secondary-btn {
+      background: linear-gradient(135deg, #6c757d, #545b62);
+      color: white;
+    }
+    
+    .secondary-btn:hover {
+      background: linear-gradient(135deg, #545b62, #343a40);
+    }
+    
+    .discharge-summary-btn {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+    }
+    
+    .discharge-summary-btn:hover {
+      background: linear-gradient(135deg, #20c997 0%, #17a2b8 100%);
+      transform: translateY(-1px);
+    }
+    
+    /* Responsive design for smaller screens */
+    @media (max-width: 768px) {
+      .nav-btn {
+        min-width: 120px;
+        padding: 8px 12px;
+        font-size: 12px;
+      }
+      
+      .nav-btn:first-child {
+        margin-bottom: 5px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px; gap: 10px;">
+    <div style="display: flex; gap: 10px;">
+      <button onclick="backToDetails()" class="nav-btn back-btn">? Back to Patient Details</button>
+      <button onclick="window.location.href='dashboard'" class="nav-btn dashboard-btn">?? Back to Dashboard</button>
+    </div>
+    <div style="display: flex; gap: 10px;">
+      <button onclick="openPrescriptionForm()" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+        ?? Add New Prescription
+      </button>
+      <button onclick="generateDischargeSummary()" class="nav-btn discharge-summary-btn">
+        ?? Print/Send Discharge Summary
+      </button>
+    </div>
+  </div>
+  <h1 id="note-title">Clinical Note</h1>
+  <div id="metadata"></div>
+  <form id="soap-form">
+    <!-- Subjective Section -->
+    <h2>Subjective</h2>
+    <label for="cc">Chief Complaint (CC):</label>
+    <textarea id="cc"></textarea>
+    
+    <label for="hpi">History of Present Illness (HPI):</label>
+    <textarea id="hpi"></textarea>
+    
+    <h3>Past Medical History</h3>
+    <table class="note-history-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Event</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="note-history-list"></tbody>
+    </table>
+    <div id="add-history-div">
+      <label for="history-date">Date:</label>
+      <input type="date" id="history-date">
+      <label for="history-event">Event:</label>
+      <div id="history-event-container">
+        <!-- Fallback input field in case ICD selector doesn't load -->
+        <input type="text" id="history-event" placeholder="Search medical condition or event..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <label for="history-notes">Notes:</label>
+      <input type="text" id="history-notes">
+      <button type="button" id="history-btn" onclick="addHistory()">Add</button>
+    </div>
+    
+    <label for="fh">Family History (FH):</label>
+    <textarea id="fh"></textarea>
+    
+    <label for="sh">Social History (SH):</label>
+    <textarea id="sh"></textarea>
+    
+    <label for="ros">Review of Systems (ROS):</label>
+    <textarea id="ros"></textarea>
+    
+    <div style="margin-bottom: 15px;">
+      <h3>Prescriptions & Medications</h3>
+    </div>
+    
+    <!-- Prescriptions Summary -->
+    <div id="prescriptions-summary" style="margin-bottom: 20px;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+        <h4 style="margin: 0;">Prescriptions for this visit:</h4>
+        <div style="background: #e8f5e8; padding: 15px; border-radius: 8px; border: 1px solid #28a745;">
+          <h4 style="margin: 0 0 10px 0; color: #155724;">????? Doctor Actions</h4>
+          <button onclick="console.log('Create Prescription button clicked'); openPrescriptionForm();" style="background: #28a745; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; font-size: 14px;">
+            ?? Create Prescription (No Encounter Required)
+          </button>
+          <p style="margin: 10px 0 0 0; font-size: 12px; color: #666; font-style: italic;">
+            Create a prescription directly without requiring an encounter first.
+          </p>
+        </div>
+      </div>
+      <table class="prescriptions-summary-table clinical-note-prescriptions-table">
+        <thead>
+          <tr>
+            <th>Prescription ID</th>
+            <th>Date</th>
+            <th>Diagnosis</th>
+            <th>Medications Count</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="prescriptions-list">
+          <!-- Prescriptions will be populated here -->
+        </tbody>
+      </table>
+      <!-- No prescriptions message (shown when no prescriptions exist) -->
+      <div id="no-prescriptions-message-clinical" style="display: none; text-align: center; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 10px;">
+        <p style="color: #666; font-style: italic; margin: 0; font-size: 14px;">
+          No prescriptions found for this visit.
+        </p>
+      </div>
+    </div>
+    
+    <!-- Current Medications from Prescriptions -->
+    <div id="current-medications" style="margin-bottom: 20px;">
+      <h4>Medications & Prescriptions:</h4>
+      <table class="active-medications-table">
+        <thead>
+          <tr>
+            <th>Medication</th>
+            <th>Strength & Form</th>
+            <th>Directions</th>
+            <th>Quantity</th>
+            <th>Duration</th>
+            <th>Refills</th>
+            <th>Prescription ID</th>
+          </tr>
+        </thead>
+        <tbody id="medications-from-prescriptions">
+          <!-- Medications from prescriptions will be populated here -->
+        </tbody>
+      </table>
+      <!-- No medications message (shown when no medications exist) -->
+      <div id="no-medications-message-clinical" style="display: none; text-align: center; padding: 15px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 10px;">
+        <p style="color: #666; font-style: italic; margin: 0; font-size: 14px;">
+          No medications from prescriptions. Create a prescription to see medications here.
+        </p>
+      </div>
+    </div>
+    
+    <h3>Allergies</h3>
+    <table class="note-allergies-table">
+      <thead>
+        <tr>
+          <th>Allergen</th>
+          <th>Reaction</th>
+          <th>Severity</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="note-allergies-list"></tbody>
+    </table>
+    
+    <!-- Enhanced Allergy Selector for Clinical Notes -->
+    <div id="clinical-note-allergy-selector-container">
+      <!-- Enhanced selector will be populated here by JavaScript -->
+    </div>
+    
+    
+    <h3>Immunizations</h3>
+    <table class="note-immunizations-table">
+      <thead>
+        <tr>
+          <th>Vaccine</th>
+          <th>Date</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="note-immunizations-list"></tbody>
+    </table>
+    <div id="add-note-immunization-div">
+      <label for="note-vaccine">Vaccine:</label>
+      <div id="note-vaccine-container"></div>
+      <label for="note-immun-date">Date:</label>
+      <input type="date" id="note-immun-date">
+      <label for="note-immun-notes">Notes:</label>
+      <input type="text" id="note-immun-notes">
+      <button type="button" id="note-immunization-btn" onclick="addImmunization()">Add</button>
+    </div>
+    
+    <!-- Objective Section -->
+    <h2>Objective</h2>
+    
+    <h3>Diagnosis/Problem List</h3>
+    <table class="note-diagnoses-table">
+      <thead>
+        <tr>
+          <th>Date</th>
+          <th>Diagnosis</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="note-diagnoses-list"></tbody>
+    </table>
+    <div id="add-note-diagnosis-div">
+      <label for="diagnosis">Search for Diagnosis:</label>
+      <div id="diagnosis-container">
+        <!-- Fallback input field in case ICD selector doesn't load -->
+        <input type="text" id="diagnosis" placeholder="Search diagnosis or condition..." style="width: 100%; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+      </div>
+      <label for="diagnosis-date">Date:</label>
+      <input type="date" id="diagnosis-date">
+      <label for="diagnosis-notes">Notes:</label>
+      <input type="text" id="diagnosis-notes">
+      <button type="button" id="diagnosis-btn" onclick="addDiagnosis()">Add</button>
+    </div>
+    
+    <h3>Vital Signs</h3>
+    <table id="vitals-table">
+      <thead>
+        <tr>
+          <th>Temperature (?C)</th>
+          <th>Heart Rate (bpm)</th>
+          <th>Respiratory Rate (breaths/min)</th>
+          <th>Systolic BP (mmHg)</th>
+          <th>Diastolic BP (mmHg)</th>
+          <th>O2 Sat (%)</th>
+          <th>Height (cm)</th>
+          <th>Weight (kg)</th>
+          <th>BMI (kg/m?)</th>
+          <th>Pain Level (0-10)</th>
+          <th>Notes</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="note-vitals-list"></tbody>
+    </table>
+    <div id="add-vitals-div">
+      <label for="temp">Temperature (?C):</label>
+      <input type="number" id="temp" step="0.1">
+      <label for="hr">Heart Rate (bpm):</label>
+      <input type="number" id="hr">
+      <label for="rr">Respiratory Rate (breaths/min):</label>
+      <input type="number" id="rr">
+      <label for="systolic">Systolic BP (mmHg):</label>
+      <input type="number" id="systolic">
+      <label for="diastolic">Diastolic BP (mmHg):</label>
+      <input type="number" id="diastolic">
+      <label for="o2sat">O2 Sat (%):</label>
+      <input type="number" id="o2sat">
+      <label for="height">Height (cm):</label>
+      <input type="number" id="height" step="0.1">
+      <label for="weight">Weight (kg):</label>
+      <input type="number" id="weight" step="0.1">
+      <label for="pain">Pain Level (0-10):</label>
+      <input type="number" id="pain" min="0" max="10">
+      <label for="vitals-notes">Notes:</label>
+      <input type="text" id="vitals-notes">
+      <button type="button" id="vitals-btn" onclick="addVitals()">Add</button>
+    </div>
+    <div id="vitals-placeholder" class="table-placeholder" style="display: none; text-align: center; color: #888; font-style: italic; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 10px;">
+      No vital signs data available.
+    </div>
+    
+    <label for="physical">Physical Exam Findings:</label>
+    <textarea id="physical"></textarea>
+    
+    <label for="labs">Laboratory Results:</label>
+    <textarea id="labs"></textarea>
+    
+    <h3>Lab Tests</h3>
+    <div id="lab-tests-section">
+      <input type="checkbox" id="no-labs" style="margin-right: 10px;"><label for="no-labs">No lab tests required today</label><br>
+      <details id="lab-details">
+        <summary>Select Lab Tests</summary>
+        <table id="lab-table"></table>
+      </details>
+      <button type="button" id="generate-lab-order">Generate Lab Order</button>
+    </div>
+
+    <h3>Imaging Tests</h3>
+    <div id="imaging-tests-section">
+      <input type="checkbox" id="no-imaging" style="margin-right: 10px;"><label for="no-imaging">No imaging tests required today</label><br>
+      <details id="imaging-details">
+        <summary>Select Imaging Tests</summary>
+        <table id="imaging-table"></table>
+      </details>
+      <button type="button" id="generate-imaging-order">Generate Imaging Order</button>
+    </div>
+
+    <h3>Generated Orders</h3>
+    <div style="margin-bottom: 15px;">
+      <button onclick="attachLabResultsFromNote()" style="background: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 10px;">?? Attach Lab Results</button>
+      <button onclick="attachImagingResultsFromNote()" style="background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">?? Attach Imaging Results</button>
+    </div>
+    <div id="generated-orders-section">
+      <table class="generated-orders-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Order Type</th>
+            <th>Items</th>
+            <th>Status</th>
+            <th>Serial #</th>
+            <th>Actions</th>
+            <th>Results</th>
+          </tr>
+        </thead>
+        <tbody id="generated-orders-list"></tbody>
+      </table>
+    </div>
+    
+    <h3>Generated Referrals</h3>
+    <div id="generated-referrals-section">
+      <table class="generated-referrals-table">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Specialist</th>
+            <th>Diagnoses</th>
+            <th>Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="generated-referrals-list"></tbody>
+      </table>
+      <div id="referrals-placeholder" class="table-placeholder" style="display: none; text-align: center; color: #888; font-style: italic; padding: 20px; background: #f8f9fa; border: 1px solid #dee2e6; border-radius: 4px; margin-top: 10px;">
+        No generated referrals found.
+      </div>
+    </div>
+    
+    <!-- Assessment Section -->
+    <h2>Assessment</h2>
+    
+    <label for="differential">Differential Diagnosis:</label>
+    <textarea id="differential"></textarea>
+    
+    <label for="status">Status Changes:</label>
+    <textarea id="status"></textarea>
+    
+    <!-- Plan Section -->
+    <h2>Plan</h2>
+    <label for="treatments">Treatments:</label>
+    <textarea id="treatments"></textarea>
+    
+    <label for="testing">Further Testing:</label>
+    <textarea id="testing"></textarea>
+    
+    <h3>Referrals/Consults</h3>
+    <div id="referrals-div">
+      <label for="referral-specialist">Select Specialist:</label>
+      <select id="referral-specialist"></select>
+      <label>Select Diagnoses:</label>
+      <div id="referral-diagnoses"></div>  <!-- Checkboxes will be here -->
+      <label for="referral-note">Reason for Referral:</label>
+      <textarea id="referral-note"></textarea>
+      <label for="referral-urgency">Priority/Urgency:</label>
+      <select id="referral-urgency">
+        <option value="">Select Priority Level</option>
+        <option value="routine">Routine</option>
+        <option value="urgent">Urgent</option>
+        <option value="emergency">Emergency</option>
+      </select>
+      <button type="button" id="generate-referral">Generate Referral</button>
+    </div>
+    <h4>Existing Referrals</h4>
+    <ul id="existing-referrals"></ul>  <!-- List existing -->
+    
+    <label for="education">Patient Education:</label>
+    <textarea id="education"></textarea>
+    
+    <label for="followup">Follow-Up:</label>
+    <textarea id="followup"></textarea>
+    
+    <div style="margin-top: 10px;">
+      <button type="button" id="schedule-followup-btn" style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+        ?? Schedule Follow-up Appointment
+      </button>
+    </div>
+    
+    <h3>Preventive Care Gaps</h3>
+    <div id="preventive-gaps-list">No preventive care gaps identified.</div>  <!-- Dynamic list for gaps with mark buttons -->
+    
+    <button type="submit">Save Note</button>
+    <button type="button" id="lock-note-btn" style="display: none; margin-left: 10px; background-color: #dc3545; color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Lock Note</button>
+    <button type="button" id="unlock-note-btn" style="display: none; margin-left: 10px; background-color: #ffc107; color: black; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer;">Unlock Note</button>
+    <button type="button" id="generate-invoice-btn" onclick="generateInvoiceFromNote()" style="margin-left: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white; border: none; padding: 10px 20px; border-radius: 4px; cursor: pointer; font-weight: 600;">?? Generate Invoice</button>
+  </form>
+  
+  <!-- Electronic Signature Section -->
+  <div id="electronic-signature" style="display: none; margin-top: 20px; padding: 15px; background-color: #f8f9fa; border: 2px solid #28a745; border-radius: 8px;">
+    <h3 style="color: #28a745; margin-top: 0;">Electronic Signature</h3>
+    <p id="signature-status" style="margin: 5px 0; font-weight: bold;"></p>
+    <p id="signature-details" style="margin: 5px 0; color: #666;"></p>
+    
+    <!-- Audit Trail Section -->
+    <div id="audit-trail" style="margin-top: 15px; padding: 10px; background-color: white; border: 1px solid #ddd; border-radius: 4px;">
+      <h4 style="margin: 0 0 10px 0; color: #333;">Audit Trail</h4>
+      <div id="audit-trail-content" style="font-size: 14px; color: #666;"></div>
+    </div>
+  </div>
+  
+  <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 20px; gap: 10px;">
+    <div style="display: flex; gap: 10px;">
+      <button onclick="backToDetails()" class="nav-btn back-btn">? Back to Patient Details</button>
+      <button onclick="window.location.href='dashboard'" class="nav-btn dashboard-btn">?? Back to Dashboard</button>
+    </div>
+    <button onclick="generateDischargeSummary()" class="nav-btn discharge-summary-btn">
+      ?? Print/Send Discharge Summary
+    </button>
+  </div>
+  <div id="appointment-timespan" style="margin-top: 20px; font-style: italic; color: #666;"></div>  <!-- New div for timespan display -->
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  <script>
+    // Organization UID to name mapping
+    const orgMapping = {
+      '576522cc-e769-4fb4-9487-3d150857d970': 'Mecure Clinics',
+      'default': 'Unknown Organization'
+    };
+    
+    // Get organization name from UID
+    function getOrgNameFromUID(orgUID) {
+      return orgMapping[orgUID] || orgMapping['default'];
+    }
+    
+    // Display logged-in user info with organization name
+    function updateFooterWithOrgName() {
+      console.log('?? TRACE: updateFooterWithOrgName called');
+      const userFooter = JSON.parse(localStorage.getItem("user"));
+      console.log('?? TRACE: userFooter:', userFooter);
+      
+      if (userFooter) {
+        const orgName = getOrgNameFromUID(userFooter.org);
+        console.log('?? TRACE: Organization name:', orgName);
+        
+        const footerElement = document.getElementById("logged-in-info");
+        console.log('?? TRACE: Footer element:', footerElement);
+        
+        if (footerElement) {
+          footerElement.innerHTML = `${userFooter.username} (${userFooter.role}) from ${orgName} is logged in`;
+          console.log('?? TRACE: Footer updated successfully');
+        } else {
+          console.error('?? TRACE: Footer element not found!');
+        }
+      } else {
+        console.log('?? TRACE: No user found in localStorage');
+      }
+    }
+    
+    // Initialize footer with organization name
+    updateFooterWithOrgName();
+  </script>
+  <!-- Load html2canvas for image generation -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    // Debug function to check order data
+    window.debugOrders = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      
+      console.log('?? DEBUGGING ORDERS FOR PATIENT:', patientId, 'VISIT:', visitDate);
+      
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient) {
+        console.log('? Patient not found');
+        return;
+      }
+      
+      console.log('? Patient found:', patient.firstName, patient.lastName);
+      
+      const visit = patient.visits.find(v => v.date === visitDate);
+      if (!visit) {
+        console.log('? Visit not found for date:', visitDate);
+        console.log('Available visits:', patient.visits.map(v => v.date));
+        return;
+      }
+      
+      console.log('? Visit found:', visit.date);
+      console.log('Visit orders:', visit.orders);
+      console.log('Visit full structure:', visit);
+      
+      if (visit.orders && visit.orders.length > 0) {
+        visit.orders.forEach((order, index) => {
+          console.log(`Order ${index + 1}:`, {
+            type: order.type,
+            timestamp: order.timestamp,
+            selectedItems: order.selectedItems,
+            noItemsChecked: order.noItemsChecked,
+            status: order.status,
+            hasSelectedItems: order.selectedItems && order.selectedItems.length > 0,
+            willBeKept: (order.selectedItems && order.selectedItems.length > 0) || order.noItemsChecked
+          });
+        });
+      } else {
+        console.log('? No orders found in visit');
+      }
+      
+      // Check all visits for this patient
+      console.log('?? ALL VISITS FOR PATIENT:');
+      patient.visits.forEach((v, index) => {
+        console.log(`Visit ${index + 1} (${v.date}):`, v.orders ? v.orders.length : 0, 'orders');
+        if (v.orders && v.orders.length > 0) {
+          v.orders.forEach((order, orderIndex) => {
+            console.log(`  Order ${orderIndex + 1}:`, order.type, order.timestamp);
+          });
+        }
+      });
+      
+      // Check localStorage keys for any order-related data
+      console.log('?? CHECKING LOCALSTORAGE KEYS:');
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key && (key.includes('order') || key.includes('lab') || key.includes('imaging'))) {
+          console.log(`Found key: ${key}`);
+        }
+      }
+      
+      // Check if orders are stored elsewhere in the visit
+      console.log('?? CHECKING VISIT STRUCTURE FOR ORDERS:');
+      console.log('visit.soap:', visit.soap);
+      console.log('visit.plan:', visit.plan);
+      console.log('visit.labOrders:', visit.labOrders);
+      console.log('visit.imagingOrders:', visit.imagingOrders);
+      console.log('visit.generatedOrders:', visit.generatedOrders);
+    };
+    
+    window.addEventListener('load', function() {
+      console.log('clinical-note.html load event triggered'); // Debug log
+      
+      
+      if (typeof loadClinicalNote === 'function') {
+        loadClinicalNote();
+      }
+      
+      // Add event listener for schedule follow-up button
+      const scheduleFollowupBtn = document.getElementById('schedule-followup-btn');
+      if (scheduleFollowupBtn) {
+        scheduleFollowupBtn.addEventListener('click', function() {
+          const urlParams = new URLSearchParams(window.location.search);
+          const patientId = urlParams.get("patientId");
+          if (patientId) {
+            window.location.href = `/add-appointment?patientId=${patientId}`;
+          } else {
+            alert('Patient ID not found. Cannot schedule appointment.');
+          }
+        });
+      }
+      
+      // Ensure gaps are displayed after loadClinicalNote completes
+      setTimeout(() => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      if (patientId) {
+        console.log('Calling displayGaps for patientId:', patientId); // Debug log
+        displayGaps(patientId, "preventive-gaps-list");
+      } else {
+        console.log('No patientId found in URL'); // Debug log
+      }
+      }, 100); // Small delay to ensure loadClinicalNote completes
+    });
+    // Add storage listener for sync
+    window.addEventListener('storage', function(e) {
+      if (e.key === getDataKey("patients")) {
+        if (typeof loadClinicalNote === 'function') {
+          loadClinicalNote();
+        }
+        // Also refresh gaps when patient data changes
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get("patientId");
+        if (patientId) {
+          displayGaps(patientId, "preventive-gaps-list");
+        }
+      }
+      
+      // Add localStorage listener for cross-tab patient data sync
+      if (e.key === 'patientDataSync') {
+        try {
+          const syncEvent = JSON.parse(e.newValue);
+          if (syncEvent && syncEvent.type === 'patientDataUpdated') {
+            const { patientId, action, data } = syncEvent;
+            const urlParams = new URLSearchParams(window.location.search);
+            const currentPatientId = urlParams.get("patientId");
+            
+            // Only update if it's the same patient
+            if (currentPatientId === patientId) {
+              console.log(`?? TRACE: Real-time sync: ${action} for patient ${patientId}`);
+              
+              // For specific actions, refresh relevant sections
+              if (action === 'medicalHistoryAdded' || action === 'diagnosisAdded' || action === 'medicationAdded' || action === 'immunizationAdded' || action === 'allergyAdded') {
+                console.log(`?? TRACE: Refreshing tables for ${action} - forcing localStorage reload`);
+                // Force localStorage reload for sync events since data was saved to localStorage
+                if (typeof loadClinicalNote === 'function') {
+                  loadClinicalNote();
+                }
+                return; // Exit early to prevent further processing
+              }
+            }
+          }
+        } catch (error) {
+          console.error('?? TRACE: Error parsing sync event:', error);
+        }
+      }
+    });
+    // Add focus listener for tab sync
+    window.addEventListener('focus', function() {
+      if (typeof loadClinicalNote === 'function') {
+        loadClinicalNote();
+      }
+    });
+    // Add visibilitychange for better tab sync
+    window.addEventListener('visibilitychange', function() {
+      if (document.visibilityState === 'visible') {
+        if (typeof loadClinicalNote === 'function') {
+          loadClinicalNote();
+        }
+        // Also refresh gaps when tab becomes visible
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get("patientId");
+        if (patientId) {
+          displayGaps(patientId, "preventive-gaps-list");
+        }
+      }
+    });
+    
+    // Add custom event listener for real-time sync with patient-details.html
+    window.addEventListener('preventiveGapsUpdated', function(e) {
+      const { patientId, intervention, action } = e.detail;
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentPatientId = urlParams.get("patientId");
+      
+      // Only update if it's the same patient
+      if (currentPatientId === patientId) {
+        console.log(`Real-time sync: ${action} for ${intervention}`);
+        displayGaps(patientId, "preventive-gaps-list");
+      }
+    });
+    
+    // Add custom event listener for patient data sync
+    window.addEventListener('patientDataUpdated', function(e) {
+      const { patientId, action, data } = e.detail;
+      const urlParams = new URLSearchParams(window.location.search);
+      const currentPatientId = urlParams.get("patientId");
+      
+      // Only update if it's the same patient
+      if (currentPatientId === patientId) {
+        console.log(`Real-time sync: ${action} for patient ${patientId}`);
+        if (typeof loadClinicalNote === 'function') {
+          loadClinicalNote(); // Refresh the entire page data
+        }
+      }
+    });
+    
+    // Auto-save functionality for clinical note
+    let autoSaveTimeout;
+    function autoSave() {
+      clearTimeout(autoSaveTimeout);
+      autoSaveTimeout = setTimeout(() => {
+        console.log('Auto-saving clinical note...');
+        saveClinicalNoteData();
+      }, 2000); // Save 2 seconds after last change
+    }
+    
+    function saveClinicalNoteData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      
+      if (!patientId || !visitDate) return;
+      
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const patient = patients.find(p => p.id === patientId);
+      if (!patient) return;
+      
+      const visit = patient.visits.find(v => v.date === visitDate);
+      if (!visit) return;
+      
+      // Initialize SOAP structure if it doesn't exist
+      if (!visit.soap) {
+        visit.soap = {
+          subjective: { cc: '', hpi: '', fh: '', sh: '', ros: '' },
+          objective: { physical: '', labs: '', vitals: [] },
+          assessment: { differential: '', status: '' },
+          plan: { medications: '', followUp: '', referrals: [] }
+        };
+      }
+      
+      // Save SOAP form data
+      visit.soap.subjective.cc = document.getElementById("cc")?.value || '';
+      visit.soap.subjective.hpi = document.getElementById("hpi")?.value || '';
+      visit.soap.subjective.fh = document.getElementById("fh")?.value || '';
+      visit.soap.subjective.sh = document.getElementById("sh")?.value || '';
+      visit.soap.subjective.ros = document.getElementById("ros")?.value || '';
+      visit.soap.objective.physical = document.getElementById("physical")?.value || '';
+      visit.soap.objective.labs = document.getElementById("labs")?.value || '';
+      visit.soap.assessment.differential = document.getElementById("differential")?.value || '';
+      visit.soap.assessment.status = document.getElementById("status")?.value || '';
+      visit.soap.plan.medications = document.getElementById("medications")?.value || '';
+      visit.soap.plan.followUp = document.getElementById("followUp")?.value || '';
+      
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+      console.log('Clinical note auto-saved');
+    }
+    
+    // Add auto-save listeners to all form fields
+    window.addEventListener('load', function() {
+      const formFields = [
+        'cc', 'hpi', 'fh', 'sh', 'ros', 'physical', 'labs', 
+        'differential', 'status', 'medications', 'followUp'
+      ];
+      
+      formFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', autoSave);
+          field.addEventListener('change', autoSave);
+        }
+      });
+      
+      // Also add to diagnosis, history, medication, allergy, and immunization fields
+      const dataFields = [
+        'history-date', 'history-event', 'history-notes',
+        'diagnosis-date', 'diagnosis', 'diagnosis-notes',
+        'note-med-name', 'note-med-dosage', 'note-med-start', 'note-med-end', 'note-med-notes',
+        'allergen', 'reaction', 'severity', 'allergy-notes',
+        'note-vaccine', 'note-immun-date', 'note-immun-notes'
+      ];
+      
+      dataFields.forEach(fieldId => {
+        const field = document.getElementById(fieldId);
+        if (field) {
+          field.addEventListener('input', autoSave);
+          field.addEventListener('change', autoSave);
+        }
+      });
+    });
+
+    // Function to attach lab results from clinical note
+    function attachLabResultsFromNote() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('patientId');
+      const visitDate = urlParams.get('visitDate');
+      
+      if (!patientId) {
+        alert("Missing patient information");
+        return;
+      }
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+      input.multiple = true;
+      
+      input.onchange = function(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        const patient = patients.find(p => p.id === patientId);
+        
+        if (!patient) {
+          alert("Patient not found");
+          return;
+        }
+        
+        // Initialize labResults array if it doesn't exist
+        if (!patient.labResults) {
+          patient.labResults = [];
+        }
+        
+        // Process each file
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const labResult = {
+              id: Date.now() + Math.random(),
+              testName: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+              attachment: e.target.result,
+              attachmentType: file.type,
+              uploadedAt: new Date().toISOString(),
+              visitDate: visitDate || new Date().toISOString().split('T')[0],
+              fileName: file.name,
+              fileSize: file.size
+            };
+            
+            patient.labResults.push(labResult);
+            
+            // Save back to localStorage
+            localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            
+            alert(`Lab result "${file.name}" attached successfully!`);
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+      
+      input.click();
+    }
+
+    // Function to attach imaging results from clinical note
+    function attachImagingResultsFromNote() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('patientId');
+      const visitDate = urlParams.get('visitDate');
+      
+      if (!patientId) {
+        alert("Missing patient information");
+        return;
+      }
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.jpg,.jpeg,.png,.dcm,.dicom';
+      input.multiple = true;
+      
+      input.onchange = function(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        const patient = patients.find(p => p.id === patientId);
+        
+        if (!patient) {
+          alert("Patient not found");
+          return;
+        }
+        
+        // Initialize imagingResults array if it doesn't exist
+        if (!patient.imagingResults) {
+          patient.imagingResults = [];
+        }
+        
+        // Process each file
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const imagingResult = {
+              id: Date.now() + Math.random(),
+              studyType: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+              attachment: e.target.result,
+              attachmentType: file.type,
+              uploadedAt: new Date().toISOString(),
+              visitDate: visitDate || new Date().toISOString().split('T')[0],
+              fileName: file.name,
+              fileSize: file.size
+            };
+            
+            patient.imagingResults.push(imagingResult);
+            
+            // Save back to localStorage
+            localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            
+            alert(`Imaging result "${file.name}" attached successfully!`);
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+      
+      input.click();
+    }
+  </script>
+  <script>
+    
+    // Wait for all scripts to load
+    window.addEventListener('load', () => {
+      console.log('All scripts loaded, creating ICD selectors...');
+      
+      // Small delay to ensure icd11.js has loaded
+      setTimeout(() => {
+        console.log('Creating medical history selector...');
+        if (typeof createIcdSelector === 'function') {
+          createIcdSelector('history-event', false, 'history-event');
+        }
+        
+        console.log('Creating diagnosis selector...');
+        if (typeof createIcdSelector === 'function') {
+          createIcdSelector('diagnosis', false, 'diagnosis');
+        }
+        
+        // Initialize vaccine selector for clinical note
+        if (typeof createVaccineSelector === 'function') {
+          createVaccineSelector('note-vaccine-container', 'note-vaccine');
+        }
+      }, 100);
+    });
+
+    // Generate invoice from clinical note
+    function generateInvoiceFromNote() {
+      // Get URL parameters - clinical-note.html uses 'patientId' not 'id'
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('patientId'); // Changed from 'id' to 'patientId'
+      const visitDate = urlParams.get('visitDate');
+      const encounterId = visitDate; // Use visit date as encounter ID
+      
+      console.log('Generate invoice clicked. PatientId:', patientId, 'VisitDate:', visitDate);
+      
+      if (!patientId) {
+        alert('Patient ID not found. Cannot generate invoice.');
+        return;
+      }
+      
+      // Get patient data
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient) {
+        alert('Patient not found.');
+        return;
+      }
+      
+      // Determine if this is first visit or follow-up
+      const visits = patient.visits || [];
+      const isFirstVisit = visits.length <= 1; // Current visit is first (or only)
+      
+      // Get appropriate service from catalog
+      const serviceCode = isFirstVisit ? 'CONS-001' : 'CONS-003'; // General vs Follow-up
+      const catalog = getPricingCatalog();
+      const consultService = catalog.find(s => s.code === serviceCode);
+      
+      if (!consultService) {
+        alert('Consultation service not found in pricing catalog. Please configure services first.');
+        return;
+      }
+      
+      const defaultCurrency = getDefaultCurrency();
+      const defaultTaxRate = getDefaultTaxRate();
+      
+      // Create invoice
+      const invoiceData = {
+        patientId: patient.id,
+        patientName: `${patient.firstName} ${patient.lastName}`,
+        services: [{
+          id: consultService.id,
+          code: consultService.code,
+          name: consultService.name,
+          quantity: 1,
+          price: consultService.price,
+          total: consultService.price
+        }],
+        currency: defaultCurrency,
+        taxRate: defaultTaxRate,
+        discountAmount: 0,
+        discountReason: '',
+        encounterId: encounterId,
+        notes: `Generated from clinical note - ${isFirstVisit ? 'Initial consultation' : 'Follow-up visit'}`
+      };
+      
+      const invoice = createInvoice(invoiceData);
+      
+      if (confirm(`Invoice ${invoice.invoiceNumber} created successfully!\n\nService: ${consultService.name}\nAmount: ${formatCurrency(invoice.total, invoice.currency)}\n\nWould you like to:\n- Add more services/edit invoice? Click OK\n- Collect payment now? Click Cancel`)) {
+        // Edit invoice - redirect to edit page
+        window.location.href = `/edit-invoice?id=${invoice.id}`;
+      } else {
+        // Collect payment - redirect to payment page
+        window.location.href = `/collect-payment?invoiceId=${invoice.id}`;
+      }
+    }
+    
+    // Function to download clinical note as image
+    function downloadClinicalNoteAsImage() {
+      console.log('?? Starting clinical note image download...');
+      
+      try {
+        // Get the main clinical note container
+        const clinicalNoteContainer = document.body;
+        
+        // Create a temporary container with just the clinical note content
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: absolute;
+          top: -9999px;
+          left: -9999px;
+          width: auto;
+          min-width: 297mm;
+          max-width: 400mm;
+          min-height: 210mm;
+          background: white;
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          overflow: visible;
+        `;
+        
+        // Clone the clinical note content
+        const noteContent = document.querySelector('form, .clinical-note-content') || document.body;
+        const clonedContent = noteContent.cloneNode(true);
+        
+        // Remove buttons and navigation elements from the clone
+        const elementsToRemove = clonedContent.querySelectorAll('button, .nav-btn, .back-btn, .dashboard-btn, .discharge-summary-btn, .download-btn');
+        elementsToRemove.forEach(el => el.remove());
+        
+        // Add a header for the image
+        const header = document.createElement('div');
+        header.style.cssText = `
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #333;
+        `;
+        header.innerHTML = `
+          <h1 style="margin: 0; color: #333; font-size: 24px;">Clinical Note</h1>
+          <p style="margin: 5px 0; color: #666; font-size: 14px;">Generated on ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>
+        `;
+        
+        tempContainer.appendChild(header);
+        tempContainer.appendChild(clonedContent);
+        document.body.appendChild(tempContainer);
+        
+        // Use html2canvas to capture the content
+        html2canvas(tempContainer, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: tempContainer.scrollWidth,
+          height: tempContainer.scrollHeight,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          scrollX: 0,
+          scrollY: 0
+        }).then(canvas => {
+          // Remove the temporary container
+          document.body.removeChild(tempContainer);
+          
+          // Create download link
+          const link = document.createElement('a');
+          const patientName = document.getElementById('note-title')?.textContent?.replace('Clinical Note - ', '') || 'ClinicalNote';
+          const date = new Date().toISOString().split('T')[0];
+          link.download = `ClinicalNote_${patientName.replace(/[^a-zA-Z0-9]/g, '_')}_${date}.png`;
+          link.href = canvas.toDataURL('image/png');
+          
+          // Trigger download
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log('? Clinical note downloaded as image:', link.download);
+          
+          // Show success message
+          const message = document.createElement('div');
+          message.style.cssText = `
+            position: fixed;
+            top: 20px;
+            right: 20px;
+            background: #4CAF50;
+            color: white;
+            padding: 15px 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+            z-index: 10000;
+            font-weight: bold;
+          `;
+          message.textContent = '?? Clinical note downloaded as image!';
+          document.body.appendChild(message);
+          
+          // Remove message after 3 seconds
+          setTimeout(() => {
+            if (document.body.contains(message)) {
+              document.body.removeChild(message);
+            }
+          }, 3000);
+          
+        }).catch(error => {
+          console.error('? Error generating image:', error);
+          alert('Error generating image. Please try again.');
+          
+          // Remove the temporary container if it still exists
+          if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+          }
+        });
+        
+      } catch (error) {
+        console.error('? Error in image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+    
+    // Function to download order as image from modal
+    function downloadOrderAsImage(orderType) {
+      console.log('?? Starting order image download from modal...');
+      
+      try {
+        const orderContent = document.getElementById('order-content-for-image');
+        if (!orderContent) {
+          alert('No order content found to download.');
+          return;
+        }
+        
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 210mm;
+          min-height: 297mm;
+          background: white;
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          z-index: 9999;
+          box-sizing: border-box;
+        `;
+        
+        // Create header
+        const header = document.createElement('div');
+        header.style.cssText = `
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #333;
+        `;
+        header.innerHTML = `
+          <h1 style="margin: 0; color: #333; font-size: 24px;">${orderType === 'lab' ? 'Lab Order' : 'Imaging Order'}</h1>
+          <p style="margin: 5px 0; color: #666; font-size: 14px;">Generated on ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>
+        `;
+        
+        tempContainer.appendChild(header);
+        
+        // Clone the order content
+        const clonedContent = orderContent.cloneNode(true);
+        tempContainer.appendChild(clonedContent);
+        document.body.appendChild(tempContainer);
+        
+        // Wait for rendering
+        setTimeout(() => {
+          html2canvas(tempContainer, {
+            scale: 2,
+            useCORS: true,
+            backgroundColor: '#ffffff',
+            width: tempContainer.offsetWidth,
+            height: tempContainer.offsetHeight,
+            allowTaint: true,
+            logging: true
+          }).then(canvas => {
+            // Remove the temporary container
+            document.body.removeChild(tempContainer);
+            
+            // Create download link
+            const link = document.createElement('a');
+            const date = new Date().toISOString().split('T')[0];
+            link.download = `${orderType === 'lab' ? 'LabOrder' : 'ImagingOrder'}_${date}.png`;
+            link.href = canvas.toDataURL('image/png');
+            
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            
+            console.log(`? ${orderType} order downloaded as image:`, link.download);
+            
+            // Show success message
+            const message = document.createElement('div');
+            message.style.cssText = `
+              position: fixed;
+              top: 20px;
+              right: 20px;
+              background: #4CAF50;
+              color: white;
+              padding: 15px 20px;
+              border-radius: 8px;
+              box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+              z-index: 10001;
+              font-weight: bold;
+            `;
+            message.textContent = `?? ${orderType === 'lab' ? 'Lab' : 'Imaging'} order downloaded as image!`;
+            document.body.appendChild(message);
+            
+            setTimeout(() => {
+              if (document.body.contains(message)) {
+                document.body.removeChild(message);
+              }
+            }, 3000);
+            
+          }).catch(error => {
+            console.error(`? Error generating ${orderType} order image:`, error);
+            alert('Error generating image. Please try again.');
+            if (document.body.contains(tempContainer)) {
+              document.body.removeChild(tempContainer);
+            }
+          });
+        }, 500);
+        
+      } catch (error) {
+        console.error('? Error in order image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+    
+    // Function to download orders as image
+    function downloadOrdersAsImage() {
+      console.log('?? Starting orders image download...');
+      
+      try {
+        const ordersSection = document.getElementById('generated-orders-section');
+        if (!ordersSection) {
+          alert('No orders found to download.');
+          return;
+        }
+        
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: absolute;
+          top: -9999px;
+          left: -9999px;
+          width: auto;
+          min-width: 297mm;
+          max-width: 400mm;
+          min-height: 210mm;
+          background: white;
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          overflow: visible;
+        `;
+        
+        const clonedContent = ordersSection.cloneNode(true);
+        
+        const header = document.createElement('div');
+        header.style.cssText = `
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #333;
+        `;
+        header.innerHTML = `
+          <h1 style="margin: 0; color: #333; font-size: 24px;">Generated Orders</h1>
+          <p style="margin: 5px 0; color: #666; font-size: 14px;">Generated on ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>
+        `;
+        
+        tempContainer.appendChild(header);
+        tempContainer.appendChild(clonedContent);
+        document.body.appendChild(tempContainer);
+        
+        html2canvas(tempContainer, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: tempContainer.scrollWidth,
+          height: tempContainer.scrollHeight,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          scrollX: 0,
+          scrollY: 0
+        }).then(canvas => {
+          document.body.removeChild(tempContainer);
+          
+          const link = document.createElement('a');
+          const date = new Date().toISOString().split('T')[0];
+          link.download = `GeneratedOrders_${date}.png`;
+          link.href = canvas.toDataURL('image/png');
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log('? Orders downloaded as image:', link.download);
+          showSuccessMessage('?? Orders downloaded as image!');
+          
+        }).catch(error => {
+          console.error('? Error generating orders image:', error);
+          alert('Error generating image. Please try again.');
+          if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+          }
+        });
+        
+      } catch (error) {
+        console.error('? Error in orders image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+    
+    // Function to download referrals as image
+    function downloadReferralsAsImage() {
+      console.log('?? Starting referrals image download...');
+      
+      try {
+        const referralsSection = document.getElementById('generated-referrals-section');
+        if (!referralsSection) {
+          alert('No referrals found to download.');
+          return;
+        }
+        
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: absolute;
+          top: -9999px;
+          left: -9999px;
+          width: auto;
+          min-width: 297mm;
+          max-width: 400mm;
+          min-height: 210mm;
+          background: white;
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          overflow: visible;
+        `;
+        
+        const clonedContent = referralsSection.cloneNode(true);
+        
+        const header = document.createElement('div');
+        header.style.cssText = `
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #333;
+        `;
+        header.innerHTML = `
+          <h1 style="margin: 0; color: #333; font-size: 24px;">Generated Referrals</h1>
+          <p style="margin: 5px 0; color: #666; font-size: 14px;">Generated on ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>
+        `;
+        
+        tempContainer.appendChild(header);
+        tempContainer.appendChild(clonedContent);
+        document.body.appendChild(tempContainer);
+        
+        html2canvas(tempContainer, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: tempContainer.scrollWidth,
+          height: tempContainer.scrollHeight,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          scrollX: 0,
+          scrollY: 0
+        }).then(canvas => {
+          document.body.removeChild(tempContainer);
+          
+          const link = document.createElement('a');
+          const date = new Date().toISOString().split('T')[0];
+          link.download = `GeneratedReferrals_${date}.png`;
+          link.href = canvas.toDataURL('image/png');
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log('? Referrals downloaded as image:', link.download);
+          showSuccessMessage('?? Referrals downloaded as image!');
+          
+        }).catch(error => {
+          console.error('? Error generating referrals image:', error);
+          alert('Error generating image. Please try again.');
+          if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+          }
+        });
+        
+      } catch (error) {
+        console.error('? Error in referrals image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+    
+    // Function to download prescriptions as image
+    function downloadPrescriptionsAsImage() {
+      console.log('?? Starting prescriptions image download...');
+      
+      try {
+        const prescriptionsSection = document.getElementById('prescriptions-summary');
+        if (!prescriptionsSection) {
+          alert('No prescriptions found to download.');
+          return;
+        }
+        
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: absolute;
+          top: -9999px;
+          left: -9999px;
+          width: auto;
+          min-width: 297mm;
+          max-width: 400mm;
+          min-height: 210mm;
+          background: white;
+          padding: 20px;
+          font-family: Arial, sans-serif;
+          font-size: 12px;
+          line-height: 1.4;
+          color: #333;
+          overflow: visible;
+        `;
+        
+        const clonedContent = prescriptionsSection.cloneNode(true);
+        
+        const header = document.createElement('div');
+        header.style.cssText = `
+          text-align: center;
+          margin-bottom: 20px;
+          padding-bottom: 15px;
+          border-bottom: 2px solid #333;
+        `;
+        header.innerHTML = `
+          <h1 style="margin: 0; color: #333; font-size: 24px;">Prescriptions</h1>
+          <p style="margin: 5px 0; color: #666; font-size: 14px;">Generated on ${new Date().toLocaleDateString('en-US', { 
+            year: 'numeric', 
+            month: 'long', 
+            day: 'numeric',
+            hour: '2-digit',
+            minute: '2-digit'
+          })}</p>
+        `;
+        
+        tempContainer.appendChild(header);
+        tempContainer.appendChild(clonedContent);
+        document.body.appendChild(tempContainer);
+        
+        html2canvas(tempContainer, {
+          scale: 1.5,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: tempContainer.scrollWidth,
+          height: tempContainer.scrollHeight,
+          allowTaint: true,
+          foreignObjectRendering: true,
+          scrollX: 0,
+          scrollY: 0
+        }).then(canvas => {
+          document.body.removeChild(tempContainer);
+          
+          const link = document.createElement('a');
+          const date = new Date().toISOString().split('T')[0];
+          link.download = `Prescriptions_${date}.png`;
+          link.href = canvas.toDataURL('image/png');
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log('? Prescriptions downloaded as image:', link.download);
+          showSuccessMessage('?? Prescriptions downloaded as image!');
+          
+        }).catch(error => {
+          console.error('? Error generating prescriptions image:', error);
+          alert('Error generating image. Please try again.');
+          if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+          }
+        });
+        
+      } catch (error) {
+        console.error('? Error in prescriptions image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+    
+    // Helper function to show success messages
+    function showSuccessMessage(message) {
+      const messageDiv = document.createElement('div');
+      messageDiv.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4CAF50;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-weight: bold;
+      `;
+      messageDiv.textContent = message;
+      document.body.appendChild(messageDiv);
+      
+      setTimeout(() => {
+        if (document.body.contains(messageDiv)) {
+          document.body.removeChild(messageDiv);
+        }
+      }, 3000);
+    }
+  </script>
+
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=20251018191427"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=20251018191427"></script>  <!-- Universal sync status indicator -->
+  <script src="js/org-name-display.js?v=20251018191427"></script>  <!-- Organization name display -->
+  
+  <!-- Page-specific Scripts -->
+  <script src="js/preventive.js?v=125"></script>  <!-- For gaps -->
+  <script src="js/main.js?v=20251018191427"></script>  <!-- General helpers -->
+  <script src="js/icd11.js?v=125"></script>  <!-- ICD local module -->
+  <script src="js/table-alignment-fix.js?v=3"></script>  <!-- Table alignment fix -->
+  <script src="js/vaccines.js?v=125"></script>  <!-- Vaccine data -->
+  <script src="js/vaccine-selector.js?v=125"></script>  <!-- Vaccine selector -->
+  <script src="js/allergy-selector.js?v=125"></script>  <!-- Enhanced allergy selector -->
+  <script src="js/icd-selector.js?v=105"></script>  <!-- ICD selector -->
+  <script src="js/patients.js?v=20251018191427"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>  <!-- Loads clinical note logic -->
+  <script src="js/billing.js?v=1"></script>  <!-- Billing system -->
+  <script src="js/pricing.js?v=1"></script>  <!-- Pricing catalog -->
+  <script src="js/prescriptions.js?v=1"></script>  <!-- Prescription system with DRUG_DATABASE -->
+  
+  <script>
+    // EXACT COPY from patient-encounters.html - getDataKey function
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user"));
+      return user && user.org ? `${user.org}_${key}` : key;
+    }
+    
+    // Make getDataKey globally available for prescriptions.js
+    window.getDataKey = getDataKey;
+
+    window.openPrescriptionForm = function() {
+      // Get current patient data
+      const patientId = new URLSearchParams(window.location.search).get('patientId');
+      const visitDate = new URLSearchParams(window.location.search).get('visitDate');
+      
+      if (!patientId) {
+        alert('Patient ID not found. Please access this page from a patient record.');
+        return;
+      }
+
+      // Create sophisticated prescription modal HTML
+      const modalHTML = `
+        <div id="prescription-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center; overflow-y: auto;">
+          <div style="background: white; border-radius: 8px; padding: 20px; max-width: 95%; max-height: 95%; overflow-y: auto; box-shadow: 0 4px 20px rgba(0,0,0,0.3); width: 1200px;">
+            
+            <!-- Header -->
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; padding-bottom: 20px; border-bottom: 2px solid #007bff;">
+              <div>
+                <h1 style="margin: 0; color: #333;">?? Prescription Management</h1>
+                <p id="prescription-patient-info" style="margin: 5px 0 0 0; color: #666;">Loading patient information...</p>
+              </div>
+              <button onclick="closePrescriptionModal()" style="background: #dc3545; color: white; border: none; border-radius: 4px; padding: 8px 16px; cursor: pointer;">? Close</button>
+            </div>
+
+            <!-- Prescription Form -->
+            <form id="prescription-form" style="display: grid; grid-template-columns: 1fr 1fr; gap: 30px;">
+              
+              <!-- Prescriber Information -->
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
+                <h3 style="margin-top: 0; color: #007bff; font-size: 18px;">????? Prescriber Information</h3>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Full Name <span style="color: #dc3545;">*</span></label>
+                  <input type="text" id="prescriber-name" required readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">License Number <span style="color: #dc3545;">*</span></label>
+                  <input type="text" id="prescriber-license" required readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Specialty</label>
+                  <input type="text" id="prescriber-specialty" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Address</label>
+                  <textarea id="prescriber-address" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical; min-height: 80px;"></textarea>
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Phone</label>
+                  <input type="tel" id="prescriber-phone" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Email</label>
+                  <input type="email" id="prescriber-email" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+              </div>
+
+              <!-- Patient Information -->
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
+                <h3 style="margin-top: 0; color: #007bff; font-size: 18px;">?? Patient Information</h3>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Full Name <span style="color: #dc3545;">*</span></label>
+                  <input type="text" id="patient-name" required readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Date of Birth <span style="color: #dc3545;">*</span></label>
+                  <input type="date" id="patient-dob" required readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Gender</label>
+                  <select id="patient-gender" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                    <option value="">Select Gender</option>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                  </select>
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Weight (kg)</label>
+                  <input type="number" id="patient-weight" step="0.1" min="0" max="500" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Height (cm)</label>
+                  <input type="number" id="patient-height" step="0.1" min="0" max="300" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Patient ID</label>
+                  <input type="text" id="patient-id" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Known Allergies</label>
+                  <textarea id="patient-allergies" readonly placeholder="No known allergies" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px; resize: vertical; min-height: 80px;"></textarea>
+                </div>
+              </div>
+
+              <!-- Prescription Details -->
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff;">
+                <h3 style="margin-top: 0; color: #007bff; font-size: 18px;">?? Prescription Details</h3>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Date of Prescription <span style="color: #dc3545;">*</span></label>
+                  <input type="date" id="prescription-date" required style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Prescription ID</label>
+                  <input type="text" id="prescription-id" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Diagnosis/Indication <span style="color: #dc3545;">*</span></label>
+                  <div id="prescription-diagnosis-container" style="position: relative;">
+                    <input type="text" id="prescription-diagnosis" required placeholder="Search for diagnosis or condition..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                  </div>
+                  <small style="color: #666;">Search and select from ICD-11 or enter custom diagnosis</small>
+                </div>
+              </div>
+
+              <!-- Medications Section -->
+              <div style="background: #f8f9fa; padding: 20px; border-radius: 8px; border-left: 4px solid #007bff; grid-column: 1 / -1;">
+                <h3 style="margin-top: 0; color: #007bff; font-size: 18px;">?? Medications</h3>
+                <div id="medications-container">
+                  <!-- Medications will be added dynamically -->
+                </div>
+                <button type="button" onclick="addMedication()" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500; width: 100%; margin-top: 10px;">
+                  ? Add Medication
+                </button>
+              </div>
+
+              <!-- Signature Section -->
+              <div style="background: #fff3cd; padding: 20px; border-radius: 8px; border-left: 4px solid #ffc107; grid-column: 1 / -1;">
+                <h3 style="margin-top: 0; color: #007bff; font-size: 18px;">?? Electronic Signature</h3>
+                <div id="signature-pad" style="border: 2px dashed #ddd; border-radius: 8px; padding: 20px; text-align: center; min-height: 150px; background: #fff;">
+                  <p>Click to sign prescription</p>
+                  <canvas id="signature-canvas" width="400" height="100" style="border: 1px solid #ddd; display: none;"></canvas>
+                </div>
+                <div style="margin-bottom: 15px; margin-top: 15px;">
+                  <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Signature Date & Time</label>
+                  <input type="datetime-local" id="signature-date" readonly style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                  <label style="display: flex; align-items: center; font-weight: 600; color: #333;">
+                    <input type="checkbox" id="prescriber-confirmation" required style="margin-right: 8px;">
+                    I confirm this prescription is accurate and appropriate
+                  </label>
+                </div>
+              </div>
+
+              <!-- Action Buttons -->
+              <div style="grid-column: 1 / -1; display: flex; gap: 15px; justify-content: center; margin-top: 30px; padding-top: 20px; border-top: 2px solid #007bff;">
+                <button type="button" onclick="previewPrescription()" style="background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  ??? Preview
+                </button>
+                <button type="button" onclick="savePrescription()" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  ?? Save Prescription
+                </button>
+                <button type="button" onclick="downloadPrescriptionAsImage()" style="background: #17a2b8; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  ?? Download As Image
+                </button>
+                <button type="button" onclick="printPrescription()" style="background: #ffc107; color: #212529; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  ??? Print
+                </button>
+                <button type="button" onclick="emailPrescription()" style="background: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  ?? Email
+                </button>
+                <button type="button" onclick="clearPrescriptionForm()" style="background: #dc3545; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 500;">
+                  ??? Clear Form
+                </button>
+              </div>
+            </form>
+
+            <!-- Prescription Preview -->
+            <div id="prescription-preview" style="background: white; border: 2px solid #333; padding: 30px; margin: 20px 0; font-family: 'Courier New', monospace; display: none;">
+              <!-- Preview content will be generated here -->
+            </div>
+          </div>
+        </div>
+      `;
+      
+      // Add modal to page
+      document.body.insertAdjacentHTML('beforeend', modalHTML);
+      
+      // Initialize the prescription form
+      initializePrescriptionModal(patientId, visitDate);
+    };
+
+    // Initialize prescription modal with patient data (EXACT COPY from clinical-note.html)
+    async function initializePrescriptionModal(patientId, visitDate) {
+      // Load patient data
+      loadPatientDataForPrescription(patientId);
+      
+      // Load prescriber data
+      await loadPrescriberDataForPrescription();
+      
+      // Set current date
+      document.getElementById('prescription-date').value = new Date().toISOString().split('T')[0];
+      
+      // Generate prescription ID
+      generatePrescriptionId();
+      
+      // Initialize signature canvas
+      initializeSignatureCanvas();
+      
+      // Initialize ICD selector for diagnosis field
+      initializePrescriptionDiagnosisSelector();
+    }
+
+    // Load patient data for prescription (EXACT COPY from clinical-note.html)
+    function loadPatientDataForPrescription(patientId) {
+      try {
+        // Helper function to get patients data (same as patient-encounters.html and prescription.html)
+        function getPatientsData() {
+          // Try to get the organization-specific key first
+          if (typeof getDataKey !== 'undefined') {
+            const orgKey = getDataKey("patients");
+            const orgPatients = JSON.parse(localStorage.getItem(orgKey) || "[]");
+            if (orgPatients.length > 0) {
+              return orgPatients;
+            }
+          }
+          
+          // Check for any organization-specific keys manually
+          const allKeys = Object.keys(localStorage);
+          const patientKeys = allKeys.filter(key => key.includes('patients') && key !== 'patients');
+          
+          for (const key of patientKeys) {
+            const patients = JSON.parse(localStorage.getItem(key) || "[]");
+            if (patients.length > 1) {
+              return patients;
+            }
+          }
+          
+          // Fallback to generic patients key
+          return JSON.parse(localStorage.getItem("patients") || "[]");
+        }
+        
+        const patients = getPatientsData();
+        console.log('Found patients for prescription:', patients.length);
+        
+        // Find the specific patient
+        let patient = patients.find(p => p.id === patientId);
+        
+        if (!patient) {
+          patient = patients.find(p => p.id === parseInt(patientId));
+        }
+        if (!patient) {
+          patient = patients.find(p => p.id.toString() === patientId);
+        }
+        if (!patient) {
+          patient = patients.find(p => p.id == patientId);
+        }
+        if (!patient) {
+          patient = patients.find(p => p.patient_id === patientId);
+        }
+        
+        if (patient) {
+          document.getElementById('patient-name').value = `${patient.firstName} ${patient.middleName || ''} ${patient.lastName}`.trim();
+          document.getElementById('patient-dob').value = patient.dob;
+          document.getElementById('patient-gender').value = patient.gender;
+          document.getElementById('patient-id').value = patient.id;
+          
+          // Load weight and height with fallback values
+          document.getElementById('patient-weight').value = patient.weight || '';
+          document.getElementById('patient-height').value = patient.height || '';
+          
+          // Load allergies
+          const allergies = patient.allergies || [];
+          const allergyText = allergies.map(a => `${a.allergen} - ${a.reaction} (${a.severity})`).join('\n');
+          document.getElementById('patient-allergies').value = allergyText || 'No known allergies';
+          
+          // Update patient info display
+          document.getElementById('prescription-patient-info').textContent = 
+            `Patient: ${patient.firstName} ${patient.lastName} (${patient.id})`;
+          
+          console.log('Patient data loaded for prescription:', patient.firstName, patient.lastName);
+        } else {
+          console.error('Patient not found for prescription:', patientId);
+        }
+      } catch (error) {
+        console.error('Error loading patient data:', error);
+      }
+    }
+
+    // Load prescriber data (EXACT COPY from clinical-note.html)
+    async function loadPrescriberDataForPrescription() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        console.log('Loading prescriber data for user:', user);
+        
+        // Load prescriber name with proper fallback
+        const prescriberName = user.firstName && user.lastName ? 
+          `Dr. ${user.firstName} ${user.lastName}` : 
+          (user.username || 'Dr. Unknown');
+        
+        // Get organization data from Supabase
+        let orgData = null;
+        let userData = null;
+        
+        if (window.supabaseClient) {
+          try {
+            // First, try to get user data from Supabase users table
+            if (user.username) {
+              const { data: userFromSupabase, error: userError } = await window.supabaseClient
+                .from('users')
+                .select('*, organizations(*)')
+                .eq('username', user.username)
+                .single();
+              
+              if (!userError && userFromSupabase) {
+                userData = userFromSupabase;
+                orgData = userFromSupabase.organizations;
+                console.log('User data loaded from Supabase:', userFromSupabase);
+                console.log('Organization data from user join:', orgData);
+              }
+            }
+            
+            // If no user data found, try to get organization directly
+            if (!orgData && user.organization_id) {
+              const { data: org, error: orgError } = await window.supabaseClient
+                .from('organizations')
+                .select('*')
+                .eq('id', user.organization_id)
+                .single();
+              
+              if (!orgError && org) {
+                orgData = org;
+                console.log('Organization data loaded directly from Supabase:', org);
+              }
+            }
+            
+            // Try with orgId if organization_id didn't work
+            if (!orgData && user.orgId) {
+              const { data: org, error: orgError } = await window.supabaseClient
+                .from('organizations')
+                .select('*')
+                .eq('id', user.orgId)
+                .single();
+              
+              if (!orgError && org) {
+                orgData = org;
+                console.log('Organization data loaded with orgId from Supabase:', org);
+              }
+            }
+          } catch (supabaseError) {
+            console.warn('Could not load data from Supabase:', supabaseError);
+          }
+        }
+        
+        // If no org data from Supabase, try localStorage fallback
+        if (!orgData && user.orgId) {
+          const orgs = JSON.parse(localStorage.getItem('organizations') || '[]');
+          orgData = orgs.find(org => org.id === user.orgId);
+          console.log('Organization data from localStorage:', orgData);
+        }
+        
+        // If still no org data, try user.org object
+        if (!orgData && user.org) {
+          orgData = user.org;
+          console.log('Organization data from user.org:', orgData);
+        }
+        
+        // Set prescriber name
+        document.getElementById('prescriber-name').value = prescriberName;
+        
+        // Get medical license from Supabase user data first, then fallback to localStorage user
+        // Use the same field name as edit-profile.html: medicalLicenseNumber
+        const medicalLicense = userData?.medicalLicenseNumber || 
+                              user.medicalLicenseNumber || 
+                              userData?.medical_license || 
+                              userData?.medicalLicense || 
+                              userData?.license_number || 
+                              userData?.licenseNumber ||
+                              user.medicalLicense || 
+                              user.licenseNumber || 
+                              'LIC-001';
+        
+        console.log('Medical license lookup:', {
+          userData_medicalLicenseNumber: userData?.medicalLicenseNumber,
+          user_medicalLicenseNumber: user.medicalLicenseNumber,
+          userData_medical_license: userData?.medical_license,
+          userData_medicalLicense: userData?.medicalLicense,
+          userData_license_number: userData?.license_number,
+          userData_licenseNumber: userData?.licenseNumber,
+          user_medicalLicense: user.medicalLicense,
+          user_licenseNumber: user.licenseNumber,
+          final_license: medicalLicense
+        });
+        
+        document.getElementById('prescriber-license').value = medicalLicense;
+        
+        // Get specialty from Supabase user data first, then fallback to localStorage user
+        const specialty = userData?.role || user.specialty || user.role || 'General Practice';
+        document.getElementById('prescriber-specialty').value = specialty;
+        
+        // Use the most complete data available
+        const address = orgData?.address || userData?.address || user.address || '123 Medical Center, Lagos, Nigeria';
+        const phone = orgData?.phone || userData?.phone_number || user.phone || user.phoneNumber || '+234-XXX-XXXX';
+        const email = userData?.email || user.email || `${user.username || 'doctor'}@${orgData?.name?.toLowerCase().replace(/\s+/g, '') || 'clinic'}.com`;
+        
+        document.getElementById('prescriber-address').value = address;
+        document.getElementById('prescriber-phone').value = phone;
+        document.getElementById('prescriber-email').value = email;
+        
+        console.log('Final prescriber data loaded:', {
+          name: prescriberName,
+          medicalLicense: medicalLicense,
+          specialty: specialty,
+          address: address,
+          phone: phone,
+          email: email,
+          orgData: orgData,
+          userData: userData
+        });
+      } catch (error) {
+        console.error('Error loading prescriber data:', error);
+        // Set fallback values even on error
+        document.getElementById('prescriber-name').value = 'Dr. Unknown';
+        document.getElementById('prescriber-license').value = 'LIC-001';
+        document.getElementById('prescriber-specialty').value = 'General Practice';
+        document.getElementById('prescriber-address').value = '123 Medical Center, Lagos, Nigeria';
+        document.getElementById('prescriber-phone').value = '+234-XXX-XXXX';
+        document.getElementById('prescriber-email').value = 'doctor@clinic.com';
+      }
+    }
+
+    // Generate prescription ID (EXACT COPY from clinical-note.html)
+    function generatePrescriptionId() {
+      const timestamp = Date.now();
+      const random = Math.floor(Math.random() * 1000);
+      const prescriptionId = `RX-${timestamp}-${random}`;
+      document.getElementById('prescription-id').value = prescriptionId;
+    }
+
+    // Initialize signature canvas
+    function initializeSignatureCanvas() {
+      const canvas = document.getElementById('signature-canvas');
+      if (canvas) {
+        const ctx = canvas.getContext('2d');
+        ctx.strokeStyle = '#000';
+        ctx.lineWidth = 2;
+        
+        let isDrawing = false;
+        
+        canvas.addEventListener('mousedown', (e) => {
+          isDrawing = true;
+          const rect = canvas.getBoundingClientRect();
+          ctx.beginPath();
+          ctx.moveTo(e.clientX - rect.left, e.clientY - rect.top);
+        });
+        
+        canvas.addEventListener('mousemove', (e) => {
+          if (isDrawing) {
+            const rect = canvas.getBoundingClientRect();
+            ctx.lineTo(e.clientX - rect.left, e.clientY - rect.top);
+            ctx.stroke();
+          }
+        });
+        
+        canvas.addEventListener('mouseup', () => {
+          isDrawing = false;
+        });
+      }
+    }
+
+    // Initialize prescription diagnosis selector (EXACT COPY from clinical-note.html)
+    function initializePrescriptionDiagnosisSelector() {
+      // Wait for ICD selector to be available
+      setTimeout(() => {
+        if (typeof createIcdSelector === 'function') {
+          console.log('Creating ICD selector for prescription diagnosis field...');
+          createIcdSelector('prescription-diagnosis', false, 'prescription-diagnosis');
+          console.log('ICD selector created successfully for prescription diagnosis');
+        } else {
+          console.error('createIcdSelector function not available for prescription diagnosis');
+          // Fallback: create a simple search input
+          const diagnosisInput = document.getElementById('prescription-diagnosis');
+          if (diagnosisInput) {
+            diagnosisInput.placeholder = 'Enter diagnosis manually (ICD search not available)';
+          }
+        }
+      }, 100);
+    }
+
+    // Add medication function (EXACT COPY from clinical-note.html)
+    window.addMedication = function() {
+      const container = document.getElementById('medications-container');
+      if (!container) return;
+      
+      const medicationNumber = container.children.length + 1;
+      
+      const medicationHTML = `
+        <div id="medication-${medicationNumber}" style="background: #fff; border: 1px solid #ddd; border-radius: 8px; padding: 15px; margin-bottom: 15px;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px;">
+            <span style="background: #007bff; color: white; padding: 5px 10px; border-radius: 20px; font-size: 12px; font-weight: bold;">Medication ${medicationNumber}</span>
+            <button onclick="removeMedication(${medicationNumber})" style="background: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer; font-size: 12px;">Remove</button>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Medication Name <span style="color: #dc3545;">*</span></label>
+              <div id="med-name-container-${medicationNumber}" style="position: relative;">
+                <input type="text" id="med-name-${medicationNumber}" required placeholder="Search medication..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+              </div>
+              <small style="color: #666; font-size: 12px;">Search and select from medication database</small>
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Strength <span style="color: #dc3545;">*</span></label>
+              <div id="med-strength-container-${medicationNumber}" style="position: relative;">
+                <input type="text" id="med-strength-${medicationNumber}" required placeholder="Search strength..." style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+              </div>
+              <small style="color: #666; font-size: 12px;">Search and select from available strengths</small>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Form</label>
+              <select id="med-form-${medicationNumber}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">Select Form</option>
+                <option value="Tablet">Tablet</option>
+                <option value="Capsule">Capsule</option>
+                <option value="Syrup">Syrup</option>
+                <option value="Injection">Injection</option>
+                <option value="Inhaler">Inhaler</option>
+                <option value="Cream">Cream</option>
+                <option value="Ointment">Ointment</option>
+              </select>
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Route</label>
+              <select id="med-route-${medicationNumber}" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+                <option value="">Select Route</option>
+                <option value="Oral">Oral</option>
+                <option value="IV">IV</option>
+                <option value="IM">IM</option>
+                <option value="Topical">Topical</option>
+                <option value="Inhalation">Inhalation</option>
+              </select>
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Dosage</label>
+              <input type="text" id="med-dosage-${medicationNumber}" placeholder="e.g., 1 tablet twice daily" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Quantity</label>
+              <input type="text" id="med-quantity-${medicationNumber}" placeholder="e.g., 30 tablets" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+          </div>
+          
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px;">
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Duration</label>
+              <input type="text" id="med-duration-${medicationNumber}" placeholder="e.g., 7 days" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+            <div>
+              <label style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Refills</label>
+              <input type="text" id="med-refills-${medicationNumber}" placeholder="e.g., 2 refills" style="width: 100%; padding: 8px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+            </div>
+          </div>
+        </div>
+      `;
+      
+      container.insertAdjacentHTML('beforeend', medicationHTML);
+      
+      // Initialize medication search for this medication
+      initializeMedicationSearch(medicationNumber);
+      
+      // Initialize strength search for this medication (with delay to ensure DOM is ready)
+      setTimeout(() => {
+        try {
+          console.log(`?? About to initialize strength search for medication ${medicationNumber}`);
+          initializeStrengthSearch(medicationNumber);
+          console.log(`?? Strength search initialization completed for medication ${medicationNumber}`);
+        } catch (error) {
+          console.error(`? Error initializing strength search for medication ${medicationNumber}:`, error);
+        }
+      }, 100);
+    };
+
+    // Remove medication function (EXACT COPY from clinical-note.html)
+    window.removeMedication = function(medicationNumber) {
+      const medicationElement = document.getElementById(`medication-${medicationNumber}`);
+      if (medicationElement) {
+        medicationElement.remove();
+      }
+    };
+
+    // Initialize medication search for a specific medication field (EXACT COPY from clinical-note.html)
+    function initializeMedicationSearch(medicationNumber) {
+      const input = document.getElementById(`med-name-${medicationNumber}`);
+      const container = document.getElementById(`med-name-container-${medicationNumber}`);
+      
+      if (!input || !container) return;
+      
+      // Create suggestions dropdown
+      const suggestionsDiv = document.createElement('div');
+      suggestionsDiv.id = `med-suggestions-${medicationNumber}`;
+      suggestionsDiv.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      `;
+      container.appendChild(suggestionsDiv);
+      
+      // Get medication database
+      const drugDatabase = window.DRUG_DATABASE || [];
+      
+      // Filter medications based on input
+      function filterMedications(searchTerm) {
+        if (!searchTerm || searchTerm.length < 2) {
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+        
+        const filtered = drugDatabase.filter(drug => 
+          drug.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          drug.generic.toLowerCase().includes(searchTerm.toLowerCase()) ||
+          drug.category.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        if (filtered.length === 0) {
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+        
+        // Display suggestions
+        suggestionsDiv.innerHTML = filtered.slice(0, 10).map(drug => `
+          <div class="med-suggestion" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;" 
+               data-name="${drug.name}" 
+               data-strength="${drug.strength}" 
+               data-form="${drug.form}"
+               data-category="${drug.category}">
+            <div style="font-weight: bold; color: #007bff;">${drug.name}</div>
+            <div style="font-size: 12px; color: #666;">${drug.generic} - ${drug.strength} ${drug.form}</div>
+            <div style="font-size: 11px; color: #999;">${drug.category}</div>
+          </div>
+        `).join('');
+        
+        suggestionsDiv.style.display = 'block';
+        
+        // Add click handlers to suggestions
+        suggestionsDiv.querySelectorAll('.med-suggestion').forEach(suggestion => {
+          suggestion.addEventListener('click', function() {
+            const name = this.dataset.name;
+            const strength = this.dataset.strength;
+            const form = this.dataset.form;
+            
+            // Fill the medication name field
+            input.value = name;
+            
+            // Auto-fill strength if available (but leave empty for user selection)
+            const strengthField = document.getElementById(`med-strength-${medicationNumber}`);
+            if (strengthField) {
+              // Don't auto-fill strength - let user select from dropdown
+              strengthField.value = '';
+            }
+            
+            // Auto-fill form if available
+            const formField = document.getElementById(`med-form-${medicationNumber}`);
+            if (formField && form) {
+              formField.value = form;
+            }
+            
+            // Hide suggestions
+            suggestionsDiv.style.display = 'none';
+          });
+        });
+      }
+      
+      // Add input event listener
+      input.addEventListener('input', function() {
+        filterMedications(this.value);
+      });
+      
+      // Hide suggestions when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!container.contains(e.target)) {
+          suggestionsDiv.style.display = 'none';
+        }
+      });
+    }
+
+    // Initialize strength search for a specific medication field
+    function initializeStrengthSearch(medicationNumber) {
+      console.log(`?? Initializing strength search for medication ${medicationNumber}`);
+      const input = document.getElementById(`med-strength-${medicationNumber}`);
+      const container = document.getElementById(`med-strength-container-${medicationNumber}`);
+      
+      console.log(`?? Strength input found:`, input);
+      console.log(`?? Strength container found:`, container);
+      
+      if (!input || !container) {
+        console.error(`? Missing elements for strength search - input: ${!!input}, container: ${!!container}`);
+        return;
+      }
+      
+      // Create suggestions dropdown
+      const suggestionsDiv = document.createElement('div');
+      suggestionsDiv.id = `strength-suggestions-${medicationNumber}`;
+      suggestionsDiv.style.cssText = `
+        position: absolute;
+        top: 100%;
+        left: 0;
+        right: 0;
+        background: white;
+        border: 1px solid #ddd;
+        border-top: none;
+        max-height: 200px;
+        overflow-y: auto;
+        z-index: 1000;
+        display: none;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+      `;
+      container.appendChild(suggestionsDiv);
+      
+      // Get all unique strengths from drug database
+      const drugDatabase = window.DRUG_DATABASE || [];
+      console.log(`?? DRUG_DATABASE available:`, !!drugDatabase, `Length:`, drugDatabase.length);
+      
+      const allStrengths = [...new Set(drugDatabase.flatMap(drug => 
+        drug.strength.split(',').map(s => s.trim())
+      ))].sort();
+      
+      console.log(`?? All strengths extracted:`, allStrengths.slice(0, 10), `Total:`, allStrengths.length);
+      
+      // Filter strengths based on input
+      function filterStrengths(searchTerm) {
+        console.log(`?? Filtering strengths for: "${searchTerm}"`);
+        
+        if (!searchTerm || searchTerm.length < 1) {
+          console.log(`?? Search term too short, hiding suggestions`);
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+        
+        const filtered = allStrengths.filter(strength => 
+          strength.toLowerCase().includes(searchTerm.toLowerCase())
+        );
+        
+        console.log(`?? Filtered strengths:`, filtered.slice(0, 5), `Total matches:`, filtered.length);
+        
+        if (filtered.length === 0) {
+          console.log(`?? No matches found, hiding suggestions`);
+          suggestionsDiv.style.display = 'none';
+          return;
+        }
+        
+        // Display suggestions
+        suggestionsDiv.innerHTML = filtered.slice(0, 10).map(strength => `
+          <div class="strength-suggestion" style="padding: 8px 12px; cursor: pointer; border-bottom: 1px solid #eee;" 
+               data-strength="${strength}">
+            <div style="font-weight: bold; color: #007bff;">${strength}</div>
+          </div>
+        `).join('');
+        
+        suggestionsDiv.style.display = 'block';
+        
+        // Add click handlers to suggestions
+        suggestionsDiv.querySelectorAll('.strength-suggestion').forEach(suggestion => {
+          suggestion.addEventListener('click', function() {
+            const strength = this.dataset.strength;
+            
+            // Fill the strength field
+            input.value = strength;
+            
+            // Hide suggestions
+            suggestionsDiv.style.display = 'none';
+          });
+        });
+      }
+      
+      // Add input event listener
+      input.addEventListener('input', function() {
+        filterStrengths(this.value);
+      });
+      
+      // Hide suggestions when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!container.contains(e.target)) {
+          suggestionsDiv.style.display = 'none';
+        }
+      });
+    }
+
+    // Close prescription modal
+    window.closePrescriptionModal = function() {
+      const modal = document.getElementById('prescription-modal');
+      if (modal) {
+        modal.remove();
+      }
+    }
+
+    // Download prescription as image with multi-page support
+    window.downloadPrescriptionAsImage = function() {
+      try {
+        // Show loading message
+        const loadingDiv = document.createElement('div');
+        loadingDiv.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #333; color: white; padding: 20px; border-radius: 8px; z-index: 10001;';
+        loadingDiv.innerHTML = '?? Generating prescription images...';
+        document.body.appendChild(loadingDiv);
+
+        // Generate preview first if it doesn't exist
+        if (typeof previewPrescription === 'function') {
+          previewPrescription();
+        }
+        
+        // Get the prescription preview element
+        const previewElement = document.getElementById('prescription-preview');
+        if (!previewElement) {
+          alert('Please preview the prescription first before downloading');
+          loadingDiv.remove();
+          return;
+        }
+
+        // Hide the preview element during capture to prevent it from being visible
+        const originalDisplay = previewElement.style.display;
+        const originalPosition = previewElement.style.position;
+        const originalLeft = previewElement.style.left;
+        const originalTop = previewElement.style.top;
+        const originalZIndex = previewElement.style.zIndex;
+        
+        // Move preview completely off-screen and hide it
+        previewElement.style.position = 'absolute';
+        previewElement.style.left = '-9999px';
+        previewElement.style.top = '-9999px';
+        previewElement.style.zIndex = '-9999';
+        previewElement.style.display = 'block';
+        previewElement.style.visibility = 'hidden';
+
+        // Use html2canvas to capture the prescription
+        if (typeof html2canvas !== 'undefined') {
+          html2canvas(previewElement, {
+            scale: 2, // Higher quality
+            useCORS: true,
+            allowTaint: true,
+            backgroundColor: '#ffffff'
+          }).then(canvas => {
+            // Restore original styles
+            previewElement.style.position = originalPosition;
+            previewElement.style.left = originalLeft;
+            previewElement.style.top = originalTop;
+            previewElement.style.zIndex = originalZIndex;
+            previewElement.style.display = originalDisplay;
+            previewElement.style.visibility = 'visible';
+            
+            // Create download link
+            const link = document.createElement('a');
+            link.download = `prescription-${new Date().toISOString().split('T')[0]}.png`;
+            link.href = canvas.toDataURL('image/png');
+            link.click();
+
+            loadingDiv.remove();
+
+            // Check if prescription is long (more than one page)
+            const previewHeight = previewElement.scrollHeight;
+            const viewportHeight = window.innerHeight;
+            
+            if (previewHeight > viewportHeight * 0.8) {
+              // Prescription is long, offer to download in sections
+              if (confirm('This prescription is long. Would you like to download it in sections for better readability?')) {
+                downloadPrescriptionInSections(previewElement);
+              }
+            }
+          }).catch(error => {
+            // Restore original styles even on error
+            previewElement.style.position = originalPosition;
+            previewElement.style.left = originalLeft;
+            previewElement.style.top = originalTop;
+            previewElement.style.zIndex = originalZIndex;
+            previewElement.style.display = originalDisplay;
+            previewElement.style.visibility = 'visible';
+            
+            console.error('Error generating image:', error);
+            alert('Error generating prescription image. Please try again.');
+            loadingDiv.remove();
+          });
+        } else {
+          alert('Image generation library not available. Please try the print option instead.');
+          previewElement.style.display = originalDisplay;
+          loadingDiv.remove();
+        }
+      } catch (error) {
+        console.error('Error in downloadPrescriptionAsImage:', error);
+        alert('Error downloading prescription as image');
+      }
+    }
+
+    // Download prescription in sections for long prescriptions
+    function downloadPrescriptionInSections(previewElement) {
+      const sections = [];
+      const sectionHeight = window.innerHeight * 0.8; // 80% of viewport height
+      const totalHeight = previewElement.scrollHeight;
+      const numSections = Math.ceil(totalHeight / sectionHeight);
+
+      let currentSection = 0;
+
+      function captureNextSection() {
+        if (currentSection >= numSections) {
+          alert(`Downloaded ${numSections} prescription sections successfully!`);
+          return;
+        }
+
+        // Create a temporary container for this section
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: absolute;
+          top: -9999px;
+          left: -9999px;
+          width: ${previewElement.offsetWidth}px;
+          height: ${sectionHeight}px;
+          overflow: hidden;
+          background: white;
+        `;
+
+        // Clone the preview content
+        const clonedContent = previewElement.cloneNode(true);
+        clonedContent.style.position = 'relative';
+        clonedContent.style.top = `-${currentSection * sectionHeight}px`;
+        
+        tempContainer.appendChild(clonedContent);
+        document.body.appendChild(tempContainer);
+
+        // Capture this section
+        html2canvas(tempContainer, {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff'
+        }).then(canvas => {
+          // Download this section
+          const link = document.createElement('a');
+          link.download = `prescription-page-${currentSection + 1}-of-${numSections}.png`;
+          link.href = canvas.toDataURL('image/png');
+          link.click();
+
+          // Clean up
+          document.body.removeChild(tempContainer);
+          
+          // Move to next section
+          currentSection++;
+          setTimeout(captureNextSection, 500); // Small delay between downloads
+        }).catch(error => {
+          console.error('Error capturing section:', error);
+          document.body.removeChild(tempContainer);
+          currentSection++;
+          setTimeout(captureNextSection, 500);
+        });
+      }
+
+      captureNextSection();
+    }
+
+    // Note: Prescription functions are provided by prescriptions.js
+
+
+    window.clearPrescriptionForm = function() {
+      if (confirm('Are you sure you want to clear the form?')) {
+        document.getElementById('prescription-form').reset();
+        document.getElementById('medications-container').innerHTML = '';
+        addMedication();
+      }
+    }
+
+
+    // Create prescription from encounter (Doctor only)
+    function createPrescriptionFromEncounter(encounterId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      if (!patientId) {
+        alert("Patient ID not found. Cannot create prescription.");
+        return;
+      }
+
+      const patients = getPatientsData();
+      const patient = patients.find(p => p.id === patientId);
+      if (!patient) {
+        alert("Patient not found. Cannot create prescription.");
+        return;
+      }
+
+      const encounter = patient.encounters.find(e => e.id === encounterId);
+      if (!encounter) {
+        alert("Encounter not found. Cannot create prescription.");
+        return;
+      }
+
+      // Check if user has Doctor role for prescription creation
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user || user.role !== "Doctor") {
+        alert("Only doctors can create prescriptions. Please contact a doctor to prescribe medications.");
+        return;
+      }
+
+      // Open prescription page with encounter context
+      const prescriptionUrl = 'prescription.html?patientId=' + patientId + '&encounterId=' + encounterId + '&encounterDate=' + encounter.date;
+      const prescriptionWindow = window.open(
+        prescriptionUrl, 
+        'prescription', 
+        'width=1400,height=800,scrollbars=yes,resizable=yes,toolbar=no,menubar=no,location=no,status=no'
+      );
+      
+      if (!prescriptionWindow) {
+        alert('Popup blocked! Please allow popups for this site and try again.');
+        return;
+      }
+      
+      // Focus the new window
+      prescriptionWindow.focus();
+    }
+
+    // Display all prescriptions for the patient
+    function displayAllPrescriptions(prescriptions) {
+      const tbody = document.getElementById("encounter-prescriptions-list");
+      if (!tbody) return;
+
+      if (prescriptions.length === 0) {
+        tbody.innerHTML = 
+          '<tr>' +
+            '<td colspan="7" style="border: 1px solid #ddd; padding: 15px; text-align: center; color: #666; font-style: italic;">' +
+              'No prescriptions found. Click "?? Create Prescription" above to create one.' +
+            '</td>' +
+          '</tr>';
+        return;
+      }
+
+      const sortedPrescriptions = prescriptions.sort((a, b) => new Date(b.date) - new Date(a.date));
+
+      // Get user role for button visibility
+      const user = JSON.parse(localStorage.getItem("user"));
+      const isDoctor = user && user.role === "Doctor";
+
+      tbody.innerHTML = sortedPrescriptions.map(function(prescription) {
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get("patientId");
+        const patients = getPatientsData();
+        const patient = patients.find(p => p.id === patientId);
+        const encounter = patient && patient.encounters ? patient.encounters.find(e => e.id === prescription.encounterId) : null;
+        
+        const source = prescription.encounterId ? 
+          (encounter ? 'Encounter: ' + encounter.reason : 'From Encounter') : 
+          'Direct Prescription';
+        
+        // Build action buttons based on user role
+        let actionButtons = 
+          '<div style="display: flex; gap: 5px; align-items: center; flex-wrap: nowrap;">' +
+            '<button onclick="viewPrescription(\'' + prescription.id + '\')" ' +
+                    'style="background: #007bff; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-right: 5px; min-width: 70px; display: flex; align-items: center; justify-content: center;">' +
+              '??? View' +
+            '</button>';
+        
+        if (isDoctor) {
+          actionButtons += 
+            '<button onclick="editPrescription(\'' + prescription.id + '\')" ' +
+                    'style="background: #ffc107; color: black; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-right: 5px; min-width: 70px; display: flex; align-items: center; justify-content: center;">' +
+              '?? Edit' +
+            '</button>';
+        }
+        
+        actionButtons += 
+          '<button onclick="printPrescription(\'' + prescription.id + '\')" ' +
+                  'style="background: #28a745; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; margin-right: 5px; min-width: 70px; display: flex; align-items: center; justify-content: center;">' +
+            '??? Print' +
+          '</button>';
+        
+        if (isDoctor) {
+        actionButtons += 
+          '<button onclick="deletePrescription(\'' + prescription.id + '\')" ' +
+                  'style="background: #dc3545; color: white; border: none; padding: 8px 12px; border-radius: 4px; cursor: pointer; font-size: 13px; min-width: 80px; display: flex; align-items: center; justify-content: center;" ' +
+                  'title="Delete Prescription">' +
+              '??? Delete' +
+          '</button>';
+        }
+        
+        actionButtons += '</div>';
+        
+        return '<tr>' +
+          '<td>' + prescription.id + '</td>' +
+          '<td>' + (prescription.date || 'Unknown') + '</td>' +
+          '<td>' + source + '</td>' +
+          '<td>' + (prescription.diagnosis || 'Not specified') + '</td>' +
+          '<td>' + (prescription.medications ? prescription.medications.length : 0) + '</td>' +
+          '<td>' +
+            '<span style="background: ' + (prescription.status === 'signed' ? '#d4edda' : '#fff3cd') + '; ' +
+                       'color: ' + (prescription.status === 'signed' ? '#155724' : '#856404') + '; ' +
+                       'padding: 4px 8px; border-radius: 12px; font-size: 12px;">' +
+              (prescription.status === 'signed' ? '? Signed' : '?? Draft') +
+            '</span>' +
+          '</td>' +
+          '<td>' + actionButtons + '</td>' +
+        '</tr>';
+      }).join('');
+    }
+
+    // Global message listener for prescription updates
+    window.addEventListener('message', function(event) {
+      if (event.data.type === 'prescriptionSaved') {
+        console.log('Prescription saved message received:', event.data);
+        // Reload clinical note data instead of patient encounters
+        if (typeof loadClinicalNote === 'function') {
+          loadClinicalNote();
+        }
+        alert('Prescription saved successfully!');
+      }
+    });
+
+    // Listen for prescription deletion and update events
+    window.addEventListener('patientDataUpdated', function(event) {
+      console.log('Patient data updated event received:', event.detail);
+      if (event.detail.action === 'prescriptionDeleted') {
+        // Reload clinical note data instead of patient encounters
+        if (typeof loadClinicalNote === 'function') {
+          loadClinicalNote();
+        }
+        alert('Prescription deleted successfully!');
+      }
+    });
+
+    window.addEventListener('prescriptionUpdated', function(event) {
+      console.log('Prescription updated event received:', event.detail);
+      // Reload clinical note data instead of patient encounters
+      if (typeof loadClinicalNote === 'function') {
+        loadClinicalNote();
+      }
+      alert('Prescription updated successfully!');
+    });
+
+    // Removed loadPatientEncounters calls - this function is specific to patient-encounters.html
+
+    // Listen for Supabase sync completion
+    if (window.UniversalDataLoader) {
+      window.UniversalDataLoader.onSyncComplete = function() {
+        console.log('? Supabase sync completed, clinical note data should be loaded...');
+        // Clinical note data is already loaded by the universal data loader
+      };
+    }
+  </script>
+  
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>  <!-- Universal sync status indicator -->
+  <script src="js/icd11.js?v=125"></script>  <!-- ICD local module -->
+  <script src="js/icd-selector.js?v=105"></script>  <!-- ICD selector -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>  <!-- For image generation -->
+
+</html>
+        document.getElementById('prescription-form').reset();
+        document.getElementById('medications-container').innerHTML = '';
+        addMedication();
+      }
+    }
+
+    // Print prescription function
+    function printPrescription() {
+      if (typeof window.printPrescription === 'function') {
+        window.printPrescription();
+      } else {
+        alert('Print function not available. Please use the Preview button first.');
+      }
+    }
+
+    // Email prescription function
+    function emailPrescription() {
+      if (typeof window.emailPrescription === 'function') {
+        window.emailPrescription();
+      } else {
+        alert('Email function not available.');
+      }
+    }
+
+
+    // Create prescription from encounter (Doctor only)
+    function createPrescriptionFromEncounter(encounterId) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      if (!patientId) {
+        alert("Patient ID not found. Cannot create prescription.");
+        return;
+      }
+
+      const patients = getPatientsData();
+      const patient = patients.find(p => p.id === patientId);
+      if (!patient) {
+        alert("Patient not found. Cannot create prescription.");
+        return;
+      }
+
+      const encounter = patient.encounters.find(e => e.id === encounterId);
+      if (!encounter) {
+        alert("Encounter not found. Cannot create prescription.");
+        return;
+      }
+
+      // Check if user has Doctor role for prescription creation
+      const user = JSON.parse(localStorage.getItem("user"));
+      if (!user || user.role !== "Doctor") {
+        alert("Only doctors can create prescriptions. Please contact a doctor to prescribe medications.");
+        return;
+  </script>
+
+</body>
+</html>

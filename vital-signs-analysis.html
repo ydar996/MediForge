@@ -1,0 +1,653 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Vital Signs Analysis</title>
+  <link rel="stylesheet" href="css/styles.css?v=112">
+  
+  </script>
+  <style>
+    .analysis-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .analysis-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .analysis-header h1 {
+      margin: 0;
+      font-size: 2.5em;
+      font-weight: 300;
+    }
+    
+    .analysis-header p {
+      margin: 10px 0 0 0;
+      opacity: 0.9;
+      font-size: 1.1em;
+    }
+    
+    .chart-container {
+      background: white;
+      border-radius: 10px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+    }
+    
+    .chart-title {
+      font-size: 1.4em;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 20px;
+      border-bottom: 2px solid #f0f0f0;
+      padding-bottom: 10px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 20px;
+      border-radius: 10px;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    
+    .stat-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #667eea;
+      margin-bottom: 5px;
+    }
+    
+    .stat-label {
+      color: #666;
+      font-size: 0.9em;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .insights-container {
+      background: #f8f9fa;
+      border-radius: 10px;
+      padding: 25px;
+      margin-bottom: 25px;
+    }
+    
+    .insight-item {
+      background: white;
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    
+    .insight-item.warning {
+      border-left-color: #ffc107;
+    }
+    
+    .insight-item.danger {
+      border-left-color: #dc3545;
+    }
+    
+    .insight-item.success {
+      border-left-color: #28a745;
+    }
+    
+    .back-btn {
+      background: #6c757d;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-bottom: 20px;
+    }
+    
+    .back-btn:hover {
+      background: #5a6268;
+    }
+    
+    .no-data {
+      text-align: center;
+      color: #666;
+      font-style: italic;
+      padding: 40px;
+    }
+    
+    .export-btn {
+      background: #28a745;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px;
+    }
+    
+    .export-btn:hover {
+      background: #218838;
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>`n  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>`n  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <div class="analysis-container">
+    <button class="back-btn" onclick="goBack()">← Back to Patient Details</button>
+    
+    <div class="analysis-header">
+      <h1>Vital Signs Trends Analysis</h1>
+      <p id="patient-name">Loading patient information...</p>
+    </div>
+    
+    <div class="stats-grid" id="stats-grid">
+      <!-- Statistics will be populated here -->
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-title">Blood Pressure Trends</div>
+      <canvas id="bpChart" width="400" height="200"></canvas>
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-title">Heart Rate Trends</div>
+      <canvas id="hrChart" width="400" height="200"></canvas>
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-title">Temperature Trends</div>
+      <canvas id="tempChart" width="400" height="200"></canvas>
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-title">Respiratory Rate Trends</div>
+      <canvas id="rrChart" width="400" height="200"></canvas>
+    </div>
+    
+    <div class="chart-container">
+      <div class="chart-title">Oxygen Saturation Trends</div>
+      <canvas id="spo2Chart" width="400" height="200"></canvas>
+    </div>
+    
+    <div class="insights-container">
+      <div class="chart-title">Clinical Insights & Recommendations</div>
+      <div id="insights-list">
+        <!-- Insights will be populated here -->
+      </div>
+    </div>
+    
+    <div style="text-align: center;">
+      <button class="export-btn" onclick="exportAnalysis()">Export Analysis Report</button>
+    </div>
+  </div>
+
+  
+  
+    let patientData = null;
+    let charts = {};
+    
+    // Get patient data from URL parameters
+    function getPatientData() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('id');
+      
+      if (!patientId) {
+        document.getElementById('patient-name').textContent = 'No patient selected';
+        return null;
+      }
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (error) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (patient) {
+        document.getElementById('patient-name').innerHTML = 
+          `${patient.firstName} ${patient.lastName} (ID: ${patient.id}) - Vital Signs Analysis`;
+        return patient;
+      } else {
+        document.getElementById('patient-name').textContent = 'Patient not found';
+        return null;
+      }
+    }
+    
+    // Extract all vital signs from clinical notes
+    function extractVitalSigns(patient) {
+      const vitalSigns = [];
+      
+      console.log('Patient visits:', patient.visits);
+      
+      if (patient.visits) {
+        patient.visits.forEach((visit, visitIndex) => {
+          console.log(`Visit ${visitIndex}:`, visit);
+          if (visit.soap && visit.soap.objective && visit.soap.objective.vitals) {
+            console.log(`Visit ${visitIndex} vitals:`, visit.soap.objective.vitals);
+            visit.soap.objective.vitals.forEach((vital, vitalIndex) => {
+              console.log(`Vital ${vitalIndex}:`, vital);
+              vitalSigns.push({
+                ...vital,
+                visitDate: visit.date
+              });
+            });
+          } else {
+            console.log(`Visit ${visitIndex} has no vitals data:`, visit.soap);
+          }
+        });
+      }
+      
+      console.log('Final vital signs array:', vitalSigns);
+      return vitalSigns.sort((a, b) => new Date(a.visitDate) - new Date(b.visitDate));
+    }
+    
+    // Calculate statistics for a vital sign
+    function calculateStats(values) {
+      if (values.length === 0) return null;
+      
+      const numericValues = values.map(v => parseFloat(v)).filter(v => !isNaN(v));
+      if (numericValues.length === 0) return null;
+      
+      numericValues.sort((a, b) => a - b);
+      
+      const sum = numericValues.reduce((a, b) => a + b, 0);
+      const mean = sum / numericValues.length;
+      const median = numericValues.length % 2 === 0
+        ? (numericValues[numericValues.length / 2 - 1] + numericValues[numericValues.length / 2]) / 2
+        : numericValues[Math.floor(numericValues.length / 2)];
+      
+      return {
+        count: numericValues.length,
+        min: numericValues[0],
+        max: numericValues[numericValues.length - 1],
+        mean: Math.round(mean * 10) / 10,
+        median: Math.round(median * 10) / 10,
+        range: numericValues[numericValues.length - 1] - numericValues[0]
+      };
+    }
+    
+    // Create chart for a vital sign
+    function createChart(canvasId, label, data, unit) {
+      const ctx = document.getElementById(canvasId).getContext('2d');
+      
+      return new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: data.map(d => new Date(d.visitDate).toLocaleDateString()),
+          datasets: [{
+            label: label,
+            data: data.map(d => d.value),
+            borderColor: '#667eea',
+            backgroundColor: 'rgba(102, 126, 234, 0.1)',
+            borderWidth: 2,
+            fill: true,
+            tension: 0.4
+          }]
+        },
+        options: {
+          responsive: true,
+          scales: {
+            y: {
+              beginAtZero: false,
+              title: {
+                display: true,
+                text: unit
+              }
+            },
+            x: {
+              title: {
+                display: true,
+                text: 'Visit Date'
+              }
+            }
+          },
+          plugins: {
+            legend: {
+              display: true
+            }
+          }
+        }
+      });
+    }
+    
+    // Generate clinical insights
+    function generateInsights(vitalSigns) {
+      const insights = [];
+      
+      // Blood Pressure Analysis
+      const bpReadings = vitalSigns.filter(v => v.systolic && v.diastolic);
+      if (bpReadings.length > 0) {
+        const avgSystolic = bpReadings.reduce((sum, v) => sum + parseFloat(v.systolic), 0) / bpReadings.length;
+        const avgDiastolic = bpReadings.reduce((sum, v) => sum + parseFloat(v.diastolic), 0) / bpReadings.length;
+        
+        if (avgSystolic >= 140 || avgDiastolic >= 90) {
+          insights.push({
+            type: 'danger',
+            text: `Elevated blood pressure detected (Avg: ${Math.round(avgSystolic)}/${Math.round(avgDiastolic)} mmHg). Consider hypertension management.`
+          });
+        } else if (avgSystolic >= 130 || avgDiastolic >= 80) {
+          insights.push({
+            type: 'warning',
+            text: `Blood pressure in Stage 1 hypertension range (Avg: ${Math.round(avgSystolic)}/${Math.round(avgDiastolic)} mmHg). Monitor closely.`
+          });
+        } else {
+          insights.push({
+            type: 'success',
+            text: `Blood pressure within normal range (Avg: ${Math.round(avgSystolic)}/${Math.round(avgDiastolic)} mmHg).`
+          });
+        }
+      }
+      
+      // Heart Rate Analysis
+      const hrReadings = vitalSigns.filter(v => v.hr).map(v => parseFloat(v.hr));
+      if (hrReadings.length > 0) {
+        const avgHR = hrReadings.reduce((sum, v) => sum + v, 0) / hrReadings.length;
+        if (avgHR > 100) {
+          insights.push({
+            type: 'warning',
+            text: `Elevated heart rate detected (Avg: ${Math.round(avgHR)} bpm). Consider cardiovascular assessment.`
+          });
+        } else if (avgHR < 60) {
+          insights.push({
+            type: 'warning',
+            text: `Low heart rate detected (Avg: ${Math.round(avgHR)} bpm). Monitor for bradycardia.`
+          });
+        } else {
+          insights.push({
+            type: 'success',
+            text: `Heart rate within normal range (Avg: ${Math.round(avgHR)} bpm).`
+          });
+        }
+      }
+      
+      // Temperature Analysis
+      const tempReadings = vitalSigns.filter(v => v.temp).map(v => parseFloat(v.temp));
+      if (tempReadings.length > 0) {
+        const avgTemp = tempReadings.reduce((sum, v) => sum + v, 0) / tempReadings.length;
+        if (avgTemp > 37.5) {
+          insights.push({
+            type: 'warning',
+            text: `Elevated temperature detected (Avg: ${avgTemp.toFixed(1)}?C). Consider fever evaluation.`
+          });
+        } else if (avgTemp < 36.0) {
+          insights.push({
+            type: 'warning',
+            text: `Low temperature detected (Avg: ${avgTemp.toFixed(1)}?C). Monitor for hypothermia.`
+          });
+        } else {
+          insights.push({
+            type: 'success',
+            text: `Temperature within normal range (Avg: ${avgTemp.toFixed(1)}?C).`
+          });
+        }
+      }
+      
+      // Respiratory Rate Analysis
+      const rrReadings = vitalSigns.filter(v => v.rr).map(v => parseFloat(v.rr));
+      if (rrReadings.length > 0) {
+        const avgRR = rrReadings.reduce((sum, v) => sum + v, 0) / rrReadings.length;
+        if (avgRR > 20) {
+          insights.push({
+            type: 'warning',
+            text: `Elevated respiratory rate (Avg: ${Math.round(avgRR)} breaths/min). Consider respiratory assessment.`
+          });
+        } else if (avgRR < 12) {
+          insights.push({
+            type: 'warning',
+            text: `Low respiratory rate (Avg: ${Math.round(avgRR)} breaths/min). Monitor for respiratory depression.`
+          });
+        } else {
+          insights.push({
+            type: 'success',
+            text: `Respiratory rate within normal range (Avg: ${Math.round(avgRR)} breaths/min).`
+          });
+        }
+      }
+      
+      // Oxygen Saturation Analysis
+      const spo2Readings = vitalSigns.filter(v => v.o2sat).map(v => parseFloat(v.o2sat));
+      if (spo2Readings.length > 0) {
+        const avgSpo2 = spo2Readings.reduce((sum, v) => sum + v, 0) / spo2Readings.length;
+        if (avgSpo2 < 95) {
+          insights.push({
+            type: 'danger',
+            text: `Low oxygen saturation detected (Avg: ${Math.round(avgSpo2)}%). Consider oxygen therapy.`
+          });
+        } else if (avgSpo2 < 97) {
+          insights.push({
+            type: 'warning',
+            text: `Borderline oxygen saturation (Avg: ${Math.round(avgSpo2)}%). Monitor closely.`
+          });
+        } else {
+          insights.push({
+            type: 'success',
+            text: `Oxygen saturation within normal range (Avg: ${Math.round(avgSpo2)}%).`
+          });
+        }
+      }
+      
+      return insights;
+    }
+    
+    // Load and display analysis
+    function loadAnalysis() {
+      patientData = getPatientData();
+      if (!patientData) return;
+      
+      console.log('Patient data:', patientData);
+      const vitalSigns = extractVitalSigns(patientData);
+      console.log('Extracted vital signs:', vitalSigns);
+      
+      if (vitalSigns.length === 0) {
+        document.getElementById('stats-grid').innerHTML = 
+          '<div class="no-data">No vital signs data available for analysis. Please ensure the patient has clinical notes with vital signs recorded.</div>';
+        return;
+      }
+      
+      // Display statistics
+      displayStatistics(vitalSigns);
+      
+      // Create charts
+      createCharts(vitalSigns);
+      
+      // Generate insights
+      displayInsights(vitalSigns);
+    }
+    
+    // Display statistics
+    function displayStatistics(vitalSigns) {
+      const statsGrid = document.getElementById('stats-grid');
+      
+      // Calculate total readings
+      const totalReadings = vitalSigns.length;
+      const dateRange = vitalSigns.length > 0 ? 
+        `${new Date(vitalSigns[0].visitDate).toLocaleDateString()} - ${new Date(vitalSigns[vitalSigns.length - 1].visitDate).toLocaleDateString()}` 
+        : 'N/A';
+      
+      statsGrid.innerHTML = `
+        <div class="stat-card">
+          <div class="stat-value">${totalReadings}</div>
+          <div class="stat-label">Total Readings</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${dateRange}</div>
+          <div class="stat-label">Date Range</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${patientData.visits ? patientData.visits.length : 0}</div>
+          <div class="stat-label">Total Visits</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-value">${vitalSigns.filter(v => v.visitDate).length}</div>
+          <div class="stat-label">Visits with Vitals</div>
+        </div>
+      `;
+    }
+    
+    // Create all charts
+    function createCharts(vitalSigns) {
+      // Blood Pressure Chart
+      const bpData = vitalSigns.filter(v => v.systolic && v.diastolic).map(v => ({
+        visitDate: v.visitDate,
+        value: `${v.systolic}/${v.diastolic}`
+      }));
+      
+      if (bpData.length > 0) {
+        // For BP, we'll show systolic values on the chart
+        const systolicData = vitalSigns.filter(v => v.systolic).map(v => ({
+          visitDate: v.visitDate,
+          value: parseFloat(v.systolic)
+        }));
+        charts.bp = createChart('bpChart', 'Systolic BP', systolicData, 'mmHg');
+      }
+      
+      // Heart Rate Chart
+      const hrData = vitalSigns.filter(v => v.hr).map(v => ({
+        visitDate: v.visitDate,
+        value: parseFloat(v.hr)
+      }));
+      if (hrData.length > 0) {
+        charts.hr = createChart('hrChart', 'Heart Rate', hrData, 'bpm');
+      }
+      
+      // Temperature Chart
+      const tempData = vitalSigns.filter(v => v.temp).map(v => ({
+        visitDate: v.visitDate,
+        value: parseFloat(v.temp)
+      }));
+      if (tempData.length > 0) {
+        charts.temp = createChart('tempChart', 'Temperature', tempData, '?C');
+      }
+      
+      // Respiratory Rate Chart
+      const rrData = vitalSigns.filter(v => v.rr).map(v => ({
+        visitDate: v.visitDate,
+        value: parseFloat(v.rr)
+      }));
+      if (rrData.length > 0) {
+        charts.rr = createChart('rrChart', 'Respiratory Rate', rrData, 'breaths/min');
+      }
+      
+      // Oxygen Saturation Chart
+      const spo2Data = vitalSigns.filter(v => v.o2sat).map(v => ({
+        visitDate: v.visitDate,
+        value: parseFloat(v.o2sat)
+      }));
+      if (spo2Data.length > 0) {
+        charts.spo2 = createChart('spo2Chart', 'Oxygen Saturation', spo2Data, '%');
+      }
+    }
+    
+    // Display insights
+    function displayInsights(vitalSigns) {
+      const insights = generateInsights(vitalSigns);
+      const insightsList = document.getElementById('insights-list');
+      
+      if (insights.length === 0) {
+        insightsList.innerHTML = '<div class="no-data">No specific insights available based on current data</div>';
+        return;
+      }
+      
+      insightsList.innerHTML = insights.map(insight => 
+        `<div class="insight-item ${insight.type}">${insight.text}</div>`
+      ).join('');
+    }
+    
+    // Export analysis report
+    function exportAnalysis() {
+      if (!patientData) return;
+      
+      const vitalSigns = extractVitalSigns(patientData);
+      const insights = generateInsights(vitalSigns);
+      
+      let report = `Vital Signs Analysis Report\n`;
+      report += `Patient: ${patientData.firstName} ${patientData.lastName}\n`;
+      report += `Generated: ${new Date().toLocaleDateString()}\n\n`;
+      
+      report += `SUMMARY\n`;
+      report += `Total Readings: ${vitalSigns.length}\n`;
+      report += `Total Visits: ${patientData.visits ? patientData.visits.length : 0}\n\n`;
+      
+      report += `CLINICAL INSIGHTS\n`;
+      insights.forEach(insight => {
+        report += `? ${insight.text}\n`;
+      });
+      
+      report += `\nDETAILED VITAL SIGNS DATA\n`;
+      vitalSigns.forEach((vital, index) => {
+        report += `\nReading ${index + 1} - ${new Date(vital.visitDate).toLocaleDateString()}\n`;
+        if (vital.systolic) report += `Blood Pressure: ${vital.systolic}/${vital.diastolic} mmHg\n`;
+        if (vital.hr) report += `Heart Rate: ${vital.hr} bpm\n`;
+        if (vital.temp) report += `Temperature: ${vital.temp}?C\n`;
+        if (vital.rr) report += `Respiratory Rate: ${vital.rr} breaths/min\n`;
+        if (vital.o2sat) report += `Oxygen Saturation: ${vital.o2sat}%\n`;
+        if (vital.weight) report += `Weight: ${vital.weight} kg\n`;
+        if (vital.height) report += `Height: ${vital.height} cm\n`;
+      });
+      
+      // Create and download file
+      const blob = new Blob([report], { type: 'text/plain' });
+      const url = window.URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `${patientData.firstName}_${patientData.lastName}_vital_signs_analysis_${new Date().toISOString().split('T')[0]}.txt`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      window.URL.revokeObjectURL(url);
+    }
+    
+    // Go back to patient details
+    function goBack() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('id');
+      window.location.href = `/patient-details?id=${patientId}`;
+    }
+    
+    // Load analysis when page loads
+    window.addEventListener('load', loadAnalysis);
+  </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</html>
+
+
+
+
+

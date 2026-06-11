@@ -1,0 +1,239 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Appointments</title>
+  <link rel="stylesheet" href="css/styles.css?v=167">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <!-- Auto Cache Buster for Mobile -->
+  <!-- DISABLED: Auto cache buster removed to prevent mobile refresh loops -->
+  
+  <style>
+    .appointments-header-actions a {
+      background-color: #0c3b2e !important;
+      border: 2px solid #06251c;
+      color: #ffffff !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+    }
+    .appointments-header-actions a.back-dashboard {
+      background-color: #1b4f9c !important;
+      border: 2px solid #123468;
+    }
+    .appointments-table thead th {
+      background: #0c3b2e !important;
+      color: #ffffff !important;
+      border-color: #0c3b2e !important;
+    }
+    .appointments-table a {
+      color: #0c3b2e !important;
+      font-weight: 600;
+      text-decoration: none;
+    }
+    .appointments-table a:hover {
+      text-decoration: underline;
+    }
+    .appointments-table .action-btn,
+    .appointments-table button.action-btn,
+    .appointments-table button {
+      background-color: #1b4f9c !important;
+      color: #ffffff !important;
+      border: 1px solid #123468 !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+    }
+    .appointments-table .checkin-btn {
+      background-color: #0c3b2e !important;
+      border-color: #06251c !important;
+    }
+    .appointments-table .note-btn {
+      background-color: #5a2d82 !important;
+      border-color: #3d1f59 !important;
+    }
+    .appointments-table .invoice-btn,
+    .appointments-table .payment-btn {
+      background-color: #b36b00 !important;
+      border-color: #7a4300 !important;
+    }
+    .appointments-table .delete-btn {
+      background-color: #7a1f1f !important;
+      border-color: #4a1212 !important;
+    }
+    .appointments-pagination {
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      gap: 16px;
+      flex-wrap: nowrap !important;
+      margin: 20px 0;
+      background: #f6f1e7;
+      border: 2px solid #0c3b2e;
+      border-radius: 12px;
+      padding: 12px 16px;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+    }
+    .appointments-pagination .page-info {
+      font-weight: 600;
+      color: #0c3b2e;
+      background: #f2efe9;
+      padding: 6px 12px;
+      border-radius: 16px;
+      white-space: nowrap;
+    }
+    .appointments-pagination .pagination-btn {
+      border: none;
+      border-radius: 6px;
+      padding: 12px 24px;
+      color: #ffffff !important;
+      font-weight: 700;
+      min-width: 120px;
+      cursor: pointer;
+      transition: filter 0.15s ease-in-out;
+      white-space: nowrap;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+    }
+    .appointments-pagination .pagination-btn:hover {
+      filter: brightness(0.95);
+    }
+    .appointments-pagination .pagination-prev {
+      background: #1b4f9c !important;
+      border: 2px solid #123468;
+    }
+    .appointments-pagination .appointments-prev-override {
+      background: #1b4f9c !important;
+      border: 2px solid #123468 !important;
+      color: #ffffff !important;
+    }
+    .appointments-pagination .pagination-next {
+      background: #b36b00 !important;
+      border: 2px solid #7a4300;
+    }
+    .appointments-pagination .pagination-btn[disabled] {
+      background: #b9b9b9 !important;
+      border: 2px solid #9a9a9a;
+      cursor: not-allowed;
+      filter: none;
+    }
+    .appointments-pagination .appointments-prev-override[disabled] {
+      background: #6b87c4 !important;
+      border: 2px solid #3a5aa0 !important;
+      color: #ffffff !important;
+    }
+  </style>
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  <script src="js/utils.js"></script>
+  <!-- Patient resolution (custom MFA ids, display patient_id) required by appointments.js openClinicalNote / Open Note -->
+  <script src="js/patients.js?v=20260507-null-patients"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="appointments-header-actions" style="margin-bottom: 20px;">
+    <a href="add-appointment" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px; display: inline-block; min-width: 160px; text-align: center;">➕ Add Appointment</a>
+    <a class="back-dashboard" href="dashboard" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px; display: inline-block; min-width: 160px; text-align: center;">← Back to Dashboard</a>
+  </div>
+  
+  <h1 id="page-title">Appointment List</h1>
+  <input type="text" id="appt-search" placeholder="Search by patient, date, doctor...">
+  
+  <!-- Top Pagination Controls -->
+  <div id="pagination-controls-top" class="appointments-pagination">
+    <button id="top-prev-page" class="pagination-btn pagination-prev appointments-prev-override" onclick="changePage(-1)" disabled>← Previous</button>
+    <span id="top-page-info" class="page-info"></span>
+    <button id="top-next-page" class="pagination-btn pagination-next" onclick="changePage(1)" disabled>Next →</button>
+  </div>
+  <table class="appointments-table">
+    <thead>
+      <tr>
+        <th>Patient Name</th>
+        <th>Date</th>
+        <th>Time</th>
+        <th>Appointment Type</th>
+        <th>Visit Duration</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="appointment-list"></tbody>
+  </table>
+  
+  <!-- Pagination Controls -->
+  <div id="pagination-controls" class="appointments-pagination">
+    <button id="prev-page" class="pagination-btn pagination-prev appointments-prev-override" onclick="changePage(-1)" disabled>← Previous</button>
+    <span id="page-info" class="page-info"></span>
+    <button id="next-page" class="pagination-btn pagination-next" onclick="changePage(1)" disabled>Next →</button>
+  </div>
+  
+  <div class="appointments-header-actions" style="margin-top: 30px; padding: 20px; background-color: #f6f1e7; border-radius: 5px; text-align: center;">
+    <a href="add-appointment" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 15px; display: inline-block; min-width: 160px; text-align: center;">➕ Add Appointment</a>
+    <a class="back-dashboard" href="dashboard" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; min-width: 160px; text-align: center;">← Back to Dashboard</a>
+  </div>
+  <script>
+    // Page initialization (logs removed for privacy)
+    
+    // Dynamic page title with org
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+      // Convert organization UID to readable name
+      const orgName = user.org === '576522cc-e769-4fb4-9487-3d150857d970' ? 'Mecure Clinics' : user.org;
+      document.getElementById("page-title").innerHTML = `Appointment List for ${orgName}`;
+    }
+    
+    // Page initialization complete
+  </script>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      const orgName = userFooter.org === '576522cc-e769-4fb4-9487-3d150857d970' ? 'Mecure Clinics' : userFooter.org;
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${orgName} is logged in`;
+    }
+  </script>
+  <script src="js/appointments.js?v=20260519-appt-patient-resolve"></script>
+  <script src="js/table-alignment-fix.js?v=202412291740"></script>  <!-- Table alignment fix -->
+  <script src="js/main.js?v=20260507-null-patients"></script>  <!-- General helpers -->
+  
+  <!-- Billing functionality for invoice generation -->
+  <script src="js/billing.js?v=289"></script>
+  <script src="js/pricing.js?v=1"></script>
+  <script src="js/payments.js?v=1"></script>
+  <script src="js/appointment-types.js"></script>  <!-- Appointment types utility -->
+  
+  <script>
+    // Force table alignment fix after DOM is fully loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      // Ensure appointments table uses proper table layout
+      const appointmentsTable = document.querySelector('.appointments-table');
+      if (appointmentsTable) {
+        appointmentsTable.style.setProperty('display', 'table', 'important');
+        appointmentsTable.style.setProperty('table-layout', 'fixed', 'important');
+        
+        // Force proper display types for all table elements
+        const thead = appointmentsTable.querySelector('thead');
+        const tbody = appointmentsTable.querySelector('tbody');
+        const rows = appointmentsTable.querySelectorAll('tr');
+        const cells = appointmentsTable.querySelectorAll('th, td');
+        
+        if (thead) thead.style.setProperty('display', 'table-header-group', 'important');
+        if (tbody) tbody.style.setProperty('display', 'table-row-group', 'important');
+        rows.forEach(row => row.style.setProperty('display', 'table-row', 'important'));
+        cells.forEach(cell => cell.style.setProperty('display', 'table-cell', 'important'));
+      }
+    });
+  </script>
+  
+  <!-- Core scripts -->
+  <script src="js/universal-data-loader.js?v=20251018191427"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=20251018191427"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

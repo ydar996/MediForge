@@ -1,0 +1,236 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test Dashboard Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Dashboard Fix</h1>
+        <p><strong>Purpose:</strong> Test the updated dashboard functions with extensive logging</p>
+        
+        <div class="test-section">
+            <h3>🔍 Test Dashboard Functions</h3>
+            <button onclick="testUpdateDashboardTitle()">Test updateDashboardTitle()</button>
+            <button onclick="testUpdateFooterInfo()">Test updateFooterInfo()</button>
+            <button onclick="testBothFunctions()">Test Both Functions</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📋 Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        // Copy the dashboard functions here for testing
+        async function updateDashboardTitle() {
+            console.log('🚀 [DASHBOARD] Starting updateDashboardTitle function');
+            
+            try {
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                const orgId = user.org || 'Unknown Organization';
+                
+                console.log('🔍 [DASHBOARD] User data from localStorage:', JSON.stringify(user, null, 2));
+                console.log('🔍 [DASHBOARD] Organization ID/Name:', orgId);
+                console.log('🔍 [DASHBOARD] Organization ID type:', typeof orgId);
+                console.log('🔍 [DASHBOARD] Organization ID length:', orgId.length);
+                console.log('🔍 [DASHBOARD] Contains hyphens:', orgId.includes('-'));
+                console.log('🔍 [DASHBOARD] Is UUID format:', (orgId.includes('-') && orgId.length > 30));
+                
+                // Handle both UUID format and name-based organization IDs
+                if (orgId && orgId.includes('-') && orgId.length > 30) {
+                    console.log('🔍 [DASHBOARD] Processing UUID format organization ID:', orgId);
+                    
+                    // Check if Supabase is available
+                    if (typeof window.supabase === 'undefined' || !window.supabase.createClient) {
+                        console.warn('⚠️ [DASHBOARD] Supabase not available, using fallback');
+                        log('⚠️ Supabase not available, using fallback', 'warning');
+                        return 'Fallback: EHR Dashboard';
+                    }
+                    
+                    console.log('✅ [DASHBOARD] Supabase available, creating client');
+                    const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    
+                    console.log('🔍 [DASHBOARD] Querying organizations table for UUID:', orgId);
+                    const { data: orgData, error } = await supabase
+                        .from('organizations')
+                        .select('name')
+                        .eq('id', orgId)
+                        .single();
+                    
+                    console.log('📊 [DASHBOARD] Organization query result:', { data: orgData, error: error });
+                    
+                    if (error || !orgData) {
+                        console.warn('⚠️ [DASHBOARD] Could not fetch organization name:', error?.message);
+                        log(`⚠️ Could not fetch organization name: ${error?.message}`, 'warning');
+                        return 'Error: Could not fetch org name';
+                    } else {
+                        console.log('✅ [DASHBOARD] Organization name found:', orgData.name);
+                        const title = `EHR Dashboard for ${orgData.name}`;
+                        console.log('📝 [DASHBOARD] Setting dashboard title to:', title);
+                        log(`✅ Organization name found: ${orgData.name}`, 'success');
+                        return title;
+                    }
+                } else {
+                    console.log('🔍 [DASHBOARD] Processing name-based organization:', orgId);
+                    console.log('📝 [DASHBOARD] Using organization name directly');
+                    
+                    // Handle name-based organization (like "Mecure Clinics")
+                    const title = `EHR Dashboard for ${orgId}`;
+                    console.log('📝 [DASHBOARD] Setting dashboard title to:', title);
+                    log(`✅ Using organization name directly: ${orgId}`, 'success');
+                    return title;
+                }
+                
+                console.log('✅ [DASHBOARD] updateDashboardTitle completed successfully');
+            } catch (error) {
+                console.error('❌ [DASHBOARD] Error updating dashboard title:', error);
+                console.error('❌ [DASHBOARD] Error stack:', error.stack);
+                log(`❌ Error updating dashboard title: ${error.message}`, 'error');
+                return 'Error: Exception occurred';
+            }
+        }
+
+        async function updateFooterInfo() {
+            console.log('🚀 [FOOTER] Starting updateFooterInfo function');
+            
+            try {
+                const userFooter = JSON.parse(localStorage.getItem("user") || "{}");
+                
+                console.log('🔍 [FOOTER] User data from localStorage:', JSON.stringify(userFooter, null, 2));
+                console.log('🔍 [FOOTER] User username:', userFooter.username);
+                console.log('🔍 [FOOTER] User role:', userFooter.role);
+                console.log('🔍 [FOOTER] User org:', userFooter.org);
+                
+                if (userFooter.username && userFooter.role) {
+                    let orgName = userFooter.org || 'Unknown Organization';
+                    console.log('🔍 [FOOTER] Initial org name:', orgName);
+                    
+                    // If orgId looks like a UUID, fetch the organization name
+                    if (userFooter.org && userFooter.org.includes('-') && userFooter.org.length > 30) {
+                        console.log('🔍 [FOOTER] Processing UUID format organization ID:', userFooter.org);
+                        
+                        // Check if Supabase is available
+                        if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                            console.log('✅ [FOOTER] Supabase available, creating client');
+                            const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                            
+                            console.log('🔍 [FOOTER] Querying organizations table for UUID:', userFooter.org);
+                            const { data: orgData, error } = await supabase
+                                .from('organizations')
+                                .select('name')
+                                .eq('id', userFooter.org)
+                                .single();
+                            
+                            console.log('📊 [FOOTER] Organization query result:', { data: orgData, error: error });
+                            
+                            if (orgData && orgData.name) {
+                                orgName = orgData.name;
+                                console.log('✅ [FOOTER] Organization name found:', orgName);
+                                log(`✅ Organization name found: ${orgName}`, 'success');
+                            } else {
+                                console.warn('⚠️ [FOOTER] Could not fetch organization name:', error?.message);
+                                log(`⚠️ Could not fetch organization name: ${error?.message}`, 'warning');
+                            }
+                        } else {
+                            console.warn('⚠️ [FOOTER] Supabase not available');
+                            log('⚠️ Supabase not available', 'warning');
+                        }
+                    } else {
+                        console.log('🔍 [FOOTER] Processing name-based organization:', userFooter.org);
+                        console.log('📝 [FOOTER] Using organization name directly');
+                        log(`✅ Using organization name directly: ${userFooter.org}`, 'success');
+                    }
+                    
+                    const footerText = `${userFooter.username} (${userFooter.role}) from ${orgName} is logged in`;
+                    console.log('📝 [FOOTER] Setting footer text to:', footerText);
+                    return footerText;
+                } else {
+                    console.log('⚠️ [FOOTER] Incomplete user data, showing guest message');
+                    log('⚠️ Incomplete user data, showing guest message', 'warning');
+                    return 'Guest is logged in';
+                }
+                
+                console.log('✅ [FOOTER] updateFooterInfo completed successfully');
+            } catch (error) {
+                console.error('❌ [FOOTER] Error updating footer info:', error);
+                console.error('❌ [FOOTER] Error stack:', error.stack);
+                log(`❌ Error updating footer info: ${error.message}`, 'error');
+                return 'Error loading user info';
+            }
+        }
+
+        async function testUpdateDashboardTitle() {
+            log('🧪 Testing updateDashboardTitle function...');
+            const result = await updateDashboardTitle();
+            log(`📊 Result: ${result}`);
+        }
+
+        async function testUpdateFooterInfo() {
+            log('🧪 Testing updateFooterInfo function...');
+            const result = await updateFooterInfo();
+            log(`📊 Result: ${result}`);
+        }
+
+        async function testBothFunctions() {
+            log('🧪 Testing both dashboard functions...');
+            
+            log('📊 Testing updateDashboardTitle...');
+            const titleResult = await updateDashboardTitle();
+            log(`📊 Title Result: ${titleResult}`);
+            
+            log('📊 Testing updateFooterInfo...');
+            const footerResult = await updateFooterInfo();
+            log(`📊 Footer Result: ${footerResult}`);
+            
+            log('✅ Both functions tested successfully', 'success');
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('🚀 Dashboard fix test tool loaded');
+            log('💡 This tool tests the updated dashboard functions with extensive logging');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+
+
+

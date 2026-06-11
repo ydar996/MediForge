@@ -1,0 +1,149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Force DOB Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #dc3545; color: white; padding: 20px 40px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin: 10px; }
+        .btn:hover { background: #c82333; }
+        .btn.success { background: #28a745; }
+        .log { background: #000; color: #0f0; padding: 15px; font-family: monospace; height: 300px; overflow-y: auto; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Force DOB Fix</h1>
+        <p>This will directly inject the correct DOB data into your EHR app, bypassing all caching issues.</p>
+        
+        <button class="btn" onclick="forceDOBFix()">🔧 Force DOB Fix</button>
+        <button class="btn success" onclick="testEHRApp()">🧪 Test EHR App</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        async function forceDOBFix() {
+            log('🔧 Starting aggressive DOB fix...');
+            
+            try {
+                // Step 1: Get fresh data from Supabase
+                log('📡 Fetching fresh data from Supabase...');
+                const { data: supabasePatients, error } = await supabase
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', ORG_ID);
+                
+                if (error) {
+                    log(`❌ Error: ${error.message}`);
+                    return;
+                }
+                
+                log(`✅ Retrieved ${supabasePatients.length} patients from Supabase`);
+                
+                // Step 2: Convert to localStorage format
+                const convertedPatients = supabasePatients.map(patient => {
+                    return {
+                        id: patient.patient_id,
+                        firstName: patient.first_name || '',
+                        middleName: patient.middle_name || '',
+                        lastName: patient.last_name || '',
+                        dob: patient.date_of_birth, // This is the key field!
+                        gender: patient.gender || '',
+                        maritalStatus: patient.marital_status || '',
+                        phone: patient.phone || '',
+                        email: patient.email || '',
+                        addressLine1: patient.address || '',
+                        city: patient.city || '',
+                        state: patient.state || '',
+                        country: patient.country || '',
+                        bloodGroup: patient.blood_group || '',
+                        allergies: [],
+                        conditions: [],
+                        emergencyFirstName: '',
+                        emergencyLastName: '',
+                        emergencyPhone: '',
+                        emergencyRelationship: '',
+                        createdDate: patient.created_at,
+                        updatedDate: patient.updated_at,
+                        visits: [],
+                        immunizations: [],
+                        prescriptions: [],
+                        hasDiabetes: false
+                    };
+                });
+                
+                // Step 3: Clear localStorage completely
+                log('🗑️ Clearing localStorage...');
+                localStorage.removeItem('mecure_patients');
+                localStorage.removeItem('patients');
+                localStorage.removeItem('mecure_patients');
+                
+                // Step 4: Set fresh data
+                log('💾 Setting fresh data in localStorage...');
+                localStorage.setItem('mecure_patients', JSON.stringify(convertedPatients));
+                
+                // Step 5: Count patients with DOB
+                const patientsWithDOB = convertedPatients.filter(p => p.dob);
+                log(`✅ Success! ${patientsWithDOB.length} patients now have DOB data`);
+                
+                if (patientsWithDOB.length > 0) {
+                    log('📋 Patients with DOB:');
+                    patientsWithDOB.forEach(patient => {
+                        log(`   • ${patient.firstName} ${patient.lastName}: ${patient.dob}`);
+                    });
+                }
+                
+                log('🎉 DOB fix complete! Now test your EHR app.');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`);
+            }
+        }
+        
+        function testEHRApp() {
+            log('🧪 Opening EHR app in new tab...');
+            const newWindow = window.open('https://mediforge.netlify.app/patients', '_blank');
+            log('💡 Instructions:');
+            log('1. In the new tab, refresh the page (F5)');
+            log('2. Check if DOB data is now showing correctly');
+            log('3. Look for patients with actual dates instead of null');
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            log('🚀 Force DOB Fix tool ready');
+            log('💡 Click "Force DOB Fix" to inject correct data');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113100113101310"></script>
+
+</html>
+
+
+
+
+
+

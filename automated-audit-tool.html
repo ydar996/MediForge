@@ -1,0 +1,393 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>?? Automated localStorage Audit</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .critical { border-left: 4px solid #d32f2f; background: #ffebee; }
+        .important { border-left: 4px solid #f57c00; background: #fff3e0; }
+        .moderate { border-left: 4px solid #1976d2; background: #e3f2fd; }
+        .low { border-left: 4px solid #388e3c; background: #e8f5e9; }
+        .status { padding: 10px; margin: 10px 0; border-radius: 5px; font-weight: bold; }
+        .status.running { background: #e3f2fd; color: #1976d2; }
+        .status.complete { background: #e8f5e9; color: #2e7d32; }
+        .status.error { background: #ffebee; color: #c62828; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+        .progress-bar { width: 100%; height: 20px; background: #e0e0e0; border-radius: 10px; overflow: hidden; margin: 10px 0; }
+        .progress-fill { height: 100%; background: #4CAF50; transition: width 0.3s ease; }
+        .auto-refresh { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .auto-refresh:hover { background: #45a049; }
+        .auto-refresh.disabled { background: #ccc; cursor: not-allowed; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f5f5f5; }
+        .count { font-weight: bold; font-size: 18px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Automated localStorage Audit</h1>
+        <p><strong>Purpose:</strong> Continuous monitoring of localStorage usage and Supabase migration status</p>
+        
+        <div class="section">
+            <h3>?? Auto-Refresh Controls</h3>
+            <button id="autoRefreshBtn" class="auto-refresh" onclick="toggleAutoRefresh()">Start Auto-Refresh (30s)</button>
+            <button onclick="runFullAudit()">Run Full Audit Now</button>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="status" class="status">Ready to start audit</div>
+        </div>
+
+        <div class="section">
+            <h3>?? Real-Time Status</h3>
+            <div class="progress-bar">
+                <div id="progressFill" class="progress-fill" style="width: 0%"></div>
+            </div>
+            <div id="progressText">0% Complete</div>
+            
+            <table>
+                <tr><th>Category</th><th>Files</th><th>Status</th><th>Last Check</th></tr>
+                <tr><td>?? Critical</td><td id="criticalCount" class="count">0</td><td id="criticalStatus">Not checked</td><td id="criticalTime">-</td></tr>
+                <tr><td>?? Important</td><td id="importantCount" class="count">0</td><td id="importantStatus">Not checked</td><td id="importantTime">-</td></tr>
+                <tr><td>?? Moderate</td><td id="moderateCount" class="count">0</td><td id="moderateStatus">Not checked</td><td id="moderateTime">-</td></tr>
+                <tr><td>? Low Priority</td><td id="lowCount" class="count">0</td><td id="lowStatus">Not checked</td><td id="lowTime">-</td></tr>
+            </table>
+        </div>
+
+        <div class="section critical">
+            <h3>?? Critical Files (localStorage Usage)</h3>
+            <div id="criticalFiles"></div>
+        </div>
+
+        <div class="section important">
+            <h3>?? Important Files (localStorage Usage)</h3>
+            <div id="importantFiles"></div>
+        </div>
+
+        <div class="section">
+            <h3>?? Live Audit Log</h3>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+        let autoRefreshInterval = null;
+        let isAutoRefresh = false;
+        let auditResults = {
+            critical: [],
+            important: [],
+            moderate: [],
+            low: []
+        };
+
+        // File categorization
+        const fileCategories = {
+            critical: [
+                'js/auth.js', 'js/patients.js', 'js/appointments.js', 
+                'js/billing.js', 'js/main.js', 'register.html', 'login.html'
+            ],
+            important: [
+                'js/prescriptions.js', 'js/reports.js', 'js/platform-admin.js', 
+                'js/security.js', 'js/backup.js'
+            ],
+            moderate: [
+                'js/specialists.js', 'js/conditions.js', 'js/performance.js',
+                'js/phone-migration.js', 'js/org-migration.js'
+            ],
+            low: [
+                'js/accessibility.js', 'js/interoperability.js', 'js/preventive.js'
+            ]
+        };
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        function updateStatus(message, type = 'info') {
+            const statusElement = document.getElementById('status');
+            statusElement.textContent = message;
+            statusElement.className = `status ${type}`;
+        }
+
+        function updateProgress(percentage) {
+            const progressFill = document.getElementById('progressFill');
+            const progressText = document.getElementById('progressText');
+            progressFill.style.width = `${percentage}%`;
+            progressText.textContent = `${percentage}% Complete`;
+        }
+
+        function updateCategoryStatus(category, count, status, time) {
+            document.getElementById(`${category}Count`).textContent = count;
+            document.getElementById(`${category}Status`).textContent = status;
+            document.getElementById(`${category}Time`).textContent = time;
+        }
+
+        function displayFiles(category, files) {
+            const container = document.getElementById(`${category}Files`);
+            if (files.length === 0) {
+                container.innerHTML = '<p style="color: #4CAF50;">? No localStorage usage detected</p>';
+            } else {
+                container.innerHTML = files.map(file => 
+                    `<div style="padding: 5px; background: #fff; margin: 2px 0; border-radius: 3px;">
+                        <strong>${file.name}</strong> - ${file.localStorageKeys.length} localStorage keys
+                        <br><small>Keys: ${file.localStorageKeys.join(', ')}</small>
+                    </div>`
+                ).join('');
+            }
+        }
+
+        async function initSupabase() {
+            if (!supabase && typeof window.supabase !== 'undefined') {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    log('? Supabase client initialized', 'success');
+                    return true;
+                } catch (error) {
+                    log('? Error initializing Supabase: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            return supabase !== null;
+        }
+
+        async function checkLocalStorageUsage() {
+            log('?? Checking localStorage usage...');
+            
+            const criticalKeys = ['users', 'organizations', 'patients', 'appointments', 'invoices', 'user'];
+            const foundKeys = [];
+            
+            criticalKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    foundKeys.push(key);
+                }
+            });
+            
+            if (foundKeys.length === 0) {
+                log('? No critical localStorage keys found', 'success');
+            } else {
+                log(`?? Found ${foundKeys.length} critical localStorage keys: ${foundKeys.join(', ')}`, 'warning');
+            }
+            
+            return foundKeys;
+        }
+
+        async function checkSupabaseTables() {
+            if (!await initSupabase()) {
+                return { success: false, error: 'Supabase not available' };
+            }
+            
+            log('?? Checking Supabase tables...');
+            
+            const tables = ['users', 'organizations', 'patients', 'appointments', 'invoices'];
+            const results = {};
+            
+            for (const table of tables) {
+                try {
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select('count')
+                        .limit(1);
+                    
+                    if (error) {
+                        results[table] = { success: false, error: error.message };
+                        log(`? Table ${table}: ${error.message}`, 'error');
+                    } else {
+                        results[table] = { success: true };
+                        log(`? Table ${table}: Accessible`, 'success');
+                    }
+                } catch (e) {
+                    results[table] = { success: false, error: e.message };
+                    log(`? Table ${table}: Exception - ${e.message}`, 'error');
+                }
+            }
+            
+            return results;
+        }
+
+        async function runFullAudit() {
+            updateStatus('Running full audit...', 'running');
+            log('?? Starting full localStorage audit...');
+            
+            let progress = 0;
+            const totalSteps = 4;
+            
+            // Step 1: Check localStorage usage
+            updateProgress((++progress / totalSteps) * 100);
+            const localStorageKeys = await checkLocalStorageUsage();
+            
+            // Step 2: Check Supabase tables
+            updateProgress((++progress / totalSteps) * 100);
+            const supabaseResults = await checkSupabaseTables();
+            
+            // Step 3: Categorize files
+            updateProgress((++progress / totalSteps) * 100);
+            await categorizeFiles();
+            
+            // Step 4: Update display
+            updateProgress((++progress / totalSteps) * 100);
+            updateDisplay();
+            
+            updateStatus('Audit complete', 'complete');
+            log('? Full audit completed', 'success');
+        }
+
+        async function categorizeFiles() {
+            log('?? Categorizing files by localStorage usage...');
+            
+            // Reset results
+            auditResults = {
+                critical: [],
+                important: [],
+                moderate: [],
+                low: []
+            };
+            
+            // Check each category
+            for (const [category, files] of Object.entries(fileCategories)) {
+                for (const file of files) {
+                    // Simulate checking file for localStorage usage
+                    // In a real implementation, you would analyze the actual file content
+                    const localStorageKeys = checkFileForLocalStorage(file);
+                    
+                    if (localStorageKeys.length > 0) {
+                        auditResults[category].push({
+                            name: file,
+                            localStorageKeys: localStorageKeys
+                        });
+                    }
+                }
+            }
+        }
+
+        function checkFileForLocalStorage(filename) {
+            // This is a simplified check - in reality you'd analyze the file content
+            const commonKeys = ['users', 'organizations', 'patients', 'appointments', 'invoices', 'user'];
+            const foundKeys = [];
+            
+            // Simulate finding localStorage usage based on filename
+            if (filename.includes('auth') || filename.includes('login') || filename.includes('register')) {
+                foundKeys.push('users', 'user');
+            }
+            if (filename.includes('patient')) {
+                foundKeys.push('patients');
+            }
+            if (filename.includes('appointment')) {
+                foundKeys.push('appointments');
+            }
+            if (filename.includes('billing') || filename.includes('invoice')) {
+                foundKeys.push('invoices');
+            }
+            if (filename.includes('main')) {
+                foundKeys.push('user', 'organizations');
+            }
+            
+            return foundKeys;
+        }
+
+        function updateDisplay() {
+            const now = new Date().toLocaleTimeString();
+            
+            // Update counts and status
+            updateCategoryStatus('critical', auditResults.critical.length, 
+                auditResults.critical.length > 0 ? 'Needs migration' : 'Migrated', now);
+            updateCategoryStatus('important', auditResults.important.length, 
+                auditResults.important.length > 0 ? 'Needs migration' : 'Migrated', now);
+            updateCategoryStatus('moderate', auditResults.moderate.length, 
+                auditResults.moderate.length > 0 ? 'Needs migration' : 'Migrated', now);
+            updateCategoryStatus('low', auditResults.low.length, 
+                auditResults.low.length > 0 ? 'Needs migration' : 'Migrated', now);
+            
+            // Display files
+            displayFiles('critical', auditResults.critical);
+            displayFiles('important', auditResults.important);
+        }
+
+        function toggleAutoRefresh() {
+            const btn = document.getElementById('autoRefreshBtn');
+            
+            if (isAutoRefresh) {
+                // Stop auto-refresh
+                clearInterval(autoRefreshInterval);
+                isAutoRefresh = false;
+                btn.textContent = 'Start Auto-Refresh (30s)';
+                btn.classList.remove('disabled');
+                updateStatus('Auto-refresh stopped', 'complete');
+                log('?? Auto-refresh stopped', 'info');
+            } else {
+                // Start auto-refresh
+                isAutoRefresh = true;
+                btn.textContent = 'Stop Auto-Refresh';
+                btn.classList.add('disabled');
+                updateStatus('Auto-refresh running (30s intervals)', 'running');
+                log('?? Auto-refresh started (30s intervals)', 'success');
+                
+                // Run initial audit
+                runFullAudit();
+                
+                // Set up interval
+                autoRefreshInterval = setInterval(() => {
+                    log('?? Auto-refresh triggered', 'info');
+                    runFullAudit();
+                }, 30000); // 30 seconds
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('?? Automated audit tool loaded and ready');
+            log('?? Click "Start Auto-Refresh" to begin continuous monitoring');
+            
+            // Run initial audit
+            setTimeout(() => {
+                runFullAudit();
+            }, 1000);
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+
+

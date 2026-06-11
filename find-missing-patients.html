@@ -1,0 +1,593 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Missing Patients - Diagnostic Tool</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #667eea;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 5px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      background: white;
+      border-radius: 6px;
+      border: 1px solid #dee2e6;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .error {
+      color: #dc3545;
+      background: #f8d7da;
+      border-color: #f5c6cb;
+    }
+    .success {
+      color: #155724;
+      background: #d4edda;
+      border-color: #c3e6cb;
+    }
+    .warning {
+      color: #856404;
+      background: #fff3cd;
+      border-color: #ffeaa7;
+    }
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    th, td {
+      padding: 8px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+    }
+  </style>
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>?? Find Missing Patients - Diagnostic Tool</h1>
+    <p>This tool helps identify patients that may have been saved with incorrect organization IDs (organization names instead of UUIDs).</p>
+    
+    <div class="section">
+      <h2>Step 1: Auto-Detect Organization</h2>
+      <button onclick="autoDetectAndFindOrphaned()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 16px; padding: 15px 30px;">
+        ?? Auto-Detect & Find Orphaned Patients
+      </button>
+      <p style="margin-top: 10px; color: #666; font-size: 14px;">
+        This will automatically detect your organization and search for orphaned patients.
+      </p>
+      <div id="org-info" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 2: Search Results</h2>
+      <div id="patients-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Step 3: Fix Orphaned Patients</h2>
+      <button onclick="fixOrphanedPatients()" id="fix-btn" style="background: #dc3545; display: none;">
+        ?? Fix Orphaned Patients
+      </button>
+      <div id="fix-result" class="result" style="display: none;"></div>
+    </div>
+    
+    <div class="section">
+      <h2>Manual Search (Advanced)</h2>
+      <input type="text" id="org-name-input" placeholder="Organization name (e.g., Vortexshpere Global Limited)" style="padding: 8px; width: 300px; margin-right: 10px;">
+      <button onclick="searchPatientsByOrgName()">Search Patients by Org Name</button>
+      <button onclick="searchPatientsByOrgId()">Search Patients by Org UUID</button>
+      <button onclick="findOrphanedPatients()">Find Orphaned Patients</button>
+    </div>
+  </div>
+
+  <script>
+    let supabaseClient = null;
+    let currentOrgName = null;
+    let currentOrgId = null;
+    
+    if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+      supabaseClient = window.supabaseClient;
+      console.log('? Using existing Supabase client');
+    } else {
+      console.warn('?? Supabase client not available');
+    }
+    
+    // Auto-detect organization on page load
+    window.addEventListener('DOMContentLoaded', function() {
+      autoDetectOrganization();
+    });
+    
+    async function autoDetectOrganization() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        
+        if (user.org) {
+          currentOrgName = user.org;
+          const orgData = organizations[user.org];
+          currentOrgId = user.organizationId || user.organization_id || orgData?.id;
+          
+          // Update input field
+          const input = document.getElementById('org-name-input');
+          if (input) {
+            input.value = currentOrgName;
+          }
+          
+          console.log('? Auto-detected organization:', {
+            name: currentOrgName,
+            id: currentOrgId
+          });
+          
+          // If we have org name but not UUID, try to get it from Supabase
+          if (currentOrgName && !currentOrgId && supabaseClient) {
+            try {
+              const { data: org, error } = await supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', currentOrgName)
+                .single();
+              
+              if (!error && org && org.id) {
+                currentOrgId = org.id;
+                console.log('? Found organization UUID from Supabase:', currentOrgId);
+              }
+            } catch (err) {
+              console.warn('?? Could not fetch organization UUID:', err);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('? Error auto-detecting organization:', error);
+      }
+    }
+    
+    async function autoDetectAndFindOrphaned() {
+      const resultDiv = document.getElementById('patients-result');
+      const orgInfoDiv = document.getElementById('org-info');
+      resultDiv.style.display = 'block';
+      orgInfoDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>?? Auto-detecting organization and searching for orphaned patients...</p>';
+      
+      try {
+        // First, ensure we have organization info
+        await autoDetectOrganization();
+        
+        if (!currentOrgName) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>? Error: Could not detect organization. Please ensure you are logged in.</p>';
+          orgInfoDiv.className = 'result error';
+          orgInfoDiv.innerHTML = '<p>Current user: ' + JSON.stringify(JSON.parse(localStorage.getItem('user') || '{}'), null, 2) + '</p>';
+          return;
+        }
+        
+        // Show organization info
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        let orgInfoHtml = '<h3>?? Detected Organization Info:</h3>';
+        orgInfoHtml += '<table style="width: 100%; margin-top: 10px;"><tbody>';
+        orgInfoHtml += '<tr><td><strong>Organization Name:</strong></td><td>' + currentOrgName + '</td></tr>';
+        orgInfoHtml += '<tr><td><strong>Organization UUID:</strong></td><td>' + (currentOrgId || 'Not found - will search by name') + '</td></tr>';
+        orgInfoHtml += '<tr><td><strong>Username:</strong></td><td>' + (user.username || 'N/A') + '</td></tr>';
+        orgInfoHtml += '</tbody></table>';
+        orgInfoDiv.className = 'result success';
+        orgInfoDiv.innerHTML = orgInfoHtml;
+        
+        // Now search for orphaned patients
+        await findOrphanedPatients(true);
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>? Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function getCurrentOrg() {
+      const resultDiv = document.getElementById('org-info');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>Loading...</p>';
+      
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        
+        let html = '<h3>Current User Info:</h3><pre>' + JSON.stringify(user, null, 2) + '</pre>';
+        
+        if (user.org) {
+          const orgData = organizations[user.org];
+          html += '<h3>Organization Data from localStorage:</h3>';
+          html += '<pre>' + JSON.stringify(orgData, null, 2) + '</pre>';
+          
+          if (supabaseClient) {
+            // Query Supabase to verify
+            const { data: supabaseOrg, error } = await supabaseClient
+              .from('organizations')
+              .select('*')
+              .eq('name', user.org)
+              .single();
+            
+            if (!error && supabaseOrg) {
+              html += '<h3>Organization from Supabase:</h3>';
+              html += '<pre>' + JSON.stringify(supabaseOrg, null, 2) + '</pre>';
+            }
+          }
+        }
+        
+        resultDiv.innerHTML = html;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function searchPatientsByOrgName() {
+      const orgName = document.getElementById('org-name-input').value || 
+                     JSON.parse(localStorage.getItem('user') || '{}').org;
+      
+      if (!orgName) {
+        alert('Please enter an organization name');
+        return;
+      }
+      
+      const resultDiv = document.getElementById('patients-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>Searching for patients with organization_id = "' + orgName + '"...</p>';
+      
+      if (!supabaseClient) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: Supabase client not available</p>';
+        return;
+      }
+      
+      try {
+        // Search for patients where organization_id is the org name (string, not UUID)
+        const { data: patients, error } = await supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('organization_id', orgName);
+        
+        if (error) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+          return;
+        }
+        
+        if (!patients || patients.length === 0) {
+          resultDiv.className = 'result warning';
+          resultDiv.innerHTML = '<p>No patients found with organization_id = "' + orgName + '"</p>';
+          return;
+        }
+        
+        resultDiv.className = 'result warning';
+        let html = '<h3>?? Found ' + patients.length + ' patients with organization_id as NAME (not UUID):</h3>';
+        html += '<table><thead><tr><th>Patient ID</th><th>Name</th><th>Organization ID (WRONG)</th><th>Created At</th></tr></thead><tbody>';
+        
+        patients.forEach(patient => {
+          html += '<tr>';
+          html += '<td>' + (patient.patient_id || patient.id) + '</td>';
+          html += '<td>' + patient.first_name + ' ' + patient.last_name + '</td>';
+          html += '<td style="color: red;">' + patient.organization_id + '</td>';
+          html += '<td>' + new Date(patient.created_at).toLocaleString() + '</td>';
+          html += '</tr>';
+        });
+        
+        html += '</tbody></table>';
+        resultDiv.innerHTML = html;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function searchPatientsByOrgId() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      
+      let orgId = user.organizationId || user.organization_id;
+      
+      if (!orgId && user.org) {
+        const orgData = organizations[user.org];
+        orgId = orgData?.id;
+      }
+      
+      if (!orgId) {
+        alert('Cannot determine organization UUID. Please check your organization info first.');
+        return;
+      }
+      
+      const resultDiv = document.getElementById('patients-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>Searching for patients with organization_id = "' + orgId + '" (UUID)...</p>';
+      
+      if (!supabaseClient) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: Supabase client not available</p>';
+        return;
+      }
+      
+      try {
+        const { data: patients, error } = await supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        if (error) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+          return;
+        }
+        
+        resultDiv.className = 'result success';
+        let html = '<h3>? Found ' + (patients?.length || 0) + ' patients with correct organization UUID:</h3>';
+        
+        if (patients && patients.length > 0) {
+          html += '<table><thead><tr><th>Patient ID</th><th>Name</th><th>Organization ID</th><th>Created At</th></tr></thead><tbody>';
+          
+          patients.forEach(patient => {
+            html += '<tr>';
+            html += '<td>' + (patient.patient_id || patient.id) + '</td>';
+            html += '<td>' + patient.first_name + ' ' + patient.last_name + '</td>';
+            html += '<td>' + patient.organization_id + '</td>';
+            html += '<td>' + new Date(patient.created_at).toLocaleString() + '</td>';
+            html += '</tr>';
+          });
+          
+          html += '</tbody></table>';
+        }
+        
+        resultDiv.innerHTML = html;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function findOrphanedPatients(autoCalled = false) {
+      const orgName = autoCalled ? currentOrgName : (document.getElementById('org-name-input').value || 
+                     JSON.parse(localStorage.getItem('user') || '{}').org);
+      
+      if (!orgName) {
+        if (!autoCalled) {
+          alert('Please enter an organization name or use the auto-detect button');
+        }
+        return;
+      }
+      
+      // Update global variables
+      currentOrgName = orgName;
+      
+      const resultDiv = document.getElementById('patients-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>Searching for orphaned patients...</p>';
+      
+      if (!supabaseClient) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: Supabase client not available</p>';
+        return;
+      }
+      
+      try {
+        // Get organization UUID
+        const { data: org, error: orgError } = await supabaseClient
+          .from('organizations')
+          .select('id')
+          .eq('name', orgName)
+          .single();
+        
+        if (orgError || !org) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>Error: Could not find organization "' + orgName + '"</p>';
+          return;
+        }
+        
+        const orgId = org.id;
+        
+        // Find patients with organization_id = org name (wrong)
+        const { data: wrongPatients, error: wrongError } = await supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('organization_id', orgName);
+        
+        if (wrongError) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>Error: ' + wrongError.message + '</p>';
+          return;
+        }
+        
+        // Update global variable
+        currentOrgId = orgId;
+        
+        resultDiv.className = 'result warning';
+        let html = '<h3>?? Orphaned Patients Found:</h3>';
+        html += '<p>Organization: <strong>' + orgName + '</strong></p>';
+        html += '<p>Organization UUID: <strong>' + orgId + '</strong></p>';
+        html += '<p>Found <strong>' + (wrongPatients?.length || 0) + '</strong> patients with wrong organization_id (org name instead of UUID)</p>';
+        
+        if (wrongPatients && wrongPatients.length > 0) {
+          html += '<table><thead><tr><th>Patient ID</th><th>Name</th><th>Current Org ID (WRONG)</th><th>Should Be</th></tr></thead><tbody>';
+          
+          wrongPatients.forEach(patient => {
+            html += '<tr>';
+            html += '<td>' + (patient.patient_id || patient.id) + '</td>';
+            html += '<td>' + patient.first_name + ' ' + patient.last_name + '</td>';
+            html += '<td style="color: red;">' + patient.organization_id + '</td>';
+            html += '<td style="color: green;">' + orgId + '</td>';
+            html += '</tr>';
+          });
+          
+          html += '</tbody></table>';
+          
+          // Show fix button
+          const fixBtn = document.getElementById('fix-btn');
+          if (fixBtn) {
+            fixBtn.style.display = 'inline-block';
+          }
+        } else {
+          html += '<p style="color: green; font-size: 18px; font-weight: bold;">? No orphaned patients found! All patients are correctly associated with your organization.</p>';
+          const fixBtn = document.getElementById('fix-btn');
+          if (fixBtn) {
+            fixBtn.style.display = 'none';
+          }
+        }
+        
+        resultDiv.innerHTML = html;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+      }
+    }
+
+    async function fixOrphanedPatients() {
+      const orgName = currentOrgName || document.getElementById('org-name-input').value || 
+                     JSON.parse(localStorage.getItem('user') || '{}').org;
+      
+      if (!orgName) {
+        alert('Please enter an organization name or use auto-detect first');
+        return;
+      }
+      
+      if (!currentOrgId) {
+        alert('Organization UUID not found. Please run auto-detect first.');
+        return;
+      }
+      
+      if (!confirm('This will update patients with wrong organization_id to the correct UUID. Continue?')) {
+        return;
+      }
+      
+      const resultDiv = document.getElementById('fix-result');
+      resultDiv.style.display = 'block';
+      resultDiv.innerHTML = '<p>Fixing orphaned patients...</p>';
+      
+      if (!supabaseClient) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: Supabase client not available</p>';
+        return;
+      }
+      
+      try {
+        // Get organization UUID
+        const { data: org, error: orgError } = await supabaseClient
+          .from('organizations')
+          .select('id')
+          .eq('name', orgName)
+          .single();
+        
+        if (orgError || !org) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>Error: Could not find organization "' + orgName + '"</p>';
+          return;
+        }
+        
+        const orgId = org.id;
+        
+        // Find patients with wrong organization_id
+        const { data: wrongPatients, error: wrongError } = await supabaseClient
+          .from('patients')
+          .select('id')
+          .eq('organization_id', orgName);
+        
+        if (wrongError) {
+          resultDiv.className = 'result error';
+          resultDiv.innerHTML = '<p>Error: ' + wrongError.message + '</p>';
+          return;
+        }
+        
+        if (!wrongPatients || wrongPatients.length === 0) {
+          resultDiv.className = 'result success';
+          resultDiv.innerHTML = '<p>? No patients to fix!</p>';
+          return;
+        }
+        
+        // Update each patient
+        let fixed = 0;
+        let errors = [];
+        
+        for (const patient of wrongPatients) {
+          const { error: updateError } = await supabaseClient
+            .from('patients')
+            .update({ organization_id: orgId })
+            .eq('id', patient.id);
+          
+          if (updateError) {
+            errors.push(patient.id + ': ' + updateError.message);
+          } else {
+            fixed++;
+          }
+        }
+        
+        resultDiv.className = errors.length > 0 ? 'result warning' : 'result success';
+        let html = '<h3>Fix Results:</h3>';
+        html += '<p>? Fixed: ' + fixed + ' patients</p>';
+        
+        if (errors.length > 0) {
+          html += '<p>? Errors: ' + errors.length + '</p>';
+          html += '<pre>' + errors.join('\n') + '</pre>';
+        } else {
+          html += '<p>? All patients fixed successfully!</p>';
+        }
+        
+        resultDiv.innerHTML = html;
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.innerHTML = '<p>Error: ' + error.message + '</p>';
+      }
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

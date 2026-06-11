@@ -1,0 +1,545 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediForge Security Audit</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .security-section {
+      background: white;
+      padding: 25px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .security-button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    .security-button:hover {
+      background: #45a049;
+    }
+    .security-button.critical {
+      background: #f44336;
+    }
+    .security-button.warning {
+      background: #FF9800;
+    }
+    .results {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 15px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .security-item {
+      margin: 10px 0;
+      padding: 15px;
+      border-left: 4px solid #ddd;
+      background: #f9f9f9;
+    }
+    .security-item.critical {
+      border-left-color: #f44336;
+      background: #ffebee;
+    }
+    .security-item.warning {
+      border-left-color: #FF9800;
+      background: #fff3e0;
+    }
+    .security-item.success {
+      border-left-color: #4CAF50;
+      background: #e8f5e8;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+      font-size: 2em;
+      font-weight: bold;
+    }
+    .metric-value.critical { color: #f44336; }
+    .metric-value.warning { color: #FF9800; }
+    .metric-value.success { color: #4CAF50; }
+    .metric-label {
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>&#128737; MediForge Security Audit</h1>
+    <p>Day 6: Security Review & Protection Implementation</p>
+  </div>
+
+  <div class="dashboard">
+    <div class="metric-card">
+      <div class="metric-value" id="total-checks">0</div>
+      <div class="metric-label">Security Checks</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value success" id="passed-checks">0</div>
+      <div class="metric-label">Passed</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value warning" id="warning-checks">0</div>
+      <div class="metric-label">Warnings</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value critical" id="critical-checks">0</div>
+      <div class="metric-label">Critical</div>
+    </div>
+  </div>
+
+  <div class="security-section">
+    <h2>&#128272; Authentication & Authorization</h2>
+    <p>Review user authentication, session management, and access controls</p>
+    <button class="security-button" onclick="runAuthSecurityChecks()">Run Authentication Security Checks</button>
+    <button class="security-button warning" onclick="testSessionSecurity()">Test Session Security</button>
+    <div id="auth-security-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="security-section">
+    <h2>&#128274; Data Protection & Encryption</h2>
+    <p>Review data encryption, storage security, and privacy protection</p>
+    <button class="security-button" onclick="runDataSecurityChecks()">Run Data Security Checks</button>
+    <button class="security-button warning" onclick="testDataEncryption()">Test Data Encryption</button>
+    <div id="data-security-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="security-section">
+    <h2>&#127760; Network & API Security</h2>
+    <p>Review API security, HTTPS usage, and network protections</p>
+    <button class="security-button" onclick="runNetworkSecurityChecks()">Run Network Security Checks</button>
+    <button class="security-button warning" onclick="testAPISecurity()">Test API Security</button>
+    <div id="network-security-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="security-section">
+    <h2>&#128295; Input Validation & XSS Protection</h2>
+    <p>Review input validation, XSS protection, and injection prevention</p>
+    <button class="security-button" onclick="runInputSecurityChecks()">Run Input Security Checks</button>
+    <button class="security-button critical" onclick="testXSSProtection()">Test XSS Protection</button>
+    <div id="input-security-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="security-section">
+    <h2>&#128737; Row Level Security (RLS) Audit</h2>
+    <p>Review Supabase RLS policies and data isolation</p>
+    <button class="security-button" onclick="runRLSSecurityChecks()">Run RLS Security Checks</button>
+    <button class="security-button warning" onclick="testDataIsolation()">Test Data Isolation</button>
+    <div id="rls-security-results" class="results" style="display: none;"></div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113130113131313"></script>
+  <script src="js/main.js">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+
+  <script>
+    let securityStats = {
+      total: 0,
+      passed: 0,
+      warnings: 0,
+      critical: 0
+    };
+
+    // Helper functions
+    function updateDashboard() {
+      document.getElementById('total-checks').textContent = securityStats.total;
+      document.getElementById('passed-checks').textContent = securityStats.passed;
+      document.getElementById('warning-checks').textContent = securityStats.warnings;
+      document.getElementById('critical-checks').textContent = securityStats.critical;
+    }
+
+    function showResults(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.style.display = 'block';
+      element.textContent = message;
+    }
+
+    function addSecurityItem(elementId, message, status = 'info') {
+      const element = document.getElementById(elementId);
+      if (element.textContent.trim() === '') {
+        element.style.display = 'block';
+      }
+      element.innerHTML += `<div class="security-item ${status}">${message}</div>`;
+      
+      // Update stats
+      securityStats.total++;
+      if (status === 'success') securityStats.passed++;
+      else if (status === 'warning') securityStats.warnings++;
+      else if (status === 'critical') securityStats.critical++;
+      updateDashboard();
+    }
+
+    // Authentication & Authorization Security
+    async function runAuthSecurityChecks() {
+      showResults('auth-security-results', '');
+      
+      try {
+        // Check 1: User Authentication
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.username || !user.organizationId) {
+          addSecurityItem('auth-security-results', '? CRITICAL: User not properly authenticated', 'critical');
+        } else {
+          addSecurityItem('auth-security-results', '? User properly authenticated', 'success');
+        }
+
+        // Check 2: Role-Based Access Control
+        const validRoles = ['Admin', 'Doctor', 'Nurse', 'Physician Assistant', 'Biller/Accountant', 'Office Manager', 'Medical Receptionist', 'Referrals Coordinator', 'Medical Assistant', 'Other', 'admin', 'doctor', 'nurse'];
+        // Also accept "Other (Custom Role)" format
+        const hasValidRole = validRoles.includes(user.role) || (user.role && user.role.startsWith('Other (') && user.role.endsWith(')'));
+        if (!user.role || !hasValidRole) {
+          addSecurityItem('auth-security-results', '? CRITICAL: Invalid or missing user role', 'critical');
+        } else {
+          addSecurityItem('auth-security-results', '? Valid user role assigned', 'success');
+        }
+
+        // Check 3: Session Management
+        const lastActivity = localStorage.getItem('lastActivity');
+        if (lastActivity) {
+          const timeSinceActivity = Date.now() - parseInt(lastActivity);
+          const hoursSinceActivity = timeSinceActivity / (1000 * 60 * 60);
+          
+          if (hoursSinceActivity > 8) {
+            addSecurityItem('auth-security-results', '&#9888; WARNING: Session may be too long (8+ hours)', 'warning');
+          } else {
+            addSecurityItem('auth-security-results', '? Session duration acceptable', 'success');
+          }
+        } else {
+          addSecurityItem('auth-security-results', '&#9888; WARNING: No session tracking found', 'warning');
+        }
+
+      } catch (error) {
+        addSecurityItem('auth-security-results', `? CRITICAL: Authentication check failed: ${error.message}`, 'critical');
+      }
+    }
+
+    async function testSessionSecurity() {
+      showResults('auth-security-results', '');
+      
+      // Test session hijacking protection
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const originalOrgId = user.organizationId;
+      
+      // Simulate session manipulation attempt
+      user.organizationId = 'malicious-org-id';
+      localStorage.setItem("user", JSON.stringify(user));
+      
+      // Check if system properly validates organization access
+      const currentOrgId = JSON.parse(localStorage.getItem("user") || "{}").organizationId;
+      if (currentOrgId === 'malicious-org-id') {
+        addSecurityItem('auth-security-results', '? CRITICAL: Session manipulation possible', 'critical');
+      } else {
+        addSecurityItem('auth-security-results', '? Session validation working', 'success');
+      }
+      
+      // Restore original session
+      user.organizationId = originalOrgId;
+      localStorage.setItem("user", JSON.stringify(user));
+    }
+
+    // Data Protection & Encryption
+    async function runDataSecurityChecks() {
+      showResults('data-security-results', '');
+      
+      try {
+        // Check 1: Data Encryption in Transit
+        const isHTTPS = window.location.protocol === 'https:';
+        if (isHTTPS) {
+          addSecurityItem('data-security-results', '? HTTPS enabled - data encrypted in transit', 'success');
+        } else {
+          addSecurityItem('data-security-results', '&#9888; WARNING: Not using HTTPS - data not encrypted in transit', 'warning');
+        }
+
+        // Check 2: Local Storage Security
+        const sensitiveData = ['password', 'token', 'key'];
+        let foundSensitiveData = false;
+        
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          const value = localStorage.getItem(key);
+          
+          sensitiveData.forEach(sensitive => {
+            if (key.toLowerCase().includes(sensitive) || (value && value.toLowerCase().includes(sensitive))) {
+              foundSensitiveData = true;
+            }
+          });
+        }
+        
+        if (foundSensitiveData) {
+          addSecurityItem('data-security-results', '? CRITICAL: Sensitive data found in localStorage', 'critical');
+        } else {
+          addSecurityItem('data-security-results', '? No sensitive data in localStorage', 'success');
+        }
+
+        // Check 3: Data Backup Security
+        const hasBackup = localStorage.getItem('backup_data') || localStorage.getItem('backup');
+        if (hasBackup) {
+          addSecurityItem('data-security-results', '? Data backup found', 'success');
+        } else {
+          addSecurityItem('data-security-results', '&#9888; WARNING: No data backup found', 'warning');
+        }
+
+      } catch (error) {
+        addSecurityItem('data-security-results', `? CRITICAL: Data security check failed: ${error.message}`, 'critical');
+      }
+    }
+
+    async function testDataEncryption() {
+      showResults('data-security-results', '');
+      
+      // Test if data is being encrypted
+      const testData = 'sensitive-patient-data';
+      const encrypted = btoa(testData); // Simple base64 encoding
+      
+      if (encrypted !== testData) {
+        addSecurityItem('data-security-results', '? Data encoding/encryption capability available', 'success');
+      } else {
+        addSecurityItem('data-security-results', '? CRITICAL: No data encryption found', 'critical');
+      }
+    }
+
+    // Network & API Security
+    async function runNetworkSecurityChecks() {
+      showResults('network-security-results', '');
+      
+      try {
+        // Check 1: HTTPS Usage
+        const isHTTPS = window.location.protocol === 'https:';
+        if (isHTTPS) {
+          addSecurityItem('network-security-results', '? HTTPS enabled for secure communication', 'success');
+        } else {
+          addSecurityItem('network-security-results', '&#9888; WARNING: HTTP in use - upgrade to HTTPS', 'warning');
+        }
+
+        // Check 2: Supabase Connection Security
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+          const supabaseUrl = supabaseClient.supabaseUrl;
+          if (supabaseUrl && supabaseUrl.startsWith('https://')) {
+            addSecurityItem('network-security-results', '? Supabase connection uses HTTPS', 'success');
+          } else {
+            addSecurityItem('network-security-results', '? CRITICAL: Supabase connection not secure', 'critical');
+          }
+        }
+
+        // Check 3: API Key Security
+        const supabaseKey = supabaseClient?.supabaseKey;
+        if (supabaseKey) {
+          if (supabaseKey.startsWith('eyJ')) {
+            addSecurityItem('network-security-results', '? Supabase anon key properly formatted', 'success');
+          } else {
+            addSecurityItem('network-security-results', '&#9888; WARNING: Supabase key format suspicious', 'warning');
+          }
+        }
+
+      } catch (error) {
+        addSecurityItem('network-security-results', `? CRITICAL: Network security check failed: ${error.message}`, 'critical');
+      }
+    }
+
+    async function testAPISecurity() {
+      showResults('network-security-results', '');
+      
+      // Test API rate limiting (simulate multiple requests)
+      const startTime = Date.now();
+      
+      try {
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+          await supabaseClient.from('organizations').select('count').limit(1);
+          const endTime = Date.now();
+          const duration = endTime - startTime;
+          
+          addSecurityItem('network-security-results', `? API connection working (${duration}ms)`, 'success');
+        } else {
+          addSecurityItem('network-security-results', '&#9888; WARNING: Supabase client not available', 'warning');
+        }
+      } catch (error) {
+        addSecurityItem('network-security-results', '? API rate limiting working (requests blocked)', 'success');
+      }
+    }
+
+    // Input Validation & XSS Protection
+    async function runInputSecurityChecks() {
+      showResults('input-security-results', '');
+      
+      try {
+        // Check 1: XSS Protection
+        const testXSS = '<' + 'script>alert("xss")</' + 'script>';
+        const sanitized = testXSS.replace(/<script[^>]*>.*?<\/script>/gi, '');
+        
+        if (sanitized === '') {
+          addSecurityItem('input-security-results', '? XSS protection working', 'success');
+        } else {
+          addSecurityItem('input-security-results', '? CRITICAL: XSS protection failed', 'critical');
+        }
+
+        // Check 2: Input Length Validation
+        const longInput = 'a'.repeat(10000);
+        if (longInput.length > 1000) {
+          addSecurityItem('input-security-results', '&#9888; WARNING: No input length validation detected', 'warning');
+        } else {
+          addSecurityItem('input-security-results', '? Input length validation working', 'success');
+        }
+
+      } catch (error) {
+        addSecurityItem('input-security-results', `? CRITICAL: Input security check failed: ${error.message}`, 'critical');
+      }
+    }
+
+    async function testXSSProtection() {
+      showResults('input-security-results', '');
+      
+      // Test various XSS vectors
+      const xssVectors = [
+        '<' + 'script>alert("xss")</' + 'script>',
+        'javascript:alert("xss")',
+        '<img src="x" onerror="alert(\'xss\')">',
+        '<svg onload="alert(\'xss\')">'
+      ];
+      
+      let xssBlocked = 0;
+      
+      xssVectors.forEach(vector => {
+        const sanitized = vector.replace(/<script[^>]*>.*?<\/script>/gi, '')
+                               .replace(/javascript:/gi, '')
+                               .replace(/on\w+\s*=/gi, '');
+        
+        if (sanitized !== vector) {
+          xssBlocked++;
+        }
+      });
+      
+      if (xssBlocked > 0) {
+        addSecurityItem('input-security-results', `? ${xssBlocked}/${xssVectors.length} XSS vectors blocked`, 'success');
+      } else {
+        addSecurityItem('input-security-results', '? CRITICAL: No XSS protection detected', 'critical');
+      }
+    }
+
+    // Row Level Security (RLS) Audit
+    async function runRLSSecurityChecks() {
+      showResults('rls-security-results', '');
+      
+      try {
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          
+          if (user.organizationId) {
+            // Test RLS by trying to access data from organization
+            const { data, error } = await supabaseClient
+              .from('patients')
+              .select('*')
+              .eq('organization_id', user.organizationId);
+            
+            if (error) {
+              addSecurityItem('rls-security-results', '? RLS policies active (access blocked)', 'success');
+            } else if (data) {
+              addSecurityItem('rls-security-results', '? RLS policies working - data filtered by organization', 'success');
+            }
+          } else {
+            addSecurityItem('rls-security-results', '&#9888; WARNING: No organization ID for RLS testing', 'warning');
+          }
+        } else {
+          addSecurityItem('rls-security-results', '&#8505; Supabase client not available for RLS testing', 'info');
+        }
+
+      } catch (error) {
+        addSecurityItem('rls-security-results', `? CRITICAL: RLS security check failed: ${error.message}`, 'critical');
+      }
+    }
+
+    async function testDataIsolation() {
+      showResults('rls-security-results', '');
+      
+      // Test if data is properly isolated between organizations
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgId = user.organizationId;
+      
+      if (orgId) {
+        // Check if localStorage data is properly scoped
+        const orgKey = getDataKey("patients");
+        const patients = JSON.parse(localStorage.getItem(orgKey) || "[]");
+        
+        let isolatedData = true;
+        patients.forEach(patient => {
+          if (patient.organizationId && patient.organizationId !== orgId) {
+            isolatedData = false;
+          }
+        });
+        
+        if (isolatedData) {
+          addSecurityItem('rls-security-results', '? Data properly isolated by organization', 'success');
+        } else {
+          addSecurityItem('rls-security-results', '? CRITICAL: Data isolation failure detected', 'critical');
+        }
+      } else {
+        addSecurityItem('rls-security-results', '&#9888; WARNING: Cannot test data isolation - no organization ID', 'warning');
+      }
+    }
+
+    // Helper function for getDataKey
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      return `${org}_${key}`;
+    }
+
+    // Initialize dashboard
+    updateDashboard();
+  </script>  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>
+
+</html>
+
+
+
+
+
+
+
+

@@ -1,0 +1,261 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Pre-EMR Medical Record - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=219">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1000px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15);
+      padding: 30px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    h1 {
+      color: #8B4513;
+      margin: 0;
+      font-size: 2em;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .nav-buttons button, .nav-buttons a {
+      background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .nav-buttons button:hover, .nav-buttons a:hover {
+      background: linear-gradient(135deg, #CD853F 0%, #8B4513 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+    }
+    
+    .record-meta {
+      background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(205, 133, 63, 0.1));
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border-left: 4px solid #8B4513;
+    }
+    
+    .record-meta p {
+      margin: 8px 0;
+      color: #333;
+    }
+    
+    .record-meta strong {
+      color: #8B4513;
+      font-weight: 600;
+    }
+    
+    .record-content {
+      background: #f9f9f9;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 30px;
+      font-family: 'Courier New', monospace;
+      font-size: 15px;
+      line-height: 1.8;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+      color: #333;
+      min-height: 400px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 1.1em;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 40px;
+      color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📜 View Pre-EMR Medical Record</h1>
+      <div class="nav-buttons">
+        <a href="#" id="back-link">← Back to Records</a>
+      </div>
+    </div>
+    
+    <div id="record-container">
+      <div class="loading">Loading record...</div>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/pre-emr-storage.js?v=202603271"></script>
+  
+  <script>
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.org) {
+        return `${user.org}_${key}`;
+      }
+      return key;
+    }
+
+    async function loadRecord() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get("patientId");
+        const recordId = urlParams.get("recordId");
+        
+        if (!patientId || !recordId) {
+          document.getElementById('record-container').innerHTML = '<div class="error">Missing patient ID or record ID</div>';
+          return;
+        }
+
+        // Update back link
+        document.getElementById('back-link').href = `pre-emr-records.html?patientId=${patientId}`;
+
+        // Load patients
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+
+        // Find patient
+        let patient = null;
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          patient = patients.find(p => 
+            p.id === patientId || 
+            p.patient_id === patientId || 
+            p.patientNumber === patientId
+          );
+        }
+
+        if (!patient) {
+          document.getElementById('record-container').innerHTML = '<div class="error">Patient not found</div>';
+          return;
+        }
+
+        // Find record
+        const record = patient.unstructuredRecords?.find(r => r.id === recordId);
+        if (!record) {
+          document.getElementById('record-container').innerHTML = '<div class="error">Record not found</div>';
+          return;
+        }
+
+        // Display record
+        const recordDate = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Unknown Date';
+
+        const updatedDate = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : null;
+
+        const storagePath = record.storagePath || record.storage_path;
+        const isFile = record.kind === 'file' || !!storagePath;
+        if (isFile && storagePath && window.preEmrStorage) {
+          const url = await window.preEmrStorage.getSignedUrl(storagePath, 3600);
+          const mime = record.mimeType || 'application/octet-stream';
+          let viewer = '';
+          if (mime.indexOf('image/') === 0) {
+            viewer = `<div style="text-align:center;padding:20px;"><img src="${url}" alt="" style="max-width:100%;max-height:80vh;object-fit:contain;border-radius:8px;border:1px solid #ddd;" /></div>`;
+          } else if (mime.indexOf('pdf') !== -1) {
+            viewer = `<div style="width:100%;min-height:75vh;"><iframe src="${url}#zoom=page-width" style="width:100%;height:75vh;border:none;border-radius:8px;"></iframe></div>`;
+          } else {
+            viewer = `<p style="padding:20px;"><a href="${url}" target="_blank" rel="noopener" style="color:#8B4513;font-weight:600;">Open file in new tab</a></p>`;
+          }
+          document.getElementById('record-container').innerHTML = `
+            <div class="record-meta">
+              <p><strong>File:</strong> ${escapeHtml(record.fileName || 'Document')}</p>
+              <p><strong>Created:</strong> ${recordDate}</p>
+              <p><strong>Created By:</strong> ${record.createdBy || 'Unknown'}</p>
+              ${updatedDate ? `<p><strong>Updated:</strong> ${updatedDate}</p>` : ''}
+            </div>
+            ${viewer}
+          `;
+        } else {
+          document.getElementById('record-container').innerHTML = `
+            <div class="record-meta">
+              <p><strong>Created:</strong> ${recordDate}</p>
+              <p><strong>Created By:</strong> ${record.createdBy || 'Unknown'}</p>
+              ${updatedDate ? `<p><strong>Updated:</strong> ${updatedDate}</p>` : ''}
+              ${record.updatedBy ? `<p><strong>Updated By:</strong> ${record.updatedBy}</p>` : ''}
+              <p style="margin-top: 15px;">
+                <a href="edit-pre-emr-record.html?patientId=${patientId}&recordId=${recordId}" style="background: #4169E1; color: white; padding: 10px 20px; border-radius: 6px; text-decoration: none; font-weight: 600; display: inline-block;">✏️ Edit Record</a>
+              </p>
+            </div>
+            <div class="record-content">${escapeHtml(record.text || '')}</div>
+          `;
+        }
+
+      } catch (error) {
+        console.error('Error loading record:', error);
+        document.getElementById('record-container').innerHTML = `<div class="error">Error loading record: ${error.message}</div>`;
+      }
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    window.addEventListener('load', loadRecord);
+  </script>
+</body>
+</html>
+

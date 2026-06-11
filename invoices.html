@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>All Invoices - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=235">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113110113111311"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113110113111311"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113110113111311"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=288"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113110113111311"></script>
+  <style>
+    .filters { background: #f5f5f5; padding: 15px; border-radius: 4px; margin-bottom: 20px; }
+    .filters input, .filters select { margin: 5px; padding: 8px; }
+    .status-paid { background: #4CAF50; color: white; padding: 4px 8px; border-radius: 3px; }
+    .status-pending { background: #FF9800; color: white; padding: 4px 8px; border-radius: 3px; }
+    .status-overdue { background: #f44336; color: white; padding: 4px 8px; border-radius: 3px; }
+    .status-partial { background: #2196F3; color: white; padding: 4px 8px; border-radius: 3px; }
+  </style>
+</head>
+<body>
+  <h1>&#128424; All Invoices</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">&#8592; Back</button>
+  <button onclick="window.location.href='quick-checkout'" style="background: #4CAF50; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">&#10133; New Invoice</button>
+
+  <div class="filters">
+    <input type="text" id="search" placeholder="Search patient, invoice#..." oninput="filterInvoices()">
+    <select id="status-filter" onchange="filterInvoices()">
+      <option value="">All Status</option>
+      <option value="pending">Pending</option>
+      <option value="paid">Paid</option>
+      <option value="overdue">Overdue</option>
+      <option value="partial">Partial</option>
+    </select>
+    <input type="date" id="date-from" onchange="filterInvoices()">
+    <input type="date" id="date-to" onchange="filterInvoices()">
+  </div>
+
+  <table id="invoices-table" class="billing-table">
+    <thead>
+      <tr>
+        <th class="left">Invoice #</th>
+        <th class="center">Date</th>
+        <th class="left">Patient</th>
+        <th class="right">Amount</th>
+        <th class="right">Paid</th>
+        <th class="right">Balance</th>
+        <th class="center">Status</th>
+        <th class="center">Actions</th>
+      </tr>
+    </thead>
+    <tbody id="invoices-body"></tbody>
+  </table>
+
+  <script>
+    console.log('🔧 TRACE: Fixed invoices.html - Added complete Supabase integration');
+    console.log('🔧 TRACE: Added connection status notifier for real-time sync');
+    console.log('🔧 TRACE: Added required billing and data loader scripts');
+    console.log('🔧 TRACE: Fixed getAllInvoices().reverse() TypeError - made async/await');
+    console.log('🔧 TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('🔧 TRACE: CSS version updated to v235 for cache busting');
+    
+    let allInvoices = [];
+
+    window.addEventListener('load', async function() {
+      try {
+        if (typeof window.getAllInvoices !== 'function') {
+          console.error('❌ getAllInvoices function is not available');
+          alert('Billing system is not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        const invoices = await window.getAllInvoices();
+        allInvoices = Array.isArray(invoices) ? invoices.reverse() : [];
+        console.log('🔧 TRACE: Loaded invoices:', allInvoices.length);
+      } catch (error) {
+        console.error('❌ Error loading invoices:', error);
+        alert('Error loading invoices. Please try again.');
+        allInvoices = [];
+      }
+      
+      // Check if there's a filter parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const filter = urlParams.get('filter');
+      
+      if (filter === 'outstanding') {
+        document.getElementById('status-filter').value = '';
+        const outstanding = allInvoices.filter(inv => 
+          (inv.status === 'pending' || inv.status === 'partial' || inv.status === 'overdue') &&
+          inv.amountDue > 0
+        );
+        displayInvoices(outstanding);
+      } else if (filter === 'pending') {
+        document.getElementById('status-filter').value = 'pending';
+        const pending = allInvoices.filter(inv => inv.status === 'pending');
+        displayInvoices(pending);
+      } else if (filter) {
+        document.getElementById('status-filter').value = filter;
+        filterInvoices();
+      } else {
+        displayInvoices(allInvoices);
+      }
+    });
+
+    function displayInvoices(invoices) {
+      const tbody = document.getElementById('invoices-body');
+      tbody.innerHTML = '';
+      
+      if (invoices.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No invoices found</td></tr>';
+        return;
+      }
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+      };
+      
+      invoices.forEach(inv => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td class="left">${inv.invoiceNumber || inv.id || 'N/A'}</td>
+          <td class="center">${inv.date || 'N/A'}</td>
+          <td class="left">${inv.patientName || 'Unknown Patient'}</td>
+          <td class="amount">${formatCurrencyFn(inv.total || 0, inv.currency || 'CAD')}</td>
+          <td class="amount">${formatCurrencyFn(inv.amountPaid || 0, inv.currency || 'CAD')}</td>
+          <td class="amount">${formatCurrencyFn(inv.amountDue || 0, inv.currency || 'CAD')}</td>
+          <td class="center"><span class="status-badge status-${inv.status || 'pending'}">${(inv.status || 'pending').toUpperCase()}</span></td>
+          <td class="actions">
+            <button onclick="viewInvoice('${inv.id}')" style="background: #2196F3; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">View</button>
+            ${inv.status !== 'paid' ? `<button onclick="recordPayment('${inv.id}')" style="background: #4CAF50; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">Pay</button>` : ''}
+            <button onclick="editInvoice('${inv.id}')" style="background: #FF9800; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
+          </td>
+        `;
+      });
+    }
+
+    function filterInvoices() {
+      const search = document.getElementById('search').value.toLowerCase();
+      const status = document.getElementById('status-filter').value;
+      const dateFrom = document.getElementById('date-from').value;
+      const dateTo = document.getElementById('date-to').value;
+      
+      let filtered = allInvoices.filter(inv => {
+        const matchSearch = !search || inv.invoiceNumber.toLowerCase().includes(search) || inv.patientName.toLowerCase().includes(search);
+        const matchStatus = !status || inv.status === status;
+        const matchFrom = !dateFrom || inv.date >= dateFrom;
+        const matchTo = !dateTo || inv.date <= dateTo;
+        return matchSearch && matchStatus && matchFrom && matchTo;
+      });
+      
+      displayInvoices(filtered);
+    }
+
+    function viewInvoice(invoiceId) {
+      if (!invoiceId) {
+        alert('Invoice ID not found');
+        return;
+      }
+      window.location.href = `/invoice-details?id=${invoiceId}`;
+    }
+
+    function editInvoice(invoiceId) {
+      if (!invoiceId) {
+        alert('Invoice ID not found');
+        return;
+      }
+      window.location.href = `/edit-invoice?id=${invoiceId}`;
+    }
+
+    function recordPayment(invoiceId) {
+      if (!invoiceId) {
+        alert('Invoice ID not found');
+        return;
+      }
+      window.location.href = `/collect-payment?invoiceId=${invoiceId}`;
+    }
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

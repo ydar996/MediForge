@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Diagnose Broken Functionality - Platform Admin</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 { color: #008753; }
+    h2 { color: #333; border-bottom: 2px solid #008753; padding-bottom: 10px; }
+    .section {
+      margin: 25px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+    }
+    button {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 5px;
+    }
+    button:hover { background: #006b42; }
+    button.danger { background: #dc3545; }
+    button.danger:hover { background: #c82333; }
+    .error { color: #dc3545; font-weight: bold; }
+    .success { color: #28a745; font-weight: bold; }
+    .warning { color: #ffc107; font-weight: bold; }
+    .info { color: #17a2b8; }
+    pre {
+      background: #f4f4f4;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #008753;
+      color: white;
+    }
+    tr:hover { background: #f5f5f5; }
+    .status-badge {
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+    }
+    .status-ok { background: #28a745; color: white; }
+    .status-error { background: #dc3545; color: white; }
+    .status-warning { background: #ffc107; color: black; }
+    .loading {
+      display: inline-block;
+      width: 20px;
+      height: 20px;
+      border: 3px solid #f3f3f3;
+      border-top: 3px solid #008753;
+      border-radius: 50%;
+      animation: spin 1s linear infinite;
+    }
+    @keyframes spin {
+      0% { transform: rotate(0deg); }
+      100% { transform: rotate(360deg); }
+    }
+    .check-item {
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      border-left: 3px solid #ddd;
+    }
+    .check-item.error { border-left-color: #dc3545; }
+    .check-item.warning { border-left-color: #ffc107; }
+    .check-item.success { border-left-color: #28a745; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔍 Diagnose Broken Functionality</h1>
+    <p class="info">This tool checks for common issues that break functionality after schema changes or updates.</p>
+    
+    <div class="section">
+      <h2>1. Database Schema Mismatches</h2>
+      <button onclick="checkSchemaMismatches()">🔍 Check Schema Issues</button>
+      <div id="schema-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>2. RPC Function Issues</h2>
+      <button onclick="checkRPCFunctions()">🔍 Test RPC Functions</button>
+      <div id="rpc-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>3. Column Name Mismatches</h2>
+      <button onclick="checkColumnMismatches()">🔍 Check Column Names</button>
+      <div id="column-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>4. Authentication & Authorization</h2>
+      <button onclick="checkAuthIssues()">🔍 Check Auth Issues</button>
+      <div id="auth-results"></div>
+    </div>
+    
+    <div class="section">
+      <h2>5. Run All Checks</h2>
+      <button onclick="runAllChecks()" style="background: #17a2b8;">🚀 Run Complete Diagnostic</button>
+      <div id="all-results"></div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/account-management.js"></script>
+
+  <script>
+    const issues = [];
+
+    async function checkSchemaMismatches() {
+      const resultsDiv = document.getElementById('schema-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Checking schema...</p>';
+      
+      let html = '<h3>Schema Check Results:</h3>';
+      const problems = [];
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<p class="error">❌ Supabase client not available</p>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        // Check users table columns
+        html += '<h4>1. Users Table Columns:</h4>';
+        let userColumns = null;
+        let userError = null;
+        
+        try {
+          const result = await supabase.rpc('exec_sql', {
+            query: `
+              SELECT column_name, data_type 
+              FROM information_schema.columns 
+              WHERE table_schema = 'public' 
+              AND table_name = 'users'
+              ORDER BY ordinal_position;
+            `
+          });
+          userColumns = result.data;
+          userError = result.error;
+        } catch (e) {
+          userError = { message: 'RPC not available' };
+        }
+        
+        if (userError) {
+          // Try direct query
+          try {
+            const { data: directData } = await supabase
+              .from('users')
+              .select('*')
+              .limit(1);
+            
+            if (directData) {
+              html += '<p class="success">✅ Users table accessible</p>';
+              html += '<p class="info">ℹ️ Checking for common column issues...</p>';
+              
+              // Check for medical_license_number column (should not exist in database)
+              // Note: Code may have backward compatibility checks (e.g., profile.license_number || profile.medical_license_number)
+              // which is acceptable - we only flag if the OLD column still exists in the database
+              try {
+                const testQuery = await supabase
+                  .from('users')
+                  .select('license_number, medical_license_number')
+                  .limit(1);
+                
+                // If query succeeds, it means BOTH columns exist (bad - migration incomplete)
+                // If query fails with medical_license_number error, it means only new column exists (good)
+                if (!testQuery.error) {
+                  // Both columns exist - migration incomplete
+                  problems.push({
+                    severity: 'warning',
+                    table: 'users',
+                    issue: 'Both license_number and medical_license_number columns exist',
+                    fix: 'Complete migration: migrate data and drop medical_license_number column'
+                  });
+                  html += '<p class="warning">⚠️ Both old and new columns exist - migration incomplete</p>';
+                } else if (testQuery.error && testQuery.error.message.includes('medical_license_number')) {
+                  // Only new column exists - this is correct
+                  html += '<p class="success">✅ Column migration complete - only license_number exists</p>';
+                  html += '<p class="info">ℹ️ Code may have backward compatibility checks (e.g., license_number || medical_license_number) which is acceptable</p>';
+                }
+              } catch (e) {
+                // Ignore test query errors
+                html += '<p class="info">ℹ️ Could not verify column migration status</p>';
+              }
+            }
+          } catch (e) {
+            html += `<p class="error">❌ Error accessing users table: ${e.message}</p>`;
+          }
+        }
+        
+        // Check for common missing columns
+        html += '<h4>2. Common Column Checks:</h4>';
+        const criticalColumns = {
+          users: ['id', 'username', 'email', 'role', 'organization_id', 'license_number'],
+          patients: ['id', 'patient_id', 'first_name', 'last_name', 'organization_id'],
+          organizations: ['id', 'name', 'org_code']
+        };
+        
+        for (const [table, columns] of Object.entries(criticalColumns)) {
+          html += `<p><strong>${table} table:</strong></p>`;
+          for (const col of columns) {
+            try {
+              const result = await supabase
+                .from(table)
+                .select(col)
+                .limit(1);
+              
+              if (result.error && result.error.message.includes('column') && result.error.message.includes('does not exist')) {
+                problems.push({
+                  severity: 'error',
+                  table: table,
+                  issue: `Missing column: ${col}`,
+                  fix: `Add column ${col} to ${table} table`
+                });
+                html += `<p class="error">❌ Missing column: ${col}</p>`;
+              } else {
+                html += `<p class="success">✅ Column ${col} exists</p>`;
+              }
+            } catch (e) {
+              html += `<p class="warning">⚠️ Could not check column ${col}: ${e.message}</p>`;
+            }
+          }
+        }
+        
+        if (problems.length > 0) {
+          html += '<h4 class="error">⚠️ Found Issues:</h4>';
+          problems.forEach(p => {
+            html += `<div class="check-item error">
+              <strong>${p.table}:</strong> ${p.issue}<br>
+              <small>Fix: ${p.fix}</small>
+            </div>`;
+          });
+          issues.push(...problems);
+        } else {
+          html += '<p class="success">✅ No schema mismatches found</p>';
+        }
+        
+      } catch (error) {
+        html += `<p class="error">❌ Error checking schema: ${error.message}</p>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function checkRPCFunctions() {
+      const resultsDiv = document.getElementById('rpc-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Testing RPC functions...</p>';
+      
+      let html = '<h3>RPC Function Test Results:</h3>';
+      const problems = [];
+      
+      const criticalRPCs = [
+        { name: 'get_organization_users', params: { p_org_id: '00000000-0000-0000-0000-000000000000' } },
+        { name: 'get_locked_accounts', params: { p_organization_id: null } },
+        { name: 'unlock_account', params: { p_identifier: 'test', p_unlocked_by: 'test', p_reason: 'test' } },
+        { name: 'check_rate_limit', params: { p_type: 'login', p_identifier: 'test', p_max_attempts: 5, p_window_minutes: 15 } }
+      ];
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<p class="error">❌ Supabase client not available</p>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        html += '<table><tr><th>RPC Function</th><th>Status</th><th>Error</th></tr>';
+        
+        for (const rpc of criticalRPCs) {
+          try {
+            const { data, error } = await supabase.rpc(rpc.name, rpc.params);
+            
+            if (error) {
+              // Check for specific error types
+              if (error.message.includes('does not exist') || error.message.includes('column')) {
+                problems.push({
+                  severity: 'error',
+                  function: rpc.name,
+                  issue: error.message,
+                  fix: 'Check function definition and column names'
+                });
+                html += `<tr>
+                  <td><strong>${rpc.name}</strong></td>
+                  <td><span class="status-badge status-error">❌ Error</span></td>
+                  <td class="error">${error.message}</td>
+                </tr>`;
+              } else if (error.message.includes('permission') || error.message.includes('RLS')) {
+                html += `<tr>
+                  <td><strong>${rpc.name}</strong></td>
+                  <td><span class="status-badge status-warning">⚠️ Permission</span></td>
+                  <td class="warning">${error.message} (may be expected)</td>
+                </tr>`;
+              } else {
+                html += `<tr>
+                  <td><strong>${rpc.name}</strong></td>
+                  <td><span class="status-badge status-warning">⚠️ Other</span></td>
+                  <td>${error.message}</td>
+                </tr>`;
+              }
+            } else {
+              html += `<tr>
+                <td><strong>${rpc.name}</strong></td>
+                <td><span class="status-badge status-ok">✅ OK</span></td>
+                <td>-</td>
+              </tr>`;
+            }
+          } catch (e) {
+            html += `<tr>
+              <td><strong>${rpc.name}</strong></td>
+              <td><span class="status-badge status-error">❌ Exception</span></td>
+              <td class="error">${e.message}</td>
+            </tr>`;
+          }
+        }
+        
+        html += '</table>';
+        
+        if (problems.length > 0) {
+          html += '<h4 class="error">⚠️ Found Issues:</h4>';
+          problems.forEach(p => {
+            html += `<div class="check-item error">
+              <strong>${p.function}:</strong> ${p.issue}<br>
+              <small>Fix: ${p.fix}</small>
+            </div>`;
+          });
+          issues.push(...problems);
+        } else {
+          html += '<p class="success">✅ All critical RPC functions accessible</p>';
+        }
+        
+      } catch (error) {
+        html += `<p class="error">❌ Error testing RPCs: ${error.message}</p>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function checkColumnMismatches() {
+      const resultsDiv = document.getElementById('column-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Checking column name mismatches...</p>';
+      
+      let html = '<h3>Column Name Check Results:</h3>';
+      const problems = [];
+      
+      // Known column renames
+      const columnRenames = [
+        { old: 'medical_license_number', new: 'license_number', table: 'users' }
+      ];
+      
+      html += '<h4>Known Column Renames:</h4>';
+      html += '<table><tr><th>Old Column</th><th>New Column</th><th>Table</th><th>Status</th></tr>';
+      
+      try {
+        const supabase = window.supabaseClient;
+        if (!supabase) {
+          html += '<p class="error">❌ Supabase client not available</p>';
+          resultsDiv.innerHTML = html;
+          return;
+        }
+        
+        for (const rename of columnRenames) {
+          // Check if old column still exists (should not)
+          let oldError = null;
+          try {
+            const oldResult = await supabase
+              .from(rename.table)
+              .select(rename.old)
+              .limit(1);
+            oldError = oldResult.error;
+          } catch (e) {
+            oldError = { message: e.message };
+          }
+          
+          // Check if new column exists (should)
+          let newError = null;
+          try {
+            const newResult = await supabase
+              .from(rename.table)
+              .select(rename.new)
+              .limit(1);
+            newError = newResult.error;
+          } catch (e) {
+            newError = { message: e.message };
+          }
+          
+          if (oldError && oldError.message.includes('does not exist')) {
+            // Good - old column doesn't exist
+            if (newError && newError.message.includes('does not exist')) {
+              problems.push({
+                severity: 'error',
+                table: rename.table,
+                issue: `Neither ${rename.old} nor ${rename.new} exists`,
+                fix: `Add ${rename.new} column to ${rename.table}`
+              });
+              html += `<tr>
+                <td>${rename.old}</td>
+                <td>${rename.new}</td>
+                <td>${rename.table}</td>
+                <td><span class="status-badge status-error">❌ Missing</span></td>
+              </tr>`;
+            } else {
+              html += `<tr>
+                <td>${rename.old}</td>
+                <td>${rename.new}</td>
+                <td>${rename.table}</td>
+                <td><span class="status-badge status-ok">✅ Migrated</span></td>
+              </tr>`;
+            }
+          } else {
+            // Old column still exists - migration incomplete
+            problems.push({
+              severity: 'warning',
+              table: rename.table,
+              issue: `Old column ${rename.old} still exists`,
+              fix: `Migrate data from ${rename.old} to ${rename.new} and drop ${rename.old}`
+            });
+            html += `<tr>
+              <td>${rename.old}</td>
+              <td>${rename.new}</td>
+              <td>${rename.table}</td>
+              <td><span class="status-badge status-warning">⚠️ Needs Migration</span></td>
+            </tr>`;
+          }
+        }
+        
+        html += '</table>';
+        
+        // Check code references
+        html += '<h4>Code References Check:</h4>';
+        html += '<p class="info">ℹ️ This checks if JavaScript code still references old column names.</p>';
+        html += '<p class="warning">⚠️ Manual check needed: Search codebase for "medical_license_number" references</p>';
+        
+        if (problems.length > 0) {
+          html += '<h4 class="error">⚠️ Found Issues:</h4>';
+          problems.forEach(p => {
+            html += `<div class="check-item ${p.severity === 'error' ? 'error' : 'warning'}">
+              <strong>${p.table}:</strong> ${p.issue}<br>
+              <small>Fix: ${p.fix}</small>
+            </div>`;
+          });
+          issues.push(...problems);
+        } else {
+          html += '<p class="success">✅ No column name mismatches found</p>';
+        }
+        
+      } catch (error) {
+        html += `<p class="error">❌ Error checking columns: ${error.message}</p>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function checkAuthIssues() {
+      const resultsDiv = document.getElementById('auth-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Checking authentication...</p>';
+      
+      let html = '<h3>Authentication Check Results:</h3>';
+      
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        html += '<h4>1. Current Session:</h4>';
+        if (user.username) {
+          html += `<p class="success">✅ Logged in as: ${user.username} (${user.role || 'Unknown role'})</p>`;
+        } else {
+          html += '<p class="warning">⚠️ No user session found</p>';
+        }
+        
+        html += '<h4>2. Supabase Session:</h4>';
+        const supabase = window.supabaseClient;
+        if (supabase) {
+          const { data: { session } } = await supabase.auth.getSession();
+          if (session) {
+            html += '<p class="success">✅ Supabase session active</p>';
+          } else {
+            html += '<p class="warning">⚠️ No Supabase session (may use localStorage auth)</p>';
+          }
+        } else {
+          html += '<p class="warning">⚠️ Supabase client not available</p>';
+        }
+        
+        html += '<h4>3. Rate Limiting:</h4>';
+        if (typeof window.rateLimiter !== 'undefined') {
+          html += '<p class="success">✅ Rate limiter module loaded</p>';
+        } else {
+          html += '<p class="warning">⚠️ Rate limiter module not loaded (may be expected if not on login page)</p>';
+          // Don't add to issues - this is not critical for diagnostic tool
+        }
+        
+        html += '<h4>4. Account Management:</h4>';
+        if (typeof window.unlockAccount !== 'undefined' && typeof window.getLockedAccounts !== 'undefined') {
+          html += '<p class="success">✅ Account management functions available</p>';
+        } else {
+          html += '<p class="error">❌ Account management functions not available</p>';
+          issues.push({
+            severity: 'error',
+            area: 'authentication',
+            issue: 'Account management functions not loaded',
+            fix: 'Check if js/account-management.js is included'
+          });
+        }
+        
+      } catch (error) {
+        html += `<p class="error">❌ Error checking auth: ${error.message}</p>`;
+      }
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    async function runAllChecks() {
+      const resultsDiv = document.getElementById('all-results');
+      resultsDiv.innerHTML = '<p class="info"><span class="loading"></span> Running complete diagnostic...</p>';
+      
+      issues.length = 0; // Clear previous issues
+      
+      await checkSchemaMismatches();
+      await new Promise(r => setTimeout(r, 500));
+      await checkRPCFunctions();
+      await new Promise(r => setTimeout(r, 500));
+      await checkColumnMismatches();
+      await new Promise(r => setTimeout(r, 500));
+      await checkAuthIssues();
+      
+      let html = '<h3>📊 Complete Diagnostic Summary:</h3>';
+      
+      if (issues.length === 0) {
+        html += '<div class="check-item success">';
+        html += '<h4>✅ No Issues Found!</h4>';
+        html += '<p>All checks passed. Your app should be functioning correctly.</p>';
+        html += '</div>';
+      } else {
+        html += `<div class="check-item error">`;
+        html += `<h4>⚠️ Found ${issues.length} Issue(s):</h4>`;
+        html += '<table><tr><th>Severity</th><th>Area</th><th>Issue</th><th>Fix</th></tr>';
+        
+        issues.forEach(issue => {
+          const severityClass = issue.severity === 'error' ? 'status-error' : 'status-warning';
+          html += `<tr>
+            <td><span class="status-badge ${severityClass}">${issue.severity.toUpperCase()}</span></td>
+            <td>${issue.table || issue.function || issue.area || 'Unknown'}</td>
+            <td>${issue.issue}</td>
+            <td><small>${issue.fix}</small></td>
+          </tr>`;
+        });
+        
+        html += '</table>';
+        html += '</div>';
+      }
+      
+      html += '<h4>Next Steps:</h4>';
+      html += '<ol>';
+      html += '<li>Review the issues above</li>';
+      html += '<li>Fix critical (error) issues first</li>';
+      html += '<li>Test functionality after fixes</li>';
+      html += '<li>Re-run diagnostic to verify fixes</li>';
+      html += '</ol>';
+      
+      resultsDiv.innerHTML = html;
+    }
+
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      setTimeout(() => {
+        document.getElementById('all-results').innerHTML = '<p class="info">Click "Run Complete Diagnostic" to start checking for issues.</p>';
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+

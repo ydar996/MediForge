@@ -1,0 +1,494 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Analyze Backup Structure</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; font-size: 16px; }
+        .btn:hover { background: #0056b3; }
+        .results { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 10px 0; max-height: 400px; overflow-y: auto; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+        .file-input { margin: 10px 0; }
+        .json-preview { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; max-height: 200px; overflow-y: auto; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>ðŸ” Analyze Backup Structure</h1>
+        <p>Let's properly analyze the backup file structure to understand how the data is organized.</p>
+        
+        <div class="file-input">
+            <label for="backupFile"><strong>Select Backup File:</strong></label><br>
+            <input type="file" id="backupFile" accept=".json" style="margin: 10px 0;">
+        </div>
+        
+        <button class="btn" onclick="analyzeStructure()">ðŸ” Analyze File Structure</button>
+        <button class="btn" onclick="findPatients()">ðŸ‘¥ Find Patient Data</button>
+        <button class="btn" onclick="createMigration()">ðŸš€ Create Migration</button>
+        
+        <div class="results" id="results">
+            <p>1. <strong>Select the backup file</strong> (mediforge-backup-2025-10-14.json)</p>
+            <p>2. <strong>Click "Analyze File Structure"</strong> to see the JSON structure</p>
+            <p>3. <strong>Click "Find Patient Data"</strong> to locate patient information</p>
+            <p>4. <strong>Click "Create Migration"</strong> to generate the correct migration code</p>
+        </div>
+    </div>
+
+    <script>
+        let backupData = null;
+
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `results ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            results.appendChild(div);
+            results.scrollTop = results.scrollHeight;
+            console.log(message);
+        }
+
+        function analyzeStructure() {
+            const fileInput = document.getElementById('backupFile');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                log('âŒ Please select a backup file first', 'error');
+                return;
+            }
+            
+            log('ðŸ” Analyzing backup file structure...');
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    backupData = JSON.parse(e.target.result);
+                    log(`âœ… Backup file loaded successfully (${file.size} bytes)`);
+                    
+                    // Show the top-level structure
+                    const topLevelKeys = Object.keys(backupData);
+                    log(`ðŸ“Š Top-level keys found: ${topLevelKeys.join(', ')}`);
+                    
+                    // Show structure preview
+                    const preview = document.createElement('div');
+                    preview.className = 'json-preview';
+                    preview.innerHTML = `<strong>File Structure Preview:</strong><br>${JSON.stringify(backupData, null, 2).substring(0, 1000)}...`;
+                    document.getElementById('results').appendChild(preview);
+                    
+                    // Check for common data types
+                    if (backupData.patients) {
+                        log(`ðŸ‘¥ Found 'patients' key with ${Array.isArray(backupData.patients) ? backupData.patients.length : 'non-array'} items`);
+                    }
+                    if (backupData.users) {
+                        log(`ðŸ‘¤ Found 'users' key with ${Array.isArray(backupData.users) ? backupData.users.length : 'non-array'} items`);
+                    }
+                    if (backupData.visits) {
+                        log(`ðŸ¥ Found 'visits' key with ${Array.isArray(backupData.visits) ? backupData.visits.length : 'non-array'} items`);
+                    }
+                    if (backupData.prescriptions) {
+                        log(`ðŸ’Š Found 'prescriptions' key with ${Array.isArray(backupData.prescriptions) ? backupData.prescriptions.length : 'non-array'} items`);
+                    }
+                    
+                    log('âœ… Structure analysis complete!', 'success');
+                    
+                } catch (error) {
+                    log(`âŒ Error parsing backup file: ${error.message}`, 'error');
+                }
+            };
+            
+            reader.readAsText(file);
+        }
+
+        function findPatients() {
+            if (!backupData) {
+                log('âŒ Please analyze the file structure first', 'error');
+                return;
+            }
+            
+            log('ðŸ‘¥ Searching for patient data...');
+            
+            // Look for patients in various possible locations
+            let patients = null;
+            let patientsLocation = '';
+            
+            // Check top-level patients
+            if (backupData.patients && Array.isArray(backupData.patients)) {
+                patients = backupData.patients;
+                patientsLocation = 'backupData.patients';
+            } 
+            // Check organizationData structure
+            else if (backupData.organizationData) {
+                log('ðŸ” Found organizationData, searching for Mecure Clinics...');
+                
+                // Look for Mecure Clinics specifically
+                if (backupData.organizationData['Mecure Clinics'] && backupData.organizationData['Mecure Clinics'].patients) {
+                    patients = backupData.organizationData['Mecure Clinics'].patients;
+                    patientsLocation = 'backupData.organizationData["Mecure Clinics"].patients';
+                }
+                // Or look for any organization with patients
+                else {
+                    for (const orgName in backupData.organizationData) {
+                        const org = backupData.organizationData[orgName];
+                        if (org.patients && Array.isArray(org.patients)) {
+                            patients = org.patients;
+                            patientsLocation = `backupData.organizationData["${orgName}"].patients`;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Check other possible locations
+            else if (backupData.data && backupData.data.patients && Array.isArray(backupData.data.patients)) {
+                patients = backupData.data.patients;
+                patientsLocation = 'backupData.data.patients';
+            } else if (backupData.mecure_patients && Array.isArray(backupData.mecure_patients)) {
+                patients = backupData.mecure_patients;
+                patientsLocation = 'backupData.mecure_patients';
+            } else {
+                // Search for any array that might contain patient data
+                for (const key in backupData) {
+                    if (Array.isArray(backupData[key]) && backupData[key].length > 0) {
+                        const firstItem = backupData[key][0];
+                        if (firstItem && (firstItem.firstName || firstItem.first_name || firstItem.name)) {
+                            patients = backupData[key];
+                            patientsLocation = `backupData.${key}`;
+                            break;
+                        }
+                    }
+                }
+            }
+            
+            if (patients) {
+                log(`âœ… Found ${patients.length} patients in ${patientsLocation}`, 'success');
+                
+                // Analyze patient structure
+                if (patients.length > 0) {
+                    const firstPatient = patients[0];
+                    const patientKeys = Object.keys(firstPatient);
+                    log(`ðŸ“‹ Patient object keys: ${patientKeys.join(', ')}`);
+                    
+                    // Check for DOB data
+                    const withDob = patients.filter(p => p.dob || p.date_of_birth || p.dateOfBirth);
+                    const withoutDob = patients.filter(p => !(p.dob || p.date_of_birth || p.dateOfBirth));
+                    
+                    log(`âœ… ${withDob.length} patients with DOB data`);
+                    log(`âŒ ${withoutDob.length} patients without DOB data`);
+                    
+                    if (withDob.length > 0) {
+                        const sampleDob = withDob[0];
+                        const dobValue = sampleDob.dob || sampleDob.date_of_birth || sampleDob.dateOfBirth;
+                        log(`ðŸ“‹ Sample DOB field: ${dobValue}`);
+                    }
+                    
+                    // Show sample patient
+                    const preview = document.createElement('div');
+                    preview.className = 'json-preview';
+                    preview.innerHTML = `<strong>Sample Patient:</strong><br>${JSON.stringify(firstPatient, null, 2)}`;
+                    document.getElementById('results').appendChild(preview);
+                }
+            } else {
+                log('âŒ No patient data found in the backup file', 'error');
+                log('ðŸ” Available keys: ' + Object.keys(backupData).join(', '), 'warning');
+            }
+        }
+
+        function createMigration() {
+            if (!backupData) {
+                log('âŒ Please analyze the file structure first', 'error');
+                return;
+            }
+            
+            log('ðŸš€ Creating migration code...');
+            
+            // Find patients again
+            let patients = null;
+            let patientsLocation = '';
+            
+            // Check top-level patients
+            if (backupData.patients && Array.isArray(backupData.patients)) {
+                patients = backupData.patients;
+                patientsLocation = 'backupData.patients';
+            } 
+            // Check organizationData structure
+            else if (backupData.organizationData) {
+                // Look for Mecure Clinics specifically
+                if (backupData.organizationData['Mecure Clinics'] && backupData.organizationData['Mecure Clinics'].patients) {
+                    patients = backupData.organizationData['Mecure Clinics'].patients;
+                    patientsLocation = 'backupData.organizationData["Mecure Clinics"].patients';
+                }
+                // Or look for any organization with patients
+                else {
+                    for (const orgName in backupData.organizationData) {
+                        const org = backupData.organizationData[orgName];
+                        if (org.patients && Array.isArray(org.patients)) {
+                            patients = org.patients;
+                            patientsLocation = `backupData.organizationData["${orgName}"].patients`;
+                            break;
+                        }
+                    }
+                }
+            }
+            // Check other possible locations
+            else if (backupData.data && backupData.data.patients && Array.isArray(backupData.data.patients)) {
+                patients = backupData.data.patients;
+                patientsLocation = 'backupData.data.patients';
+            } else if (backupData.mecure_patients && Array.isArray(backupData.mecure_patients)) {
+                patients = backupData.mecure_patients;
+                patientsLocation = 'backupData.mecure_patients';
+            }
+            
+            if (!patients) {
+                log('âŒ No patient data found to migrate', 'error');
+                return;
+            }
+            
+            // Create the migration code
+            const migrationCode = `
+// COMPLETE BACKUP MIGRATION - Paste this in your EHR app console
+console.log('ðŸš€ Starting complete backup migration...');
+
+// First, let's get the backup data
+const backupData = ${JSON.stringify(backupData, null, 2)};
+
+// Extract patients from the correct location
+const patients = ${patientsLocation};
+
+console.log('ðŸ“Š Found', patients.length, 'patients in backup');
+
+// Get Supabase client
+const supabaseClient = window.supabaseClient;
+if (!supabaseClient) {
+    console.error('âŒ Supabase client not available');
+    return;
+}
+
+// Organization ID for Mecure Clinics
+const orgId = '576522cc-e769-4fb4-9487-3d150857d970';
+
+// Clear existing patients first
+console.log('ðŸ—‘ï¸ Clearing existing patients...');
+const { error: deleteError } = await supabaseClient
+    .from('patients')
+    .delete()
+    .eq('organization_id', orgId);
+
+if (deleteError) {
+    console.log('âš ï¸ Warning clearing existing patients:', deleteError.message);
+} else {
+    console.log('âœ… Cleared existing patients');
+}
+
+// Migrate patients
+console.log('ðŸ”„ Migrating patients...');
+let successCount = 0;
+let errorCount = 0;
+
+for (let i = 0; i < patients.length; i++) {
+    const patient = patients[i];
+    
+    try {
+        // Convert backup format to Supabase format
+        const supabasePatient = {
+            patient_id: patient.id || patient.patient_id || \`PAT_\${Date.now()}_\${i}\`,
+            organization_id: orgId,
+            first_name: patient.firstName || patient.first_name || '',
+            middle_name: patient.middleName || patient.middle_name || '',
+            last_name: patient.lastName || patient.last_name || '',
+            date_of_birth: patient.dob || patient.date_of_birth || patient.dateOfBirth || null,
+            gender: patient.gender || '',
+            marital_status: patient.maritalStatus || patient.marital_status || '',
+            phone: patient.phone || '',
+            email: patient.email || '',
+            address: patient.addressLine1 || patient.address || patient.address_line1 || '',
+            city: patient.city || '',
+            state: patient.state || '',
+            country: patient.country || '',
+            blood_group: patient.bloodGroup || patient.blood_group || '',
+            allergies: JSON.stringify(patient.allergies || []),
+            chronic_conditions: JSON.stringify(patient.conditions || patient.chronic_conditions || []),
+            emergency_contact_name: \`\${patient.emergencyFirstName || ''} \${patient.emergencyLastName || ''}\`.trim(),
+            emergency_contact_phone: patient.emergencyPhone || patient.emergency_phone || '',
+            emergency_contact_relationship: patient.emergencyRelationship || patient.emergency_relationship || '',
+            created_at: patient.createdDate || patient.created_at || new Date().toISOString(),
+            updated_at: patient.updatedDate || patient.updated_at || new Date().toISOString()
+        };
+        
+        const { error } = await supabaseClient
+            .from('patients')
+            .insert([supabasePatient]);
+        
+        if (error) {
+            console.error(\`âŒ Error migrating \${patient.firstName || patient.first_name} \${patient.lastName || patient.last_name}:\`, error.message);
+            errorCount++;
+        } else {
+            console.log(\`âœ… Migrated \${patient.firstName || patient.first_name} \${patient.lastName || patient.last_name} (DOB: \${patient.dob || patient.date_of_birth || 'N/A'})\`);
+            successCount++;
+        }
+    } catch (error) {
+        console.error(\`âŒ Error processing patient \${i}:\`, error.message);
+        errorCount++;
+    }
+}
+
+console.log(\`ðŸŽ‰ Migration complete! Success: \${successCount}, Errors: \${errorCount}\`);
+
+// Verify migration
+console.log('ðŸ” Verifying migration...');
+const { data: verifyPatients, error: verifyError } = await supabaseClient
+    .from('patients')
+    .select('*')
+    .eq('organization_id', orgId);
+
+if (verifyError) {
+    console.error('âŒ Verification error:', verifyError.message);
+} else {
+    const withDob = verifyPatients.filter(p => p.date_of_birth);
+    console.log(\`âœ… Verification complete: \${verifyPatients.length} patients in Supabase\`);
+    console.log(\`âœ… \${withDob.length} patients with DOB data\`);
+    
+    // Now sync the app
+    console.log('ðŸ”„ Syncing app with Supabase...');
+    
+    // Override loadPatients to use Supabase as primary source
+    window.loadPatients = async function(page = 1) {
+        console.log('ðŸ”„ Loading patients from Supabase (primary source)...');
+        
+        const { data: patients, error } = await supabaseClient
+            .from('patients')
+            .select('*')
+            .eq('organization_id', orgId);
+        
+        if (error) {
+            console.error('âŒ Error loading from Supabase:', error);
+            return;
+        }
+        
+        console.log('âœ… Loaded', patients.length, 'patients from Supabase');
+        
+        // Convert to app format
+        const appPatients = patients.map(patient => ({
+            id: patient.patient_id,
+            firstName: patient.first_name || '',
+            middleName: patient.middle_name || '',
+            lastName: patient.last_name || '',
+            dob: patient.date_of_birth,
+            gender: patient.gender || '',
+            maritalStatus: patient.marital_status || '',
+            phone: patient.phone || '',
+            email: patient.email || '',
+            addressLine1: patient.address || '',
+            city: patient.city || '',
+            state: patient.state || '',
+            country: patient.country || '',
+            bloodGroup: patient.blood_group || '',
+            allergies: JSON.parse(patient.allergies || '[]'),
+            conditions: JSON.parse(patient.chronic_conditions || '[]'),
+            emergencyFirstName: patient.emergency_contact_name?.split(' ')[0] || '',
+            emergencyLastName: patient.emergency_contact_name?.split(' ').slice(1).join(' ') || '',
+            emergencyPhone: patient.emergency_contact_phone || '',
+            emergencyRelationship: patient.emergency_contact_relationship || '',
+            createdDate: patient.created_at,
+            updatedDate: patient.updated_at,
+            visits: [],
+            immunizations: [],
+            prescriptions: [],
+            hasDiabetes: false
+        }));
+        
+        // Update localStorage
+        localStorage.setItem('mecure_patients', JSON.stringify(appPatients));
+        
+        // Display patients
+        displayPatients(appPatients, page);
+    };
+    
+    // Helper function to display patients
+    function displayPatients(patients, page) {
+        // Sort patients
+        patients.sort((a, b) => {
+            const nameA = \`\${a.firstName} \${a.lastName}\`.toLowerCase();
+            const nameB = \`\${b.firstName} \${b.lastName}\`.toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+        
+        // Pagination
+        const patientsPerPage = 10;
+        const startIndex = (page - 1) * patientsPerPage;
+        const endIndex = startIndex + patientsPerPage;
+        const paginatedPatients = patients.slice(startIndex, endIndex);
+        
+        // Display patients
+        const tbody = document.getElementById('patient-list');
+        if (tbody) {
+            tbody.innerHTML = '';
+            
+            if (paginatedPatients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">No patients found.</td></tr>';
+            } else {
+                paginatedPatients.forEach(patient => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = \`
+                        <td>\${patient.firstName} \${patient.lastName}</td>
+                        <td>\${patient.dob}</td>
+                        <td>\${patient.gender}</td>
+                        <td>
+                            <button onclick="viewPatient('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">View</button>
+                            <button onclick="editPatient('\${patient.id}')" style="background-color: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Edit</button>
+                            <button onclick="deletePatient('\${patient.id}')" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Delete</button>
+                            <button onclick="addEncounter('\${patient.id}')" style="background-color: #fd7e14; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Encounter</button>
+                            <button onclick="addAppointment('\${patient.id}')" style="background-color: #6f42c1; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Appointment</button>
+                            <button onclick="printPatientSummary('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">ðŸ“„ Print Patient Summary</button>
+                        </td>
+                    \`;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+        
+        // Update pagination
+        const totalPages = Math.ceil(patients.length / patientsPerPage);
+        const paginationDiv = document.getElementById('pagination-controls');
+        if (paginationDiv) {
+            paginationDiv.innerHTML = '';
+            if (totalPages > 1) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.style.margin = '5px';
+                    button.style.padding = '5px 10px';
+                    button.style.backgroundColor = i === page ? '#007bff' : '#f8f9fa';
+                    button.style.color = i === page ? 'white' : 'black';
+                    button.style.border = '1px solid #dee2e6';
+                    button.style.borderRadius = '3px';
+                    button.style.cursor = 'pointer';
+                    button.onclick = () => window.loadPatients(i);
+                    paginationDiv.appendChild(button);
+                }
+            }
+        }
+    }
+    
+    console.log('âœ… App sync complete! Loading patients...');
+    window.loadPatients(1);
+}
+
+console.log('ðŸŽ‰ Complete migration and sync finished!');
+`;
+            
+            log('ðŸ“‹ Migration code created! Copy the code above and paste it in your EHR app console.', 'success');
+            log('ðŸŽ‰ This will migrate all data from the backup file to Supabase and sync your app!', 'success');
+        }
+    </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+

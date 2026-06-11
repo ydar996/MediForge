@@ -1,0 +1,1254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Appointment</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+    <a href="appointments" style="padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Appointments</a>
+    <a href='/' style='padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;'>← Back to Dashboard</a>
+  </div>
+  <h1>Add Appointment</h1>
+  <form id="add-appointment-form">
+    <label for="patientSearch">Patient Search:</label>
+    <input type="text" id="patientSearch" placeholder="Search by name or date of birth..." required style="min-height: 44px; font-size: 16px; padding: 10px;">
+    <div id="patient-results" style="display: none; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; background: white; position: absolute; z-index: 1000; width: 100%;"></div>
+    <input type="hidden" id="patientName" required>
+    <div id="selected-patient" style="margin-top: 5px; padding: 5px; background: #e8f5e8; border-radius: 4px; display: none;"></div>
+    <label for="date">Date:</label>
+    <input type="date" id="date" min="1900-01-01" required style="min-height: 44px; font-size: 16px; padding: 10px;">
+    <label for="time">Time Slot:</label>
+    <select id="time" required style="min-height: 44px; font-size: 16px; padding: 10px;">
+      <option value="">Select a time slot...</option>
+    </select>
+    <label for="appointmentType">Appointment Type:</label>
+    <select id="appointmentType" required style="min-height: 44px; font-size: 16px; padding: 10px;">
+      <option value="">Select appointment type...</option>
+    </select>
+    <label for="doctor">Doctor:</label>
+    <select id="doctor" onchange="handleDoctorSelection()" style="min-height: 44px; font-size: 16px; padding: 10px;">
+      <option value="">Select a doctor...</option>
+    </select>
+    <input type="text" id="doctorCustom" placeholder="Enter doctor name manually" style="display: none; margin-top: 5px; min-height: 44px; font-size: 16px; padding: 10px;">
+    <label for="notes">Notes:</label>
+    <textarea id="notes" style="min-height: 80px; font-size: 16px; padding: 10px;"></textarea>
+    <button type="submit" style="min-height: 44px; min-width: 120px; font-size: 16px; padding: 12px 24px; touch-action: manipulation;">Add Appointment</button>
+  </form>
+  <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+    <a href="appointments" style="padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Appointments</a>
+    <a href='/' style='padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;'>← Back to Dashboard</a>
+  </div>
+  <!-- Load Supabase SDK directly for mobile compatibility -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113070113071307?v=1"></script>
+  <script src="js/utils.js"></script>  <!-- Centralized utilities for organization ID resolution -->
+  <script src="js/patients.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/universal-data-loader.js?v=202510220113070113071307"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/main.js?v=202510220113070113071307"></script>
+  <script src="js/pricing.js"></script>  <!-- Load pricing for billing services -->
+  <script src="js/appointment-types.js"></script>  <!-- Appointment types utility -->
+  <script src="js/appointments.js?v=20260416140000-appointment-org-reconcile"></script>
+  <script src="js/universal-sync-status.js?v=202510220113070113071307"></script>  <!-- Universal sync status indicator -->
+  <script>
+    window.addEventListener('load', async function() {
+      // Remove any minimum date restriction to allow past dates
+      const dateInput = document.getElementById('date');
+      if (dateInput) {
+        dateInput.removeAttribute('min');
+        // Explicitly allow any date (past, present, or future)
+        dateInput.setAttribute('min', '1900-01-01'); // Set a very old minimum to allow all past dates
+        console.log('✅ Date input configured to allow past dates');
+      }
+      
+      setupPatientSearch(); // Function to setup patient search
+      preSelectPatient(); // Function to pre-select patient if patientId in URL
+      preSelectDateAndTime(); // Function to pre-select date and time from URL
+      loadAvailableSlots(); // Load available time slots
+      await loadDoctors(); // Load existing doctors into dropdown - await to ensure it completes
+      await loadAppointmentTypes(); // Load appointment types from billing services
+      
+      // Pre-select appointment type from URL parameter
+      const urlParams = new URLSearchParams(window.location.search);
+      const appointmentTypeParam = urlParams.get('appointmentType');
+      if (appointmentTypeParam) {
+        setTimeout(() => {
+          const typeSelect = document.getElementById("appointmentType");
+          if (typeSelect) {
+            // Find matching option (by ID or partial match)
+            const options = typeSelect.querySelectorAll('option');
+            for (let option of options) {
+              if (option.value === appointmentTypeParam || 
+                  option.value.includes(appointmentTypeParam) ||
+                  appointmentTypeParam.includes(option.value)) {
+                typeSelect.value = option.value;
+                break;
+              }
+            }
+          }
+        }, 500); // Wait for dropdown to populate
+      }
+    });
+    
+    // Function to load appointment types into dropdown
+    async function loadAppointmentTypes() {
+      const typeSelect = document.getElementById("appointmentType");
+      if (!typeSelect) return;
+      
+      // Clear existing options except the first one
+      typeSelect.innerHTML = '<option value="">Select appointment type...</option>';
+      
+      // Get appointment types (includes standard + billing services)
+      const types = await window.getAppointmentTypes();
+      
+      // Group by category for better UX
+      const categories = {};
+      types.forEach(type => {
+        if (!categories[type.category]) {
+          categories[type.category] = [];
+        }
+        categories[type.category].push(type);
+      });
+      
+      // Add standard types first, then billing services
+      const standardCategories = ['Consultation', 'Laboratory', 'Vitals'];
+      const otherCategories = Object.keys(categories).filter(cat => !standardCategories.includes(cat));
+      
+      // Add standard categories first
+      standardCategories.forEach(category => {
+        if (categories[category]) {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = category;
+          categories[category].forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.id;
+            option.textContent = type.name + (type.description ? ` - ${type.description}` : '');
+            optgroup.appendChild(option);
+          });
+          typeSelect.appendChild(optgroup);
+        }
+      });
+      
+      // Add other categories
+      otherCategories.forEach(category => {
+        if (categories[category]) {
+          const optgroup = document.createElement('optgroup');
+          optgroup.label = category;
+          categories[category].forEach(type => {
+            const option = document.createElement('option');
+            option.value = type.id;
+            option.textContent = type.name + (type.description ? ` - ${type.description}` : '');
+            optgroup.appendChild(option);
+          });
+          typeSelect.appendChild(optgroup);
+        }
+      });
+    }
+    
+    // Function to sync appointment to Supabase (same as desktop)
+    async function syncAppointmentToSupabase(appointment) {
+      try {
+        // Use window.supabaseClient (global from js/supabase-client.js)
+        const supabaseClient = window.supabaseClient;
+        if (!supabaseClient) {
+          console.warn('⚠️ Supabase client not available');
+          return { success: false, error: 'Supabase client not available' };
+        }
+        
+        // Resolve organization_id properly (CRITICAL - must be UUID)
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgId = appointment.organization_id || user.organizationId || user.organization_id;
+        
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[user.org];
+          if (orgData && orgData.id) {
+            orgId = orgData.id;
+          }
+        }
+        
+        if (!orgId) {
+          console.error('❌ CRITICAL: Cannot determine organization ID');
+          return { success: false, error: 'Cannot determine organization ID' };
+        }
+        
+        console.log('✅ Organization ID resolved:', orgId);
+        
+        // Normalize status to lowercase (required by constraint)
+        const normalizedStatus = (appointment.status || 'scheduled').toLowerCase().trim();
+        const allowedStatuses = ['scheduled', 'completed', 'cancelled', 'no_show'];
+        const finalStatus = allowedStatuses.includes(normalizedStatus) ? normalizedStatus : 'scheduled';
+        
+        // Normalize time to HH:MM:SS format
+        let normalizedTime = appointment.time;
+        if (normalizedTime && !normalizedTime.includes(':')) {
+          normalizedTime = null; // Invalid time
+        } else if (normalizedTime && normalizedTime.split(':').length === 2) {
+          normalizedTime = normalizedTime + ':00'; // Add seconds
+        }
+        
+        // Use the type the user selected - never default to General Consultation when we have a value
+        const selectedTypeName = (appointment.appointment_type || appointment.appointmentType || '').trim();
+        const supabaseAppointment = {
+          appointment_id: appointment.id,
+          patient_id: appointment.patientId, // CRITICAL: Include patient UUID
+          patient_name: appointment.patientName,
+          appointment_date: appointment.date,
+          appointment_time: normalizedTime || appointment.time,
+          doctor_name: appointment.doctor || 'Dr. Smith',
+          appointment_type: selectedTypeName || 'General Consultation', // Persist the type the user selected
+          notes: appointment.notes || '',
+          status: finalStatus,
+          organization_id: orgId, // CRITICAL: Use resolved orgId (UUID)
+          duration_minutes: 30
+        };
+        
+        // Debug logging to verify appointment_type is set correctly
+        console.log('🔍 [syncAppointmentToSupabase] Appointment type check:', {
+          'appointment.appointment_type': appointment.appointment_type,
+          'appointment.appointmentType': appointment.appointmentType,
+          'final appointment_type': supabaseAppointment.appointment_type
+        });
+        
+        console.log('🔄 Syncing appointment to Supabase:', supabaseAppointment);
+        
+        const { data, error } = await supabaseClient
+          .from('appointments')
+          .insert(supabaseAppointment);
+        
+        if (error) {
+          console.error('❌ Supabase insert error:', error);
+          const errorMsg = (error.message || '').toLowerCase();
+          // Treat constraint errors and duplicates as success (appointment exists)
+          if (errorMsg.includes('violates check constraint') || errorMsg.includes('duplicate key') || errorMsg.includes('already exists')) {
+            console.log('✅ Appointment already exists in Supabase (non-critical):', error.message);
+            return { success: true, data: null, isDuplicate: true };
+          }
+          // Return error details for debugging
+          return { success: false, error: error.message, errorDetails: error };
+        } else {
+          console.log('✅ Appointment synced to Supabase successfully:', data);
+          return { success: true, data: data };
+        }
+      } catch (error) {
+        console.error('❌ Exception syncing appointment to Supabase:', error);
+        return { success: false, error: error.message || error, errorDetails: error };
+      }
+    }
+
+    /** Uses app-wide window.reconcileFormPatientRowWithDisplayedName (patients.js) + updates datasets if corrected. */
+    async function ensureAddAppointmentPatientIdMatchesName(patientId) {
+      const isUuidFn = (id) => id && typeof id === "string" && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id.trim());
+      if (!isUuidFn(patientId) || typeof window.reconcileFormPatientRowWithDisplayedName !== "function") return patientId;
+      const patientNameEl = document.getElementById("patientName");
+      const selectedEl = document.getElementById("selected-patient");
+      const entered = (patientNameEl && patientNameEl.value) ? patientNameEl.value.trim().replace(/\s+/g, " ") : "";
+      if (!entered) return patientId;
+      let dob = null;
+      if (selectedEl && selectedEl.textContent) {
+        const dm = selectedEl.textContent.match(/DOB:\s*([0-9]{4}-[0-9]{2}-[0-9]{2})/i);
+        if (dm) dob = dm[1];
+      }
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      let orgId = user.organizationId || user.organization_id;
+      if (!orgId && user.org) {
+        const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+        orgId = organizations[user.org]?.id;
+      }
+      const next = await window.reconcileFormPatientRowWithDisplayedName(patientId, entered, { orgId, dob });
+      if (next && isUuidFn(next) && next !== patientId) {
+        if (patientNameEl && selectedEl) {
+          patientNameEl.dataset.supabaseUuid = next;
+          selectedEl.dataset.supabaseUuid = next;
+          patientNameEl.dataset.patientId = next;
+          selectedEl.dataset.patientId = next;
+        }
+        return next;
+      }
+      return patientId;
+    }
+    
+    
+    // Form submit logic
+    const addAppointmentForm = document.getElementById("add-appointment-form");
+    addAppointmentForm.addEventListener("submit", async function(e) {
+      e.preventDefault();
+      // Get doctor name from dropdown or custom input
+      const doctorSelect = document.getElementById("doctor");
+      const doctorCustom = document.getElementById("doctorCustom");
+      const doctorName = doctorSelect.value === "other" ? doctorCustom.value.trim() : doctorSelect.value;
+      
+      if (!doctorName) {
+        alert("Please select or enter a doctor name.");
+        return;
+      }
+      
+      // Get patient ID from dataset or resolve from name
+      const patientNameEl = document.getElementById("patientName");
+      const selectedPatientEl = document.getElementById("selected-patient");
+      
+      // CRITICAL: patientId must be a UUID, not a display ID like "MEC0014"
+      // Check if patientId is a UUID (has dashes)
+      const isUuid = (id) => id && typeof id === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(id);
+      
+      // Try to get UUID from dataset first (stored during patient selection)
+      let patientId = patientNameEl?.dataset?.supabaseUuid || selectedPatientEl?.dataset?.supabaseUuid;
+      
+      // If no UUID, try the patientId from dataset (might be display ID)
+      if (!patientId || !isUuid(patientId)) {
+        patientId = patientNameEl?.dataset?.patientId || selectedPatientEl?.dataset?.patientId;
+      }
+      
+      // If still no valid UUID, try to resolve from name or display ID
+      if ((!patientId || !isUuid(patientId)) && patientNameEl?.value) {
+        // Supabase-first: Load patients from Supabase, fallback to localStorage
+        let patients = [];
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            // Fallback: loadPatientsWithSupabasePriority not available - try direct Supabase before localStorage
+            try {
+              if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const orgId = user.organization_id || user.organizationId;
+                if (orgId) {
+                  const { data } = await window.supabaseClient.from('patients').select('*').eq('organization_id', orgId);
+                  if (data && data.length > 0) {
+                    patients = data.map(p => ({ id: p.id || p.patient_id, patient_id: p.patient_id, firstName: p.first_name, lastName: p.last_name, ...p }));
+                    return;
+                  }
+                }
+              }
+            } catch (e) {}
+            // Final attempt: Try Supabase immediately before localStorage fallback
+            try {
+              if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                const finalPatients = await window.loadPatientsWithSupabasePriority();
+                if (finalPatients && finalPatients.length > 0) {
+                  patients = finalPatients;
+                  return;
+                }
+              }
+            } catch (e) {}
+            // loadPatientsWithSupabasePriority attempted above
+            const _supabaseCheck = window.loadPatientsWithSupabasePriority; patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+        } catch (error) {
+          // Final attempt: Try Supabase immediately before localStorage fallback
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              const finalPatients = await window.loadPatientsWithSupabasePriority();
+              if (finalPatients && finalPatients.length > 0) {
+                patients = finalPatients;
+                return;
+              }
+            }
+          } catch (e) {}
+          // loadPatientsWithSupabasePriority attempted above
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+        
+        const displayId = patientNameEl?.dataset?.displayId;
+        let patient = null;
+        
+        // First try to find by display ID if we have it
+        if (displayId) {
+          patient = patients.find(p => (p.id === displayId || p.patient_id === displayId));
+        }
+        
+        // If not found, try by name
+        if (!patient) {
+          patient = patients.find(p => {
+            const fullName = `${p.firstName || ''} ${p.middleName ? p.middleName + ' ' : ''}${p.lastName || ''}`.trim();
+          return fullName === patientNameEl.value.trim();
+        });
+        }
+        
+        if (patient) {
+          // Try to get UUID from patient object
+          if (patient._supabaseUuid) {
+            patientId = patient._supabaseUuid;
+          } else if (patient.supabaseUuid || patient.supabase_uuid || patient._supabaseId || patient._supabase_id) {
+            patientId = patient.supabaseUuid || patient.supabase_uuid || patient._supabaseId || patient._supabase_id;
+          } else if (isUuid(patient.id)) {
+            patientId = patient.id; // Use UUID if patient.id is actually a UUID
+          } else {
+            // Patient.id is display ID, need to resolve UUID from Supabase
+            console.warn('⚠️ Patient has display ID, attempting to resolve UUID from Supabase...');
+            const resolvedUuid = await resolvePatientUuidFromSupabase(patient.id || patient.patient_id);
+            if (resolvedUuid && isUuid(resolvedUuid)) {
+              patientId = resolvedUuid;
+              console.log('✅ Resolved UUID from Supabase:', patientId);
+            }
+          }
+        }
+      }
+      
+      // If still no valid UUID, try to resolve from Supabase using display ID or name
+      if (!patientId || !isUuid(patientId)) {
+        const displayId = patientNameEl?.dataset?.displayId || patientNameEl?.dataset?.patientId;
+        
+        // First try to resolve by display ID (more reliable)
+        if (displayId && !isUuid(displayId)) {
+          const resolvedUuid = await resolvePatientUuidFromSupabase(displayId);
+          if (resolvedUuid && isUuid(resolvedUuid)) {
+            patientId = resolvedUuid;
+            console.log('✅ Resolved patient UUID from display ID:', patientId);
+          }
+        }
+        
+        // If still not resolved, try by name
+        if ((!patientId || !isUuid(patientId)) && typeof window.resolveSupabasePatientIdByName === 'function') {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          let orgId = user.organizationId || user.organization_id;
+          if (!orgId && user.org) {
+            const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+            orgId = organizations[user.org]?.id;
+          }
+          if (orgId && patientNameEl?.value) {
+            const resolvedUuid = await window.resolveSupabasePatientIdByName(patientNameEl.value, orgId, null);
+            if (resolvedUuid && isUuid(resolvedUuid)) {
+              patientId = resolvedUuid;
+              console.log('✅ Resolved patient UUID from name:', patientId);
+            }
+          }
+        }
+      }
+      
+      if (isUuid(patientId) && typeof window.resolvePatientByIdentifier === "function") {
+        patientId = await ensureAddAppointmentPatientIdMatchesName(patientId);
+      }
+
+      if (!patientId || !isUuid(patientId)) {
+        alert("Could not resolve patient UUID. Please select a patient from the search results.");
+        console.error('❌ CRITICAL: Cannot resolve patient UUID. patientId:', patientId);
+        return;
+      }
+      
+      // Get appointment type
+      const appointmentTypeId = document.getElementById("appointmentType").value;
+      if (!appointmentTypeId) {
+        alert("Please select an appointment type.");
+        return;
+      }
+      
+      // Get appointment type details - use selected option text as fallback so type always persists correctly
+      const appointmentType = await window.getAppointmentTypeById(appointmentTypeId);
+      let appointmentTypeName = appointmentType ? appointmentType.name : null;
+      if (!appointmentTypeName) {
+        const typeSelectEl = document.getElementById("appointmentType");
+        const selectedOption = typeSelectEl && typeSelectEl.options[typeSelectEl.selectedIndex];
+        if (selectedOption && selectedOption.value) {
+          appointmentTypeName = (selectedOption.textContent || '').split(' - ')[0].trim() || appointmentTypeId;
+        } else {
+          appointmentTypeName = appointmentTypeId;
+        }
+      }
+      
+      // Get date and time - NO VALIDATION - past dates/times are allowed
+      // IMPORTANT: Users can schedule appointments in the past, including:
+      // - Past dates (yesterday, last week, etc.)
+      // - Past times on today's date (e.g., if it's 3:00 PM, user can schedule for 2:00 PM today)
+      const appointmentDate = document.getElementById("date").value;
+      const appointmentTime = document.getElementById("time").value;
+      
+      console.log('📅 Creating appointment for date:', appointmentDate);
+      console.log('🕐 Creating appointment for time:', appointmentTime);
+      console.log('✅ Past appointments are allowed - no time validation (including past times on today\'s date)');
+      
+      // CRITICAL: appointment_id must be unique per (org, patient, date, time) so different patients
+      // can have appointments in the same slot and retroactive past-time appointments don't collide
+      const uniqueSuffix = (patientId + '_' + appointmentDate + '_' + appointmentTime).replace(/[:-\s]/g, '');
+      const appointmentId = uniqueSuffix.length <= 100 ? uniqueSuffix : uniqueSuffix.substring(0, 96) + '_' + Date.now().toString(36);
+      const appointment = {
+        id: appointmentId,
+        patientId: patientId,
+        patientName: document.getElementById("patientName").value,
+        date: appointmentDate,
+        time: appointmentTime,
+        doctor: doctorName,
+        appointment_type: appointmentTypeName || 'General Consultation', // Store appointment type name - ensure it's never empty
+        appointmentType: appointmentTypeName || 'General Consultation', // Also store as appointmentType for compatibility
+        appointment_type_id: appointmentTypeId, // Store appointment type ID for reference
+        notes: document.getElementById("notes").value,
+        status: 'scheduled',
+        duration: 30,
+        created_at: new Date().toISOString(),
+        organization_id: JSON.parse(localStorage.getItem("user") || "{}").organizationId
+      };
+      
+      // Debug logging to verify appointment type is set correctly
+      console.log('🔍 [saveAppointment] Appointment created:', {
+        'appointmentTypeName': appointmentTypeName,
+        'appointment.appointment_type': appointment.appointment_type,
+        'appointment.appointmentType': appointment.appointmentType
+      });
+      
+      // Show sync status to user
+      const syncStatus = document.createElement('div');
+      syncStatus.id = 'sync-status';
+      syncStatus.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px;
+        padding: 20px; z-index: 10000; text-align: center; max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      syncStatus.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 10px;">🔄 Saving to Cloud...</div>
+        <div id="sync-details" style="font-size: 14px; color: #666;"></div>
+      `;
+      document.body.appendChild(syncStatus);
+      
+      // HYBRID ARCHITECTURE: SUPABASE-FIRST
+      // Step 1: Try Supabase FIRST (source of truth)
+      const appointmentsKey = getDataKey("appointments");
+      let supabaseSuccess = false;
+      
+      // Ensure Supabase client is initialized
+      if (!window.supabaseClient && typeof window.supabase !== 'undefined') {
+        console.log('🔄 Initializing Supabase client...');
+        if (typeof window.initSupabase === 'function') {
+          window.initSupabase();
+        }
+      }
+      
+      // Try Supabase FIRST
+      const syncResult = await syncAppointmentToSupabase(appointment);
+      
+      console.log('📊 Sync result:', syncResult);
+      
+      // Step 2: If Supabase succeeds, save to localStorage as cache
+      // Step 3: If Supabase fails, save to localStorage as fallback
+      const errorMsg = (syncResult.error || '').toLowerCase();
+      const isConstraintError = errorMsg.includes('violates check constraint') || errorMsg.includes('duplicate key') || errorMsg.includes('already exists');
+      
+      if (syncResult.success || isConstraintError || syncResult.isDuplicate) {
+        // Supabase succeeded - save to localStorage as cache
+        supabaseSuccess = true;
+        let appointments = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
+        const isDuplicate = appointments.some(a => a.id === appointment.id);
+        if (!isDuplicate) {
+          appointments.push(appointment);
+          localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
+          console.log('✅ Appointment cached to localStorage after Supabase success');
+        }
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgIdForNotif = appointment.organization_id || user.organizationId || user.organization_id;
+        if (!orgIdForNotif && user.org) {
+          const orgs = JSON.parse(localStorage.getItem("organizations") || "{}");
+          orgIdForNotif = orgs[user.org]?.id;
+        }
+        if (orgIdForNotif && typeof window.createAppointmentSavedNotification === 'function') {
+          window.createAppointmentSavedNotification(appointment, orgIdForNotif).catch(() => {});
+        }
+        
+        syncStatus.style.borderColor = '#28a745';
+        syncStatus.innerHTML = `
+          <div style="font-weight: bold; margin-bottom: 10px; color: #28a745;">✅ Appointment Saved to Cloud!</div>
+          <div style="font-size: 14px; color: #666;">Appointment synced to Supabase successfully</div>
+        `;
+      } else {
+        // Supabase failed - log the actual error for debugging
+        console.error('❌ CRITICAL: Supabase save failed:', syncResult.error, syncResult.errorDetails);
+        
+        // Fallback to localStorage
+        let appointments = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
+        const isDuplicate = appointments.some(a => a.id === appointment.id);
+        if (!isDuplicate) {
+          appointments.push(appointment);
+          localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
+          console.log('✅ Appointment saved to localStorage (fallback)');
+        }
+        
+        // Show error message to user
+        syncStatus.style.borderColor = '#dc3545';
+        syncStatus.innerHTML = `
+          <div style="font-weight: bold; margin-bottom: 10px; color: #dc3545;">❌ Cloud Save Failed</div>
+          <div style="font-size: 14px; color: #666;">Appointment saved locally. Error: ${syncResult.error || 'Unknown error'}</div>
+        `;
+        
+        // Also alert user about the error
+        alert(`⚠️ Warning: Cloud save failed. Appointment saved locally.\n\nError: ${syncResult.error || 'Unknown error'}\n\nThe appointment will be synced when the issue is resolved.`);
+      }
+      
+      // Verify appointment was saved (either Supabase or localStorage)
+      const verifyAppointments = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
+      const appointmentExists = verifyAppointments.some(a => a.id === appointment.id);
+      
+      if (!appointmentExists) {
+        console.error('❌ CRITICAL: Appointment was not saved! Attempting emergency save...');
+        verifyAppointments.push(appointment);
+        localStorage.setItem(appointmentsKey, JSON.stringify(verifyAppointments));
+        console.log('✅ Emergency save completed');
+      } else {
+        console.log('✅ Verified: Appointment exists before redirect');
+      }
+      
+      // Remove status after 2 seconds and redirect
+      setTimeout(() => {
+        if (document.body.contains(syncStatus)) {
+          document.body.removeChild(syncStatus);
+        }
+        console.log('🔄 Redirecting to appointments.html...');
+        window.location.href = "appointments";
+      }, 2000);
+    });
+    
+    // Helper function to resolve UUID from Supabase by display ID
+    async function resolvePatientUuidFromSupabase(displayId) {
+      if (!displayId || !window.supabaseClient) return null;
+      
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        let orgId = user.organizationId || user.organization_id;
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          orgId = organizations[user.org]?.id;
+        }
+        
+        if (!orgId) return null;
+        
+        const { data, error } = await window.supabaseClient
+          .from('patients')
+          .select('id, patient_id')
+          .eq('patient_id', displayId)
+          .eq('organization_id', orgId)
+          .maybeSingle();
+        
+        if (error) {
+          console.warn('⚠️ Error resolving UUID:', error);
+          return null;
+        }
+        
+        if (data && data.id) {
+          return data.id;
+        }
+      } catch (e) {
+        console.warn('⚠️ Exception resolving UUID:', e);
+      }
+      
+      return null;
+    }
+    
+    // Function to load all patients
+    async function loadAllPatients() {
+          let patients = [];
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              // Try direct Supabase before localStorage fallback
+              try {
+                if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+                  const user = JSON.parse(localStorage.getItem('user') || '{}');
+                  const orgId = user.organization_id || user.organizationId;
+                  if (orgId) {
+                    const { data } = await window.supabaseClient.from('patients').select('*').eq('organization_id', orgId);
+                    if (data && data.length > 0) {
+                      patients = data.map(p => ({ id: p.id || p.patient_id, patient_id: p.patient_id, firstName: p.first_name, lastName: p.last_name, ...p }));
+                    } else {
+                  patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                    }
+                  } else {
+                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                  }
+                } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                }
+              } catch (e) {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+              }
+            }
+          } catch (error) {
+            // Fallback after loadPatientsWithSupabasePriority() attempt above
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+      return patients;
+    }
+
+    function clearAddAppointmentPatientBinding() {
+      const selectedInput = document.getElementById("patientName");
+      const selectedDisplay = document.getElementById("selected-patient");
+      if (selectedInput) {
+        delete selectedInput.dataset.patientId;
+        delete selectedInput.dataset.displayId;
+        delete selectedInput.dataset.supabaseUuid;
+      }
+      if (selectedDisplay) {
+        delete selectedDisplay.dataset.patientId;
+        delete selectedDisplay.dataset.displayId;
+        delete selectedDisplay.dataset.supabaseUuid;
+        selectedDisplay.removeAttribute("data-locked-name");
+        selectedDisplay.style.display = "none";
+        selectedDisplay.innerHTML = "";
+      }
+    }
+
+    // Function to display patient results
+    function displayPatientResults(patients, query, resultsDiv, selectedInput, selectedDisplay, searchInput) {
+      resultsDiv.innerHTML = '';
+      
+      let filtered = patients;
+      if (query && query.length > 0) {
+        filtered = patients.filter(patient => {
+          const fullName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.toLowerCase();
+          const dob = (patient.dob || '').toString();
+          return fullName.includes(query.toLowerCase()) || dob.includes(query);
+          });
+      }
+
+          if (filtered.length > 0) {
+            resultsDiv.style.display = 'block';
+        filtered.slice(0, 50).forEach(patient => { // Show up to 50 results
+          const fullName = `${patient.firstName || ''} ${patient.middleName ? patient.middleName + ' ' : ''}${patient.lastName || ''}`.trim();
+              const resultItem = document.createElement("div");
+              resultItem.style.cursor = 'pointer';
+              resultItem.style.padding = '8px';
+              resultItem.style.borderBottom = '1px solid #eee';
+              resultItem.style.fontSize = '14px';
+              
+              const displayDob = patient.dob ? ` (DOB: ${patient.dob})` : '';
+          resultItem.innerHTML = `<strong>${fullName}</strong>${displayDob}`;
+              
+              // Add hover/touch effect for desktop and tablet compatibility
+              resultItem.addEventListener("mouseenter", function() {
+                this.style.backgroundColor = '#f0f0f0';
+              });
+              resultItem.addEventListener("mouseleave", function() {
+                this.style.backgroundColor = 'white';
+              });
+              
+              // Touch support for tablets
+              resultItem.addEventListener("touchstart", function() {
+                this.style.backgroundColor = '#e0e0e0';
+              });
+              resultItem.addEventListener("touchend", function() {
+                this.style.backgroundColor = 'white';
+              });
+              
+              // Unified click handler (works for both mouse and touch)
+              const handlePatientSelection = async function() {
+                selectedInput.value = fullName;
+                
+                // CRITICAL: Store both display ID and try to resolve UUID
+                // patient.id from loadPatientsWithSupabasePriority is the display ID (patient_id)
+                // We need the Supabase UUID (the primary key 'id' field)
+                const displayId = patient.id || patient.patient_id;
+                let supabaseUuid = null;
+                
+                // Check if patient has a Supabase row UUID (loadPatientsWithSupabasePriority uses _supabaseUuid)
+                if (patient._supabaseUuid) {
+                  supabaseUuid = patient._supabaseUuid;
+                } else if (patient.supabaseUuid || patient.supabase_uuid) {
+                  supabaseUuid = patient.supabaseUuid || patient.supabase_uuid;
+                } else if (patient._supabaseId || patient._supabase_id) {
+                  supabaseUuid = patient._supabaseId || patient._supabase_id;
+                } else {
+                  // Try to resolve UUID from Supabase if we have the display ID
+                  if (displayId && window.supabaseClient) {
+                    try {
+                      const user = JSON.parse(localStorage.getItem('user') || '{}');
+                      let orgId = user.organizationId || user.organization_id;
+                      if (!orgId && user.org) {
+                        const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                        orgId = organizations[user.org]?.id;
+                      }
+                      
+                      if (orgId) {
+                        // Query Supabase to get UUID by patient_id (display ID)
+                        const { data: supabasePatient, error } = await window.supabaseClient
+                          .from('patients')
+                          .select('id, patient_id')
+                          .eq('patient_id', displayId)
+                          .eq('organization_id', orgId)
+                          .maybeSingle();
+                        
+                        if (!error && supabasePatient && supabasePatient.id) {
+                          supabaseUuid = supabasePatient.id;
+                          console.log('✅ Resolved Supabase UUID:', supabaseUuid, 'for display ID:', displayId);
+                        }
+                      }
+                    } catch (e) {
+                      console.warn('⚠️ Could not resolve UUID from Supabase:', e);
+                    }
+                  }
+                }
+                
+                // Store the UUID if we have it, otherwise store display ID (will be resolved later)
+                const patientIdToStore = supabaseUuid || displayId;
+                selectedInput.dataset.patientId = patientIdToStore;
+                selectedInput.dataset.displayId = displayId; // Store display ID separately
+                if (supabaseUuid) {
+                  selectedInput.dataset.supabaseUuid = supabaseUuid;
+                }
+                
+                selectedDisplay.innerHTML = `<strong>Selected:</strong> ${fullName}${displayDob}`;
+                selectedDisplay.dataset.patientId = patientIdToStore;
+                selectedDisplay.dataset.displayId = displayId;
+                if (supabaseUuid) {
+                  selectedDisplay.dataset.supabaseUuid = supabaseUuid;
+                }
+                selectedDisplay.setAttribute("data-locked-name", fullName);
+                
+                selectedDisplay.style.display = 'block';
+                resultsDiv.innerHTML = '';
+                resultsDiv.style.display = 'none';
+                searchInput.value = fullName;
+              };
+              
+              // Support both click and touch events
+              resultItem.addEventListener("click", handlePatientSelection);
+              resultItem.addEventListener("touchend", function(e) {
+                e.preventDefault(); // Prevent double-firing
+                handlePatientSelection();
+              });
+              
+              resultsDiv.appendChild(resultItem);
+            });
+            
+        if (filtered.length > 50) {
+              const moreItem = document.createElement("div");
+              moreItem.style.padding = '8px';
+              moreItem.style.fontStyle = 'italic';
+              moreItem.style.color = '#666';
+          moreItem.textContent = `... and ${filtered.length - 50} more results. Refine your search.`;
+              resultsDiv.appendChild(moreItem);
+            }
+          } else {
+            resultsDiv.style.display = 'block';
+            const noResults = document.createElement("div");
+            noResults.style.padding = '8px';
+            noResults.style.color = '#666';
+            noResults.style.fontStyle = 'italic';
+            noResults.textContent = 'No patients found. Try a different search term.';
+            resultsDiv.appendChild(noResults);
+          }
+    }
+
+    // Function to setup patient search
+    async function setupPatientSearch() {
+      const searchInput = document.getElementById("patientSearch");
+      const resultsDiv = document.getElementById("patient-results");
+      const selectedInput = document.getElementById("patientName");
+      const selectedDisplay = document.getElementById("selected-patient");
+
+      if (searchInput && resultsDiv && selectedInput) {
+        let allPatients = [];
+        let patientsLoaded = false;
+
+        // Load all patients on click (single click to show dropdown)
+        searchInput.addEventListener("click", async function() {
+          if (!patientsLoaded) {
+            allPatients = await loadAllPatients();
+            patientsLoaded = true;
+          }
+          const query = this.value.trim();
+          displayPatientResults(allPatients, query, resultsDiv, selectedInput, selectedDisplay, searchInput);
+        });
+
+        // Add event listener for search input
+        searchInput.addEventListener("input", async function() {
+          const query = this.value.trim();
+          const lock = selectedDisplay && selectedDisplay.getAttribute("data-locked-name");
+          if (lock && query.length > 0) {
+            const l = lock.toLowerCase();
+            const vl = query.toLowerCase();
+            const firstTok = l.split(/\s+/)[0] || "";
+            if (vl.length >= 2 && !l.includes(vl) && !firstTok.startsWith(vl) && !(firstTok.length >= 2 && vl.startsWith(firstTok.slice(0, Math.min(vl.length, firstTok.length))))) {
+              clearAddAppointmentPatientBinding();
+            }
+          }
+          if (this.value.trim() === '') {
+            clearAddAppointmentPatientBinding();
+            selectedInput.value = '';
+            resultsDiv.style.display = 'none';
+            return;
+          }
+          if (!patientsLoaded) {
+            allPatients = await loadAllPatients();
+            patientsLoaded = true;
+          }
+          displayPatientResults(allPatients, query, resultsDiv, selectedInput, selectedDisplay, searchInput);
+        });
+
+        // Hide results on click outside
+        document.addEventListener("click", function(e) {
+          if (!searchInput.contains(e.target) && !resultsDiv.contains(e.target)) {
+            resultsDiv.style.display = 'none';
+          }
+        });
+      }
+    }
+    
+    // Function to pre-select patient
+    async function preSelectPatient() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      if (patientId) {
+        // Supabase-first: Load patients from Supabase, fallback to localStorage
+        let patients = [];
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            // Fallback: loadPatientsWithSupabasePriority not available - try direct Supabase before localStorage
+            try {
+              if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+                const user = JSON.parse(localStorage.getItem('user') || '{}');
+                const orgId = user.organization_id || user.organizationId;
+                if (orgId) {
+                  const { data } = await window.supabaseClient.from('patients').select('*').eq('organization_id', orgId);
+                  if (data && data.length > 0) {
+                    patients = data.map(p => ({ id: p.id || p.patient_id, patient_id: p.patient_id, firstName: p.first_name, lastName: p.last_name, ...p }));
+                    return;
+                  }
+                }
+              }
+            } catch (e) {}
+            // Final attempt: Try Supabase immediately before localStorage fallback
+            try {
+              if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                const finalPatients = await window.loadPatientsWithSupabasePriority();
+                if (finalPatients && finalPatients.length > 0) {
+                  patients = finalPatients;
+                  return;
+                }
+              }
+            } catch (e) {}
+            // loadPatientsWithSupabasePriority attempted above
+            const _supabaseCheck = window.loadPatientsWithSupabasePriority; patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+        } catch (error) {
+          // Final attempt: Try Supabase immediately before localStorage fallback
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              const finalPatients = await window.loadPatientsWithSupabasePriority();
+              if (finalPatients && finalPatients.length > 0) {
+                patients = finalPatients;
+                return;
+              }
+            }
+          } catch (e) {}
+          // loadPatientsWithSupabasePriority attempted above
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+        
+        const selectedPatient = patients.find(p => p.id === patientId);
+        if (selectedPatient) {
+          const fullName = `${selectedPatient.firstName} ${selectedPatient.middleName ? selectedPatient.middleName : ''} ${selectedPatient.lastName}`;
+          document.getElementById("patientName").value = fullName;
+          document.getElementById("patientSearch").value = fullName;
+          document.getElementById("selected-patient").innerHTML = `<strong>Selected:</strong> ${fullName} (DOB: ${selectedPatient.dob || 'N/A'})`;
+          document.getElementById("selected-patient").style.display = 'block';
+        }
+      }
+    }
+    
+    // Function to pre-select date and time from URL parameters
+    function preSelectDateAndTime() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const date = urlParams.get("date");
+      const time = urlParams.get("time");
+      
+      if (date) {
+        document.getElementById("date").value = date;
+      }
+      if (time) {
+        // Time will be set after slots are loaded
+        window.preSelectedTime = time;
+      }
+    }
+    
+    // Function to load available time slots
+    function loadAvailableSlots() {
+      const dateInput = document.getElementById("date");
+      const timeSelect = document.getElementById("time");
+
+      if (!dateInput || !timeSelect) {
+        console.error('❌ Date input or time select not found');
+        return;
+      }
+
+      async function updateSlots() {
+        try {
+        const selectedDate = dateInput.value;
+          console.log('📅 Date changed to:', selectedDate);
+        if (!selectedDate) {
+          timeSelect.innerHTML = '<option value="">Select date first</option>';
+          return;
+        }
+
+        const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+
+        // Get all slots from configured schedule - NO FILTERING BY TIME
+        if (typeof getAllSlots !== 'function') {
+          console.error('❌ getAllSlots function not available');
+          timeSelect.innerHTML = '<option value="">Error: Schedule not configured</option>';
+          return;
+        }
+        const allSlots = getAllSlots();
+        console.log('📋 getAllSlots returned', allSlots.length, 'slots');
+        
+        // Count doctors in organization to multiply available slots
+        if (typeof getDoctorCount !== 'function') {
+          console.warn('⚠️ getDoctorCount function not available, defaulting to 1 doctor');
+          var doctorCount = 1;
+        } else {
+          var doctorCount = await getDoctorCount();
+        }
+        console.log(`👨‍⚕️ Found ${doctorCount} doctor(s) in organization. Slots will be multiplied by ${doctorCount}.`);
+          
+        // Count occupied slots per time slot (multiple doctors can occupy same time)
+        const occupiedByTime = {};
+        appointments
+          .filter(appt => appt.date === selectedDate)
+          .forEach(appt => {
+            if (!occupiedByTime[appt.time]) {
+              occupiedByTime[appt.time] = 0;
+            }
+            occupiedByTime[appt.time]++;
+          });
+        
+        // Calculate available slots: for each time slot, available = (doctorCount - occupied)
+        // CRITICAL: We show ALL slots regardless of current time - past times are allowed for historical data entry
+        // IMPORTANT: This includes past times on today's date (e.g., if it's 3:00 PM, user can select 2:00 PM)
+        console.log('🕐 Loading time slots - ALL slots will be shown (past times allowed, including past times on today\'s date)');
+        console.log('📅 Selected date:', selectedDate);
+        console.log('📋 Total slots from schedule:', allSlots.length);
+        console.log('👨‍⚕️ Doctor count:', doctorCount);
+        
+        // BUG FIX: Show ALL slots from schedule, even if fully occupied
+        // This ensures past times are always visible, even if all doctors are booked
+        const allSlotsWithAvailability = allSlots.map(slot => {
+          const occupiedCount = occupiedByTime[slot] || 0;
+          const availableCount = doctorCount - occupiedCount;
+          return { slot, availableCount, occupiedCount };
+        });
+        
+        console.log('✅ Processing all slots (including fully occupied past times):', allSlotsWithAvailability.length);
+          
+          timeSelect.innerHTML = '<option value="">Select a time slot...</option>';
+          
+          // CRITICAL: Show ALL slots including past times - NO TIME FILTERING
+          // IMPORTANT: This includes past times on today's date (e.g., if it's 3:00 PM, user can select 2:00 PM)
+          // BUG FIX: Show slots even if fully occupied (availableCount = 0) to allow past appointments
+          const sortedSlots = allSlotsWithAvailability.sort((a, b) => a.slot.localeCompare(b.slot));
+          const currentTime = new Date();
+          console.log('📝 Displaying ALL unique slots (including past times on today\'s date):', sortedSlots.map(s => s.slot));
+          console.log('🕐 Current time:', currentTime.toLocaleTimeString());
+          console.log('📋 Total unique slots to display:', sortedSlots.length);
+          console.log('⚠️ IMPORTANT: Past time slots are ALLOWED and will be shown (including past times on today\'s date)');
+          
+          sortedSlots.forEach(({ slot, availableCount, occupiedCount }) => {
+              const option = document.createElement("option");
+              option.value = slot;
+            
+            // Show availability status, but ALWAYS show the slot (even if fully occupied)
+            if (availableCount === 0) {
+              // Fully occupied - but still show it for past appointments
+              option.text = `${slot} (Fully booked - can still schedule for past)`;
+              option.style.color = '#666'; // Gray out but still selectable
+            } else if (availableCount < doctorCount) {
+              option.text = `${slot} (${availableCount} of ${doctorCount} doctors available)`;
+            } else {
+              option.text = slot;
+            }
+            // CRITICAL: Add ALL slots - do NOT filter by current time or availability
+              timeSelect.appendChild(option);
+            });
+          console.log('✅ All time slots added to dropdown (past times included)');
+          console.log('📊 Final dropdown has', timeSelect.options.length, 'options');
+        
+        // Set pre-selected time if available
+        if (window.preSelectedTime) {
+          timeSelect.value = window.preSelectedTime;
+          window.preSelectedTime = null; // Clear after setting
+        }
+        } catch (error) {
+          console.error('❌ Error updating slots:', error);
+          timeSelect.innerHTML = '<option value="">Error loading slots. Check console.</option>';
+        }
+      }
+      
+      // Update slots when date changes - use multiple event types for better compatibility
+      dateInput.addEventListener("change", function() {
+        console.log('📅 Date change event triggered, value:', dateInput.value);
+        updateSlots();
+      });
+      dateInput.addEventListener("input", function() {
+        console.log('📅 Date input event triggered, value:', dateInput.value);
+        updateSlots();
+      });
+      
+      // Initial load - only if date is already set
+      if (dateInput.value) {
+        console.log('📅 Initial date value found:', dateInput.value);
+      updateSlots();
+      } else {
+        timeSelect.innerHTML = '<option value="">Select date first</option>';
+      }
+    }
+    
+    // Function to load existing doctors into dropdown
+    async function loadDoctors() {
+      const doctorSelect = document.getElementById("doctor");
+      if (!doctorSelect) return;
+      
+      // Get organization ID
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      let orgId = currentUser.organizationId || currentUser.organization_id;
+      
+      // Resolve organization ID if needed
+      if (!orgId && currentUser.org) {
+        const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+        const orgData = organizations[currentUser.org];
+        if (orgData && orgData.id) {
+          orgId = orgData.id;
+        } else if (typeof currentUser.org === 'string' && currentUser.org.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          // org is already a UUID
+          orgId = currentUser.org;
+        }
+      }
+      
+      console.log('🔍 Loading doctors for organization:', orgId);
+      
+      let users = [];
+      
+      // Try Supabase first to get all users in the organization
+      if (window.supabaseClient && orgId) {
+        try {
+          console.log('🔍 Fetching doctors from Supabase...');
+          const { data: supabaseUsers, error } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('organization_id', orgId);
+          
+          if (!error && supabaseUsers && supabaseUsers.length > 0) {
+            console.log(`✅ Loaded ${supabaseUsers.length} users from Supabase`);
+            // Convert Supabase format to localStorage format
+            users = supabaseUsers.map(su => ({
+              id: su.id,
+              username: su.username,
+              firstName: su.first_name || su.firstName || '',
+              lastName: su.last_name || su.lastName || '',
+              email: su.email || '',
+              role: su.role || '',
+              organizationId: su.organization_id,
+              organization_id: su.organization_id
+            }));
+            
+            // Save to localStorage for future use
+            localStorage.setItem(getDataKey("users"), JSON.stringify(users));
+          } else {
+            console.warn('⚠️ No users found in Supabase or error:', error);
+          }
+        } catch (error) {
+          console.warn('⚠️ Supabase query failed:', error);
+        }
+      }
+      
+      // Fallback to localStorage if Supabase didn't return users
+      if (users.length === 0) {
+        users = JSON.parse(localStorage.getItem(getDataKey("users")) || "[]");
+        console.log('🔍 Users from localStorage:', users.length);
+        
+        // Also check the current user (stored as single object)
+        if (currentUser && currentUser.username) {
+          const existingUser = users.find(u => u.username === currentUser.username);
+          if (!existingUser) {
+            users.push(currentUser);
+            console.log('🔍 Added current user to users array');
+          }
+        }
+      }
+      
+      // Filter for doctors with various role formats
+      const doctors = users.filter(user => {
+        const role = (user.role || '').toLowerCase();
+        const isDoctor = role === "doctor" || role.includes("doctor");
+        console.log(`🔍 User ${user.firstName || ''} ${user.lastName || ''} has role: "${user.role}" - ${isDoctor ? 'IS DOCTOR' : 'not doctor'}`);
+        return isDoctor;
+      });
+      
+      console.log('🔍 Doctors found:', doctors.length);
+      console.log('🔍 Doctors data:', doctors);
+      
+      // Clear existing options except the first one
+      doctorSelect.innerHTML = '<option value="">Select a doctor...</option>';
+      
+      // Add doctor options
+      doctors.forEach(doctor => {
+        const firstName = doctor.firstName || doctor.first_name || '';
+        const lastName = doctor.lastName || doctor.last_name || '';
+        if (firstName && lastName) {
+          const option = document.createElement("option");
+          option.value = `${firstName} ${lastName}`;
+          option.textContent = `Dr. ${firstName} ${lastName}`;
+          doctorSelect.appendChild(option);
+        }
+      });
+      
+      // Add "Other" option for manual entry
+      const otherOption = document.createElement("option");
+      otherOption.value = "other";
+      otherOption.textContent = "Other (Enter manually)";
+      doctorSelect.appendChild(otherOption);
+      
+      console.log(`✅ Loaded ${doctors.length} doctors into dropdown`);
+    }
+    
+    // Function to handle doctor selection
+    function handleDoctorSelection() {
+      const doctorSelect = document.getElementById("doctor");
+      const doctorCustom = document.getElementById("doctorCustom");
+      
+      if (doctorSelect.value === "other") {
+        // Show custom input field
+        doctorCustom.style.display = "block";
+        doctorCustom.required = true;
+        doctorCustom.focus();
+      } else {
+        // Hide custom input field
+        doctorCustom.style.display = "none";
+        doctorCustom.required = false;
+        doctorCustom.value = "";
+      }
+    }
+  </script>
+  
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('🔄 Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+

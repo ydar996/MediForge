@@ -1,0 +1,232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>?? Check ydar109 User</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Check ydar109 User</h1>
+        <p><strong>Purpose:</strong> Find and verify ydar109 user registration</p>
+        
+        <div class="section">
+            <h3>?? Search for ydar109</h3>
+            <button onclick="checkYdar109()">Check ydar109 User</button>
+            <button onclick="checkAllUsers()">Check All Users</button>
+            <button onclick="checkAllOrganizations()">Check All Organizations</button>
+        </div>
+
+        <div class="section">
+            <h3>?? Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    
+  </script>
+    
+  
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        async function initSupabase() {
+            if (!supabase) {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    log('? Supabase client initialized', 'success');
+                    return true;
+                } catch (error) {
+                    log('? Error initializing Supabase: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function checkYdar109() {
+            if (!await initSupabase()) return;
+
+            log('?? Searching for ydar109 user...');
+            
+            try {
+                // Check in users table
+                const { data: users, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar109');
+
+                if (usersError) {
+                    log(`? Error searching users: ${usersError.message}`, 'error');
+                    return;
+                }
+
+                if (users && users.length > 0) {
+                    log(`? Found ${users.length} ydar109 user(s):`, 'success');
+                    users.forEach((user, index) => {
+                        log(`?? User ${index + 1}:`);
+                        log(`   - Username: ${user.username}`);
+                        log(`   - Email: ${user.email}`);
+                        log(`   - Role: ${user.role}`);
+                        log(`   - Organization ID: ${user.organization_id}`);
+                        log(`   - First Name: ${user.first_name}`);
+                        log(`   - Last Name: ${user.last_name}`);
+                        log(`   - Created: ${user.created_at}`);
+                        log('');
+                    });
+
+                    // Check organization for each user
+                    for (const user of users) {
+                        if (user.organization_id) {
+                            log(`?? Checking organization for user ${user.username}...`);
+                            const { data: org, error: orgError } = await supabase
+                                .from('organizations')
+                                .select('*')
+                                .eq('id', user.organization_id)
+                                .single();
+
+                            if (orgError) {
+                                log(`? Error fetching organization: ${orgError.message}`, 'error');
+                            } else if (org) {
+                                log(`? Organization found:`, 'success');
+                                log(`   - Name: ${org.name}`);
+                                log(`   - Address: ${org.address_line1}`);
+                                log(`   - City: ${org.city}`);
+                                log(`   - Phone: ${org.phone}`);
+                                log(`   - Created: ${org.created_at}`);
+                            }
+                        }
+                    }
+                } else {
+                    log('? No ydar109 user found', 'error');
+                }
+
+            } catch (e) {
+                log(`? Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkAllUsers() {
+            if (!await initSupabase()) return;
+
+            log('?? Checking all users...');
+            
+            try {
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`? Error fetching users: ${error.message}`, 'error');
+                    return;
+                }
+
+                log(`?? Found ${users.length} total users:`, 'success');
+                users.forEach((user, index) => {
+                    log(`${index + 1}. ${user.username} (${user.role})`);
+                    log(`   - Email: ${user.email}`);
+                    log(`   - Organization ID: ${user.organization_id}`);
+                    log(`   - Created: ${user.created_at}`);
+                    log('');
+                });
+
+            } catch (e) {
+                log(`? Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkAllOrganizations() {
+            if (!await initSupabase()) return;
+
+            log('?? Checking all organizations...');
+            
+            try {
+                const { data: orgs, error } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`? Error fetching organizations: ${error.message}`, 'error');
+                    return;
+                }
+
+                log(`?? Found ${orgs.length} total organizations:`, 'success');
+                orgs.forEach((org, index) => {
+                    log(`${index + 1}. ${org.name}`);
+                    log(`   - ID: ${org.id}`);
+                    log(`   - Address: ${org.address_line1}`);
+                    log(`   - City: ${org.city}`);
+                    log(`   - Phone: ${org.phone}`);
+                    log(`   - Created: ${org.created_at}`);
+                    log('');
+                });
+
+            } catch (e) {
+                log(`? Exception: ${e.message}`, 'error');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('?? ydar109 user checker loaded and ready');
+            log('?? Click buttons above to search for ydar109 user');
+        });
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+

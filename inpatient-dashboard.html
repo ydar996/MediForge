@@ -1,0 +1,3828 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Inpatient Dashboard - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=59">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"></script>
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+      --warm-orange: #FF8C00;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1600px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 55%, var(--soft-white) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 10px 28px rgba(54, 69, 79, 0.15);
+      border: 2px solid var(--kente-gold);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .patient-header {
+      background: linear-gradient(135deg, var(--adire-blue), var(--primary-green));
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .patient-header-item {
+      background: rgba(255,255,255,0.1);
+      padding: 10px;
+      border-radius: 6px;
+    }
+    
+    .patient-header-item strong {
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      opacity: 0.9;
+    }
+    
+    .patient-header-item span {
+      font-size: 16px;
+      font-weight: 700;
+    }
+    
+    .tabs {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 20px;
+      border-bottom: 3px solid var(--primary-green);
+      flex-wrap: nowrap;
+      overflow-x: auto;
+      -webkit-overflow-scrolling: touch;
+      scrollbar-width: thin;
+    }
+    
+    .tab {
+      background: var(--soft-white);
+      color: var(--charcoal);
+      border: none;
+      padding: 12px 18px;
+      border-radius: 8px 8px 0 0;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      transition: all 0.3s ease;
+      white-space: nowrap;
+      flex: 0 0 auto;
+      width: auto !important;
+      display: inline-flex !important;
+      align-items: center;
+      justify-content: center;
+      margin: 0 !important;
+    }
+
+    /* Nigerian heritage palette for tabs */
+    .tab:nth-child(1) { background: var(--primary-green); color: white; }
+    .tab:nth-child(2) { background: var(--kente-gold); color: var(--charcoal); }
+    .tab:nth-child(3) { background: var(--adire-blue); color: white; }
+    .tab:nth-child(4) { background: var(--coral); color: white; }
+    .tab:nth-child(5) { background: var(--warm-orange); color: var(--charcoal); }
+    .tab:nth-child(6) { background: var(--dark-green); color: white; }
+    .tab:nth-child(7) { background: var(--charcoal); color: white; }
+    .tab:nth-child(8) { background: var(--primary-green); color: var(--nigerian-white); }
+    .tab:nth-child(9) { background: var(--warm-gray); color: var(--charcoal); }
+
+    /* Force theme overrides against global CSS */
+    .inpatient-theme .tabs .tab {
+      background: var(--soft-white) !important;
+      color: var(--charcoal) !important;
+      border: 1px solid rgba(54, 69, 79, 0.15) !important;
+      box-shadow: none !important;
+    }
+    .inpatient-theme .tabs .tab:nth-child(1) { background: var(--primary-green) !important; color: white !important; }
+    .inpatient-theme .tabs .tab:nth-child(2) { background: var(--kente-gold) !important; color: var(--charcoal) !important; }
+    .inpatient-theme .tabs .tab:nth-child(3) { background: var(--adire-blue) !important; color: white !important; }
+    .inpatient-theme .tabs .tab:nth-child(4) { background: var(--coral) !important; color: white !important; }
+    .inpatient-theme .tabs .tab:nth-child(5) { background: var(--warm-orange) !important; color: var(--charcoal) !important; }
+    .inpatient-theme .tabs .tab:nth-child(6) { background: var(--dark-green) !important; color: white !important; }
+    .inpatient-theme .tabs .tab:nth-child(7) { background: var(--charcoal) !important; color: white !important; }
+    .inpatient-theme .tabs .tab:nth-child(8) { background: var(--primary-green) !important; color: var(--nigerian-white) !important; }
+    .inpatient-theme .tabs .tab:nth-child(9) { background: var(--warm-gray) !important; color: var(--charcoal) !important; }
+    
+    .tab:hover {
+      background: var(--warm-gray);
+    }
+    
+    .tab.active {
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.25);
+      transform: translateY(-1px);
+      outline: 2px solid rgba(0, 0, 0, 0.15);
+    }
+    .tab {
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.35);
+    }
+    .tab:nth-child(3),
+    .tab:nth-child(4),
+    .tab:nth-child(6),
+    .tab:nth-child(7),
+    .tab:nth-child(8) {
+      text-shadow: 0 1px 0 rgba(0, 0, 0, 0.25);
+    }
+    
+    .tab-content {
+      display: none;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 60%, var(--soft-white) 100%);
+      padding: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--adire-blue);
+      box-shadow: 0 4px 14px rgba(65, 105, 225, 0.12);
+      min-height: 400px;
+    }
+    
+    .tab-content.active {
+      display: block;
+    }
+    
+    .section-title {
+      color: var(--adire-blue);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--kente-gold);
+      padding-bottom: 10px;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 5px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--charcoal), var(--dark-green));
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    
+    table th {
+      background: linear-gradient(135deg, var(--adire-blue), var(--kente-gold));
+      color: white;
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+    }
+    
+    table td {
+      padding: 10px;
+      border-bottom: 1px solid rgba(54, 69, 79, 0.15);
+    }
+    
+    table tr:hover {
+      background: var(--soft-white);
+    }
+
+    .inpatient-theme table th {
+      background: var(--adire-blue) !important;
+      background-image: none !important;
+      color: white !important;
+    }
+
+    .inpatient-theme table tr:hover {
+      background: var(--warm-gray) !important;
+    }
+
+    .inpatient-theme #vitals-flowsheet-table th,
+    .inpatient-theme .tab-content table th,
+    .inpatient-theme .tab-content table thead th,
+    .inpatient-theme .inpatient-table th {
+      background: var(--adire-blue) !important;
+      background-image: none !important;
+      color: white !important;
+      border-color: rgba(54, 69, 79, 0.15) !important;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid rgba(54, 69, 79, 0.2);
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-pending {
+      background: var(--warm-orange);
+      color: var(--charcoal);
+    }
+    
+    .status-active {
+      background: var(--primary-green);
+      color: white;
+    }
+    
+    .status-completed {
+      background: var(--charcoal);
+      color: white;
+    }
+    
+    .alert-box {
+      background: var(--warm-gray);
+      border: 2px solid var(--warm-orange);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 15px;
+    }
+    
+    .alert-box.critical {
+      background: rgba(255, 127, 80, 0.2);
+      border-color: var(--coral);
+    }
+
+    .drug-suggestions {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 1px solid #ced4da;
+      border-top: none;
+      border-radius: 0 0 4px 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10000;
+      display: none;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-top: -1px;
+    }
+
+    .drug-suggestion {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+
+    .drug-suggestion:hover {
+      background: rgba(65, 105, 225, 0.08);
+    }
+
+    .drug-name {
+      font-weight: 600;
+      font-size: 13px;
+    }
+
+    .drug-strength {
+      font-size: 12px;
+      color: #666;
+    }
+
+    #med-admin-form .form-group,
+    #add-order-form .form-group {
+      position: relative;
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/prescriptions.js?v=20251210040000"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body class="inpatient-theme">
+  <div class="container">
+    <div class="back-button-row" style="display: flex; gap: 10px; margin-bottom: 20px;">
+      <button class="back-button" style="flex: 1;" onclick="goBack()">← Back to Admissions Dashboard</button>
+      <button class="back-button" style="flex: 1;" onclick="goToMainDashboard()">← Back to Main Dashboard</button>
+    </div>
+    
+    <h1>🏥 Inpatient Dashboard</h1>
+    
+    <!-- Patient Header -->
+    <div class="patient-header" id="patient-header">
+      <div class="patient-header-item">
+        <strong>Patient</strong>
+        <span id="header-patient-name">Loading...</span>
+      </div>
+      <div class="patient-header-item">
+        <strong>Room / Bed</strong>
+        <span id="header-room-bed">Loading...</span>
+      </div>
+      <div class="patient-header-item">
+        <strong>Length of Stay</strong>
+        <span id="header-los">Loading...</span>
+      </div>
+    </div>
+    
+    <!-- Tabs -->
+    <div class="tabs">
+      <button class="tab active" onclick="switchTab('vitals')">📊 Vitals Flowsheet</button>
+      <button class="tab" onclick="switchTab('orders')">📋 Active Orders</button>
+      <button class="tab" onclick="switchTab('results')">🔬 Results</button>
+      <button class="tab" onclick="switchTab('notes')">📝 Notes</button>
+      <button class="tab" onclick="switchTab('care-plan')">🎯 Care Plan</button>
+      <button class="tab" onclick="switchTab('medications')">💊 Medications</button>
+      <button class="tab" onclick="switchTab('procedures')">🏥 Procedures</button>
+      <button class="tab" onclick="switchTab('discharge')">🚪 Discharge</button>
+      <button class="tab" onclick="switchTab('alerts')">⚠️ Alerts</button>
+    </div>
+    
+    <!-- Vitals Flowsheet Tab -->
+    <div id="tab-vitals" class="tab-content active">
+      <h2 class="section-title">Vitals Flowsheet</h2>
+      <button onclick="showAddVitalsForm()">➕ Add Vitals</button>
+      <div id="vitals-flowsheet-container" style="overflow-x: auto; margin-top: 20px;">
+        <table id="vitals-flowsheet-table" class="inpatient-table">
+          <thead>
+            <tr>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Time</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Temp (°C)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">HR (bpm)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">RR (breaths/min)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">BP (mmHg)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">O2 Sat (%)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Pain (0-10)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Weight (kg)</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Recorded By</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Actions</th>
+            </tr>
+          </thead>
+          <tbody id="vitals-flowsheet-tbody">
+            <tr><td colspan="10">Loading vitals...</td></tr>
+          </tbody>
+        </table>
+      </div>
+      
+      <!-- Add Vitals Form (Hidden by default) -->
+      <div id="add-vitals-form" style="display: none; margin-top: 20px; padding: 20px; background: var(--soft-white); border-radius: 8px;">
+        <h3>Add New Vitals</h3>
+        <form id="vitals-form" onsubmit="handleAddVitals(event)">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Temperature (°C)</label>
+              <input type="number" id="vital-temp" step="0.1" min="30" max="45">
+            </div>
+            <div class="form-group">
+              <label>Heart Rate (bpm)</label>
+              <input type="number" id="vital-hr" min="30" max="200">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Respiratory Rate (breaths/min)</label>
+              <input type="number" id="vital-rr" min="8" max="40">
+            </div>
+            <div class="form-group">
+              <label>Systolic BP (mmHg)</label>
+              <input type="number" id="vital-systolic" min="60" max="250">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Diastolic BP (mmHg)</label>
+              <input type="number" id="vital-diastolic" min="40" max="150">
+            </div>
+            <div class="form-group">
+              <label>O2 Saturation (%)</label>
+              <input type="number" id="vital-o2sat" min="70" max="100" step="0.1">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Pain Score (0-10)</label>
+              <input type="number" id="vital-pain" min="0" max="10">
+            </div>
+            <div class="form-group">
+              <label>Height (cm)</label>
+              <input type="number" id="vital-height" step="0.1" min="30" max="250">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Weight (kg)</label>
+              <input type="number" id="vital-weight" step="0.1" min="1" max="300">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea id="vital-notes" rows="2"></textarea>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="submit">💾 Save Vitals</button>
+            <button type="button" class="btn-secondary" onclick="hideAddVitalsForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+      
+      <!-- Vitals Chart -->
+      <div style="margin-top: 30px;">
+        <h3>Vitals Trends</h3>
+        <canvas id="vitals-chart" style="max-height: 300px;"></canvas>
+      </div>
+    </div>
+    
+    <!-- Active Orders Tab -->
+    <div id="tab-orders" class="tab-content">
+      <h2 class="section-title">Active Orders</h2>
+      <button onclick="showAddOrderForm()">➕ New Order</button>
+      <div id="orders-list" style="margin-top: 20px;">
+        <p>Loading orders...</p>
+      </div>
+      
+      <!-- Add Order Form (Hidden) -->
+      <div id="add-order-form" style="display: none; margin-top: 20px; padding: 20px; background: var(--soft-white); border-radius: 8px;">
+        <h3>Add New Order</h3>
+        <form id="order-form" onsubmit="handleAddOrder(event)">
+          <div class="form-group">
+            <label>Order Type *</label>
+            <select id="order-type" required onchange="handleOrderTypeChange()">
+              <option value="">Select order type...</option>
+              <option value="medication">Medication</option>
+              <option value="test">Lab Test</option>
+              <option value="imaging">Imaging</option>
+              <option value="procedure">Procedure</option>
+              <option value="diet">Diet</option>
+              <option value="activity">Activity</option>
+            </select>
+          </div>
+          <div id="order-details-container">
+            <!-- Order details will be populated based on type -->
+          </div>
+          <div id="order-scheduling-fields">
+            <div class="form-group">
+              <label>Scheduled Time</label>
+              <input type="datetime-local" id="order-scheduled-time">
+            </div>
+            <div class="form-group">
+              <label>Notes</label>
+              <textarea id="order-notes" rows="2"></textarea>
+            </div>
+          </div>
+          <div id="order-actions" style="display: flex; gap: 10px;">
+            <button type="submit">💾 Create Order</button>
+            <button type="button" class="btn-secondary" onclick="hideAddOrderForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Results Tab -->
+    <div id="tab-results" class="tab-content">
+      <h2 class="section-title">Lab & Imaging Results</h2>
+      <div id="results-list" style="margin-top: 20px;">
+        <p>Loading results...</p>
+      </div>
+    </div>
+    
+    <!-- Notes Tab -->
+    <div id="tab-notes" class="tab-content">
+      <h2 class="section-title">Progress Notes</h2>
+      <button onclick="window.location.href='rounds-documentation.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')">📝 Document Rounds</button>
+      <button onclick="window.location.href='inpatient-assessment.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')">📋 Initial Assessment</button>
+      <div id="notes-list" style="margin-top: 20px;">
+        <p>Loading notes...</p>
+      </div>
+    </div>
+    
+    <!-- Care Plan Tab -->
+    <div id="tab-care-plan" class="tab-content">
+      <h2 class="section-title">Care Plan</h2>
+      <button onclick="window.location.href='care-plan.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')">🎯 Manage Care Plan</button>
+      <div id="care-plan-display" style="margin-top: 20px;">
+        <p>Loading care plan...</p>
+      </div>
+    </div>
+    
+    <!-- Medications Tab -->
+    <div id="tab-medications" class="tab-content">
+      <h2 class="section-title">Medications & Administration</h2>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button onclick="showMedicationAdminForm()">💉 Record Administration</button>
+        <button id="btn-new-med-order" onclick="openMedicationOrderForm()">➕ New Medication Order</button>
+      </div>
+      <div id="medications-list" style="margin-top: 20px;">
+        <p>Loading medications...</p>
+      </div>
+      
+      <!-- Medication Administration Form (Hidden) -->
+      <div id="med-admin-form" style="display: none; margin-top: 20px; padding: 20px; background: var(--soft-white); border-radius: 8px;">
+        <h3>Record Medication Administration</h3>
+        <form id="med-admin-form-element" onsubmit="handleMedAdmin(event)">
+          <div class="form-group">
+            <label>Medication *</label>
+            <select id="med-admin-medication" required>
+              <option value="">Select medication...</option>
+            </select>
+            <button type="button" class="btn-secondary btn-small" onclick="showNewMedicationForm()">+ Add New Medication</button>
+          </div>
+          <div id="new-medication-form" class="add-item-form" style="display: none;">
+            <div class="form-row">
+              <div class="form-group">
+                <label>Medication Name *</label>
+                <div style="position: relative;">
+                  <input type="text" id="new-med-name" placeholder="Medication name" autocomplete="off">
+                  <div id="new-med-name-suggestions" class="drug-suggestions"></div>
+                </div>
+              </div>
+              <div class="form-group">
+                <label>Strength *</label>
+                <div style="position: relative;">
+                  <input type="text" id="new-med-dosage" placeholder="e.g., 250mg" autocomplete="off">
+                  <div id="new-med-dosage-suggestions" class="drug-suggestions"></div>
+                </div>
+              </div>
+            </div>
+            <div class="form-row">
+              <div class="form-group">
+                <label>Frequency</label>
+                <select id="new-med-frequency"></select>
+              </div>
+              <div class="form-group">
+                <label>Route</label>
+                <select id="new-med-route"></select>
+              </div>
+            </div>
+            <div style="display: flex; gap: 10px;">
+              <button type="button" onclick="addNewMedicationFromAdmin()">Save Medication</button>
+              <button type="button" class="btn-secondary" onclick="hideNewMedicationForm()">Cancel</button>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Scheduled Time *</label>
+              <input type="datetime-local" id="med-admin-scheduled" required>
+            </div>
+            <div class="form-group">
+              <label>Administered Time</label>
+              <input type="datetime-local" id="med-admin-administered">
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Dose Given</label>
+              <input type="text" id="med-admin-dose">
+            </div>
+            <div class="form-group">
+              <label>Route</label>
+              <select id="med-admin-route">
+                <option value="oral">Oral</option>
+                <option value="iv">IV</option>
+                <option value="im">IM</option>
+                <option value="subcutaneous">Subcutaneous</option>
+                <option value="topical">Topical</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Status *</label>
+            <select id="med-admin-status" required>
+              <option value="given">Given</option>
+              <option value="held">Held</option>
+              <option value="refused">Refused</option>
+              <option value="missed">Missed</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea id="med-admin-notes" rows="2"></textarea>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="submit">💾 Record Administration</button>
+            <button type="button" class="btn-secondary" onclick="hideMedAdminForm()">Cancel</button>
+          </div>
+        </form>
+      </div>
+    </div>
+    
+    <!-- Procedures Tab -->
+    <div id="tab-procedures" class="tab-content">
+      <h2 class="section-title">Procedures & Surgeries</h2>
+      <button onclick="window.location.href='procedure-management.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')">➕ Schedule Procedure</button>
+      <div id="procedures-list" style="margin-top: 20px;">
+        <p>Loading procedures...</p>
+      </div>
+    </div>
+    
+    <!-- Discharge Tab -->
+    <div id="tab-discharge" class="tab-content">
+      <h2 class="section-title">Discharge Planning</h2>
+      <button onclick="window.location.href='discharge-planning.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')">📋 Manage Discharge Planning</button>
+      <button onclick="window.location.href='discharge-summary.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')" style="background: linear-gradient(135deg, var(--kente-gold), var(--warm-orange));">📄 Generate Discharge Summary</button>
+      <div id="discharge-planning-status" style="margin-top: 20px;">
+        <p>Loading discharge planning status...</p>
+      </div>
+    </div>
+    
+    <!-- Alerts Tab -->
+    <div id="tab-alerts" class="tab-content">
+      <h2 class="section-title">Alerts & Warnings</h2>
+      <div id="alerts-list" style="margin-top: 20px;">
+        <p>Loading alerts...</p>
+      </div>
+    </div>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let organizationId = null;
+    let admission = null;
+    let patient = null;
+    let vitalsChart = null;
+    let legacyPatientId = null;
+    const vitalsUserCache = new Map();
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId =
+        typeof window.getPatientIdFromUrl === 'function'
+          ? window.getPatientIdFromUrl(urlParams)
+          : urlParams.get('patientId') || urlParams.get('patient_id') || urlParams.get('id');
+      if (typeof window.ensurePatientIdQueryParam === 'function') {
+        window.ensurePatientIdQueryParam();
+      }
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+      window.__admissionIdForUrl = admissionCode || (window.formatAdmissionCode ? window.formatAdmissionCode({ id: admissionId }) : admissionIdParam);
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+      
+      resolveLegacyPatientId();
+
+      // Load admission and patient data
+      await Promise.all([
+        loadAdmission(),
+        loadPatient(),
+        loadVitals()
+      ]);
+      enforceInpatientTheme();
+      
+      // Auto-refresh every 30 seconds
+      setInterval(async () => {
+        await refreshActiveTabData();
+      }, 30000);
+    });
+
+    function getActiveTabName() {
+      const activeTab = document.querySelector('.tab-content.active');
+      if (!activeTab || !activeTab.id) return 'vitals';
+      return activeTab.id.replace('tab-', '');
+    }
+
+    async function refreshActiveTabData() {
+      const activeTab = getActiveTabName();
+      if (activeTab === 'vitals') {
+        await loadVitals();
+      } else if (activeTab === 'orders') {
+        await loadOrders();
+      } else if (activeTab === 'results') {
+        await loadResults();
+      } else if (activeTab === 'notes') {
+        await loadNotes();
+      } else if (activeTab === 'care-plan') {
+        await loadCarePlan();
+      } else if (activeTab === 'medications') {
+        await loadMedications();
+      } else if (activeTab === 'procedures') {
+        await loadProcedures();
+      } else if (activeTab === 'discharge') {
+        await loadDischargePlanning();
+      } else if (activeTab === 'alerts') {
+        await loadAlerts();
+      }
+    }
+    
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data: admissionData, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && admissionData?.patient_id) {
+            resolvedId = admissionData.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+
+    async function loadAdmission() {
+      try {
+        if (window.supabaseClient) {
+          // Query admission first (only fields needed for header)
+          const { data: admissionData, error: admissionError } = await window.supabaseClient
+            .from('admissions')
+            .select('id, admission_date, room_id, bed_id, patient_id')
+            .eq('id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (admissionError) throw admissionError;
+          
+          if (!admissionData) {
+            admission = null;
+            return;
+          }
+          
+          // Load room and bed in parallel to reduce latency
+          const roomPromise = admissionData.room_id
+            ? window.supabaseClient
+              .from('rooms')
+              .select('id, room_name')
+              .eq('id', admissionData.room_id)
+              .single()
+            : Promise.resolve({ data: null });
+          const bedPromise = admissionData.bed_id
+            ? window.supabaseClient
+              .from('beds')
+              .select('id, bed_name, bed_number')
+              .eq('id', admissionData.bed_id)
+              .single()
+            : Promise.resolve({ data: null });
+          const [{ data: roomData }, { data: bedData }] = await Promise.all([roomPromise, bedPromise]);
+          const room = roomData || null;
+          const bed = bedData || null;
+          
+          // Combine the data
+          admission = {
+            ...admissionData,
+            rooms: room,
+            beds: bed
+          };
+        } else {
+          const stored = localStorage.getItem(`admissions_${organizationId}`);
+          const admissions = stored ? JSON.parse(stored) : [];
+          admission = admissions.find(a => a.id === admissionId);
+        }
+        
+        if (!admission) {
+          alert('Admission not found. Redirecting...');
+          goBack();
+          return;
+        }
+        
+        await updatePatientHeader();
+      } catch (error) {
+        console.error('Error loading admission:', error);
+        alert('Error loading admission data. Please try again.');
+      }
+    }
+    
+    async function loadPatient() {
+      try {
+        // Prefer a direct Supabase lookup for a single patient (faster than loading all)
+        if (window.supabaseClient) {
+          const isUuid = patientId && patientId.includes('-') && patientId.length === 36;
+          const orFilter = isUuid ? `id.eq.${patientId},patient_id.eq.${patientId}` : `patient_id.eq.${patientId}`;
+          const { data, error } = await window.supabaseClient
+            .from('patients')
+            .select('id, patient_id, firstName, middleName, lastName, first_name, middle_name, last_name, name, dob')
+            .eq('organization_id', organizationId)
+            .or(orFilter)
+            .maybeSingle();
+          if (!error && data) {
+            patient = data;
+          }
+        }
+        
+        if (!patient) {
+          // Use resolvePatientByIdentifier to find patient (handles both UUID and display ID)
+          if (typeof window.resolvePatientByIdentifier === 'function') {
+            patient = await window.resolvePatientByIdentifier(patientId);
+          } else {
+            // Fallback: Load from Supabase or localStorage
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              const patients = await window.loadPatientsWithSupabasePriority();
+              patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+            } else {
+              const stored = localStorage.getItem(getDataKey("patients"));
+              const patients = stored ? JSON.parse(stored) : [];
+              patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+            }
+          }
+        }
+        
+        await updatePatientHeader();
+      } catch (error) {
+        console.error('Error loading patient:', error);
+      }
+    }
+    
+    async function updatePatientHeader() {
+      if (patient) {
+        // Get display patient ID (MECXXX format) instead of UUID
+        let displayPatientId = patientId;
+        if (typeof getPatientIdentifier === 'function') {
+          displayPatientId = getPatientIdentifier(patient) || patientId;
+        } else if (patient) {
+          const pid = patient.patient_id || patient.patientNumber;
+          const idOk = patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id);
+          displayPatientId = pid || (idOk ? patient.id : null) || patientId;
+        }
+        legacyPatientId = displayPatientId || legacyPatientId;
+        
+        const patientName = patient.name || 
+                           (patient.firstName && patient.lastName ? `${patient.firstName} ${patient.lastName}` : '') ||
+                           (patient.first_name && patient.last_name ? `${patient.first_name} ${patient.last_name}` : '') ||
+                           'Unknown Patient';
+        const pidUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, displayPatientId || fallbackDisplayId) : displayPatientId;
+        document.getElementById('header-patient-name').textContent = `${patientName} (${pidUi})`;
+      } else {
+        // Fallback: Try to resolve patient ID if it's a UUID
+        let fallbackDisplayId = patientId;
+        if (patientId && patientId.includes('-') && patientId.length === 36 && typeof window.resolvePatientByIdentifier === 'function') {
+          try {
+            const resolvedPatient = await window.resolvePatientByIdentifier(patientId);
+            if (resolvedPatient && typeof window.getPatientIdentifier === 'function') {
+              fallbackDisplayId = window.getPatientIdentifier(resolvedPatient) || patientId.substring(0, 8) + '...';
+            }
+          } catch (error) {
+            console.warn('Could not resolve patient ID for fallback display:', error);
+            fallbackDisplayId = patientId.substring(0, 8) + '...';
+          }
+        } else if (patientId && patientId.length > 20) {
+          // If it's a long ID but not UUID format, truncate
+          fallbackDisplayId = patientId.substring(0, 8) + '...';
+        }
+        const fbUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(fallbackDisplayId, fallbackDisplayId) : fallbackDisplayId;
+        document.getElementById('header-patient-name').textContent = `Patient ID: ${fbUi}`;
+      }
+      
+      if (admission) {
+        const roomName = admission.rooms?.room_name || 'Not assigned';
+        const bedName = admission.beds?.bed_name || admission.beds?.bed_number || 'Not assigned';
+        document.getElementById('header-room-bed').textContent = `${roomName} / ${bedName}`;
+        
+        // Calculate and update length of stay
+        updateLengthOfStay();
+        
+        // Set up real-time timer that updates every second
+        if (window.lengthOfStayInterval) {
+          clearInterval(window.lengthOfStayInterval);
+        }
+        window.lengthOfStayInterval = setInterval(() => {
+          updateLengthOfStay();
+        }, 1000);
+      }
+    }
+    
+    function updateLengthOfStay() {
+      if (!admission || !admission.admission_date) {
+        document.getElementById('header-los').textContent = 'Not available';
+        return;
+      }
+      
+      try {
+        // Parse admission date properly - handle both ISO strings and date objects
+        const admissionDateStr = admission.admission_date;
+        const admissionDate = new Date(admissionDateStr);
+        
+        // Validate date
+        if (isNaN(admissionDate.getTime())) {
+          console.error('Invalid admission date:', admissionDateStr);
+          document.getElementById('header-los').textContent = 'Invalid date';
+          return;
+        }
+        
+        const now = new Date();
+        const diffMs = now - admissionDate;
+        
+        // If negative, the admission date is in the future (timezone issue)
+        if (diffMs < 0) {
+          document.getElementById('header-los').textContent = 'Just admitted';
+          return;
+        }
+        
+        // Calculate days, hours, minutes, seconds
+        const totalSeconds = Math.floor(diffMs / 1000);
+        const totalMinutes = Math.floor(totalSeconds / 60);
+        const totalHours = Math.floor(totalMinutes / 60);
+        const days = Math.floor(totalHours / 24);
+        const hours = totalHours % 24;
+        const minutes = totalMinutes % 60;
+        const seconds = totalSeconds % 60;
+        
+        // Format display
+        let losText = '';
+        if (days > 0) {
+          losText = `${days} day${days !== 1 ? 's' : ''}`;
+          if (hours > 0) {
+            losText += `, ${hours} hour${hours !== 1 ? 's' : ''}`;
+          }
+        } else if (hours > 0) {
+          losText = `${hours} hour${hours !== 1 ? 's' : ''}`;
+          if (minutes > 0) {
+            losText += `, ${minutes} minute${minutes !== 1 ? 's' : ''}`;
+          }
+        } else if (minutes > 0) {
+          losText = `${minutes} minute${minutes !== 1 ? 's' : ''}`;
+          if (seconds > 0) {
+            losText += `, ${seconds} second${seconds !== 1 ? 's' : ''}`;
+          }
+        } else {
+          losText = `${seconds} second${seconds !== 1 ? 's' : ''}`;
+        }
+        
+        // Add timer indicator (blinking colon)
+        const timerIndicator = new Date().getSeconds() % 2 === 0 ? '⏱️' : '⏰';
+        document.getElementById('header-los').innerHTML = `<span style="font-size: 14px;">${timerIndicator}</span> ${losText}`;
+      } catch (error) {
+        console.error('Error calculating length of stay:', error);
+        document.getElementById('header-los').textContent = 'Error';
+      }
+    }
+    
+    async function loadVitals() {
+      try {
+        if (window.supabaseClient) {
+          // First, get the vitals
+          const { data: vitalsData, error: vitalsError } = await window.supabaseClient
+            .from('inpatient_vitals')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .order('vital_time', { ascending: false })
+            .limit(50);
+          
+          if (vitalsError) throw vitalsError;
+          
+          // Then, for each vital with a recorded_by, fetch the user info
+          if (vitalsData && vitalsData.length > 0) {
+            const userIds = [...new Set(vitalsData.map(v => v.recorded_by).filter(Boolean))];
+            const usersMap = new Map(vitalsUserCache);
+            
+            console.log('🔍 [LOAD] Loading vitals - found userIds:', userIds);
+            console.log('🔍 [LOAD] Raw vitals data:', vitalsData.map(v => ({ id: v.id, recorded_by: v.recorded_by })));
+            
+            if (userIds.length > 0) {
+              const missingUserIds = userIds.filter(id => !vitalsUserCache.has(id));
+              if (missingUserIds.length > 0) {
+                const { data: usersData, error: usersError } = await window.supabaseClient
+                  .from('users')
+                  .select('id, first_name, last_name, username')
+                  .in('id', missingUserIds);
+                
+                if (usersError) {
+                  console.error('❌ [LOAD] Error fetching users:', usersError);
+                } else if (usersData) {
+                  console.log('✅ [LOAD] Found users:', usersData);
+                  usersData.forEach(user => {
+                    vitalsUserCache.set(user.id, user);
+                    usersMap.set(user.id, user);
+                  });
+                } else {
+                  console.warn('⚠️ [LOAD] No users found for IDs:', missingUserIds);
+                }
+              }
+            } else {
+              console.warn('⚠️ [LOAD] No userIds found in vitals - all recorded_by fields are null/empty');
+            }
+            
+            // Also get current user info for fallback display
+            const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+            console.log('🔍 Current local user:', localUser);
+            
+            // Attach user info to each vital
+            const vitalsWithUsers = vitalsData.map(vital => ({
+              ...vital,
+              users: vital.recorded_by ? usersMap.get(vital.recorded_by) : null
+            }));
+            
+            displayVitals(vitalsWithUsers);
+            updateVitalsChart(vitalsWithUsers);
+          } else {
+            displayVitals([]);
+            updateVitalsChart([]);
+          }
+        } else {
+          const stored = localStorage.getItem(`inpatient_vitals_${organizationId}`);
+          const vitals = stored ? JSON.parse(stored).filter(v => v.admission_id === admissionId) : [];
+          displayVitals(vitals);
+          updateVitalsChart(vitals);
+        }
+      } catch (error) {
+        console.error('Error loading vitals:', error);
+        document.getElementById('vitals-flowsheet-tbody').innerHTML = 
+          '<tr><td colspan="10">Error loading vitals. Please try again.</td></tr>';
+      }
+    }
+    
+    function displayVitals(vitals) {
+      const tbody = document.getElementById('vitals-flowsheet-tbody');
+      if (vitals.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="10">No vitals recorded yet.</td></tr>';
+        return;
+      }
+      
+      tbody.innerHTML = vitals.map(vital => {
+        const time = new Date(vital.vital_time).toLocaleString();
+        
+        // Get recorded by name - try multiple sources
+        let recordedBy = 'Unknown';
+        if (vital.users) {
+          const firstName = vital.users.first_name || '';
+          const lastName = vital.users.last_name || '';
+          const username = vital.users.username || '';
+          if (firstName && lastName) {
+            recordedBy = `${firstName} ${lastName}`;
+          } else if (username) {
+            recordedBy = username;
+          }
+          console.log('✅ Using vital.users for recordedBy:', recordedBy);
+        } else if (vital.recorded_by) {
+          console.log('⚠️ No vital.users, checking recorded_by:', vital.recorded_by);
+          // Fallback: try to get from localStorage user if it matches
+          const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+          console.log('🔍 Comparing with localUser.id:', localUser.id, 'localUser._supabaseUuid:', localUser._supabaseUuid);
+          
+          if (localUser.id === vital.recorded_by || localUser._supabaseUuid === vital.recorded_by) {
+            recordedBy = localUser.username || 
+                        (localUser.firstName && localUser.lastName ? `${localUser.firstName} ${localUser.lastName}` : '') ||
+                        (localUser.first_name && localUser.last_name ? `${localUser.first_name} ${localUser.last_name}` : '') ||
+                        'Current User';
+            console.log('✅ Using localUser for recordedBy:', recordedBy);
+          } else {
+            // Try to fetch user from Supabase as last resort
+            console.log('⚠️ Trying to fetch user from Supabase for ID:', vital.recorded_by);
+            // Note: This is async but we can't await here in map - will need to handle differently
+            recordedBy = `User ${vital.recorded_by.substring(0, 8)}...`;
+          }
+        } else {
+          console.warn('⚠️ No recorded_by found for vital:', vital.id);
+        }
+        
+        const bp = vital.systolic_bp && vital.diastolic_bp ? 
+          `${vital.systolic_bp}/${vital.diastolic_bp}` : 'N/A';
+        
+        return `
+          <tr>
+            <td>${time}</td>
+            <td>${vital.temperature || 'N/A'}</td>
+            <td>${vital.heart_rate || 'N/A'}</td>
+            <td>${vital.respiratory_rate || 'N/A'}</td>
+            <td>${bp}</td>
+            <td>${vital.o2_saturation || 'N/A'}</td>
+            <td>${vital.pain_score !== null ? vital.pain_score : 'N/A'}</td>
+            <td>${vital.weight || 'N/A'}</td>
+            <td>${recordedBy}</td>
+            <td>
+              <button onclick="editVital('${vital.id}')" class="btn-secondary" style="padding: 4px 8px; font-size: 12px;">Edit</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+    
+    function updateVitalsChart(vitals) {
+      if (vitals.length === 0) return;
+      
+      const ctx = document.getElementById('vitals-chart');
+      if (!ctx) return;
+
+      const coral = getThemeColor('--coral', '#FF7F50');
+      const adireBlue = getThemeColor('--adire-blue', '#4169E1');
+      const primaryGreen = getThemeColor('--primary-green', '#008753');
+      
+      // Sort by time ascending for chart
+      const sortedVitals = [...vitals].sort((a, b) => 
+        new Date(a.vital_time) - new Date(b.vital_time)
+      );
+      
+      const labels = sortedVitals.map(v => new Date(v.vital_time).toLocaleTimeString());
+      
+      if (vitalsChart) {
+        vitalsChart.destroy();
+      }
+      
+      vitalsChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels: labels,
+          datasets: [
+            {
+              label: 'Temperature (°C)',
+              data: sortedVitals.map(v => v.temperature),
+              borderColor: coral,
+              backgroundColor: 'rgba(255, 127, 80, 0.15)',
+              yAxisID: 'y'
+            },
+            {
+              label: 'Heart Rate (bpm)',
+              data: sortedVitals.map(v => v.heart_rate),
+              borderColor: adireBlue,
+              backgroundColor: 'rgba(65, 105, 225, 0.15)',
+              yAxisID: 'y1'
+            },
+            {
+              label: 'O2 Saturation (%)',
+              data: sortedVitals.map(v => v.o2_saturation),
+              borderColor: primaryGreen,
+              backgroundColor: 'rgba(0, 135, 83, 0.15)',
+              yAxisID: 'y2'
+            }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            y: {
+              type: 'linear',
+              display: true,
+              position: 'left',
+              title: { display: true, text: 'Temperature (°C)' }
+            },
+            y1: {
+              type: 'linear',
+              display: true,
+              position: 'right',
+              title: { display: true, text: 'Heart Rate (bpm)' },
+              grid: { drawOnChartArea: false }
+            },
+            y2: {
+              type: 'linear',
+              display: false
+            }
+          }
+        }
+      });
+    }
+    
+    async function resolvePatientIdentifiersForInpatient() {
+      const identifiers = new Set([patientId, legacyPatientId].filter(Boolean));
+      let resolvedPatient = null;
+      let supabasePatientId = null;
+
+      if (identifiers.size && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          resolvedPatient = await window.resolvePatientByIdentifier(legacyPatientId || patientId);
+          if (resolvedPatient?.id) identifiers.add(resolvedPatient.id);
+          if (resolvedPatient?._supabaseUuid) identifiers.add(resolvedPatient._supabaseUuid);
+          supabasePatientId = resolvedPatient?._supabaseUuid || resolvedPatient?.id || null;
+        } catch (error) {
+          console.warn('Unable to resolve patient identifiers for inpatient dashboard:', error);
+        }
+      }
+
+      if (window.supabaseClient) {
+        try {
+          if (admissionId) {
+            const { data: admissionRow, error: admissionError } = await window.supabaseClient
+              .from('admissions')
+              .select('patient_id')
+              .eq('id', admissionId)
+              .maybeSingle();
+            if (!admissionError && admissionRow?.patient_id) {
+              identifiers.add(admissionRow.patient_id);
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to load admission patient id:', error);
+        }
+
+        try {
+          const legacyId = legacyPatientId || patientId;
+          if (legacyId) {
+            const isUuid = legacyId.includes('-') && legacyId.length === 36;
+            const orFilters = isUuid ? `patient_id.eq.${legacyId},id.eq.${legacyId}` : `patient_id.eq.${legacyId}`;
+            const { data: patientRow, error: patientError } = await window.supabaseClient
+              .from('patients')
+              .select('id, patient_id')
+              .eq('organization_id', organizationId)
+              .or(orFilters)
+              .maybeSingle();
+            if (!patientError && patientRow) {
+              if (patientRow.id) identifiers.add(patientRow.id);
+              if (patientRow.patient_id) identifiers.add(patientRow.patient_id);
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to load patient ids from Supabase:', error);
+        }
+      }
+
+      return Array.from(identifiers);
+    }
+
+    async function loadOrders() {
+      try {
+        const combined = [];
+        if (window.supabaseClient) {
+          console.log('🔍 [INPATIENT] Loading orders', { admissionId, organizationId, patientId, legacyPatientId });
+          const patientIdentifiers = await resolvePatientIdentifiersForInpatient();
+          console.log('🔍 [INPATIENT] Order patient identifiers', patientIdentifiers);
+
+          const { data, error } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .in('order_status', ['pending', 'active'])
+            .order('scheduled_time', { ascending: true });
+          
+          if (error) throw error;
+          console.log('🔍 [INPATIENT] Admission orders found', data?.length || 0);
+          (data || []).forEach(order => {
+            combined.push({
+              source: 'orders',
+              id: order.id,
+              order_type: order.order_type || order.type,
+              description: order.selected_items ? order.selected_items.map(i => i.name || i).join(', ') : (order.description || 'N/A'),
+              scheduled_time: order.scheduled_time,
+              status: order.order_status || 'pending',
+              html_content: order.html_content,
+              raw: order
+            });
+          });
+          
+          // Include lab orders created through clinical-note (orders table, type=lab)
+          try {
+            const ids = patientIdentifiers;
+            if (ids.length) {
+              const { data: clinicalLabOrders, error: clinicalLabError } = await window.supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('type', 'lab')
+                .in('patient_id', ids)
+                .order('created_at', { ascending: false })
+                .limit(100);
+              
+              if (!clinicalLabError && Array.isArray(clinicalLabOrders)) {
+                console.log('🔍 [INPATIENT] Clinical lab orders found', clinicalLabOrders.length);
+                clinicalLabOrders.forEach(order => {
+                  const statusValue = String(order.status || order.order_status || '').toLowerCase();
+                  const hasResults = hasMeaningfulResults(order.results);
+                  if (statusValue === 'completed' || hasResults) return;
+                  combined.push({
+                    source: 'clinical_lab_orders',
+                    id: order.id,
+                    order_type: 'lab',
+                    description: order.selected_items ? order.selected_items.map(i => i.name || i).join(', ') : (order.description || 'Lab Order'),
+                    scheduled_time: order.created_at || order.scheduled_time,
+                    status: order.status || order.order_status || 'pending',
+                    html_content: order.html_content,
+                    raw: order
+                  });
+                });
+              }
+            }
+          } catch (clinicalLabError) {
+            console.warn('Clinical lab orders not available for inpatient dashboard:', clinicalLabError);
+          }
+
+          // Include imaging orders created through clinical-note (orders table, type=imaging)
+          try {
+            const ids = patientIdentifiers;
+            if (ids.length) {
+              const { data: clinicalImagingOrders, error: clinicalImagingError } = await window.supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('type', 'imaging')
+                .in('patient_id', ids)
+                .order('created_at', { ascending: false })
+                .limit(100);
+              
+              if (!clinicalImagingError && Array.isArray(clinicalImagingOrders)) {
+                console.log('🔍 [INPATIENT] Clinical imaging orders found', clinicalImagingOrders.length);
+                clinicalImagingOrders.forEach(order => {
+                  const statusValue = String(order.status || order.order_status || '').toLowerCase();
+                  const hasResults = hasMeaningfulResults(order.results);
+                  if (statusValue === 'completed' || hasResults) return;
+                  combined.push({
+                    source: 'clinical_imaging_orders',
+                    id: order.id,
+                    order_type: 'imaging',
+                    description: order.selected_items ? order.selected_items.map(i => i.name || i).join(', ') : (order.description || 'Imaging Order'),
+                    scheduled_time: order.created_at || order.scheduled_time,
+                    status: order.status || order.order_status || 'pending',
+                    html_content: order.html_content,
+                    raw: order
+                  });
+                });
+              }
+            }
+          } catch (clinicalImagingError) {
+            console.warn('Clinical imaging orders not available for inpatient dashboard:', clinicalImagingError);
+          }
+
+          try {
+            let labQuery = window.supabaseClient
+              .from('lab_orders')
+              .select('*')
+              .eq('organization_id', organizationId)
+              .in('status', ['pending', 'in_progress']);
+            const labIds = patientIdentifiers;
+            if (labIds.length) {
+              labQuery = labQuery.in('patient_id', labIds);
+            }
+            const { data: labOrders, error: labError } = await labQuery
+              .order('order_date', { ascending: false })
+              .limit(50);
+            if (!labError && Array.isArray(labOrders)) {
+              console.log('🔍 [INPATIENT] Lab orders found', labOrders.length);
+              labOrders.forEach(order => {
+                combined.push({
+                  source: 'lab_orders',
+                  id: order.id,
+                  order_type: 'lab',
+                  description: order.test_name || 'Lab Order',
+                  scheduled_time: order.order_date,
+                  status: order.status || 'pending',
+                  raw: order
+                });
+              });
+            }
+          } catch (labFetchError) {
+            console.warn('Lab orders not available for inpatient dashboard:', labFetchError);
+          }
+
+          try {
+            let imagingQuery = window.supabaseClient
+              .from('imaging_orders')
+              .select('*')
+              .eq('organization_id', organizationId)
+              .in('status', ['pending', 'scheduled', 'in_progress']);
+            const imagingIds = patientIdentifiers;
+            if (imagingIds.length) {
+              imagingQuery = imagingQuery.in('patient_id', imagingIds);
+            }
+            const { data: imagingOrders, error: imagingError } = await imagingQuery
+              .order('order_date', { ascending: false })
+              .limit(50);
+            if (!imagingError && Array.isArray(imagingOrders)) {
+              console.log('🔍 [INPATIENT] Imaging orders found', imagingOrders.length);
+              imagingOrders.forEach(order => {
+                combined.push({
+                  source: 'imaging_orders',
+                  id: order.id,
+                  order_type: 'imaging',
+                  description: [order.imaging_type, order.body_part].filter(Boolean).join(' - ') || 'Imaging Order',
+                  scheduled_time: order.order_date,
+                  status: order.status || 'pending',
+                  raw: order
+                });
+              });
+            }
+          } catch (imagingFetchError) {
+            console.warn('Imaging orders not available for inpatient dashboard:', imagingFetchError);
+          }
+        } else {
+          const stored = localStorage.getItem(`orders_${organizationId}`);
+          const orders = stored ? JSON.parse(stored).filter(o =>
+            o.admission_id === admissionId &&
+            (o.order_status === 'pending' || o.order_status === 'active')
+          ) : [];
+          orders.forEach(order => {
+            combined.push({
+              source: 'orders',
+              id: order.id,
+              order_type: order.order_type || order.type,
+              description: order.selected_items ? order.selected_items.map(i => i.name || i).join(', ') : (order.description || 'N/A'),
+              scheduled_time: order.scheduled_time,
+              status: order.order_status || 'pending'
+            });
+          });
+        }
+        displayOrders(combined);
+      } catch (error) {
+        console.error('Error loading orders:', error);
+        document.getElementById('orders-list').innerHTML = 
+          '<p>Error loading orders. Please try again.</p>';
+      }
+    }
+    
+    function displayOrders(orders) {
+      const container = document.getElementById('orders-list');
+      if (orders.length === 0) {
+        container.innerHTML = '<p>No active orders.</p>';
+        return;
+      }
+      
+      if (!window.__inpatientOrderDetails) {
+        window.__inpatientOrderDetails = {};
+      }
+      window.__inpatientOrderDetails = {};
+      orders.forEach(order => {
+        const key = `${order.source}:${order.id}`;
+        window.__inpatientOrderDetails[key] = order;
+      });
+
+      container.innerHTML = `
+        <table class="inpatient-table">
+          <thead>
+            <tr>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Source</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Order Type</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Description</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Scheduled Time</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Status</th>
+              <th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${orders.map(order => `
+              <tr>
+                <td>${order.source === 'orders' ? 'Inpatient Orders' : (order.source === 'lab_orders' || order.source === 'clinical_lab_orders' ? 'Lab Orders' : 'Imaging Orders')}</td>
+                <td>${formatOrderTypeLabel(order.order_type)}</td>
+                <td>${order.description || 'N/A'}</td>
+                <td>${order.scheduled_time ? new Date(order.scheduled_time).toLocaleString() : 'N/A'}</td>
+                <td><span class="status-badge status-${order.status}">${order.status}</span></td>
+                <td>
+                  ${order.source === 'orders'
+                    ? `<button onclick="completeOrder('${order.id}')" class="btn-secondary" style="padding: 4px 8px; font-size: 12px;">Complete</button>`
+                    : '<span style="color: var(--charcoal); font-size: 12px;">—</span>'}
+                  <button onclick="viewOrderDetails('${order.source}:${order.id}')" class="btn-secondary" style="padding: 4px 8px; font-size: 12px; margin-left: 6px;">View</button>
+                </td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      `;
+      enforceInpatientTheme();
+    }
+
+    function formatOrderTypeLabel(orderType) {
+      const normalized = (orderType || '').toString().toLowerCase();
+      if (normalized === 'lab') return 'Lab';
+      if (normalized === 'imaging') return 'Imaging';
+      if (normalized === 'medication') return 'Medication';
+      if (!normalized) return 'N/A';
+      return normalized.charAt(0).toUpperCase() + normalized.slice(1);
+    }
+
+    function getAdmissionIdForUrl() {
+      if (window.__admissionIdForUrl) return window.__admissionIdForUrl;
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+
+    function getThemeColor(variable, fallback) {
+      if (!variable) return fallback || '';
+      try {
+        const value = getComputedStyle(document.documentElement).getPropertyValue(variable).trim();
+        return value || fallback || '';
+      } catch (error) {
+        return fallback || '';
+      }
+    }
+
+    function enforceInpatientTheme() {
+      const headerColor = getThemeColor('--adire-blue', '#4169E1');
+      const headerText = '#ffffff';
+      document.querySelectorAll('.tab-content table th, #vitals-flowsheet-table th, .inpatient-table th').forEach(th => {
+        th.style.background = headerColor;
+        th.style.backgroundImage = 'none';
+        th.style.color = headerText;
+      });
+    }
+    
+    async function loadResults() {
+      try {
+        const combined = [];
+        if (window.supabaseClient) {
+          console.log('🔍 [INPATIENT] Loading results', { admissionId, organizationId, patientId, legacyPatientId });
+          const patientIdentifiers = await resolvePatientIdentifiersForInpatient();
+          console.log('🔍 [INPATIENT] Result patient identifiers', patientIdentifiers);
+
+          const { data, error } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .eq('order_status', 'completed')
+            .order('updated_at', { ascending: false })
+            .limit(50);
+          
+          if (error) throw error;
+          console.log('🔍 [INPATIENT] Admission results found', data?.length || 0);
+          (data || []).forEach(result => {
+            combined.push({
+              source: 'orders',
+              type: result.type || result.order_type || 'lab',
+              description: result.selected_items ? result.selected_items.map(i => i.name || i).join(', ') : (result.description || 'N/A'),
+              results: result.results,
+              updated_at: result.updated_at,
+              order_id: result.id,
+              selected_items: result.selected_items,
+              order_serial_number: result.serial_number
+            });
+          });
+
+          // Include lab results created through clinical-note (orders table, type=lab)
+          try {
+            const ids = patientIdentifiers;
+            if (ids.length) {
+              const { data: clinicalLabResults, error: clinicalLabError } = await window.supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('type', 'lab')
+                .in('patient_id', ids)
+                .not('results', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(100);
+              
+              if (!clinicalLabError && Array.isArray(clinicalLabResults)) {
+                console.log('🔍 [INPATIENT] Clinical lab results found', clinicalLabResults.length);
+                clinicalLabResults.forEach(order => {
+                  if (!hasMeaningfulResults(order.results)) return;
+                  combined.push({
+                    source: 'clinical_lab_orders',
+                    type: 'lab',
+                    description: order.selected_items ? order.selected_items.map(i => i.name || i).join(', ') : (order.description || 'Lab Result'),
+                    results: order.results,
+                    updated_at: order.updated_at || order.created_at,
+                    order_id: order.id,
+                    selected_items: order.selected_items,
+                    order_serial_number: order.serial_number
+                  });
+                });
+              }
+            }
+          } catch (clinicalLabError) {
+            console.warn('Clinical lab results not available for inpatient dashboard:', clinicalLabError);
+          }
+
+          // Include imaging results created through clinical-note (orders table, type=imaging)
+          try {
+            const ids = patientIdentifiers;
+            if (ids.length) {
+              const { data: clinicalImagingResults, error: clinicalImagingError } = await window.supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('organization_id', organizationId)
+                .eq('type', 'imaging')
+                .in('patient_id', ids)
+                .not('results', 'is', null)
+                .order('created_at', { ascending: false })
+                .limit(100);
+              
+              if (!clinicalImagingError && Array.isArray(clinicalImagingResults)) {
+                console.log('🔍 [INPATIENT] Clinical imaging results found', clinicalImagingResults.length);
+                clinicalImagingResults.forEach(order => {
+                  if (!hasMeaningfulResults(order.results)) return;
+                  combined.push({
+                    source: 'clinical_imaging_orders',
+                    type: 'imaging',
+                    description: order.selected_items ? order.selected_items.map(i => i.name || i).join(', ') : (order.description || 'Imaging Result'),
+                    results: order.results,
+                    updated_at: order.updated_at || order.created_at,
+                    order_id: order.id,
+                    selected_items: order.selected_items,
+                    order_serial_number: order.serial_number
+                  });
+                });
+              }
+            }
+          } catch (clinicalImagingError) {
+            console.warn('Clinical imaging results not available for inpatient dashboard:', clinicalImagingError);
+          }
+
+          try {
+            let labQuery = window.supabaseClient
+              .from('lab_orders')
+              .select('*')
+              .eq('organization_id', organizationId)
+              .eq('status', 'completed');
+            const labIds = patientIdentifiers;
+            if (labIds.length) {
+              labQuery = labQuery.in('patient_id', labIds);
+            }
+            const { data: labOrders, error: labError } = await labQuery
+              .order('result_date', { ascending: false })
+              .limit(50);
+            if (!labError && Array.isArray(labOrders)) {
+              console.log('🔍 [INPATIENT] Lab results found', labOrders.length);
+              labOrders.forEach(order => {
+                combined.push({
+                  source: 'lab_orders',
+                  type: 'lab',
+                  description: order.test_name || 'Lab Result',
+                  results: order.results,
+                  updated_at: order.result_date || order.updated_at
+                });
+              });
+            }
+          } catch (labFetchError) {
+            console.warn('Lab results not available for inpatient dashboard:', labFetchError);
+          }
+
+          try {
+            let imagingQuery = window.supabaseClient
+              .from('imaging_orders')
+              .select('*')
+              .eq('organization_id', organizationId)
+              .eq('status', 'completed');
+            const imagingIds = patientIdentifiers;
+            if (imagingIds.length) {
+              imagingQuery = imagingQuery.in('patient_id', imagingIds);
+            }
+            const { data: imagingOrders, error: imagingError } = await imagingQuery
+              .order('result_date', { ascending: false })
+              .limit(50);
+            if (!imagingError && Array.isArray(imagingOrders)) {
+              console.log('🔍 [INPATIENT] Imaging results found', imagingOrders.length);
+              imagingOrders.forEach(order => {
+                combined.push({
+                  source: 'imaging_orders',
+                  type: 'imaging',
+                  description: [order.imaging_type, order.body_part].filter(Boolean).join(' - ') || 'Imaging Result',
+                  results: order.results,
+                  updated_at: order.result_date || order.updated_at
+                });
+              });
+            }
+          } catch (imagingFetchError) {
+            console.warn('Imaging results not available for inpatient dashboard:', imagingFetchError);
+          }
+        } else {
+          document.getElementById('results-list').innerHTML = 
+            '<p>Results will be displayed here when available.</p>';
+        }
+        displayResults(combined);
+      } catch (error) {
+        console.error('Error loading results:', error);
+        document.getElementById('results-list').innerHTML = 
+          '<p>Error loading results. Please try again.</p>';
+      }
+    }
+    
+    function displayResults(results) {
+      const container = document.getElementById('results-list');
+      if (results.length === 0) {
+        container.innerHTML = '<p>No results available yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = results.map(result => {
+        const resultItems = extractResultItems(result);
+        const detailsHtml = resultItems.length
+          ? `<div style="margin-top: 10px;">${resultItems.map(item => `
+              <div style="padding: 8px 10px; border: 1px solid rgba(54, 69, 79, 0.15); border-radius: 6px; margin-bottom: 6px; background: var(--nigerian-white);">
+                <strong>${item.testName}</strong>
+                ${item.reviewStatus ? `<span class="status-badge ${item.reviewStatusClass}" style="margin-left: 8px;">${item.reviewStatus}</span>` : ''}
+                ${item.viewUrl ? `<a href="${item.viewUrl}" class="btn-secondary" style="margin-left: 10px; padding: 3px 8px; font-size: 11px; text-decoration: none;">View</a>` : ''}
+              </div>
+            `).join('')}</div>`
+          : (result.results ? `<div style="margin-top: 6px; color: var(--charcoal);">${formatResultSummary(result.results)}</div>` : '');
+
+        return `
+          <div style="background: var(--soft-white); padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid var(--adire-blue);">
+            <strong>${result.type === 'lab' ? 'Lab' : 'Imaging'} Results</strong><br>
+            <em>${result.description || 'N/A'}</em><br>
+            ${detailsHtml}
+            <small>Completed: ${result.updated_at ? new Date(result.updated_at).toLocaleString() : 'N/A'}</small>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function extractResultItems(result) {
+      if (!result || !result.results) return [];
+      const parsed = parseResultsObject(result.results);
+      if (!parsed || typeof parsed !== 'object') return [];
+      const items = [];
+      Object.entries(parsed).forEach(([testName, testResult]) => {
+        if (!testResult || typeof testResult !== 'object') return;
+        if (!hasMeaningfulResults({ [testName]: testResult })) return;
+        const isReviewed = testResult.reviewed_at && testResult.reviewed_by;
+        const viewUrl = result.type === 'lab' && result.order_id
+          ? `doctor-lab-result-details.html?orderId=${encodeURIComponent(result.order_id)}&testName=${encodeURIComponent(testName)}&returnUrl=${encodeURIComponent(window.location.href)}`
+          : null;
+        items.push({
+          testName,
+          reviewStatus: isReviewed ? 'Reviewed' : 'Not Reviewed',
+          reviewStatusClass: isReviewed ? 'status-reviewed' : 'status-unreviewed',
+          viewUrl
+        });
+      });
+      return items;
+    }
+
+    function parseResultsObject(results) {
+      if (!results) return null;
+      if (typeof results === 'string') {
+        try {
+          return JSON.parse(results);
+        } catch (error) {
+          return null;
+        }
+      }
+      return results;
+    }
+
+    function formatResultSummary(results) {
+      if (!results) return '';
+      if (typeof results === 'string') return results;
+      try {
+        return JSON.stringify(results);
+      } catch (error) {
+        return '';
+      }
+    }
+
+    async function viewOrderHtml(orderId) {
+      if (!orderId || !window.supabaseClient) return;
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('orders')
+          .select('html_content')
+          .eq('id', orderId)
+          .maybeSingle();
+        if (error || !data?.html_content) {
+          alert('Order details not available.');
+          return;
+        }
+        const popup = window.open('', '_blank');
+        if (!popup) {
+          alert('Popup blocked. Please allow popups to view order details.');
+          return;
+        }
+        popup.document.open();
+        popup.document.write(data.html_content);
+        popup.document.close();
+      } catch (error) {
+        console.error('Unable to load order details:', error);
+        alert('Unable to load order details. Please try again.');
+      }
+    }
+
+    function viewOrderDetails(orderKey) {
+      const order = window.__inpatientOrderDetails ? window.__inpatientOrderDetails[orderKey] : null;
+      if (!order) {
+        alert('Order details not available.');
+        return;
+      }
+
+      const raw = order.raw || {};
+      const visitDate = raw.visit_date || raw.visitDate || raw.order_date || raw.created_at;
+      const timestamp = raw.timestamp || raw.created_at || raw.order_date;
+      const patientIdentifier = legacyPatientId || patientId;
+      if (patientIdentifier && visitDate && timestamp) {
+        const returnUrl = encodeURIComponent(window.location.href);
+        const url = `view-order.html?patientId=${encodeURIComponent(patientIdentifier)}&visitDate=${encodeURIComponent(visitDate)}&timestamp=${encodeURIComponent(timestamp)}&returnUrl=${returnUrl}`;
+        window.open(url, '_blank');
+        return;
+      }
+
+      if (order.html_content) {
+        viewOrderHtml(order.id);
+        return;
+      }
+
+      openOrderDetailsPopup(order);
+    }
+
+    async function openOrderDetailsPopup(order) {
+      let fullOrder = order.raw || {};
+      if (window.supabaseClient && order.id) {
+        try {
+          if (order.source === 'lab_orders') {
+            const { data, error } = await window.supabaseClient
+              .from('lab_orders')
+              .select('*')
+              .eq('id', order.id)
+              .maybeSingle();
+            if (!error && data) fullOrder = data;
+          } else if (order.source === 'imaging_orders') {
+            const { data, error } = await window.supabaseClient
+              .from('imaging_orders')
+              .select('*')
+              .eq('id', order.id)
+              .maybeSingle();
+            if (!error && data) fullOrder = data;
+          } else {
+            const { data, error } = await window.supabaseClient
+              .from('orders')
+              .select('*')
+              .eq('id', order.id)
+              .maybeSingle();
+            if (!error && data) fullOrder = data;
+          }
+        } catch (error) {
+          console.warn('Unable to load full order details:', error);
+        }
+      }
+
+      if (fullOrder.html_content) {
+        const popup = window.open('', '_blank');
+        if (!popup) {
+          alert('Popup blocked. Please allow popups to view order details.');
+          return;
+        }
+        popup.document.open();
+        popup.document.write(fullOrder.html_content);
+        popup.document.close();
+        return;
+      }
+
+      const title = `${formatOrderTypeLabel(order.order_type)} Order Details`;
+      const items = parseJsonList(fullOrder.selected_items || fullOrder.selectedItems || [], []);
+      const itemsHtml = items.length
+        ? `<ul>${items.map(item => `<li>${item.name || item}</li>`).join('')}</ul>`
+        : '<span>None</span>';
+      const resultsHtml = formatResultsHtml(fullOrder.results);
+      const orderDate = fullOrder.order_date || fullOrder.created_at || '';
+      const scheduled = order.scheduled_time || fullOrder.scheduled_time || fullOrder.order_date || '';
+
+      const theme = {
+        primaryGreen: getThemeColor('--primary-green', '#008753'),
+        warmGray: getThemeColor('--warm-gray', '#F5F5DC'),
+        nigerianWhite: getThemeColor('--nigerian-white', '#FFFFFF'),
+        charcoal: getThemeColor('--charcoal', '#36454F'),
+        softWhite: getThemeColor('--soft-white', '#FAFAFA')
+      };
+
+      const html = `
+        <html>
+          <head>
+            <title>${title}</title>
+            <style>
+              body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: ${theme.warmGray}; }
+              .card { background: ${theme.nigerianWhite}; padding: 20px; border-radius: 10px; border: 1px solid rgba(54, 69, 79, 0.15); max-width: 900px; margin: 0 auto; }
+              h1 { margin-top: 0; color: ${theme.primaryGreen}; }
+              table { width: 100%; border-collapse: collapse; }
+              td { padding: 8px 10px; border-bottom: 1px solid rgba(54, 69, 79, 0.15); vertical-align: top; }
+              td.label { width: 180px; font-weight: 600; color: ${theme.charcoal}; }
+              .results-block { background: ${theme.softWhite}; padding: 10px; border-radius: 6px; }
+            </style>
+          </head>
+          <body>
+            <div class="card">
+              <h1>${title}</h1>
+              <table>
+                <tr><td class="label">Source</td><td>${order.source}</td></tr>
+                <tr><td class="label">Order Type</td><td>${formatOrderTypeLabel(order.order_type)}</td></tr>
+                <tr><td class="label">Description</td><td>${order.description || 'N/A'}</td></tr>
+                <tr><td class="label">Scheduled Time</td><td>${scheduled ? new Date(scheduled).toLocaleString() : 'N/A'}</td></tr>
+                <tr><td class="label">Status</td><td>${order.status || fullOrder.status || 'N/A'}</td></tr>
+                <tr><td class="label">Ordering Doctor</td><td>${fullOrder.ordering_doctor || fullOrder.created_by || 'N/A'}</td></tr>
+                <tr><td class="label">Priority</td><td>${fullOrder.priority || 'N/A'}</td></tr>
+                <tr><td class="label">Notes</td><td>${fullOrder.notes || 'N/A'}</td></tr>
+                <tr><td class="label">Order Date</td><td>${orderDate ? new Date(orderDate).toLocaleString() : 'N/A'}</td></tr>
+                <tr><td class="label">Results</td><td class="results-block">${resultsHtml}</td></tr>
+                <tr><td class="label">Result Date</td><td>${fullOrder.result_date ? new Date(fullOrder.result_date).toLocaleString() : 'N/A'}</td></tr>
+                <tr><td class="label">Items</td><td>${itemsHtml}</td></tr>
+              </table>
+            </div>
+          </body>
+        </html>
+      `;
+
+      const popup = window.open('', '_blank');
+      if (!popup) {
+        alert('Popup blocked. Please allow popups to view order details.');
+        return;
+      }
+      popup.document.open();
+      popup.document.write(html);
+      popup.document.close();
+    }
+
+    function formatResultsHtml(results) {
+      if (!results) return 'N/A';
+      const parsed = parseResultsObject(results);
+      if (!parsed || typeof parsed !== 'object') return typeof results === 'string' ? results : 'N/A';
+      const entries = Object.entries(parsed);
+      if (!entries.length) return 'N/A';
+      const metadataFields = ['status', 'entered_at', 'entered_by', 'completed_at', 'completed_by', 'started_at', 'started_by', 'file_name', 'file_data', 'file_type', 'file_size', 'notes', 'reviewed_at', 'reviewed_by'];
+      return entries.map(([testName, testResult]) => {
+        if (!testResult || typeof testResult !== 'object') {
+          return `<div><strong>${testName}</strong>: ${String(testResult || '')}</div>`;
+        }
+        const fields = Object.entries(testResult)
+          .filter(([key, value]) => !metadataFields.includes(key))
+          .filter(([, value]) => value !== null && value !== undefined && value !== '');
+        const fieldsHtml = fields.length
+          ? `<ul>${fields.map(([key, value]) => {
+              const safeValue = typeof value === 'object' ? JSON.stringify(value) : String(value);
+              return `<li>${key}: ${safeValue}</li>`;
+            }).join('')}</ul>`
+          : '<span>No result data.</span>';
+        return `<div style="margin-bottom: 10px;"><strong>${testName}</strong>${fieldsHtml}</div>`;
+      }).join('');
+    }
+
+    function hasMeaningfulResults(results) {
+      if (!results) return false;
+      let parsed = results;
+      if (typeof results === 'string') {
+        try {
+          parsed = JSON.parse(results);
+        } catch (error) {
+          return false;
+        }
+      }
+      if (!parsed || typeof parsed !== 'object') return false;
+      const metadataFields = ['status', 'entered_at', 'entered_by', 'completed_at', 'completed_by', 'started_at', 'started_by', 'file_name', 'file_data', 'file_type', 'file_size', 'notes'];
+      return Object.values(parsed).some(testResult => {
+        if (!testResult || typeof testResult !== 'object') return false;
+        const resultFields = Object.keys(testResult).filter(key => {
+          if (metadataFields.includes(key)) return false;
+          const value = testResult[key];
+          if (value === null || value === undefined || value === '') return false;
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            return value.value !== undefined && value.value !== null && value.value !== '';
+          }
+          return true;
+        });
+        return resultFields.length > 0;
+      });
+    }
+
+    function parseJsonList(value, fallback = []) {
+      if (!value) return fallback;
+      if (Array.isArray(value)) return value;
+      if (typeof value === 'string') {
+        try {
+          const parsed = JSON.parse(value);
+          return Array.isArray(parsed) ? parsed : fallback;
+        } catch (error) {
+          return fallback;
+        }
+      }
+      return fallback;
+    }
+
+    async function loadNotes() {
+      try {
+        if (window.supabaseClient) {
+          const [roundsResult, assessmentsResult] = await Promise.all([
+            window.supabaseClient
+              .from('rounds_notes')
+              .select('*')
+              .eq('admission_id', admissionId)
+              .eq('organization_id', organizationId)
+              .order('rounds_date', { ascending: false })
+              .limit(10),
+            window.supabaseClient
+              .from('inpatient_assessments')
+              .select('*')
+              .eq('admission_id', admissionId)
+              .eq('organization_id', organizationId)
+              .order('assessment_date', { ascending: false })
+              .limit(10)
+          ]);
+
+          const rounds = roundsResult.error ? [] : (roundsResult.data || []);
+          const assessments = assessmentsResult.error ? [] : (assessmentsResult.data || []);
+          displayNotes(rounds, assessments);
+        } else {
+          document.getElementById('notes-list').innerHTML = '<p>Notes will be displayed here when available.</p>';
+        }
+      } catch (error) {
+        console.error('Error loading notes:', error);
+        document.getElementById('notes-list').innerHTML = '<p>Error loading notes. Please try again.</p>';
+      }
+    }
+
+    function displayNotes(rounds, assessments) {
+      const container = document.getElementById('notes-list');
+      if ((!rounds || rounds.length === 0) && (!assessments || assessments.length === 0)) {
+        container.innerHTML = '<p>No notes documented yet.</p>';
+        return;
+      }
+
+      let html = '';
+      if (rounds.length) {
+        html += '<h3>Rounds Notes</h3>';
+        html += rounds.map(note => `
+          <div style="background: var(--soft-white); padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid var(--primary-green);">
+            <strong>${note.rounds_type || 'Rounds'} - ${note.rounds_date || ''}</strong>
+            ${note.subjective ? `<p><strong>Subjective:</strong> ${note.subjective}</p>` : ''}
+            ${note.objective ? `<p><strong>Objective:</strong> ${note.objective}</p>` : ''}
+            ${note.assessment ? `<p><strong>Assessment:</strong> ${note.assessment}</p>` : ''}
+            ${note.plan ? `<p><strong>Plan:</strong> ${note.plan}</p>` : ''}
+            ${note.notes ? `<p><strong>Notes:</strong> ${note.notes}</p>` : ''}
+          </div>
+        `).join('');
+      }
+
+      if (assessments.length) {
+        html += '<h3>Assessments</h3>';
+        html += assessments.map(assessment => `
+          <div style="background: var(--soft-white); padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid var(--kente-gold);">
+            <strong>${assessment.assessment_type || 'Assessment'} - ${assessment.assessment_date ? new Date(assessment.assessment_date).toLocaleString() : ''}</strong>
+            ${assessment.notes ? `<p><strong>Notes:</strong> ${assessment.notes}</p>` : ''}
+          </div>
+        `).join('');
+      }
+
+      container.innerHTML = html;
+      enforceInpatientTheme();
+    }
+
+    async function loadCarePlan() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('care_plans')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .order('updated_at', { ascending: false })
+            .limit(1);
+
+          if (error) throw error;
+          displayCarePlan(data && data.length ? data[0] : null);
+        } else {
+          document.getElementById('care-plan-display').innerHTML = '<p>Care plan will be displayed here when available.</p>';
+        }
+      } catch (error) {
+        console.error('Error loading care plan:', error);
+        document.getElementById('care-plan-display').innerHTML = '<p>Error loading care plan. Please try again.</p>';
+      }
+    }
+
+    function displayCarePlan(carePlan) {
+      const container = document.getElementById('care-plan-display');
+      if (!carePlan) {
+        container.innerHTML = '<p>No care plan documented yet.</p>';
+        return;
+      }
+
+      const problems = parseJsonList(carePlan.problem_list);
+      const goals = parseJsonList(carePlan.goals);
+      const interventions = parseJsonList(carePlan.interventions);
+
+      container.innerHTML = `
+        <div style="background: var(--soft-white); padding: 20px; border-radius: 8px; border-left: 6px solid var(--primary-green);">
+          <p><strong>Expected LOS:</strong> ${carePlan.expected_los ? `${carePlan.expected_los} day(s)` : 'Not specified'}</p>
+          <div style="margin-top: 12px;">
+            <strong>Problems:</strong>
+            ${problems.length ? `<ul>${problems.map(item => `<li>${item.problem || item}</li>`).join('')}</ul>` : '<p>No problems listed.</p>'}
+          </div>
+          <div style="margin-top: 12px;">
+            <strong>Goals:</strong>
+            ${goals.length ? `<ul>${goals.map(goal => `<li>${goal.goal || goal} ${goal.status ? `(${goal.status})` : ''}</li>`).join('')}</ul>` : '<p>No goals listed.</p>'}
+          </div>
+          <div style="margin-top: 12px;">
+            <strong>Interventions:</strong>
+            ${interventions.length ? `<ul>${interventions.map(item => `<li>${item.description || item}</li>`).join('')}</ul>` : '<p>No interventions listed.</p>'}
+          </div>
+        </div>
+      `;
+    }
+    
+    async function loadMedications() {
+      try {
+        if (window.supabaseClient) {
+          const filterPatientId = legacyPatientId || patientId;
+          let resolvedPatient = null;
+          let supabasePatientId = null;
+          if (filterPatientId && typeof window.resolvePatientByIdentifier === 'function') {
+            try {
+              resolvedPatient = await window.resolvePatientByIdentifier(filterPatientId);
+              supabasePatientId = resolvedPatient?.id || resolvedPatient?._supabaseUuid || null;
+            } catch (error) {
+              console.warn('Unable to resolve patient identifiers for medications:', error);
+            }
+          }
+          // Load prescriptions tied to admission or patient
+          let prescQuery = window.supabaseClient
+            .from('prescriptions')
+            .select('*')
+            .eq('organization_id', organizationId);
+          const patientOrFilters = [];
+          if (filterPatientId) {
+            patientOrFilters.push(`patient_id.eq.${filterPatientId}`);
+          }
+          if (supabasePatientId && supabasePatientId !== filterPatientId) {
+            patientOrFilters.push(`patient_id.eq.${supabasePatientId}`);
+          }
+          if (admissionId) {
+            patientOrFilters.push(`admission_id.eq.${admissionId}`);
+          }
+          if (patientOrFilters.length) {
+            prescQuery = prescQuery.or(patientOrFilters.join(','));
+          } else if (admissionId) {
+            prescQuery = prescQuery.eq('admission_id', admissionId);
+          } else if (filterPatientId) {
+            prescQuery = prescQuery.eq('patient_id', filterPatientId);
+          }
+          const { data: prescriptions, error: prescError } = await prescQuery.order('created_at', { ascending: false });
+          
+          if (prescError) throw prescError;
+          
+          // Load medication orders for this admission
+          const { data: medicationOrders, error: orderError } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .eq('order_type', 'medication')
+            .order('created_at', { ascending: false });
+          
+          if (orderError) throw orderError;
+          
+          // Load medication administration records
+          const { data: administrations, error: adminError } = await window.supabaseClient
+            .from('medication_administration')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .order('scheduled_time', { ascending: false })
+            .limit(100);
+          
+          if (adminError) throw adminError;
+          
+          let patientMedications = [];
+          if (resolvedPatient) {
+            patientMedications = Array.isArray(resolvedPatient.medications) ? resolvedPatient.medications : [];
+          }
+          const localPrescriptions = Array.isArray(resolvedPatient?.prescriptions) ? resolvedPatient.prescriptions : [];
+          const combinedPrescriptions = [...(prescriptions || []), ...localPrescriptions];
+          
+          displayMedications(combinedPrescriptions, administrations || [], medicationOrders || [], patientMedications || []);
+        } else {
+          document.getElementById('medications-list').innerHTML = 
+            '<p>Medications will be displayed here when available.</p>';
+        }
+      } catch (error) {
+        console.error('Error loading medications:', error);
+        document.getElementById('medications-list').innerHTML = 
+          '<p>Error loading medications. Please try again.</p>';
+      }
+    }
+    
+    function displayMedications(prescriptions, administrations, medicationOrders, patientMedications) {
+      const container = document.getElementById('medications-list');
+      
+      const medsFromPrescriptions = [];
+      (prescriptions || []).forEach(prescription => {
+        if (Array.isArray(prescription.medications) && prescription.medications.length) {
+          prescription.medications.forEach(med => {
+            medsFromPrescriptions.push({
+              name: med.name || med.medication_name,
+              dosage: med.dosage || '',
+              frequency: med.frequency || med.directions || prescription.frequency || prescription.directions || '',
+              route: med.route || med.form || prescription.route || '',
+              status: prescription.status || 'Active'
+            });
+          });
+        } else if (prescription.medication_name) {
+          medsFromPrescriptions.push({
+            name: prescription.medication_name,
+            dosage: prescription.dosage || '',
+            frequency: prescription.frequency || prescription.directions || '',
+            route: prescription.route || prescription.form || '',
+            status: prescription.status || 'Active'
+          });
+        }
+      });
+      
+      const medsFromOrders = [];
+      (medicationOrders || []).forEach(order => {
+        const items = Array.isArray(order.selected_items) ? order.selected_items : [];
+        items.forEach(item => {
+          medsFromOrders.push({
+            name: item.name || order.description || '',
+            dosage: item.dosage || '',
+            frequency: item.frequency || '',
+            route: item.route || item.form || '',
+            status: order.order_status || 'pending'
+          });
+        });
+      });
+      
+      const medsFromPatient = (patientMedications || []).map(med => ({
+        name: med.name || med.medication_name || '',
+        dosage: med.dosage || '',
+        frequency: med.frequency || med.directions || '',
+        route: med.route || med.form || '',
+        status: med.status || 'Patient-Reported'
+      }));
+      
+      const combinedMedications = [
+        ...medsFromPrescriptions,
+        ...medsFromOrders,
+        ...medsFromPatient
+      ].filter(med => med.name);
+
+      const normalizeKey = (value) => String(value || '').trim().toLowerCase();
+      const scoreMedication = (med) => {
+        let score = 0;
+        if (med.dosage) score += 1;
+        if (med.frequency) score += 1;
+        if (med.route) score += 1;
+        return score;
+      };
+      const mergedByName = new Map();
+      combinedMedications.forEach(med => {
+        const key = normalizeKey(med.name);
+        if (!key) return;
+        if (!mergedByName.has(key)) {
+          mergedByName.set(key, med);
+          return;
+        }
+        const existing = mergedByName.get(key);
+        if (scoreMedication(med) > scoreMedication(existing)) {
+          mergedByName.set(key, med);
+        }
+      });
+      const mergedMedications = Array.from(mergedByName.values());
+      
+      if (mergedMedications.length === 0 && (administrations || []).length === 0) {
+        container.innerHTML = '<p>No medications ordered yet.</p>';
+        return;
+      }
+      
+      let html = '<h3>Active Medications</h3><table class="inpatient-table"><thead><tr>'
+        + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Medication</th>'
+        + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Strength</th>'
+        + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Frequency</th>'
+        + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Route</th>'
+        + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Status</th>'
+        + '</tr></thead><tbody>';
+      
+      mergedMedications.forEach(med => {
+        html += `
+          <tr>
+            <td>${med.name || 'N/A'}</td>
+            <td>${med.dosage || 'N/A'}</td>
+            <td>${med.frequency || 'Not recorded'}</td>
+            <td>${med.route || 'Not recorded'}</td>
+            <td><span class="status-badge status-active">${med.status || 'Active'}</span></td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      
+      if (administrations.length > 0) {
+        html += '<h3 style="margin-top: 30px;">Administration History</h3>';
+        html += '<table class="inpatient-table"><thead><tr>'
+          + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Medication</th>'
+          + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Scheduled</th>'
+          + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Administered</th>'
+          + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Status</th>'
+          + '<th style="background: var(--adire-blue) !important; background-image: none !important; color: #fff;">Route</th>'
+          + '</tr></thead><tbody>';
+        
+        administrations.forEach(admin => {
+          html += `
+            <tr>
+              <td>${admin.medication_name || 'N/A'}</td>
+              <td>${new Date(admin.scheduled_time).toLocaleString()}</td>
+              <td>${admin.administered_time ? new Date(admin.administered_time).toLocaleString() : 'N/A'}</td>
+              <td><span class="status-badge status-${admin.status}">${admin.status}</span></td>
+              <td>${admin.route || 'N/A'}</td>
+            </tr>
+          `;
+        });
+        
+        html += '</tbody></table>';
+      }
+      
+      container.innerHTML = html;
+    }
+    
+    async function loadAlerts() {
+      const alerts = [];
+      
+      // Check for critical vitals
+      try {
+        if (window.supabaseClient) {
+          const { data: recentVitals } = await window.supabaseClient
+            .from('inpatient_vitals')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .order('vital_time', { ascending: false })
+            .limit(1)
+            .maybeSingle();
+          
+          if (recentVitals) {
+            if (recentVitals.heart_rate && (recentVitals.heart_rate > 120 || recentVitals.heart_rate < 50)) {
+              alerts.push({
+                type: 'critical',
+                message: `Abnormal Heart Rate: ${recentVitals.heart_rate} bpm`,
+                time: new Date(recentVitals.vital_time).toLocaleString()
+              });
+            }
+            if (recentVitals.o2_saturation && recentVitals.o2_saturation < 90) {
+              alerts.push({
+                type: 'critical',
+                message: `Low O2 Saturation: ${recentVitals.o2_saturation}%`,
+                time: new Date(recentVitals.vital_time).toLocaleString()
+              });
+            }
+            if (recentVitals.temperature && recentVitals.temperature > 38.5) {
+              alerts.push({
+                type: 'warning',
+                message: `Elevated Temperature: ${recentVitals.temperature}°C`,
+                time: new Date(recentVitals.vital_time).toLocaleString()
+              });
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error checking vitals for alerts:', error);
+      }
+      
+      // Check for overdue medications
+      try {
+        if (window.supabaseClient) {
+          const now = new Date();
+          const { data: overdueMeds } = await window.supabaseClient
+            .from('medication_administration')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('status', 'pending')
+            .lt('scheduled_time', now.toISOString());
+          
+          if (overdueMeds && overdueMeds.length > 0) {
+            alerts.push({
+              type: 'warning',
+              message: `${overdueMeds.length} medication(s) overdue`,
+              time: 'Now'
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error checking overdue medications:', error);
+      }
+      
+      displayAlerts(alerts);
+    }
+    
+    function displayAlerts(alerts) {
+      const container = document.getElementById('alerts-list');
+      if (alerts.length === 0) {
+        container.innerHTML = '<p style="color: var(--primary-green);">✅ No alerts at this time.</p>';
+        return;
+      }
+      
+      container.innerHTML = alerts.map(alert => `
+        <div class="alert-box ${alert.type === 'critical' ? 'critical' : ''}">
+          <strong>${alert.type === 'critical' ? '🚨 CRITICAL' : '⚠️ WARNING'}</strong><br>
+          ${alert.message}<br>
+          <small>Time: ${alert.time}</small>
+        </div>
+      `).join('');
+    }
+    
+    function activateTab(tabName) {
+      // Hide all tabs
+      document.querySelectorAll('.tab-content').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      document.querySelectorAll('.tab').forEach(tab => {
+        tab.classList.remove('active');
+      });
+      
+      // Show selected tab
+      document.getElementById(`tab-${tabName}`).classList.add('active');
+      const tabButton = Array.from(document.querySelectorAll('.tab'))
+        .find(tab => tab.textContent.toLowerCase().includes(tabName.replace('-', ' ')));
+      if (tabButton) tabButton.classList.add('active');
+      
+      // Load data for the tab if needed
+      if (tabName === 'vitals') {
+        loadVitals();
+      } else if (tabName === 'orders') {
+        loadOrders();
+      } else if (tabName === 'results') {
+        loadResults();
+      } else if (tabName === 'notes') {
+        loadNotes();
+      } else if (tabName === 'care-plan') {
+        loadCarePlan();
+      } else if (tabName === 'medications') {
+        loadMedications();
+      } else if (tabName === 'procedures') {
+        loadProcedures();
+      } else if (tabName === 'discharge') {
+        loadDischargePlanning();
+      } else if (tabName === 'alerts') {
+        loadAlerts();
+      }
+      enforceInpatientTheme();
+    }
+
+    function switchTab(tabName) {
+      activateTab(tabName);
+    }
+    
+    function showAddVitalsForm() {
+      document.getElementById('add-vitals-form').style.display = 'block';
+    }
+    
+    function hideAddVitalsForm() {
+      document.getElementById('add-vitals-form').style.display = 'none';
+      document.getElementById('vitals-form').reset();
+      // Remove edit mode
+      document.getElementById('vitals-form').removeAttribute('data-edit-id');
+      const submitButton = document.querySelector('#vitals-form button[type="submit"]');
+      if (submitButton) {
+        submitButton.textContent = '💾 Save Vitals';
+      }
+    }
+    
+    async function handleAddVitals(e) {
+      e.preventDefault();
+      
+      try {
+        // Check if this is an edit operation
+        const editId = document.getElementById('vitals-form').getAttribute('data-edit-id');
+        const isEdit = !!editId;
+        
+        // Get current user's UUID from Supabase users table
+        let currentUserId = null;
+        if (window.supabaseClient) {
+          try {
+            // Get authenticated user
+            const { data: { user: authUser }, error: authError } = await window.supabaseClient.auth.getUser();
+            
+            if (!authError && authUser) {
+              // Find user record in users table by auth_user_id
+              const { data: userRecord, error: userError } = await window.supabaseClient
+                .from('users')
+                .select('id')
+                .eq('auth_user_id', authUser.id)
+                .single();
+              
+              if (!userError && userRecord) {
+                currentUserId = userRecord.id;
+                console.log('✅ Got current user ID from Supabase:', currentUserId);
+              } else {
+                console.warn('⚠️ Could not find user record, falling back to localStorage');
+                const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+                currentUserId = localUser.id || null;
+              }
+            } else {
+              console.warn('⚠️ No authenticated user, using localStorage fallback');
+              const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+              currentUserId = localUser.id || null;
+            }
+          } catch (error) {
+            console.warn('⚠️ Error getting user ID from Supabase:', error);
+            const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+            currentUserId = localUser.id || null;
+          }
+        } else {
+          // Fallback to localStorage
+          const localUser = JSON.parse(localStorage.getItem("user") || "{}");
+          currentUserId = localUser.id || null;
+        }
+        
+        const vitalData = {
+          temperature: document.getElementById('vital-temp').value ? parseFloat(document.getElementById('vital-temp').value) : null,
+          heart_rate: document.getElementById('vital-hr').value ? parseInt(document.getElementById('vital-hr').value) : null,
+          respiratory_rate: document.getElementById('vital-rr').value ? parseInt(document.getElementById('vital-rr').value) : null,
+          systolic_bp: document.getElementById('vital-systolic').value ? parseInt(document.getElementById('vital-systolic').value) : null,
+          diastolic_bp: document.getElementById('vital-diastolic').value ? parseInt(document.getElementById('vital-diastolic').value) : null,
+          o2_saturation: document.getElementById('vital-o2sat').value ? parseFloat(document.getElementById('vital-o2sat').value) : null,
+          pain_score: document.getElementById('vital-pain').value ? parseInt(document.getElementById('vital-pain').value) : null,
+          height: document.getElementById('vital-height').value ? parseFloat(document.getElementById('vital-height').value) : null,
+          weight: document.getElementById('vital-weight').value ? parseFloat(document.getElementById('vital-weight').value) : null,
+          notes: document.getElementById('vital-notes').value.trim() || null
+        };
+        
+        if (isEdit) {
+          // For edits, check if recorded_by is null and set it if needed
+          const originalRecordedBy = document.getElementById('vitals-form').getAttribute('data-original-recorded-by');
+          
+          console.log('🔍 [EDIT] Editing vital - original recorded_by:', originalRecordedBy, 'currentUserId:', currentUserId);
+          console.log('🔍 [EDIT] editId:', editId);
+          
+          // Always fetch the current recorded_by from the database to be sure
+          let existingRecordedBy = null;
+          if (window.supabaseClient) {
+            try {
+              const { data: existingVital, error: fetchError } = await window.supabaseClient
+                .from('inpatient_vitals')
+                .select('recorded_by')
+                .eq('id', editId)
+                .single();
+              
+              if (!fetchError && existingVital) {
+                existingRecordedBy = existingVital.recorded_by;
+                console.log('🔍 [EDIT] Fetched existing recorded_by from DB:', existingRecordedBy);
+              } else {
+                console.warn('⚠️ [EDIT] Could not fetch existing vital:', fetchError);
+              }
+            } catch (error) {
+              console.error('❌ [EDIT] Error fetching existing vital:', error);
+            }
+          }
+          
+          // Use the fetched value or fall back to the attribute
+          const actualRecordedBy = existingRecordedBy !== null ? existingRecordedBy : originalRecordedBy;
+          
+          // If recorded_by is null or missing, set it to current user
+          if (!actualRecordedBy) {
+            console.log('⚠️ [EDIT] Existing vital has no recorded_by, setting to current user:', currentUserId);
+            vitalData.recorded_by = currentUserId;
+            console.log('✅ [EDIT] vitalData.recorded_by set to:', vitalData.recorded_by);
+          } else {
+            console.log('✅ [EDIT] Preserving existing recorded_by:', actualRecordedBy);
+            // Don't update recorded_by if it already exists (for audit trail)
+          }
+        } else {
+          // For new records, always set recorded_by
+          vitalData.admission_id = admissionId;
+          vitalData.organization_id = organizationId;
+          vitalData.vital_time = new Date().toISOString();
+          vitalData.recorded_by = currentUserId;
+        }
+        
+        // SUPABASE-FIRST: Save or update in Supabase
+        if (window.supabaseClient) {
+          if (isEdit) {
+            // Update existing record
+            console.log('🔍 [UPDATE] Updating vital with data:', vitalData);
+            console.log('🔍 [UPDATE] Edit ID:', editId);
+            
+            const { error, data: updateResult } = await window.supabaseClient
+              .from('inpatient_vitals')
+              .update(vitalData)
+              .eq('id', editId)
+              .select('recorded_by'); // Select to verify what was updated
+            
+            if (error) {
+              console.error('❌ [UPDATE] Error updating vital:', error);
+              throw error;
+            }
+            console.log('✅ [UPDATE] Vitals updated in Supabase, result:', updateResult);
+            
+            // Verify the update worked
+            if (updateResult && updateResult.length > 0) {
+              console.log('✅ [UPDATE] Updated vital recorded_by:', updateResult[0].recorded_by);
+            }
+          } else {
+            // Insert new record
+            const { error } = await window.supabaseClient
+              .from('inpatient_vitals')
+              .insert(vitalData);
+            
+            if (error) throw error;
+            console.log('✅ Vitals saved to Supabase');
+          }
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`inpatient_vitals_${organizationId}`) || "[]";
+          const vitals = JSON.parse(stored);
+          
+          if (isEdit) {
+            const index = vitals.findIndex(v => v.id === editId);
+            if (index !== -1) {
+              vitals[index] = { ...vitals[index], ...vitalData, updated_at: new Date().toISOString() };
+              console.log('✅ Vitals updated in localStorage');
+            }
+          } else {
+            vitals.push({ ...vitalData, id: `vital_${Date.now()}`, created_at: new Date().toISOString() });
+            console.log('✅ Vitals saved to localStorage');
+          }
+          
+          localStorage.setItem(`inpatient_vitals_${organizationId}`, JSON.stringify(vitals));
+        }
+        
+        hideAddVitalsForm();
+        await loadVitals();
+        await loadAlerts(); // Refresh alerts
+        alert(isEdit ? 'Vitals updated successfully!' : 'Vitals recorded successfully!');
+      } catch (error) {
+        console.error('Error saving vitals:', error);
+        alert('Error saving vitals: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function showAddOrderForm() {
+      document.getElementById('add-order-form').style.display = 'block';
+    }
+    
+    function hideAddOrderForm() {
+      document.getElementById('add-order-form').style.display = 'none';
+      document.getElementById('order-form').reset();
+      document.getElementById('order-details-container').innerHTML = '';
+      const schedulingFields = document.getElementById('order-scheduling-fields');
+      const orderActions = document.getElementById('order-actions');
+      if (schedulingFields) schedulingFields.style.display = '';
+      if (orderActions) orderActions.style.display = 'flex';
+    }
+    
+    function handleOrderTypeChange() {
+      const orderType = document.getElementById('order-type').value;
+      const normalizedOrderType = orderType === 'lab' ? 'test' : orderType;
+      const container = document.getElementById('order-details-container');
+      const schedulingFields = document.getElementById('order-scheduling-fields');
+      const orderActions = document.getElementById('order-actions');
+      container.innerHTML = '';
+      if (schedulingFields) schedulingFields.style.display = '';
+      if (orderActions) orderActions.style.display = 'flex';
+      
+      if (normalizedOrderType === 'medication') {
+        container.innerHTML = `
+          <div class="form-group">
+            <label>Medication Name *</label>
+            <div style="position: relative;">
+              <input type="text" id="order-med-name" required placeholder="Start typing medication name..." autocomplete="off">
+              <div id="order-med-name-suggestions" class="drug-suggestions"></div>
+            </div>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Strength *</label>
+              <div style="position: relative;">
+                <input type="text" id="order-med-dosage" required placeholder="Select strength" autocomplete="off">
+                <div id="order-med-dosage-suggestions" class="drug-suggestions"></div>
+              </div>
+            </div>
+            <div class="form-group">
+              <label>Route *</label>
+              <select id="order-med-route" required></select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Frequency *</label>
+            <select id="order-med-frequency" required></select>
+          </div>
+        `;
+        initializeMedicationOrderForm();
+      } else if (normalizedOrderType === 'diet') {
+        container.innerHTML = `
+          <div class="form-group">
+            <label>Diet Type *</label>
+            <select id="order-diet-type" required>
+              <option value="regular">Regular Diet</option>
+              <option value="soft">Soft Diet</option>
+              <option value="liquid">Liquid Diet</option>
+              <option value="npo">NPO</option>
+              <option value="diabetic">Diabetic Diet</option>
+              <option value="cardiac">Cardiac Diet</option>
+              <option value="renal">Renal Diet</option>
+            </select>
+          </div>
+        `;
+      } else if (normalizedOrderType === 'activity') {
+        container.innerHTML = `
+          <div class="form-group">
+            <label>Activity Level *</label>
+            <select id="order-activity-level" required>
+              <option value="bedrest">Bed Rest</option>
+              <option value="bedrest-bathroom">Bed Rest with Bathroom Privileges</option>
+              <option value="ambulatory">Ambulatory</option>
+              <option value="ambulatory-assist">Ambulatory with Assistance</option>
+              <option value="chair">Up in Chair</option>
+            </select>
+          </div>
+        `;
+      } else if (normalizedOrderType === 'test' || normalizedOrderType === 'imaging') {
+        const isLab = normalizedOrderType === 'test';
+        container.innerHTML = `
+          <div class="form-group">
+            <label>${isLab ? 'Lab Orders' : 'Imaging Orders'} *</label>
+            <p style="margin: 0 0 10px; color: #555;">
+              Use the full ${isLab ? 'lab' : 'imaging'} order workflow to select tests.
+            </p>
+            <button type="button" onclick="${isLab ? 'openInpatientLabOrders()' : 'openInpatientImagingOrders()'}">
+              ${isLab ? '🧪 Select Lab Tests' : '📷 Select Imaging Studies'}
+            </button>
+          </div>
+        `;
+        if (schedulingFields) schedulingFields.style.display = 'none';
+        if (orderActions) orderActions.style.display = 'none';
+      }
+    }
+
+    function getInpatientVisitDateForOrders() {
+      return new Date().toISOString().split('T')[0];
+    }
+
+    function getInpatientPatientIdForOrders() {
+      return legacyPatientId || patientId || '';
+    }
+
+    function getInpatientAdmissionIdForOrders() {
+      return admissionId || (typeof getAdmissionIdForUrl === 'function' ? getAdmissionIdForUrl() : '');
+    }
+
+    function openInpatientLabOrders() {
+      const patientIdParam = getInpatientPatientIdForOrders();
+      const admissionParam = getInpatientAdmissionIdForOrders();
+      const visitDate = getInpatientVisitDateForOrders();
+      const returnUrl = encodeURIComponent(window.location.href);
+      if (!patientIdParam) {
+        alert('Patient ID is required to create lab orders.');
+        return;
+      }
+      window.location.href = `select-lab-orders.html?patientId=${encodeURIComponent(patientIdParam)}&visitDate=${encodeURIComponent(visitDate)}&admissionId=${encodeURIComponent(admissionParam)}&returnUrl=${returnUrl}`;
+    }
+
+    function openInpatientImagingOrders() {
+      const patientIdParam = getInpatientPatientIdForOrders();
+      const admissionParam = getInpatientAdmissionIdForOrders();
+      const visitDate = getInpatientVisitDateForOrders();
+      const returnUrl = encodeURIComponent(window.location.href);
+      if (!patientIdParam) {
+        alert('Patient ID is required to create imaging orders.');
+        return;
+      }
+      window.location.href = `select-imaging-orders.html?patientId=${encodeURIComponent(patientIdParam)}&visitDate=${encodeURIComponent(visitDate)}&admissionId=${encodeURIComponent(admissionParam)}&returnUrl=${returnUrl}`;
+    }
+
+    function getMedicationOrderFormDatabase() {
+      if (Array.isArray(window.DRUG_DATABASE) && window.DRUG_DATABASE.length) {
+        return window.DRUG_DATABASE;
+      }
+      return [];
+    }
+
+    function getMedicationOrderRoutes() {
+      return [
+        'Oral',
+        'IV',
+        'IM',
+        'Subcutaneous',
+        'Topical',
+        'Inhalation',
+        'Sublingual',
+        'Rectal',
+        'Vaginal',
+        'Nasal',
+        'Ophthalmic',
+        'Otic',
+        'Other'
+      ];
+    }
+
+    function getMedicationOrderFrequencies() {
+      return [
+        'Once daily',
+        'Twice daily',
+        'Three times daily',
+        'Four times daily',
+        'Q6H',
+        'Q8H',
+        'Q12H',
+        'BID',
+        'TID',
+        'QID',
+        'PRN'
+      ];
+    }
+
+    function renderSuggestions(container, items, onSelect, options = {}) {
+      if (!container) return;
+      const allowCustom = options.allowCustom === true;
+      const customLabel = options.customLabel || '➕ Add custom entry…';
+      const customValue = options.customValue || '';
+
+      const list = items.slice();
+      if (allowCustom) {
+        list.push({
+          value: customValue,
+          label: customLabel,
+          meta: '',
+          isCustom: true
+        });
+      }
+
+      if (!list.length) {
+        container.style.display = 'none';
+        container.innerHTML = '';
+        return;
+      }
+      container.innerHTML = list.map(item => `
+        <div class="drug-suggestion${item.isCustom ? ' custom' : ''}" data-value="${item.value}" data-meta="${item.meta || ''}">
+          <div class="drug-name">${item.label}</div>
+          ${item.meta ? `<div class="drug-strength">${item.meta}</div>` : ''}
+        </div>
+      `).join('');
+      container.style.display = 'block';
+
+      Array.from(container.querySelectorAll('.drug-suggestion')).forEach(el => {
+        el.addEventListener('click', () => {
+          const value = el.getAttribute('data-value') || '';
+          onSelect(value);
+          container.style.display = 'none';
+        });
+      });
+    }
+
+    function setStrengthLabelForInput(inputId, labelText) {
+      const input = document.getElementById(inputId);
+      const label = input?.closest('.form-group')?.querySelector('label');
+      if (label) label.textContent = labelText;
+    }
+
+    function setupMedicationAutocomplete(nameInputId, nameSuggestionsId, dosageInputId, dosageSuggestionsId) {
+      const nameInput = document.getElementById(nameInputId);
+      const nameSuggestions = document.getElementById(nameSuggestionsId);
+      const dosageInput = document.getElementById(dosageInputId);
+      const dosageSuggestions = document.getElementById(dosageSuggestionsId);
+      if (!nameInput || !nameSuggestions || !dosageInput || !dosageSuggestions) return;
+
+      const db = getMedicationOrderFormDatabase();
+
+      const updateDosage = (drugName) => {
+        const match = db.find(d => (d.name || '').toLowerCase() === (drugName || '').toLowerCase());
+        const strengths = match?.strength ? match.strength.split(',').map(s => s.trim()).filter(Boolean) : [];
+        const items = strengths.map(s => ({ value: s, label: s }));
+        renderSuggestions(
+          dosageSuggestions,
+          items,
+          (val) => { dosageInput.value = val; },
+          {
+            allowCustom: true,
+            customLabel: '➕ Add custom strength…',
+            customValue: dosageInput.value.trim()
+          }
+        );
+      };
+
+      const renderNameSuggestions = () => {
+        const query = nameInput.value.trim().toLowerCase();
+        const matches = db.filter(drug =>
+          (drug.name || '').toLowerCase().includes(query) ||
+          (drug.generic || '').toLowerCase().includes(query)
+        ).slice(0, 20);
+        const items = matches.map(drug => ({
+          value: drug.name,
+          label: drug.name,
+          meta: `${drug.strength || ''}${drug.form ? ` | ${drug.form}` : ''}${drug.category ? ` | ${drug.category}` : ''}`
+        }));
+        renderSuggestions(
+          nameSuggestions,
+          items,
+          (val) => {
+            nameInput.value = val || nameInput.value;
+            updateDosage(nameInput.value);
+          },
+          {
+            allowCustom: true,
+            customLabel: '➕ Add custom medication…',
+            customValue: nameInput.value.trim()
+          }
+        );
+      };
+
+      nameInput.addEventListener('input', renderNameSuggestions);
+      nameInput.addEventListener('focus', renderNameSuggestions);
+      nameInput.addEventListener('click', renderNameSuggestions);
+
+      dosageInput.addEventListener('focus', () => {
+        updateDosage(nameInput.value);
+      });
+      dosageInput.addEventListener('click', () => {
+        updateDosage(nameInput.value);
+      });
+
+      document.addEventListener('click', (event) => {
+        if (!nameInput.contains(event.target) && !nameSuggestions.contains(event.target)) {
+          nameSuggestions.style.display = 'none';
+        }
+        if (!dosageInput.contains(event.target) && !dosageSuggestions.contains(event.target)) {
+          dosageSuggestions.style.display = 'none';
+        }
+      });
+    }
+
+    function initializeMedicationOrderForm() {
+      const routeSelect = document.getElementById('order-med-route');
+      const frequencySelect = document.getElementById('order-med-frequency');
+
+      if (!routeSelect || !frequencySelect) return;
+
+      routeSelect.innerHTML = `<option value="">Select route...</option>${getMedicationOrderRoutes()
+        .map(route => `<option value="${route}">${route}</option>`).join('')}`;
+      frequencySelect.innerHTML = `<option value="">Select frequency...</option>${getMedicationOrderFrequencies()
+        .map(freq => `<option value="${freq}">${freq}</option>`).join('')}`;
+
+      setupMedicationAutocomplete('order-med-name', 'order-med-name-suggestions', 'order-med-dosage', 'order-med-dosage-suggestions');
+      setStrengthLabelForInput('order-med-dosage', 'Strength *');
+    }
+    
+    async function handleAddOrder(e) {
+      e.preventDefault();
+      
+      try {
+        const orderType = document.getElementById('order-type').value;
+        const normalizedOrderType = orderType === 'lab' ? 'test' : orderType;
+        if (normalizedOrderType === 'test') {
+          openInpatientLabOrders();
+          return;
+        }
+        if (normalizedOrderType === 'imaging') {
+          openInpatientImagingOrders();
+          return;
+        }
+        const orderData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          patient_id: patientId,
+          type: normalizedOrderType === 'test' ? 'lab' : (normalizedOrderType === 'imaging' ? 'imaging' : 'other'),
+          order_type: orderType,
+          order_status: 'pending',
+          scheduled_time: document.getElementById('order-scheduled-time').value || null,
+          notes: document.getElementById('order-notes').value.trim() || null
+        };
+        
+        // Build selected_items based on order type
+        if (normalizedOrderType === 'medication') {
+          const medName = getInputValue('order-med-name');
+          const medDosage = getInputValue('order-med-dosage');
+          const medRoute = getInputValue('order-med-route');
+          const medFrequency = getInputValue('order-med-frequency');
+
+          if (!medName || !medDosage || !medRoute || !medFrequency) {
+            alert('Please fill in medication name, strength, route, and frequency.');
+            return;
+          }
+
+          orderData.selected_items = [{
+            name: medName,
+            dosage: medDosage,
+            route: medRoute,
+            frequency: medFrequency
+          }];
+        } else if (normalizedOrderType === 'diet') {
+          orderData.selected_items = [{
+            type: 'diet',
+            name: document.getElementById('order-diet-type').value
+          }];
+        } else if (normalizedOrderType === 'activity') {
+          orderData.selected_items = [{
+            type: 'activity',
+            name: document.getElementById('order-activity-level').value
+          }];
+        } else if (normalizedOrderType === 'test' || normalizedOrderType === 'imaging') {
+          orderData.selected_items = [{
+            name: document.getElementById('order-test-name').value,
+            instructions: document.getElementById('order-test-instructions').value || null
+          }];
+        }
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('orders')
+            .insert(orderData);
+          
+          if (error) throw error;
+          console.log('✅ Order saved to Supabase');
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`orders_${organizationId}`) || "[]";
+          const orders = JSON.parse(stored);
+          orders.push({ ...orderData, id: `order_${Date.now()}`, created_at: new Date().toISOString() });
+          localStorage.setItem(`orders_${organizationId}`, JSON.stringify(orders));
+          console.log('✅ Order saved to localStorage');
+        }
+        
+        if (orderType === 'medication') {
+          await syncPatientMedicationsFromOrder(orderData);
+        }
+        
+        hideAddOrderForm();
+        await loadOrders();
+        alert('Order created successfully!');
+      } catch (error) {
+        console.error('Error creating order:', error);
+        alert('Error creating order: ' + (error.message || 'Please try again.'));
+      }
+    }
+
+    function emitPatientSyncEvent(action, entry) {
+      const syncEvent = {
+        type: 'patientDataUpdated',
+        patientId: legacyPatientId || patientId,
+        action: action,
+        data: entry,
+        timestamp: new Date().toISOString()
+      };
+      try {
+        localStorage.setItem('patientDataSync', JSON.stringify(syncEvent));
+      } catch (error) {
+        console.warn('Unable to write patient sync event to localStorage:', error);
+      }
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: syncEvent
+      }));
+    }
+
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+
+    async function syncPatientMedicationsFromOrder(orderData) {
+      const patientKey = legacyPatientId || patientId || orderData.patient_id;
+      if (!patientKey) return;
+      const med = orderData.selected_items?.[0];
+      if (!med || !med.name) return;
+
+      let patients = [];
+      try {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      } catch (error) {
+        patients = [];
+      }
+
+      let patient = patients.find(p => p.patient_id === patientKey || p.id === patientKey || p._supabaseUuid === patientKey);
+      if (!patient && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          patient = await window.resolvePatientByIdentifier(patientKey);
+          if (patient) {
+            const existingIndex = patients.findIndex(p => p.id === patient.id || p.patient_id === patient.patient_id);
+            if (existingIndex === -1) {
+              patients.push(patient);
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient for medication sync:', error);
+        }
+      }
+
+      if (!patient) return;
+
+      const medications = Array.isArray(patient.medications) ? patient.medications : [];
+      const entry = {
+        name: med.name,
+        dosage: med.dosage || '',
+        route: med.route || '',
+        frequency: med.frequency || '',
+        notes: orderData.notes || ''
+      };
+      const exists = medications.some(item => String(item.name || '').toLowerCase() === String(entry.name || '').toLowerCase());
+      if (!exists) {
+        medications.push(entry);
+        patient.medications = medications;
+        try {
+          localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+        } catch (error) {
+          console.warn('Unable to update local patient medications cache:', error);
+        }
+
+        if (window.supabaseClient) {
+          try {
+            await window.supabaseClient
+              .from('patients')
+              .update({ medications: JSON.stringify(medications) })
+              .eq(patient.id ? 'id' : 'patient_id', patient.id || patient.patient_id)
+              .eq('organization_id', organizationId);
+          } catch (error) {
+            console.warn('Unable to sync medications to Supabase:', error);
+          }
+        }
+
+        emitPatientSyncEvent('medicationAdded', entry);
+      }
+    }
+    
+    function showMedicationAdminForm() {
+      // Load medications first
+      loadMedicationsForAdmin();
+      document.getElementById('med-admin-form').style.display = 'block';
+    }
+
+    function openMedicationOrderForm() {
+      activateTab('orders');
+      showAddOrderForm();
+      const orderType = document.getElementById('order-type');
+      if (orderType) orderType.value = 'medication';
+      handleOrderTypeChange();
+
+      const form = document.getElementById('add-order-form');
+      if (form) form.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }
+    
+    function hideMedAdminForm() {
+      document.getElementById('med-admin-form').style.display = 'none';
+      document.getElementById('med-admin-form-element').reset();
+      hideNewMedicationForm();
+    }
+
+    function showNewMedicationForm() {
+      document.getElementById('new-medication-form').style.display = 'block';
+      initializeNewMedicationFormOptions();
+      document.getElementById('new-med-name').focus();
+    }
+
+    function hideNewMedicationForm() {
+      const form = document.getElementById('new-medication-form');
+      if (form) form.style.display = 'none';
+      const nameInput = document.getElementById('new-med-name');
+      const dosageInput = document.getElementById('new-med-dosage');
+      const frequencySelect = document.getElementById('new-med-frequency');
+      const routeSelect = document.getElementById('new-med-route');
+      if (nameInput) nameInput.value = '';
+      if (dosageInput) dosageInput.value = '';
+      if (frequencySelect) frequencySelect.value = '';
+      if (routeSelect) routeSelect.value = '';
+    }
+
+    function initializeNewMedicationFormOptions() {
+      const nameInput = document.getElementById('new-med-name');
+      const dosageInput = document.getElementById('new-med-dosage');
+      const frequencySelect = document.getElementById('new-med-frequency');
+      const routeSelect = document.getElementById('new-med-route');
+
+      if (!nameInput || !dosageInput || !frequencySelect || !routeSelect) return;
+
+      routeSelect.innerHTML = `<option value="">Select route...</option>${getMedicationOrderRoutes()
+        .map(route => `<option value="${route}">${route}</option>`).join('')}`;
+      frequencySelect.innerHTML = `<option value="">Select frequency...</option>${getMedicationOrderFrequencies()
+        .map(freq => `<option value="${freq}">${freq}</option>`).join('')}`;
+
+      setupMedicationAutocomplete('new-med-name', 'new-med-name-suggestions', 'new-med-dosage', 'new-med-dosage-suggestions');
+      setStrengthLabelForInput('new-med-dosage', 'Strength *');
+    }
+    function getInputValue(inputId) {
+      const input = document.getElementById(inputId);
+      return input ? input.value.trim() : '';
+    }
+
+    async function addNewMedicationFromAdmin() {
+      const name = getInputValue('new-med-name');
+      if (!name) {
+        alert('Please enter a medication name.');
+        return;
+      }
+      const entry = {
+        name,
+        dosage: getInputValue('new-med-dosage') || '',
+        frequency: getInputValue('new-med-frequency') || '',
+        route: getInputValue('new-med-route') || ''
+      };
+
+      const saved = await addMedicationToPatientRecords(entry);
+      if (saved) {
+        hideNewMedicationForm();
+        await loadMedicationsForAdmin();
+        const select = document.getElementById('med-admin-medication');
+        if (select) {
+          const value = `med:${encodeURIComponent(entry.name)}`;
+          const option = Array.from(select.options).find(opt => opt.value === value);
+          if (option) select.value = value;
+        }
+        alert('Medication added to patient record.');
+      }
+    }
+    
+    async function loadMedicationsForAdmin() {
+      try {
+        const select = document.getElementById('med-admin-medication');
+        if (!select) return;
+        select.innerHTML = '<option value="">Loading medications...</option>';
+        select.disabled = false;
+
+        const patientIdentifiers = await resolvePatientIdentifiersForInpatient();
+        let prescriptions = [];
+        let medicationOrders = [];
+        let patientMedications = [];
+        let patientPrescriptions = [];
+
+        if (window.supabaseClient) {
+          let prescQuery = window.supabaseClient
+            .from('prescriptions')
+            .select('*')
+            .eq('organization_id', organizationId);
+          const prescOrFilters = [];
+          if (admissionId) {
+            prescOrFilters.push(`admission_id.eq.${admissionId}`);
+          }
+          if (patientIdentifiers.length) {
+            prescOrFilters.push(...patientIdentifiers.map(id => `patient_id.eq.${id}`));
+          }
+          if (prescOrFilters.length) {
+            prescQuery = prescQuery.or(prescOrFilters.join(','));
+          }
+          const { data: prescData } = await prescQuery;
+          prescriptions = prescData || [];
+
+          const { data: orderData } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('order_type', 'medication')
+            .eq('admission_id', admissionId);
+          medicationOrders = orderData || [];
+        }
+
+        const patientKey = legacyPatientId || patientId;
+        if (patientKey && typeof window.resolvePatientByIdentifier === 'function') {
+          try {
+            const resolved = await window.resolvePatientByIdentifier(patientKey);
+            patientMedications = Array.isArray(resolved?.medications) ? resolved.medications : [];
+            patientPrescriptions = Array.isArray(resolved?.prescriptions) ? resolved.prescriptions : [];
+          } catch (error) {
+            console.warn('Unable to resolve patient medications for admin:', error);
+          }
+        }
+
+        const combined = [];
+        prescriptions.forEach(presc => {
+          if (Array.isArray(presc.medications) && presc.medications.length) {
+            presc.medications.forEach(med => {
+              combined.push({
+                source: 'prescription',
+                id: presc.id,
+                name: med.name || presc.medication_name,
+                dosage: med.dosage || presc.dosage || '',
+                frequency: med.frequency || presc.frequency || '',
+                route: med.route || presc.route || ''
+              });
+            });
+          } else if (presc.medication_name) {
+            combined.push({
+              source: 'prescription',
+              id: presc.id,
+              name: presc.medication_name,
+              dosage: presc.dosage || '',
+              frequency: presc.frequency || '',
+              route: presc.route || ''
+            });
+          }
+        });
+
+        (patientPrescriptions || []).forEach((presc, prescIndex) => {
+          if (Array.isArray(presc.medications) && presc.medications.length) {
+            presc.medications.forEach((med, medIndex) => {
+              combined.push({
+                source: 'patient-prescription',
+                id: presc.id || `local_${prescIndex}_${medIndex}`,
+                name: med.name || presc.medication_name,
+                dosage: med.dosage || presc.dosage || '',
+                frequency: med.frequency || presc.frequency || med.directions || '',
+                route: med.route || presc.route || med.form || ''
+              });
+            });
+          } else if (presc.medication_name) {
+            combined.push({
+              source: 'patient-prescription',
+              id: presc.id || `local_${prescIndex}`,
+              name: presc.medication_name,
+              dosage: presc.dosage || '',
+              frequency: presc.frequency || presc.directions || '',
+              route: presc.route || presc.form || ''
+            });
+          }
+        });
+
+        (medicationOrders || []).forEach(order => {
+          const items = Array.isArray(order.selected_items) ? order.selected_items : [];
+          items.forEach(item => {
+            combined.push({
+              source: 'order',
+              id: order.id,
+              name: item.name || order.description || '',
+              dosage: item.dosage || '',
+              frequency: item.frequency || '',
+              route: item.route || ''
+            });
+          });
+        });
+
+        (patientMedications || []).forEach(med => {
+          combined.push({
+            source: 'patient',
+            id: med.id || med.name,
+            name: med.name || med.medication_name || '',
+            dosage: med.dosage || '',
+            frequency: med.frequency || med.directions || '',
+            route: med.route || med.form || ''
+          });
+        });
+
+        const unique = new Map();
+        combined.forEach(med => {
+          const key = `${(med.name || '').toLowerCase()}|${(med.dosage || '').toLowerCase()}|${(med.frequency || '').toLowerCase()}|${(med.route || '').toLowerCase()}`;
+          if (!unique.has(key)) unique.set(key, med);
+        });
+
+        select.innerHTML = '<option value="">Select medication...</option>';
+        Array.from(unique.values()).forEach(med => {
+          if (!med.name) return;
+          const option = document.createElement('option');
+          if (med.source === 'prescription') {
+            option.value = `rx:${med.id}`;
+          } else {
+            option.value = `med:${encodeURIComponent(med.name)}`;
+          }
+          option.dataset.med = JSON.stringify(med);
+          option.textContent = `${med.name}${med.dosage ? ` - ${med.dosage}` : ''}${med.frequency ? ` (${med.frequency})` : ''}`;
+          select.appendChild(option);
+        });
+        if (select.options.length === 1) {
+          select.innerHTML = '<option value="">No medications found</option>';
+        }
+      } catch (error) {
+        console.error('Error loading medications for admin:', error);
+        const select = document.getElementById('med-admin-medication');
+        if (select) {
+          select.innerHTML = '<option value="">Unable to load medications</option>';
+        }
+      }
+    }
+
+    async function addMedicationToPatientRecords(entry) {
+      const patientKey = legacyPatientId || patientId;
+      if (!patientKey) return false;
+
+      let patients = [];
+      try {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      } catch (error) {
+        patients = [];
+      }
+
+      let patient = patients.find(p => p.patient_id === patientKey || p.id === patientKey || p._supabaseUuid === patientKey);
+      if (!patient && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          patient = await window.resolvePatientByIdentifier(patientKey);
+          if (patient) {
+            const existingIndex = patients.findIndex(p => p.id === patient.id || p.patient_id === patient.patient_id);
+            if (existingIndex === -1) {
+              patients.push(patient);
+            }
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient for medication sync:', error);
+        }
+      }
+
+      if (!patient) {
+        alert('Unable to resolve patient for medication update.');
+        return false;
+      }
+
+      const medications = Array.isArray(patient.medications) ? patient.medications : [];
+      const key = `${entry.name.toLowerCase()}|${entry.dosage.toLowerCase()}|${entry.frequency.toLowerCase()}|${entry.route.toLowerCase()}`;
+      const exists = medications.some(item => {
+        const compareKey = `${(item.name || '').toLowerCase()}|${(item.dosage || '').toLowerCase()}|${(item.frequency || '').toLowerCase()}|${(item.route || '').toLowerCase()}`;
+        return compareKey === key;
+      });
+      if (!exists) {
+        medications.push(entry);
+        patient.medications = medications;
+        try {
+          localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+        } catch (error) {
+          console.warn('Unable to update local patient medications cache:', error);
+        }
+
+        if (window.supabaseClient) {
+          try {
+            await window.supabaseClient
+              .from('patients')
+              .update({ medications: JSON.stringify(medications) })
+              .eq(patient.id ? 'id' : 'patient_id', patient.id || patient.patient_id)
+              .eq('organization_id', organizationId);
+          } catch (error) {
+            console.warn('Unable to sync medications to Supabase:', error);
+          }
+        }
+
+        emitPatientSyncEvent('medicationAdded', entry);
+      }
+
+      return true;
+    }
+    
+    async function handleMedAdmin(e) {
+      e.preventDefault();
+      
+      try {
+        const select = document.getElementById('med-admin-medication');
+        const selectedOption = select.options[select.selectedIndex];
+        const selectedValue = select.value;
+        let medicationDetails = null;
+        let prescription = null;
+
+        if (selectedOption && selectedOption.dataset.med) {
+          try {
+            medicationDetails = JSON.parse(selectedOption.dataset.med);
+          } catch (error) {
+            medicationDetails = null;
+          }
+        }
+
+        if (selectedValue && selectedValue.startsWith('rx:')) {
+          const prescriptionId = selectedValue.replace('rx:', '');
+          prescription = await getPrescriptionById(prescriptionId);
+        }
+        
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const adminData = {
+          admission_id: admissionId,
+          prescription_id: prescription?.id || null,
+          organization_id: organizationId,
+          medication_name: medicationDetails?.name || prescription?.medication_name || 'Unknown',
+          scheduled_time: new Date(document.getElementById('med-admin-scheduled').value).toISOString(),
+          administered_time: document.getElementById('med-admin-administered').value ? 
+            new Date(document.getElementById('med-admin-administered').value).toISOString() : null,
+          administered_by: user.id || null,
+          dose_given: document.getElementById('med-admin-dose').value.trim() || medicationDetails?.dosage || null,
+          route: document.getElementById('med-admin-route').value || medicationDetails?.route || null,
+          status: document.getElementById('med-admin-status').value,
+          notes: document.getElementById('med-admin-notes').value.trim() || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('medication_administration')
+            .insert(adminData);
+          
+          if (error) throw error;
+          console.log('✅ Medication administration saved to Supabase');
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`medication_administration_${organizationId}`) || "[]";
+          const admins = JSON.parse(stored);
+          admins.push({ ...adminData, id: `med_admin_${Date.now()}`, created_at: new Date().toISOString() });
+          localStorage.setItem(`medication_administration_${organizationId}`, JSON.stringify(admins));
+          console.log('✅ Medication administration saved to localStorage');
+        }
+        
+        hideMedAdminForm();
+        await loadMedications();
+        await loadAlerts();
+        alert('Medication administration recorded successfully!');
+      } catch (error) {
+        console.error('Error recording medication administration:', error);
+        alert('Error recording administration: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function getPrescriptionById(prescriptionId) {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('prescriptions')
+            .select('*')
+            .eq('id', prescriptionId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          return data;
+        }
+        return null;
+      } catch (error) {
+        console.error('Error getting prescription:', error);
+        return null;
+      }
+    }
+    
+    async function completeOrder(orderId) {
+      if (!confirm('Mark this order as completed?')) return;
+      
+      try {
+        if (window.supabaseClient) {
+          const { error } = await window.supabaseClient
+            .from('orders')
+            .update({ order_status: 'completed' })
+            .eq('id', orderId);
+          
+          if (error) throw error;
+        } else {
+          const stored = localStorage.getItem(`orders_${organizationId}`);
+          const orders = JSON.parse(stored);
+          const index = orders.findIndex(o => o.id === orderId);
+          if (index !== -1) {
+            orders[index].order_status = 'completed';
+            localStorage.setItem(`orders_${organizationId}`, JSON.stringify(orders));
+          }
+        }
+        
+        await loadOrders();
+        alert('Order marked as completed!');
+      } catch (error) {
+        console.error('Error completing order:', error);
+        alert('Error completing order: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function editVital(vitalId) {
+      try {
+        console.log('🔍 Loading vital for edit:', vitalId);
+        // Load the vital data
+        let vitalData = null;
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('inpatient_vitals')
+            .select('*')
+            .eq('id', vitalId)
+            .single();
+          
+          if (error) throw error;
+          vitalData = data;
+          console.log('✅ Loaded vital data:', vitalData);
+          console.log('🔍 Vital recorded_by:', vitalData.recorded_by);
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`inpatient_vitals_${organizationId}`) || "[]";
+          const vitals = JSON.parse(stored);
+          vitalData = vitals.find(v => v.id === vitalId);
+        }
+        
+        if (!vitalData) {
+          alert('Vital record not found!');
+          return;
+        }
+        
+        // Populate the form with existing data
+        document.getElementById('vital-temp').value = vitalData.temperature || '';
+        document.getElementById('vital-hr').value = vitalData.heart_rate || '';
+        document.getElementById('vital-rr').value = vitalData.respiratory_rate || '';
+        document.getElementById('vital-systolic').value = vitalData.systolic_bp || '';
+        document.getElementById('vital-diastolic').value = vitalData.diastolic_bp || '';
+        document.getElementById('vital-o2sat').value = vitalData.o2_saturation || '';
+        document.getElementById('vital-pain').value = vitalData.pain_score || '';
+        document.getElementById('vital-height').value = vitalData.height || '';
+        document.getElementById('vital-weight').value = vitalData.weight || '';
+        document.getElementById('vital-notes').value = vitalData.notes || '';
+        
+        // Store the vital ID and original recorded_by for update
+        document.getElementById('vitals-form').setAttribute('data-edit-id', vitalId);
+        if (vitalData.recorded_by) {
+          document.getElementById('vitals-form').setAttribute('data-original-recorded-by', vitalData.recorded_by);
+        }
+        
+        // Change button text
+        const submitButton = document.querySelector('#vitals-form button[type="submit"]');
+        if (submitButton) {
+          submitButton.textContent = '💾 Update Vitals';
+        }
+        
+        // Show the form
+        showAddVitalsForm();
+        
+        // Scroll to form
+        document.getElementById('add-vitals-form').scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+        
+      } catch (error) {
+        console.error('Error loading vital for edit:', error);
+        alert('Error loading vital record: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function goBack() {
+      window.location.href = 'admissions-dashboard';
+    }
+
+    function goToMainDashboard() {
+      window.location.href = 'dashboard.html';
+    }
+    
+    async function loadProcedures() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('procedure_records')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .order('scheduled_date', { ascending: false })
+            .limit(10);
+          
+          if (error) throw error;
+          displayProcedures(data || []);
+        } else {
+          const stored = localStorage.getItem(`procedure_records_${organizationId}`);
+          const procedures = stored ? JSON.parse(stored).filter(p => p.admission_id === admissionId) : [];
+          displayProcedures(procedures);
+        }
+      } catch (error) {
+        console.error('Error loading procedures:', error);
+        document.getElementById('procedures-list').innerHTML = 
+          '<p>Error loading procedures. Please try again.</p>';
+      }
+    }
+    
+    function displayProcedures(procedures) {
+      const container = document.getElementById('procedures-list');
+      if (procedures.length === 0) {
+        container.innerHTML = '<p>No procedures scheduled yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = procedures.map(proc => {
+        const scheduledDate = proc.scheduled_date ? new Date(proc.scheduled_date).toLocaleString() : 'Not scheduled';
+        const statusClass = proc.recovery_status === 'completed' ? 'status-completed' : 
+                           proc.scheduled_date ? 'status-scheduled' : 'status-pending';
+        
+        return `
+          <div style="background: var(--soft-white); padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid var(--primary-green);">
+            <strong>${proc.procedure_name}</strong> <span class="status-badge ${statusClass}">${proc.recovery_status || 'pending'}</span><br>
+            <small>Type: ${proc.procedure_type}</small><br>
+            <small>Scheduled: ${scheduledDate}</small>
+            ${proc.surgeon ? `<br><small>Surgeon: ${proc.surgeon}</small>` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function loadDischargePlanning() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('discharge_planning')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          displayDischargePlanning(data);
+        } else {
+          const stored = localStorage.getItem(`discharge_planning_${organizationId}`);
+          const planning = stored ? JSON.parse(stored).find(p => p.admission_id === admissionId) : null;
+          displayDischargePlanning(planning);
+        }
+      } catch (error) {
+        console.error('Error loading discharge planning:', error);
+        document.getElementById('discharge-planning-status').innerHTML = 
+          '<p>Error loading discharge planning. Please try again.</p>';
+      }
+    }
+    
+    function displayDischargePlanning(planning) {
+      const container = document.getElementById('discharge-planning-status');
+      if (!planning) {
+        container.innerHTML = '<p>Discharge planning has not been started yet. Click "Manage Discharge Planning" to begin.</p>';
+        return;
+      }
+      
+      const readiness = planning.readiness_checklist || {};
+      const totalItems = 8;
+      const completedItems = Object.values(readiness).filter(v => v === true).length;
+      const percentage = Math.round((completedItems / totalItems) * 100);
+      
+      const barriers = planning.barriers || [];
+      const unresolvedBarriers = barriers.filter(b => !b.resolved).length;
+      
+      container.innerHTML = `
+        <div style="background: var(--soft-white); padding: 20px; border-radius: 8px; border-left: 6px solid var(--primary-green);">
+          <h3 style="margin-top: 0;">Discharge Planning Status</h3>
+          <p><strong>Status:</strong> ${planning.status || 'in-progress'}</p>
+          <p><strong>Target Discharge Date:</strong> ${planning.target_discharge_date ? new Date(planning.target_discharge_date).toLocaleDateString() : 'Not set'}</p>
+          <p><strong>Readiness Progress:</strong> ${percentage}% (${completedItems}/${totalItems} items complete)</p>
+          <div style="width: 100%; height: 20px; background: rgba(54, 69, 79, 0.15); border-radius: 10px; margin: 10px 0; overflow: hidden;">
+            <div style="height: 100%; width: ${percentage}%; background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); transition: width 0.3s ease;"></div>
+          </div>
+          ${unresolvedBarriers > 0 ? `<p style="color: var(--coral);"><strong>⚠️ ${unresolvedBarriers} unresolved barrier(s)</strong></p>` : ''}
+          ${planning.discharge_location ? `<p><strong>Discharge Location:</strong> ${planning.discharge_location}</p>` : ''}
+        </div>
+      `;
+    }
+    
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+
+    document.addEventListener('DOMContentLoaded', () => {
+      const newMedOrderBtn = document.getElementById('btn-new-med-order');
+      if (newMedOrderBtn) {
+        newMedOrderBtn.addEventListener('click', openMedicationOrderForm);
+      }
+    });
+  </script>
+</body>
+</html>
+

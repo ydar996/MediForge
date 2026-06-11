@@ -1,0 +1,264 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔧 Fix Login Schema Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .critical { border-left: 4px solid #d32f2f; background: #ffebee; }
+        .success { border-left: 4px solid #388e3c; background: #e8f5e9; }
+        .warning { border-left: 4px solid #f57c00; background: #fff3e0; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+        button { background: #4CAF50; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #45a049; }
+        button:disabled { background: #ccc; cursor: not-allowed; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Login Schema Issue</h1>
+        <p><strong>Issue:</strong> User profile not found - database schema mismatch</p>
+        
+        <div class="section critical">
+            <h3>🚨 Critical Issue</h3>
+            <p>The login is failing because the users table structure doesn't match the expected format.</p>
+            <p><strong>Error:</strong> Cannot coerce the result to a single JSON object</p>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Diagnostic Actions</h3>
+            <button onclick="checkUsersTable()">Check Users Table Structure</button>
+            <button onclick="checkYdar2User()">Check ydar2 User Data</button>
+            <button onclick="fixUserProfile()">Fix User Profile Query</button>
+            <button onclick="testLogin()">Test Login After Fix</button>
+        </div>
+
+        <div class="section">
+            <h3>📋 Live Debug Log</h3>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function initSupabase() {
+            if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                log('✅ Supabase client initialized', 'success');
+                return true;
+            }
+            log('❌ Supabase not available', 'error');
+            return false;
+        }
+
+        async function checkUsersTable() {
+            log('🔍 Checking users table structure...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Try to get all users to see the structure
+                const { data, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .limit(5);
+                
+                if (error) {
+                    log(`❌ Error querying users table: ${error.message}`, 'error');
+                    log(`❌ Error details: ${JSON.stringify(error, null, 2)}`, 'error');
+                } else {
+                    log(`✅ Users table accessible. Found ${data.length} users`, 'success');
+                    if (data.length > 0) {
+                        log(`📊 Sample user structure: ${JSON.stringify(data[0], null, 2)}`, 'info');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Exception checking users table: ${error.message}`, 'error');
+            }
+        }
+
+        async function checkYdar2User() {
+            log('🔍 Checking ydar2 user specifically...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Check by username
+                const { data: byUsername, error: usernameError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar2');
+                
+                if (usernameError) {
+                    log(`❌ Error querying by username: ${usernameError.message}`, 'error');
+                } else {
+                    log(`📊 Found ${byUsername.length} users with username 'ydar2'`, 'info');
+                    if (byUsername.length > 0) {
+                        log(`📊 ydar2 user data: ${JSON.stringify(byUsername[0], null, 2)}`, 'info');
+                    }
+                }
+
+                // Check by auth_user_id
+                const { data: byAuthId, error: authError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('auth_user_id', 'c49cd868-e403-4b94-9637-058ffad1ae79');
+                
+                if (authError) {
+                    log(`❌ Error querying by auth_user_id: ${authError.message}`, 'error');
+                } else {
+                    log(`📊 Found ${byAuthId.length} users with auth_user_id`, 'info');
+                    if (byAuthId.length > 0) {
+                        log(`📊 ydar2 auth user data: ${JSON.stringify(byAuthId[0], null, 2)}`, 'info');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Exception checking ydar2 user: ${error.message}`, 'error');
+            }
+        }
+
+        async function fixUserProfile() {
+            log('🔧 Attempting to fix user profile query...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                // Try different query approaches
+                const authUserId = 'c49cd868-e403-4b94-9637-058ffad1ae79';
+                
+                // Approach 1: Use .maybeSingle() instead of .single()
+                const { data: data1, error: error1 } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('auth_user_id', authUserId)
+                    .maybeSingle();
+                
+                if (error1) {
+                    log(`❌ Approach 1 failed: ${error1.message}`, 'error');
+                } else if (data1) {
+                    log(`✅ Approach 1 success: Found user profile`, 'success');
+                    log(`📊 User data: ${JSON.stringify(data1, null, 2)}`, 'info');
+                } else {
+                    log(`⚠️ Approach 1: No user found with auth_user_id`, 'warning');
+                }
+
+                // Approach 2: Check if user exists in auth.users
+                const { data: authData, error: authError } = await supabase.auth.getUser();
+                if (authError) {
+                    log(`❌ Auth check failed: ${authError.message}`, 'error');
+                } else {
+                    log(`📊 Current auth user: ${JSON.stringify(authData, null, 2)}`, 'info');
+                }
+
+                // Approach 3: Try to create missing user profile
+                if (!data1) {
+                    log('🔧 Attempting to create missing user profile...');
+                    
+                    const { data: newUser, error: createError } = await supabase
+                        .from('users')
+                        .insert([{
+                            auth_user_id: authUserId,
+                            username: 'ydar2',
+                            email: 'ydar2@mecureclinics.com',
+                            role: 'Doctor',
+                            first_name: 'Yinka',
+                            last_name: 'Daramola',
+                            organization_id: '576522cc-e769-4fb4-9487-3d150857d970', // Mecure Clinics ID
+                            medical_license_number: '201025',
+                            gender: 'Male'
+                        }])
+                        .select()
+                        .single();
+                    
+                    if (createError) {
+                        log(`❌ Failed to create user profile: ${createError.message}`, 'error');
+                    } else {
+                        log(`✅ Successfully created user profile for ydar2`, 'success');
+                        log(`📊 New user data: ${JSON.stringify(newUser, null, 2)}`, 'info');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Exception fixing user profile: ${error.message}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            log('🧪 Testing login after fix...');
+            
+            if (!initSupabase()) return;
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: 'ydar2@mecureclinics.com',
+                    password: 'ydar102'
+                });
+
+                if (error) {
+                    log(`❌ Login failed: ${error.message}`, 'error');
+                } else {
+                    log(`✅ Login successful!`, 'success');
+                    log(`📊 Auth data: ${JSON.stringify(data, null, 2)}`, 'info');
+                    
+                    // Now try to get user profile
+                    const { data: profile, error: profileError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('auth_user_id', data.user.id)
+                        .maybeSingle();
+                    
+                    if (profileError) {
+                        log(`❌ Profile fetch failed: ${profileError.message}`, 'error');
+                    } else if (profile) {
+                        log(`✅ Profile fetch successful!`, 'success');
+                        log(`📊 Profile data: ${JSON.stringify(profile, null, 2)}`, 'info');
+                    } else {
+                        log(`⚠️ No profile found for user`, 'warning');
+                    }
+                }
+            } catch (error) {
+                log(`❌ Exception during login test: ${error.message}`, 'error');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('🚀 Login schema fix tool loaded');
+            log('💡 Click buttons above to diagnose and fix the login issue');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113100113101310"></script>
+
+</html>
+
+
+
+
+
+
+
+

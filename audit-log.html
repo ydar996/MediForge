@@ -1,0 +1,604 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log</title>
+  <link rel="stylesheet" href="css/styles.css?v=208">
+  <style>
+    .audit-filters {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .audit-filters label {
+      display: inline-block;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      font-weight: 600;
+    }
+    
+    .audit-filters input,
+    .audit-filters select {
+      margin-right: 20px;
+      padding: 6px 10px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+    
+    .audit-table {
+      font-size: 13px;
+    }
+    
+    .audit-table td {
+      max-width: 300px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    
+    .audit-table td:hover {
+      white-space: normal;
+      overflow: visible;
+    }
+    
+    .stats-cards {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 15px;
+      border-radius: 8px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+      border-left: 4px solid #4CAF50;
+    }
+    
+    .stat-card h4 {
+      margin: 0 0 10px 0;
+      color: #666;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    
+    .stat-card .value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+    }
+  </style>
+</head>
+<body>
+  <h1>Audit Log</h1>
+  
+  <!-- Back to Dashboard Button -->
+  <div style="margin-bottom: 20px;">
+    <a href="dashboard" style="background-color: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+      &larr; Back to Dashboard
+    </a>
+  </div>
+  
+  <p style="color: #666; margin-bottom: 20px;">View all system activity and user actions</p>
+  
+  <!-- Statistics Cards -->
+  <div class="stats-cards">
+    <div class="stat-card">
+      <h4>Total Events</h4>
+      <div class="value" id="total-events">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #007bff;">
+      <h4>Today's Activity</h4>
+      <div class="value" id="today-events">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #28a745;">
+      <h4>Active Users</h4>
+      <div class="value" id="active-users">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #ffc107;">
+      <h4>This Week</h4>
+      <div class="value" id="week-events">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #dc3545;">
+      <h4>Failed Logins</h4>
+      <div class="value" id="failed-logins">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #fd7e14;">
+      <h4>Security Alerts</h4>
+      <div class="value" id="security-alerts">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #6f42c1;">
+      <h4>Data Exports</h4>
+      <div class="value" id="data-exports">0</div>
+    </div>
+    <div class="stat-card" style="border-left-color: #20c997;">
+      <h4>Patient Accesses</h4>
+      <div class="value" id="patient-accesses">0</div>
+    </div>
+  </div>
+  
+  <!-- Security Alerts Section -->
+  <div id="security-alerts-section" style="background: #fff3cd; border: 2px solid #ffc107; border-radius: 8px; padding: 15px; margin-bottom: 20px; display: none;">
+    <h3 style="margin-top: 0; color: #856404;">&#9888; Security Alerts</h3>
+    <div id="security-alerts-list"></div>
+  </div>
+  
+  <!-- Filters -->
+  <div class="audit-filters">
+    <h3 style="margin-top: 0;">Filters</h3>
+    <div>
+      <label for="filter-action">Action:</label>
+      <select id="filter-action">
+        <option value="">All Actions</option>
+        <optgroup label="Authentication">
+          <option value="login_success">Login Success</option>
+          <option value="login_failed">Login Failed</option>
+          <option value="user_login_supabase">User Login (Supabase)</option>
+          <option value="platform_admin_login">Platform Admin Login</option>
+          <option value="password_changed">Password Changed</option>
+          <option value="password_change_failed">Password Change Failed</option>
+        </optgroup>
+        <optgroup label="Patient Data">
+          <option value="patient_created">Patient Created</option>
+          <option value="patient_viewed">Patient Viewed</option>
+          <option value="patient_updated">Patient Updated</option>
+          <option value="patient_edited">Patient Edited</option>
+          <option value="patient_deleted">Patient Deleted</option>
+        </optgroup>
+        <optgroup label="Billing & Financial">
+          <option value="invoice_created">Invoice Created</option>
+          <option value="invoice_edited">Invoice Edited</option>
+          <option value="invoice_deleted">Invoice Deleted</option>
+          <option value="payment_recorded">Payment Recorded</option>
+          <option value="payment_deleted">Payment Deleted</option>
+          <option value="payment_refunded">Payment Refunded</option>
+        </optgroup>
+        <optgroup label="Security Events">
+          <option value="unauthorized_access">Unauthorized Access</option>
+          <option value="access_attempt">Access Attempt</option>
+          <option value="security_breach">Security Breach</option>
+        </optgroup>
+        <optgroup label="Data Management">
+          <option value="data_exported">Data Exported</option>
+          <option value="data_imported">Data Imported</option>
+          <option value="report_exported">Report Exported</option>
+          <option value="document_uploaded">Document Uploaded</option>
+          <option value="backup_created">Backup Created</option>
+        </optgroup>
+        <optgroup label="Appointments">
+          <option value="appointment_created">Appointment Created</option>
+          <option value="appointment_edited">Appointment Edited</option>
+          <option value="appointment_canceled">Appointment Canceled</option>
+        </optgroup>
+        <optgroup label="Other">
+          <option value="prescription_created">Prescription Created</option>
+          <option value="user_profile_updated">User Profile Updated</option>
+          <option value="billing_reports_accessed">Billing Reports Accessed</option>
+        </optgroup>
+      </select>
+      
+      <label for="filter-risk">Risk Level:</label>
+      <select id="filter-risk">
+        <option value="">All Risk Levels</option>
+        <option value="high">&#128308; High Risk</option>
+        <option value="medium">&#128993; Medium Risk</option>
+        <option value="low">&#128994; Low Risk</option>
+        <option value="info">&#8505; Informational</option>
+      </select>
+      
+      <label for="filter-user">User:</label>
+      <select id="filter-user">
+        <option value="">All Users</option>
+      </select>
+      
+      <label for="filter-start-date">From:</label>
+      <input type="date" id="filter-start-date">
+      
+      <label for="filter-end-date">To:</label>
+      <input type="date" id="filter-end-date">
+      
+      <button onclick="applyFilters()" style="background: #4CAF50; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+        Apply Filters
+      </button>
+      <button onclick="clearFilters()" style="background: #6c757d; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 5px;">
+        Clear
+      </button>
+      <button onclick="exportAuditLog()" style="background: #17a2b8; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin-left: 10px;">
+        &#128229; Export to CSV
+      </button>
+    </div>
+  </div>
+  
+  <!-- Audit Log Table -->
+  <div id="audit-log-container">
+    <p style="text-align: center; color: #666; padding: 20px;">Loading audit log...</p>
+  </div>
+  
+  <div style="margin-top: 20px;">
+    <button onclick="window.location.href='dashboard'" style="background: #4CAF50; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">
+      &larr; Back to Dashboard
+    </button>
+  </div>
+  
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113080113081308"></script>
+  
+  <!-- Security functions -->
+  <script src="js/security.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  
+  <script>
+    // ?? TRACE: audit-log.html loaded - clean rewrite with proper Unicode characters v208
+    console.log('?? TRACE: Clean rewrite of audit-log.html with proper Unicode characters');
+    console.log('?? TRACE: Fixed all special character issues in buttons');
+    console.log('?? TRACE: Added complete Supabase setup for audit log');
+    console.log('?? TRACE: Added connection status notifier for real-time sync');
+    console.log('?? TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('?? TRACE: CSS version updated to v208 for cache busting');
+    
+    // Display logged-in user info
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+    
+    // Load and display audit log
+    function loadAuditLog() {
+      const auditLog = getAuditLog();
+      
+      console.log('Total audit log entries found:', auditLog.length);
+      console.log('Audit log entries:', auditLog);
+      
+      // Show details of each entry
+      auditLog.forEach((entry, index) => {
+        console.log(`Entry ${index + 1}:`, {
+          action: entry.action,
+          user: entry.user,
+          timestamp: entry.timestamp,
+          details: entry.details
+        });
+      });
+      
+      // Count login events
+      const loginEvents = auditLog.filter(e => e.action.includes('login'));
+      console.log('Login events found:', loginEvents.length);
+      console.log('Login events:', loginEvents);
+      
+      // Check localStorage directly
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const auditKey = user.org ? `${user.org}_auditLog` : 'auditLog';
+      console.log('Audit log storage key:', auditKey);
+      console.log('Raw localStorage value:', localStorage.getItem(auditKey));
+      
+      // Update statistics
+      document.getElementById('total-events').textContent = auditLog.length;
+      
+      // Today's events
+      const today = new Date().toDateString();
+      const todayEvents = auditLog.filter(e => new Date(e.timestamp).toDateString() === today);
+      document.getElementById('today-events').textContent = todayEvents.length;
+      
+      // This week's events
+      const weekAgo = new Date(Date.now() - 7 * 24 * 60 * 60 * 1000);
+      const weekEvents = auditLog.filter(e => new Date(e.timestamp) >= weekAgo);
+      document.getElementById('week-events').textContent = weekEvents.length;
+      
+      // Active users (unique users in last 7 days)
+      const activeUsers = new Set(weekEvents.map(e => e.user));
+      document.getElementById('active-users').textContent = activeUsers.size;
+      
+      // Failed logins
+      const failedLogins = auditLog.filter(e => 
+        e.action === 'login_failed' || 
+        e.action === 'password_change_failed' ||
+        e.action === 'unauthorized_access'
+      );
+      document.getElementById('failed-logins').textContent = failedLogins.length;
+      
+      // Security alerts (high risk events)
+      const securityAlerts = auditLog.filter(e => getRiskLevel(e) === 'high');
+      document.getElementById('security-alerts').textContent = securityAlerts.length;
+      
+      // Data exports
+      const dataExports = auditLog.filter(e => 
+        e.action === 'data_exported' || 
+        e.action === 'report_exported' ||
+        e.action === 'patient_exported_hl7'
+      );
+      document.getElementById('data-exports').textContent = dataExports.length;
+      
+      // Patient accesses
+      const patientAccesses = auditLog.filter(e => 
+        e.action === 'patient_viewed' || 
+        e.action === 'patient_updated' ||
+        e.action === 'patient_edited'
+      );
+      document.getElementById('patient-accesses').textContent = patientAccesses.length;
+      
+      // Display security alerts if any
+      displaySecurityAlerts(auditLog);
+      
+      // Populate user filter dropdown
+      const allUsers = new Set(auditLog.map(e => e.user));
+      const userFilter = document.getElementById('filter-user');
+      allUsers.forEach(user => {
+        const option = document.createElement('option');
+        option.value = user;
+        option.textContent = user;
+        userFilter.appendChild(option);
+      });
+      
+      // Display audit log table
+      displayAuditLog(auditLog.slice(0, 100)); // Show first 100
+    }
+    
+    function displayAuditLog(entries) {
+      const container = document.getElementById('audit-log-container');
+      
+      if (entries.length === 0) {
+        container.innerHTML = '<div style="text-align: center; padding: 40px; color: #666;">No audit log entries found</div>';
+        return;
+      }
+      
+      let html = `
+        <div style="margin-bottom: 10px; color: #666; font-size: 14px;">
+          Showing ${entries.length} entries (sorted by most recent)
+        </div>
+        <table class="audit-table" style="width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">Risk</th>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">Timestamp</th>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">User</th>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">Role</th>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">Action</th>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">IP Address</th>
+              <th style="border: 1px solid #ddd; padding: 10px; background: linear-gradient(135deg, #4CAF50, #45a049); color: white;">Details</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      entries.forEach((entry, index) => {
+        const riskLevel = getRiskLevel(entry);
+        const riskColor = getRiskColor(riskLevel);
+        const bgColor = index % 2 === 0 ? '#ffffff' : '#f8f9fa';
+        const rowStyle = riskLevel === 'high' ? `background: ${bgColor}; border-left: 4px solid ${riskColor};` : `background: ${bgColor};`;
+        
+        html += `
+          <tr style="${rowStyle}">
+            <td style="border: 1px solid #ddd; padding: 8px; text-align: center;">
+              <span style="font-size: 18px;" title="${riskLevel.toUpperCase()} Risk">${getRiskIcon(riskLevel)}</span>
+            </td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${new Date(entry.timestamp).toLocaleString()}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${entry.user}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">${entry.role}</td>
+            <td style="border: 1px solid #ddd; padding: 8px;">
+              <code style="background: #e9ecef; padding: 2px 6px; border-radius: 3px; font-size: 11px;">${entry.action}</code>
+            </td>
+            <td style="border: 1px solid #ddd; padding: 8px; font-size: 11px; font-family: monospace;">
+              ${entry.ipAddress && entry.ipAddress !== 'N/A' ? entry.ipAddress : '<span style="color: #999;">N/A</span>'}
+            </td>
+            <td style="border: 1px solid #ddd; padding: 8px; font-size: 11px; font-family: monospace;" title="${JSON.stringify(entry.details)}">
+              ${formatDetails(entry.details, entry.action)}
+            </td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    // Risk level calculation
+    function getRiskLevel(entry) {
+      const action = entry.action ? entry.action.toLowerCase() : '';
+      const details = entry.details || {};
+      
+      // High risk events
+      if (action.includes('failed') || 
+          action.includes('unauthorized') || 
+          action.includes('breach') ||
+          action.includes('security') ||
+          (action.includes('delete') && (action.includes('patient') || action.includes('invoice'))) ||
+          details.attempt_count > 3) {
+        return 'high';
+      }
+      
+      // Medium risk events
+      if (action.includes('export') || 
+          action.includes('delete') ||
+          action.includes('password') ||
+          action.includes('admin') ||
+          action.includes('payment_deleted')) {
+        return 'medium';
+      }
+      
+      // Low risk events
+      if (action.includes('view') || 
+          action.includes('read') ||
+          action.includes('login_success')) {
+        return 'low';
+      }
+      
+      // Default to informational
+      return 'info';
+    }
+    
+    function getRiskColor(riskLevel) {
+      switch(riskLevel) {
+        case 'high': return '#dc3545';
+        case 'medium': return '#ffc107';
+        case 'low': return '#28a745';
+        default: return '#6c757d';
+      }
+    }
+    
+    function getRiskIcon(riskLevel) {
+      switch(riskLevel) {
+        case 'high': return '&#128308;';
+        case 'medium': return '&#128993;';
+        case 'low': return '&#128994;';
+        default: return '&#8505;';
+      }
+    }
+    
+    function formatDetails(details, action) {
+      if (!details || typeof details !== 'object') return '';
+      
+      // Format based on action type
+      const keyDetails = [];
+      
+      if (details.patientId) keyDetails.push(`Patient: ${details.patientId}`);
+      if (details.patientName) keyDetails.push(`Name: ${details.patientName}`);
+      if (details.invoiceId) keyDetails.push(`Invoice: ${details.invoiceId}`);
+      if (details.amount) keyDetails.push(`Amount: ${details.amount}`);
+      if (details.reason) keyDetails.push(`Reason: ${details.reason}`);
+      if (details.attempt_count) keyDetails.push(`Attempts: ${details.attempt_count}`);
+      if (details.ip_address) keyDetails.push(`IP: ${details.ip_address}`);
+      
+      const detailsStr = JSON.stringify(details);
+      const formatted = keyDetails.length > 0 
+        ? keyDetails.join(', ') 
+        : detailsStr.substring(0, 100);
+      
+      return formatted + (detailsStr.length > 100 ? '...' : '');
+    }
+    
+    function displaySecurityAlerts(auditLog) {
+      const alerts = [];
+      
+      // Multiple failed logins from same user
+      const failedLoginsByUser = {};
+      auditLog.filter(e => e.action === 'login_failed').forEach(e => {
+        if (!failedLoginsByUser[e.user]) failedLoginsByUser[e.user] = [];
+        failedLoginsByUser[e.user].push(e);
+      });
+      
+      Object.entries(failedLoginsByUser).forEach(([user, events]) => {
+        if (events.length >= 3) {
+          alerts.push({
+            type: 'high',
+            message: `&#128683; User "${user}" has ${events.length} failed login attempts`,
+            timestamp: events[0].timestamp
+          });
+        }
+      });
+      
+      // Unusual access times (outside business hours)
+      const unusualAccess = auditLog.filter(e => {
+        const hour = new Date(e.timestamp).getHours();
+        return (hour < 6 || hour > 22) && e.action.includes('login');
+      });
+      if (unusualAccess.length > 0) {
+        alerts.push({
+          type: 'medium',
+          message: `&#127769; ${unusualAccess.length} login(s) outside normal business hours (6 AM - 10 PM)`,
+          timestamp: unusualAccess[0].timestamp
+        });
+      }
+      
+      // Multiple data exports
+      const exports = auditLog.filter(e => e.action.includes('export'));
+      if (exports.length >= 5) {
+        alerts.push({
+          type: 'medium',
+          message: `&#128229; ${exports.length} data export(s) detected - review for compliance`,
+          timestamp: exports[0].timestamp
+        });
+      }
+      
+      // Patient data deletions
+      const deletions = auditLog.filter(e => e.action.includes('delete') && e.action.includes('patient'));
+      if (deletions.length > 0) {
+        alerts.push({
+          type: 'high',
+          message: `&#128465; ${deletions.length} patient deletion(s) - verify authorization`,
+          timestamp: deletions[0].timestamp
+        });
+      }
+      
+      // Display alerts
+      const alertsSection = document.getElementById('security-alerts-section');
+      const alertsList = document.getElementById('security-alerts-list');
+      
+      if (alerts.length > 0) {
+        alertsSection.style.display = 'block';
+        alertsList.innerHTML = alerts.map(alert => `
+          <div style="padding: 10px; margin-bottom: 10px; background: white; border-radius: 4px; border-left: 4px solid ${getRiskColor(alert.type)};">
+            <strong>${alert.message}</strong>
+            <div style="font-size: 12px; color: #666; margin-top: 5px;">
+              ${new Date(alert.timestamp).toLocaleString()}
+            </div>
+          </div>
+        `).join('');
+      } else {
+        alertsSection.style.display = 'none';
+      }
+    }
+    
+    function applyFilters() {
+      const filters = {
+        action: document.getElementById('filter-action').value,
+        user: document.getElementById('filter-user').value,
+        startDate: document.getElementById('filter-start-date').value,
+        endDate: document.getElementById('filter-end-date').value,
+        riskLevel: document.getElementById('filter-risk').value
+      };
+      
+      let filteredLog = getAuditLog(filters);
+      
+      // Apply risk level filter
+      if (filters.riskLevel) {
+        filteredLog = filteredLog.filter(entry => getRiskLevel(entry) === filters.riskLevel);
+      }
+      
+      displayAuditLog(filteredLog.slice(0, 100));
+    }
+    
+    function clearFilters() {
+      document.getElementById('filter-action').value = '';
+      document.getElementById('filter-user').value = '';
+      document.getElementById('filter-start-date').value = '';
+      document.getElementById('filter-end-date').value = '';
+      loadAuditLog();
+    }
+    
+    // Load on page load
+    window.addEventListener('load', function() {
+      console.log('?? TRACE: Page loaded - initializing audit log');
+      loadAuditLog();
+    });
+    
+    console.log('?? TRACE: Audit log page initialization complete');
+  </script>
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

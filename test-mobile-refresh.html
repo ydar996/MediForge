@@ -1,0 +1,336 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <meta name="mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-capable" content="yes">
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Mobile Auto-Refresh Test</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .test-container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 40px rgba(0,0,0,0.1);
+            padding: 30px;
+            max-width: 90vw;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 20px;
+            font-size: 1.8rem;
+        }
+        
+        .status {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #28a745;
+        }
+        
+        .info {
+            background: #e3f2fd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #2196f3;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border-radius: 10px;
+            padding: 20px;
+            margin: 20px 0;
+            border-left: 4px solid #ffc107;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 15px 25px;
+            border-radius: 8px;
+            font-size: 16px;
+            cursor: pointer;
+            margin: 10px;
+            transition: transform 0.2s;
+            width: 100%;
+            max-width: 300px;
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .log {
+            background: #f8f9fa;
+            border-radius: 8px;
+            padding: 15px;
+            margin: 20px 0;
+            text-align: left;
+            font-family: monospace;
+            font-size: 12px;
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #dee2e6;
+        }
+        
+        .mobile-indicator {
+            background: #4CAF50;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        .desktop-indicator {
+            background: #2196F3;
+            color: white;
+            padding: 10px;
+            border-radius: 8px;
+            margin: 10px 0;
+            font-weight: bold;
+        }
+        
+        @media (max-width: 768px) {
+            .test-container {
+                padding: 20px;
+                margin: 10px;
+            }
+            
+            h1 {
+                font-size: 1.5rem;
+            }
+            
+            .button {
+                padding: 12px 20px;
+                font-size: 14px;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="test-container">
+        <h1>📱 Mobile Auto-Refresh Test</h1>
+        
+        <div id="device-indicator"></div>
+        
+        <div class="status">
+            <h3>✅ System Status</h3>
+            <p>Testing the unified auto-refresh system specifically for mobile browsers.</p>
+        </div>
+        
+        <div class="info">
+            <h3>📋 Mobile Test Information</h3>
+            <p><strong>Current Version:</strong> <span id="current-version">20251022120000</span></p>
+            <p><strong>Page Load Time:</strong> <span id="load-time"></span></p>
+            <p><strong>Refresh Attempts:</strong> <span id="refresh-attempts">0</span></p>
+            <p><strong>Device Type:</strong> <span id="device-type"></span></p>
+            <p><strong>Browser:</strong> <span id="browser-info"></span></p>
+        </div>
+        
+        <div class="warning">
+            <h3>⚠️ Mobile-Specific Behavior</h3>
+            <p>On mobile devices, the system uses aggressive cache clearing and multiple refresh strategies to ensure the latest version loads automatically.</p>
+        </div>
+        
+        <div>
+            <button class="button" onclick="simulateOldVersion()">Simulate Old Version</button>
+            <button class="button" onclick="clearMobileCache()">Clear Mobile Cache</button>
+            <button class="button" onclick="testOrientation()">Test Orientation</button>
+            <button class="button" onclick="checkMobileStatus()">Check Mobile Status</button>
+        </div>
+        
+        <div class="log" id="log">
+            <div>📱 Mobile auto-refresh test loaded...</div>
+        </div>
+    </div>
+    
+    <!-- Load the unified auto-refresh system -->
+    <script src="js/unified-auto-refresh.js?v=20251022120000"></script>
+    
+    <script>
+        // Mobile test page functionality
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div>[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        function updateInfo() {
+            document.getElementById('current-version').textContent = '20251022120000';
+            document.getElementById('load-time').textContent = new Date().toLocaleString();
+            document.getElementById('refresh-attempts').textContent = new URLSearchParams(window.location.search).get('refreshAttempts') || '0';
+            
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            document.getElementById('device-type').textContent = isMobile ? 'Mobile' : 'Desktop';
+            document.getElementById('browser-info').textContent = navigator.userAgent.substring(0, 50) + '...';
+            
+            // Update device indicator
+            const indicator = document.getElementById('device-indicator');
+            if (isMobile) {
+                indicator.innerHTML = '<div class="mobile-indicator">📱 Mobile Device Detected</div>';
+            } else {
+                indicator.innerHTML = '<div class="desktop-indicator">🖥️ Desktop Device Detected</div>';
+            }
+        }
+        
+        function simulateOldVersion() {
+            log('🧪 Simulating old version scenario for mobile...');
+            localStorage.setItem('ehrAppVersion', '20251019043800');
+            log('✅ Old version set in localStorage');
+            
+            // Add old script to trigger refresh
+            const oldScript = document.createElement('script');
+            oldScript.src = 'js/old-script.js?v=20251019043800';
+            document.head.appendChild(oldScript);
+            log('✅ Old script added to page');
+            
+            // Simulate mobile-specific cache issues
+            if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+                log('📱 Mobile: Simulating mobile cache issues...');
+                // Add mobile-specific cache keys
+                localStorage.setItem('mobileAppCache', 'old');
+                localStorage.setItem('browserCache', 'old');
+            }
+        }
+        
+        function clearMobileCache() {
+            log('🗑️ Clearing mobile cache aggressively...');
+            
+            if ('caches' in window) {
+                caches.keys().then(function(cacheNames) {
+                    cacheNames.forEach(function(cacheName) {
+                        caches.delete(cacheName);
+                        log(`✅ Cleared cache: ${cacheName}`);
+                    });
+                });
+            }
+            
+            // Clear all possible localStorage keys
+            const keysToRemove = [
+                'ehrAppVersion', 'autoRefreshVersion', 'universalAutoRefreshVersion',
+                'mobileCacheNotificationShown', 'appVersion', 'mobileCacheRefresh',
+                'ehrAppCache', 'mobileAppCache', 'browserCache'
+            ];
+            
+            keysToRemove.forEach(key => {
+                localStorage.removeItem(key);
+                log(`✅ Cleared localStorage: ${key}`);
+            });
+            
+            sessionStorage.clear();
+            log('✅ Cleared sessionStorage');
+        }
+        
+        function testOrientation() {
+            log('🔄 Testing orientation change...');
+            if (screen.orientation) {
+                log(`📱 Current orientation: ${screen.orientation.type}`);
+            } else {
+                log('📱 Orientation API not available');
+            }
+        }
+        
+        function checkMobileStatus() {
+            log('🔍 Checking mobile-specific status...');
+            
+            const isMobile = /Mobi|Android|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+            log(`📱 Mobile device: ${isMobile}`);
+            
+            const storedVersion = localStorage.getItem('ehrAppVersion');
+            log(`📦 Stored version: ${storedVersion || 'none'}`);
+            
+            const scripts = document.querySelectorAll('script[src*="v="]');
+            log(`📜 Scripts with version: ${scripts.length}`);
+            
+            // Check for mobile-specific cache keys
+            const mobileCacheKeys = ['mobileAppCache', 'browserCache', 'mobileCacheRefresh'];
+            mobileCacheKeys.forEach(key => {
+                const value = localStorage.getItem(key);
+                log(`📱 Mobile cache ${key}: ${value || 'none'}`);
+            });
+            
+            log('✅ Mobile status check complete');
+        }
+        
+        // Initialize page
+        updateInfo();
+        log('🚀 Mobile test page initialized');
+        
+        // Check for refresh attempts
+        const refreshAttempts = new URLSearchParams(window.location.search).get('refreshAttempts');
+        if (refreshAttempts) {
+            log(`🔄 Refresh attempt #${refreshAttempts} detected`);
+        }
+        
+        // Monitor for auto-refresh
+        let refreshDetected = false;
+        const originalLocation = window.location.href;
+        
+        setInterval(() => {
+            if (window.location.href !== originalLocation && !refreshDetected) {
+                refreshDetected = true;
+                log('🔄 MOBILE AUTO-REFRESH DETECTED! System is working correctly.');
+            }
+        }, 1000);
+        
+        // Mobile-specific event listeners
+        if (/Mobi|Android|iPhone|iPad/i.test(navigator.userAgent)) {
+            log('📱 Mobile device detected - setting up mobile-specific listeners');
+            
+            // Touch events
+            document.addEventListener('touchstart', function() {
+                log('📱 Touch detected');
+            });
+            
+            // Orientation change
+            window.addEventListener('orientationchange', function() {
+                log('📱 Orientation changed');
+                setTimeout(() => {
+                    log(`📱 New orientation: ${screen.orientation ? screen.orientation.type : 'unknown'}`);
+                }, 500);
+            });
+            
+            // Page show event
+            window.addEventListener('pageshow', function(event) {
+                if (event.persisted) {
+                    log('📱 Page restored from cache');
+                }
+            });
+            
+            // Online/offline events
+            window.addEventListener('online', function() {
+                log('📱 Back online');
+            });
+            
+            window.addEventListener('offline', function() {
+                log('📱 Gone offline');
+            });
+        }
+    </script>
+</body>
+</html>

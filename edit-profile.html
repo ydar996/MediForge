@@ -1,0 +1,1830 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Profile</title>
+  <link rel="stylesheet" href="css/styles.css?v=211">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    .profile-form {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .profile-form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .profile-form input,
+    .profile-form select {
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .profile-form button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .profile-form button:hover {
+      background: #45a049;
+    }
+    
+    .org-code-container {
+      background: #e8f5e9;
+      border: 2px solid #4CAF50;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .signature-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .signature-preview {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin: 15px 0;
+      background-color: #f9f9f9;
+    }
+    
+    .password-strength {
+      margin-top: 5px;
+      font-size: 12px;
+    }
+    
+    .strength-weak { color: #dc3545; }
+    .strength-medium { color: #ffc107; }
+    .strength-strong { color: #28a745; }
+  </style>
+</head>
+<body>
+  <h1>Edit Profile</h1>
+  
+  <!-- Back to Dashboard Button -->
+  <div style="margin-bottom: 20px;">
+    <a href="dashboard" style="background-color: #667eea; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+      ← Back to Dashboard
+    </a>
+    <!-- Approval Section for Admins and Doctors -->
+    <div id="approval-section" style="margin-top: 15px; display: none;">
+      <a href="data-download-approvals" style="background-color: #28a745; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+        🔐 Review Download Approvals
+      </a>
+    </div>
+  </div>
+  
+  <!-- Organization Code Display -->
+  <div id="org-code-container"></div>
+  
+  <div class="profile-form">
+    <form id="edit-profile-form">
+      <label for="firstName">First Name:</label>
+      <input type="text" id="firstName" name="firstName" required>
+      
+      <label for="lastName">Last Name:</label>
+      <input type="text" id="lastName" name="lastName" required>
+      
+      <label for="username">Username:</label>
+      <input type="text" id="username" name="username">
+      
+      <label for="gender">Gender*:</label>
+      <select id="gender" name="gender" required>
+        <option value="">-- Select Gender --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      
+      <label for="old-password">Old Password (required only if changing password):</label>
+      <input type="password" id="old-password">
+      
+      <label for="new-password">New Password (leave blank if no change):</label>
+      <input type="password" id="new-password" oninput="handlePasswordChange()">
+      <div id="password-strength" class="password-strength"></div>
+      
+      <label for="confirm-password">Confirm New Password:</label>
+      <input type="password" id="confirm-password" oninput="handlePasswordChange()">
+      
+      <label for="role">Role:</label>
+      <select id="role" name="role" onchange="toggleOtherRoleField('other-role')">
+        <option value="Admin">Administrator</option>
+        <option value="Doctor">Doctor</option>
+        <option value="Nurse">Nurse</option>
+        <option value="Physician Assistant">Physician Assistant</option>
+        <option value="Pharmacist">Pharmacist</option>
+        <option value="Optometrist">Optometrist</option>
+        <option value="Medical Lab Scientist">Medical Lab Scientist</option>
+        <option value="Biller/Accountant">Biller/Accountant</option>
+        <option value="Office Manager">Office Manager</option>
+        <option value="Medical Receptionist">Medical Receptionist</option>
+        <option value="Referrals Coordinator">Referrals Coordinator</option>
+        <option value="Medical Assistant">Medical Assistant</option>
+        <option value="Other">Other (Please specify)</option>
+      </select>
+      
+      <label for="other-role" id="other-role-label" style="display: none;">Please specify your exact role:</label>
+      <input type="text" id="other-role" placeholder="e.g., Physical Therapist, Pharmacist, Lab Technician..." style="display: none;">
+      
+      <label for="medicalLicenseNumber" id="medicalLicenseLabel" style="display: none;">Medical License Number*:</label>
+      <input type="text" id="medicalLicenseNumber" name="medicalLicenseNumber" style="display: none;">
+      
+      <label for="personalPhoneCode">Personal Phone Country Code:</label>
+      <select id="personalPhoneCode" style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+        <option value="">-- Select Country Code --</option>
+        <!-- Populated by JavaScript -->
+      </select>
+      
+      <label for="personalPhone">Personal Phone Number:</label>
+      <input type="tel" id="personalPhone" placeholder="Enter your phone number" style="width: 100%;">
+      
+      <label for="org">Organization:</label>
+      <input type="text" id="org">
+      
+      <h2>Organization Address</h2>
+      <label for="orgAddressLine1">Address Line 1*:</label>
+      <input type="text" id="orgAddressLine1" name="orgAddressLine1" required>
+      
+      <label for="orgAddressLine2">Address Line 2:</label>
+      <input type="text" id="orgAddressLine2" name="orgAddressLine2">
+      
+      <label for="orgCity">City*:</label>
+      <input type="text" id="orgCity" name="orgCity" required>
+      
+      <label for="country">Country*:</label>
+      <select id="country" name="country" required onchange="handleOrgCountryChange()">
+        <option value="">-- Select Country --</option>
+        <!-- Populated by countries-data.js -->
+      </select>
+      
+      <label for="state">State/Province*:</label>
+      <select id="state" name="state" required>
+        <option value="">-- Select State/Province --</option>
+        <!-- Populated dynamically based on country selection -->
+      </select>
+      
+      <label for="orgPhone">Office Phone:</label>
+      <div style="display: flex; gap: 10px;">
+        <select id="orgPhoneCode" style="width: 120px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+          <option value="">Code</option>
+          <!-- Populated by JavaScript -->
+        </select>
+        <input type="tel" id="orgPhone" placeholder="Phone number" style="flex: 1;">
+      </div>
+      
+      <label for="afterHoursPhone">After Hours Phone:</label>
+      <div style="display: flex; gap: 10px;">
+        <select id="afterHoursPhoneCode" style="width: 120px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+          <option value="">Code</option>
+          <!-- Populated by JavaScript -->
+        </select>
+        <input type="tel" id="afterHoursPhone" placeholder="Phone number" style="flex: 1;">
+      </div>
+      
+      <button type="submit">Update Profile</button>
+    </form>
+  </div>
+  
+  <!-- Digital Signature Section (Doctor only) -->
+  <div id="signature-section" class="signature-section" style="display: none;">
+    <h2>Digital Signature</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 15px;">
+      Upload a PDF or PNG image of your handwritten signature. This will be used when electronically signing clinical notes.
+    </p>
+    
+    <label for="signature-upload">Upload Signature (PDF or PNG):</label>
+    <input type="file" id="signature-upload" accept=".pdf,.png" style="margin-bottom: 10px;">
+    
+    <div id="signature-preview" class="signature-preview" style="display: none;">
+      <h4>Current Signature:</h4>
+      <div id="signature-display" style="margin: 10px 0;"></div>
+      <button type="button" id="remove-signature" style="background-color: #dc3545; color: white; border: none; padding: 5px 10px; border-radius: 3px; cursor: pointer; margin-top: 10px;">Remove Signature</button>
+    </div>
+    
+    <div id="signature-status" style="margin-top: 10px; font-size: 14px;"></div>
+  </div>
+  
+  <div style="margin-top: 20px;">
+    <a href="dashboard" style="background: #4CAF50; color: white; padding: 10px 20px; text-decoration: none; border-radius: 4px; display: inline-block;">
+      ← Back to Dashboard
+    </a>
+  </div>
+  
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113090113091309"></script>
+  <script src="js/organization-address-sync.js"></script>  <!-- Auto-sync organization addresses from Supabase -->
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113090113091309"></script>
+  
+  <!-- Security functions -->
+  <script src="js/security.js?v=1"></script>
+  
+  <!-- Countries data -->
+  <script src="js/countries-data.js?v=1"></script>
+  
+  <!-- Phone input enhancement -->
+  <script src="js/phone-input.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
+  
+  <script>
+    
+    
+    // African countries data with phone codes - BACKWARD COMPATIBILITY ONLY
+    // Use centralized COUNTRIES_DATA instead - loaded via countries-data.js
+    // This ensures all 36 states + FCT are available for Nigeria and complete data for all countries
+    const africanCountries = {};
+    
+    // Populate from COUNTRIES_DATA for backward compatibility
+    if (typeof COUNTRIES_DATA !== 'undefined') {
+      Object.keys(COUNTRIES_DATA).forEach(country => {
+        const data = COUNTRIES_DATA[country];
+        africanCountries[country] = {
+          states: data.states || [],
+          code: data.phoneCode || ''
+        };
+      });
+    }
+    
+    // Function to populate country code dropdowns from COUNTRIES_DATA
+    function populateCountryCodeDropdowns() {
+      const orgPhoneCodeSelect = document.getElementById('orgPhoneCode');
+      const afterHoursPhoneCodeSelect = document.getElementById('afterHoursPhoneCode');
+      const personalPhoneCodeSelect = document.getElementById('personalPhoneCode');
+      
+      if (!orgPhoneCodeSelect || !afterHoursPhoneCodeSelect) return;
+      
+      // Clear existing options
+      orgPhoneCodeSelect.innerHTML = '<option value="">Code</option>';
+      afterHoursPhoneCodeSelect.innerHTML = '<option value="">Code</option>';
+      if (personalPhoneCodeSelect) {
+        personalPhoneCodeSelect.innerHTML = '<option value="">-- Select Country Code --</option>';
+      }
+      
+      // Use COUNTRIES_DATA if available, otherwise fallback to africanCountries
+      const countriesData = typeof COUNTRIES_DATA !== 'undefined' ? COUNTRIES_DATA : africanCountries;
+      
+      // Add country codes sorted by country name
+      const sortedCountries = Object.entries(countriesData).sort((a, b) => a[0].localeCompare(b[0]));
+      
+      sortedCountries.forEach(([country, data]) => {
+        const phoneCode = data.phoneCode || data.code || '';
+        if (phoneCode) {
+          const displayText = `${phoneCode} (${country})`;
+          const option1 = new Option(displayText, phoneCode);
+          const option2 = new Option(displayText, phoneCode);
+          orgPhoneCodeSelect.add(option1);
+          afterHoursPhoneCodeSelect.add(option2);
+          if (personalPhoneCodeSelect) {
+            const option3 = new Option(displayText, phoneCode);
+            personalPhoneCodeSelect.add(option3);
+          }
+        }
+      });
+    }
+    
+    // Function to auto-select country code based on organization country
+    function autoSelectCountryCode() {
+      const countrySelect = document.getElementById('country');
+      if (!countrySelect) return;
+      
+      const selectedCountry = countrySelect.value || countrySelect.options[countrySelect.selectedIndex]?.text || '';
+      const countryName = countrySelect.options[countrySelect.selectedIndex]?.text || selectedCountry;
+      
+      if (!countryName) return;
+      
+      // Try to find country code from COUNTRIES_DATA or africanCountries
+      const countriesData = typeof COUNTRIES_DATA !== 'undefined' ? COUNTRIES_DATA : africanCountries;
+      const countryData = countriesData[countryName];
+      
+      if (countryData) {
+        const phoneCode = countryData.phoneCode || countryData.code || '';
+        if (phoneCode) {
+          const orgPhoneCodeSelect = document.getElementById('orgPhoneCode');
+          const afterHoursPhoneCodeSelect = document.getElementById('afterHoursPhoneCode');
+          if (orgPhoneCodeSelect) orgPhoneCodeSelect.value = phoneCode;
+          if (afterHoursPhoneCodeSelect) afterHoursPhoneCodeSelect.value = phoneCode;
+        }
+      }
+    }
+    
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+    
+    // Toggle Medical License Number field based on role and pre-populate
+    const roleSelect = document.getElementById("role");
+    const medicalLicenseInput = document.getElementById("medicalLicenseNumber");
+    const medicalLicenseLabel = document.getElementById("medicalLicenseLabel");
+    
+    // Function to handle password field changes and update requirements
+    function handlePasswordChange() {
+      const newPassword = document.getElementById('new-password').value;
+      const confirmPassword = document.getElementById('confirm-password').value;
+      const oldPasswordField = document.getElementById('old-password');
+      const oldPasswordLabel = document.querySelector('label[for="old-password"]');
+      
+      // Check if user is trying to change password
+      const isChangingPassword = newPassword.trim() !== '' || confirmPassword.trim() !== '';
+      
+      if (isChangingPassword) {
+        // User is changing password - require old password
+        oldPasswordField.required = true;
+        oldPasswordLabel.innerHTML = 'Old Password*:';
+        oldPasswordLabel.style.color = '#333';
+        
+        // Show password strength indicator
+        if (newPassword.trim() !== '') {
+          showPasswordStrength(newPassword, 'password-strength');
+        }
+      } else {
+        // User is not changing password - make old password optional
+        oldPasswordField.required = false;
+        oldPasswordLabel.innerHTML = 'Old Password (required only if changing password):';
+        oldPasswordLabel.style.color = '#666';
+        
+        // Clear password strength indicator
+        document.getElementById('password-strength').innerHTML = '';
+      }
+    }
+    
+    // Function to toggle "Other" role specification field
+    function toggleOtherRoleField(otherRoleFieldId) {
+      const roleSelect = event.target;
+      const otherRoleLabel = document.getElementById(otherRoleFieldId + '-label');
+      const otherRoleInput = document.getElementById(otherRoleFieldId);
+      
+      if (roleSelect.value === 'Other') {
+        otherRoleLabel.style.display = 'block';
+        otherRoleInput.style.display = 'block';
+        otherRoleInput.required = true;
+      } else {
+        otherRoleLabel.style.display = 'none';
+        otherRoleInput.style.display = 'none';
+        otherRoleInput.required = false;
+        otherRoleInput.value = ''; // Clear the field when hidden
+      }
+    }
+    
+    function toggleMedicalLicense(role) {
+      const signatureSection = document.getElementById("signature-section");
+      
+      // Roles that require medical license number
+      const rolesRequiringLicense = ["Doctor", "Nurse", "Physician Assistant", "Pharmacist", "Optometrist", "Medical Lab Scientist"];
+      
+      if (role === "Doctor") {
+        medicalLicenseLabel.style.display = "block";
+        medicalLicenseInput.style.display = "block";
+        medicalLicenseInput.required = true;
+        signatureSection.style.display = "block";
+      } else if (rolesRequiringLicense.includes(role)) {
+        medicalLicenseLabel.style.display = "block";
+        medicalLicenseInput.style.display = "block";
+        medicalLicenseInput.required = false;
+        signatureSection.style.display = "none";
+      } else {
+        medicalLicenseLabel.style.display = "none";
+        medicalLicenseInput.style.display = "none";
+        medicalLicenseInput.required = false;
+        signatureSection.style.display = "none";
+      }
+    }
+    
+    // Handle country change for organization profile (same as register.html)
+    function handleOrgCountryChange() {
+      const countrySelect = document.getElementById('country');
+      if (!countrySelect) {
+        console.warn('⚠️ Country select element not found');
+        return;
+      }
+      
+      const selectedValue = countrySelect.value; // could be ISO2 or country name depending on data source
+      const selectedText = countrySelect.options[countrySelect.selectedIndex]?.text || '';
+      
+      console.log('Country changed:', { value: selectedValue, text: selectedText });
+      
+      if (selectedValue) {
+        // Extract country name from text (remove ISO code prefix like "KE Kenya" -> "Kenya")
+        let countryName = selectedText;
+        
+        // If text contains ISO code prefix (e.g., "KE Kenya", "NG Nigeria"), extract just the country name
+        if (selectedText && selectedText.length > 3) {
+          // Pattern: "XX CountryName" or "XXX CountryName"
+          const match = selectedText.match(/^[A-Z]{2,3}\s+(.+)$/);
+          if (match && match[1]) {
+            countryName = match[1].trim();
+          } else {
+            // If no ISO prefix pattern, use the text as-is
+            countryName = selectedText.trim();
+          }
+        }
+        
+        // If still not a valid country name, try to resolve from value
+        if (!countryName || countryName.length <= 3 || !COUNTRIES_DATA[countryName]) {
+          // Try to find country name from COUNTRIES_DATA using code property
+          if (typeof COUNTRIES_DATA !== 'undefined') {
+            // First try direct lookup by value
+            if (COUNTRIES_DATA[selectedValue]) {
+              countryName = selectedValue;
+            } else {
+              // Try to find by code property
+              for (const [name, data] of Object.entries(COUNTRIES_DATA)) {
+                if (data.code === selectedValue) {
+                  countryName = name;
+                  break;
+                }
+              }
+            }
+          }
+        }
+        
+        // Update state/province list based on country name
+        if (typeof window.populateStateDropdown === 'function') {
+          console.log('Calling populateStateDropdown with:', countryName);
+          window.populateStateDropdown('state', countryName);
+        } else {
+          console.warn('⚠️ populateStateDropdown function not available, using fallback');
+          // Fallback to legacy function
+          handleProfileCountryChange();
+        }
+        
+        // Auto-select phone country code based on selected country
+        const phoneCountryCode = document.getElementById('orgPhoneCode');
+        const afterHoursPhoneCode = document.getElementById('afterHoursPhoneCode');
+        
+        let code = '';
+        // Use the countryName already resolved above
+        
+        // Try COUNTRIES_DATA first (more comprehensive)
+        if (typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[countryName]) {
+          code = COUNTRIES_DATA[countryName].phoneCode || '';
+        }
+        // Fallback to africanCountries if COUNTRIES_DATA doesn't have it
+        else if (typeof africanCountries !== 'undefined' && africanCountries[countryName]) {
+          code = africanCountries[countryName].code || '';
+        }
+        
+        if (code && phoneCountryCode && afterHoursPhoneCode) {
+          // Check if the code exists in the dropdown before setting
+          const codeExists = Array.from(phoneCountryCode.options).some(opt => opt.value === code);
+          if (codeExists) {
+            phoneCountryCode.value = code;
+            afterHoursPhoneCode.value = code;
+          } else {
+            // Code might not be populated yet, try auto-selection after a short delay
+            setTimeout(() => {
+              autoSelectCountryCode();
+            }, 100);
+          }
+        }
+      }
+    }
+    
+    // Legacy function for backward compatibility
+    function handleProfileCountryChange() {
+        const country = document.getElementById('country').value;
+      const stateSelect = document.getElementById('state');
+      
+      // Clear existing options
+      stateSelect.innerHTML = '<option value="">-- Select State/Province --</option>';
+      
+      if (country === 'Nigeria') {
+        const states = [
+          'Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno',
+          'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo',
+          'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos',
+          'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers',
+          'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'FCT'
+        ];
+        states.forEach(state => {
+          const option = document.createElement('option');
+          option.value = state;
+          option.textContent = state;
+          stateSelect.appendChild(option);
+        });
+      } else if (country === 'Ghana') {
+        const regions = [
+          'Greater Accra', 'Ashanti', 'Western', 'Central', 'Volta', 'Eastern',
+          'Northern', 'Upper East', 'Upper West', 'Brong-Ahafo'
+        ];
+        regions.forEach(region => {
+          const option = document.createElement('option');
+          option.value = region;
+          option.textContent = region;
+          stateSelect.appendChild(option);
+        });
+      } else if (country === 'Kenya') {
+        const counties = [
+          'Nairobi', 'Mombasa', 'Kisumu', 'Nakuru', 'Eldoret', 'Thika', 'Malindi',
+          'Kitale', 'Garissa', 'Kakamega', 'Nyeri', 'Meru', 'Machakos', 'Kitui'
+        ];
+        counties.forEach(county => {
+          const option = document.createElement('option');
+          option.value = county;
+          option.textContent = county;
+          stateSelect.appendChild(option);
+        });
+      } else if (country === 'South Africa') {
+        const provinces = [
+          'Western Cape', 'Eastern Cape', 'Northern Cape', 'Free State', 'KwaZulu-Natal',
+          'North West', 'Gauteng', 'Mpumalanga', 'Limpopo'
+        ];
+        provinces.forEach(province => {
+          const option = document.createElement('option');
+          option.value = province;
+          option.textContent = province;
+          stateSelect.appendChild(option);
+        });
+      } else if (country === 'United States') {
+        const states = [
+          'Alabama', 'Alaska', 'Arizona', 'Arkansas', 'California', 'Colorado', 'Connecticut',
+          'Delaware', 'Florida', 'Georgia', 'Hawaii', 'Idaho', 'Illinois', 'Indiana',
+          'Iowa', 'Kansas', 'Kentucky', 'Louisiana', 'Maine', 'Maryland', 'Massachusetts',
+          'Michigan', 'Minnesota', 'Mississippi', 'Missouri', 'Montana', 'Nebraska',
+          'Nevada', 'New Hampshire', 'New Jersey', 'New Mexico', 'New York', 'North Carolina',
+          'North Dakota', 'Ohio', 'Oklahoma', 'Oregon', 'Pennsylvania', 'Rhode Island',
+          'South Carolina', 'South Dakota', 'Tennessee', 'Texas', 'Utah', 'Vermont',
+          'Virginia', 'Washington', 'West Virginia', 'Wisconsin', 'Wyoming'
+        ];
+        states.forEach(state => {
+          const option = document.createElement('option');
+          option.value = state;
+          option.textContent = state;
+          stateSelect.appendChild(option);
+        });
+      }
+    }
+    
+    // Copy org code to clipboard
+    function copyOrgCodeFromProfile(code) {
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(() => {
+          alert('? Organization code copied to clipboard: ' + code);
+        }).catch(() => {
+          prompt('Copy this organization code:', code);
+        });
+      } else {
+        prompt('Copy this organization code:', code);
+      }
+    }
+    
+    // Load and populate user profile data
+    let isLoadingProfile = false; // Prevent infinite loops
+    
+    async function loadUserProfile() {
+      // Prevent infinite loops
+      if (isLoadingProfile) {
+        console.log('⚠️ Profile load already in progress, skipping...');
+        return;
+      }
+      
+      isLoadingProfile = true;
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || '{}');
+        if (!user || !user.username) {
+          console.log('? No user found, redirecting to login');
+          window.location.href = '/login';
+          return;
+        }
+        
+        // Also check for user in organization-prefixed users array
+        let users = JSON.parse(localStorage.getItem(getDataKey("users")) || "[]");
+        const userFromArray = users.find(u => u.username === user.username);
+        if (userFromArray) {
+          // Merge data from users array with current user data
+          const mergedUser = { ...user, ...userFromArray };
+          localStorage.setItem("user", JSON.stringify(mergedUser));
+          console.log('✅ Merged user data from users array');
+        }
+        
+        // Show approval section for Admins and Doctors
+        const approvalSection = document.getElementById('approval-section');
+        if (approvalSection && (user.role === 'Admin' || user.role === 'admin' || user.role === 'Doctor' || user.role === 'doctor')) {
+          approvalSection.style.display = 'block';
+        }
+        
+        // Populate form fields
+        document.getElementById('firstName').value = user.firstName || '';
+        document.getElementById('lastName').value = user.lastName || '';
+        document.getElementById('username').value = user.username || '';
+        document.getElementById('gender').value = user.gender || '';
+        document.getElementById('role').value = user.role || '';
+        document.getElementById('medicalLicenseNumber').value = user.medicalLicenseNumber || '';
+        document.getElementById('org').value = user.org || user.organization || '';
+        
+        // Load personal phone number
+        if (user.phone) {
+          // Helper function to split phone number
+          function splitPersonalPhone(phoneStr) {
+            if (!phoneStr) return { code: '', number: '' };
+            phoneStr = phoneStr.trim();
+            const phoneCodeMatch = phoneStr.match(/^(\+\d{1,4}|\d{1,4})\s+/);
+            if (phoneCodeMatch) {
+              const code = phoneCodeMatch[1];
+              const number = phoneStr.substring(phoneCodeMatch[0].length).trim();
+              return { code: code, number: number };
+            }
+            return { code: '', number: phoneStr };
+          }
+          
+          const phoneParts = splitPersonalPhone(user.phone);
+          const personalPhoneCodeEl = document.getElementById('personalPhoneCode');
+          const personalPhoneEl = document.getElementById('personalPhone');
+          if (personalPhoneCodeEl && phoneParts.code) {
+            personalPhoneCodeEl.value = phoneParts.code;
+          }
+          if (personalPhoneEl) {
+            personalPhoneEl.value = phoneParts.number || '';
+          }
+        }
+        
+        // Load organization data to populate address and phone fields
+        // Supabase-first: Try getAllOrganizations() first, fallback to localStorage
+        const orgName = user.org || user.organization;
+        if (orgName) {
+          let organizations = {};
+          try {
+            if (typeof getAllOrganizations === 'function') {
+              organizations = await getAllOrganizations();
+            } else {
+              organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+            }
+          } catch (error) {
+            organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          }
+          let orgData = organizations[orgName];
+          
+          // CRITICAL FIX: If localStorage doesn't have address, load from Supabase
+          if (!orgData || !orgData.addressLine1) {
+            try {
+              // Wait for Supabase client to be available
+              let supabase = window.supabaseClient;
+              let attempts = 0;
+              while (!supabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                supabase = window.supabaseClient;
+                attempts++;
+              }
+              
+              if (supabase) {
+                  const { data: supabaseOrg, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('address_line1, address_line2, city, state, country, phone, after_hours_phone')
+                    .eq('name', orgName)
+                    .single();
+                  
+                  if (!orgError && supabaseOrg) {
+                    // Map Supabase snake_case to camelCase for consistency
+                    orgData = orgData || {};
+                    orgData.addressLine1 = supabaseOrg.address_line1 || '';
+                    orgData.addressLine2 = supabaseOrg.address_line2 || '';
+                    orgData.city = supabaseOrg.city || '';
+                    orgData.state = supabaseOrg.state || '';
+                    orgData.country = supabaseOrg.country || '';
+                    orgData.phone = supabaseOrg.phone || '';
+                    orgData.afterHoursPhone = supabaseOrg.after_hours_phone || '';
+                    
+                    console.log('Loaded from Supabase:', {
+                      after_hours_phone: supabaseOrg.after_hours_phone,
+                      mapped_to: orgData.afterHoursPhone
+                    });
+                    
+                    // Update localStorage for future use
+                    organizations[orgName] = { ...organizations[orgName], ...orgData };
+                    localStorage.setItem('organizations', JSON.stringify(organizations));
+                    console.log('✅ Loaded organization address from Supabase');
+                    
+                    // Also update user object with address data
+                    const updatedUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    updatedUser.orgAddressLine1 = orgData.addressLine1;
+                    updatedUser.orgAddressLine2 = orgData.addressLine2;
+                    updatedUser.orgCity = orgData.city;
+                    updatedUser.orgState = orgData.state;
+                    updatedUser.orgCountry = orgData.country;
+                    updatedUser.orgPhone = orgData.phone;
+                    updatedUser.afterHoursPhone = orgData.afterHoursPhone;
+                    localStorage.setItem('user', JSON.stringify(updatedUser));
+                  }
+                }
+            } catch (error) {
+              console.warn('Could not load organization from Supabase:', error);
+            }
+          }
+          
+          if (orgData) {
+            // Populate organization address fields from organization data
+            // Use both camelCase (localStorage) and snake_case (Supabase) formats
+            document.getElementById('orgAddressLine1').value = orgData.addressLine1 || orgData.address_line1 || user.orgAddressLine1 || '';
+            document.getElementById('orgAddressLine2').value = orgData.addressLine2 || orgData.address_line2 || user.orgAddressLine2 || '';
+            document.getElementById('orgCity').value = orgData.city || user.orgCity || '';
+            const countryValue = orgData.country || user.country || '';
+            const stateValue = orgData.state || user.state || '';
+            
+            // Set country value first
+            document.getElementById('country').value = countryValue;
+            
+            // Immediately populate state dropdown based on country
+            if (countryValue) {
+              if (typeof window.populateStateDropdown === 'function') {
+                // Use centralized function - it will handle the state selection
+                window.populateStateDropdown('state', countryValue, stateValue);
+              } else {
+                // Fallback to legacy function
+                handleProfileCountryChange();
+                // Set state value after dropdown is populated
+                setTimeout(() => {
+                  if (stateValue) {
+                    document.getElementById('state').value = stateValue;
+                  }
+                }, 100);
+              }
+            }
+            
+            // Handle phone numbers with country codes - strip codes from phone number field
+            // Prioritize orgData, then user data, then empty
+            const orgPhone = orgData.phone || user.orgPhone || '';
+            const afterHoursPhone = orgData.afterHoursPhone || user.afterHoursPhone || '';
+            
+            console.log('Phone data from orgData:', {
+              orgPhone: orgData.phone,
+              afterHoursPhone: orgData.afterHoursPhone,
+              userAfterHoursPhone: user.afterHoursPhone,
+              finalAfterHoursPhone: afterHoursPhone
+            });
+            
+            // Helper function to extract country code and phone number
+            function splitPhoneNumber(phoneStr) {
+              if (!phoneStr) return { code: '', number: '' };
+              
+              // Remove leading/trailing whitespace
+              phoneStr = phoneStr.trim();
+              
+              // Check if it starts with a country code pattern (+XXX or XXX followed by space)
+              let phoneCodeMatch = phoneStr.match(/^(\+\d{1,4})\s+/);
+              if (!phoneCodeMatch) {
+                // Try without + sign
+                phoneCodeMatch = phoneStr.match(/^(\d{1,4})\s+/);
+              }
+              if (phoneCodeMatch) {
+                const code = phoneCodeMatch[1];
+                let number = phoneStr.substring(phoneCodeMatch[0].length).trim();
+                // If number starts with the same code again (duplicate), remove it
+                if (number.startsWith(code) || number.startsWith(code.replace('+', ''))) {
+                  number = number.substring(code.replace('+', '').length).trim();
+                  // Also remove leading + if present
+                  if (number.startsWith('+')) {
+                    number = number.substring(1).trim();
+                  }
+                }
+                return { code: code, number: number };
+              }
+              
+              // Check for country code without space but with obvious pattern
+              // If phone starts with +XXX or XXX and is longer than 15 digits, likely has embedded code
+              if (phoneStr.startsWith('+')) {
+                const codeMatch = phoneStr.match(/^(\+\d{1,4})/);
+                if (codeMatch && phoneStr.length > 10) {
+                  const code = codeMatch[1];
+                  let number = phoneStr.substring(code.length).trim();
+                  // Remove duplicate code if present
+                  if (number.startsWith(code.replace('+', ''))) {
+                    number = number.substring(code.replace('+', '').length).trim();
+                  }
+                  return { code: code, number: number };
+                }
+              }
+              
+              // If no space, check if entire string is a code (unlikely but possible)
+              if (phoneStr.match(/^(\+\d{1,4})$/) || phoneStr.match(/^\d{1,4}$/)) {
+                return { code: phoneStr, number: '' };
+              }
+              
+              // No code found, return as-is for number
+              return { code: '', number: phoneStr };
+            }
+            
+            // Process org phone
+            const orgPhoneParts = splitPhoneNumber(orgPhone);
+            if (orgPhoneParts.code) {
+              document.getElementById('orgPhoneCode').value = orgPhoneParts.code;
+            }
+            document.getElementById('orgPhone').value = orgPhoneParts.number;
+            
+            // Process after hours phone
+            const afterHoursParts = splitPhoneNumber(afterHoursPhone);
+            console.log('After hours phone processing:', { 
+              original: afterHoursPhone, 
+              code: afterHoursParts.code, 
+              number: afterHoursParts.number 
+            });
+            
+            const afterHoursPhoneCodeEl = document.getElementById('afterHoursPhoneCode');
+            const afterHoursPhoneEl = document.getElementById('afterHoursPhone');
+            
+            if (afterHoursPhoneCodeEl) {
+              if (afterHoursParts.code) {
+                afterHoursPhoneCodeEl.value = afterHoursParts.code;
+                console.log('✅ Set afterHoursPhoneCode to:', afterHoursParts.code);
+              } else {
+                afterHoursPhoneCodeEl.value = '';
+              }
+            } else {
+              console.warn('⚠️ afterHoursPhoneCode element not found');
+            }
+            
+            if (afterHoursPhoneEl) {
+              afterHoursPhoneEl.value = afterHoursParts.number || '';
+              console.log('✅ Set afterHoursPhone to:', afterHoursParts.number);
+            } else {
+              console.warn('⚠️ afterHoursPhone element not found');
+            }
+          } else {
+            console.log('No organization data found in localStorage for:', orgName);
+            // Try to load from Supabase as fallback
+            try {
+              // Wait for Supabase client to be available
+              let supabase = window.supabaseClient;
+              let attempts = 0;
+              while (!supabase && attempts < 50) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                supabase = window.supabaseClient;
+                attempts++;
+              }
+              
+              if (supabase) {
+                  const { data: supabaseOrg, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('address_line1, address_line2, city, state, country, phone, after_hours_phone')
+                    .eq('name', orgName)
+                    .single();
+                  
+                  if (!orgError && supabaseOrg) {
+                    // Use Supabase data
+                    document.getElementById('orgAddressLine1').value = supabaseOrg.address_line1 || '';
+                    document.getElementById('orgAddressLine2').value = supabaseOrg.address_line2 || '';
+                    document.getElementById('orgCity').value = supabaseOrg.city || '';
+                    const countryValue = supabaseOrg.country || '';
+                    const stateValue = supabaseOrg.state || '';
+                    
+                    // Set country value first
+                    document.getElementById('country').value = countryValue;
+                    
+                    // Immediately populate state dropdown based on country
+                    if (countryValue) {
+                      if (typeof window.populateStateDropdown === 'function') {
+                        // Use centralized function - it will handle the state selection
+                        window.populateStateDropdown('state', countryValue, stateValue);
+                      } else {
+                        // Fallback to legacy function
+                        handleProfileCountryChange();
+                        // Set state value after dropdown is populated
+                        setTimeout(() => {
+                          if (stateValue) {
+                            document.getElementById('state').value = stateValue;
+                          }
+                        }, 100);
+                      }
+                    }
+                    
+                    // Update localStorage for future use
+                    const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                    organizations[orgName] = {
+                      ...organizations[orgName],
+                      addressLine1: supabaseOrg.address_line1 || '',
+                      addressLine2: supabaseOrg.address_line2 || '',
+                      city: supabaseOrg.city || '',
+                      state: supabaseOrg.state || '',
+                      country: supabaseOrg.country || '',
+                      phone: supabaseOrg.phone || '',
+                      afterHoursPhone: supabaseOrg.after_hours_phone || ''
+                    };
+                    localStorage.setItem('organizations', JSON.stringify(organizations));
+                    console.log('✅ Loaded organization address from Supabase (fallback)');
+                    
+                    // Set phone fields - need to define splitPhoneNumber function here
+                    function splitPhoneNumber(phoneStr) {
+                      if (!phoneStr) return { code: '', number: '' };
+                      phoneStr = phoneStr.trim();
+                      let phoneCodeMatch = phoneStr.match(/^(\+\d{1,4})\s+/);
+                      if (!phoneCodeMatch) {
+                        phoneCodeMatch = phoneStr.match(/^(\d{1,4})\s+/);
+                      }
+                      if (phoneCodeMatch) {
+                        const code = phoneCodeMatch[1];
+                        let number = phoneStr.substring(phoneCodeMatch[0].length).trim();
+                        if (number.startsWith(code) || number.startsWith(code.replace('+', ''))) {
+                          number = number.substring(code.replace('+', '').length).trim();
+                          if (number.startsWith('+')) {
+                            number = number.substring(1).trim();
+                          }
+                        }
+                        return { code: code, number: number };
+                      }
+                      if (phoneStr.startsWith('+')) {
+                        const codeMatch = phoneStr.match(/^(\+\d{1,4})/);
+                        if (codeMatch && phoneStr.length > 10) {
+                          const code = codeMatch[1];
+                          let number = phoneStr.substring(code.length).trim();
+                          if (number.startsWith(code.replace('+', ''))) {
+                            number = number.substring(code.replace('+', '').length).trim();
+                          }
+                          return { code: code, number: number };
+                        }
+                      }
+                      if (phoneStr.match(/^(\+\d{1,4})$/) || phoneStr.match(/^\d{1,4}$/)) {
+                        return { code: phoneStr, number: '' };
+                      }
+                      return { code: '', number: phoneStr };
+                    }
+                    
+                    const orgPhone = supabaseOrg.phone || '';
+                    const afterHoursPhone = supabaseOrg.after_hours_phone || '';
+                    
+                    // Process org phone
+                    const orgPhoneParts = splitPhoneNumber(orgPhone);
+                    if (orgPhoneParts.code) {
+                      document.getElementById('orgPhoneCode').value = orgPhoneParts.code;
+                    }
+                    document.getElementById('orgPhone').value = orgPhoneParts.number;
+                    
+                    // Process after hours phone
+                    const afterHoursParts = splitPhoneNumber(afterHoursPhone);
+                    console.log('After hours phone (fallback):', { 
+                      original: afterHoursPhone, 
+                      code: afterHoursParts.code, 
+                      number: afterHoursParts.number 
+                    });
+                    
+                    const afterHoursPhoneCodeEl = document.getElementById('afterHoursPhoneCode');
+                    const afterHoursPhoneEl = document.getElementById('afterHoursPhone');
+                    
+                    if (afterHoursPhoneCodeEl) {
+                      if (afterHoursParts.code) {
+                        afterHoursPhoneCodeEl.value = afterHoursParts.code;
+                        console.log('✅ Set afterHoursPhoneCode (fallback) to:', afterHoursParts.code);
+                      } else {
+                        afterHoursPhoneCodeEl.value = '';
+                      }
+                    }
+                    
+                    if (afterHoursPhoneEl) {
+                      afterHoursPhoneEl.value = afterHoursParts.number || '';
+                      console.log('✅ Set afterHoursPhone (fallback) to:', afterHoursParts.number);
+                    }
+                    
+                    return; // Exit early since we loaded from Supabase
+                  }
+                }
+            } catch (error) {
+              console.warn('Could not load organization from Supabase:', error);
+            }
+            
+            // Final fallback to user data if Supabase also fails
+            document.getElementById('orgAddressLine1').value = user.orgAddressLine1 || '';
+            document.getElementById('orgAddressLine2').value = user.orgAddressLine2 || '';
+            document.getElementById('orgCity').value = user.orgCity || '';
+            const countryValue = user.country || '';
+            const stateValue = user.state || '';
+            
+            // Set country value first
+            document.getElementById('country').value = countryValue;
+            
+            // Immediately populate state dropdown based on country
+            if (countryValue) {
+              if (typeof window.populateStateDropdown === 'function') {
+                // Use centralized function - it will handle the state selection
+                window.populateStateDropdown('state', countryValue, stateValue);
+              } else {
+                // Fallback to legacy function
+                handleProfileCountryChange();
+                // Set state value after dropdown is populated
+                setTimeout(() => {
+                  if (stateValue) {
+                    document.getElementById('state').value = stateValue;
+                  }
+                }, 100);
+              }
+            }
+            
+            // Process phone numbers to strip country codes
+            function splitPhoneNumber(phoneStr) {
+              if (!phoneStr) return { code: '', number: '' };
+              phoneStr = phoneStr.trim();
+              const phoneCodeMatch = phoneStr.match(/^(\+\d{1,4}|\d{1,4})\s+/);
+              if (phoneCodeMatch) {
+                const code = phoneCodeMatch[1];
+                const number = phoneStr.substring(phoneCodeMatch[0].length).trim();
+                return { code: code, number: number };
+              }
+              return { code: '', number: phoneStr };
+            }
+            
+            const userOrgPhoneParts = splitPhoneNumber(user.orgPhone || '');
+            if (userOrgPhoneParts.code) {
+              document.getElementById('orgPhoneCode').value = userOrgPhoneParts.code;
+            }
+            document.getElementById('orgPhone').value = userOrgPhoneParts.number;
+            
+            const userAfterHoursParts = splitPhoneNumber(user.afterHoursPhone || '');
+            if (userAfterHoursParts.code) {
+              document.getElementById('afterHoursPhoneCode').value = userAfterHoursParts.code;
+            }
+            document.getElementById('afterHoursPhone').value = userAfterHoursParts.number;
+          }
+        } else {
+          // No organization name, use user data
+          document.getElementById('orgAddressLine1').value = user.orgAddressLine1 || '';
+          document.getElementById('orgAddressLine2').value = user.orgAddressLine2 || '';
+          document.getElementById('orgCity').value = user.orgCity || '';
+          const countryValue = user.country || '';
+          const stateValue = user.state || '';
+          
+          // Set country value first
+          document.getElementById('country').value = countryValue;
+          
+          // Immediately populate state dropdown based on country
+          if (countryValue) {
+            if (typeof window.populateStateDropdown === 'function') {
+              // Use centralized function - it will handle the state selection
+              window.populateStateDropdown('state', countryValue, stateValue);
+            } else {
+              // Fallback to legacy function
+              handleProfileCountryChange();
+              // Set state value after dropdown is populated
+              setTimeout(() => {
+                if (stateValue) {
+                  document.getElementById('state').value = stateValue;
+                }
+              }, 100);
+            }
+          }
+          
+          // Process phone numbers to strip country codes
+          function splitPhoneNumber(phoneStr) {
+            if (!phoneStr) return { code: '', number: '' };
+            phoneStr = phoneStr.trim();
+            const phoneCodeMatch = phoneStr.match(/^(\+\d{1,4}|\d{1,4})\s+/);
+            if (phoneCodeMatch) {
+              const code = phoneCodeMatch[1];
+              const number = phoneStr.substring(phoneCodeMatch[0].length).trim();
+              return { code: code, number: number };
+            }
+            return { code: '', number: phoneStr };
+          }
+          
+          const userOrgPhoneParts = splitPhoneNumber(user.orgPhone || '');
+          if (userOrgPhoneParts.code) {
+            document.getElementById('orgPhoneCode').value = userOrgPhoneParts.code;
+          }
+          document.getElementById('orgPhone').value = userOrgPhoneParts.number;
+          
+          const userAfterHoursParts = splitPhoneNumber(user.afterHoursPhone || '');
+          if (userAfterHoursParts.code) {
+            document.getElementById('afterHoursPhoneCode').value = userAfterHoursParts.code;
+          }
+          document.getElementById('afterHoursPhone').value = userAfterHoursParts.number;
+        }
+        
+        // Final check: Ensure state dropdown is populated if country is set
+        // This is a safety net in case the above code paths didn't execute
+        const countrySelect = document.getElementById('country');
+        const stateSelect = document.getElementById('state');
+        if (countrySelect && stateSelect) {
+          const countryValue = countrySelect.value || user.country || '';
+          // Get orgData from the scope where it was defined, or use user.state as fallback
+          let orgStateValue = user.state || '';
+          try {
+            const orgName = user.organization || user.org;
+            if (orgName) {
+              const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+              const orgDataCheck = organizations[orgName];
+              if (orgDataCheck && orgDataCheck.state) {
+                orgStateValue = orgDataCheck.state;
+              }
+            }
+          } catch (e) {
+            // Ignore errors, use user.state
+          }
+          const stateValue = orgStateValue;
+          
+          // If country is set but state dropdown has no options (only the default option), populate it
+          if (countryValue && stateSelect.options.length <= 1) {
+            console.log('⚠️ State dropdown not populated, populating now for country:', countryValue);
+            if (typeof window.populateStateDropdown === 'function') {
+              window.populateStateDropdown('state', countryValue, stateValue);
+            } else {
+              handleProfileCountryChange();
+              setTimeout(() => {
+                if (stateValue) {
+                  document.getElementById('state').value = stateValue;
+                }
+              }, 100);
+            }
+          }
+        }
+        
+        // Initialize role-based fields
+        toggleMedicalLicense(user.role || '');
+        
+        // Load organization code
+        loadOrganizationCode();
+        
+      } catch (error) {
+        console.error('? Error loading user profile:', error);
+      } finally {
+        isLoadingProfile = false; // Always reset flag
+      }
+    }
+    
+    // Load organization code
+    async function loadOrganizationCode() {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      if (!user) return;
+      
+      const orgName = user.organization || user.org;
+      if (!orgName) return;
+      
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      let orgData = organizations[orgName];
+      
+      if (!orgData) {
+        orgData = {};
+        organizations[orgName] = orgData;
+      }
+      
+      let orgCode = orgData.orgCode;
+      
+      // First, try to get org_code from Supabase (source of truth)
+      try {
+        const supabase = window.supabaseClient;
+        if (supabase) {
+          const { data: supabaseOrg, error: orgError } = await supabase
+            .from('organizations')
+            .select('org_code')
+            .eq('name', orgName)
+            .single();
+          
+          if (!orgError && supabaseOrg && supabaseOrg.org_code) {
+            orgCode = supabaseOrg.org_code;
+            // Update localStorage to match Supabase
+            orgData.orgCode = orgCode;
+            organizations[orgName] = orgData;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+            console.log('✅ Loaded organization code from Supabase:', orgCode);
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load organization code from Supabase:', error);
+      }
+      
+      // If still no code, generate one using the same method as platform-admin
+      if (!orgCode) {
+        const prefix = orgName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+        const year = new Date().getFullYear();
+        // Use a more deterministic approach - use org name hash instead of random
+        // This ensures the same org always gets the same code if regenerated
+        const hash = orgName.split('').reduce((acc, char) => {
+          return ((acc << 5) - acc) + char.charCodeAt(0);
+        }, 0);
+        const random = Math.abs(hash).toString(36).substring(0, 4).toUpperCase().padEnd(4, '0');
+        orgCode = `${prefix}-${year}-${random}`;
+        
+        // Supabase-first: Write to Supabase first, then cache in localStorage
+        orgData.orgCode = orgCode;
+        
+        // Try to sync to Supabase first
+        try {
+          const supabase = window.supabaseClient;
+          if (supabase && orgData.id) {
+            const { error } = await supabase
+              .from('organizations')
+              .update({ org_code: orgCode })
+              .eq('id', orgData.id);
+            
+            if (error) {
+              console.warn('⚠️ Could not update org code in Supabase:', error);
+            } else {
+              console.log('✅ Updated org code in Supabase');
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Exception updating org code in Supabase:', error);
+        }
+        
+        // Cache to localStorage (after Supabase write, or as fallback)
+        // Supabase write: supabaseClient.update() completed above
+        organizations[orgName] = orgData;
+        localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+        
+        // Legacy: Try to sync to Supabase if possible (backward compatibility)
+        try {
+          const supabase = window.supabaseClient;
+          if (supabase) {
+            const { error: updateError } = await supabase
+              .from('organizations')
+              .update({ org_code: orgCode })
+              .eq('name', orgName);
+            
+            if (!updateError) {
+              console.log('✅ Synced organization code to Supabase:', orgCode);
+            } else {
+              console.warn('Could not sync organization code to Supabase:', updateError);
+            }
+          }
+        } catch (error) {
+          console.warn('Could not sync organization code to Supabase:', error);
+        }
+      }
+      
+      const container = document.getElementById('org-code-container');
+      container.innerHTML = `
+        <div class="org-code-container">
+          <h3 style="margin: 0 0 15px 0; color: #155724;">🏢 Organization Code</h3>
+          <p style="margin: 0 0 10px 0; color: #666;">Share this code with new staff members who need to join <strong>${orgName}</strong>:</p>
+          <div style="background: white; padding: 15px; border-radius: 6px; text-align: center; margin: 15px 0;">
+            <span style="font-size: 28px; font-weight: bold; font-family: monospace; letter-spacing: 3px; color: #155724;">
+              ${orgCode}
+            </span>
+          </div>
+          <button onclick="copyOrgCodeFromProfile('${orgCode}')" style="margin-top: 10px; background: #4CAF50; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">
+            📋 Copy Organization Code
+          </button>
+        </div>
+      `;
+    }
+    
+    // Update user profile with Supabase integration
+    async function updateUserProfile(profileData) {
+      try {
+        
+        // Update localStorage first
+        const user = JSON.parse(localStorage.getItem("user") || '{}');
+        const updatedUser = { ...user, ...profileData, updatedAt: new Date().toISOString() };
+        localStorage.setItem("user", JSON.stringify(updatedUser));
+        
+        // Also update in the users array (for doctor dropdown compatibility)
+        let users = JSON.parse(localStorage.getItem(getDataKey("users")) || "[]");
+        const userIndex = users.findIndex(u => u.username === user.username);
+        if (userIndex !== -1) {
+          users[userIndex] = { ...users[userIndex], ...profileData, updatedAt: new Date().toISOString() };
+          localStorage.setItem(getDataKey("users"), JSON.stringify(users));
+          console.log('✅ Updated user in users array');
+        } else {
+          // Add user to array if not found
+          users.push(updatedUser);
+          localStorage.setItem(getDataKey("users"), JSON.stringify(users));
+          console.log('✅ Added user to users array');
+        }
+        
+        // Update organization data if organization fields are being updated
+        const orgName = user.org || user.organization;
+        if (orgName && (profileData.orgAddressLine1 || profileData.orgCity || profileData.country || 
+                       profileData.state || profileData.orgPhone || profileData.afterHoursPhone)) {
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          if (organizations[orgName]) {
+            const orgData = organizations[orgName];
+            
+            // Supabase-first: Update Supabase first, then cache in localStorage
+            if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+              try {
+                const { error } = await window.supabaseClient
+                  .from('organizations')
+                  .update({
+                    address: profileData.orgAddressLine1 || orgData.addressLine1 || orgData.address,
+                    address_line1: profileData.orgAddressLine1 || orgData.addressLine1,
+                    address_line2: profileData.orgAddressLine2 || orgData.addressLine2,
+                    city: profileData.orgCity || orgData.city,
+                    state: profileData.state || orgData.state,
+                    country: profileData.country || orgData.country,
+                    phone: profileData.orgPhone || orgData.phone,
+                    after_hours_phone: profileData.afterHoursPhone || orgData.afterHoursPhone,
+                    updated_at: new Date().toISOString()
+                  })
+                  .eq('id', orgData.id);
+                
+                if (error) {
+                  console.warn('⚠️ Could not update organization in Supabase:', error);
+                } else {
+                  console.log('✅ Updated organization address/phone in Supabase');
+                }
+              } catch (error) {
+                console.warn('⚠️ Exception updating organization in Supabase:', error);
+              }
+            }
+            
+            // Cache to localStorage (after Supabase update, or as fallback)
+            // Supabase write: supabaseClient.update() completed above
+            organizations[orgName] = {
+              ...orgData,
+              addressLine1: profileData.orgAddressLine1 || orgData.addressLine1,
+              addressLine2: profileData.orgAddressLine2 || orgData.addressLine2,
+              city: profileData.orgCity || orgData.city,
+              country: profileData.country || orgData.country,
+              state: profileData.state || orgData.state,
+              phone: profileData.orgPhone || orgData.phone,
+              afterHoursPhone: profileData.afterHoursPhone || orgData.afterHoursPhone,
+              updatedAt: new Date().toISOString()
+            };
+            localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+          }
+        }
+        
+        // Use working Supabase client approach (same as registration)
+        try {
+          console.log('🔄 MOBILE SYNC: Starting profile sync...');
+          
+          // Initialize Supabase client if not available (mobile fallback)
+          let supabaseClient = window.supabaseClient;
+          if (!supabaseClient && window.supabase) {
+            console.log('🔄 MOBILE SYNC: Initializing Supabase client...');
+            const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+            const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+            
+            supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+              auth: {
+                autoRefreshToken: true,
+                persistSession: true,
+                detectSessionInUrl: true
+              },
+              global: {
+                headers: {
+                  'apikey': SUPABASE_ANON_KEY,
+                  'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                  'Content-Type': 'application/json'
+                }
+              }
+            });
+            window.supabaseClient = supabaseClient;
+            console.log('✅ MOBILE SYNC: Supabase client initialized');
+          }
+          
+          if (supabaseClient) {
+            // Filter profileData to only include fields that exist in the database schema
+            const allowedFields = {
+              'first_name': profileData.firstName,
+              'last_name': profileData.lastName,
+              'gender': profileData.gender,
+              'role': profileData.role,
+              'phone': profileData.phone
+            };
+            
+            // Remove undefined/null values
+            const cleanProfileData = Object.fromEntries(
+              Object.entries(allowedFields).filter(([key, value]) => value !== undefined && value !== null && value !== '')
+            );
+            
+            console.log('🔄 MOBILE SYNC: Sending to Supabase:', cleanProfileData);
+            
+            const { data, error } = await supabaseClient
+              .from('users')
+              .update(cleanProfileData)
+              .eq('username', user.username);
+            
+            if (error) {
+              console.error('❌ MOBILE SYNC: Supabase update failed:', error);
+              // Check if it's a constraint violation for role
+              if (error.message && error.message.includes('role') && error.message.includes('check constraint')) {
+                throw new Error(`Role "${cleanProfileData.role}" is not allowed in the database. Please contact your administrator to add this role to the system.`);
+              }
+              throw new Error(`Supabase update failed: ${error.message}`);
+            } else {
+              console.log('✅ MOBILE SYNC: Profile updated in Supabase successfully');
+              
+              // Also sync organization contact details to organizations table
+              try {
+                const orgId = user.organization_id || user.organizationId;
+                let resolvedOrgId = orgId;
+                if (!resolvedOrgId && user.org) {
+                  const { data: orgRow } = await supabaseClient
+                    .from('organizations')
+                    .select('id')
+                    .eq('name', user.org)
+                    .single();
+                  if (orgRow && orgRow.id) {
+                    resolvedOrgId = orgRow.id;
+                    // persist for future
+                    const updUser = JSON.parse(localStorage.getItem('user') || '{}');
+                    updUser.organization_id = orgRow.id;
+                    localStorage.setItem('user', JSON.stringify(updUser));
+                  }
+                }
+                if (resolvedOrgId) {
+                  const orgUpdate = {
+                    address_line1: profileData.orgAddressLine1 || null,
+                    address_line2: profileData.orgAddressLine2 || null,
+                    city: profileData.orgCity || null,
+                    state: profileData.state || null,
+                    country: profileData.country || null,
+                    phone: profileData.orgPhone || null,
+                    after_hours_phone: profileData.afterHoursPhone || null
+                  };
+                  // Don't filter out nulls - allow updating to null to clear fields
+                  const { error: orgErr } = await supabaseClient
+                    .from('organizations')
+                    .update(orgUpdate)
+                    .eq('id', resolvedOrgId);
+                  if (orgErr) {
+                    console.warn('⚠️ MOBILE SYNC: Organization update failed:', orgErr.message);
+                  } else {
+                    console.log('✅ MOBILE SYNC: Organization address and contact updated in Supabase');
+                    
+                    // Update localStorage cache
+                    // Supabase write: supabaseClient.update() completed above
+                    const orgName = user.org || user.organization;
+                    if (orgName) {
+                      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                      if (organizations[orgName]) {
+                        organizations[orgName] = {
+                          ...organizations[orgName],
+                          addressLine1: profileData.orgAddressLine1 || organizations[orgName].addressLine1,
+                          addressLine2: profileData.orgAddressLine2 || organizations[orgName].addressLine2,
+                          city: profileData.orgCity || organizations[orgName].city,
+                          state: profileData.state || organizations[orgName].state,
+                          country: profileData.country || organizations[orgName].country,
+                          phone: profileData.orgPhone || organizations[orgName].phone,
+                          afterHoursPhone: profileData.afterHoursPhone || organizations[orgName].afterHoursPhone
+                        };
+                        localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+                      }
+                    }
+                  }
+                }
+              } catch (orgSyncErr) {
+                console.warn('⚠️ MOBILE SYNC: Error syncing organization contact:', orgSyncErr.message);
+              }
+              
+              alert('✅ Profile updated successfully and synced to cloud!');
+            }
+          } else {
+            throw new Error('Supabase client not available');
+          }
+        } catch (supabaseError) {
+          console.log('❌ MOBILE SYNC: Error:', supabaseError);
+          
+          // Show detailed error on mobile screen
+          const errorDetails = `❌ SYNC FAILED
+Error: ${supabaseError.message}
+Please try again or contact support.`;
+          alert(errorDetails);
+        }
+        
+        return true;
+      } catch (error) {
+        console.error('? Error updating user profile:', error);
+        return false;
+      }
+    }
+    
+    // Handle form submission
+    document.getElementById('edit-profile-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const formData = new FormData(this);
+      const profileData = Object.fromEntries(formData.entries());
+      
+      // Validate required fields
+      const missingFields = [];
+      if (!profileData.firstName) missingFields.push('First Name');
+      if (!profileData.lastName) missingFields.push('Last Name');
+      if (!profileData.gender) missingFields.push('Gender');
+      if (!profileData.role) missingFields.push('Role');
+      if (!profileData.orgAddressLine1) missingFields.push('Address Line 1');
+      if (!profileData.orgCity) missingFields.push('City');
+      if (!profileData.country) missingFields.push('Country');
+      if (!profileData.state) missingFields.push('State');
+      
+      if (missingFields.length > 0) {
+        alert(`Please fill in the following required fields: ${missingFields.join(', ')}`);
+        return;
+      }
+      
+      // Validate password if changing
+      if (profileData['new-password'] && profileData['new-password'] !== profileData['confirm-password']) {
+        alert('New passwords do not match.');
+        return;
+      }
+      
+      // Remove password fields from profile data (handle separately)
+      const { 'old-password': oldPassword, 'new-password': newPassword, 'confirm-password': confirmPassword, ...cleanProfileData } = profileData;
+      
+      // Combine country codes with phone numbers
+      const orgPhoneCode = document.getElementById('orgPhoneCode').value;
+      const orgPhone = document.getElementById('orgPhone').value;
+      const afterHoursPhoneCode = document.getElementById('afterHoursPhoneCode').value;
+      const afterHoursPhone = document.getElementById('afterHoursPhone').value;
+      const personalPhoneCode = document.getElementById('personalPhoneCode').value;
+      const personalPhone = document.getElementById('personalPhone').value.trim();
+      
+      if (orgPhoneCode && orgPhone) {
+        cleanProfileData.orgPhone = `${orgPhoneCode} ${orgPhone}`;
+      }
+      if (afterHoursPhoneCode && afterHoursPhone) {
+        cleanProfileData.afterHoursPhone = `${afterHoursPhoneCode} ${afterHoursPhone}`;
+      }
+      // Save personal phone
+      if (personalPhoneCode && personalPhone) {
+        cleanProfileData.phone = `${personalPhoneCode} ${personalPhone}`;
+      } else if (personalPhone) {
+        cleanProfileData.phone = personalPhone;
+      } else {
+        cleanProfileData.phone = '';
+      }
+      
+      // Update profile
+      const success = await updateUserProfile(cleanProfileData);
+      
+      if (success) {
+        alert('Profile updated successfully!');
+        // Reload the page to show updated data
+        window.location.reload();
+      } else {
+        alert('Error updating profile. Please try again.');
+      }
+    });
+    
+    // Signature upload functionality
+    document.addEventListener('DOMContentLoaded', function() {
+      const signatureUpload = document.getElementById('signature-upload');
+      const signaturePreview = document.getElementById('signature-preview');
+      const signatureDisplay = document.getElementById('signature-display');
+      const removeSignatureBtn = document.getElementById('remove-signature');
+      const signatureStatus = document.getElementById('signature-status');
+      
+      // Load existing signature if available
+      loadExistingSignature();
+      
+      // Handle signature upload
+      signatureUpload.addEventListener('change', function(e) {
+        const file = e.target.files[0];
+        if (file) {
+          if (file.type === 'application/pdf' || file.type === 'image/png') {
+            uploadSignature(file);
+          } else {
+            signatureStatus.innerHTML = '<span style="color: red;">Please upload only PDF or PNG files.</span>';
+          }
+        }
+      });
+      
+      // Handle signature removal
+      removeSignatureBtn.addEventListener('click', function() {
+        removeSignature();
+      });
+      
+      function uploadSignature(file) {
+        const reader = new FileReader();
+        reader.onload = function(e) {
+          const signatureData = {
+            data: e.target.result,
+            type: file.type,
+            name: file.name,
+            uploadedAt: new Date().toISOString()
+          };
+          
+          // Save signature to user profile
+          const user = JSON.parse(localStorage.getItem("user"));
+          if (user) {
+            user.signature = signatureData;
+            localStorage.setItem("user", JSON.stringify(user));
+            
+            // Display signature preview
+            displaySignaturePreview(signatureData);
+            signatureStatus.innerHTML = '<span style="color: green;">Signature uploaded successfully!</span>';
+          }
+        };
+        reader.readAsDataURL(file);
+      }
+      
+      function displaySignaturePreview(signatureData) {
+        if (signatureData.type === 'image/png') {
+          signatureDisplay.innerHTML = `
+            <img src="${signatureData.data}" style="max-width: 200px; max-height: 100px; border: 1px solid #ccc; background: white;" alt="Signature Preview">
+            <p style="margin: 5px 0; font-size: 12px; color: #666;">Uploaded: ${new Date(signatureData.uploadedAt).toLocaleString()}</p>
+          `;
+        } else if (signatureData.type === 'application/pdf') {
+          signatureDisplay.innerHTML = `
+            <div style="border: 1px solid #ccc; padding: 10px; background: white; max-width: 200px; text-align: center;">
+              <p style="margin: 0; font-weight: bold;">PDF Signature</p>
+              <p style="margin: 5px 0; font-size: 12px; color: #666;">${signatureData.name}</p>
+              <p style="margin: 5px 0; font-size: 12px; color: #666;">Uploaded: ${new Date(signatureData.uploadedAt).toLocaleString()}</p>
+            </div>
+          `;
+        }
+        signaturePreview.style.display = 'block';
+      }
+      
+      function loadExistingSignature() {
+        const user = JSON.parse(localStorage.getItem("user"));
+        if (user && user.signature) {
+          displaySignaturePreview(user.signature);
+        }
+      }
+      
+      function removeSignature() {
+        if (confirm('Are you sure you want to remove your signature?')) {
+          const user = JSON.parse(localStorage.getItem("user"));
+          if (user) {
+            delete user.signature;
+            localStorage.setItem("user", JSON.stringify(user));
+            
+            signaturePreview.style.display = 'none';
+            signatureUpload.value = '';
+            signatureStatus.innerHTML = '<span style="color: orange;">Signature removed.</span>';
+          }
+        }
+      }
+    });
+    
+    // Initialize page when DOM is loaded
+    // Listen for organization address sync completion (only once)
+    let hasReloadedAfterSync = false;
+    window.addEventListener('organizationAddressSynced', function(event) {
+      if (hasReloadedAfterSync) {
+        console.log('⚠️ Already reloaded after sync, skipping...');
+        return;
+      }
+      hasReloadedAfterSync = true;
+      console.log('🔄 Organization address sync completed, reloading profile data...');
+      // Reload profile data after sync completes (only once)
+      setTimeout(() => {
+        isLoadingProfile = false; // Reset flag before reload
+        loadUserProfile();
+      }, 500);
+    });
+    
+    document.addEventListener('DOMContentLoaded', function() {
+      
+      // Wait for countries data to be available (mobile compatibility)
+      let retryCount = 0;
+      const maxRetries = 50; // 5 seconds total
+      
+      const initializeDropdowns = () => {
+        if (typeof window.populateCountryDropdown === 'function' && typeof COUNTRIES_DATA !== 'undefined') {
+          
+          // Initialize country and state dropdowns (same as register.html)
+          window.populateCountryDropdown('country');
+          
+          // Initialize country code dropdowns
+          populateCountryCodeDropdowns();
+          
+          // Load user profile data
+          loadUserProfile();
+          
+          // Auto-select country codes after profile is loaded
+          // Also trigger when country dropdown changes
+          setTimeout(() => {
+            autoSelectCountryCode();
+            // Add listener for country changes to auto-update phone codes
+            const countrySelect = document.getElementById('country');
+            if (countrySelect) {
+              countrySelect.addEventListener('change', function() {
+                setTimeout(() => autoSelectCountryCode(), 100);
+              });
+            }
+            
+            // Add listener to state dropdown to auto-populate when clicked if empty
+            const stateSelect = document.getElementById('state');
+            if (stateSelect) {
+              stateSelect.addEventListener('focus', function() {
+                const countryValue = countrySelect ? countrySelect.value : '';
+                // If state dropdown is empty (only has default option) and country is selected, populate it
+                if (countryValue && stateSelect.options.length <= 1) {
+                  console.log('State dropdown empty, populating for country:', countryValue);
+                  if (typeof window.populateStateDropdown === 'function') {
+                    window.populateStateDropdown('state', countryValue);
+                  } else {
+                    handleProfileCountryChange();
+                  }
+                }
+              });
+              
+              // Also handle click event for better compatibility
+              stateSelect.addEventListener('click', function() {
+                const countryValue = countrySelect ? countrySelect.value : '';
+                // If state dropdown is empty (only has default option) and country is selected, populate it
+                if (countryValue && stateSelect.options.length <= 1) {
+                  console.log('State dropdown empty, populating for country:', countryValue);
+                  if (typeof window.populateStateDropdown === 'function') {
+                    window.populateStateDropdown('state', countryValue);
+                  } else {
+                    handleProfileCountryChange();
+                  }
+                }
+              });
+            }
+          }, 500);
+        } else if (retryCount < maxRetries) {
+          retryCount++;
+          setTimeout(initializeDropdowns, 100);
+        } else {
+          console.error('ERROR: Countries data failed to load after maximum retries');
+          // Fallback: try to initialize anyway
+          try {
+            if (typeof window.populateCountryDropdown === 'function') {
+              window.populateCountryDropdown('country');
+            }
+            populateCountryCodeDropdowns();
+            loadUserProfile();
+            
+            // Add state dropdown listeners even in fallback
+            setTimeout(() => {
+              const countrySelect = document.getElementById('country');
+              const stateSelect = document.getElementById('state');
+              if (stateSelect && countrySelect) {
+                stateSelect.addEventListener('focus', function() {
+                  const countryValue = countrySelect.value;
+                  if (countryValue && stateSelect.options.length <= 1) {
+                    if (typeof window.populateStateDropdown === 'function') {
+                      window.populateStateDropdown('state', countryValue);
+                    } else {
+                      handleProfileCountryChange();
+                    }
+                  }
+                });
+                stateSelect.addEventListener('click', function() {
+                  const countryValue = countrySelect.value;
+                  if (countryValue && stateSelect.options.length <= 1) {
+                    if (typeof window.populateStateDropdown === 'function') {
+                      window.populateStateDropdown('state', countryValue);
+                    } else {
+                      handleProfileCountryChange();
+                    }
+                  }
+                });
+              }
+            }, 500);
+          } catch (error) {
+            console.error('ERROR: Fallback initialization failed:', error);
+          }
+        }
+      };
+      
+      // Start initialization
+      initializeDropdowns();
+      
+      // Add event listeners programmatically (more reliable than inline onchange)
+      const countrySelect = document.getElementById('country');
+      const stateSelect = document.getElementById('state');
+      
+      // Event listener is handled by inline onchange in HTML (same as register.html)
+      
+    });
+    
+    // Initialize role change handler
+    roleSelect.addEventListener("change", function() {
+      toggleMedicalLicense(this.value);
+    });
+    
+    // Initialize signature section visibility based on current role
+    const currentUser = JSON.parse(localStorage.getItem("user"));
+    if (currentUser && currentUser.role === "Doctor") {
+      toggleMedicalLicense("Doctor");
+    }
+    
+  </script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

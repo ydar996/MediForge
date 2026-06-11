@@ -1,0 +1,991 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discharge Planning - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 10px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .item-list {
+      margin-top: 15px;
+    }
+    
+    .item-card {
+      background: var(--soft-white);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    .add-item-form {
+      background: var(--soft-white);
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 2px dashed var(--primary-green);
+    }
+    
+    .progress-indicator {
+      background: var(--soft-white);
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 6px solid var(--primary-green);
+    }
+    
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #e0e0e0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin-top: 10px;
+    }
+    
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      transition: width 0.3s ease;
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Inpatient Dashboard</button>
+    
+    <h1>🏥 Discharge Planning</h1>
+    
+    <!-- Progress Indicator -->
+    <div class="progress-indicator">
+      <strong>Discharge Readiness Progress</strong>
+      <div class="progress-bar">
+        <div class="progress-fill" id="readiness-progress" style="width: 0%;"></div>
+      </div>
+      <small id="readiness-percentage">0% Complete</small>
+    </div>
+    
+    <form id="discharge-planning-form" onsubmit="handleDischargePlanningSubmit(event)">
+      <!-- Basic Information -->
+      <div class="form-section">
+        <h2>Planning Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Planning Started Date *</label>
+            <input type="date" id="planning-started-date" required>
+          </div>
+          <div class="form-group">
+            <label>Target Discharge Date</label>
+            <input type="date" id="target-discharge-date">
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Case Manager</label>
+          <input type="text" id="case-manager" placeholder="Case manager name">
+        </div>
+      </div>
+      
+      <!-- Discharge Readiness Checklist -->
+      <div class="form-section">
+        <h2>Discharge Readiness Checklist</h2>
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-medical-clearance" value="medical-clearance">
+            <label for="readiness-medical-clearance">Medical Clearance Obtained</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-medications-ready" value="medications-ready">
+            <label for="readiness-medications-ready">Discharge Medications Ready</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-followup-scheduled" value="followup-scheduled">
+            <label for="readiness-followup-scheduled">Follow-Up Appointments Scheduled</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-education-complete" value="education-complete">
+            <label for="readiness-education-complete">Patient Education Completed</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-home-care-arranged" value="home-care-arranged">
+            <label for="readiness-home-care-arranged">Home Care Arranged (if needed)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-transportation" value="transportation">
+            <label for="readiness-transportation">Transportation Arranged</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-discharge-summary" value="discharge-summary">
+            <label for="readiness-discharge-summary">Discharge Summary Prepared</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="readiness-family-notified" value="family-notified">
+            <label for="readiness-family-notified">Family/Caregiver Notified</label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Barriers to Discharge -->
+      <div class="form-section">
+        <h2>Barriers to Discharge</h2>
+        <div id="barriers-list" class="item-list">
+          <p>No barriers identified yet.</p>
+        </div>
+        <button type="button" onclick="showAddBarrierForm()">➕ Add Barrier</button>
+        <div id="add-barrier-form" class="add-item-form" style="display: none;">
+          <div class="form-group">
+            <label>Barrier Type *</label>
+            <select id="new-barrier-type" required>
+              <option value="medical">Medical</option>
+              <option value="social">Social</option>
+              <option value="financial">Financial</option>
+              <option value="housing">Housing</option>
+              <option value="transportation">Transportation</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Description *</label>
+            <textarea id="new-barrier-description" rows="2" required></textarea>
+          </div>
+          <div class="form-group">
+            <label>Resolved?</label>
+            <select id="new-barrier-resolved">
+              <option value="false">No</option>
+              <option value="true">Yes</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addBarrier()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddBarrierForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Home Care Needs -->
+      <div class="form-section">
+        <h2>Home Care Needs</h2>
+        <div id="home-care-list" class="item-list">
+          <p>No home care needs identified yet.</p>
+        </div>
+        <button type="button" onclick="showAddHomeCareForm()">➕ Add Home Care Need</button>
+        <div id="add-home-care-form" class="add-item-form" style="display: none;">
+          <div class="form-group">
+            <label>Care Need *</label>
+            <input type="text" id="new-home-care-need" required placeholder="e.g., Wound care, Medication administration">
+          </div>
+          <div class="form-group">
+            <label>Frequency</label>
+            <input type="text" id="new-home-care-frequency" placeholder="e.g., Daily, Twice daily">
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addHomeCareNeed()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddHomeCareForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Medication Reconciliation -->
+      <div class="form-section">
+        <h2>Medication Reconciliation</h2>
+        <div class="form-group">
+          <label>Pre-Admission Medications</label>
+          <textarea id="med-recon-pre-admission" rows="3" placeholder="List medications patient was taking before admission"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Current Inpatient Medications</label>
+          <textarea id="med-recon-current" rows="3" placeholder="List medications patient is currently taking"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Discharge Medications</label>
+          <textarea id="med-recon-discharge" rows="3" placeholder="List medications for discharge"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Changes/Notes</label>
+          <textarea id="med-recon-changes" rows="3" placeholder="Document any changes, additions, or discontinuations"></textarea>
+        </div>
+      </div>
+      
+      <!-- Follow-Up Appointments -->
+      <div class="form-section">
+        <h2>Follow-Up Appointments</h2>
+        <div id="followup-list" class="item-list">
+          <p>No follow-up appointments scheduled yet.</p>
+        </div>
+        <button type="button" onclick="showAddFollowupForm()">➕ Add Follow-Up</button>
+        <div id="add-followup-form" class="add-item-form" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Provider/Department *</label>
+              <input type="text" id="new-followup-provider" required placeholder="e.g., Cardiology, Dr. Smith">
+            </div>
+            <div class="form-group">
+              <label>Date</label>
+              <input type="date" id="new-followup-date">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Reason</label>
+            <input type="text" id="new-followup-reason" placeholder="Reason for follow-up">
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addFollowup()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddFollowupForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Patient Education -->
+      <div class="form-section">
+        <h2>Patient Education Provided</h2>
+        <div id="education-list" class="item-list">
+          <p>No education topics documented yet.</p>
+        </div>
+        <button type="button" onclick="showAddEducationForm()">➕ Add Education Topic</button>
+        <div id="add-education-form" class="add-item-form" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Topic *</label>
+              <input type="text" id="new-education-topic" required placeholder="e.g., Medication management, Wound care">
+            </div>
+            <div class="form-group">
+              <label>Provided By</label>
+              <input type="text" id="new-education-provider" placeholder="Staff member name">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Date</label>
+            <input type="date" id="new-education-date">
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addEducation()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddEducationForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Discharge Location -->
+      <div class="form-section">
+        <h2>Discharge Location</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Discharge Location *</label>
+            <select id="discharge-location" required>
+              <option value="home">Home</option>
+              <option value="skilled-nursing">Skilled Nursing Facility</option>
+              <option value="rehab">Rehabilitation Facility</option>
+              <option value="long-term-care">Long-Term Care</option>
+              <option value="other">Other</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="planning-status">
+              <option value="in-progress">In Progress</option>
+              <option value="ready">Ready for Discharge</option>
+              <option value="completed">Completed</option>
+              <option value="delayed">Delayed</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Discharge Location Details</label>
+          <textarea id="discharge-location-details" rows="3" placeholder="Additional details about discharge location"></textarea>
+        </div>
+      </div>
+      
+      <!-- Additional Notes -->
+      <div class="form-section">
+        <h2>Additional Notes</h2>
+        <div class="form-group">
+          <label>Planning Notes</label>
+          <textarea id="planning-notes" rows="4" placeholder="Any additional notes about discharge planning"></textarea>
+        </div>
+      </div>
+      
+      <!-- Submit Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="submit">💾 Save Discharge Planning</button>
+        <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+        <button type="button" onclick="window.location.href='discharge-summary.html?admissionId=' + getAdmissionIdForUrl() + '&patientId=' + (legacyPatientId || patientId || '')" style="background: linear-gradient(135deg, var(--kente-gold), var(--warm-orange));">📄 Generate Discharge Summary</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let legacyPatientId = null;
+    let organizationId = null;
+    let barriers = [];
+    let homeCareNeeds = [];
+    let followUpAppointments = [];
+    let educationProvided = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId = urlParams.get('patientId');
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+
+      await resolveLegacyPatientId();
+      
+      // Set default planning started date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('planning-started-date').value = today;
+      
+      // Load existing discharge planning
+      await loadExistingDischargePlanning();
+      
+      // Update progress on checklist changes
+      document.querySelectorAll('#discharge-planning-form input[type="checkbox"]').forEach(checkbox => {
+        checkbox.addEventListener('change', updateReadinessProgress);
+      });
+      updateReadinessProgress();
+    });
+
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && data?.patient_id) {
+            resolvedId = data.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+    
+    async function loadExistingDischargePlanning() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('discharge_planning')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          
+          if (data) {
+            populateForm(data);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading discharge planning:', error);
+      }
+    }
+    
+    function populateForm(planning) {
+      if (planning.planning_started_date) {
+        document.getElementById('planning-started-date').value = planning.planning_started_date;
+      }
+      if (planning.target_discharge_date) {
+        document.getElementById('target-discharge-date').value = planning.target_discharge_date;
+      }
+      if (planning.case_manager) {
+        document.getElementById('case-manager').value = planning.case_manager;
+      }
+      
+      const readiness = planning.readiness_checklist || {};
+      if (readiness.medical_clearance) document.getElementById('readiness-medical-clearance').checked = true;
+      if (readiness.medications_ready) document.getElementById('readiness-medications-ready').checked = true;
+      if (readiness.followup_scheduled) document.getElementById('readiness-followup-scheduled').checked = true;
+      if (readiness.education_complete) document.getElementById('readiness-education-complete').checked = true;
+      if (readiness.home_care_arranged) document.getElementById('readiness-home-care-arranged').checked = true;
+      if (readiness.transportation) document.getElementById('readiness-transportation').checked = true;
+      if (readiness.discharge_summary) document.getElementById('readiness-discharge-summary').checked = true;
+      if (readiness.family_notified) document.getElementById('readiness-family-notified').checked = true;
+      
+      barriers = planning.barriers || [];
+      homeCareNeeds = planning.home_care_needs || [];
+      followUpAppointments = planning.follow_up_appointments || [];
+      educationProvided = planning.education_provided || [];
+      
+      displayBarriers();
+      displayHomeCareNeeds();
+      displayFollowUps();
+      displayEducation();
+      
+      const medRecon = planning.medication_reconciliation || {};
+      if (medRecon.pre_admission_meds) document.getElementById('med-recon-pre-admission').value = medRecon.pre_admission_meds;
+      if (medRecon.current_meds) document.getElementById('med-recon-current').value = medRecon.current_meds;
+      if (medRecon.discharge_meds) document.getElementById('med-recon-discharge').value = medRecon.discharge_meds;
+      if (medRecon.changes) document.getElementById('med-recon-changes').value = medRecon.changes;
+      
+      if (planning.discharge_location) {
+        document.getElementById('discharge-location').value = planning.discharge_location;
+      }
+      if (planning.discharge_location_details) {
+        document.getElementById('discharge-location-details').value = planning.discharge_location_details;
+      }
+      if (planning.status) {
+        document.getElementById('planning-status').value = planning.status;
+      }
+      if (planning.notes) {
+        document.getElementById('planning-notes').value = planning.notes;
+      }
+      
+      updateReadinessProgress();
+    }
+    
+    function updateReadinessProgress() {
+      const checkboxes = document.querySelectorAll('#discharge-planning-form input[type="checkbox"]');
+      const checked = Array.from(checkboxes).filter(cb => cb.checked).length;
+      const total = checkboxes.length;
+      const percentage = total > 0 ? Math.round((checked / total) * 100) : 0;
+      
+      document.getElementById('readiness-progress').style.width = percentage + '%';
+      document.getElementById('readiness-percentage').textContent = `${percentage}% Complete (${checked}/${total} items)`;
+    }
+    
+    function showAddBarrierForm() {
+      document.getElementById('add-barrier-form').style.display = 'block';
+    }
+    
+    function hideAddBarrierForm() {
+      document.getElementById('add-barrier-form').style.display = 'none';
+      document.getElementById('new-barrier-type').value = 'medical';
+      document.getElementById('new-barrier-description').value = '';
+      document.getElementById('new-barrier-resolved').value = 'false';
+    }
+    
+    function addBarrier() {
+      const type = document.getElementById('new-barrier-type').value;
+      const description = document.getElementById('new-barrier-description').value.trim();
+      if (!description) {
+        alert('Please enter a barrier description.');
+        return;
+      }
+      
+      barriers.push({
+        id: `barrier_${Date.now()}`,
+        type: type,
+        description: description,
+        resolved: document.getElementById('new-barrier-resolved').value === 'true'
+      });
+      
+      hideAddBarrierForm();
+      displayBarriers();
+    }
+    
+    function removeBarrier(id) {
+      barriers = barriers.filter(b => b.id !== id);
+      displayBarriers();
+    }
+    
+    function displayBarriers() {
+      const container = document.getElementById('barriers-list');
+      if (barriers.length === 0) {
+        container.innerHTML = '<p>No barriers identified yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = barriers.map(barrier => `
+        <div class="item-card">
+          <div>
+            <strong>[${barrier.type.toUpperCase()}]</strong> ${barrier.description}
+            <br><small>Status: ${barrier.resolved ? '✅ Resolved' : '⚠️ Not Resolved'}</small>
+          </div>
+          <div>
+            <button onclick="removeBarrier('${barrier.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showAddHomeCareForm() {
+      document.getElementById('add-home-care-form').style.display = 'block';
+    }
+    
+    function hideAddHomeCareForm() {
+      document.getElementById('add-home-care-form').style.display = 'none';
+      document.getElementById('new-home-care-need').value = '';
+      document.getElementById('new-home-care-frequency').value = '';
+    }
+    
+    function addHomeCareNeed() {
+      const need = document.getElementById('new-home-care-need').value.trim();
+      if (!need) {
+        alert('Please enter a home care need.');
+        return;
+      }
+      
+      homeCareNeeds.push({
+        id: `homecare_${Date.now()}`,
+        need: need,
+        frequency: document.getElementById('new-home-care-frequency').value.trim() || null
+      });
+      
+      hideAddHomeCareForm();
+      displayHomeCareNeeds();
+    }
+    
+    function removeHomeCareNeed(id) {
+      homeCareNeeds = homeCareNeeds.filter(h => h.id !== id);
+      displayHomeCareNeeds();
+    }
+    
+    function displayHomeCareNeeds() {
+      const container = document.getElementById('home-care-list');
+      if (homeCareNeeds.length === 0) {
+        container.innerHTML = '<p>No home care needs identified yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = homeCareNeeds.map(need => `
+        <div class="item-card">
+          <div>
+            <strong>${need.need}</strong>
+            ${need.frequency ? `<br><small>Frequency: ${need.frequency}</small>` : ''}
+          </div>
+          <div>
+            <button onclick="removeHomeCareNeed('${need.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showAddFollowupForm() {
+      document.getElementById('add-followup-form').style.display = 'block';
+    }
+    
+    function hideAddFollowupForm() {
+      document.getElementById('add-followup-form').style.display = 'none';
+      document.getElementById('new-followup-provider').value = '';
+      document.getElementById('new-followup-date').value = '';
+      document.getElementById('new-followup-reason').value = '';
+    }
+    
+    function addFollowup() {
+      const provider = document.getElementById('new-followup-provider').value.trim();
+      if (!provider) {
+        alert('Please enter a provider/department.');
+        return;
+      }
+      
+      followUpAppointments.push({
+        id: `followup_${Date.now()}`,
+        provider: provider,
+        date: document.getElementById('new-followup-date').value || null,
+        reason: document.getElementById('new-followup-reason').value.trim() || null
+      });
+      
+      hideAddFollowupForm();
+      displayFollowUps();
+    }
+    
+    function removeFollowup(id) {
+      followUpAppointments = followUpAppointments.filter(f => f.id !== id);
+      displayFollowUps();
+    }
+    
+    function displayFollowUps() {
+      const container = document.getElementById('followup-list');
+      if (followUpAppointments.length === 0) {
+        container.innerHTML = '<p>No follow-up appointments scheduled yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = followUpAppointments.map(appt => `
+        <div class="item-card">
+          <div>
+            <strong>${appt.provider}</strong>
+            ${appt.date ? `<br><small>Date: ${new Date(appt.date).toLocaleDateString()}</small>` : ''}
+            ${appt.reason ? `<br><small>Reason: ${appt.reason}</small>` : ''}
+          </div>
+          <div>
+            <button onclick="removeFollowup('${appt.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    function showAddEducationForm() {
+      document.getElementById('add-education-form').style.display = 'block';
+    }
+    
+    function hideAddEducationForm() {
+      document.getElementById('add-education-form').style.display = 'none';
+      document.getElementById('new-education-topic').value = '';
+      document.getElementById('new-education-provider').value = '';
+      document.getElementById('new-education-date').value = '';
+    }
+    
+    function addEducation() {
+      const topic = document.getElementById('new-education-topic').value.trim();
+      if (!topic) {
+        alert('Please enter an education topic.');
+        return;
+      }
+      
+      educationProvided.push({
+        id: `edu_${Date.now()}`,
+        topic: topic,
+        provided_by: document.getElementById('new-education-provider').value.trim() || null,
+        date: document.getElementById('new-education-date').value || null
+      });
+      
+      hideAddEducationForm();
+      displayEducation();
+    }
+    
+    function removeEducation(id) {
+      educationProvided = educationProvided.filter(e => e.id !== id);
+      displayEducation();
+    }
+    
+    function displayEducation() {
+      const container = document.getElementById('education-list');
+      if (educationProvided.length === 0) {
+        container.innerHTML = '<p>No education topics documented yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = educationProvided.map(edu => `
+        <div class="item-card">
+          <div>
+            <strong>${edu.topic}</strong>
+            ${edu.provided_by ? `<br><small>Provided by: ${edu.provided_by}</small>` : ''}
+            ${edu.date ? `<br><small>Date: ${new Date(edu.date).toLocaleDateString()}</small>` : ''}
+          </div>
+          <div>
+            <button onclick="removeEducation('${edu.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    async function handleDischargePlanningSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        const readinessChecklist = {
+          medical_clearance: document.getElementById('readiness-medical-clearance').checked,
+          medications_ready: document.getElementById('readiness-medications-ready').checked,
+          followup_scheduled: document.getElementById('readiness-followup-scheduled').checked,
+          education_complete: document.getElementById('readiness-education-complete').checked,
+          home_care_arranged: document.getElementById('readiness-home-care-arranged').checked,
+          transportation: document.getElementById('readiness-transportation').checked,
+          discharge_summary: document.getElementById('readiness-discharge-summary').checked,
+          family_notified: document.getElementById('readiness-family-notified').checked
+        };
+        
+        const planningData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          planning_started_date: document.getElementById('planning-started-date').value,
+          target_discharge_date: document.getElementById('target-discharge-date').value || null,
+          readiness_checklist: readinessChecklist,
+          barriers: barriers.map(b => ({
+            type: b.type,
+            description: b.description,
+            resolved: b.resolved
+          })),
+          home_care_needs: homeCareNeeds.map(h => ({
+            need: h.need,
+            frequency: h.frequency
+          })),
+          medication_reconciliation: {
+            pre_admission_meds: document.getElementById('med-recon-pre-admission').value.trim() || null,
+            current_meds: document.getElementById('med-recon-current').value.trim() || null,
+            discharge_meds: document.getElementById('med-recon-discharge').value.trim() || null,
+            changes: document.getElementById('med-recon-changes').value.trim() || null
+          },
+          follow_up_appointments: followUpAppointments.map(f => ({
+            provider: f.provider,
+            date: f.date,
+            reason: f.reason
+          })),
+          education_provided: educationProvided.map(e => ({
+            topic: e.topic,
+            provided_by: e.provided_by,
+            date: e.date
+          })),
+          discharge_location: document.getElementById('discharge-location').value,
+          discharge_location_details: document.getElementById('discharge-location-details').value.trim() || null,
+          case_manager: document.getElementById('case-manager').value.trim() || null,
+          case_manager_id: user.id || null,
+          status: document.getElementById('planning-status').value,
+          notes: document.getElementById('planning-notes').value.trim() || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          // Check if discharge planning exists
+          const { data: existing } = await window.supabaseClient
+            .from('discharge_planning')
+            .select('id')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (existing) {
+            // Update existing
+            const { error } = await window.supabaseClient
+              .from('discharge_planning')
+              .update(planningData)
+              .eq('id', existing.id);
+            
+            if (error) throw error;
+            console.log('✅ Discharge planning updated in Supabase');
+          } else {
+            // Insert new
+            const { error } = await window.supabaseClient
+              .from('discharge_planning')
+              .insert(planningData);
+            
+            if (error) throw error;
+            console.log('✅ Discharge planning saved to Supabase');
+          }
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`discharge_planning_${organizationId}`) || "[]";
+          const planning = JSON.parse(stored);
+          const existingIndex = planning.findIndex(p => p.admission_id === admissionId);
+          
+          if (existingIndex !== -1) {
+            planning[existingIndex] = { ...planningData, id: planning[existingIndex].id, updated_at: new Date().toISOString() };
+          } else {
+            planning.push({ ...planningData, id: `dp_${Date.now()}`, created_at: new Date().toISOString() });
+          }
+          
+          localStorage.setItem(`discharge_planning_${organizationId}`, JSON.stringify(planning));
+          console.log('✅ Discharge planning saved to localStorage');
+        }
+        
+        alert('Discharge planning saved successfully!');
+        updateReadinessProgress();
+      } catch (error) {
+        console.error('Error saving discharge planning:', error);
+        alert('Error saving discharge planning: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function goBack() {
+      if (admissionId) {
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } else {
+        window.location.href = 'admissions-dashboard';
+      }
+    }
+
+    function getAdmissionIdForUrl() {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+  </script>
+</body>
+</html>
+

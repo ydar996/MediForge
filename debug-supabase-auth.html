@@ -1,0 +1,90 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Supabase Auth</title>
+</head>
+<body>
+    <h1>Debug Supabase Auth</h1>
+    <div id="results"></div>
+    
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        console.log('🔍 Debugging Supabase Auth...');
+        
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        // Create client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function debugAuth() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>🔍 Testing Supabase Auth...</p>';
+            
+            try {
+                // Test 1: Check if we can access auth
+                console.log('🔍 Test 1: Checking auth object');
+                results.innerHTML += '<p>✅ Auth object available: ' + !!supabase.auth + '</p>';
+                
+                // Test 2: Try to sign up a test user
+                console.log('🔍 Test 2: Testing sign up');
+                const testEmail = 'test@mediforge.app';
+                const testPassword = 'testpassword123';
+                
+                const { data: signUpData, error: signUpError } = await supabase.auth.signUp({
+                    email: testEmail,
+                    password: testPassword
+                });
+                
+                if (signUpError) {
+                    console.error('❌ Sign up error:', signUpError);
+                    results.innerHTML += '<p style="color: red;">❌ Sign up failed: ' + signUpError.message + '</p>';
+                } else {
+                    console.log('✅ Sign up successful:', signUpData);
+                    results.innerHTML += '<p style="color: green;">✅ Sign up successful</p>';
+                    
+                    // Test 3: Try to sign in
+                    console.log('🔍 Test 3: Testing sign in');
+                    const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                        email: testEmail,
+                        password: testPassword
+                    });
+                    
+                    if (signInError) {
+                        console.error('❌ Sign in error:', signInError);
+                        results.innerHTML += '<p style="color: red;">❌ Sign in failed: ' + signInError.message + '</p>';
+                    } else {
+                        console.log('✅ Sign in successful:', signInData);
+                        results.innerHTML += '<p style="color: green;">✅ Sign in successful</p>';
+                    }
+                }
+                
+                // Test 4: Check current session
+                console.log('🔍 Test 4: Checking current session');
+                const { data: sessionData, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('❌ Session error:', sessionError);
+                    results.innerHTML += '<p style="color: red;">❌ Session check failed: ' + sessionError.message + '</p>';
+                } else {
+                    console.log('✅ Session check successful:', sessionData);
+                    results.innerHTML += '<p style="color: green;">✅ Session check successful</p>';
+                }
+                
+            } catch (err) {
+                console.error('❌ Debug failed:', err);
+                results.innerHTML += '<p style="color: red;">❌ Debug failed: ' + err.message + '</p>';
+            }
+        }
+        
+        // Run debug
+        debugAuth();
+    </script>
+</body>
+</html>
+
+
+

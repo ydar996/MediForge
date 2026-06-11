@@ -1,0 +1,1053 @@
+<!-- Purpose: Form to edit an existing patient. Loads data from localStorage based on ID, updates on submit, and returns to patient list. Mirrors add-patient.html structure. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+ <meta charset="UTF-8">
+ <meta name="viewport" content="width=device-width, initial-scale=1.0">
+ <title>Edit Patient</title>
+ <link rel="stylesheet" href="css/styles.css?v=245">
+ <style>
+   .required-asterisk {
+     color: red;
+     font-weight: bold;
+   }
+ </style>
+</head>
+<body>
+ <div style="position: fixed; top: 10px; right: 10px; font-size: 14px; color: #333;" id="org-info"></div> <!-- Top right org display -->
+ <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+  <a id="back-to-patients-top" href="patients" style="flex: 1; text-align: center; padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Patients</a>
+  <a id="back-to-details-top" href="patient-details" style="flex: 1; text-align: center; padding: 8px 16px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Patient Details</a>
+  <a id="back-to-dashboard-top" href='/' style='flex: 1; text-align: center; padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;'>← Back to Dashboard</a>
+ </div>
+ <h1 id="page-title">Edit Patient</h1>
+ <form id="edit-patient-form" novalidate>
+ <!-- Personal Information Section -->
+ <h2>Personal Information</h2>
+ 
+ <!-- Patient/File Number - always shown so users can view/edit (including retroactive fix for patients created with wrong IDs) -->
+ <div id="manual-patient-number-container" style="display: block;">
+   <label for="customPatientId" style="display: block; margin-top: 10px;">Patient/File Number:</label>
+   <input type="text" id="customPatientId" placeholder="Enter custom patient number">
+   <small style="display: block; color: #666; margin-top: 5px; font-size: 12px;">
+     Update patient number. All related records (appointments, documents, financial records) will be updated automatically.
+   </small>
+ </div>
+ 
+ <label for="firstName" style="display: block; margin-top: 10px;">First Name*:</label>
+ <input type="text" id="firstName" required>
+ 
+ <label for="middleName" style="display: block; margin-top: 10px;">Middle Name:</label>
+ <input type="text" id="middleName">
+ 
+ <label for="lastName" style="display: block; margin-top: 10px;">Last Name*:</label>
+ <input type="text" id="lastName" required>
+ 
+ <label for="dob" style="display: block; margin-top: 10px;">Date of Birth*:</label>
+ <input type="date" id="dob" required>
+ 
+ <label for="gender" style="display: block; margin-top: 10px;">Gender*:</label>
+ <select id="gender" required>
+ <option value="" disabled selected>Select Gender</option>
+ <option value="Male">Male</option>
+ <option value="Female">Female</option>
+ </select>
+ 
+ <label for="maritalStatus" style="display: block; margin-top: 10px;">Marital Status*:</label>
+ <select id="maritalStatus" required>
+ <option value="" disabled selected>Select Status</option>
+ <option value="Single">Single</option>
+ <option value="Divorced">Divorced</option>
+ <option value="Married">Married</option>
+ <option value="Separated">Separated</option>
+ <option value="Widowed">Widowed</option>
+ </select>
+ 
+ <label for="tribe" style="display: block; margin-top: 10px;">Tribe*:</label>
+ <select id="tribe" required>
+ <option value="" disabled selected>Select Tribe</option>
+ <option value="Abanyom">Abanyom</option>
+ <option value="Abayon">Abayon</option>
+ <option value="Abon">Abon</option>
+ <option value="Abua (Odual)">Abua (Odual)</option>
+ <option value="Abureni">Abureni</option>
+ <option value="Acipa (Eastern)">Acipa (Eastern)</option>
+ <option value="Acipa (Western)">Acipa (Western)</option>
+ <option value="Adim">Adim</option>
+ <option value="Aduge">Aduge</option>
+ <option value="Adun">Adun</option>
+ <option value="Afade">Afade</option>
+ <option value="Afar">Afar</option>
+ <option value="Afizere">Afizere</option>
+ <option value="Afo (Eloyi)">Afo (Eloyi)</option>
+ <option value="Agbo">Agbo</option>
+ <option value="Ajawa">Ajawa</option>
+ <option value="Akaju-Ndem (Akajuk)">Akaju-Ndem (Akajuk)</option>
+ <option value="Akan">Akan</option>
+ <option value="Akum">Akum</option>
+ <option value="Akweya-Yachi">Akweya-Yachi</option>
+ <option value="Alago (Arago)">Alago (Arago)</option>
+ <option value="Amhara">Amhara</option>
+ <option value="Amo">Amo</option>
+ <option value="Anaguta">Anaguta</option>
+ <option value="Anang">Anang</option>
+ <option value="Andoni">Andoni</option>
+ <option value="Angas">Angas</option>
+ <option value="Ankwei">Ankwei</option>
+ <option value="Anlo-Ewe">Anlo-Ewe</option>
+ <option value="Anyima">Anyima</option>
+ <option value="Arum">Arum</option>
+ <option value="Ashanti">Ashanti</option>
+ <option value="Asu">Asu</option>
+ <option value="Attakar (Ataka)">Attakar (Ataka)</option>
+ <option value="Atsam">Atsam</option>
+ <option value="Auyoka (Auyokawa)">Auyoka (Auyokawa)</option>
+ <option value="Awori">Awori</option>
+ <option value="Ayere">Ayere</option>
+ <option value="Ayu">Ayu</option>
+ <option value="Babur">Babur</option>
+ <option value="Bachama">Bachama</option>
+ <option value="Bachere">Bachere</option>
+ <option value="Bada">Bada</option>
+ <option value="Bade">Bade</option>
+ <option value="Bahumono">Bahumono</option>
+ <option value="Baka">Baka</option>
+ <option value="Bakongo">Bakongo</option>
+ <option value="Bakpinka">Bakpinka</option>
+ <option value="Bakulung">Bakulung</option>
+ <option value="Bali">Bali</option>
+ <option value="Bambara">Bambara</option>
+ <option value="Bambaro (Bambarawa)">Bambaro (Bambarawa)</option>
+ <option value="Bambuko">Bambuko</option>
+ <option value="Banda (Bandawa)">Banda (Bandawa)</option>
+ <option value="Banka (Bankalawa)">Banka (Bankalawa)</option>
+ <option value="Banso (Panso)">Banso (Panso)</option>
+ <option value="Bara (Barawa)">Bara (Barawa)</option>
+ <option value="Barke">Barke</option>
+ <option value="Baruba (Barba)">Baruba (Barba)</option>
+ <option value="Bashiri (Bashirawa)">Bashiri (Bashirawa)</option>
+ <option value="Bassa">Bassa</option>
+ <option value="Batta">Batta</option>
+ <option value="Baushi">Baushi</option>
+ <option value="Baya">Baya</option>
+ <option value="Bekwarra">Bekwarra</option>
+ <option value="Bele (Buli, Belewa)">Bele (Buli, Belewa)</option>
+ <option value="Bemba">Bemba</option>
+ <option value="Berber">Berber</option>
+ <option value="Berom (Birom)">Berom (Birom)</option>
+ <option value="Betso (Bete)">Betso (Bete)</option>
+ <option value="Bette">Bette</option>
+ <option value="Bilei">Bilei</option>
+ <option value="Bille">Bille</option>
+ <option value="Bina (Binawa)">Bina (Binawa)</option>
+ <option value="Bini">Bini</option>
+ <option value="Bobua">Bobua</option>
+ <option value="Boki (Nki)">Boki (Nki)</option>
+ <option value="Bkkos">Bkkos</option>
+ <option value="Boko (Bussawa, Bargawa)">Boko (Bussawa, Bargawa)</option>
+ <option value="Bole (Bolewa)">Bole (Bolewa)</option>
+ <option value="Botlere">Botlere</option>
+ <option value="Boma (Bomawa, Burmano)">Boma (Bomawa, Burmano)</option>
+ <option value="Bomboro">Bomboro</option>
+ <option value="Buduma">Buduma</option>
+ <option value="Buji">Buji</option>
+ <option value="Buli">Buli</option>
+ <option value="Bunu">Bunu</option>
+ <option value="Bura">Bura</option>
+ <option value="Burak">Burak</option>
+ <option value="Burma (Burmawa)">Burma (Burmawa)</option>
+ <option value="Buru">Buru</option>
+ <option value="Buta (Butawa)">Buta (Butawa)</option>
+ <option value="Bwall">Bwall</option>
+ <option value="Bwatiye">Bwatiye</option>
+ <option value="Bwazza">Bwazza</option>
+ <option value="Challa">Challa</option>
+ <option value="Chama (Chamawa Fitilai)">Chama (Chamawa Fitilai)</option>
+ <option value="Chamba">Chamba</option>
+ <option value="Chamo">Chamo</option>
+ <option value="Chewa">Chewa</option>
+ <option value="Chibok (Chibbak)">Chibok (Chibbak)</option>
+ <option value="Chinine">Chinine</option>
+ <option value="Chip">Chip</option>
+ <option value="Chokobo">Chokobo</option>
+ <option value="Chokwe">Chokwe</option>
+ <option value="Chukkol">Chukkol</option>
+ <option value="Daba">Daba</option>
+ <option value="Dadiya">Dadiya</option>
+ <option value="Daka">Daka</option>
+ <option value="Dakarkari">Dakarkari</option>
+ <option value="Danda (Dandawa)">Danda (Dandawa)</option>
+ <option value="Dangsa">Dangsa</option>
+ <option value="Daza (Dere, Derewa)">Daza (Dere, Derewa)</option>
+ <option value="Degema">Degema</option>
+ <option value="Deno (Denawa)">Deno (Denawa)</option>
+ <option value="Dghwede">Dghwede</option>
+ <option value="Diba? Diba">Diba? Diba</option>
+ <option value="Doemak (Dumuk)">Doemak (Dumuk)</option>
+ <option value="Dogon">Dogon</option>
+ <option value="Duguri">Duguri</option>
+ <option value="Duka (Dukawa)">Duka (Dukawa)</option>
+ <option value="Duma (Dumawa)">Duma (Dumawa)</option>
+ <option value="Ebana (Ebani)">Ebana (Ebani)</option>
+ <option value="Ebu">Ebu</option>
+ <option value="Eda">Eda</option>
+ <option value="Efik">Efik</option>
+ <option value="Egbira">Egbira</option>
+ <option value="Eggon">Eggon</option>
+ <option value="Egun (Gu)">Egun (Gu)</option>
+ <option value="Ejagham">Ejagham</option>
+ <option value="Ekajuk">Ekajuk</option>
+ <option value="Eket">Eket</option>
+ <option value="Eko">Eko</option>
+ <option value="Ekoi">Ekoi</option>
+ <option value="Eleme">Eleme</option>
+ <option value="Emane">Emane</option>
+ <option value="Engenni (Ngene)">Engenni (Ngene)</option>
+ <option value="Epie">Epie</option>
+ <option value="Esan (Ishan)">Esan (Ishan)</option>
+ <option value="Etche">Etche</option>
+ <option value="Etkywan">Etkywan</option>
+ <option value="Etuno">Etuno</option>
+ <option value="Etung">Etung</option>
+ <option value="Falli">Falli</option>
+ <option value="Fang">Fang</option>
+ <option value="Fon">Fon</option>
+ <option value="Fulani (Fulbe)">Fulani (Fulbe)</option>
+ <option value="Fyam (Fyem)">Fyam (Fyem)</option>
+ <option value="Fyer">Fyer</option>
+ <option value="Ga'anda">Ga'anda</option>
+ <option value="Gade">Gade</option>
+ <option value="Galambi">Galambi</option>
+ <option value="Gamergu (Mulgwa)">Gamergu (Mulgwa)</option>
+ <option value="Ganawuri">Ganawuri</option>
+ <option value="Gbagyi (Gwari)">Gbagyi (Gwari)</option>
+ <option value="Gbedde">Gbedde</option>
+ <option value="Gengle">Gengle</option>
+ <option value="Geji">Geji</option>
+ <option value="Gera (Gere, Gerawa)">Gera (Gere, Gerawa)</option>
+ <option value="Geruma (Gerumawa)">Geruma (Gerumawa)</option>
+ <option value="Gizigz">Gizigz</option>
+ <option value="Gokana (Kana)">Gokana (Kana)</option>
+ <option value="Gornun">Gornun</option>
+ <option value="Gubi (Gudu)">Gubi (Gudu)</option>
+ <option value="Gure">Gure</option>
+ <option value="Gurmana">Gurmana</option>
+ <option value="Guruntum">Guruntum</option>
+ <option value="Gusu">Gusu</option>
+ <option value="Gwa (Gwahne)">Gwa (Gwahne)</option>
+ <option value="Gwom">Gwom</option>
+ <option value="Gwong">Gwong</option>
+ <option value="Gwari">Gwari</option>
+ <option value="Gwodogudo">Gwodogudo</option>
+ <option value="Hausa">Hausa</option>
+ <option value="Higi">Higi</option>
+ <option value="Holma">Holma</option>
+ <option value="Hona">Hona</option>
+ <option value="Hyam (Hum)">Hyam (Hum)</option>
+ <option value="Ibeno">Ibeno</option>
+ <option value="Ibibio">Ibibio</option>
+ <option value="Ichen">Ichen</option>
+ <option value="Idoma">Idoma</option>
+ <option value="Igala">Igala</option>
+ <option value="Igbo">Igbo</option>
+ <option value="Igede">Igede</option>
+ <option value="Ijaw (Izon)">Ijaw (Izon)</option>
+ <option value="Ijumu">Ijumu</option>
+ <option value="Ika ">Ika</option>
+ <option value="Ikorn">Ikorn</option>
+ <option value="Ikwerre">Ikwerre</option>
+ <option value="Ilaje">Ilaje</option>
+ <option value="Irigwe">Irigwe</option>
+ <option value="Isoko">Isoko</option>
+ <option value="Isekiri (Itsekiri)">Isekiri (Itsekiri)</option>
+ <option value="Iyala (Iyara)">Iyala (Iyara)</option>
+ <option value="Izere">Izere</option>
+ <option value="Jaba">Jaba</option>
+ <option value="Jahuna (Jahunawa)">Jahuna (Jahunawa)</option>
+ <option value="Jaku">Jaku</option>
+ <option value="Jara (Jaar Jarawa Jarawa-Dutse)">Jara (Jaar Jarawa Jarawa-Dutse)</option>
+ <option value="Jere (Jero, Jerawa)">Jere (Jero, Jerawa)</option>
+ <option value="Jero">Jero</option>
+ <option value="Jimbin (Jimbinawa)">Jimbin (Jimbinawa)</option>
+ <option value="Jirai">Jirai</option>
+ <option value="Jonkobo">Jonkobo</option>
+ <option value="Jukun">Jukun</option>
+ <option value="Kache">Kache</option>
+ <option value="Kadara">Kadara</option>
+ <option value="Kagoro">Kagoro</option>
+ <option value="Kajuru">Kajuru</option>
+ <option value="Kaka">Kaka</option>
+ <option value="Kamaku (Kambu)">Kamaku (Kambu)</option>
+ <option value="Kambari">Kambari</option>
+ <option value="Kamwe">Kamwe</option>
+ <option value="Kanakuru (Dera)">Kanakuru (Dera)</option>
+ <option value="Kanembu">Kanembu</option>
+ <option value="Kaninko">Kaninko</option>
+ <option value="Kanufi">Kanufi</option>
+ <option value="Kanuri">Kanuri</option>
+ <option value="Karekare (Kariya)">Karekare (Kariya)</option>
+ <option value="Karimjo">Karimjo</option>
+ <option value="Kariya">Kariya</option>
+ <option value="Katab (Tyap)">Katab (Tyap)</option>
+ <option value="Kbo (Kiballo)">Kbo (Kiballo)</option>
+ <option value="Kilba">Kilba</option>
+ <option value="Kirfi (Kirfawa)">Kirfi (Kirfawa)</option>
+ <option value="Koma">Koma</option>
+ <option value="Kona">Kona</option>
+ <option value="Koro (Kwaro)">Koro (Kwaro)</option>
+ <option value="Kubi (Kubawa)">Kubi (Kubawa)</option>
+ <option value="Kudachano (Kudawa)">Kudachano (Kudawa)</option>
+ <option value="Kugama">Kugama</option>
+ <option value="Kulere (KUN (Kurama)">Kulere (KUN (Kurama)</option>
+ <option value="Kurdul">Kurdul</option>
+ <option value="Kushi">Kushi</option>
+ <option value="Kuteb">Kuteb</option>
+ <option value="Kwalla">Kwalla</option>
+ <option value="Kwami (Kwanchi)">Kwami (Kwanchi)</option>
+ <option value="Kwanka (Kwankwa)">Kwanka (Kwankwa)</option>
+ <option value="Kwaro">Kwaro</option>
+ <option value="Kwato">Kwato</option>
+ <option value="Kyenga (Katuka)">Kyenga (Katuka)</option>
+ <option value="Laar">Laar</option>
+ <option value="Lama">Lama</option>
+ <option value="Lamja">Lamja</option>
+ <option value="Lau">Lau</option>
+ <option value="Legbo">Legbo</option>
+ <option value="Lemoro (Emoro)">Lemoro (Emoro)</option>
+ <option value="Lere">Lere</option>
+ <option value="Lopa (Lupa)">Lopa (Lupa)</option>
+ <option value="Longuda (Nungurab)">Longuda (Nungurab)</option>
+ <option value="Luba">Luba</option>
+ <option value="Lunda">Lunda</option>
+ <option value="Maasai">Maasai</option>
+ <option value="Mada">Mada</option>
+ <option value="Mama">Mama</option>
+ <option value="Mambilla">Mambilla</option>
+ <option value="Mandara (Wandala)">Mandara (Wandala)</option>
+ <option value="Manga (Mangawa)">Manga (Mangawa)</option>
+ <option value="Margi">Margi</option>
+ <option value="Matakam">Matakam</option>
+ <option value="Mbemba">Mbemba</option>
+ <option value="Mbol">Mbol</option>
+ <option value="Mbube">Mbube</option>
+ <option value="Mbula">Mbula</option>
+ <option value="Mbum">Mbum</option>
+ <option value="Meryan">Meryan</option>
+ <option value="Miship (Chip)">Miship (Chip)</option>
+ <option value="Mmom (Kumkum)">Mmom (Kumkum)</option>
+ <option value="Mongo">Mongo</option>
+ <option value="Montol">Montol</option>
+ <option value="Moruwa (Korana)">Moruwa (Korana)</option>
+ <option value="Mundang">Mundang</option>
+ <option value="Mumuye">Mumuye</option>
+ <option value="Mwahavul (Sura)">Mwahavul (Sura)</option>
+ <option value="Ndoro">Ndoro</option>
+ <option value="Ngamo">Ngamo</option>
+ <option value="Ngas">Ngas</option>
+ <option value="Ngizim">Ngizim</option>
+ <option value="Ngweshe (Ndhang)">Ngweshe (Ndhang)</option>
+ <option value="Ninka">Ninka</option>
+ <option value="Ninzam (Ninzo)">Ninzam (Ninzo)</option>
+ <option value="Nizaa">Nizaa</option>
+ <option value="Nkoro">Nkoro</option>
+ <option value="Nor">Nor</option>
+ <option value="Nunku">Nunku</option>
+ <option value="Nupe">Nupe</option>
+ <option value="Obanliku">Obanliku</option>
+ <option value="Obanlo">Obanlo</option>
+ <option value="Obolo">Obolo</option>
+ <option value="Odual">Odual</option>
+ <option value="Ofombonga">Ofombonga</option>
+ <option value="Ogbronuagum (Bukuma)">Ogbronuagum (Bukuma)</option>
+ <option value="Ogbia">Ogbia</option>
+ <option value="Ohori (Ije)">Ohori (Ije)</option>
+ <option value="Okobo (Okkobor)">Okobo (Okkobor)</option>
+ <option value="Oko">Oko</option>
+ <option value="Okoro (Okorro)">Okoro (Okorro)</option>
+ <option value="Oku">Oku</option>
+ <option value="Olulumo (Ikom)">Olulumo (Ikom)</option>
+ <option value="Oromo">Oromo</option>
+ <option value="Oron">Oron</option>
+ <option value="Oring">Oring</option>
+ <option value="Ososo">Ososo</option>
+ <option value="Otank">Otank</option>
+ <option value="Paipai">Paipai</option>
+ <option value="Pai">Pai</option>
+ <option value="Panyam">Panyam</option>
+ <option value="Pero">Pero</option>
+ <option value="Pire">Pire</option>
+ <option value="Pkanzom">Pkanzom</option>
+ <option value="Polci">Polci</option>
+ <option value="Putai">Putai</option>
+ <option value="Qua">Qua</option>
+ <option value="Reshe">Reshe</option>
+ <option value="Rindan (Rendre)">Rindan (Rendre)</option>
+ <option value="Ron">Ron</option>
+ <option value="Rumaya">Rumaya</option>
+ <option value="Sakbe">Sakbe</option>
+ <option value="Samba">Samba</option>
+ <option value="Samburu">Samburu</option>
+ <option value="San">San</option>
+ <option value="Sanga">Sanga</option>
+ <option value="Sate">Sate</option>
+ <option value="Saya (Sayawa Zaar)">Saya (Sayawa Zaar)</option>
+ <option value="Segidi (Sigidawa)">Segidi (Sigidawa)</option>
+ <option value="Shama">Shama</option>
+ <option value="Shangawa (Shuwa)">Shangawa (Shuwa)</option>
+ <option value="Shuwa Arab">Shuwa Arab</option>
+ <option value="Siri (Sirawa)">Siri (Sirawa)</option>
+ <option value="Somali">Somali</option>
+ <option value="Songe">Songe</option>
+ <option value="Southern Ndebele">Southern Ndebele</option>
+ <option value="Srubu (Sur)">Srubu (Sur)</option>
+ <option value="Sukur">Sukur</option>
+ <option value="Sura (Mupun)">Sura (Mupun)</option>
+ <option value="Tangale">Tangale</option>
+ <option value="Tarok">Tarok</option>
+ <option value="Teme">Teme</option>
+ <option value="Tera (Terawa)">Tera (Terawa)</option>
+ <option value="Teshena (Teshenawa)">Teshena (Teshenawa)</option>
+ <option value="Tiv">Tiv</option>
+ <option value="Tula">Tula</option>
+ <option value="Ufia">Ufia</option>
+ <option value="Ukelle">Ukelle</option>
+ <option value="Ukwuani">Ukwuani</option>
+ <option value="Uneme (Ilema)">Uneme (Ilema)</option>
+ <option value="Urhobo">Urhobo</option>
+ <option value="Uton (Utonkong)">Uton (Utonkong)</ option>
+ <option value="Uyanga">Uyanga</option>
+ <option value="Vemgo">Vemgo</option>
+ <option value="Verre">Verre</option>
+ <option value="Vommi">Vommi</option>
+ <option value="Wagga">Wagga</option>
+ <option value="Waja">Waja</option>
+ <option value="Waka">Waka</option>
+ <option value="Warja (Warjawa)">Warja (Warjawa)</option>
+ <option value="Wula">Wula</option>
+ <option value="Wurbu">Wurbu</option>
+ <option value="Wurbo">Wurbo</option>
+ <option value="Xhosa">Xhosa</option>
+ <option value="Yache">Yache</option>
+ <option value="Yagba">Yagba</option>
+ <option value="Yakurr (Yako)">Yakurr (Yako)</option>
+ <option value="Yandang">Yandang</option>
+ <option value="Yergan (Yergum)">Yergan (Yergum)</option>
+ <option value="Yoruba">Yoruba</option>
+ <option value="Yott">Yott</option>
+ <option value="Yugur">Yugur</option>
+ <option value="Yungur">Yungur</option>
+ <option value="Yuom">Yuom</option>
+ <option value="Zabara">Zabara</option>
+ <option value="Zangon-Kataf">Zangon-Kataf</option>
+ <option value="Zar (Zaar)">Zar (Zaar)</option>
+ <option value="Zaranda">Zaranda</option>
+ <option value="Zarma">Zarma</option>
+ <option value="Zayam (Diayim)">Zayam (Diayim)</option>
+ <option value="Zul (Zulawa)">Zul (Zulawa)</option>
+ <option value="Zulu">Zulu</option>
+ <option value="Declined to Disclose">Declined to Disclose</option>
+ <option value="Unknown">Unknown</option>
+ <option value="Other">Other</option>
+ <option value="Other">Other</option>
+ </select>
+ 
+ <label for="email" style="display: block; margin-top: 10px;">Email:</label>
+ <input type="email" id="email">
+ 
+ <label for="phone" style="display: block; margin-top: 10px;">Phone*:</label>
+ <div style="display: flex; gap: 5px;">
+   <select id="phoneCountryCode" style="width: 120px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" onchange="updatePhonePlaceholder()">
+     <!-- Populated dynamically by country-codes.js -->
+   </select>
+   <input type="tel" id="phone" required placeholder="Enter phone number" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+ </div>
+ 
+ <label for="hasDiabetes" style="display: block; margin-top: 10px;">Has Diabetes:</label>
+ <input type="checkbox" id="hasDiabetes">
+ 
+ <!-- Contact Address Section -->
+ <h2>Contact Address</h2>
+ <label for="addressLine1" style="display: block; margin-top: 10px;">Address Line 1*:</label>
+ <input type="text" id="addressLine1" required>
+ 
+ <label for="addressLine2" style="display: block; margin-top: 10px;">Address Line 2:</label>
+ <input type="text" id="addressLine2">
+ 
+ <label for="city" style="display: block; margin-top: 10px;">City*:</label>
+ <input type="text" id="city" required>
+ 
+ <label for="country" style="display: block; margin-top: 10px;">Country*:</label>
+ <select id="country" required onchange="handleEditPatientCountryChange()">
+   <option value="">-- Select Country --</option>
+   <!-- Populated by JavaScript -->
+ </select>
+ 
+ <label for="state" style="display: block; margin-top: 10px;">State*:</label>
+ <select id="state" required>
+   <option value="">-- Select State/Province --</option>
+ </select>
+ 
+ <!-- Emergency Contact Section -->
+ <h2>Emergency Contact</h2>
+ <!-- Checkbox for copying address (placed above all emergency fields, with inline style to keep checkbox and text on same line) -->
+ <label style="display: block; margin-top: 10px; text-align: left;">
+ <input type="checkbox" id="sameAsContact" style="margin-right: 5px; vertical-align: middle;"> Same as Patient Address
+ </label>
+ 
+ <!-- Emergency name fields (not affected by checkbox) -->
+<label for="emergencyFirstName" style="display: block; margin-top: 10px;">First Name<span id="emergencyFirstNameRequired" class="required-asterisk">*</span>:</label>
+<input type="text" id="emergencyFirstName">
+ 
+<label for="emergencyLastName" style="display: block; margin-top: 10px;">Last Name<span id="emergencyLastNameRequired" class="required-asterisk">*</span>:</label>
+<input type="text" id="emergencyLastName">
+ 
+<!-- New mandatory field: Relationship to Patient -->
+<label for="emergencyRelationship" style="display: block; margin-top: 10px;">Relationship to Patient<span id="emergencyRelationshipRequired" class="required-asterisk">*</span>:</label>
+<select id="emergencyRelationship">
+  <option value="">-- Select Relationship --</option>
+  <option value="Spouse">Spouse</option>
+  <option value="Husband">Husband</option>
+  <option value="Wife">Wife</option>
+  <option value="Brother">Brother</option>
+  <option value="Sister">Sister</option>
+  <option value="Father">Father</option>
+  <option value="Mother">Mother</option>
+  <option value="Son">Son</option>
+  <option value="Daughter">Daughter</option>
+  <option value="Parent">Parent</option>
+  <option value="Child">Child</option>
+  <option value="Relative">Relative</option>
+  <option value="Friend">Friend</option>
+  <option value="Acquaintance">Acquaintance</option>
+  <option value="Guardian">Guardian</option>
+  <option value="Other">Other</option>
+</select>
+ 
+ <label for="emergencyPhone" style="display: block; margin-top: 10px;">Phone<span id="emergencyPhoneRequired" class="required-asterisk">*</span>:</label>
+ <div style="display: flex; gap: 5px;">
+   <select id="emergencyPhoneCountryCode" style="width: 120px; padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;" onchange="updateEmergencyPhonePlaceholder()">
+     <!-- Populated dynamically by country-codes.js -->
+   </select>
+   <input type="tel" id="emergencyPhone" placeholder="Enter emergency contact phone" style="flex: 1; padding: 8px; border: 1px solid #ccc; border-radius: 4px;">
+ </div>
+ 
+ <label for="emergencyEmail" style="display: block; margin-top: 10px;">Email<span id="emergencyEmailRequired" class="required-asterisk" style="display: none;">*</span>:</label>
+ <input type="email" id="emergencyEmail" placeholder="Emergency contact email (optional)">
+ 
+ <!-- Wrapper div for emergency address fields (to hide/show) -->
+ <div id="emergencyAddressFields">
+ <label for="emergencyAddressLine1" style="display: block; margin-top: 10px;">Address Line 1<span id="emergencyAddressLine1Required" class="required-asterisk">*</span>:</label>
+ <input type="text" id="emergencyAddressLine1">
+ 
+ <label for="emergencyAddressLine2" style="display: block; margin-top: 10px;">Address Line 2:</label>
+ <input type="text" id="emergencyAddressLine2">
+ 
+ <label for="emergencyCity" style="display: block; margin-top: 10px;">City<span id="emergencyCityRequired" class="required-asterisk">*</span>:</label>
+ <input type="text" id="emergencyCity">
+ 
+ <label for="emergencyCountry" style="display: block; margin-top: 10px;">Country<span id="emergencyCountryRequired" class="required-asterisk">*</span>:</label>
+ <select id="emergencyCountry" onchange="handleEditEmergencyCountryChange()">
+   <option value="">-- Select Country --</option>
+   <!-- Populated by JavaScript -->
+ </select>
+ 
+ <label for="emergencyState" style="display: block; margin-top: 10px;">State<span id="emergencyStateRequired" class="required-asterisk">*</span>:</label>
+ <select id="emergencyState">
+   <option value="">-- Select State/Province --</option>
+ </select>
+    </div>
+    
+    <!-- Payment Source Section -->
+    <h2>Payment Information</h2>
+    
+    <label for="paymentSource" style="display: block; margin-top: 10px;">Source of Payment for Services*:</label>
+    <select id="paymentSource" required>
+      <option value="" disabled selected>Select Payment Source</option>
+      <option value="Cash">Cash</option>
+      <option value="Insurance">Insurance</option>
+    </select>
+    
+    <!-- Insurance Information Section (shown when Insurance is selected) -->
+    <div id="insuranceFields" style="display: none;">
+      <h3>Insurance Information</h3>
+      
+      <label for="insuranceName" style="display: block; margin-top: 10px;">Insurance Name:</label>
+      <input type="text" id="insuranceName">
+      
+      <label for="insurancePolicyGroupNumber" style="display: block; margin-top: 10px;">Insurance Policy Group Number:</label>
+      <input type="text" id="insurancePolicyGroupNumber">
+      
+      <label for="insuranceMemberNumber" style="display: block; margin-top: 10px;">Insurance Member Number:</label>
+      <input type="text" id="insuranceMemberNumber">
+      
+      <label for="insuranceCardFront" style="display: block; margin-top: 10px;">Insurance Card Front (PDF, PNG, JPEG):</label>
+      <input type="file" id="insuranceCardFront" accept=".pdf,.png,.jpg,.jpeg">
+      <div id="currentCardFront" style="margin-top: 5px; font-size: 0.9em; color: #666;"></div>
+      
+      <label for="insuranceCardBack" style="display: block; margin-top: 10px;">Insurance Card Back (PDF, PNG, JPEG):</label>
+      <input type="file" id="insuranceCardBack" accept=".pdf,.png,.jpg,.jpeg">
+      <div id="currentCardBack" style="margin-top: 5px; font-size: 0.9em; color: #666;"></div>
+    </div>
+    
+ <button type="submit">Update Patient</button>
+ </form>
+ <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+  <a id="back-to-patients-bottom" href="patients" style="flex: 1; text-align: center; padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Patients</a>
+  <a id="back-to-details-bottom" href="patient-details" style="flex: 1; text-align: center; padding: 8px 16px; background-color: #17a2b8; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Patient Details</a>
+  <a id="back-to-dashboard-bottom" href='/' style='flex: 1; text-align: center; padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;'>← Back to Dashboard</a>
+ </div>
+  
+  <script>
+    (function updateBackLinks() {
+      const params = new URLSearchParams(window.location.search);
+      const patientId = params.get('patientId') || params.get('id');
+      if (!patientId) return;
+      const detailsUrl = `patient-details?patientId=${encodeURIComponent(patientId)}`;
+      const topDetails = document.getElementById('back-to-details-top');
+      const bottomDetails = document.getElementById('back-to-details-bottom');
+      if (topDetails) topDetails.href = detailsUrl;
+      if (bottomDetails) bottomDetails.href = detailsUrl;
+    })();
+    // Dynamic page title with org
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+      document.getElementById("page-title").innerHTML = `Edit Patient for ${user.org}`;
+    }
+    
+    // Handle payment source selection to show/hide insurance fields
+    document.addEventListener('DOMContentLoaded', function() {
+      // Initialize country code dropdowns immediately
+      if (typeof window.populateCountryCodeDropdown === 'function') {
+        window.populateCountryCodeDropdown('phoneCountryCode', '+234', true);
+        window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+234', true);
+      }
+      
+      const paymentSourceSelect = document.getElementById('paymentSource');
+      const insuranceFields = document.getElementById('insuranceFields');
+      
+      if (paymentSourceSelect && insuranceFields) {
+        paymentSourceSelect.addEventListener('change', function() {
+          if (this.value === 'Insurance') {
+            insuranceFields.style.display = 'block';
+          } else {
+            insuranceFields.style.display = 'none';
+          }
+        });
+      }
+      
+      // Handle "Same as Patient Address" checkbox for emergency contact
+      const sameAsContact = document.getElementById('sameAsContact');
+      const emergencyAddressFields = document.getElementById('emergencyAddressFields');
+      const emergencyAddressInputs = [
+        document.getElementById('emergencyAddressLine1'),
+        document.getElementById('emergencyCity'),
+        document.getElementById('emergencyState'),
+        document.getElementById('emergencyCountry')
+      ];
+      
+      if (sameAsContact && emergencyAddressFields) {
+        sameAsContact.addEventListener('change', function() {
+          if (this.checked) {
+            // Copy patient address to emergency fields
+            document.getElementById('emergencyAddressLine1').value = document.getElementById('addressLine1').value;
+            document.getElementById('emergencyAddressLine2').value = document.getElementById('addressLine2').value;
+            document.getElementById('emergencyCity').value = document.getElementById('city').value;
+            document.getElementById('emergencyState').value = document.getElementById('state').value;
+            document.getElementById('emergencyCountry').value = document.getElementById('country').value;
+            
+            // Auto-select emergency phone country code based on patient country
+            const patientCountry = document.getElementById('country').value;
+            const emergencyPhoneCountryCode = document.getElementById('emergencyPhoneCountryCode');
+            if (emergencyPhoneCountryCode && patientCountry) {
+              if (typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[patientCountry]) {
+                const countryData = COUNTRIES_DATA[patientCountry];
+                if (countryData.phoneCode) {
+                  emergencyPhoneCountryCode.value = countryData.phoneCode;
+                  if (typeof updateEmergencyPhonePlaceholder === 'function') {
+                    updateEmergencyPhonePlaceholder();
+                  }
+                }
+              } else {
+                // Fallback mapping
+                const countryCodeMap = {
+                  'Nigeria': '+234',
+                  'Kenya': '+254', 
+                  'South Africa': '+27',
+                  'Ghana': '+233',
+                  'Uganda': '+256',
+                  'Tanzania': '+255',
+                  'Rwanda': '+250',
+                  'Ethiopia': '+251',
+                  'Egypt': '+20',
+                  'Morocco': '+212',
+                  'Algeria': '+213',
+                  'Zambia': '+260',
+                  'Zimbabwe': '+263'
+                };
+                if (countryCodeMap[patientCountry]) {
+                  emergencyPhoneCountryCode.value = countryCodeMap[patientCountry];
+                  if (typeof updateEmergencyPhonePlaceholder === 'function') {
+                    updateEmergencyPhonePlaceholder();
+                  }
+                }
+              }
+            }
+            
+            // Hide the address fields
+            emergencyAddressFields.style.display = 'none';
+            
+            // Remove required attribute from emergency address fields
+            emergencyAddressInputs.forEach(input => {
+              if (input) input.removeAttribute('required');
+            });
+          } else {
+            // Show the address fields
+            emergencyAddressFields.style.display = 'block';
+            
+            // Add required attribute back to emergency address fields
+            emergencyAddressInputs.forEach(input => {
+              if (input) input.setAttribute('required', 'required');
+            });
+          }
+        });
+      }
+    });
+  </script>
+ <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+ 
+  
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      const orgName = userFooter.org === '576522cc-e769-4fb4-9487-3d150857d970' ? 'Mecure Clinics' : userFooter.org;
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${orgName} is logged in`;
+    }
+    
+    // Update phone placeholder based on country code selection
+    function updatePhonePlaceholder() {
+      const countryCodeSelect = document.getElementById('phoneCountryCode');
+      const phoneInput = document.getElementById('phone');
+      const countryCode = countryCodeSelect.value;
+      
+      if (countryCode) {
+        phoneInput.placeholder = `Enter phone number (${countryCode})`;
+      } else {
+        phoneInput.placeholder = 'Enter phone number';
+      }
+    }
+    
+    function updateEmergencyPhonePlaceholder() {
+      const countryCodeSelect = document.getElementById('emergencyPhoneCountryCode');
+      const phoneInput = document.getElementById('emergencyPhone');
+      const countryCode = countryCodeSelect.value;
+      
+      if (countryCode) {
+        phoneInput.placeholder = `Enter emergency phone (${countryCode})`;
+      } else {
+        phoneInput.placeholder = 'Enter emergency contact phone';
+      }
+    }
+    
+    // Handle country change for patient
+    async function handleEditPatientCountryChange() {
+      const country = document.getElementById('country').value;
+      if (country) {
+        // Populate state dropdown for selected country
+        if (typeof window.populateStateDropdown === 'function') {
+          const currentState = document.getElementById('state').value;
+          await window.populateStateDropdown('state', country, currentState);
+        }
+        
+        // Auto-select phone country code based on address country
+        const phoneCountryCode = document.getElementById('phoneCountryCode');
+        if (phoneCountryCode && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
+          const countryData = COUNTRIES_DATA[country];
+          if (countryData.phoneCode) {
+            phoneCountryCode.value = countryData.phoneCode;
+            if (typeof updatePhonePlaceholder === 'function') {
+              updatePhonePlaceholder();
+            }
+          }
+        }
+        if (typeof updatePhoneFormat === 'function') {
+          updatePhoneFormat('phone', country);
+        }
+      }
+    }
+    
+    // Handle country change for emergency contact
+    async function handleEditEmergencyCountryChange() {
+      const country = document.getElementById('emergencyCountry').value;
+      if (country) {
+        // Populate state dropdown for selected country
+        if (typeof window.populateStateDropdown === 'function') {
+          const currentState = document.getElementById('emergencyState').value;
+          await window.populateStateDropdown('emergencyState', country, currentState);
+        }
+        
+        // Auto-select emergency phone country code based on emergency country
+        const emergencyPhoneCountryCode = document.getElementById('emergencyPhoneCountryCode');
+        if (emergencyPhoneCountryCode && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
+          const countryData = COUNTRIES_DATA[country];
+          if (countryData.phoneCode) {
+            emergencyPhoneCountryCode.value = countryData.phoneCode;
+            if (typeof updateEmergencyPhonePlaceholder === 'function') {
+              updateEmergencyPhonePlaceholder();
+            }
+          }
+        }
+      }
+    }
+    
+    // Initialize dropdowns and load patient data
+    window.addEventListener('load', async function() {
+      // Initialize country dropdowns first (empty, will be populated by loadEditForm)
+      if (typeof window.populateCountryDropdown === 'function') {
+        await window.populateCountryDropdown('country');
+        await window.populateCountryDropdown('emergencyCountry');
+      }
+      
+      // Initialize country code dropdowns with default values
+      if (typeof window.populateCountryCodeDropdown === 'function') {
+        await window.populateCountryCodeDropdown('phoneCountryCode', '+234', true);
+        await window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+234', true);
+      }
+      
+      // Load patient data (this will populate all fields including country/state)
+      if (typeof loadEditForm === 'function') {
+        await loadEditForm();
+      }
+      
+      // Add auto-population for state dropdowns when clicked/focused
+      const stateSelect = document.getElementById('state');
+      const emergencyStateSelect = document.getElementById('emergencyState');
+      const countrySelect = document.getElementById('country');
+      const emergencyCountrySelect = document.getElementById('emergencyCountry');
+      
+      if (stateSelect && countrySelect) {
+        stateSelect.addEventListener('focus', function() {
+          const countryValue = countrySelect.value;
+          if (countryValue && stateSelect.options.length <= 1) {
+            if (typeof window.populateStateDropdown === 'function') {
+              window.populateStateDropdown('state', countryValue);
+            }
+          }
+        });
+        stateSelect.addEventListener('click', function() {
+          const countryValue = countrySelect.value;
+          if (countryValue && stateSelect.options.length <= 1) {
+            if (typeof window.populateStateDropdown === 'function') {
+              window.populateStateDropdown('state', countryValue);
+            }
+          }
+        });
+      }
+      
+      if (emergencyStateSelect && emergencyCountrySelect) {
+        emergencyStateSelect.addEventListener('focus', function() {
+          const countryValue = emergencyCountrySelect.value;
+          if (countryValue && emergencyStateSelect.options.length <= 1) {
+            if (typeof window.populateStateDropdown === 'function') {
+              window.populateStateDropdown('emergencyState', countryValue);
+            }
+          }
+        });
+        emergencyStateSelect.addEventListener('click', function() {
+          const countryValue = emergencyCountrySelect.value;
+          if (countryValue && emergencyStateSelect.options.length <= 1) {
+            if (typeof window.populateStateDropdown === 'function') {
+              window.populateStateDropdown('emergencyState', countryValue);
+            }
+          }
+        });
+      }
+      
+      // Add onchange handlers for country dropdowns
+      if (countrySelect) {
+        countrySelect.addEventListener('change', handleEditPatientCountryChange);
+      }
+      if (emergencyCountrySelect) {
+        emergencyCountrySelect.addEventListener('change', handleEditEmergencyCountryChange);
+      }
+    });
+  </script>  
+
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113090113091309"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
+  
+  <!-- Enhanced selectors -->
+  <script src="js/countries-data.js?v=1"></script>
+  <script src="js/country-codes.js"></script>
+  <script src="js/searchable-dropdown.js"></script>
+  <script src="js/icd-selector.js?v=105"></script>
+  <script src="js/prescriptions.js?v=1"></script>
+  <script src="js/vaccines.js?v=144"></script>
+  <script src="js/vaccine-selector.js?v=125"></script>
+  <script src="js/allergy-selector.js?v=213"></script>
+  
+  <!-- Manual Patient Numbering Support -->
+  <script src="js/manual-patient-numbering.js?v=1"></script>
+  <script src="js/patient-number-cascade-update.js?v=1"></script>
+  
+  <!-- Patient management -->
+  <script src="js/patients.js?v=20251209235000"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/main.js?v=202510220113090113091309"></script>
+  
+  <script>
+    console.log('[EDIT-PATIENT] TRACE: Fixed edit-patient.html - Added complete Supabase integration');
+    console.log('?? TRACE: Added connection status notifier for real-time sync');
+    console.log('?? TRACE: Fixed loose JavaScript code rendering as text');
+    console.log('?? TRACE: Updated phone fields to match add-patient page structure');
+    console.log('?? TRACE: Fixed duplicate country code fields - removed phone-input.js conflict');
+    console.log('?? TRACE: Fixed remaining loose JavaScript code at bottom of page');
+    console.log('?? TRACE: Added comprehensive African country codes for phone fields');
+    console.log('?? TRACE: Added enhanced selectors for medications, vaccines, and ICD codes');
+    console.log('?? TRACE: Fixed loose script tags and missing dependencies');
+    console.log('?? TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('?? TRACE: CSS version updated to v245 for cache busting');
+    
+    // Always show patient/file number field for editing (including retroactive fix for wrong IDs)
+    async function updateManualPatientNumberField() {
+      const container = document.getElementById('manual-patient-number-container');
+      if (!container) return;
+      
+      try {
+        container.style.display = 'block'; // Always show so users can edit patient numbers
+        // Load current patient ID into the field
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get("id");
+        if (patientId) {
+          const customPatientIdInput = document.getElementById('customPatientId');
+          if (customPatientIdInput && !customPatientIdInput.value) {
+            customPatientIdInput.value = patientId;
+          }
+        }
+      } catch (error) {
+        console.error('Error loading patient number field:', error);
+      }
+    }
+    
+    // Initialize on page load
+    window.addEventListener('load', function() {
+      setTimeout(updateManualPatientNumberField, 500);
+    });
+  </script>
+  <!-- Emergency Contact Settings -->
+  <script src="js/emergency-contact-settings.js?v=1"></script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+  
+  <!-- Emergency Contact Settings - Dynamic Required Fields -->
+  <script>
+    // Function to update emergency contact field requirements based on organization setting
+    async function updateEmergencyContactRequirements() {
+      try {
+        // Wait for the function to be available
+        let retryCount = 0;
+        const maxRetries = 20;
+        while (retryCount < maxRetries && typeof window.getEmergencyContactRequired !== 'function') {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          retryCount++;
+        }
+        
+        if (typeof window.getEmergencyContactRequired !== 'function') {
+          console.warn('⚠️ Emergency contact settings not available, defaulting to required');
+          // Default to required if function not available
+          setEmergencyFieldsRequired(true);
+          return;
+        }
+        
+        const required = await window.getEmergencyContactRequired();
+        setEmergencyFieldsRequired(required);
+        
+      } catch (error) {
+        console.error('❌ Error updating emergency contact requirements:', error);
+        // Default to required on error
+        setEmergencyFieldsRequired(true);
+      }
+    }
+    
+    // Helper function to set required attributes and asterisks
+    function setEmergencyFieldsRequired(required) {
+      const fields = [
+        { id: 'emergencyFirstName', asteriskId: 'emergencyFirstNameRequired' },
+        { id: 'emergencyLastName', asteriskId: 'emergencyLastNameRequired' },
+        { id: 'emergencyRelationship', asteriskId: 'emergencyRelationshipRequired' },
+        { id: 'emergencyPhone', asteriskId: 'emergencyPhoneRequired' },
+        { id: 'emergencyEmail', asteriskId: 'emergencyEmailRequired' },
+        { id: 'emergencyCountry', asteriskId: 'emergencyCountryRequired' },
+        { id: 'emergencyState', asteriskId: 'emergencyStateRequired' },
+        { id: 'emergencyAddressLine1', asteriskId: 'emergencyAddressLine1Required' },
+        { id: 'emergencyCity', asteriskId: 'emergencyCityRequired' }
+      ];
+      
+      fields.forEach(field => {
+        const input = document.getElementById(field.id);
+        const asterisk = document.getElementById(field.asteriskId);
+        
+        if (input) {
+          if (required) {
+            input.setAttribute('required', 'required');
+          } else {
+            input.removeAttribute('required');
+          }
+        }
+        
+        if (asterisk) {
+          asterisk.style.display = required ? 'inline' : 'none';
+        }
+      });
+      
+      console.log(`✅ Emergency contact fields set to: ${required ? 'REQUIRED' : 'OPTIONAL'}`);
+    }
+    
+    // Update on page load
+    window.addEventListener('load', function() {
+      setTimeout(updateEmergencyContactRequirements, 500);
+    });
+    
+    // Also update when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', function() {
+        setTimeout(updateEmergencyContactRequirements, 500);
+      });
+    } else {
+      setTimeout(updateEmergencyContactRequirements, 500);
+    }
+    
+    // Edit Patient: no mandatory fields - allows saving with minimal data (e.g. patient ID change only)
+    // Existing old patients often lack dob, tribe, address, etc. Run after other init scripts.
+    function makeEditPatientFieldsOptional() {
+      const form = document.getElementById('edit-patient-form');
+      if (!form) return;
+      form.querySelectorAll('input, select, textarea').forEach(function(el) {
+        el.removeAttribute('required');
+      });
+      // Hide required asterisks
+      form.querySelectorAll('.required-asterisk').forEach(function(el) {
+        el.style.display = 'none';
+      });
+    }
+    window.addEventListener('load', function() {
+      setTimeout(makeEditPatientFieldsOptional, 800);
+    });
+  </script>
+</body>
+</html>
+
+
+
+

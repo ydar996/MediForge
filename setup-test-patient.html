@@ -1,0 +1,406 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Setup Test Patient Account</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #008751;
+      margin-bottom: 20px;
+    }
+    .info {
+      background: #e8f5e9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-bottom: 20px;
+      border-left: 4px solid #008751;
+    }
+    button {
+      background: #008751;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #006B3F;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .log {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: monospace;
+      font-size: 14px;
+      white-space: pre-wrap;
+    }
+    .success { color: #008751; }
+    .error { color: #d32f2f; }
+    .info-text { color: #1976d2; }
+    .credentials {
+      background: #fff3cd;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+      border: 2px solid #ffc107;
+    }
+    .credentials h3 {
+      margin-top: 0;
+      color: #856404;
+    }
+    .credentials code {
+      background: #f5f5f5;
+      padding: 2px 6px;
+      border-radius: 3px;
+      font-family: monospace;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏥 Setup Test Patient Account</h1>
+    
+    <div class="info">
+      <strong>Purpose:</strong> This script will create a patient portal account for <strong>Toke Makinwa</strong> (Patient ID: MEC0006) from Mecure Clinics.
+      <br><br>
+      <strong>What it does:</strong>
+      <ul>
+        <li>Finds Toke Makinwa in the patients table</li>
+        <li>Creates a Supabase Auth user account</li>
+        <li>Links the patient to the user account</li>
+        <li>Generates a temporary username and password</li>
+        <li>Sets password reset required flag</li>
+      </ul>
+    </div>
+
+    <button id="setupBtn" onclick="setupTestPatient()">🚀 Setup Test Patient Account</button>
+    <button onclick="clearLog()">Clear Log</button>
+
+    <div id="credentials" class="credentials" style="display: none;">
+      <h3>✅ Patient Portal Credentials Created!</h3>
+      <p><strong>Username:</strong> <code id="username"></code></p>
+      <p><strong>Password:</strong> <code id="password"></code></p>
+      <p><strong>⚠️ Important:</strong> Patient will be prompted to change password on first login.</p>
+      <p><strong>📧 Next Step:</strong> Send these credentials to the patient via email or SMS.</p>
+    </div>
+
+    <div id="log" class="log"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+
+  <script>
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info-text';
+      logDiv.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(`[${timestamp}] ${message}`);
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+      document.getElementById('credentials').style.display = 'none';
+    }
+
+    function generateUsername(firstName, lastName) {
+      // Generate username: firstname.lastname (lowercase, no spaces)
+      const base = `${firstName}.${lastName}`.toLowerCase().replace(/\s+/g, '');
+      // Add random 3-digit number to ensure uniqueness
+      const random = Math.floor(Math.random() * 1000).toString().padStart(3, '0');
+      return `${base}${random}`;
+    }
+
+    function generatePassword() {
+      // Generate a secure temporary password
+      const length = 12;
+      const chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+      let password = '';
+      // Ensure at least one uppercase, one lowercase, one number
+      password += 'ABCDEFGHJKLMNPQRSTUVWXYZ'[Math.floor(Math.random() * 24)];
+      password += 'abcdefghijkmnpqrstuvwxyz'[Math.floor(Math.random() * 24)];
+      password += '23456789'[Math.floor(Math.random() * 8)];
+      // Fill the rest
+      for (let i = password.length; i < length; i++) {
+        password += chars[Math.floor(Math.random() * chars.length)];
+      }
+      // Shuffle
+      return password.split('').sort(() => Math.random() - 0.5).join('');
+    }
+
+    async function setupTestPatient() {
+      const btn = document.getElementById('setupBtn');
+      btn.disabled = true;
+      clearLog();
+      
+      try {
+        log('🔍 Starting test patient setup...', 'info');
+        
+        // Step 1: Find Toke Makinwa in patients table
+        log('📋 Step 1: Searching for Toke Makinwa in patients table...', 'info');
+        
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not initialized. Make sure js/supabase-client.js is loaded.');
+        }
+
+        // Try to find patient by name or patient_id
+        let { data: patients, error: patientError } = await window.supabaseClient
+          .from('patients')
+          .select('*')
+          .or('first_name.ilike.%Toke%,last_name.ilike.%Makinwa%,patient_id.eq.MEC0006');
+
+        if (patientError) {
+          throw new Error(`Error searching for patient: ${patientError.message}`);
+        }
+
+        if (!patients || patients.length === 0) {
+          throw new Error('Toke Makinwa not found in patients table. Please ensure the patient exists.');
+        }
+
+        // Find exact match
+        const patient = patients.find(p => 
+          (p.first_name && p.first_name.toLowerCase().includes('toke')) &&
+          (p.last_name && p.last_name.toLowerCase().includes('makinwa'))
+        ) || patients.find(p => p.patient_id === 'MEC0006') || patients[0];
+
+        log(`✅ Found patient: ${patient.first_name} ${patient.last_name} (ID: ${patient.id}, Patient ID: ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient) : patient.patient_id})`, 'success');
+        log(`   Organization ID: ${patient.organization_id}`, 'info');
+
+        // Step 2: Check if patient already has a user account
+        log('📋 Step 2: Checking for existing user account...', 'info');
+        
+        const { data: existingUser, error: userCheckError } = await window.supabaseClient
+          .from('users')
+          .select('*')
+          .eq('patient_id', patient.id)
+          .eq('role', 'patient')
+          .maybeSingle();
+
+        if (userCheckError && userCheckError.code !== 'PGRST116') {
+          throw new Error(`Error checking existing user: ${userCheckError.message}`);
+        }
+
+        if (existingUser) {
+          log(`⚠️ Patient already has a user account (Username: ${existingUser.username})`, 'info');
+          log('   You can update the password or create a new account.', 'info');
+          
+          if (!confirm('Patient already has an account. Do you want to create a new account anyway?')) {
+            btn.disabled = false;
+            return;
+          }
+        }
+
+        // Step 3: Generate credentials
+        log('📋 Step 3: Generating credentials...', 'info');
+        const username = generateUsername(patient.first_name, patient.last_name);
+        const tempPassword = generatePassword();
+        
+        log(`   Generated username: ${username}`, 'info');
+        log(`   Generated password: ${tempPassword}`, 'info');
+
+        // Step 4: Create Supabase Auth user
+        log('📋 Step 4: Creating Supabase Auth user...', 'info');
+        
+        const email = `${username}@patient.ehrapp.local`;
+        
+        const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
+          email: email,
+          password: tempPassword,
+          options: {
+            data: {
+              username: username,
+              first_name: patient.first_name,
+              last_name: patient.last_name,
+              role: 'patient'
+            }
+          }
+        });
+
+        if (authError) {
+          // If user already exists, try to sign in to get the user
+          if (authError.message.includes('already registered')) {
+            log('⚠️ Auth user already exists, attempting to get user...', 'info');
+            const { data: signInData, error: signInError } = await window.supabaseClient.auth.signInWithPassword({
+              email: email,
+              password: tempPassword
+            });
+
+            if (signInError) {
+              throw new Error(`Auth user exists but password doesn't match. Please reset password manually. Error: ${signInError.message}`);
+            }
+
+            authData.user = signInData.user;
+            log('✅ Using existing Auth user', 'success');
+          } else {
+            throw new Error(`Failed to create Auth user: ${authError.message}`);
+          }
+        } else {
+          log('✅ Auth user created successfully', 'success');
+        }
+
+        const authUserId = authData.user.id;
+        log(`   Auth User ID: ${authUserId}`, 'info');
+
+        // Step 5: Create user profile in users table
+        log('📋 Step 5: Creating user profile...', 'info');
+        
+        // Build user profile object - use auth_user_id and set id to match auth user ID
+        const userProfileData = {
+          id: authUserId,  // Set id to auth user ID for RLS policies
+          auth_user_id: authUserId,  // Also set auth_user_id for foreign key
+          username: username,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          role: 'Patient',  // Use capitalized role to match CHECK constraint
+          organization_id: patient.organization_id,
+          patient_id: patient.id,
+          password_reset_required: true,
+          temp_password: tempPassword,
+          gender: patient.gender || 'Not Specified'  // Get gender from patient record
+        };
+        
+        // Only include email if column exists (handle schema differences)
+        // Try to check if email column exists by attempting insert without it first
+        let userProfileInsert = userProfileData;
+        
+        // Try with email first
+        const { data: userProfile, error: profileError } = await window.supabaseClient
+          .from('users')
+          .insert({
+            ...userProfileData,
+            email: email
+          })
+          .select()
+          .single();
+
+        if (profileError) {
+          // If error is about email column, try without it
+          if (profileError.message.includes('email') || profileError.message.includes('schema cache')) {
+            log('⚠️ Email column issue detected, trying without email field...', 'info');
+            
+            // Try insert without email
+            const { data: userProfileRetry, error: retryError } = await window.supabaseClient
+              .from('users')
+              .insert(userProfileData)
+              .select()
+              .single();
+              
+            if (retryError) {
+              // If user profile already exists, update it
+              if (retryError.code === '23505') {
+                log('⚠️ User profile already exists, updating...', 'info');
+                const { data: updatedProfile, error: updateError } = await window.supabaseClient
+                  .from('users')
+                  .update({
+                    patient_id: patient.id,
+                    password_reset_required: true,
+                    temp_password: tempPassword,
+                    auth_user_id: authUserId
+                  })
+                  .eq('id', authUserId)
+                  .select()
+                  .single();
+
+                if (updateError) {
+                  throw new Error(`Failed to update user profile: ${updateError.message}`);
+                }
+
+                log('✅ User profile updated successfully', 'success');
+                displayCredentials(username, tempPassword);
+                btn.disabled = false;
+                return;
+              } else {
+                throw new Error(`Failed to create user profile: ${retryError.message}`);
+              }
+            } else {
+              log('✅ User profile created successfully (without email)', 'success');
+              displayCredentials(username, tempPassword);
+              log('', 'info');
+              log('✅ Setup complete!', 'success');
+              log('📧 Send these credentials to the patient via email or SMS.', 'info');
+              btn.disabled = false;
+              return;
+            }
+          }
+          
+          // If user profile already exists, update it
+          if (profileError.code === '23505') {
+            log('⚠️ User profile already exists, updating...', 'info');
+            const { data: updatedProfile, error: updateError } = await window.supabaseClient
+              .from('users')
+              .update({
+                patient_id: patient.id,
+                password_reset_required: true,
+                temp_password: tempPassword,
+                auth_user_id: authUserId
+              })
+              .eq('id', authUserId)
+              .select()
+              .single();
+
+            if (updateError) {
+              throw new Error(`Failed to update user profile: ${updateError.message}`);
+            }
+
+            log('✅ User profile updated successfully', 'success');
+            displayCredentials(username, tempPassword);
+            btn.disabled = false;
+            return;
+          } else {
+            throw new Error(`Failed to create user profile: ${profileError.message}`);
+          }
+        }
+
+        log('✅ User profile created successfully', 'success');
+
+        // Step 6: Display credentials
+        displayCredentials(username, tempPassword);
+        
+        log('', 'info');
+        log('✅ Setup complete!', 'success');
+        log('📧 Send these credentials to the patient via email or SMS.', 'info');
+
+      } catch (error) {
+        log(`❌ Error: ${error.message}`, 'error');
+        console.error('Setup error:', error);
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function displayCredentials(username, password) {
+      document.getElementById('username').textContent = username;
+      document.getElementById('password').textContent = password;
+      document.getElementById('credentials').style.display = 'block';
+    }
+  </script>
+</body>
+</html>

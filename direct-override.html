@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Direct Override</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; text-align: center; }
+        .container { max-width: 600px; margin: 50px auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #dc3545; color: white; padding: 20px 40px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin: 10px; }
+        .btn:hover { background: #c82333; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 5px; margin: 20px 0; color: #155724; display: none; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Direct Override</h1>
+        <p>This will directly override the loadPatients function with the correct code.</p>
+        
+        <button class="btn" onclick="directOverride()">?? Direct Override</button>
+        <button class="btn" onclick="simpleFix()">?? Simple Fix</button>
+        
+        <div class="success" id="success">
+            <h2>? OVERRIDE COMPLETE!</h2>
+            <p>The loadPatients function has been overridden with the correct code.</p>
+            <p><strong>Now go to your EHR app and refresh - the DOB data should show correctly!</strong></p>
+        </div>
+    </div>
+
+    <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>  <!-- Universal data loader with Supabase priority -->
+  
+        function directOverride() {
+            console.log('?? Starting direct override...');
+            
+            // Wait for the function to be available
+            let attempts = 0;
+            const maxAttempts = 10;
+            
+            function tryOverride() {
+                attempts++;
+                console.log(`?? Attempt ${attempts}: Looking for loadPatients function...`);
+                
+                if (typeof window.loadPatients === 'function') {
+                    console.log('?? Found loadPatients function, overriding...');
+                
+                window.loadPatients = async function(page = 1) {
+                    console.log('?????? OVERRIDDEN VERSION - loadPatients called with page:', page);
+                    console.log('?? DEBUG: This is the OVERRIDDEN version with NO merge logic');
+                    
+                    // Get Supabase client
+                    const supabaseClient = window.supabaseClient;
+                    console.log('?? DEBUG: supabaseClient available:', !!supabaseClient);
+                    
+                    let patients = [];
+                    
+                    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+                        try {
+                            console.log('?? Loading patients from Supabase...');
+                            
+                            // Get organization ID
+                            let orgId = '576522cc-e769-4fb4-9487-3d150857d970';
+                            console.log('Using organization ID:', orgId);
+                            
+                            const { data: supabasePatients, error } = await supabaseClient
+                                .from('patients')
+                                .select('*')
+                                .eq('organization_id', orgId);
+                            
+                            if (error) {
+                                console.error('? Error loading from Supabase:', error);
+                                throw error;
+                            } else {
+                                console.log('? Loaded', supabasePatients.length, 'patients from Supabase');
+                                
+                                // Convert Supabase format to localStorage format
+                                console.log('?? DEBUG: Converting', supabasePatients.length, 'patients from Supabase format');
+                                patients = supabasePatients.map(patient => {
+                                    console.log('?? DEBUG: Converting patient', patient.patient_id, 'DOB:', patient.date_of_birth);
+                                    
+                                    return {
+                                        id: patient.patient_id,
+                                        firstName: patient.first_name || '',
+                                        middleName: patient.middle_name || '',
+                                        lastName: patient.last_name || '',
+                                        dob: patient.date_of_birth, // This is the key field!
+                                        gender: patient.gender || '',
+                                        maritalStatus: patient.marital_status || '',
+                                        phone: patient.phone || '',
+                                        email: patient.email || '',
+                                        addressLine1: patient.address || '',
+                                        city: patient.city || '',
+                                        state: patient.state || '',
+                                        country: patient.country || '',
+                                        bloodGroup: patient.blood_group || '',
+                                        allergies: [],
+                                        conditions: [],
+                                        emergencyFirstName: '',
+                                        emergencyLastName: '',
+                                        emergencyPhone: '',
+                                        emergencyRelationship: '',
+                                        createdDate: patient.created_at,
+                                        updatedDate: patient.updated_at,
+                                        visits: [],
+                                        immunizations: [],
+                                        prescriptions: [],
+                                        hasDiabetes: false
+                                    };
+                                });
+                                
+                                // Update localStorage with fresh data
+                                localStorage.setItem('mecure_patients', JSON.stringify(patients));
+                                console.log('?? Updated localStorage with fresh Supabase data');
+                                console.log('?? DEBUG: Final patients array length:', patients.length);
+                                console.log('?? DEBUG: Patients with DOB:', patients.filter(p => p.dob).length);
+                                console.log('?? DEBUG: Sample patient DOB:', patients[0]?.dob);
+                            }
+                        } catch (error) {
+                            console.error('? Supabase connection failed:', error);
+                            patients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+                        }
+                    } else {
+                        console.log('?? Supabase client not available, using localStorage');
+                        patients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+                    }
+                    
+                    // Continue with the rest of the function (sorting, pagination, display)
+                    console.log('Final patients count:', patients.length);
+                    
+                    // Sort patients
+                    patients.sort((a, b) => {
+                        let valA, valB;
+                        if (currentSort && currentSort.field === 'name') {
+                            valA = `${a.firstName} ${a.lastName}`.toLowerCase();
+                            valB = `${b.firstName} ${b.lastName}`.toLowerCase();
+                        } else if (currentSort && currentSort.field === 'dob') {
+                            valA = new Date(a.dob);
+                            valB = new Date(b.dob);
+                        } else {
+                            valA = `${a.firstName} ${a.lastName}`.toLowerCase();
+                            valB = `${b.firstName} ${b.lastName}`.toLowerCase();
+                        }
+                        
+                        if (currentSort && currentSort.direction === 'desc') {
+                            return valA < valB ? 1 : -1;
+                        } else {
+                            return valA > valB ? 1 : -1;
+                        }
+                    });
+                    
+                    // Pagination
+                    const patientsPerPage = 10;
+                    const startIndex = (page - 1) * patientsPerPage;
+                    const endIndex = startIndex + patientsPerPage;
+                    const paginatedPatients = patients.slice(startIndex, endIndex);
+                    
+                    // Display patients
+                    const tbody = document.getElementById('patient-list');
+                    if (tbody) {
+                        tbody.innerHTML = '';
+                        
+                        if (paginatedPatients.length === 0) {
+                            tbody.innerHTML = '<tr><td colspan="4">No patients found. Add a new patient to get started.</td></tr>';
+                        } else {
+                            paginatedPatients.forEach(patient => {
+                                const row = document.createElement("tr");
+                                console.log(`Creating row for patient: ${patient.firstName} ${patient.lastName} with 6 action buttons`);
+                                row.innerHTML = `
+                                    <td>${patient.firstName} ${patient.lastName}</td>
+                                    <td>${patient.dob}</td>
+                                    <td>${patient.gender}</td>
+                                    <td>
+                                        <button onclick="viewPatient('${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">View</button>
+                                        <button onclick="editPatient('${patient.id}')" style="background-color: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Edit</button>
+                                        <button onclick="deletePatient('${patient.id}')" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Delete</button>
+                                        <button onclick="addEncounter('${patient.id}')" style="background-color: #fd7e14; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Encounter</button>
+                                        <button onclick="addAppointment('${patient.id}')" style="background-color: #6f42c1; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Appointment</button>
+                                        <button onclick="printPatientSummary('${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">?? Print Patient Summary</button>
+                                    </td>
+                                `;
+                                tbody.appendChild(row);
+                            });
+                        }
+                    }
+                    
+                    // Update pagination controls
+                    const totalPages = Math.ceil(patients.length / patientsPerPage);
+                    const paginationDiv = document.getElementById('pagination-controls');
+                    if (paginationDiv) {
+                        paginationDiv.innerHTML = '';
+                        if (totalPages > 1) {
+                            for (let i = 1; i <= totalPages; i++) {
+                                const button = document.createElement('button');
+                                button.textContent = i;
+                                button.style.margin = '5px';
+                                button.style.padding = '5px 10px';
+                                button.style.backgroundColor = i === page ? '#007bff' : '#f8f9fa';
+                                button.style.color = i === page ? 'white' : 'black';
+                                button.style.border = '1px solid #dee2e6';
+                                button.style.borderRadius = '3px';
+                                button.style.cursor = 'pointer';
+                                button.onclick = () => window.loadPatients(i);
+                                paginationDiv.appendChild(button);
+                            }
+                        }
+                    }
+                };
+                
+                    console.log('? loadPatients function overridden successfully');
+                    document.getElementById('success').style.display = 'block';
+                } else if (attempts < maxAttempts) {
+                    console.log('? loadPatients function not found yet, retrying in 1 second...');
+                    setTimeout(tryOverride, 1000);
+                } else {
+                    console.log('? loadPatients function not found after', maxAttempts, 'attempts');
+                    alert('loadPatients function not found. Please make sure you are on the patients page.');
+                }
+            }
+            
+            tryOverride();
+        }
+        
+        function simpleFix() {
+            console.log('?? Starting simple fix...');
+            
+            // Get the correct patient data with DOB
+            const correctPatients = [
+                {
+                    id: 'MEC0001',
+                    firstName: 'Final',
+                    lastName: 'Test7',
+                    dob: '1964-01-02',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                },
+                {
+                    id: 'MEC0002',
+                    firstName: 'Verified',
+                    lastName: 'Working',
+                    dob: '1970-01-03',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                },
+                {
+                    id: 'MEC0003',
+                    firstName: 'Verified2',
+                    lastName: 'Working',
+                    dob: '1975-05-22',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                },
+                {
+                    id: 'MEC0004',
+                    firstName: 'Verified3',
+                    lastName: 'Working',
+                    dob: '1969-05-01',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                },
+                {
+                    id: 'MEC0005',
+                    firstName: 'Samson',
+                    lastName: 'Alagbara',
+                    dob: '1980-01-01',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                },
+                {
+                    id: 'MEC0006',
+                    firstName: 'Toke',
+                    lastName: 'Makinwa',
+                    dob: '1987-01-01',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                },
+                {
+                    id: 'MEC0007',
+                    firstName: 'Akeju',
+                    lastName: 'Lawal',
+                    dob: '1990-01-01',
+                    gender: 'Male',
+                    maritalStatus: '',
+                    phone: '',
+                    email: '',
+                    addressLine1: '',
+                    city: '',
+                    state: '',
+                    country: '',
+                    bloodGroup: '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: new Date().toISOString(),
+                    updatedDate: new Date().toISOString(),
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                }
+            ];
+            
+            // Clear all localStorage
+            localStorage.removeItem('mecure_patients');
+            localStorage.removeItem('patients');
+            
+            // Set the correct data
+            localStorage.setItem('mecure_patients', JSON.stringify(correctPatients));
+            
+            console.log('? Injected correct DOB data into localStorage');
+            console.log('?? Patients with DOB:', correctPatients.length);
+            
+            // Show success
+            document.getElementById('success').style.display = 'block';
+        }
+    </script>  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+

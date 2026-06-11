@@ -1,0 +1,765 @@
+<!-- Purpose: Public-facing patient intake form for new patients to submit registration details -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Patient Intake Form | MediForge</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="css/patient-intake.css?v=20251109">
+  <link rel="stylesheet" href="css/mobile.css?v=20251109" media="(max-width: 768px)">
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251109" defer></script>
+  <script src="js/rate-limiter.js?v=20251115040000" defer></script>  <!-- Rate limiting module -->
+</head>
+<body>
+  <main class="intake-container">
+    <article class="intake-card">
+      <header class="intake-header">
+        <div class="intake-org-context" id="intake-org-context" hidden>
+          <span class="intake-org-chip">Organization</span>
+          <div class="intake-org-text">
+            <h2 id="intake-org-name-label">Your Clinic</h2>
+            <p id="intake-org-tagline" class="section-helper" hidden></p>
+          </div>
+        </div>
+        <span class="intake-badge">
+          <span aria-hidden="true">🌿</span>
+          MediForge Patient Intake
+        </span>
+        <h1 id="intake-title">Welcome to <span id="org-name">Your Clinic</span></h1>
+        <p id="intake-description">
+          Please complete the secure onboarding form. Your information will be reviewed by our care team before your first visit.
+        </p>
+        <p class="section-helper" id="intake-org-hint" hidden></p>
+      </header>
+
+      <form id="patient-intake-form" novalidate>
+        <input type="hidden" id="organization-id" name="organizationId">
+
+        <!-- Personal Information -->
+        <section class="intake-section" aria-labelledby="personal-info-heading">
+          <h2 id="personal-info-heading">Patient Details</h2>
+          <p class="section-helper">Complete the required details to help us prepare for your arrival.</p>
+
+          <div class="intake-field-grid two-column">
+            <label for="firstName">
+              First Name*
+              <input type="text" id="firstName" name="firstName" autocomplete="given-name" required>
+            </label>
+            <label for="middleName">
+              Middle Name
+              <input type="text" id="middleName" name="middleName" autocomplete="additional-name">
+            </label>
+            <label for="lastName">
+              Last Name*
+              <input type="text" id="lastName" name="lastName" autocomplete="family-name" required>
+            </label>
+            <label for="dob">
+              Date of Birth*
+              <input type="date" id="dob" name="dob" autocomplete="bday" required>
+            </label>
+            <label for="gender">
+              Gender*
+              <select id="gender" name="gender" required>
+                <option value="" disabled selected>Select gender</option>
+                <option value="Female">Female</option>
+                <option value="Male">Male</option>
+              </select>
+            </label>
+            <label for="maritalStatus">
+              Marital Status*
+              <select id="maritalStatus" name="maritalStatus" required>
+                <option value="" disabled selected>Select status</option>
+                <option value="Single">Single</option>
+                <option value="Married">Married</option>
+                <option value="Separated">Separated</option>
+                <option value="Divorced">Divorced</option>
+                <option value="Widowed">Widowed</option>
+              </select>
+            </label>
+            <label for="tribe">
+              Tribe / Ethnic Group*
+              <input type="text" id="tribe" name="tribe" autocomplete="off" list="tribe-options" placeholder="Start typing to search…" required>
+            </label>
+            <label for="email">
+              Email address (valid format if provided)
+              <input type="email" id="email" name="email" autocomplete="email" inputmode="email" placeholder="you@example.com" title="Use a valid email, e.g. name@example.com" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}">
+            </label>
+          </div>
+
+          <div class="intake-field-grid two-column" style="margin-top: 18px;">
+            <label for="country">
+              Country*
+              <select id="country" name="country" required>
+                <option value="">-- Select Country --</option>
+              </select>
+            </label>
+            <label for="state">
+              State / Region*
+              <select id="state" name="state" required>
+                <option value="">-- Select State/Province --</option>
+              </select>
+            </label>
+            <label for="addressLine1">
+              Address Line 1*
+              <input type="text" id="addressLine1" name="addressLine1" autocomplete="address-line1" required>
+            </label>
+            <label for="addressLine2">
+              Address Line 2
+              <input type="text" id="addressLine2" name="addressLine2" autocomplete="address-line2" placeholder="Apartment, suite, etc.">
+            </label>
+            <label for="city">
+              City / Town*
+              <input type="text" id="city" name="city" autocomplete="address-level2" required>
+            </label>
+            <label for="phone">
+              Mobile Number*
+              <div class="intake-phone-row">
+                <select id="phoneCountryCode" name="phoneCountryCode" aria-label="Country code">
+                  <option value="">Code</option>
+                </select>
+                <input type="tel" id="phone" name="phone" autocomplete="tel-national" placeholder="00000" required data-skip-phone-format="true">
+              </div>
+            </label>
+          </div>
+
+          <datalist id="tribe-options">
+            <option value="Abanyom">
+            <option value="Abayon">
+            <option value="Abon">
+            <option value="Abua (Odual)">
+            <option value="Abureni">
+            <option value="Acipa (Eastern)">
+            <option value="Acipa (Western)">
+            <option value="Adim">
+            <option value="Aduge">
+            <option value="Adun">
+            <option value="Afade">
+            <option value="Afar">
+            <option value="Afizere">
+            <option value="Afo (Eloyi)">
+            <option value="Agbo">
+            <option value="Ajawa">
+            <option value="Akaju-Ndem (Akajuk)">
+            <option value="Akan">
+            <option value="Akum">
+            <option value="Akweya-Yachi">
+            <option value="Alago (Arago)">
+            <option value="Amhara">
+            <option value="Amo">
+            <option value="Anaguta">
+            <option value="Anang">
+            <option value="Andoni">
+            <option value="Angas">
+            <option value="Ankwei">
+            <option value="Anlo-Ewe">
+            <option value="Anyima">
+            <option value="Arum">
+            <option value="Ashanti">
+            <option value="Asu">
+            <option value="Attakar (Ataka)">
+            <option value="Atsam">
+            <option value="Auyoka (Auyokawa)">
+            <option value="Awori">
+            <option value="Ayere">
+            <option value="Ayu">
+            <option value="Babur">
+            <option value="Bachama">
+            <option value="Bachere">
+            <option value="Bada">
+            <option value="Bade">
+            <option value="Bahumono">
+            <option value="Baka">
+            <option value="Bakongo">
+            <option value="Bakpinka">
+            <option value="Bakulung">
+            <option value="Bali">
+            <option value="Bambara">
+            <option value="Bambaro (Bambarawa)">
+            <option value="Bambuko">
+            <option value="Banda (Bandawa)">
+            <option value="Banka (Bankalawa)">
+            <option value="Banso (Panso)">
+            <option value="Bara (Barawa)">
+            <option value="Barke">
+            <option value="Baruba (Barba)">
+            <option value="Bashiri (Bashirawa)">
+            <option value="Bassa">
+            <option value="Batta">
+            <option value="Baushi">
+            <option value="Baya">
+            <option value="Bekwarra">
+            <option value="Bele (Buli, Belewa)">
+            <option value="Bemba">
+            <option value="Berber">
+            <option value="Berom (Birom)">
+            <option value="Betso (Bete)">
+            <option value="Bette">
+            <option value="Bilei">
+            <option value="Bille">
+            <option value="Bina (Binawa)">
+            <option value="Bini">
+            <option value="Bobua">
+            <option value="Boki (Nki)">
+            <option value="Bkkos">
+            <option value="Boko (Bussawa, Bargawa)">
+            <option value="Bole (Bolewa)">
+            <option value="Botlere">
+            <option value="Boma (Bomawa, Burmano)">
+            <option value="Bomboro">
+            <option value="Buduma">
+            <option value="Buji">
+            <option value="Buli">
+            <option value="Bunu">
+            <option value="Bura">
+            <option value="Burak">
+            <option value="Burma (Burmawa)">
+            <option value="Buru">
+            <option value="Buta (Butawa)">
+            <option value="Bwall">
+            <option value="Bwatiye">
+            <option value="Bwazza">
+            <option value="Challa">
+            <option value="Chama (Chamawa Fitilai)">
+            <option value="Chamba">
+            <option value="Chamo">
+            <option value="Chewa">
+            <option value="Chibok (Chibbak)">
+            <option value="Chinine">
+            <option value="Chip">
+            <option value="Chokobo">
+            <option value="Chokwe">
+            <option value="Chukkol">
+            <option value="Daba">
+            <option value="Dadiya">
+            <option value="Daka">
+            <option value="Dakarkari">
+            <option value="Danda (Dandawa)">
+            <option value="Dangsa">
+            <option value="Daza (Dere, Derewa)">
+            <option value="Degema">
+            <option value="Deno (Denawa)">
+            <option value="Dghwede">
+            <option value="Diba? Diba">
+            <option value="Doemak (Dumuk)">
+            <option value="Dogon">
+            <option value="Duguri">
+            <option value="Duka (Dukawa)">
+            <option value="Duma (Dumawa)">
+            <option value="Ebana (Ebani)">
+            <option value="Ebu">
+            <option value="Eda">
+            <option value="Efik">
+            <option value="Egbira">
+            <option value="Eggon">
+            <option value="Egun (Gu)">
+            <option value="Ejagham">
+            <option value="Ekajuk">
+            <option value="Eket">
+            <option value="Eko">
+            <option value="Ekoi">
+            <option value="Eleme">
+            <option value="Emane">
+            <option value="Engenni (Ngene)">
+            <option value="Epie">
+            <option value="Esan (Ishan)">
+            <option value="Etche">
+            <option value="Etkywan">
+            <option value="Etuno">
+            <option value="Etung">
+            <option value="Falli">
+            <option value="Fang">
+            <option value="Fon">
+            <option value="Fulani (Fulbe)">
+            <option value="Fyam (Fyem)">
+            <option value="Fyer">
+            <option value="Ga'anda">
+            <option value="Gade">
+            <option value="Galambi">
+            <option value="Gamergu (Mulgwa)">
+            <option value="Ganawuri">
+            <option value="Gbagyi">
+            <option value="Gede">
+            <option value="Gokana">
+            <option value="Gongola">
+            <option value="Gude">
+            <option value="Guruntum-Mbaaru">
+            <option value="Gwari">
+            <option value="Hausa">
+            <option value="Higgi">
+            <option value="Idoma">
+            <option value="Ifa">
+            <option value="Igala">
+            <option value="Igbo">
+            <option value="Ijaw">
+            <option value="Ikulu">
+            <option value="Ila">
+            <option value="Irigwe">
+            <option value="Isoko">
+            <option value="Iyo">
+            <option value="Jaba">
+            <option value="Jere">
+            <option value="Jukun">
+            <option value="Kamuku">
+            <option value="Kanembu">
+            <option value="Kanuri">
+            <option value="Karekare">
+            <option value="Karo">
+            <option value="Katsina-Ala">
+            <option value="Kerewe">
+            <option value="Kibaku">
+            <option value="Kilba">
+            <option value="Kindiga">
+            <option value="Koma">
+            <option value="Koro">
+            <option value="Kresh">
+            <option value="Kubi">
+            <option value="Kurama">
+            <option value="Kwanka">
+            <option value="Kyenga">
+            <option value="Laka">
+            <option value="Lala">
+            <option value="Lamba">
+            <option value="Lere">
+            <option value="Logba">
+            <option value="Mada">
+            <option value="Mafa">
+            <option value="Maguzawa">
+            <option value="Maouri">
+            <option value="Margi">
+            <option value="Matakam">
+            <option value="Mbol">
+            <option value="Mekens">
+            <option value="Mmani">
+            <option value="Montol">
+            <option value="Mumuye">
+            <option value="Mundang">
+            <option value="Ngizim">
+            <option value="Ngoni">
+            <option value="Ngwa">
+            <option value="Nupe">
+            <option value="Ogberi">
+            <option value="Ogoni">
+            <option value="Okpamheri">
+            <option value="Oron">
+            <option value="Oro">
+            <option value="Owan">
+            <option value="Owe">
+            <option value="Oyo">
+            <option value="Papel">
+            <option value="Pere">
+            <option value="Piti">
+            <option value="Ron-Kulere">
+            <option value="Rubatu">
+            <option value="Sanga">
+            <option value="Sayawa">
+            <option value="Shakara">
+            <option value="Shuwa Arab">
+            <option value="Somyev">
+            <option value="Sukur">
+            <option value="Taje">
+            <option value="Tarok">
+            <option value="Tiv">
+            <option value="Tsikimba">
+            <option value="Tula">
+            <option value="Tulai">
+            <option value="Ugep">
+            <option value="Ukelle">
+            <option value="Urhobo">
+            <option value="Uwano">
+            <option value="Waja">
+            <option value="Waka">
+            <option value="Warja (Warjawa)">
+            <option value="Wula">
+            <option value="Wurbu">
+            <option value="Wurbo">
+            <option value="Xhosa">
+            <option value="Yache">
+            <option value="Yagba">
+            <option value="Yakurr (Yako)">
+            <option value="Yandang">
+            <option value="Yergan (Yergum)">
+            <option value="Yoruba">
+            <option value="Yott">
+            <option value="Yugur">
+            <option value="Yungur">
+            <option value="Yuom">
+            <option value="Zabara">
+            <option value="Zangon-Kataf">
+            <option value="Zar (Zaar)">
+            <option value="Zaranda">
+            <option value="Zarma">
+            <option value="Zayam (Diayim)">
+            <option value="Zul (Zulawa)">
+            <option value="Zulu">
+            <option value="Other">
+          </datalist>
+        </section>
+
+        <!-- Emergency Contact -->
+        <section class="intake-section" aria-labelledby="emergency-info-heading">
+          <h2 id="emergency-info-heading">Emergency Contact</h2>
+          <p class="section-helper">Provide a trusted contact person we can reach in case of emergencies.</p>
+
+          <div class="intake-field-grid two-column">
+            <label for="emergencyFirstName">
+              First Name*
+              <input type="text" id="emergencyFirstName" name="emergencyFirstName" placeholder="Samson" autocomplete="additional-name" required>
+            </label>
+            <label for="emergencyLastName">
+              Last Name*
+              <input type="text" id="emergencyLastName" name="emergencyLastName" placeholder="Makinwa" autocomplete="family-name" required>
+            </label>
+            <label for="emergencyRelationship">
+              Relationship to You*
+              <select id="emergencyRelationship" name="emergencyRelationship" required>
+                <option value="">-- Select Relationship --</option>
+                <option value="Spouse">Spouse</option>
+                <option value="Husband">Husband</option>
+                <option value="Wife">Wife</option>
+                <option value="Brother">Brother</option>
+                <option value="Sister">Sister</option>
+                <option value="Father">Father</option>
+                <option value="Mother">Mother</option>
+                <option value="Son">Son</option>
+                <option value="Daughter">Daughter</option>
+                <option value="Parent">Parent</option>
+                <option value="Child">Child</option>
+                <option value="Relative">Relative</option>
+                <option value="Friend">Friend</option>
+                <option value="Acquaintance">Acquaintance</option>
+                <option value="Guardian">Guardian</option>
+                <option value="Other">Other</option>
+              </select>
+            </label>
+            <label for="emergencyEmail">
+              Email address (valid format if provided)
+              <input type="email" id="emergencyEmail" name="emergencyEmail" autocomplete="email" inputmode="email" placeholder="contact@example.com" title="Use a valid email, e.g. name@example.com" pattern="[a-zA-Z0-9._%+\-]+@[a-zA-Z0-9.\-]+\.[a-zA-Z]{2,}">
+            </label>
+          </div>
+
+          <label class="intake-checkbox-row" style="display: inline-flex; align-items: center; gap: 8px; margin-top: 12px; font-size: 14px; color: var(--intake-text);">
+            <input type="checkbox" id="emergencySameAddress" style="width: 18px; height: 18px;">
+            Same as Patient Address
+          </label>
+
+          <div class="intake-field-grid two-column" id="emergency-address-fields" style="margin-top: 18px;">
+            <label for="emergencyCountry">
+              Country*
+              <select id="emergencyCountry" name="emergencyCountry" required>
+                <option value="">-- Select Country --</option>
+              </select>
+            </label>
+            <label for="emergencyState">
+              State / Region*
+              <select id="emergencyState" name="emergencyState" required>
+                <option value="">-- Select State/Province --</option>
+              </select>
+            </label>
+            <label for="emergencyAddressLine1">
+              Address Line 1*
+              <input type="text" id="emergencyAddressLine1" name="emergencyAddressLine1" required>
+            </label>
+            <label for="emergencyAddressLine2">
+              Address Line 2
+              <input type="text" id="emergencyAddressLine2" name="emergencyAddressLine2">
+            </label>
+            <label for="emergencyCity">
+              City / Town*
+              <input type="text" id="emergencyCity" name="emergencyCity" required>
+            </label>
+          </div>
+
+          <div class="intake-field-grid two-column" style="margin-top: 18px;">
+            <label for="emergencyPhone">
+              Phone Number*
+              <div class="intake-phone-row">
+                <select id="emergencyPhoneCountryCode" name="emergencyPhoneCountryCode" aria-label="Emergency phone country code">
+                  <option value="">Code</option>
+                </select>
+                <input type="tel" id="emergencyPhone" name="emergencyPhone" placeholder="00000" required data-skip-phone-format="true">
+              </div>
+            </label>
+          </div>
+        </section>
+
+        <!-- Health Overview -->
+        <section class="intake-section" aria-labelledby="health-overview-heading">
+          <h2 id="health-overview-heading">Health Overview</h2>
+          <div class="option-group" role="group" aria-labelledby="diabetes-label">
+            <span id="diabetes-label" class="section-helper" style="margin-bottom: 0;">Do you have diabetes?</span>
+            <label>
+              <input type="radio" name="hasDiabetes" value="true" required>
+              Yes
+            </label>
+            <label>
+              <input type="radio" name="hasDiabetes" value="false" required>
+              No
+            </label>
+          </div>
+
+          <label for="paymentSource" style="margin-top: 18px;">
+            Source of Payment for Services*
+            <select id="paymentSource" name="paymentSource" required>
+              <option value="" disabled selected>Select Payment Source</option>
+              <option value="Cash">Cash</option>
+              <option value="Insurance">Insurance</option>
+            </select>
+          </label>
+        </section>
+
+        <!-- Medical History -->
+        <section class="intake-section" aria-labelledby="medical-history-heading">
+          <h2 id="medical-history-heading">Past Medical History</h2>
+          <p class="section-helper">List hospitalizations, diagnoses, or significant events you would like the care team to know.</p>
+
+          <div class="intake-table-wrapper" id="history-table-wrapper">
+            <table id="history-table" class="intake-table add-patient-history-table" aria-live="polite">
+              <thead>
+                <tr>
+                  <th scope="col">Date</th>
+                  <th scope="col">Event</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="intake-empty-state" id="history-empty">No past medical history added yet.</div>
+
+          <div id="add-history-form" class="intake-subform">
+            <div class="intake-field-grid three-column history-grid">
+              <label for="history-date">
+                Date
+                <input type="date" id="history-date" placeholder="YYYY-MM-DD">
+              </label>
+              <label for="history-event">
+                Existing Medical Condition
+                <div class="intake-suggestion-container">
+                  <input type="text" id="history-event" placeholder="Search disease name..." autocomplete="off">
+                  <div id="icd-results-history" class="intake-suggestions" style="display: none;"></div>
+                </div>
+              </label>
+              <label for="history-notes">
+                Notes
+                <input type="text" id="history-notes" placeholder="Additional details (optional)">
+              </label>
+            </div>
+            <div class="intake-actions" style="justify-content: flex-start; margin-top: 12px;">
+              <button type="button" class="intake-secondary-button" onclick="addHistoryEntry()">
+                + Add Medical History Entry
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Medications -->
+        <section class="intake-section" aria-labelledby="medications-heading">
+          <h2 id="medications-heading">Patient-Reported Medications</h2>
+          <p class="section-helper">Include any medications you are currently taking or have recently completed.</p>
+
+          <div class="intake-table-wrapper" id="medications-table-wrapper">
+            <table id="medications-table" class="intake-table add-patient-medications-table">
+              <thead>
+                <tr>
+                  <th scope="col">Name</th>
+                  <th scope="col">Dosage</th>
+                  <th scope="col">Start</th>
+                  <th scope="col">End</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="intake-empty-state" id="medications-empty">No medications added yet.</div>
+
+          <div id="add-medication-form" class="intake-subform">
+            <div class="intake-field-grid three-column">
+              <div>
+                <label for="med-name">Medication Name</label>
+                <div class="intake-suggestion-container">
+                  <input type="text" id="med-name" placeholder="Search medication or type manually (press spacebar to see all)" autocomplete="off">
+                  <div id="medication-suggestions" class="intake-suggestions" style="display: none;"></div>
+                </div>
+              </div>
+              <div>
+                <label for="med-dosage">Dosage</label>
+                <div class="intake-suggestion-container">
+                  <input type="text" id="med-dosage" placeholder="Select medication first to see available dosages" autocomplete="off" readonly>
+                  <div id="dosage-suggestions" class="intake-suggestions" style="display: none;"></div>
+                </div>
+              </div>
+              <label for="med-start">
+                Start Date
+                <input type="date" id="med-start" placeholder="YYYY-MM-DD">
+              </label>
+              <label for="med-end">
+                End Date
+                <input type="date" id="med-end" placeholder="YYYY-MM-DD">
+              </label>
+              <label for="med-notes" class="full-span">
+                Notes
+                <input type="text" id="med-notes" placeholder="Instructions or comments (optional)">
+              </label>
+            </div>
+            <div class="intake-actions" style="justify-content: flex-start; margin-top: 12px;">
+              <button type="button" class="intake-secondary-button" onclick="addMedicationEntry()">
+                + Add Patient-Reported Medication
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Allergies -->
+        <section class="intake-section" aria-labelledby="allergies-heading">
+          <h2 id="allergies-heading">Allergies</h2>
+          <p class="section-helper">Tell us about any allergies and reactions you have experienced.</p>
+
+          <div class="intake-table-wrapper" id="allergies-table-wrapper">
+            <table id="allergies-table" class="intake-table add-patient-allergies-table">
+              <thead>
+                <tr>
+                  <th scope="col">Category</th>
+                  <th scope="col">Allergen</th>
+                  <th scope="col">Severity</th>
+                  <th scope="col">Reactions</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="intake-empty-state" id="allergies-empty">No allergies added yet.</div>
+
+          <div id="add-allergy-form" class="intake-subform">
+            <input type="hidden" id="allergy-category">
+            <input type="hidden" id="allergen">
+            <input type="hidden" id="reaction">
+            <input type="hidden" id="severity">
+            <input type="hidden" id="allergy-notes">
+
+            <div id="allergy-selector-container"></div>
+
+            <div class="intake-actions" style="justify-content: flex-start; margin-top: 12px;">
+              <button type="button" class="intake-secondary-button" onclick="addAllergyEntry()">
+                + Add Allergy
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Immunizations -->
+        <section class="intake-section" aria-labelledby="immunizations-heading">
+          <h2 id="immunizations-heading">Immunizations</h2>
+          <p class="section-helper">Share vaccinations you have received that are relevant to your care.</p>
+
+          <div class="intake-table-wrapper" id="immunizations-table-wrapper">
+            <table id="immunizations-table" class="intake-table add-patient-immunizations-table">
+              <thead>
+                <tr>
+                  <th scope="col">Vaccine</th>
+                  <th scope="col">Date</th>
+                  <th scope="col">Notes</th>
+                  <th scope="col">Actions</th>
+                </tr>
+              </thead>
+              <tbody></tbody>
+            </table>
+          </div>
+          <div class="intake-empty-state" id="immunizations-empty">No immunizations added yet.</div>
+
+          <div id="add-immunization-form" class="intake-subform">
+            <div class="intake-field-grid three-column">
+              <label for="vaccine">
+                Vaccine
+                <div id="vaccine-container" class="intake-suggestion-container">
+                  <input type="text" id="vaccine" placeholder="Search vaccine name or type custom entry..." autocomplete="off">
+                </div>
+              </label>
+              <label for="immun-date">
+                Date
+                <input type="date" id="immun-date" placeholder="YYYY-MM-DD">
+              </label>
+              <label for="immun-notes" class="full-span">
+                Notes
+                <input type="text" id="immun-notes" placeholder="Additional details or documented reactions">
+              </label>
+            </div>
+            <div class="intake-actions" style="justify-content: flex-start; margin-top: 12px;">
+              <button type="button" class="intake-secondary-button" onclick="addImmunizationEntry()">
+                + Add Immunization
+              </button>
+            </div>
+          </div>
+        </section>
+
+        <!-- Custom Fields -->
+        <section class="intake-section" id="custom-fields-section" aria-labelledby="custom-fields-heading" hidden>
+          <h2 id="custom-fields-heading">Additional Information Requested</h2>
+          <p class="section-helper">Your clinic has requested the following additional details.</p>
+          <div class="custom-fields-container" id="custom-fields-container"></div>
+        </section>
+
+        <footer class="intake-actions" style="margin-top: 32px;">
+          <button type="submit" class="intake-button" id="submit-intake">
+            Submit Intake Form
+          </button>
+          <button type="button" class="intake-secondary-button" id="clear-intake">
+            Clear Form
+          </button>
+        </footer>
+
+        <div class="intake-status info" id="submission-status" role="status" aria-live="polite" hidden>
+          Your form is being prepared...
+        </div>
+      </form>
+
+      <footer class="intake-footer" style="margin-top: 32px; text-align: center; color: var(--intake-muted); font-size: 0.85rem;">
+        Secure intake powered by MediForge. Your information is encrypted in transit and reviewed only by authorized clinical staff.
+      </footer>
+    </article>
+  </main>
+
+  <!-- Core utilities - load first -->
+  <script src="js/utils.js"></script>
+  <script src="js/main.js?v=202510220113070113071307"></script>
+  
+  <!-- Country and phone data - load before patient-intake -->
+  <script src="js/countries-data.js?v=20251109"></script>
+  <script src="js/country-codes.js"></script>
+  
+  <!-- Medical data -->
+  <script src="js/prescriptions.js?v=20251109"></script>
+  
+  <!-- Selectors and input enhancements -->
+  <script src="js/allergy-selector.js?v=20251109"></script>
+  <script src="js/vaccines.js?v=20251109"></script>
+  <script src="js/vaccine-selector.js?v=20251109"></script>
+  <script src="js/icd-selector.js?v=2026012201"></script>
+  <script src="js/phone-input.js?v=20251109"></script>
+  
+  <!-- Patient utilities - must load before patient-intake -->
+  <script src="js/patients.js?v=2026012201"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/validation.js"></script>
+  
+  <!-- Patient intake form handler - load last -->
+  <script src="js/patient-intake.js?v=20260311"></script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

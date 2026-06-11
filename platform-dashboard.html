@@ -1,0 +1,3096 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/favicon.ico">
+  <link rel="manifest" href="/manifest.json">
+  <title>Platform Dashboard - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <!-- Legal Agreements Update: 2025-01-18-v2 - Organization cards navigate to legal-agreements-org.html, NO inline display -->
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/legal-agreements.js?v=20250118000000"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=20260520150000"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251112063500"></script>
+  
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- Platform Admin functionality -->
+  <script src="js/platform-admin.js?v=20260520150000"></script>
+  
+  <!-- Account Management (unlock accounts, password reset) -->
+  <script src="js/account-management.js?v=20251115050000"></script>
+  
+  <!-- Rate Limiter (for checking account status) -->
+  <script src="js/rate-limiter.js?v=20251115040000"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=20251112063500"></script>
+  <script>
+    window.platformOpenInNewTab = function (pathOrUrl) {
+      var href;
+      try {
+        href = new URL(pathOrUrl, window.location.href).href;
+      } catch (e) {
+        href = pathOrUrl;
+      }
+      var win = window.open(href, '_blank', 'noopener,noreferrer');
+      if (!win) {
+        alert('Your browser blocked the new tab. Allow pop-ups for this site or open the link manually.');
+      }
+    };
+  </script>
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .platform-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .platform-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+    
+    .platform-header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border-left: 5px solid #667eea;
+      transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+    
+    .stat-card[onclick] {
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .stat-card[onclick]:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    }
+    
+    .stat-card[onclick]:active {
+      transform: translateY(-2px);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      color: #666;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-card .value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #333;
+      margin: 10px 0;
+    }
+    
+    .stat-card .label {
+      color: #999;
+      font-size: 12px;
+    }
+    
+    .section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    
+    .section h2 {
+      margin: 0 0 20px 0;
+      color: #333;
+      font-size: 22px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .action-buttons button {
+      padding: 15px 20px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .action-buttons button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    
+    .clinic-row {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      transition: all 0.2s;
+    }
+    
+    .clinic-row:hover {
+      background: #f8f9fa;
+    }
+    
+    .clinic-row:last-child {
+      border-bottom: none;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-trial {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-suspended {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="platform-header">
+    <h1>🏢 Platform Dashboard</h1>
+    <p>Multi-Tenant Management & Monitoring | MediForge</p>
+    <div style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
+      <span id="platform-user-info"></span> | 
+      <a href="#" onclick="platformLogout(); return false;" style="color: white; text-decoration: underline;">Logout</a>
+    </div>
+  </div>
+  
+  <!-- Global Statistics -->
+  <div class="stats-grid">
+    <div class="stat-card" style="border-left-color: #667eea; cursor: pointer;" onclick="platformOpenInNewTab('manage-clinics')" title="Click to view all clinics">
+      <h3>Total Clinics</h3>
+      <div class="value" id="stat-total-clinics">0</div>
+      <div class="label">Registered Organizations</div>
+      <button onclick="event.stopPropagation(); refreshOrganizations();" style="margin-top: 10px; padding: 5px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">🔄 Refresh</button>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #4CAF50; cursor: pointer;" onclick="platformOpenInNewTab('manage-clinics')" title="Click to view active clinics">
+      <h3>Active Clinics</h3>
+      <div class="value" id="stat-active-clinics">0</div>
+      <div class="label">Last 30 days</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #2196F3; cursor: pointer;" onclick="viewAllPatients()" title="Click to view patient breakdown by clinic">
+      <h3>Total Patients</h3>
+      <div class="value" id="stat-total-patients">0</div>
+      <div class="label">Across all clinics</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #FF9800; cursor: pointer;" onclick="platformOpenInNewTab('revenue-analytics')" title="Click to view revenue breakdown by country">
+      <h3>Total Revenue</h3>
+      <div class="value" id="stat-total-revenue">$0</div>
+      <div class="label">All-time (USD equivalent)</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #9C27B0; cursor: pointer;" onclick="viewAllUsers()" title="Click to view all users">
+      <h3>Active Users</h3>
+      <div class="value" id="stat-total-users">0</div>
+      <div class="label">All staff across clinics</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #F44336; cursor: pointer;" onclick="platformOpenInNewTab('platform-audit-log')" title="Click to view global audit log">
+      <h3>Total Events</h3>
+      <div class="value" id="stat-total-events">0</div>
+      <div class="label">Audit log entries</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #00BCD4; cursor: pointer;" onclick="platformOpenInNewTab('healthcare-staff')" title="Click to view all healthcare staff">
+      <h3>👨‍⚕️ Doctors</h3>
+      <div class="value" id="stat-total-doctors">0</div>
+      <div class="label">Registered doctors</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #E91E63; cursor: pointer;" onclick="platformOpenInNewTab('healthcare-staff')" title="Click to view all healthcare staff">
+      <h3>👩‍⚕️ Nurses</h3>
+      <div class="value" id="stat-total-nurses">0</div>
+      <div class="label">Registered nurses</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #4CAF50; cursor: pointer;" onclick="platformOpenInNewTab('healthcare-staff')" title="Click to view detailed ratios">
+      <h3>📊 Patient:Staff Ratio</h3>
+      <div class="value" id="stat-patient-staff-ratio">0:1</div>
+      <div class="label">Patients per healthcare professional</div>
+    </div>
+  </div>
+  
+  <!-- Quick Actions -->
+  <div class="action-buttons">
+    <button onclick="platformOpenInNewTab('manage-clinics')" style="background: linear-gradient(135deg, #4CAF50, #45a049);">
+      <i class="fa-solid fa-building"></i> Manage Clinics
+    </button>
+    <button onclick="platformOpenInNewTab('platform-analytics')" style="background: linear-gradient(135deg, #2196F3, #1976D2);">
+      📊 Analytics & Charts
+    </button>
+    <button onclick="platformOpenInNewTab('disease-analytics')" style="background: linear-gradient(135deg, #E91E63, #C2185B);">
+      📈 Disease Analytics
+    </button>
+    <button onclick="platformOpenInNewTab('platform-audit-log')" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2);">
+      📋 Global Audit Log
+    </button>
+    <button onclick="platformOpenInNewTab('register-clinic')" style="background: linear-gradient(135deg, #FF9800, #F57C00);">
+      ➕ Register New Clinic
+    </button>
+    <button onclick="platformOpenInNewTab('platform-settings')" style="background: linear-gradient(135deg, #607D8B, #455A64);">
+      ⚙️ Platform Settings
+    </button>
+    <button onclick="platformOpenInNewTab('platform-subscriptions')" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2);">
+      💳 Subscription Management
+    </button>
+    <button onclick="platformOpenInNewTab('platform-migrate-appointment-types')" style="background: linear-gradient(135deg, #008753, #006b42);">
+      📅 Migrate Appointment Types
+    </button>
+    <button onclick="platformOpenInNewTab('payment-receipts')" style="background: linear-gradient(135deg, #FF9800, #F57C00);">
+      🧾 Payment Receipts Review
+    </button>
+    <button onclick="platformOpenInNewTab('healthcare-staff')" style="background: linear-gradient(135deg, #00BCD4, #0097A7);">
+      👥 Healthcare Staff Directory
+    </button>
+    <button onclick="platformOpenInNewTab('platform-security-dashboard')" style="background: linear-gradient(135deg, #B8860B, #9A7209);">
+      🔒 Platform Security Dashboard
+    </button>
+    <button onclick="platformOpenInNewTab('platform-physician-verification')" style="background: linear-gradient(135deg, #00695c, #004d40);">
+      Physician verification (regulatory body / diploma)
+    </button>
+    <button onclick="platformOpenInNewTab('security-monitoring')" style="background: linear-gradient(135deg, #dc3545, #c82333);">
+      <i class="fa-solid fa-shield-halved"></i> Security Monitoring
+    </button>
+    <button onclick="platformOpenInNewTab('security-logs')" style="background: linear-gradient(135deg, #008753, #006b42);">
+      <i class="fa-solid fa-list"></i> Security Logs & Login Attempts
+    </button>
+    <button onclick="platformOpenInNewTab('/platform-encryption-recovery')" style="background: linear-gradient(135deg, #ff9800, #f57c00);">
+      <i class="fa-solid fa-key"></i> Encryption Recovery
+    </button>
+    <button onclick="forceRefreshAllData()" style="background: linear-gradient(135deg, #FF5722, #E64A19); margin-top: 10px;">
+      <i class="fa-solid fa-arrows-rotate"></i> Force Refresh All Data
+    </button>
+    <button onclick="viewLegalAgreements()" style="background: linear-gradient(135deg, #008753, #006b42); margin-top: 10px;">
+      <i class="fa-solid fa-file-contract"></i> Legal Agreements
+    </button>
+  </div>
+  
+  <!-- Legal Agreements Section -->
+  <div class="section" id="legal-agreements-section" style="display: none;">
+    <h2 style="color: #008753; border-bottom: 3px solid #008753; padding-bottom: 10px; margin-bottom: 20px;">
+      <i class="fa-solid fa-file-signature"></i> Signed Legal Agreements
+    </h2>
+    <div style="margin-bottom: 20px;">
+      <button onclick="loadLegalAgreements()" style="background: #008753; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+        <i class="fa-solid fa-arrows-rotate"></i> Refresh Agreements
+      </button>
+      <button onclick="document.getElementById('legal-agreements-section').style.display='none'" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; font-weight: 600; margin-left: 10px;">
+        <i class="fa-solid fa-xmark"></i> Close
+      </button>
+    </div>
+    <div id="legal-agreements-list" style="background: white; border-radius: 8px; padding: 20px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+      <p style="text-align: center; color: #666; padding: 40px;">Loading legal agreements...</p>
+    </div>
+  </div>
+  
+  <!-- Registered Clinics -->
+  <div class="section">
+    <h2>Registered Clinics</h2>
+    <div id="clinics-list">
+      <!-- Populated by JavaScript -->
+    </div>
+    
+    <!-- Organization Management Table -->
+    <div id="organizations-table" style="margin-top: 20px; display: none; overflow-x: auto; max-width: 100%;">
+      <table style="width: 100%; min-width: 1200px; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+        <thead>
+          <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+            <th style="padding: 15px; text-align: left; font-weight: 600; color: #495057; min-width: 200px;">Organization</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 100px;">Status</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 80px;">Patients</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 80px;">Users</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 100px;">Revenue</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 120px;">Created</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 120px;">Created By</th>
+            <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057; min-width: 400px;">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="organizations-table-body">
+          <!-- Organizations will be populated here -->
+        </tbody>
+      </table>
+    </div>
+    
+    <div id="no-clinics" style="text-align: center; padding: 40px; color: #999; display: none;">
+      <p style="font-size: 18px;">No clinics registered yet</p>
+      <button onclick="platformOpenInNewTab('register-clinic')" style="background: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 15px;">
+        <i class="fa-solid fa-plus" style="margin-right: 6px;"></i> Register First Clinic
+      </button>
+    </div>
+  </div>
+  
+  <!-- Staff & Patient Analytics by Country -->
+  <div class="section">
+    <h2><i class="fa-solid fa-chart-pie"></i> Staff & Patient Analytics by Country</h2>
+    <div id="country-analytics">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Gender Distribution Analytics -->
+  <div class="section">
+    <h2><i class="fa-solid fa-chart-bar"></i> Gender Distribution Analytics</h2>
+    <div id="gender-analytics">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Recent Platform Activity -->
+  <div class="section">
+    <h2>Recent Platform Activity</h2>
+    <div id="recent-activity" style="max-height: 400px; overflow-y: auto;">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Critical scripts loaded immediately -->
+  
+  <script>
+    // Organization action functions
+    async function viewOrganization(orgName) {
+      console.log('Viewing organization:', orgName);
+      try {
+        // Get organization details to get the ID
+        const orgs = await getAllOrganizations();
+        const org = orgs[orgName];
+        if (!org || !org.id) {
+          alert('Organization not found or missing ID');
+          return;
+        }
+        
+        // Generate timestamp for cache busting
+        const timestamp = Date.now();
+        
+        const url = `/dashboard?platformView=1&org=${encodeURIComponent(orgName)}&orgId=${org.id}&t=${timestamp}`;
+        platformOpenInNewTab(url);
+        
+      } catch (error) {
+        console.error('? Error viewing organization:', error);
+        alert('Failed to load organization: ' + error.message);
+      }
+    }
+    
+    function viewOrganizationDetails(orgName) {
+      console.log('Viewing organization details:', orgName);
+      platformOpenInNewTab(`/clinic-details?clinic=${encodeURIComponent(orgName)}`);
+    }
+    
+    function editOrganization(orgName) {
+      console.log('Editing organization:', orgName);
+      alert(`Editing organization: ${orgName}\n\nThis would open the organization edit form.`);
+    }
+    
+    async function archiveOrganization(orgName) {
+      console.log('Archiving organization:', orgName);
+      if (confirm(`Are you sure you want to archive ${orgName}?`)) {
+        try {
+          // Get the organization ID first
+          const orgs = await getAllOrganizations();
+          const org = orgs[orgName];
+          if (!org || !org.id) {
+            alert('Organization not found or missing ID');
+            return;
+          }
+          
+          console.log('[PLATFORM] Archiving organization in Supabase:', orgName, 'ID:', org.id);
+          
+          // Update organization status to archived
+          const { error: archiveError } = await window.supabaseClient
+            .from('organizations')
+            .update({ status: 'archived', updated_at: new Date().toISOString() })
+            .eq('id', org.id);
+            
+          if (archiveError) {
+            console.error('? Error archiving organization:', archiveError);
+            alert('Failed to archive organization: ' + archiveError.message);
+            return;
+          }
+          
+          console.log('? Organization archived successfully');
+          alert('Organization ' + orgName + ' has been archived successfully.');
+          
+          // Clear cache and refresh
+          if (typeof clearOrganizationsCache === 'function') {
+            clearOrganizationsCache();
+          }
+          await loadClinicsList();
+          
+        } catch (error) {
+          console.error('? Error during archiving:', error);
+          alert('Failed to archive organization: ' + error.message);
+        }
+      }
+    }
+    
+    // Toggle organization access (suspend/reactivate)
+    async function toggleOrganizationAccess(orgName, suspend) {
+      const action = suspend ? 'suspend' : 'reactivate';
+      const confirmMsg = suspend 
+        ? `Are you sure you want to SUSPEND access for "${orgName}"? This will immediately disable all users from accessing the application.`
+        : `Are you sure you want to REACTIVATE access for "${orgName}"? This will immediately enable all users to access the application.`;
+      
+      if (!confirm(confirmMsg)) {
+        return;
+      }
+      
+      try {
+        let result;
+        if (suspend) {
+          const reason = prompt('Please provide a reason for suspending this organization (optional):') || 'Manual suspension by platform administrator';
+          result = await window.suspendOrganizationAccess(orgName, reason);
+        } else {
+          result = await window.reactivateOrganizationAccess(orgName);
+        }
+        
+        if (result.success) {
+          alert(`? ${result.message}`);
+          // Refresh the organizations list
+          await loadClinicsList();
+        } else {
+          alert(`Failed to ${action} organization: ${result.error}`);
+        }
+      } catch (error) {
+        console.error(`? Error ${action}ing organization:`, error);
+        alert(`Failed to ${action} organization: ${error.message}`);
+      }
+    }
+    
+    async function deleteOrganization(orgName) {
+      console.log('Deleting organization:', orgName);
+      if (confirm(`Are you sure you want to DELETE ${orgName}? This action cannot be undone.`)) {
+        if (confirm(`FINAL WARNING: This will permanently delete ${orgName} and all its data. Continue?`)) {
+          try {
+            // Get the organization ID first
+            const orgs = await getAllOrganizations();
+            const org = orgs[orgName];
+            if (!org || !org.id) {
+              alert('Organization not found or missing ID');
+              return;
+            }
+            
+            console.log('[PLATFORM] Deleting organization from Supabase:', orgName, 'ID:', org.id);
+            
+            // IMPORTANT: Delete in correct order to avoid foreign key constraint violations
+            // Delete related data first, then the organization
+            // Note: Some tables have ON DELETE CASCADE, but we delete explicitly for safety
+            
+            // 1. Delete audit logs (has foreign key to organizations, NO CASCADE)
+            console.log('[PLATFORM] Deleting audit logs...');
+            const { error: auditLogsError } = await window.supabaseClient
+              .from('audit_logs')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (auditLogsError) {
+              console.warn('[PLATFORM] Warning: Could not delete audit logs:', auditLogsError);
+            } else {
+              console.log('? Audit logs deleted');
+            }
+            
+            // 2. Delete legal agreements (has foreign key to organizations, NO CASCADE)
+            console.log('[PLATFORM] Deleting legal agreements...');
+            const { error: legalAgreementsError } = await window.supabaseClient
+              .from('legal_agreements')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (legalAgreementsError) {
+              console.warn('[PLATFORM] Warning: Could not delete legal agreements:', legalAgreementsError);
+            } else {
+              console.log('? Legal agreements deleted');
+            }
+            
+            // 3. Delete payment receipts (has CASCADE, but delete explicitly for safety)
+            console.log('[PLATFORM] Deleting payment receipts...');
+            const { error: paymentReceiptsError } = await window.supabaseClient
+              .from('payment_receipts')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (paymentReceiptsError) {
+              console.warn('[PLATFORM] Warning: Could not delete payment receipts:', paymentReceiptsError);
+            } else {
+              console.log('? Payment receipts deleted');
+            }
+            
+            // 4. Delete data download requests (has CASCADE, but delete explicitly for safety)
+            console.log('[PLATFORM] Deleting data download requests...');
+            const { error: downloadRequestsError } = await window.supabaseClient
+              .from('data_download_requests')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (downloadRequestsError) {
+              console.warn('[PLATFORM] Warning: Could not delete data download requests:', downloadRequestsError);
+            } else {
+              console.log('? Data download requests deleted');
+            }
+            
+            // 5. Delete patient intake submissions (has CASCADE, but delete explicitly for safety)
+            console.log('[PLATFORM] Deleting patient intake submissions...');
+            const { error: intakeSubmissionsError } = await window.supabaseClient
+              .from('patient_intake_submissions')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (intakeSubmissionsError) {
+              console.warn('[PLATFORM] Warning: Could not delete patient intake submissions:', intakeSubmissionsError);
+            } else {
+              console.log('? Patient intake submissions deleted');
+            }
+            
+            // 6. Delete patient intake custom fields (has CASCADE, but delete explicitly for safety)
+            console.log('[PLATFORM] Deleting patient intake custom fields...');
+            const { error: intakeFieldsError } = await window.supabaseClient
+              .from('patient_intake_custom_fields')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (intakeFieldsError) {
+              console.warn('[PLATFORM] Warning: Could not delete patient intake custom fields:', intakeFieldsError);
+            } else {
+              console.log('? Patient intake custom fields deleted');
+            }
+            
+            // 7. Delete pharmacy-related data (has CASCADE, but delete explicitly for safety)
+            console.log('[PLATFORM] Deleting pharmacy data...');
+            const pharmacyTables = [
+              'stock_alerts',
+              'dispensing_records',
+              'inventory_transactions',
+              'medication_inventory'
+            ];
+            
+            for (const table of pharmacyTables) {
+              const { error: pharmacyError } = await window.supabaseClient
+                .from(table)
+                .delete()
+                .eq('organization_id', org.id);
+                
+              if (pharmacyError) {
+                console.warn(`[PLATFORM] Warning: Could not delete ${table}:`, pharmacyError);
+              } else {
+                console.log(`? ${table} deleted`);
+              }
+            }
+            
+            // 8. Delete associated users (must be deleted before patients due to foreign keys)
+            console.log('[PLATFORM] Deleting users...');
+            const { error: usersError } = await window.supabaseClient
+              .from('users')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (usersError) {
+              console.warn('[PLATFORM] Warning: Could not delete associated users:', usersError);
+            } else {
+              console.log('? Users deleted');
+            }
+            
+            // 9. Delete associated patients
+            console.log('[PLATFORM] Deleting patients...');
+            const { error: patientsError } = await window.supabaseClient
+              .from('patients')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (patientsError) {
+              console.warn('[PLATFORM] Warning: Could not delete associated patients:', patientsError);
+            } else {
+              console.log('? Patients deleted');
+            }
+            
+            // 10. Delete associated appointments
+            console.log('[PLATFORM] Deleting appointments...');
+            const { error: appointmentsError } = await window.supabaseClient
+              .from('appointments')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (appointmentsError) {
+              console.warn('[PLATFORM] Warning: Could not delete associated appointments:', appointmentsError);
+            } else {
+              console.log('? Appointments deleted');
+            }
+            
+            // 11. Delete associated orders (lab/imaging orders)
+            console.log('[PLATFORM] Deleting orders...');
+            const { error: ordersError } = await window.supabaseClient
+              .from('orders')
+              .delete()
+              .eq('organization_id', org.id);
+              
+            if (ordersError) {
+              // Orders table might not exist or have different structure - not critical
+              console.log('[PLATFORM] Orders deletion skipped (table may not exist or use different structure)');
+            } else {
+              console.log('? Orders deleted');
+            }
+            
+            // 12. Finally, delete the organization itself
+            console.log('[PLATFORM] Deleting organization...');
+            const { error: orgError } = await window.supabaseClient
+              .from('organizations')
+              .delete()
+              .eq('id', org.id);
+              
+            if (orgError) {
+              console.error('? Error deleting organization:', orgError);
+              alert('Failed to delete organization: ' + orgError.message);
+              return;
+            }
+            
+            console.log('? Organization deleted successfully');
+            
+            console.log('? Organization deleted successfully');
+            alert('Organization ' + orgName + ' has been deleted successfully.');
+            
+            // Clear cache and refresh
+            if (typeof clearOrganizationsCache === 'function') {
+              clearOrganizationsCache();
+            }
+            await loadClinicsList();
+            
+          } catch (error) {
+            console.error('? Error during deletion:', error);
+            alert('Failed to delete organization: ' + error.message);
+          }
+        }
+      }
+    }
+    
+    async function viewOrganizationUsers(orgName) {
+      console.log('Viewing users for organization:', orgName);
+      try {
+        // Get organization details
+        const orgs = await getAllOrganizations();
+        const org = orgs[orgName];
+        if (!org || !org.id) {
+          alert('Organization not found or missing ID');
+          return;
+        }
+        
+        // Get users for this organization
+        const { data: users, error: usersError } = await window.supabaseClient
+          .from('users')
+          .select('*')
+          .eq('organization_id', org.id);
+          
+        if (usersError) {
+          console.error('? Error fetching users:', usersError);
+          alert('Failed to load users: ' + usersError.message);
+          return;
+        }
+        
+        // Store org name for later use
+        window.currentOrgName = orgName;
+
+        // Create users view modal
+        const usersHtml = users && users.length > 0 ? users.map(user => {
+          const safeUserId = (user.id || '').toString().replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safeUsername = (user.username || '').replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          const safeFullName = `${user.first_name || ''} ${user.last_name || ''}`.trim().replace(/'/g, "\\'").replace(/"/g, '&quot;');
+          
+          // Check account status after modal is created
+          setTimeout(() => {
+            checkAccountStatus(safeUserId, user.username, user);
+          }, 100);
+          
+          return `
+          <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 12px;">${user.first_name} ${user.last_name}</td>
+            <td style="padding: 12px;">${user.username}</td>
+            <td style="padding: 12px;">${user.role || 'Not specified'}</td>
+            <td style="padding: 12px;">${user.gender || 'Not specified'}</td>
+            <td style="padding: 12px;">${user.created_at ? new Date(user.created_at).toLocaleDateString() : 'Unknown'}</td>
+            <td style="padding: 12px; text-align: center;">
+              <span id="user-status-${safeUserId}" class="user-status-badge" data-username="${safeUsername}">
+                <span class="status-loading">Checking...</span>
+              </span>
+            </td>
+            <td style="padding: 12px; text-align: center;">
+              <button onclick="resetUserPassword('${safeUserId}', '${safeUsername}', '${safeFullName}', '${orgName.replace(/'/g, "\\'").replace(/"/g, '&quot;')}')" style="background: #ff9800; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">
+                <i class="fa-solid fa-key"></i> Reset Password
+              </button>
+              <button onclick="diagnoseUserAuthPlatform('${safeUserId}', '${safeUsername}', '${safeFullName}')" style="background: #17a2b8; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-right: 5px;">
+                <i class="fa-solid fa-stethoscope"></i> Diagnose
+              </button>
+              <button onclick="unlockUserAccount('${safeUsername}', '${safeFullName}')" id="unlock-btn-${safeUserId}" style="display: none; background: #4caf50; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">
+                <i class="fa-solid fa-lock-open"></i> Unlock Account
+              </button>
+            </td>
+          </tr>
+        `;
+        }).join('') : '<tr><td colspan="7" style="padding: 20px; text-align: center; color: #6c757d;">No users found for this organization</td></tr>';
+        
+        const modalHtml = `
+          <div id="users-modal-${orgName.replace(/[^a-zA-Z0-9]/g, '-')}" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="if(event.target.id === 'users-modal-${orgName.replace(/[^a-zA-Z0-9]/g, '-')}') { document.getElementById('users-modal-${orgName.replace(/[^a-zA-Z0-9]/g, '-')}').remove(); }">
+            <div style="background: white; padding: 30px; border-radius: 12px; max-width: 900px; width: 90%; max-height: 80%; overflow-y: auto; position: relative;" onclick="event.stopPropagation()">
+              <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin: 0; color: #333;"><i class="fa-solid fa-users"></i> Users in ${orgName}</h2>
+                <button onclick="document.getElementById('users-modal-${orgName.replace(/[^a-zA-Z0-9]/g, '-')}').remove()" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; line-height: 1; position: absolute; top: 15px; right: 15px; display: flex; align-items: center; justify-content: center;" aria-label="Close"><i class="fa-solid fa-times"></i></button>
+              </div>
+              
+              <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                <p style="margin: 0; color: #495057;"><strong>Total Users:</strong> ${users ? users.length : 0}</p>
+              </div>
+              
+              <table style="width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+                <thead>
+                  <tr style="background: #f8f9fa; border-bottom: 2px solid #dee2e6;">
+                    <th style="padding: 15px; text-align: left; font-weight: 600; color: #495057;">Name</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600; color: #495057;">Username</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600; color: #495057;">Role</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600; color: #495057;">Gender</th>
+                    <th style="padding: 15px; text-align: left; font-weight: 600; color: #495057;">Created</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057;">Status</th>
+                    <th style="padding: 15px; text-align: center; font-weight: 600; color: #495057;">Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${usersHtml}
+                </tbody>
+              </table>
+              
+              <div style="margin-top: 20px; text-align: center; padding-top: 15px; border-top: 1px solid #dee2e6;">
+                <button onclick="document.getElementById('users-modal-${orgName.replace(/[^a-zA-Z0-9]/g, '-')}').remove()" style="background: #6c757d; color: white; border: none; padding: 10px 30px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 14px;">Close</button>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Add modal to page
+        document.body.insertAdjacentHTML('beforeend', modalHtml);
+        
+      } catch (error) {
+        console.error('? Error viewing organization users:', error);
+        alert('Failed to load users: ' + error.message);
+      }
+    }
+    
+    // Reset user password function
+    async function resetUserPassword(userId, username, userFullName, orgNameParam) {
+      const confirmation = confirm(`Reset password for ${userFullName} (${username})?\n\nA new temporary password will be generated and the user will need to change it on first login.`);
+      
+      if (!confirmation) {
+        return;
+      }
+      
+      try {
+        // Generate a secure temporary password
+        const tempPassword = generateTempPassword();
+        
+        // Update password in Supabase Auth if user has auth_user_id
+        const { data: userData, error: fetchError } = await window.supabaseClient
+          .from('users')
+          .select('auth_user_id')
+          .eq('id', userId)
+          .single();
+        
+        if (!fetchError && userData && userData.auth_user_id) {
+          // Update password via Supabase Auth - use admin API if available
+          try {
+            // Try admin API first (requires service role key)
+            if (window.supabaseClient.auth.admin) {
+              const { data: authUser, error: authError } = await window.supabaseClient.auth.admin.updateUserById(
+                userData.auth_user_id,
+                { password: tempPassword }
+              );
+              
+              if (authError) {
+                console.warn('[PLATFORM] Could not update password in Supabase Auth (admin):', authError);
+              } else {
+                console.log('? Password updated in Supabase Auth');
+              }
+            } else {
+              // Fallback: Update users table with password reset flag
+              await window.supabaseClient
+                .from('users')
+                .update({ 
+                  password_reset_required: true,
+                  temp_password: tempPassword 
+                })
+                .eq('id', userId);
+            }
+          } catch (authErr) {
+            console.warn('[PLATFORM] Auth password update not available, updating users table:', authErr);
+            // Update users table with reset flag
+            await window.supabaseClient
+              .from('users')
+              .update({ 
+                password_reset_required: true,
+                temp_password: tempPassword 
+              })
+              .eq('id', userId);
+          }
+        }
+        
+        // Also update in localStorage users array if it exists
+        const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        const userIndex = localUsers.findIndex(u => u.username === username);
+        if (userIndex >= 0) {
+          // Hash the temporary password using SHA-256
+          const encoder = new TextEncoder();
+          const data = encoder.encode(tempPassword);
+          const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+          const hashArray = Array.from(new Uint8Array(hashBuffer));
+          const hashedPassword = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+          
+          localUsers[userIndex].password = hashedPassword;
+          localUsers[userIndex].passwordType = 'sha256';
+          localUsers[userIndex].passwordReset = true;
+          localUsers[userIndex].tempPassword = tempPassword; // Store temporarily for display
+          localStorage.setItem('users', JSON.stringify(localUsers));
+        }
+        
+        // Show temporary password in a modal with copy functionality
+        showPasswordResetModal(userFullName, username, tempPassword);
+        
+        // Refresh users list
+        if (orgNameParam) {
+          await viewOrganizationUsers(orgNameParam);
+        }
+      } catch (error) {
+        console.error('? Error resetting password:', error);
+        alert('Failed to reset password: ' + error.message);
+      }
+    }
+    
+    // Generate a secure temporary password
+    function generateTempPassword() {
+      const length = 12;
+      const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+      let password = '';
+      const values = new Uint32Array(length);
+      crypto.getRandomValues(values);
+      
+      for (let i = 0; i < length; i++) {
+        password += charset[values[i] % charset.length];
+      }
+      
+      // Ensure at least one of each type
+      if (!/[a-z]/.test(password)) password = password.slice(0, -1) + 'a';
+      if (!/[A-Z]/.test(password)) password = password.slice(0, -1) + 'A';
+      if (!/[0-9]/.test(password)) password = password.slice(0, -1) + '1';
+      if (!/[!@#$%^&*]/.test(password)) password = password.slice(0, -1) + '!';
+      
+      return password;
+    }
+    
+    // Check account lock status and display unlock button if needed
+    // CRITICAL FIX: Enhanced to check multiple sources and show all locked accounts
+    async function checkAccountStatus(userId, username, userRow) {
+      try {
+        let isLocked = false;
+        let lockSource = null;
+
+        const u = (username || '').trim();
+        const email = (userRow && userRow.email) ? String(userRow.email).trim() : '';
+        const orgId = (userRow && userRow.organization_id) ? String(userRow.organization_id) : '';
+        const variationSet = new Set();
+        [u, u.toLowerCase(), `${u}@mediforge.app`, `${u}@mediforge.app`.toLowerCase(), `${u}@example.com`, email, email.toLowerCase()]
+          .forEach(x => { if (x) variationSet.add(x); });
+        if (orgId && u) {
+          variationSet.add(`${u}-${orgId.substring(0, 8)}@mediforge.app`);
+          variationSet.add(`${u}-${orgId}@mediforge.app`);
+        }
+        const variations = [...variationSet].filter(Boolean);
+        
+        // Method 1: Check via getLockedAccounts function
+        if (typeof window.getLockedAccounts === 'function') {
+          try {
+            const lockedAccounts = await window.getLockedAccounts();
+            const unameLower = u.toLowerCase();
+            isLocked = lockedAccounts.some(acc => {
+              if (!acc || !acc.identifier) return false;
+              const id = String(acc.identifier);
+              const idl = id.toLowerCase();
+              if (variations.some(v => idl === String(v).toLowerCase())) return true;
+              if (unameLower && idl.startsWith(unameLower + '@')) return true;
+              if (unameLower && idl.startsWith(unameLower + '-') && idl.includes('@mediforge.app')) return true;
+              return false;
+            });
+            
+            if (isLocked) {
+              lockSource = 'rate_limits';
+            }
+          } catch (rpcError) {
+            console.warn('[PLATFORM] getLockedAccounts failed, trying direct query:', rpcError);
+          }
+        }
+        
+        // Method 2: Direct Supabase query (if RPC failed or returned no results)
+        if (!isLocked && window.supabaseClient) {
+          try {
+            for (const identifier of variations) {
+              const { data: rateLimit, error } = await window.supabaseClient
+                .from('rate_limits')
+                .select('permanent_lock, locked_until, locked_at')
+                .eq('rate_limit_type', 'login')
+                .eq('identifier', identifier)
+                .maybeSingle();
+              
+              const untilOk = rateLimit && rateLimit.locked_until && new Date(rateLimit.locked_until) > new Date();
+              if (!error && rateLimit && (rateLimit.permanent_lock === true || untilOk)) {
+                isLocked = true;
+                lockSource = 'direct_query';
+                console.log(`? Found locked account via direct query: ${identifier}`);
+                break;
+              }
+            }
+          } catch (queryError) {
+            console.warn('[PLATFORM] Direct query failed:', queryError);
+          }
+        }
+        
+        // Method 3: Check localStorage (for device-specific locks)
+        if (!isLocked) {
+          for (const identifier of variations) {
+            const lockoutKey = `rate_limit_lockout_login_${identifier}`;
+            const lockoutData = localStorage.getItem(lockoutKey);
+            if (lockoutData) {
+              try {
+                const lockout = JSON.parse(lockoutData);
+                if (lockout.locked === true || lockout.permanentLock === true) {
+                  isLocked = true;
+                  lockSource = 'localStorage';
+                  console.log(`? Found locked account in localStorage: ${identifier}`);
+                  break;
+                }
+              } catch (e) {
+                // Invalid JSON, ignore
+              }
+            }
+          }
+        }
+          
+        const statusBadge = document.getElementById(`user-status-${userId}`);
+        const unlockBtn = document.getElementById(`unlock-btn-${userId}`);
+        const showUnlockBtn = isLocked || !(userRow && (userRow.role === 'Patient' || userRow.role === 'patient'));
+
+        if (statusBadge) {
+          if (isLocked) {
+            statusBadge.innerHTML = '<span style="color: #f44336; font-weight: 600;"><i class="fa-solid fa-lock"></i> Locked</span>';
+            console.log(`[PLATFORM] Account locked: ${username} (source: ${lockSource})`);
+          } else {
+            statusBadge.innerHTML = '<span style="color: #4caf50; font-weight: 600;"><i class="fa-solid fa-check-circle"></i> Active</span>';
+          }
+          if (unlockBtn) {
+            unlockBtn.style.display = showUnlockBtn ? 'inline-block' : 'none';
+          }
+        }
+      } catch (error) {
+        console.error('? Error checking account status:', error);
+        const statusBadge = document.getElementById(`user-status-${userId}`);
+        if (statusBadge) {
+          statusBadge.innerHTML = '<span style="color: #999;"><i class="fa-solid fa-question-circle"></i> Unknown</span>';
+        }
+      }
+    }
+
+    // Unlock user account
+    async function unlockUserAccount(username, userFullName) {
+      const confirmation = confirm(`Unlock account for ${userFullName} (${username})?\n\nThis will unlock the account and clear rate limits for both username and email formats.`);
+      
+      if (!confirmation) {
+        return;
+      }
+
+      try {
+        const currentUser = JSON.parse(localStorage.getItem('user') || '{}');
+        const unlockedBy = currentUser.username || 'Platform Admin';
+
+        // Try multiple variations to handle typos and different email formats
+        const variations = [
+          username, // Original username
+          `${username}@mediforge.app`, // New format
+          `${username}@example.com`, // Legacy format
+        ];
+        
+        // Also try common typos (swap 's' and 't' if applicable)
+        if (username.includes('Mistura') || username.includes('Mitsura')) {
+          const corrected = username.replace('Mitsura', 'Mistura').replace('Mistura', 'Mitsura');
+          if (corrected !== username) {
+            variations.push(corrected);
+            variations.push(`${corrected}@mediforge.app`);
+            variations.push(`${corrected}@example.com`);
+          }
+        }
+
+        let unlockedCount = 0;
+        const unlockResults = [];
+
+        if (typeof window.unlockAccount === 'function') {
+          for (const identifier of variations) {
+            try {
+              const result = await window.unlockAccount(identifier, unlockedBy, 'Unlocked by platform administrator');
+              if (result.success) {
+                unlockedCount++;
+                unlockResults.push(`? Unlocked: ${identifier}`);
+                console.log(`? Successfully unlocked: ${identifier}`);
+              } else {
+                unlockResults.push(`Failed: ${identifier} - ${result.error}`);
+              }
+            } catch (err) {
+              unlockResults.push(`? Error unlocking ${identifier}: ${err.message}`);
+            }
+          }
+        }
+
+        // Also clear rate limits directly
+        if (typeof window.clearRateLimit === 'function') {
+          for (const identifier of variations) {
+            try {
+              await window.clearRateLimit('login', identifier);
+              console.log(`? Cleared rate limit for: ${identifier}`);
+            } catch (err) {
+              console.warn(`[PLATFORM] Could not clear rate limit for ${identifier}:`, err);
+            }
+          }
+        }
+
+        if (unlockedCount > 0) {
+          let message = `? Account unlocked successfully!\n\nUnlocked ${unlockedCount} of ${variations.length} variations.\n\n`;
+          message += unlockResults.join('\n');
+          message += `\n\n${userFullName} (${username}) can now login.`;
+          alert(message);
+          
+          // Log unlock action
+          if (typeof window.logAuditEvent === 'function') {
+            await window.logAuditEvent('account_unlocked_admin', {
+              identifier: username,
+              unlocked_by: unlockedBy,
+              reason: 'Unlocked by platform administrator',
+              variations_unlocked: unlockedCount
+            });
+          }
+          
+          // Refresh the users list
+          const orgName = window.currentOrgName;
+          if (orgName && typeof viewOrganizationUsers === 'function') {
+            // Close modal and reopen to refresh
+            const modal = document.querySelector('div[style*="position: fixed"][style*="z-index: 10000"]');
+            if (modal) {
+              modal.remove();
+            }
+            await viewOrganizationUsers(orgName);
+          } else {
+            location.reload();
+          }
+        } else {
+          alert(`Failed to unlock account for any variation.\n\nResults:\n${unlockResults.join('\n')}`);
+        }
+      } catch (error) {
+        console.error('? Error unlocking account:', error);
+        alert(`Failed to unlock account: ${error.message}`);
+      }
+    }
+
+    // Diagnose user authentication issues (platform dashboard version)
+    async function diagnoseUserAuthPlatform(userId, username, userFullName) {
+      try {
+        console.log(`[PLATFORM] Diagnosing auth for user: ${username} (ID: ${userId})`);
+        
+        if (typeof window.secureSupabaseRpc !== 'function') {
+          throw new Error('secureSupabaseRpc function not available');
+        }
+
+        const result = await window.secureSupabaseRpc('diagnose_user_auth', {
+          p_user_id: userId,
+          p_username: username
+        });
+
+        console.log('[PLATFORM] Diagnosis result:', result);
+
+        const diagnosis = result?.diagnosis || result?.data?.diagnosis;
+        const warning = result?.warning || result?.data?.warning;
+        
+        if (!diagnosis) {
+          const errorMsg = result?.error || result?.data?.error || 'No diagnosis data returned';
+          const suggestions = result?.suggestions || result?.data?.suggestions || [];
+          throw new Error(errorMsg + (suggestions.length > 0 ? '\n\nSuggestions:\n' + suggestions.join('\n') : ''));
+        }
+
+        // Build diagnostic message
+        let message = `Authentication Diagnosis for ${userFullName} (${username})\n\n`;
+        if (warning) {
+          message += `WARNING: ${warning}\n\n`;
+        }
+        message += `────────────────────────────────────\n\n`;
+        
+        if (diagnosis.usersTable) {
+          message += `Users Table Info:\n`;
+          message += `   ID: ${diagnosis.usersTable.id || 'N/A'}\n`;
+          message += `   Username: ${diagnosis.usersTable.username || 'N/A'}\n`;
+          message += `   Auth User ID: ${diagnosis.usersTable.auth_user_id || 'MISSING'}\n\n`;
+        }
+        
+        if (diagnosis.authUser) {
+          message += `Email in Supabase Auth:\n`;
+          message += `   ${diagnosis.authUser.email || 'Not found'}\n\n`;
+          
+          message += `Account Created:\n`;
+          message += `   ${diagnosis.authUser.createdAt ? new Date(diagnosis.authUser.createdAt).toLocaleString() : 'Unknown'}\n\n`;
+          
+          message += `Last Sign In:\n`;
+          message += `   ${diagnosis.authUser.lastSignIn ? new Date(diagnosis.authUser.lastSignIn).toLocaleString() : 'Never'}\n\n`;
+          
+          message += `Email Confirmed:\n`;
+          message += `   ${diagnosis.authUser.emailConfirmed ? 'Yes' : 'No'}\n\n`;
+        } else {
+          message += `Supabase Auth Record:\n`;
+          message += `   User NOT found in Supabase Auth\n`;
+          message += `   This explains why login is failing!\n\n`;
+        }
+        
+        message += `Expected Email Format:\n`;
+        message += `   ${diagnosis.expectedEmail || 'N/A'}\n\n`;
+        
+        if (diagnosis.emailMatchesExpected !== null) {
+          message += `Email Matches Expected:\n`;
+          message += `   ${diagnosis.emailMatchesExpected ? 'Yes' : 'No'}\n\n`;
+        }
+
+        if (diagnosis.recommendations && diagnosis.recommendations.length > 0) {
+          message += `Recommendations:\n`;
+          diagnosis.recommendations.forEach(rec => {
+            message += `   • ${rec}\n`;
+          });
+          message += `\n`;
+        }
+
+        message += `────────────────────────────────────\n\n`;
+        
+        if (diagnosis.authUser && diagnosis.authUser.email) {
+          message += `To login, use the email shown above: "${diagnosis.authUser.email}"\n`;
+          message += `   If password reset was done, use the temporary password provided.`;
+        } else {
+          message += `CRITICAL: User is not registered in Supabase Auth.\n`;
+          message += `   Solution: Reset password to create Auth record.\n`;
+          message += `   This will create the user in Supabase Auth with the correct email format.`;
+        }
+
+        alert(message);
+        
+        // Also log to console for detailed inspection
+        console.log('[OK] Full diagnosis data:', JSON.stringify(diagnosis, null, 2));
+
+      } catch (error) {
+        console.error('Error diagnosing user auth:', error);
+        alert(`Failed to diagnose user authentication: ${error.message}\n\nCheck console for details.`);
+      }
+    }
+
+    // Show password reset modal with copy functionality
+    function showPasswordResetModal(userFullName, username, tempPassword) {
+      const modalHtml = `
+        <div id="password-reset-modal" style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.7); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="if(event.target.id === 'password-reset-modal') this.remove()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 500px; width: 90%; box-shadow: 0 4px 20px rgba(0,0,0,0.3);" onclick="event.stopPropagation()">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+              <h2 style="margin: 0; color: #333;"><i class="fa-solid fa-check-circle"></i> Password Reset Successful</h2>
+              <button onclick="document.getElementById('password-reset-modal').remove()" style="background: #dc3545; color: white; border: none; border-radius: 50%; width: 30px; height: 30px; cursor: pointer; font-size: 18px; line-height: 1;"><i class="fa-solid fa-times"></i></button>
+            </div>
+            
+            <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+              <p style="margin: 0 0 10px 0; color: #495057;"><strong>User:</strong> ${userFullName} (${username})</p>
+              <p style="margin: 0; color: #495057; font-size: 14px;"><i class="fa-solid fa-info-circle"></i> Please share this password securely with the user. They will be required to change it on first login.</p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+              <label style="display: block; margin-bottom: 8px; font-weight: 600; color: #333;">Temporary Password:</label>
+              <div style="display: flex; gap: 10px;">
+                <input type="text" id="temp-password-display" value="${tempPassword}" readonly style="flex: 1; padding: 12px; border: 2px solid #008753; border-radius: 6px; font-family: 'Courier New', monospace; font-size: 16px; font-weight: 600; background: #f8f9fa; color: #333;">
+                <button onclick="copyPasswordToClipboard('${tempPassword}')" style="background: #008753; color: white; border: none; padding: 12px 20px; border-radius: 6px; cursor: pointer; font-weight: 600; white-space: nowrap;">
+                  <i class="fa-solid fa-copy"></i> Copy
+                </button>
+              </div>
+              <p id="copy-feedback" style="margin: 8px 0 0 0; color: #28a745; font-size: 14px; display: none;"><i class="fa-solid fa-check"></i> Password copied to clipboard!</p>
+            </div>
+            
+            <div style="background: #fff3cd; padding: 12px; border-radius: 6px; border-left: 4px solid #ffc107; margin-bottom: 20px;">
+              <p style="margin: 0; color: #856404; font-size: 13px;">
+                <strong>Security Requirements:</strong> The user must create a new password that meets the highest security standards:
+                <ul style="margin: 8px 0 0 20px; padding: 0; color: #856404; font-size: 12px;">
+                  <li>Minimum 12 characters (required)</li>
+                  <li>At least one uppercase letter</li>
+                  <li>At least one lowercase letter</li>
+                  <li>At least one number</li>
+                  <li>At least one special character</li>
+                  <li>Cannot be a common password pattern</li>
+                </ul>
+              </p>
+            </div>
+            
+            <div style="text-align: right;">
+              <button onclick="document.getElementById('password-reset-modal').remove()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', modalHtml);
+    }
+    
+    // Copy password to clipboard
+    function copyPasswordToClipboard(password) {
+      navigator.clipboard.writeText(password).then(() => {
+        const feedback = document.getElementById('copy-feedback');
+        if (feedback) {
+          feedback.style.display = 'block';
+          setTimeout(() => {
+            feedback.style.display = 'none';
+          }, 3000);
+        }
+      }).catch(err => {
+        console.error('Failed to copy password:', err);
+        // Fallback: select text
+        const input = document.getElementById('temp-password-display');
+        if (input) {
+          input.select();
+          input.setSelectionRange(0, 99999);
+          document.execCommand('copy');
+          const feedback = document.getElementById('copy-feedback');
+          if (feedback) {
+            feedback.style.display = 'block';
+            feedback.textContent = 'Password copied to clipboard!';
+            setTimeout(() => {
+              feedback.style.display = 'none';
+            }, 3000);
+          }
+        }
+      });
+    }
+
+    // Make functions globally accessible
+    window.resetUserPassword = resetUserPassword;
+    window.unlockUserAccount = unlockUserAccount;
+    window.checkAccountStatus = checkAccountStatus;
+    window.showPasswordResetModal = showPasswordResetModal;
+    window.copyPasswordToClipboard = copyPasswordToClipboard;
+  </script>
+  
+  <script>
+    console.log('? TRACE: Fixed platform-dashboard.html - Added complete Supabase integration');
+    console.log('? TRACE: Added connection status notifier for real-time sync');
+    console.log('? TRACE: Added required platform-admin and data loader scripts');
+    console.log('? TRACE: Fixed duplicate script tags and syntax errors');
+    console.log('? TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('? TRACE: CSS version updated to v239 for cache busting');
+    
+    // Ensure switchToOrganization function is available
+    if (typeof window.switchToOrganization === 'undefined') {
+      console.log('[PLATFORM] switchToOrganization not found, defining fallback...');
+      window.switchToOrganization = async function(orgName) {
+        console.log('[PLATFORM] switchToOrganization fallback called with:', orgName);
+        const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin"));
+        if (!platformAdmin) {
+          alert("Not logged in as platform admin");
+          return;
+        }
+        try {
+          const orgs = await getAllOrganizations();
+          const org = orgs[orgName];
+          const orgId = org && org.id ? org.id : '';
+          const timestamp = Date.now();
+          const q = new URLSearchParams({
+            platformView: '1',
+            org: orgName,
+            t: String(timestamp)
+          });
+          if (orgId) q.set('orgId', orgId);
+          platformOpenInNewTab('/dashboard?' + q.toString());
+        } catch (e) {
+          console.error('[PLATFORM] switchToOrganization failed:', e);
+          platformOpenInNewTab('/dashboard?platformView=1&org=' + encodeURIComponent(orgName) + '&t=' + Date.now());
+        }
+      };
+    }
+    
+    // Check platform admin authentication
+    window.addEventListener('load', async function() {
+      const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+      const platformUserInfoEl = document.getElementById('platform-user-info');
+      
+      if (!platformAdmin) {
+        console.warn('[PLATFORM] PLATFORM-DASHBOARD: No platform admin session found. Redirecting to login.');
+        if (platformUserInfoEl) {
+          platformUserInfoEl.textContent = 'Not signed in';
+        }
+        alert('Please log in as a platform administrator to view the platform dashboard.');
+        window.location.href = 'platform-login';
+        return;
+      }
+      
+      // Display platform admin info
+      if (platformUserInfoEl) {
+        platformUserInfoEl.textContent = `Logged in as: ${platformAdmin.username}`;
+      }
+      
+      // Load platform statistics
+      await loadPlatformStats();
+      
+      // Load clinics list (now properly awaited)
+      try {
+        await loadClinicsList();
+      } catch (clinicsError) {
+        console.error('[PLATFORM] loadClinicsList failed:', clinicsError);
+      }
+      
+      // Load country and gender analytics (now properly awaited)
+      try {
+        await loadCountryAnalytics();
+        await loadGenderAnalytics();
+      } catch (analyticsError) {
+        console.error('[PLATFORM] Analytics load failed:', analyticsError);
+      }
+      
+      // Load recent activity
+      try {
+        await loadRecentActivity();
+      } catch (activityError) {
+        console.error('[PLATFORM] Recent activity load failed:', activityError);
+      }
+    });
+    
+    async function loadPlatformStats() {
+      const stats = await getGlobalPlatformStats(true); // Force refresh
+      console.log('[PLATFORM] Platform stats received:', stats);
+      
+      document.getElementById('stat-total-clinics').textContent = stats.totalClinics;
+      document.getElementById('stat-active-clinics').textContent = stats.activeClinics;
+      document.getElementById('stat-total-patients').textContent = stats.totalPatients.toLocaleString();
+      
+      // Convert revenue to USD for uniform display
+      const revenueUSD = stats.totalRevenueUSD || 0;
+      document.getElementById('stat-total-revenue').textContent = '$' + revenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      
+      document.getElementById('stat-total-users').textContent = stats.totalUsers;
+      document.getElementById('stat-total-events').textContent = stats.totalAuditEvents.toLocaleString();
+      
+      // Calculate staff by role
+      // Get doctor and nurse counts from Supabase
+      let doctors = 0;
+      let nurses = 0;
+      let healthcareStaff = 0;
+      
+      try {
+        // Get all users from Supabase
+        const { data: allUsers, error: usersError } = await supabaseClient
+          .from('users')
+          .select('role');
+        
+        if (!usersError && allUsers) {
+          doctors = allUsers.filter(u => u.role === 'Doctor').length;
+          nurses = allUsers.filter(u => u.role === 'Nurse').length;
+          healthcareStaff = allUsers.filter(u => ['Doctor', 'Nurse', 'Physician Assistant', 'Medical Assistant'].includes(u.role)).length;
+          
+          console.log('[PLATFORM] Healthcare staff counts:', { doctors, nurses, healthcareStaff });
+        }
+      } catch (error) {
+        console.error('Error fetching healthcare staff counts:', error);
+      }
+      
+      document.getElementById('stat-total-doctors').textContent = doctors;
+      document.getElementById('stat-total-nurses').textContent = nurses;
+      
+      // Calculate patient-to-staff ratio
+      const patientToStaffRatio = healthcareStaff > 0 ? (stats.totalPatients / healthcareStaff).toFixed(1) : 0;
+      document.getElementById('stat-patient-staff-ratio').textContent = patientToStaffRatio + ':1';
+    }
+    
+    // Refresh organizations and reload dashboard
+    async function refreshOrganizations() {
+      console.log('[PLATFORM] Refreshing organizations...');
+      if (typeof clearOrganizationsCache === 'function') {
+        clearOrganizationsCache();
+      }
+      if (typeof clearPlatformStatsCache === 'function') {
+        clearPlatformStatsCache();
+      }
+      // Reload all dashboard components
+      await loadPlatformStats();
+      await loadClinicsList();
+      await loadCountryAnalytics();
+      await loadGenderAnalytics();
+      await loadRecentActivity();
+      console.log('? Organizations refreshed');
+    }
+    
+    // Fix organizations with zero users by checking for orphaned users
+    async function fixOrganizationsWithZeroUsers(orgs) {
+      const fixedOrgs = []; // Track which orgs were fixed
+      
+      try {
+        if (!window.supabaseClient) {
+          console.warn('[PLATFORM] Supabase client not available, skipping zero-user fix');
+          return fixedOrgs;
+        }
+        
+        console.log('[PLATFORM] Checking for organizations with zero users...');
+        
+        // Get ALL orphaned users once (more efficient)
+        const { data: allOrphanedUsers, error: orphanError } = await window.supabaseClient
+          .from('users')
+          .select('id, username, first_name, last_name, email, created_at, auth_user_id')
+          .is('organization_id', null)
+          .order('created_at', { ascending: false });
+        
+        if (orphanError) {
+          console.error('? Error fetching orphaned users:', orphanError);
+          return fixedOrgs;
+        }
+        
+        if (!allOrphanedUsers || allOrphanedUsers.length === 0) {
+          console.log('? No orphaned users found');
+          return fixedOrgs;
+        }
+        
+        console.log(`[PLATFORM] Found ${allOrphanedUsers.length} users with NULL organization_id:`, allOrphanedUsers.map(u => ({
+          username: u.username,
+          email: u.email,
+          created_at: u.created_at
+        })));
+        
+        // Process each organization with zero users
+        for (const orgName of Object.keys(orgs)) {
+          const org = orgs[orgName];
+          if (!org || !org.id) continue;
+          
+          // Get user count for this organization
+          const stats = await getOrganizationStats(orgName);
+          
+          // Check if this is "Ministry of Foreign Affairs Mobile Clinic" and needs fixing
+          const isMobileClinic = orgName.toLowerCase().includes('mobile clinic') || 
+                                 orgName.toLowerCase().includes('foreign affairs');
+          
+          // Also check for organizations with ydar508 incorrectly linked
+          const { data: currentUsers } = await window.supabaseClient
+            .from('users')
+            .select('id, username, email, created_at')
+            .eq('organization_id', org.id);
+          
+          const hasYdar508 = currentUsers?.some(u => u.username === 'ydar508');
+          const needsFix = stats.userCount === 0 || (isMobileClinic && hasYdar508);
+          
+          if (needsFix) {
+            console.warn(`[PLATFORM] Organization "${orgName}" (ID: ${org.id}) has 0 users. Attempting to fix...`);
+            console.log(`[PLATFORM] Organization details:`, {
+              id: org.id,
+              createdAt: org.createdAt || org.created_at,
+              createdByEmail: org.createdByEmail,
+              createdByUsername: org.createdByUsername
+            });
+            
+            // If ydar508 is incorrectly linked to Mobile Clinic, unlink it first
+            if (hasYdar508 && isMobileClinic) {
+              const ydar508User = currentUsers.find(u => u.username === 'ydar508');
+              console.warn(`[PLATFORM] Detected ydar508 incorrectly linked to "${orgName}". Unlinking...`);
+              
+              // Check if there's a better match (MuseM/MisturaM pattern or creator info)
+              const hasBetterMatch = allOrphanedUsers.some(u => 
+                u.username?.toLowerCase().includes('musem') ||
+                u.username?.toLowerCase().includes('mistura') ||
+                (u.first_name && u.first_name.toLowerCase().includes('mistura')) ||
+                (u.last_name && u.last_name.toLowerCase().includes('muse')) ||
+                (org.createdByUsername && u.username === org.createdByUsername) ||
+                (org.createdByEmail && u.email === org.createdByEmail)
+              );
+              
+              if (hasBetterMatch || org.createdByUsername || org.createdByEmail) {
+                // Unlink ydar508 first
+                const { error: unlinkError } = await window.supabaseClient
+                  .from('users')
+                  .update({ organization_id: null })
+                  .eq('id', ydar508User.id);
+                
+                if (!unlinkError) {
+                  console.log(`? Unlinked incorrect user ydar508 from "${orgName}"`);
+                  // Clear cache
+                  if (typeof statsCache !== 'undefined' && statsCache) {
+                    const cacheKey = `${org.id}_users`;
+                    statsCache.delete(cacheKey);
+                  }
+                }
+                
+                // Reset stats to force matching logic below
+                stats.userCount = 0;
+              }
+            }
+            
+            let linkedUser = false;
+            
+            // Method 1: Match by email (if creator email is known)
+            if (org.createdByEmail) {
+              console.log(`[PLATFORM] Method 1: Checking email match for "${org.createdByEmail}"...`);
+              const matchingUser = allOrphanedUsers.find(u => u.email === org.createdByEmail);
+              if (matchingUser) {
+                console.log(`[PLATFORM] Method 1: Found creator user by email: "${matchingUser.username}" (${matchingUser.email})`);
+                
+                const { error: updateError } = await window.supabaseClient
+                  .from('users')
+                  .update({ organization_id: org.id })
+                  .eq('id', matchingUser.id);
+                
+                if (!updateError) {
+                  console.log(`? Fixed: Linked creator user "${matchingUser.username}" to organization "${orgName}"`);
+                  
+                  // Clear cache for this organization
+                  if (typeof statsCache !== 'undefined' && statsCache) {
+                    const cacheKey = `${org.id}_users`;
+                    statsCache.delete(cacheKey);
+                    console.log(`[PLATFORM] Cleared cache for ${orgName} (key: ${cacheKey})`);
+                  }
+                  
+                  linkedUser = true;
+                  fixedOrgs.push(orgName);
+                } else {
+                  console.error(`? Failed to link user "${matchingUser.username}":`, updateError);
+                }
+              } else {
+                console.log(`? Method 1: No user found with email "${org.createdByEmail}"`);
+              }
+            } else {
+              console.log(`[PLATFORM] Method 1: Skipped - organization has no createdByEmail`);
+            }
+            
+            // Method 1.5: Match by username (if creator username is known)
+            if (!linkedUser && org.createdByUsername) {
+              console.log(`[PLATFORM] Method 1.5: Checking username match for "${org.createdByUsername}"...`);
+              const matchingUser = allOrphanedUsers.find(u => u.username === org.createdByUsername || 
+                                                               u.username?.toLowerCase() === org.createdByUsername?.toLowerCase());
+              if (matchingUser) {
+                console.log(`[PLATFORM] Method 1.5: Found creator user by username: "${matchingUser.username}" (${matchingUser.email || 'no email'})`);
+                
+                const { error: updateError } = await window.supabaseClient
+                  .from('users')
+                  .update({ organization_id: org.id })
+                  .eq('id', matchingUser.id);
+                
+                if (!updateError) {
+                  console.log(`? Fixed: Linked creator user "${matchingUser.username}" to organization "${orgName}"`);
+                  
+                  // Clear cache for this organization
+                  if (typeof statsCache !== 'undefined' && statsCache) {
+                    const cacheKey = `${org.id}_users`;
+                    statsCache.delete(cacheKey);
+                    console.log(`[PLATFORM] Cleared cache for ${orgName} (key: ${cacheKey})`);
+                  }
+                  
+                  linkedUser = true;
+                  fixedOrgs.push(orgName);
+                } else {
+                  console.error(`? Failed to link user "${matchingUser.username}":`, updateError);
+                }
+              } else {
+                console.log(`? Method 1.5: No user found with username "${org.createdByUsername}"`);
+              }
+            }
+            
+            // Method 2: Match by creation time proximity (7 day window - more generous)
+            if (!linkedUser) {
+              const orgCreatedAt = org.createdAt || org.created_at;
+              if (orgCreatedAt) {
+                const orgDate = new Date(orgCreatedAt);
+                const timeWindow = 7 * 24 * 60 * 60 * 1000; // 7 days window (more generous)
+                
+                console.log(`[PLATFORM] Method 2: Checking time proximity (org created: ${orgDate.toISOString()})...`);
+                
+                // Find the closest matching user by creation time
+                let bestMatch = null;
+                let bestTimeDiff = Infinity;
+                
+                for (const user of allOrphanedUsers) {
+                  const userCreatedAt = user.created_at ? new Date(user.created_at) : null;
+                  if (userCreatedAt) {
+                    const timeDiff = Math.abs(userCreatedAt - orgDate);
+                    if (timeDiff < timeWindow && timeDiff < bestTimeDiff) {
+                      bestMatch = user;
+                      bestTimeDiff = timeDiff;
+                    }
+                  }
+                }
+                
+                if (bestMatch) {
+                  console.log(`[PLATFORM] Method 2: Found closest user by time: "${bestMatch.username}" (created ${Math.round(bestTimeDiff / 1000 / 60)} minutes ${bestMatch.created_at > orgDate ? 'after' : 'before'} org)`);
+                  
+                  const { error: updateError } = await window.supabaseClient
+                    .from('users')
+                    .update({ organization_id: org.id })
+                    .eq('id', bestMatch.id);
+                  
+                  if (!updateError) {
+                    console.log(`? Fixed: Linked user "${bestMatch.username}" to organization "${orgName}"`);
+                    
+                    // Clear cache for this organization
+                    if (typeof statsCache !== 'undefined' && statsCache) {
+                      const cacheKey = `${org.id}_users`;
+                      statsCache.delete(cacheKey);
+                      console.log(`[PLATFORM] Cleared cache for ${orgName} (key: ${cacheKey})`);
+                    }
+                    
+                    linkedUser = true;
+                    fixedOrgs.push(orgName);
+                  } else {
+                    console.error(`? Failed to link user "${bestMatch.username}":`, updateError);
+                  }
+                } else {
+                  console.log(`? Method 2: No user found within 7 days of org creation`);
+                  console.log(`   Orphaned user creation dates:`, allOrphanedUsers.map(u => u.created_at).slice(0, 3));
+                }
+              } else {
+                console.log(`[PLATFORM] Method 2: Skipped - organization has no createdAt date`);
+              }
+            }
+            
+            // Method 3: Match by email pattern (username-{shortOrgId}@mediforge.app)
+            if (!linkedUser) {
+              const shortOrgId = org.id.replace(/-/g, '').substring(0, 8);
+              const emailPattern = `-${shortOrgId}@mediforge.app`;
+              
+              console.log(`[PLATFORM] Method 3: Checking email pattern "${emailPattern}"...`);
+              console.log(`   Orphaned user emails:`, allOrphanedUsers.map(u => u.email).slice(0, 5));
+              
+              const matchingUser = allOrphanedUsers.find(u => 
+                u.email && u.email.includes(emailPattern)
+              );
+              
+              if (matchingUser) {
+                console.log(`[PLATFORM] Method 3: Found user by email pattern: "${matchingUser.username}" (${matchingUser.email})`);
+                
+                const { error: updateError } = await window.supabaseClient
+                  .from('users')
+                  .update({ organization_id: org.id })
+                  .eq('id', matchingUser.id);
+                
+                if (!updateError) {
+                  console.log(`? Fixed: Linked user "${matchingUser.username}" to organization "${orgName}"`);
+                  
+                  // Clear cache for this organization
+                  if (typeof statsCache !== 'undefined' && statsCache) {
+                    const cacheKey = `${org.id}_users`;
+                    statsCache.delete(cacheKey);
+                    console.log(`[PLATFORM] Cleared cache for ${orgName} (key: ${cacheKey})`);
+                  }
+                  
+                  linkedUser = true;
+                  fixedOrgs.push(orgName);
+                } else {
+                  console.error(`? Failed to link user "${matchingUser.username}":`, updateError);
+                }
+              } else {
+                console.log(`? Method 3: No user found with email pattern "${emailPattern}"`);
+              }
+            }
+            
+            // Method 4: Last resort - ONLY if org created within last 24 hours (very conservative)
+            // WARNING: This is risky and may link the wrong user. Only use if absolutely necessary.
+            if (!linkedUser) {
+              const orgCreatedAt = org.createdAt || org.created_at;
+              if (orgCreatedAt) {
+                const orgDate = new Date(orgCreatedAt);
+                const hoursSinceCreation = (Date.now() - orgDate.getTime()) / (1000 * 60 * 60);
+                
+                // Only if org was created in last 24 hours AND we have no creator info
+                // This is much more conservative to avoid linking wrong users
+                if (hoursSinceCreation < 24 && allOrphanedUsers.length > 0 && !org.createdByEmail && !org.createdByUsername) {
+                  // Find user created closest to org creation time (not just most recent)
+                  let bestMatch = null;
+                  let bestTimeDiff = Infinity;
+                  
+                  for (const user of allOrphanedUsers) {
+                    const userCreatedAt = user.created_at ? new Date(user.created_at) : null;
+                    if (userCreatedAt) {
+                      const timeDiff = Math.abs(userCreatedAt - orgDate);
+                      // Within 2 hours of org creation
+                      if (timeDiff < 2 * 60 * 60 * 1000 && timeDiff < bestTimeDiff) {
+                        bestMatch = user;
+                        bestTimeDiff = timeDiff;
+                      }
+                    }
+                  }
+                  
+                  if (bestMatch) {
+                    console.warn(`[PLATFORM] Method 4 (RISKY LAST RESORT): Attempting to link user "${bestMatch.username}" created ${Math.round(bestTimeDiff / 1000 / 60)} minutes ${bestMatch.created_at > orgDate ? 'after' : 'before'} org "${orgName}"`);
+                    console.warn(`[PLATFORM] WARNING: This may not be the correct user. Please verify manually.`);
+                  
+                  const { error: updateError } = await window.supabaseClient
+                    .from('users')
+                    .update({ organization_id: org.id })
+                      .eq('id', bestMatch.id);
+                  
+                  if (!updateError) {
+                      console.warn(`? Fixed (RISKY): Linked user "${bestMatch.username}" to organization "${orgName}" - PLEASE VERIFY THIS IS CORRECT`);
+                      
+                      // Clear cache for this organization
+                      if (typeof statsCache !== 'undefined' && statsCache) {
+                        const cacheKey = `${org.id}_users`;
+                        statsCache.delete(cacheKey);
+                        console.log(`[PLATFORM] Cleared cache for ${orgName} (key: ${cacheKey})`);
+                      }
+                      
+                    linkedUser = true;
+                      fixedOrgs.push(orgName);
+                  } else {
+                      console.error(`? Failed to link user "${bestMatch.username}":`, updateError);
+                  }
+                } else {
+                    console.log(`[PLATFORM] Method 4: No user found within 2 hours of org creation`);
+                  }
+                } else {
+                  if (hoursSinceCreation >= 24) {
+                    console.log(`[PLATFORM] Method 4: Skipped - organization created ${Math.round(hoursSinceCreation)} hours ago (too old, max 24 hours)`);
+                  } else if (org.createdByEmail || org.createdByUsername) {
+                    console.log(`[PLATFORM] Method 4: Skipped - organization has creator info but no match found`);
+                  }
+                }
+              }
+            }
+            
+            if (!linkedUser) {
+              console.warn(`[PLATFORM] Could not find a matching orphaned user for "${orgName}" after trying all methods`);
+              console.warn(`   Organization ID: ${org.id}`);
+              console.warn(`   Organization created: ${org.createdAt || org.created_at}`);
+              console.warn(`   Available orphaned users: ${allOrphanedUsers.length}`);
+            }
+          }
+        }
+        
+        console.log('? Zero-user check completed');
+        if (fixedOrgs.length > 0) {
+          console.log(`? Fixed ${fixedOrgs.length} organization(s):`, fixedOrgs);
+        }
+        return fixedOrgs;
+      } catch (error) {
+        console.error('? Error fixing organizations with zero users:', error);
+        return fixedOrgs; // Return whatever we fixed so far
+      }
+    }
+    
+    // Fix specific organization - can be called manually or automatically
+    window.fixSpecificOrganization = async function(orgName) {
+      console.log(`[PLATFORM] Fixing specific organization: "${orgName}"`);
+      
+      if (!window.supabaseClient) {
+        console.error('? Supabase client not available');
+        return { success: false, error: 'Supabase client not available' };
+      }
+      
+      try {
+        // Get organization
+        const orgs = await getAllOrganizations();
+        const org = orgs[orgName];
+        
+        if (!org || !org.id) {
+          console.error(`? Organization "${orgName}" not found`);
+          return { success: false, error: 'Organization not found' };
+        }
+        
+        console.log(`? Found organization: ${orgName} (ID: ${org.id})`);
+        
+        // Get current users
+        const { data: currentUsers } = await window.supabaseClient
+          .from('users')
+          .select('*')
+          .eq('organization_id', org.id);
+        
+        console.log(`   Current users: ${currentUsers?.length || 0}`);
+        
+        // Get orphaned users
+        const { data: orphanedUsers } = await window.supabaseClient
+          .from('users')
+          .select('*')
+          .is('organization_id', null)
+          .order('created_at', { ascending: false });
+        
+        console.log(`   Orphaned users: ${orphanedUsers?.length || 0}`);
+        
+        // Find potential creator (MuseM, MisturaM, etc.)
+        const potentialCreators = orphanedUsers?.filter(u => 
+          u.username?.toLowerCase().includes('musem') ||
+          u.username?.toLowerCase().includes('mistura') ||
+          (u.first_name && u.first_name.toLowerCase().includes('mistura')) ||
+          (u.last_name && u.last_name.toLowerCase().includes('muse'))
+        ) || [];
+        
+        let correctUser = null;
+        
+        // Priority 1: Username match
+        if (org.createdByUsername && orphanedUsers) {
+          correctUser = orphanedUsers.find(u => 
+            u.username === org.createdByUsername || 
+            u.username?.toLowerCase() === org.createdByUsername?.toLowerCase()
+          );
+          if (correctUser) {
+            console.log(`? Found user by username match: ${correctUser.username}`);
+          }
+        }
+        
+        // Priority 2: Email match
+        if (!correctUser && org.createdByEmail && orphanedUsers) {
+          correctUser = orphanedUsers.find(u => u.email === org.createdByEmail);
+          if (correctUser) {
+            console.log(`? Found user by email match: ${correctUser.username}`);
+          }
+        }
+        
+        // Priority 3: Name pattern match (MuseM/MisturaM)
+        if (!correctUser && potentialCreators.length > 0) {
+          correctUser = potentialCreators[0];
+          console.log(`? Found user by name pattern: ${correctUser.username}`);
+        }
+        
+        // Priority 4: Time proximity (closest to org creation)
+        if (!correctUser && orphanedUsers && orphanedUsers.length > 0) {
+          const orgCreatedAt = new Date(org.createdAt || org.created_at);
+          const timeWindow = 7 * 24 * 60 * 60 * 1000; // 7 days
+          
+          let bestMatch = null;
+          let bestTimeDiff = Infinity;
+          
+          for (const user of orphanedUsers) {
+            if (!user.created_at) continue;
+            const userCreatedAt = new Date(user.created_at);
+            const timeDiff = Math.abs(userCreatedAt - orgCreatedAt);
+            if (timeDiff < timeWindow && timeDiff < bestTimeDiff) {
+              bestMatch = user;
+              bestTimeDiff = timeDiff;
+            }
+          }
+          
+          if (bestMatch) {
+            correctUser = bestMatch;
+            const hoursDiff = Math.round(bestTimeDiff / (1000 * 60 * 60));
+            console.log(`? Found user by time proximity: ${correctUser.username} (${hoursDiff} hours difference)`);
+          }
+        }
+        
+        if (!correctUser) {
+          console.warn(`[PLATFORM] Could not find a suitable user to link`);
+          return { success: false, error: 'No suitable user found' };
+        }
+        
+        // Unlink ydar508 if incorrectly linked
+        if (currentUsers && currentUsers.some(u => u.username === 'ydar508' && u.id !== correctUser.id)) {
+          const ydar508User = currentUsers.find(u => u.username === 'ydar508');
+          console.log(`[PLATFORM] Unlinking incorrectly linked user: ydar508`);
+          
+          const { error: unlinkError } = await window.supabaseClient
+            .from('users')
+            .update({ organization_id: null })
+            .eq('id', ydar508User.id);
+          
+          if (unlinkError) {
+            console.error(`? Failed to unlink ydar508:`, unlinkError);
+          } else {
+            console.log(`? Unlinked ydar508`);
+          }
+        }
+        
+        // Link correct user if not already linked
+        if (!currentUsers || !currentUsers.some(u => u.id === correctUser.id)) {
+          console.log(`[PLATFORM] Linking user: ${correctUser.username}`);
+          
+          const { error: linkError } = await window.supabaseClient
+            .from('users')
+            .update({ organization_id: org.id })
+            .eq('id', correctUser.id);
+          
+          if (linkError) {
+            console.error(`? Failed to link user:`, linkError);
+            return { success: false, error: linkError.message };
+          }
+          
+          console.log(`? Successfully linked ${correctUser.username} to ${orgName}`);
+          
+          // Clear cache
+          if (typeof statsCache !== 'undefined' && statsCache) {
+            const cacheKey = `${org.id}_users`;
+            statsCache.delete(cacheKey);
+            console.log(`[PLATFORM] Cleared cache for ${orgName}`);
+          }
+        } else {
+          console.log(`[PLATFORM] User ${correctUser.username} is already linked`);
+        }
+        
+        // Re-fetch stats
+        await new Promise(resolve => setTimeout(resolve, 500));
+        const stats = await getOrganizationStats(orgName);
+        console.log(`? Updated stats - Users: ${stats.userCount}, Patients: ${stats.patientCount}`);
+        
+        return { 
+          success: true, 
+          linkedUser: correctUser.username,
+          userCount: stats.userCount
+        };
+        
+      } catch (error) {
+        console.error(`? Error fixing organization:`, error);
+        return { success: false, error: error.message };
+      }
+    };
+    
+    // Force refresh all data - clears all caches and reloads everything
+    async function forceRefreshAllData() {
+      console.log('[PLATFORM] FORCE REFRESH: Clearing all caches and reloading data...');
+      
+      // Clear all possible caches
+      if (typeof clearOrganizationsCache === 'function') {
+        clearOrganizationsCache();
+      }
+      
+      // Clear localStorage caches
+      localStorage.removeItem('organizations');
+      localStorage.removeItem('users');
+      localStorage.removeItem('patients');
+      localStorage.removeItem('appointments');
+      
+      // Clear any Supabase client caches
+      if (window.supabaseClient) {
+        console.log('[PLATFORM] Clearing Supabase client cache...');
+      }
+      
+      // Show loading message
+      const loadingMsg = document.createElement('div');
+      loadingMsg.innerHTML = 'Force refreshing all data...';
+      loadingMsg.style.cssText = 'position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%); background: #FF5722; color: white; padding: 20px; border-radius: 8px; z-index: 10000; font-weight: bold;';
+      document.body.appendChild(loadingMsg);
+      
+      try {
+        // Reload all dashboard components
+        await loadPlatformStats();
+        await loadClinicsList();
+        await loadCountryAnalytics();
+        await loadGenderAnalytics();
+        await loadRecentActivity();
+        
+        console.log('? FORCE REFRESH: All data reloaded successfully');
+        alert('All data has been force refreshed! New organizations should now be visible.');
+      } catch (error) {
+        console.error('? Error during force refresh:', error);
+        alert('Error during force refresh: ' + error.message);
+      } finally {
+        // Remove loading message
+        if (loadingMsg.parentNode) {
+          loadingMsg.parentNode.removeChild(loadingMsg);
+        }
+      }
+    }
+
+    async function loadClinicsList() {
+      const orgs = await getAllOrganizations(true); // Force refresh
+      const orgNames = Object.keys(orgs);
+      const container = document.getElementById('clinics-list');
+      const noClinicMsg = document.getElementById('no-clinics');
+      const orgTable = document.getElementById('organizations-table');
+      const orgTableBody = document.getElementById('organizations-table-body');
+      
+      if (orgNames.length === 0) {
+        container.style.display = 'none';
+        orgTable.style.display = 'none';
+        noClinicMsg.style.display = 'block';
+        return;
+      }
+      
+      container.innerHTML = '';
+      orgTable.style.display = 'block';
+      
+      // CRITICAL: Check for organizations with 0 users and fix them
+      const fixedOrgs = (await fixOrganizationsWithZeroUsers(orgs)) || [];
+      
+      // Small delay to ensure Supabase has processed the updates
+      if (fixedOrgs.length > 0) {
+        console.log(`? Waiting 500ms for Supabase to process updates for ${fixedOrgs.length} fixed organization(s)...`);
+        await new Promise(resolve => setTimeout(resolve, 500));
+        
+        // Force clear cache for all fixed organizations
+        for (const fixedOrgName of fixedOrgs) {
+          const fixedOrg = orgs[fixedOrgName];
+          if (fixedOrg && fixedOrg.id) {
+            const cacheKey = `${fixedOrg.id}_users`;
+            if (typeof statsCache !== 'undefined' && statsCache) {
+              statsCache.delete(cacheKey);
+              console.log(`[PLATFORM] Force-cleared cache for ${fixedOrgName} (key: ${cacheKey})`);
+            }
+          }
+        }
+      }
+      
+      // Populate the organization table
+      const orgRows = await Promise.all(orgNames.map(async (orgName) => {
+        const org = orgs[orgName];
+        const stats = await getOrganizationStats(orgName);
+        const status = org.status || 'Active';
+        
+        const createdByDisplay = org.createdByName || org.created_by || org.createdByUsername || org.createdByEmail || 'Not specified';
+        const createdByDetail = org.createdByEmail && org.createdByEmail !== createdByDisplay
+          ? `${createdByDisplay} (${org.createdByEmail})`
+          : createdByDisplay;
+        const isSuspended = status.toLowerCase() === 'suspended';
+        const statusColor = isSuspended ? '#f8d7da' : '#d4edda';
+        const statusTextColor = isSuspended ? '#721c24' : '#155724';
+        
+        return `
+          <tr style="border-bottom: 1px solid #dee2e6;">
+            <td style="padding: 15px; font-weight: 600; color: #495057;">${orgName}</td>
+            <td style="padding: 15px; text-align: center;">
+              <span style="padding: 4px 8px; border-radius: 12px; background: ${statusColor}; color: ${statusTextColor}; font-size: 12px; font-weight: 600;">${status}</span>
+            </td>
+            <td style="padding: 15px; text-align: center; color: #495057;">${stats.patientCount || 0}</td>
+            <td style="padding: 15px; text-align: center; color: #495057;">${stats.userCount || 0}</td>
+            <td style="padding: 15px; text-align: center; color: #495057;">$${stats.revenue || 0}</td>
+            <td style="padding: 15px; text-align: center; color: #6c757d; font-size: 12px;">${org.createdAt ? new Date(org.createdAt).toLocaleDateString() : 'Unknown'}</td>
+            <td style="padding: 15px; text-align: center; color: #495057; font-size: 12px;">${createdByDetail}</td>
+            <td style="padding: 15px; text-align: center;">
+              <div style="display: flex; gap: 3px; justify-content: center; flex-wrap: wrap;">
+                <button onclick="switchToOrganization('${orgName}')" style="padding: 3px 6px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;"><i class="fa-solid fa-eye"></i> View</button>
+                <button onclick="viewOrganizationDetails('${orgName}')" style="padding: 3px 6px; background: #17a2b8; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;"><i class="fa-solid fa-info-circle"></i> Details</button>
+                <button onclick="editOrganization('${orgName}')" style="padding: 3px 6px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;"><i class="fa-solid fa-pen"></i> Edit</button>
+                ${isSuspended ? 
+                  `<button onclick="toggleOrganizationAccess('${orgName}', false)" style="padding: 3px 6px; background: #28a745; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;" title="Reactivate organization"><i class="fa-solid fa-rotate-left"></i> Reactivate</button>` :
+                  `<button onclick="toggleOrganizationAccess('${orgName}', true)" style="padding: 3px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;" title="Suspend organization access"><i class="fa-solid fa-ban"></i> Suspend</button>`
+                }
+                <button onclick="archiveOrganization('${orgName}')" style="padding: 3px 6px; background: #ffc107; color: black; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;">Archive</button>
+                <button onclick="deleteOrganization('${orgName}')" style="padding: 3px 6px; background: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;">Delete</button>
+                <button onclick="platformOpenInNewTab('org-user-management?org=${encodeURIComponent(orgName)}')" style="padding: 3px 6px; background: #6f42c1; color: white; border: none; border-radius: 3px; cursor: pointer; font-size: 10px; white-space: nowrap;">Users</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }));
+      
+      orgTableBody.innerHTML = orgRows.join('');
+      
+      for (const orgName of orgNames) {
+        const org = orgs[orgName];
+        const stats = await getOrganizationStats(orgName);
+        const status = org.status || 'active';
+        
+        const row = document.createElement('div');
+        row.className = 'clinic-row';
+        const createdByDisplay = org.createdByName || org.created_by || org.createdByUsername || org.createdByEmail || 'Not specified';
+        const createdByDetail = org.createdByEmail && org.createdByEmail !== createdByDisplay
+          ? `${createdByDisplay} (${org.createdByEmail})`
+          : createdByDisplay;
+        row.innerHTML = `
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 15px; align-items: center;">
+            <div>
+              <strong style="font-size: 18px; color: #333;">${orgName}</strong><br>
+              <span style="color: #666; font-size: 13px;">${org.country || 'Not specified'} | Created ${new Date(org.createdAt || Date.now()).toLocaleDateString()}</span><br>
+              <span style="color: #888; font-size: 12px;">Creator: ${createdByDetail}</span>
+            </div>
+            <div>
+              <span class="status-badge status-${status}">${status.toUpperCase()}</span>
+            </div>
+            <div style="text-align: center;">
+              <strong style="color: #2196F3; font-size: 20px;">${stats.patientCount}</strong><br>
+              <span style="color: #999; font-size: 12px;">Patients</span>
+            </div>
+            <div style="text-align: center;">
+              <strong style="color: #4CAF50; font-size: 20px;">${stats.userCount}</strong><br>
+              <span style="color: #999; font-size: 12px;">Users</span>
+            </div>
+            <div style="text-align: center;">
+              <strong style="color: #FF9800; font-size: 18px;">${formatCurrency(stats.totalRevenue, 'NGN')}</strong><br>
+              <span style="color: #999; font-size: 12px;">Revenue</span>
+            </div>
+            <div style="text-align: right;">
+              <button onclick="switchToOrganization('${orgName}')" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 5px;">
+                View
+              </button>
+              <button onclick="viewClinicDetails('${orgName}')" style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                Details
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(row);
+      }
+    }
+    
+    async function loadRecentActivity() {
+      try {
+        const globalLog = await getGlobalAuditLog();
+        
+        // Ensure globalLog is an array
+        if (!Array.isArray(globalLog)) {
+          console.warn('[PLATFORM] getGlobalAuditLog returned non-array:', typeof globalLog, globalLog);
+          const container = document.getElementById('recent-activity');
+          container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No recent activity</p>';
+          return;
+        }
+        
+        const recent = globalLog.slice(0, 20);  // Last 20 events
+        const container = document.getElementById('recent-activity');
+        
+        if (recent.length === 0) {
+          container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No recent activity</p>';
+          return;
+        }
+      
+        container.innerHTML = '';
+        
+        recent.forEach(event => {
+          const eventDiv = document.createElement('div');
+          eventDiv.style.cssText = 'padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;';
+          
+          const actionColor = getActionColor(event.action);
+          
+          eventDiv.innerHTML = `
+            <div>
+              <strong style="color: ${actionColor};">${event.action.replace(/_/g, ' ').toUpperCase()}</strong>
+              <span style="color: #666; margin: 0 8px;">•</span>
+              <span style="color: #333;">${event.organization}</span>
+              <span style="color: #666; margin: 0 8px;">by</span>
+              <span style="color: #666; font-size: 13px;">${event.user}</span>
+            </div>
+            <div style="color: #999; font-size: 12px;">
+              ${new Date(event.timestamp).toLocaleString()}
+            </div>
+          `;
+          
+          container.appendChild(eventDiv);
+        });
+      } catch (error) {
+        console.error('? Error loading recent activity:', error);
+        const container = document.getElementById('recent-activity');
+        if (container) {
+          container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">Error loading recent activity</p>';
+        }
+      }
+    }
+    
+    function getActionColor(action) {
+      if (action.includes('created') || action.includes('registered')) return '#4CAF50';
+      if (action.includes('deleted') || action.includes('canceled')) return '#F44336';
+      if (action.includes('edited') || action.includes('updated')) return '#FF9800';
+      if (action.includes('login')) return '#2196F3';
+      if (action.includes('payment')) return '#9C27B0';
+      return '#666';
+    }
+    
+    function viewClinicDetails(orgName) {
+      platformOpenInNewTab(`/clinic-details?clinic=${encodeURIComponent(orgName)}`);
+    }
+    
+    function formatCurrency(amount, currency = 'NGN') {
+      const symbols = {
+        'NGN': '₦',
+        'KES': 'KSh',
+        'ZAR': 'R',
+        'GHS': 'GH₵',
+        'USD': '$'
+      };
+      
+      const symbol = symbols[currency] || currency;
+      return `${symbol}${amount.toLocaleString()}`;
+    }
+    
+    // Show patient breakdown by clinic in modal
+    async function viewAllPatients() {
+      const orgs = await getAllOrganizations();
+      const orgNames = Object.keys(orgs);
+      
+      let html = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80%; overflow-y: auto;" onclick="event.stopPropagation()">
+            <h2 style="margin-top: 0;">Patient Breakdown by Clinic</h2>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 50%;">Clinic Name</th>
+                  <th class="center" style="width: 20%;">Patients</th>
+                  <th class="center" style="width: 30%;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      const globalStats = await getGlobalPlatformStats();
+      const totalPatients = globalStats.totalPatients;
+      
+      for (const orgName of orgNames) {
+        const stats = await getOrganizationStats(orgName);
+        const percentage = totalPatients > 0 ? ((stats.patientCount / totalPatients) * 100).toFixed(1) : 0;
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${orgName}</strong></td>
+            <td class="center"><strong style="color: #2196F3; font-size: 18px;">${stats.patientCount}</strong></td>
+            <td class="center">${percentage}%</td>
+          </tr>
+        `;
+      }
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="text-align: right; margin-top: 20px;">
+              <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', html);
+    }
+    
+    // Show all users breakdown by clinic in modal
+    async function viewAllUsers() {
+      const orgs = await getAllOrganizations();
+      const orgNames = Object.keys(orgs);
+      
+      let html = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 1000px; width: 90%; max-height: 80%; overflow-y: auto;" onclick="event.stopPropagation()">
+            <h2 style="margin-top: 0;">All Users Across Clinics</h2>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 25%;">Name</th>
+                  <th class="left" style="width: 15%;">Username</th>
+                  <th class="center" style="width: 15%;">Role</th>
+                  <th class="left" style="width: 30%;">Organization</th>
+                  <th class="left" style="width: 15%;">License</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      // Get users from Supabase
+      const { data: allUsers, error: usersError } = await supabaseClient
+        .from('users')
+        .select('username, role, organization_id, gender');
+      
+      const usersToDisplay = allUsers || [];
+      
+      console.log('All users:', usersToDisplay);
+      console.log('All organizations:', orgNames);
+      
+      if (usersToDisplay.length === 0) {
+        html += `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 40px; color: #999;">
+              No users found
+            </td>
+          </tr>
+        `;
+      } else {
+        usersToDisplay.forEach(user => {
+          // Find organization name from ID
+          const userOrg = orgNames.find(name => orgs[name].id === user.organization_id);
+          
+          html += `
+            <tr>
+              <td class="left">${user.username}</td>
+              <td class="left">${user.username}</td>
+              <td class="center"><strong>${user.role}</strong></td>
+              <td class="left">${userOrg || 'N/A'}</td>
+              <td class="left">N/A</td>
+            </tr>
+          `;
+        });
+      }
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="text-align: right; margin-top: 20px;">
+              <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', html);
+    }
+    // Load Country Analytics
+    async function loadCountryAnalytics() {
+      const orgs = await getAllOrganizations();
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const countryData = {};
+      
+      // Aggregate data by country - use for...of to support async/await
+      for (const orgName of Object.keys(orgs)) {
+        const org = orgs[orgName];
+        const country = org.country || 'Unknown';
+        
+        if (!countryData[country]) {
+          countryData[country] = {
+            organizations: 0,
+            patients: 0,
+            doctors: 0,
+            nurses: 0,
+            otherStaff: 0,
+            totalStaff: 0
+          };
+        }
+        
+        countryData[country].organizations++;
+        
+        // Count patients for this organization - MUST await async function
+        try {
+          const stats = await getOrganizationStats(orgName);
+          const patientCount = stats && stats.patientCount ? parseInt(stats.patientCount) || 0 : 0;
+          countryData[country].patients += patientCount;
+        } catch (error) {
+          console.error(`Error getting stats for ${orgName}:`, error);
+          // Continue with 0 patients for this org
+        }
+        
+        // Count staff by role for this organization
+        const orgUsers = users.filter(u => u.organization === orgName || u.org === orgName);
+        orgUsers.forEach(user => {
+          countryData[country].totalStaff++;
+          if (user.role === 'Doctor') {
+            countryData[country].doctors++;
+          } else if (user.role === 'Nurse') {
+            countryData[country].nurses++;
+          } else if (['Physician Assistant', 'Medical Assistant'].includes(user.role)) {
+            countryData[country].otherStaff++;
+          } else {
+            countryData[country].otherStaff++;
+          }
+        });
+      }
+      
+      const container = document.getElementById('country-analytics');
+      
+      if (Object.keys(countryData).length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No data available</p>';
+        return;
+      }
+      
+      let html = `
+        <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th class="left" style="width: 20%;">Country</th>
+              <th class="center" style="width: 12%;">Organizations</th>
+              <th class="center" style="width: 12%;">Total Patients</th>
+              <th class="center" style="width: 12%;">Doctors</th>
+              <th class="center" style="width: 12%;">Nurses</th>
+              <th class="center" style="width: 12%;">Other Staff</th>
+              <th class="center" style="width: 12%;">Total Staff</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Sort by total patients descending
+      const sortedCountries = Object.entries(countryData).sort((a, b) => b[1].patients - a[1].patients);
+      
+      sortedCountries.forEach(([country, data]) => {
+        // Ensure all values are numbers, not NaN
+        const patients = isNaN(data.patients) ? 0 : data.patients;
+        const doctors = isNaN(data.doctors) ? 0 : data.doctors;
+        const nurses = isNaN(data.nurses) ? 0 : data.nurses;
+        const otherStaff = isNaN(data.otherStaff) ? 0 : data.otherStaff;
+        const totalStaff = isNaN(data.totalStaff) ? 0 : data.totalStaff;
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${country}</strong></td>
+            <td class="center">${data.organizations || 0}</td>
+            <td class="center"><strong style="color: #2196F3; font-size: 16px;">${patients.toLocaleString()}</strong></td>
+            <td class="center"><strong style="color: #00BCD4;">${doctors}</strong></td>
+            <td class="center"><strong style="color: #E91E63;">${nurses}</strong></td>
+            <td class="center">${otherStaff}</td>
+            <td class="center"><strong style="color: #9C27B0;">${totalStaff}</strong></td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    // Load Gender Distribution Analytics
+    async function loadGenderAnalytics() {
+      const orgs = await getAllOrganizations();
+      
+      // Start with localStorage users
+      let users = JSON.parse(localStorage.getItem('users') || '[]');
+      
+      // Also fetch users from Supabase if available
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          // Try to select gender column (may not exist in all schemas)
+          let supabaseUsers = [];
+          let usersError = null;
+          
+          try {
+            // First try with gender column (if it exists)
+            const result = await window.supabaseClient
+              .from('users')
+              .select('id, username, role, organization_id, gender');
+            supabaseUsers = result.data || [];
+            usersError = result.error;
+            
+            if (usersError && usersError.code === '42703') {
+              // Column doesn't exist, try without gender
+              const result2 = await window.supabaseClient
+                .from('users')
+                .select('id, username, role, organization_id');
+              supabaseUsers = result2.data || [];
+              usersError = result2.error;
+            }
+          } catch (err) {
+            // If that fails, try basic query without gender
+            try {
+              const result = await window.supabaseClient
+                .from('users')
+                .select('id, username, role, organization_id');
+              supabaseUsers = result.data || [];
+              usersError = result.error;
+            } catch (err2) {
+              usersError = err2;
+            }
+          }
+          
+          if (!usersError && supabaseUsers && supabaseUsers.length > 0) {
+            // Get organization names for mapping
+            const orgIds = [...new Set(supabaseUsers.map(u => u.organization_id).filter(Boolean))];
+            let orgIdToName = {};
+            
+            if (orgIds.length > 0) {
+              const { data: orgsData, error: orgsError } = await window.supabaseClient
+                .from('organizations')
+                .select('id, name')
+                .in('id', orgIds);
+              
+              if (!orgsError && orgsData) {
+                orgsData.forEach(org => {
+                  orgIdToName[org.id] = org.name;
+                });
+              }
+            }
+            
+            // Merge Supabase users with localStorage users
+            // Convert Supabase users to match localStorage format
+            const supabaseUsersFormatted = supabaseUsers.map(su => {
+              // Gender is directly in gender field (if column exists)
+              const gender = su.gender || null;
+              const orgName = orgIdToName[su.organization_id] || null;
+              
+              return {
+                id: su.id,
+                username: su.username,
+                role: su.role,
+                organization: orgName,
+                org: orgName,
+                organization_id: su.organization_id,
+                gender: gender
+              };
+            });
+            
+            // Merge: prefer Supabase data (more recent), but preserve gender from localStorage if Supabase doesn't have it
+            const localUsersMap = new Map();
+            users.forEach(u => {
+              const orgName = u.organization || u.org;
+              if (orgName && orgs[orgName]) {
+                localUsersMap.set(u.username, u);
+              }
+            });
+            
+            // Enhance Supabase users with localStorage gender data if missing
+            supabaseUsersFormatted.forEach(su => {
+              const localUser = localUsersMap.get(su.username);
+              if (localUser && localUser.gender && !su.gender) {
+                su.gender = localUser.gender;
+              }
+            });
+            
+            // Add localStorage users not in Supabase
+            const supabaseUsernames = new Set(supabaseUsersFormatted.map(u => u.username));
+            const localUsersNotInSupabase = Array.from(localUsersMap.values())
+              .filter(u => !supabaseUsernames.has(u.username));
+            
+            users = [...supabaseUsersFormatted, ...localUsersNotInSupabase];
+            
+          } else {
+            // Continue with localStorage users only
+          }
+        } catch (error) {
+          // Continue with localStorage users only
+        }
+      }
+      
+      // Calculate staff gender distribution - ONLY for users in registered organizations
+      const staffGender = {
+        Male: 0,
+        Female: 0
+      };
+      
+      let skippedCount = 0;
+      let countedCount = 0;
+      
+      users.forEach(user => {
+        const orgName = user.organization || user.org;
+        
+        // Only count users that belong to registered organizations
+        if (orgName && orgs[orgName]) {
+          // Try to get gender from user object
+          let gender = user.gender;
+          
+          // If gender is not set or invalid, skip this user
+          if (!gender || (gender !== 'Male' && gender !== 'Female')) {
+            skippedCount++;
+            return;
+          }
+          
+          staffGender[gender] = (staffGender[gender] || 0) + 1;
+          countedCount++;
+        } else {
+          skippedCount++;
+        }
+      });
+      
+      // Calculate patient gender distribution across all organizations
+      const patientGender = {
+        Male: 0,
+        Female: 0
+      };
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      for (const orgName of Object.keys(orgs)) {
+        let patients = [];
+        const orgData = orgs[orgName];
+        
+        // Try Supabase first
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+          try {
+            const { data: supabasePatients, error } = await window.supabaseClient
+              .from('patients')
+              .select('gender')
+              .eq('organization_id', orgData.id);
+            
+            if (!error && supabasePatients) {
+              patients = supabasePatients;
+              // Cache to localStorage
+              const patientsKey = `${orgName}_patients`;
+              localStorage.setItem(patientsKey, JSON.stringify(patients));
+            }
+          } catch (error) {
+            console.warn('[PLATFORM] Could not load patients from Supabase:', error);
+          }
+        }
+        
+        // Fallback to localStorage if Supabase didn't provide data
+        // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
+        if (patients.length === 0) {
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              const patientsKey = `${orgName}_patients`;
+              patients = JSON.parse(localStorage.getItem(patientsKey) || '[]');
+            }
+          } catch (error) {
+            const patientsKey = `${orgName}_patients`;
+            patients = JSON.parse(localStorage.getItem(patientsKey) || '[]');
+          }
+        }
+        
+        patients.forEach(patient => {
+          const gender = (patient.gender === 'Male' || patient.gender === 'Female') ? patient.gender : 'Male';
+          patientGender[gender] = (patientGender[gender] || 0) + 1;
+        });
+      }
+      
+      const container = document.getElementById('gender-analytics');
+      
+      const totalStaff = Object.values(staffGender).reduce((a, b) => a + b, 0);
+      const totalPatients = Object.values(patientGender).reduce((a, b) => a + b, 0);
+      
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;">
+          <!-- Staff Gender Distribution -->
+          <div>
+            <h3 style="margin-top: 0; color: #667eea;">Staff Gender Distribution</h3>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 40%;">Gender</th>
+                  <th class="center" style="width: 30%;">Count</th>
+                  <th class="center" style="width: 30%;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      Object.entries(staffGender).forEach(([gender, count]) => {
+        const percentage = totalStaff > 0 ? ((count / totalStaff) * 100).toFixed(1) : 0;
+        const color = gender === 'Male' ? '#00BCD4' : gender === 'Female' ? '#E91E63' : '#9C27B0';
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${gender}</strong></td>
+            <td class="center"><strong style="color: ${color}; font-size: 16px;">${count}</strong></td>
+            <td class="center">${percentage}%</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="margin-top: 10px; color: #666; font-size: 13px;">Total Staff: ${totalStaff.toLocaleString()}</div>
+          </div>
+          
+          <!-- Patient Gender Distribution -->
+          <div>
+            <h3 style="margin-top: 0; color: #667eea;">Patient Gender Distribution</h3>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 40%;">Gender</th>
+                  <th class="center" style="width: 30%;">Count</th>
+                  <th class="center" style="width: 30%;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      Object.entries(patientGender).forEach(([gender, count]) => {
+        const percentage = totalPatients > 0 ? ((count / totalPatients) * 100).toFixed(1) : 0;
+        const color = gender === 'Male' ? '#2196F3' : gender === 'Female' ? '#E91E63' : '#FF9800';
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${gender}</strong></td>
+            <td class="center"><strong style="color: ${color}; font-size: 16px;">${count}</strong></td>
+            <td class="center">${percentage}%</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="margin-top: 10px; color: #666; font-size: 13px;">Total Patients: ${totalPatients.toLocaleString()}</div>
+          </div>
+        </div>
+      `;
+      
+      container.innerHTML = html;
+    }
+    
+    // Legal Agreements Functions
+    async function viewLegalAgreements() {
+      platformOpenInNewTab('/legal-agreements-summary');
+    }
+    
+    async function loadLegalAgreements() {
+      const listDiv = document.getElementById('legal-agreements-list');
+      listDiv.innerHTML = '<p style="text-align: center; color: #666; padding: 40px;">Loading legal agreements...</p>';
+      
+      try {
+        console.log('[PLATFORM] loadLegalAgreements - Starting...');
+        console.log('[PLATFORM] VERSION CHECK: This is the UPDATED version (2025-01-18-v2) that ONLY shows summary cards, NOT individual agreements');
+        console.log('[PLATFORM] If you see individual agreement cards, the OLD code is running - check browser cache or deployment');
+        
+        if (typeof window.getAllLegalAgreements === 'undefined') {
+          console.error('? getAllLegalAgreements function not available');
+          throw new Error('Legal agreements module not loaded. Please refresh the page.');
+        }
+        
+        console.log('[PLATFORM] loadLegalAgreements - Calling getAllLegalAgreements...');
+        const { success, agreements, error } = await window.getAllLegalAgreements();
+        
+        console.log('[PLATFORM] loadLegalAgreements - Response:', { success, agreementsCount: agreements?.length, error });
+        
+        if (!success) {
+          console.error('? loadLegalAgreements - Failed:', error);
+          listDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #dc3545;">
+              <p style="font-size: 18px; margin-bottom: 10px; font-weight: 700;">Error Loading Legal Agreements</p>
+              <p style="font-size: 14px; margin-bottom: 20px;">${error || 'Failed to load legal agreements'}</p>
+              <p style="font-size: 12px; color: #666; margin-bottom: 20px;">Please check the browser console for detailed error information.</p>
+              <button onclick="loadLegalAgreements()" style="padding: 10px 20px; background: #008753; color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+                Try Again
+              </button>
+            </div>
+          `;
+          return;
+        }
+        
+        if (!agreements || agreements.length === 0) {
+          console.warn('[PLATFORM] loadLegalAgreements - No agreements returned');
+          listDiv.innerHTML = `
+            <div style="text-align: center; padding: 40px; color: #666;">
+              <p style="font-size: 18px; margin-bottom: 10px;">No signed legal agreements found.</p>
+              <p style="font-size: 14px; margin-bottom: 20px;">Agreements will appear here once users sign them during registration or login.</p>
+              <p style="font-size: 12px; color: #999; margin-top: 20px;">
+                <strong>Debug Info:</strong> Query succeeded but returned 0 agreements.<br>
+                This could mean:<br>
+                ? No agreements exist in the database<br>
+                ? RLS policy is filtering out results<br>
+                ? User role doesn't match PlatformAdmin/PlatformOwner<br>
+                <br>
+                Check browser console for detailed logs.
+              </p>
+            </div>
+          `;
+          return;
+        }
+        
+        console.log('? loadLegalAgreements - Found', agreements.length, 'agreements');
+        
+        // Group agreements by organization for summary
+        const agreementsByOrg = {};
+        const totalUsers = new Set();
+        
+        console.log('[PLATFORM] loadLegalAgreements - Processing', agreements.length, 'agreements');
+        
+        agreements.forEach((agreement, index) => {
+          console.log(`[PLATFORM] Agreement ${index + 1}:`, {
+            id: agreement.id,
+            type: agreement.agreement_type,
+            org_id: agreement.organization_id,
+            org_name: agreement.organizations?.name,
+            user_name: agreement.user_name
+          });
+          
+          const orgId = agreement.organization_id || 'no-org';
+          const orgName = agreement.organizations?.name || 'Unknown Organization';
+          const userId = agreement.user_id;
+          totalUsers.add(userId);
+          
+          if (!agreementsByOrg[orgId]) {
+            agreementsByOrg[orgId] = {
+              organization: { id: orgId, name: orgName },
+              count: 0,
+              agreements: []
+            };
+          }
+          
+          agreementsByOrg[orgId].count++;
+          agreementsByOrg[orgId].agreements.push(agreement);
+        });
+        
+        console.log('? Grouped agreements by organization:', Object.keys(agreementsByOrg).length, 'organizations');
+        
+        // Display ONE summary card that navigates to legal-agreements-summary.html
+        let html = `
+          <div style="background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05)); border: 2px solid #008753; border-radius: 12px; padding: 30px; cursor: pointer; transition: all 0.3s ease; box-shadow: 0 4px 12px rgba(0, 135, 83, 0.15);" 
+               onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 6px 20px rgba(0, 135, 83, 0.25)';" 
+               onmouseout="this.style.transform=''; this.style.boxShadow='0 4px 12px rgba(0, 135, 83, 0.15)';" 
+               onclick="platformOpenInNewTab('/legal-agreements-summary'); return false;">
+            <h3 style="color: #008753; margin-top: 0; margin-bottom: 20px; font-size: 24px;">Legal Agreements Summary</h3>
+            <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px;">
+              <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; border: 2px solid #008753;">
+                <div style="font-size: 36px; font-weight: 800; color: #008753;">${agreements.length}</div>
+                <div style="font-size: 16px; color: #666; margin-top: 8px;">Total Agreements</div>
+              </div>
+              <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; border: 2px solid #008753;">
+                <div style="font-size: 36px; font-weight: 800; color: #008753;">${Object.keys(agreementsByOrg).length}</div>
+                <div style="font-size: 16px; color: #666; margin-top: 8px;">Organizations</div>
+              </div>
+              <div style="text-align: center; padding: 15px; background: white; border-radius: 8px; border: 2px solid #008753;">
+                <div style="font-size: 36px; font-weight: 800; color: #008753;">${totalUsers.size}</div>
+                <div style="font-size: 16px; color: #666; margin-top: 8px;">Unique Users</div>
+              </div>
+            </div>
+            <div style="margin-top: 20px; padding-top: 20px; border-top: 2px solid rgba(0, 135, 83, 0.2); text-align: center;">
+              <div style="color: #008753; font-weight: 600; font-size: 16px;">
+                Click to view organizations and agreements
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // IMPORTANT: Only set summary cards - NO individual agreement details
+        // Individual agreements are shown on legal-agreements-org.html page
+        console.log('? Setting HTML - Summary cards only, NO individual agreements');
+        listDiv.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading legal agreements:', error);
+        listDiv.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: #dc3545;">
+            <p style="font-size: 18px; margin-bottom: 10px;">Error loading legal agreements</p>
+            <p style="font-size: 14px;">${error.message}</p>
+            <button onclick="loadLegalAgreements()" style="margin-top: 20px; padding: 10px 20px; background: #008753; color: white; border: none; border-radius: 5px; cursor: pointer;">
+              Try Again
+            </button>
+          </div>
+        `;
+      }
+    }
+    
+    // View agreements for a specific organization - navigates to dedicated page
+    // UPDATED: This function ONLY navigates - it does NOT display agreements inline
+    // Version: 2025-01-18 - Removed inline display, now navigates to legal-agreements-org.html
+    function viewOrganizationAgreements(orgId, orgName, agreementsJson) {
+      console.log('[PLATFORM] viewOrganizationAgreements called - Navigating to organization page:', orgId);
+      // Navigate immediately to the organization-specific legal agreements page
+      // The orgId parameter is used, orgName and agreementsJson are ignored
+      platformOpenInNewTab(`/legal-agreements-org?orgId=${encodeURIComponent(orgId)}`);
+      return false; // Prevent any further execution
+    }
+    
+    // View agreement details (opens in new page)
+    function viewAgreementDetails(agreementId) {
+      platformOpenInNewTab(`/legal-agreement-view?id=${agreementId}`);
+    }
+    
+    // Download agreement as PDF
+    async function downloadAgreementPDF(agreementId, agreementType, userName, signedDate, version) {
+      try {
+        // Wait for jsPDF to be available (check multiple ways it might be exposed)
+        let jsPDFLib = null;
+        let attempts = 0;
+        const maxAttempts = 100; // 10 seconds max wait
+        
+        while (!jsPDFLib && attempts < maxAttempts) {
+          // Method 1: UMD format (window.jsPDF.jsPDF) - most common for UMD builds
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.jsPDF;
+            console.log('? Found jsPDF via UMD format (window.jsPDF.jsPDF)');
+            break;
+          }
+          // Method 2: UMD format with default (window.jsPDF.default.jsPDF)
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.default.jsPDF;
+            console.log('? Found jsPDF via UMD default format');
+            break;
+          }
+          // Method 3: Direct global function
+          if (typeof window.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF;
+            console.log('? Found jsPDF via direct global function');
+            break;
+          }
+          // Method 4: Check if it's an object with constructor
+          if (window.jsPDF && typeof window.jsPDF === 'object' && window.jsPDF.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.jsPDF;
+            console.log('? Found jsPDF via object property');
+            break;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        // If still not found, try loading dynamically
+        if (!jsPDFLib) {
+          console.log('[PLATFORM] jsPDF not found after waiting, attempting to load dynamically...');
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js';
+          script.async = false;
+          
+          await new Promise((resolve, reject) => {
+            const timeout = setTimeout(() => {
+              reject(new Error('Timeout waiting for jsPDF to load'));
+            }, 5000);
+            
+            script.onload = () => {
+              // Wait a bit for library to initialize
+              setTimeout(() => {
+                clearTimeout(timeout);
+                // Try all methods again after load
+                if (window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF.jsPDF;
+                  console.log('? Found jsPDF after dynamic load (UMD format)');
+                  resolve();
+                } else if (window.jsPDF && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF.default.jsPDF;
+                  console.log('? Found jsPDF after dynamic load (UMD default)');
+                  resolve();
+                } else if (typeof window.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF;
+                  console.log('? Found jsPDF after dynamic load (direct function)');
+                  resolve();
+                } else {
+                  console.error('? Library loaded but constructor not found:', typeof window.jsPDF, window.jsPDF);
+                  reject(new Error('Library loaded but constructor not accessible'));
+                }
+              }, 200);
+            };
+            script.onerror = () => {
+              clearTimeout(timeout);
+              reject(new Error('Failed to load jsPDF from CDN'));
+            };
+            document.head.appendChild(script);
+          });
+        }
+        
+        if (!jsPDFLib) {
+          alert('PDF library failed to load. Please refresh the page and try again.');
+          console.error('? jsPDF library not available after all attempts');
+          console.error('window.jsPDF type:', typeof window.jsPDF);
+          console.error('window.jsPDF value:', window.jsPDF);
+          return;
+        }
+        
+        console.log('? jsPDF library ready, creating PDF...');
+        
+        // Fetch the full agreement text from legal-agreement.html
+        let agreementText = '';
+        try {
+          const response = await fetch('legal-agreement.html');
+          if (response.ok) {
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.legal-content') || doc.body;
+            agreementText = content.innerText || content.textContent || '';
+          }
+        } catch (fetchError) {
+          console.warn('Could not fetch agreement text:', fetchError);
+          agreementText = `${agreementType}\n\nVersion: ${version}\nSigned By: ${userName}\nSigned Date: ${signedDate}\n\nThis is a copy of your signed legal agreement.`;
+        }
+        
+        const doc = new jsPDFLib({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        // Set font
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text(agreementType, 20, 20);
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Version: ${version}`, 20, 30);
+        doc.text(`Signed By: ${userName}`, 20, 35);
+        doc.text(`Signed Date: ${signedDate}`, 20, 40);
+        
+        // Add agreement text
+        doc.setFontSize(9);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
+        const maxWidth = pageWidth - (margin * 2);
+        
+        let yPos = 50;
+        const lines = doc.splitTextToSize(agreementText || 'Agreement text not available', maxWidth);
+        
+        lines.forEach((line) => {
+          if (yPos > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(line, margin, yPos);
+          yPos += 5;
+        });
+        
+        // Add footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+          doc.text('MediForge Legal Agreement Copy', pageWidth / 2, pageHeight - 5, { align: 'center' });
+        }
+        
+        // Generate filename
+        const filename = `${agreementType.replace(/[^a-z0-9]/gi, '_')}_${userName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        // Save PDF
+        doc.save(filename);
+        
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF: ' + error.message);
+      }
+    }
+  </script>  
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+
+
+
+

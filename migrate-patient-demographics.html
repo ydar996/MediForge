@@ -1,0 +1,611 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Patient Demographics Migration Tool</title>
+    <script src="js/vendor/supabase.min.js"></script>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #2c3e50;
+            text-align: center;
+            margin-bottom: 30px;
+        }
+        .section {
+            margin-bottom: 30px;
+            padding: 20px;
+            border: 1px solid #ddd;
+            border-radius: 5px;
+        }
+        .section h2 {
+            color: #34495e;
+            margin-top: 0;
+        }
+        button {
+            background-color: #3498db;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 5px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 5px;
+        }
+        button:hover {
+            background-color: #2980b9;
+        }
+        button:disabled {
+            background-color: #bdc3c7;
+            cursor: not-allowed;
+        }
+        .danger {
+            background-color: #e74c3c;
+        }
+        .danger:hover {
+            background-color: #c0392b;
+        }
+        .success {
+            background-color: #27ae60;
+        }
+        .success:hover {
+            background-color: #229954;
+        }
+        .warning {
+            background-color: #f39c12;
+        }
+        .warning:hover {
+            background-color: #e67e22;
+        }
+        #results {
+            background-color: #f8f9fa;
+            border: 1px solid #dee2e6;
+            border-radius: 5px;
+            padding: 15px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 14px;
+            white-space: pre-wrap;
+        }
+        .status {
+            padding: 10px;
+            margin: 10px 0;
+            border-radius: 5px;
+        }
+        .status.info {
+            background-color: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        .status.success {
+            background-color: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        .status.warning {
+            background-color: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        .status.error {
+            background-color: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        .patient-list {
+            max-height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            background-color: #f9f9f9;
+        }
+        .patient-item {
+            padding: 8px;
+            border-bottom: 1px solid #eee;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+        }
+        .patient-item:last-child {
+            border-bottom: none;
+        }
+        .patient-info {
+            flex: 1;
+        }
+        .patient-actions {
+            display: flex;
+            gap: 5px;
+        }
+        .btn-small {
+            padding: 4px 8px;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>Patient Demographics Migration Tool</h1>
+        
+        <div class="section">
+            <h2>Migration Overview</h2>
+            <p>This tool will migrate patient demographic data from localStorage to Supabase.</p>
+            <p><strong>What it does:</strong></p>
+            <ul>
+                <li>Reads all patients from localStorage</li>
+                <li>Updates their Supabase records with missing demographic fields</li>
+                <li>Handles data conflicts gracefully</li>
+                <li>Provides detailed logging and progress tracking</li>
+            </ul>
+        </div>
+
+        <div class="section">
+            <h2>Analysis</h2>
+            <button onclick="analyzeData()">Analyze Current Data</button>
+            <div id="analysis-results"></div>
+        </div>
+
+        <div class="section">
+            <h2>Test Migration</h2>
+            <p>Test the migration on a single patient first:</p>
+            <div id="test-patient-selection"></div>
+            <button onclick="testMigration()" id="test-btn" disabled>Test Migration on Selected Patient</button>
+            <div id="test-results"></div>
+        </div>
+
+        <div class="section">
+            <h2>Full Migration</h2>
+            <p><strong>WARNING:</strong> This will update ALL patients in Supabase. Make sure you've tested first!</p>
+            <button onclick="runFullMigration()" id="full-migration-btn" disabled class="danger">Run Full Migration</button>
+            <div id="migration-results"></div>
+        </div>
+
+        <div class="section">
+            <h2>Results</h2>
+            <div id="results"></div>
+        </div>
+    </div>
+
+    <script>
+        // Supabase credentials
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        // Initialize Supabase client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        let localPatients = [];
+        let supabasePatients = [];
+        let selectedTestPatient = null;
+        
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const timestamp = new Date().toLocaleTimeString();
+            const logEntry = `[${timestamp}] ${message}\n`;
+            results.textContent += logEntry;
+            results.scrollTop = results.scrollHeight;
+            
+            // Also log to console
+            console.log(`[MIGRATION] ${message}`);
+        }
+        
+        function showStatus(message, type = 'info') {
+            const statusDiv = document.createElement('div');
+            statusDiv.className = `status ${type}`;
+            statusDiv.textContent = message;
+            return statusDiv;
+        }
+        
+        async function analyzeData() {
+            log('Starting data analysis...');
+            
+            try {
+                // Get current user and organization
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                log(`User object: ${JSON.stringify(user, null, 2)}`);
+                
+                // Get organization ID with fallback mechanism
+                let orgId = user.organizationId;
+                if (!orgId && user.org) {
+                    // For Mecure Clinics, use the known org ID
+                    if (user.org.toLowerCase().includes('mecure')) {
+                        orgId = '576522cc-e769-4fb4-9487-3d150857d970';
+                    } else {
+                        // Try to get from organizations storage
+                        const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+                        const orgData = organizations[user.org];
+                        if (orgData && orgData.id) {
+                            orgId = orgData.id;
+                        }
+                    }
+                }
+                
+                if (!orgId) {
+                    throw new Error('No organization ID found. Please log in first.');
+                }
+                
+                // Update user object with the found orgId
+                user.organizationId = orgId;
+                
+                log(`User: ${user.firstName} ${user.lastName}`);
+                log(`Organization ID: ${user.organizationId}`);
+                
+                // Load local patients
+                const patientsKey = `patients_${orgId}`;
+                localPatients = JSON.parse(localStorage.getItem(patientsKey) || "[]");
+                log(`Local patients: ${localPatients.length}`);
+                
+                // Load Supabase patients
+                const { data: supabaseData, error } = await supabase
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', orgId);
+                
+                if (error) {
+                    throw new Error(`Supabase error: ${error.message}`);
+                }
+                
+                supabasePatients = supabaseData || [];
+                log(`Supabase patients: ${supabasePatients.length}`);
+                
+                // Analyze what needs migration
+                const analysisResults = document.getElementById('analysis-results');
+                analysisResults.innerHTML = '';
+                
+                let needsMigration = 0;
+                let hasAllData = 0;
+                
+                for (const localPatient of localPatients) {
+                    const supabasePatient = supabasePatients.find(sp => sp.patient_id === localPatient.id);
+                    
+                    if (supabasePatient) {
+                        // Check if demographic fields are missing
+                        const hasAddress = supabasePatient.address_line1 || supabasePatient.city || supabasePatient.state;
+                        const hasEmergency = supabasePatient.emergency_contact_name || supabasePatient.emergency_contact_phone;
+                        const hasDemographics = supabasePatient.email || supabasePatient.tribe || supabasePatient.marital_status;
+                        
+                        if (!hasAddress || !hasEmergency || !hasDemographics) {
+                            needsMigration++;
+                        } else {
+                            hasAllData++;
+                        }
+                    } else {
+                        needsMigration++;
+                    }
+                }
+                
+                analysisResults.appendChild(showStatus(`? Patients with complete data: ${hasAllData}`, 'success'));
+                analysisResults.appendChild(showStatus(`Patients needing migration: ${needsMigration}`, 'warning'));
+                analysisResults.appendChild(showStatus(`Total local patients: ${localPatients.length}`, 'info'));
+                analysisResults.appendChild(showStatus(`Total Supabase patients: ${supabasePatients.length}`, 'info'));
+                
+                // Show test patient selection
+                if (needsMigration > 0) {
+                    showTestPatientSelection();
+                    document.getElementById('test-btn').disabled = false;
+                    document.getElementById('full-migration-btn').disabled = false;
+                }
+                
+                log(`? Analysis complete. ${needsMigration} patients need migration.`);
+                
+            } catch (error) {
+                log(`? Analysis failed: ${error.message}`, 'error');
+                const analysisResults = document.getElementById('analysis-results');
+                analysisResults.innerHTML = '';
+                analysisResults.appendChild(showStatus(`? Analysis failed: ${error.message}`, 'error'));
+            }
+        }
+        
+        function showTestPatientSelection() {
+            const container = document.getElementById('test-patient-selection');
+            container.innerHTML = '<h3>Select a patient for testing:</h3>';
+            
+            const patientList = document.createElement('div');
+            patientList.className = 'patient-list';
+            
+            for (const localPatient of localPatients) {
+                const supabasePatient = supabasePatients.find(sp => sp.patient_id === localPatient.id);
+                const hasAddress = supabasePatient && (supabasePatient.address_line1 || supabasePatient.city);
+                const hasEmergency = supabasePatient && (supabasePatient.emergency_contact_name || supabasePatient.emergency_contact_phone);
+                const hasDemographics = supabasePatient && (supabasePatient.email || supabasePatient.tribe);
+                
+                const needsMigration = !hasAddress || !hasEmergency || !hasDemographics;
+                
+                if (needsMigration) {
+                    const patientDiv = document.createElement('div');
+                    patientDiv.className = 'patient-item';
+                    
+                    const patientInfo = document.createElement('div');
+                    patientInfo.className = 'patient-info';
+                    patientInfo.innerHTML = `
+                        <strong>${localPatient.firstName} ${localPatient.lastName}</strong> (${localPatient.id})<br>
+                        <small>
+                            Address: ${hasAddress ? 'Yes' : 'No'} | 
+                            Emergency: ${hasEmergency ? 'Yes' : 'No'} | 
+                            Demographics: ${hasDemographics ? 'Yes' : 'No'}
+                        </small>
+                    `;
+                    
+                    const selectBtn = document.createElement('button');
+                    selectBtn.className = 'btn-small';
+                    selectBtn.textContent = 'Select';
+                    selectBtn.onclick = () => {
+                        selectedTestPatient = localPatient;
+                        // Update UI to show selection
+                        document.querySelectorAll('.patient-item').forEach(item => {
+                            item.style.backgroundColor = '';
+                        });
+                        patientDiv.style.backgroundColor = '#e8f5e8';
+                        log(`Selected patient for testing: ${localPatient.firstName} ${localPatient.lastName} (${localPatient.id})`);
+                    };
+                    
+                    patientDiv.appendChild(patientInfo);
+                    patientDiv.appendChild(selectBtn);
+                    patientList.appendChild(patientDiv);
+                }
+            }
+            
+            container.appendChild(patientList);
+        }
+        
+        async function testMigration() {
+            if (!selectedTestPatient) {
+                alert('Please select a patient for testing first.');
+                return;
+            }
+            
+            log(`Starting test migration for: ${selectedTestPatient.firstName} ${selectedTestPatient.lastName}`);
+            
+            try {
+                const result = await migratePatient(selectedTestPatient);
+                
+                const testResults = document.getElementById('test-results');
+                testResults.innerHTML = '';
+                
+                if (result.success) {
+                    testResults.appendChild(showStatus(`? Test migration successful!`, 'success'));
+                    testResults.appendChild(showStatus(`Updated fields: ${result.updatedFields.join(', ')}`, 'info'));
+                    log(`? Test migration completed successfully`);
+                } else {
+                    testResults.appendChild(showStatus(`? Test migration failed: ${result.error}`, 'error'));
+                    log(`? Test migration failed: ${result.error}`);
+                }
+                
+            } catch (error) {
+                log(`? Test migration error: ${error.message}`);
+                const testResults = document.getElementById('test-results');
+                testResults.innerHTML = '';
+                testResults.appendChild(showStatus(`? Test migration error: ${error.message}`, 'error'));
+            }
+        }
+        
+        async function runFullMigration() {
+            if (!confirm('This will update ALL patients in Supabase. Are you sure you want to continue?')) {
+                return;
+            }
+            
+            log('Starting full migration...');
+            
+            const migrationResults = document.getElementById('migration-results');
+            migrationResults.innerHTML = '';
+            
+            let successCount = 0;
+            let errorCount = 0;
+            const errors = [];
+            
+            for (let i = 0; i < localPatients.length; i++) {
+                const patient = localPatients[i];
+                log(`Migrating patient ${i + 1}/${localPatients.length}: ${patient.firstName} ${patient.lastName}`);
+                
+                try {
+                    const result = await migratePatient(patient);
+                    if (result.success) {
+                        successCount++;
+                        log(`? Success: ${patient.firstName} ${patient.lastName}`);
+                    } else {
+                        errorCount++;
+                        errors.push(`${patient.firstName} ${patient.lastName}: ${result.error}`);
+                        log(`? Failed: ${patient.firstName} ${patient.lastName} - ${result.error}`);
+                    }
+                } catch (error) {
+                    errorCount++;
+                    errors.push(`${patient.firstName} ${patient.lastName}: ${error.message}`);
+                    log(`? Error: ${patient.firstName} ${patient.lastName} - ${error.message}`);
+                }
+                
+                // Small delay to avoid overwhelming the API
+                await new Promise(resolve => setTimeout(resolve, 100));
+            }
+            
+            // Show final results
+            migrationResults.appendChild(showStatus(`? Successful migrations: ${successCount}`, 'success'));
+            migrationResults.appendChild(showStatus(`? Failed migrations: ${errorCount}`, errorCount > 0 ? 'error' : 'info'));
+            
+            if (errors.length > 0) {
+                const errorDetails = document.createElement('div');
+                errorDetails.innerHTML = '<h4>Error Details:</h4><ul>' + errors.map(e => `<li>${e}</li>`).join('') + '</ul>';
+                migrationResults.appendChild(errorDetails);
+            }
+            
+            log(`Full migration completed. Success: ${successCount}, Errors: ${errorCount}`);
+        }
+        
+        async function migratePatient(localPatient) {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            
+            // Get organization ID with fallback mechanism
+            let orgId = user.organizationId;
+            if (!orgId && user.org) {
+                // For Mecure Clinics, use the known org ID
+                if (user.org.toLowerCase().includes('mecure')) {
+                    orgId = '576522cc-e769-4fb4-9487-3d150857d970';
+                } else {
+                    // Try to get from organizations storage
+                    const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+                    const orgData = organizations[user.org];
+                    if (orgData && orgData.id) {
+                        orgId = orgData.id;
+                    }
+                }
+            }
+            
+            // Check if patient exists in Supabase
+            const { data: existingPatient, error: fetchError } = await supabase
+                .from('patients')
+                .select('*')
+                .eq('patient_id', localPatient.id)
+                .eq('organization_id', orgId)
+                .single();
+            
+            if (fetchError && fetchError.code !== 'PGRST116') { // PGRST116 = no rows returned
+                throw new Error(`Failed to fetch patient: ${fetchError.message}`);
+            }
+            
+            // Prepare update data
+            const updateData = {
+                first_name: localPatient.firstName,
+                last_name: localPatient.lastName,
+                middle_name: localPatient.middleName || null,
+                gender: localPatient.gender,
+                date_of_birth: localPatient.dob || null,
+                phone: localPatient.phone,
+                email: localPatient.email || null,
+                address_line1: localPatient.addressLine1 || null,
+                address_line2: localPatient.addressLine2 || null,
+                city: localPatient.city || null,
+                state: localPatient.state || null,
+                country: localPatient.country || null,
+                postal_code: localPatient.postalCode || null,
+                emergency_contact_name: localPatient.emergencyFirstName && localPatient.emergencyLastName ? 
+                    `${localPatient.emergencyFirstName} ${localPatient.emergencyLastName}` : null,
+                emergency_contact_relationship: localPatient.emergencyRelationship || null,
+                emergency_contact_phone: localPatient.emergencyPhone || null,
+                emergency_contact_email: localPatient.emergencyEmail || null,
+                emergency_contact_address: localPatient.emergencyAddressLine1 ? 
+                    `${localPatient.emergencyAddressLine1}${localPatient.emergencyAddressLine2 ? ', ' + localPatient.emergencyAddressLine2 : ''}, ${localPatient.emergencyCity || ''}, ${localPatient.emergencyState || ''}, ${localPatient.emergencyCountry || ''}` : null,
+                blood_group: localPatient.bloodGroup || null,
+                genotype: localPatient.genotype || null,
+                tribe: localPatient.tribe || null,
+                occupation: localPatient.occupation || null,
+                marital_status: localPatient.maritalStatus || null,
+                allergies: localPatient.allergies ? JSON.stringify(localPatient.allergies) : '[]',
+                chronic_conditions: localPatient.conditions ? JSON.stringify(localPatient.conditions) : '[]',
+                medications: localPatient.medications ? JSON.stringify(localPatient.medications) : '[]',
+                medical_history: localPatient.medicalHistory ? JSON.stringify(localPatient.medicalHistory) : '[]',
+                diagnoses: localPatient.diagnoses ? JSON.stringify(localPatient.diagnoses) : '[]',
+                payment_source: localPatient.paymentSource || 'Self Pay',
+                insurance_name: localPatient.insuranceName || null,
+                insurance_policy_number: localPatient.insurancePolicyNumber || null,
+                insurance_member_number: localPatient.insuranceMemberNumber || null
+            };
+            
+            let result;
+            const updatedFields = [];
+            
+            if (existingPatient) {
+                // Update existing patient
+                const { data, error } = await supabase
+                    .from('patients')
+                    .update(updateData)
+                    .eq('patient_id', localPatient.id)
+                    .eq('organization_id', orgId)
+                    .select()
+                    .single();
+                
+                if (error) {
+                    return { success: false, error: error.message };
+                }
+                
+                result = data;
+                
+                // Track which fields were updated
+                Object.keys(updateData).forEach(key => {
+                    if (updateData[key] !== null && updateData[key] !== existingPatient[key]) {
+                        updatedFields.push(key);
+                    }
+                });
+                
+            } else {
+                // Insert new patient
+                const insertData = {
+                    ...updateData,
+                    patient_id: localPatient.id,
+                    organization_id: orgId
+                };
+                
+                const { data, error } = await supabase
+                    .from('patients')
+                    .insert(insertData)
+                    .select()
+                    .single();
+                
+                if (error) {
+                    return { success: false, error: error.message };
+                }
+                
+                result = data;
+                updatedFields.push('new_patient_created');
+            }
+            
+            return { 
+                success: true, 
+                data: result, 
+                updatedFields: updatedFields,
+                wasNew: !existingPatient
+            };
+        }
+        
+        // Initialize on page load
+        window.addEventListener('load', () => {
+            log('Patient Demographics Migration Tool loaded');
+            log('Please make sure you are logged in to the EHR system');
+        });
+    </script>
+
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('[OK] Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</body>
+</html>

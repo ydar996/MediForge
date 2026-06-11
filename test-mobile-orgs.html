@@ -1,0 +1,144 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test Mobile Organizations</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .org-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .org-name { font-weight: bold; color: #333; }
+        .org-details { color: #666; font-size: 14px; }
+        .error { color: red; }
+        .success { color: green; }
+    </style>
+</head>
+<body>
+    <h1>Test Mobile Organizations in Supabase</h1>
+    <div id="results"></div>
+    
+    <!-- Load Supabase SDK directly for mobile compatibility -->
+    <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js"></script>
+    <script>
+        // Mobile-specific Supabase client initialization
+        async function initializeMobileSupabase() {
+            console.log('🔄 Initializing mobile Supabase client...');
+            
+            // Wait for Supabase library to load
+            let attempts = 0;
+            const maxAttempts = 20; // 10 seconds total
+            
+            while (attempts < maxAttempts) {
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    console.log('✅ Supabase library loaded');
+                    break;
+                }
+                console.log(`🔄 Waiting for Supabase library... (attempt ${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.error('❌ Supabase library failed to load');
+                return false;
+            }
+            
+            // Initialize Supabase client manually for mobile
+            try {
+                const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+                const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+                
+                const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    },
+                    global: {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                });
+                
+                window.supabaseClient = supabaseClient;
+                console.log('✅ Mobile Supabase client initialized successfully');
+                return true;
+                
+            } catch (error) {
+                console.error('❌ Mobile Supabase client initialization failed:', error);
+                return false;
+            }
+        }
+        
+        async function testMobileOrganizations() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>🔄 Loading organizations from Supabase...</p>';
+            
+            try {
+                // Initialize Supabase client for mobile
+                const clientReady = await initializeMobileSupabase();
+                
+                if (!clientReady || !window.supabaseClient) {
+                    resultsDiv.innerHTML = '<p class="error">❌ Failed to initialize Supabase client on mobile device</p>';
+                    return;
+                }
+                
+                console.log('🔍 Testing mobile organizations...');
+                
+                // Query all organizations from Supabase
+                const { data: orgs, error } = await window.supabaseClient
+                    .from('organizations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    resultsDiv.innerHTML = `<p class="error">❌ Error: ${error.message}</p>`;
+                    return;
+                }
+                
+                console.log('📊 Organizations found:', orgs);
+                
+                if (!orgs || orgs.length === 0) {
+                    resultsDiv.innerHTML = '<p class="error">❌ No organizations found in Supabase</p>';
+                    return;
+                }
+                
+                // Display organizations
+                let html = `<p class="success">✅ Found ${orgs.length} organizations in Supabase:</p>`;
+                
+                orgs.forEach(org => {
+                    const createdDate = new Date(org.created_at).toLocaleString();
+                    html += `
+                        <div class="org-item">
+                            <div class="org-name">${org.name}</div>
+                            <div class="org-details">
+                                ID: ${org.id}<br>
+                                Country: ${org.country || 'N/A'}<br>
+                                State: ${org.state || 'N/A'}<br>
+                                City: ${org.city || 'N/A'}<br>
+                                Org Code: ${org.org_code || 'N/A'}<br>
+                                Created: ${createdDate}<br>
+                                Status: ${org.status || 'active'}
+                            </div>
+                        </div>
+                    `;
+                });
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                console.error('❌ Test error:', error);
+                resultsDiv.innerHTML = `<p class="error">❌ Test failed: ${error.message}</p>`;
+            }
+        }
+        
+        // Run test when page loads
+        document.addEventListener('DOMContentLoaded', testMobileOrganizations);
+    </script>
+</body>
+</html>

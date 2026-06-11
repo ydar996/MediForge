@@ -1,0 +1,961 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Test Result Details - Lab Scientist View - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=217">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 12px 24px;
+      background: #008753;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    
+    .back-button:hover {
+      background: #006b42;
+    }
+    
+    .results-container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .patient-info {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .patient-info h2 {
+      margin: 0 0 10px 0;
+      font-size: 24px;
+    }
+    
+    .patient-info p {
+      margin: 5px 0;
+      opacity: 0.9;
+    }
+    
+    .order-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border-left: 4px solid #008753;
+    }
+    
+    .order-info h3 {
+      margin: 0 0 15px 0;
+      color: #008753;
+      font-size: 20px;
+    }
+    
+    .order-info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+    }
+    
+    .order-info-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .order-info-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      margin-bottom: 5px;
+    }
+    
+    .order-info-value {
+      font-size: 16px;
+      color: #333;
+      font-weight: 600;
+    }
+    
+    .test-header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 0;
+    }
+    
+    .test-header h3 {
+      margin: 0;
+      font-size: 22px;
+    }
+    
+    .test-content {
+      background: white;
+      border: 2px solid #008753;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 30px;
+    }
+    
+    .result-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f8f9fa;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+    
+    .result-item.abnormal {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    
+    .result-label {
+      font-weight: 600;
+      color: #333;
+      font-size: 14px;
+      text-transform: capitalize;
+    }
+    
+    .result-value {
+      font-size: 18px;
+      color: #008753;
+      font-weight: 500;
+    }
+    
+    .result-value.abnormal {
+      color: #dc3545;
+    }
+    
+    .result-range {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+    
+    .notes-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #008753;
+    }
+    
+    .notes-section h4 {
+      margin: 0 0 10px 0;
+      color: #008753;
+    }
+    
+    .file-section {
+      margin-top: 20px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #008753;
+    }
+    
+    .file-section h4 {
+      margin: 0 0 10px 0;
+      color: #008753;
+    }
+    
+    .file-link {
+      display: inline-block;
+      padding: 10px 20px;
+      background: #008753;
+      color: white;
+      text-decoration: none;
+      border-radius: 6px;
+      margin-top: 10px;
+      transition: background 0.3s;
+    }
+    
+    .file-link:hover {
+      background: #006b42;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .empty-state h3 {
+      color: #333;
+      margin-bottom: 10px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 15px;
+    }
+    
+    .status-completed {
+      background: #28a745;
+      color: white;
+    }
+    
+    .status-reviewed {
+      background: #17a2b8;
+      color: white;
+    }
+    
+    .status-unreviewed {
+      background: #ffc107;
+      color: #333;
+    }
+    
+    .review-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #008753;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .review-section.unreviewed {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+    
+    .review-info {
+      flex: 1;
+      min-width: 200px;
+    }
+    
+    .review-info h4 {
+      margin: 0 0 8px 0;
+      color: #008753;
+    }
+    
+    .review-section.unreviewed .review-info h4 {
+      color: #856404;
+    }
+    
+    .review-info p {
+      margin: 5px 0;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .review-button {
+      padding: 12px 24px;
+      background: #008753;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      white-space: nowrap;
+    }
+    
+    .review-button:hover {
+      background: #006b42;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .review-button:active {
+      transform: translateY(0);
+    }
+    
+    .review-button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .review-button.reviewed {
+      background: #6c757d;
+    }
+    
+    .review-button.reviewed:hover {
+      background: #5a6268;
+    }
+
+    .doctor-note-section {
+      margin-top: 30px;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #008753;
+    }
+
+    .doctor-note-section h4 {
+      margin: 0 0 10px 0;
+      color: #008753;
+    }
+
+    .doctor-note-textarea {
+      width: 100%;
+      min-height: 120px;
+      padding: 12px;
+      border-radius: 6px;
+      border: 1px solid #ccc;
+      font-size: 14px;
+      resize: vertical;
+      background: #fff;
+    }
+
+    .doctor-note-actions {
+      margin-top: 12px;
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      flex-wrap: wrap;
+    }
+
+    .doctor-note-status {
+      font-size: 13px;
+      color: #666;
+    }
+    
+    @media (max-width: 768px) {
+      .result-item {
+        grid-template-columns: 1fr;
+        gap: 10px;
+      }
+      
+      .order-info-grid {
+        grid-template-columns: 1fr;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a class='back-button' id="back-to-results" href='/lab-scientist-lab-results'>← Back to Lab Results</a>
+    <h1>🔬 Lab Test Result Details (View Only)</h1>
+  </div>
+  
+  <div id="access-denied" class="empty-state" style="display: none;">
+    <h3>Access Restricted</h3>
+    <p>This page is only accessible to Medical Lab Scientists.</p>
+    <a href="dashboard" class="back-button" style="margin-top: 20px;">← Back to Dashboard</a>
+  </div>
+  
+  <div id="results-content">
+    <div class="loading">Loading test result details...</div>
+  </div>
+  
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/lab-results-manager.js"></script>
+  <script src="js/patient-id-normalizer.js?v=1"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script>
+    // Wait for Supabase client to be ready
+    async function waitForSupabaseClient(maxAttempts = 50) {
+      for (let i = 0; i < maxAttempts; i++) {
+        if (typeof window.getLabSupabaseClient === 'function') {
+          return true;
+        }
+        await new Promise(resolve => setTimeout(resolve, 100));
+      }
+      return false;
+    }
+    
+    // Get URL parameters
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+    const testName = urlParams.get('testName');
+    
+    function isLabScientistUser() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const labScientistRoles = [
+        'Medical Lab Scientist',
+        'Lab Scientist',
+        'Medical Laboratory Scientist',
+        'Laboratory Scientist',
+        'Lab Tech',
+        'Laboratory Technician'
+      ];
+      return labScientistRoles.some(role =>
+        user.role === role || user.role?.toLowerCase() === role.toLowerCase()
+      );
+    }
+    
+    // Initialize page after Supabase client is ready
+    (async function() {
+      const accessDenied = document.getElementById('access-denied');
+      if (!isLabScientistUser()) {
+        const contentDiv = document.getElementById('results-content');
+        if (contentDiv) {
+          contentDiv.style.display = 'none';
+        }
+        if (accessDenied) {
+          accessDenied.style.display = 'block';
+        }
+        return;
+      }
+      const returnUrl = urlParams.get('returnUrl');
+      if (returnUrl) {
+        const backLink = document.getElementById('back-to-results');
+        if (backLink) backLink.href = returnUrl;
+      }
+      if (!orderId || !testName) {
+        document.getElementById('results-content').innerHTML = `
+          <div class="empty-state">
+            <h3>Invalid Request</h3>
+            <p>Missing required parameters. Please go back and try again.</p>
+          </div>
+        `;
+        return;
+      }
+      
+      // Wait for Supabase client to be ready
+      const isReady = await waitForSupabaseClient();
+      if (!isReady) {
+        document.getElementById('results-content').innerHTML = `
+          <div class="empty-state">
+            <h3>Error Loading</h3>
+            <p>Unable to initialize database connection. Please refresh the page.</p>
+          </div>
+        `;
+        console.error('❌ [LAB-RESULT-DETAILS] Supabase client not available after waiting');
+        return;
+      }
+      
+      // Now load the test details
+      loadTestDetails(orderId, testName);
+    })();
+    
+    // Format audit trail array for human-readable display (security/compliance visibility)
+    function formatAuditTrail(entries, userMap) {
+      if (!Array.isArray(entries) || entries.length === 0) return '';
+      const sorted = [...entries].sort((a, b) => new Date(b.at || b.timestamp || 0) - new Date(a.at || a.timestamp || 0));
+      return sorted.map(e => {
+        const action = (e.action || 'updated').replace(/_/g, ' ');
+        let by = e.by || e.user || 'Unknown';
+        if (userMap && typeof by === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(by)) {
+          by = userMap[by] || by;
+        }
+        const at = e.at || e.timestamp;
+        const dateStr = at ? new Date(at).toLocaleString('en-US', { dateStyle: 'medium', timeStyle: 'short' }) : 'N/A';
+        return `${action} by ${by} on ${dateStr}`;
+      }).join('; ');
+    }
+
+    // Helper function to extract display value from result field
+    function getResultDisplayValue(value, userMap) {
+      if (value === null || value === undefined || value === '') {
+        return '';
+      }
+      
+      // If value is an object (has value, unit, normalRange structure)
+      if (typeof value === 'object' && !Array.isArray(value)) {
+        // Check if it's a result object with value property
+        if (value.value !== undefined && value.value !== null && value.value !== '') {
+          let display = String(value.value);
+          if (value.unit && value.unit !== '') {
+            display += ` ${value.unit}`;
+          }
+          if (value.normalRange && value.normalRange !== '') {
+            display += ` (Range: ${value.normalRange})`;
+          }
+          // Check for reactionStrength (for Blood Group tests)
+          if (value.reactionStrength && value.reactionStrength !== '') {
+            display += ` [${value.reactionStrength}]`;
+          }
+          return display;
+        }
+        // If it's an object but doesn't have a value property, try to extract meaningful data
+        if (value.comments !== undefined) {
+          return String(value.comments);
+        }
+        // Other complex objects: skip
+        return '';
+      }
+      
+      // Arrays: if audit trail format [{action, by, at}], format for display
+      if (Array.isArray(value) && value.length > 0) {
+        const first = value[0];
+        if (first && typeof first === 'object' && (first.action !== undefined || first.by !== undefined || first.at !== undefined)) {
+          return formatAuditTrail(value, userMap);
+        }
+        return '';
+      }
+      
+      // If it's a string or number, return as is
+      return String(value);
+    }
+    
+    async function loadTestDetails(orderId, testName) {
+      const contentDiv = document.getElementById('results-content');
+      
+      try {
+        const supabase = await window.getLabSupabaseClient();
+        if (!supabase) {
+          throw new Error('Supabase client not available');
+        }
+        
+        // Get the lab order - use 'orders' table with type='lab' (same as dashboard)
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .eq('type', 'lab')
+          .single();
+        
+        if (orderError || !order) {
+          throw new Error('Order not found');
+        }
+        
+        // Parse results
+        let results = {};
+        try {
+          if (typeof order.results === 'string' && order.results.trim()) {
+            results = JSON.parse(order.results);
+          } else if (order.results && typeof order.results === 'object') {
+            results = order.results;
+          }
+        } catch (e) {
+          console.warn('Failed to parse results:', e);
+        }
+        
+        const testResults = results[testName];
+        
+        if (!testResults || typeof testResults !== 'object') {
+          contentDiv.innerHTML = `
+            <div class="empty-state">
+              <h3>Test Results Not Found</h3>
+              <p>The requested test results could not be found.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Get patient information
+        const orgId = await getLabOrgId();
+        let patient = null;
+        if (orgId) {
+          const { data: patientData } = await supabase
+            .from('patients')
+            .select('id, patient_id, first_name, last_name, date_of_birth, gender')
+            .eq('patient_id', order.patient_id)
+            .eq('organization_id', orgId)
+            .maybeSingle();
+          
+          if (patientData) {
+            patient = {
+              id: patientData.id || patientData.patient_id,
+              patient_id: patientData.patient_id,
+              firstName: patientData.first_name,
+              lastName: patientData.last_name,
+              dateOfBirth: patientData.date_of_birth,
+              gender: patientData.gender
+            };
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!patient) {
+          const patients = JSON.parse(localStorage.getItem('patients') || '[]');
+          patient = patients.find(p => p.patient_id === order.patient_id || p.id === order.patient_id);
+        }
+        
+        const patientName = patient ? `${patient.first_name || patient.firstName || ''} ${patient.last_name || patient.lastName || ''}`.trim() : order.patient_id;
+        
+        // Canonical MRN for UI (maps legacy MIN → MFA-MC/MFA-SC)
+        const orderPatientToken = order.patient_id || '';
+        let displayPatientId = 'N/A';
+        if (typeof window.patientMrnDisplay === 'function') {
+          displayPatientId = patient
+            ? window.patientMrnDisplay(patient, orderPatientToken)
+            : window.patientMrnDisplay(orderPatientToken, orderPatientToken);
+        } else if (patient && typeof window.getPatientIdentifier === 'function') {
+          displayPatientId = window.getPatientIdentifier(patient) || 'N/A';
+        } else if (patient) {
+          displayPatientId = patient.patient_id || patient.patientNumber || 'N/A';
+        }
+        
+        const patientId = displayPatientId;
+        const patientDob = patient ? (patient.date_of_birth || patient.dateOfBirth || 'N/A') : 'N/A';
+        const patientGender = patient ? (patient.gender || 'N/A') : 'N/A';
+        
+        // Get user name and role
+        let orderedByName = 'Unknown User';
+        if (order.created_by) {
+          try {
+            const username = order.created_by;
+            let userData = null;
+            
+            // Try username match first (most common case)
+            const { data: usernameMatch } = await supabase
+              .from('users')
+              .select('first_name, last_name, username, role')
+              .eq('username', username)
+              .maybeSingle();
+            
+            if (usernameMatch) {
+              userData = usernameMatch;
+            } else {
+              // Try other fields if username doesn't match
+              const { data: otherMatch } = await supabase
+                .from('users')
+                .select('first_name, last_name, username, role')
+                .or(`id.eq.${username},auth_user_id.eq.${username}`)
+                .limit(1)
+                .maybeSingle();
+              
+              if (otherMatch) {
+                userData = otherMatch;
+              }
+            }
+            
+            if (userData) {
+              const firstName = userData.first_name || '';
+              const lastName = userData.last_name || '';
+              const fullName = (firstName && lastName) ? `${firstName} ${lastName}` : (firstName || lastName || userData.username || 'Unknown');
+              const role = (userData.role || '').toLowerCase();
+              
+              // Determine appropriate title based on role
+              let title = '';
+              if (role.includes('lab') || role.includes('scientist') || role === 'medical lab scientist') {
+                title = 'Medical Lab Scientist';
+              } else if (role.includes('doctor') || role.includes('physician') || role === 'dr') {
+                title = 'Dr.';
+              } else if (role.includes('nurse')) {
+                title = 'Nurse';
+              } else if (role.includes('admin')) {
+                title = 'Admin';
+              } else if (role.includes('staff')) {
+                title = 'Staff';
+              } else {
+                // Default to Dr. for backward compatibility
+                title = 'Dr.';
+              }
+              
+              orderedByName = `${title} ${fullName}`.trim();
+            } else if (order.created_by && !order.created_by.includes('-')) {
+              // Fallback: use the username with appropriate title
+              const username = order.created_by;
+              if (username.startsWith('Dr.') || username.startsWith('Medical Lab Scientist')) {
+                orderedByName = username;
+              } else {
+                // Default to Dr. for backward compatibility
+                orderedByName = `Dr. ${username}`;
+              }
+            }
+          } catch (error) {
+            console.warn('Could not fetch user name:', error);
+            // Fallback to username
+            if (order.created_by && !order.created_by.includes('-')) {
+              orderedByName = `Dr. ${order.created_by}`;
+            }
+          }
+        }
+        
+        // Get organization details
+        let orgName = 'Medical Clinic';
+        let orgAddress = '';
+        let orgPhone = '';
+        
+        if (order.organization_id) {
+          try {
+            const { data: orgData } = await supabase
+              .from('organizations')
+              .select('name, address_line1, address_line2, city, state, country, phone')
+              .eq('id', order.organization_id)
+              .single();
+            
+            if (orgData) {
+              orgName = orgData.name || orgName;
+              const addrParts = [
+                orgData.address_line1,
+                orgData.address_line2,
+                orgData.city,
+                orgData.state,
+                orgData.country
+              ].filter(Boolean);
+              orgAddress = addrParts.join(', ');
+              orgPhone = orgData.phone || '';
+            }
+          } catch (error) {
+            console.warn('Could not fetch organization details:', error);
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            if (user.org) orgName = user.org;
+          }
+        }
+        
+        // Format dates
+        const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric' 
+        }) : 'N/A';
+        
+        const completedDate = testResults.completed_at ? new Date(testResults.completed_at).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'N/A';
+        
+        // Check review status
+        const isReviewed = testResults.reviewed_at && testResults.reviewed_by;
+        const reviewedDate = testResults.reviewed_at ? new Date(testResults.reviewed_at).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : null;
+        
+        // Get reviewer name if available
+        let reviewerName = 'Unknown';
+        if (testResults.reviewed_by) {
+          try {
+            const { data: reviewerData } = await supabase
+              .from('users')
+              .select('first_name, last_name, username')
+              .or(`id.eq.${testResults.reviewed_by},username.eq.${testResults.reviewed_by},auth_user_id.eq.${testResults.reviewed_by}`)
+              .limit(1)
+              .maybeSingle();
+            
+            if (reviewerData) {
+              const firstName = reviewerData.first_name || '';
+              const lastName = reviewerData.last_name || '';
+              reviewerName = (firstName && lastName) ? `${firstName} ${lastName}` : (firstName || lastName || reviewerData.username || 'Unknown');
+            } else {
+              reviewerName = testResults.reviewed_by;
+            }
+          } catch (error) {
+            console.warn('Could not fetch reviewer name:', error);
+            reviewerName = testResults.reviewed_by;
+          }
+        }
+        
+        // Build HTML
+        let html = `
+          <div class="patient-info">
+            <h2>${patientName}</h2>
+            <p>Patient ID: ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patientId) : patientId} | DOB: ${patientDob} | Gender: ${patientGender}</p>
+          </div>
+          
+          <div class="order-info">
+            <h3>Order Information</h3>
+            <div class="order-info-grid">
+              <div class="order-info-item">
+                <div class="order-info-label">Order Number</div>
+                <div class="order-info-value">${typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serial_number || order.id.substring(0, 8), order.id, order) : (order.serial_number || order.id.substring(0, 8))}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Ordered By</div>
+                <div class="order-info-value">${orderedByName}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Order Date</div>
+                <div class="order-info-value">${orderDate}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Completed Date</div>
+                <div class="order-info-value">${completedDate}</div>
+              </div>
+            </div>
+          </div>
+          
+          <div class="results-container">
+            <div class="test-header">
+              <h3>${testName}${(typeof window.getLabTestCategory === 'function' && window.getLabTestCategory(testName)) ? ' <span style="font-size: 14px; opacity: 0.9;">(' + window.getLabTestCategory(testName) + ')</span>' : ''}
+                <span class="status-badge status-completed">✓ Completed</span>
+                ${isReviewed ? '<span class="status-badge status-reviewed">✓ Reviewed</span>' : '<span class="status-badge status-unreviewed">⚠ Not Reviewed</span>'}
+              </h3>
+            </div>
+            <div class="test-content">
+        `;
+        
+        // Display each result field
+        const metadataFields = ['status', 'entered_at', 'entered_by', 'completed_at', 'completed_by', 'started_at', 'started_by', 'file_name', 'file_data', 'file_type', 'file_size', 'notes', 'doctor_note', 'doctor_note_by', 'doctor_note_updated_at'];
+        
+        // Resolve UUIDs in audit trails to display names
+        const auditTrailByIds = new Set();
+        for (const [k, v] of Object.entries(testResults)) {
+          if ((k === 'auditTrail' || k === 'AuditTrail') && Array.isArray(v)) {
+            v.forEach(e => { if (e && e.by && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(e.by)) auditTrailByIds.add(e.by); });
+          }
+        }
+        let userMap = {};
+        if (auditTrailByIds.size > 0) {
+          const ids = Array.from(auditTrailByIds);
+          const orClause = ids.flatMap(id => [`id.eq.${id}`, `auth_user_id.eq.${id}`]).join(',');
+          const { data: users } = await supabase.from('users').select('id, auth_user_id, first_name, last_name, username').or(orClause);
+          if (users) users.forEach(u => {
+            const name = (u.first_name && u.last_name) ? `${u.first_name} ${u.last_name}`.trim() : (u.username || '');
+            const display = name || u.username || 'Unknown';
+            if (u.id) userMap[u.id] = display;
+            if (u.auth_user_id) userMap[u.auth_user_id] = display;
+          });
+        }
+        
+        const resultFields = Object.entries(testResults).filter(([key, value]) => {
+          if (metadataFields.includes(key)) return false;
+          const displayValue = getResultDisplayValue(value, userMap);
+          return displayValue !== '';
+        });
+        
+        if (resultFields.length > 0) {
+          resultFields.forEach(([key, value]) => {
+            const displayValue = getResultDisplayValue(value, userMap);
+            if (!displayValue) return;
+            
+            // Check if value is abnormal (if it has a normalRange and value is outside)
+            const isAbnormal = false; // Could be enhanced with actual range checking
+            
+            html += `
+              <div class="result-item ${isAbnormal ? 'abnormal' : ''}">
+                <div class="result-label">${key.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase())}</div>
+                <div class="result-value ${isAbnormal ? 'abnormal' : ''}">${displayValue}</div>
+              </div>
+            `;
+          });
+        } else {
+          html += `<p style="color: #666; font-style: italic;">No result data available.</p>`;
+        }
+        
+        // Show notes if available
+        if (testResults.notes) {
+          html += `
+            <div class="notes-section">
+              <h4>Additional Notes</h4>
+              <p>${testResults.notes}</p>
+            </div>
+          `;
+        }
+        
+        // Show file if available
+        if (testResults.file_name) {
+          html += `
+            <div class="file-section">
+              <h4>Result File</h4>
+              <p>${testResults.file_name}</p>
+              <a href="#" onclick="viewResultFile('${orderId}', '${testName.replace(/'/g, "\\'")}')" class="file-link">
+                📄 View File
+              </a>
+            </div>
+          `;
+        }
+        
+        // Review status (view-only)
+        html += `
+            <div class="review-section ${isReviewed ? '' : 'unreviewed'}">
+              <div class="review-info">
+                <h4>${isReviewed ? '✓ Reviewed' : '⚠ Not Yet Reviewed'}</h4>
+                ${isReviewed ? `
+                  <p><strong>Reviewed by:</strong> ${reviewerName}</p>
+                  <p><strong>Reviewed on:</strong> ${reviewedDate}</p>
+                ` : `
+                  <p>This result is awaiting doctor review.</p>
+                `}
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Organization footer
+        html += `
+          <div class="results-container" style="background: #f8f9fa; padding: 20px;">
+            <div style="text-align: center; color: #666;">
+              <p style="margin: 5px 0; font-weight: 600;">${orgName}</p>
+              ${orgAddress ? `<p style="margin: 5px 0;">${orgAddress}</p>` : ''}
+              ${orgPhone ? `<p style="margin: 5px 0;">Phone: ${orgPhone}</p>` : ''}
+            </div>
+          </div>
+        `;
+        
+        contentDiv.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading test details:', error);
+        contentDiv.innerHTML = `
+          <div class="empty-state">
+            <h3>Error Loading Results</h3>
+            <p>${error.message || 'An error occurred while loading the test results.'}</p>
+          </div>
+        `;
+      }
+    }
+    
+    function viewResultFile(orderId, testName) {
+      // Open file viewer modal or download
+      alert('File viewer will be implemented');
+    }
+    
+    
+    // Get organization ID helper
+    async function getLabOrgId() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.organizationId) return user.organizationId;
+      if (user.organization_id) return user.organization_id;
+      
+      // Try to get from Supabase
+      try {
+        const supabase = await window.getLabSupabaseClient();
+        const { data } = await supabase
+          .from('organizations')
+          .select('id')
+          .eq('name', user.org)
+          .single();
+        
+        return data?.id;
+      } catch (error) {
+        return null;
+      }
+    }
+  </script>
+</body>
+</html>
+

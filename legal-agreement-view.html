@@ -1,0 +1,829 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Agreement Details - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/legal-agreements.js?v=20250118000000"></script>
+  
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      /* Primary Nigerian Colors */
+      --primary-green: #008753;        /* Nigerian flag green */
+      --dark-green: #006b42;           /* Deep forest green */
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      
+      /* Nigerian Flag Colors */
+      --nigerian-white: #FFFFFF;       /* White stripe */
+      --nigerian-green: #008753;       /* Green stripe */
+      
+      /* Traditional Nigerian Colors */
+      --gold: #FFD700;                 /* Nigerian gold/amber */
+      --dark-gold: #B8860B;            /* Dark gold */
+      --bronze: #CD7F32;               /* Bronze accent */
+      --earth-brown: #8B4513;          /* Earthy brown */
+      --warm-orange: #FF8C00;          /* Warm orange */
+      --deep-red: #8B0000;             /* Deep red accent */
+      
+      /* Cultural Accent Colors */
+      --kente-gold: #DAA520;           /* Kente cloth gold */
+      --adire-blue: #4169E1;           /* Adire indigo blue */
+      --coral: #FF7F50;                /* Coral accent */
+      --ivory: #FFFFF0;                /* Ivory/cream */
+      
+      /* Neutral Palette */
+      --warm-gray: #F5F5DC;            /* Warm beige */
+      --charcoal: #36454F;             /* Charcoal text */
+      --soft-white: #FAFAFA;           /* Soft white background */
+    }
+    
+    body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0, 135, 83, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(218, 165, 32, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(65, 105, 225, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    body > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 50%, var(--adire-blue) 100%);
+      color: var(--nigerian-white);
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2);
+    }
+    
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--kente-gold), var(--nigerian-white));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+    }
+    
+    .header p {
+      margin: 0;
+      opacity: 0.95;
+      font-size: 16px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: var(--nigerian-white);
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.2);
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4);
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+    }
+    
+    .agreement-card {
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 12px;
+      padding: 30px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15);
+      border: 3px solid var(--primary-green);
+    }
+    
+    .agreement-header {
+      border-bottom: 3px solid var(--primary-green);
+      padding-bottom: 20px;
+      margin-bottom: 25px;
+    }
+    
+    .agreement-title {
+      font-size: 28px;
+      font-weight: 800;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--adire-blue));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      margin: 0 0 15px 0;
+    }
+    
+    .agreement-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 15px;
+      margin-top: 15px;
+    }
+    
+    .meta-item {
+      padding: 12px;
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05));
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      transition: all 0.3s ease;
+    }
+    
+    .meta-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(0, 135, 83, 0.2);
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.15), rgba(0, 107, 66, 0.1));
+    }
+    
+    .meta-label {
+      font-size: 12px;
+      color: var(--charcoal);
+      text-transform: uppercase;
+      font-weight: 600;
+      margin-bottom: 5px;
+      letter-spacing: 0.5px;
+    }
+    
+    .meta-value {
+      font-size: 16px;
+      color: var(--primary-green);
+      font-weight: 600;
+    }
+    
+    .agreement-content {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--soft-white), var(--ivory));
+      border-radius: 8px;
+      border: 2px solid rgba(0, 135, 83, 0.2);
+      line-height: 1.5;
+      color: var(--charcoal);
+      font-size: 14px;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    
+    .agreement-content h1,
+    .agreement-content h1.agreement-title {
+      color: var(--primary-green);
+      font-size: 24px;
+      margin-top: 20px;
+      margin-bottom: 10px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 8px;
+      font-weight: 800;
+      line-height: 1.3;
+    }
+    
+    .agreement-content h2 {
+      color: var(--primary-green);
+      font-size: 20px;
+      margin-top: 20px;
+      margin-bottom: 8px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 6px;
+      font-weight: 700;
+      line-height: 1.3;
+    }
+    
+    .agreement-content h3 {
+      color: var(--dark-green);
+      font-size: 16px;
+      margin-top: 12px;
+      margin-bottom: 6px;
+      font-weight: 600;
+      line-height: 1.3;
+    }
+    
+    .agreement-content p {
+      margin-bottom: 8px;
+      line-height: 1.5;
+    }
+    
+    .agreement-content .agreement-subtitle {
+      margin-bottom: 12px;
+      font-size: 14px;
+      color: var(--dark-green);
+    }
+    
+    .agreement-content ul {
+      margin-top: 8px;
+      margin-bottom: 12px;
+      padding-left: 20px;
+    }
+    
+    .agreement-content li {
+      margin-bottom: 6px;
+      line-height: 1.5;
+    }
+    
+    .agreement-content .highlight {
+      margin-top: 12px;
+      margin-bottom: 12px;
+      padding: 15px;
+    }
+    
+    .agreement-content .highlight p {
+      margin-bottom: 8px;
+    }
+    
+    .agreement-content .whereas-section {
+      margin-top: 12px;
+      margin-bottom: 12px;
+    }
+    
+    .agreement-content .whereas-section h3 {
+      margin-top: 0;
+      margin-bottom: 8px;
+    }
+    
+    .agreement-content .footer-info {
+      margin-top: 20px;
+      padding: 15px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      margin-top: 30px;
+      padding-top: 25px;
+      border-top: 3px solid var(--primary-green);
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 14px 28px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 16px;
+      cursor: pointer;
+      border: none;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.15);
+      color: var(--nigerian-white);
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4);
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, var(--adire-blue), var(--primary-green));
+    }
+    
+    .btn-secondary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+      background: linear-gradient(135deg, var(--primary-green), var(--adire-blue));
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--charcoal);
+      font-size: 18px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 12px;
+      border: 3px solid var(--primary-green);
+    }
+    
+    .error {
+      text-align: center;
+      padding: 60px 20px;
+      color: var(--deep-red);
+      font-size: 18px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 12px;
+      border: 3px solid var(--deep-red);
+    }
+    
+    .error button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, var(--deep-red), #a00000);
+      color: var(--nigerian-white);
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .error button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 8px rgba(139, 0, 0, 0.3);
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>&#128196; Legal Agreement Details</h1>
+    <p>View your signed legal agreement</p>
+  </div>
+  
+  <button class="back-button" onclick="goBack()">&larr; Back to Dashboard</button>
+  
+  <div id="agreement-container">
+    <div class="loading">Loading agreement details...</div>
+  </div>
+  
+  <script>
+    // Get agreement ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const agreementId = urlParams.get('id');
+    
+    async function loadAgreement() {
+      const container = document.getElementById('agreement-container');
+      
+      if (!agreementId) {
+        container.innerHTML = `
+          <div class="error">
+            <h2>? Agreement ID Missing</h2>
+            <p>No agreement ID provided in the URL.</p>
+            <button onclick="goBack()">Go Back</button>
+          </div>
+        `;
+        return;
+      }
+      
+      try {
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not initialized');
+        }
+        
+        // Fetch the agreement by ID
+        const { data: agreement, error } = await window.supabaseClient
+          .from('legal_agreements')
+          .select('*')
+          .eq('id', agreementId)
+          .single();
+        
+        if (error) {
+          throw new Error(error.message || 'Failed to load agreement');
+        }
+        
+        if (!agreement) {
+          throw new Error('Agreement not found');
+        }
+        
+        // Format agreement type
+        const agreementTypeLabel = agreement.agreement_type === 'service_agreement' 
+          ? 'Service Subscription Agreement' 
+          : agreement.agreement_type === 'baa' 
+          ? 'Business Associate Agreement (BAA)' 
+          : agreement.agreement_type === 'dpa'
+          ? 'Data Processing Agreement (DPA)'
+          : agreement.agreement_type;
+        
+        // Format signed date
+        const signedDate = agreement.signed_at 
+          ? new Date(agreement.signed_at).toLocaleString('en-US', {
+              year: 'numeric',
+              month: 'long',
+              day: 'numeric',
+              hour: '2-digit',
+              minute: '2-digit'
+            })
+          : 'Unknown';
+        
+        // Get agreement text (from agreement_text field or fetch from legal-agreement.html)
+        let agreementText = agreement.agreement_text || '';
+        let agreementHTML = null;
+        
+        console.log('?? Loading agreement text. Stored text length:', agreementText?.length || 0);
+        
+        // Always fetch from legal-agreement.html to get the full formatted text
+        try {
+          console.log('?? Fetching agreement text from legal-agreement.html...');
+          const response = await fetch('legal-agreement.html');
+          
+          if (!response.ok) {
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+          }
+          
+          const html = await response.text();
+          console.log('? Fetched HTML, length:', html.length);
+          
+          const parser = new DOMParser();
+          const doc = parser.parseFromString(html, 'text/html');
+          
+          // Find the correct agreement container based on agreement type
+          const containers = doc.querySelectorAll('.agreement-container');
+          console.log('?? Found', containers.length, 'agreement containers');
+          
+          let content = null;
+          
+          if (agreement.agreement_type === 'baa') {
+            // Find BAA container (second one, index 1)
+            console.log('?? Looking for BAA container (index 1)');
+            content = containers[1] || containers[0];
+          } else if (agreement.agreement_type === 'service_agreement') {
+            // Find Service Agreement container (first one, index 0)
+            console.log('?? Looking for Service Agreement container (index 0)');
+            content = containers[0];
+          } else {
+            // Default to first container or body
+            console.log('?? Using default container');
+            content = containers[0] || doc.body;
+          }
+          
+          if (content) {
+            console.log('? Found content container');
+            // Clone to avoid modifying original
+            const clone = content.cloneNode(true);
+            
+            // Remove non-content elements
+            clone.querySelectorAll('script, style').forEach(el => el.remove());
+            
+            // Get HTML content (preserves formatting)
+            agreementHTML = clone.innerHTML;
+            
+            // Also get text version for fallback
+            agreementText = clone.innerText || clone.textContent || '';
+            
+            console.log('? Extracted HTML length:', agreementHTML.length);
+            console.log('? Extracted text length:', agreementText.length);
+            
+            // Clean up extra whitespace in text version
+            agreementText = agreementText.replace(/\n{3,}/g, '\n\n').trim();
+          } else {
+            console.warn('?? No content container found, using body');
+            agreementText = doc.body.innerText || doc.body.textContent || '';
+            agreementHTML = doc.body.innerHTML;
+          }
+        } catch (fetchError) {
+          console.error('? Error fetching agreement text:', fetchError);
+          agreementText = `Error loading agreement text: ${fetchError.message}. Please contact support.`;
+        }
+        
+        // If still no text, provide a default message
+        if ((!agreementText || agreementText.trim().length === 0) && !agreementHTML) {
+          console.error('? No agreement text or HTML available');
+          agreementText = `This ${agreementTypeLabel} was signed on ${signedDate} by ${agreement.user_name} (${agreement.user_email}) in the role of ${agreement.user_role}.\n\nAgreement text not available. Please contact support for the full agreement text.`;
+        }
+        
+        // Render agreement
+        container.innerHTML = `
+          <div class="agreement-card">
+            <div class="agreement-header">
+              <h2 class="agreement-title">${agreementTypeLabel}</h2>
+              <div class="agreement-meta">
+                <div class="meta-item">
+                  <div class="meta-label">Version</div>
+                  <div class="meta-value">${agreement.agreement_version || 'N/A'}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Signed By</div>
+                  <div class="meta-value">${agreement.user_name || 'N/A'}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Role</div>
+                  <div class="meta-value">${agreement.user_role || 'N/A'}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Email</div>
+                  <div class="meta-value">${agreement.user_email || 'N/A'}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">Signed Date</div>
+                  <div class="meta-value">${signedDate}</div>
+                </div>
+                <div class="meta-item">
+                  <div class="meta-label">IP Address</div>
+                  <div class="meta-value">${agreement.ip_address || 'N/A'}</div>
+                </div>
+              </div>
+            </div>
+            
+            <div class="agreement-content" id="agreement-text">
+              ${agreementHTML ? formatAgreementHTML(agreementHTML) : formatAgreementText(agreementText)}
+            </div>
+            
+            <!-- Signature Section -->
+            <div style="margin-top: 30px; padding: 25px; background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05)); border-radius: 8px; border: 2px solid var(--primary-green);">
+              <h3 style="color: var(--primary-green); margin-top: 0; margin-bottom: 15px; font-size: 20px; font-weight: 700;">&#9998; Electronic Signature</h3>
+              <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+                <div>
+                  <div style="font-size: 12px; color: var(--charcoal); text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Signed By</div>
+                  <div style="font-size: 18px; color: var(--primary-green); font-weight: 700;">${agreement.user_name || 'N/A'}</div>
+                </div>
+                <div>
+                  <div style="font-size: 12px; color: var(--charcoal); text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Role</div>
+                  <div style="font-size: 16px; color: var(--charcoal); font-weight: 600;">${agreement.user_role || 'N/A'}</div>
+                </div>
+                <div>
+                  <div style="font-size: 12px; color: var(--charcoal); text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">Date & Time</div>
+                  <div style="font-size: 16px; color: var(--charcoal); font-weight: 600;">${signedDate}</div>
+                </div>
+                <div>
+                  <div style="font-size: 12px; color: var(--charcoal); text-transform: uppercase; font-weight: 600; margin-bottom: 5px;">IP Address</div>
+                  <div style="font-size: 14px; color: var(--charcoal); font-weight: 600;">${agreement.ip_address || 'N/A'}</div>
+                </div>
+              </div>
+              <div style="margin-top: 20px; padding: 15px; background: white; border-radius: 6px; border-left: 4px solid var(--kente-gold);">
+                <div style="font-size: 14px; color: var(--charcoal); line-height: 1.6;">
+                  <strong>Signature Confirmation:</strong> By signing this agreement, ${agreement.user_name} acknowledges that they have read, understood, and agree to be bound by the terms and conditions of this ${agreementTypeLabel}. This electronic signature has the same legal effect as a handwritten signature.
+                </div>
+              </div>
+            </div>
+            
+            <div class="action-buttons">
+              <button class="btn btn-primary" onclick="downloadPDF()">
+                &#128229; Download PDF Copy
+              </button>
+              <button class="btn btn-secondary" onclick="window.print()">
+                &#128424; Print Agreement
+              </button>
+            </div>
+          </div>
+        `;
+        
+        // Store agreement data for PDF download
+        window.currentAgreement = {
+          id: agreement.id,
+          type: agreementTypeLabel,
+          userName: agreement.user_name,
+          signedDate: signedDate,
+          version: agreement.agreement_version || 'N/A',
+          text: agreementText,
+          html: agreementHTML
+        };
+        
+      } catch (error) {
+        console.error('Error loading agreement:', error);
+        container.innerHTML = `
+          <div class="error">
+            <h2>? Error Loading Agreement</h2>
+            <p>${error.message}</p>
+            <button onclick="goBack()">Go Back</button>
+          </div>
+        `;
+      }
+    }
+    
+    function formatAgreementHTML(html) {
+      if (!html) return '<p>Agreement text not available.</p>';
+      
+      // The HTML is already formatted, just need to clean it up and apply styles
+      // Create a temporary container to process the HTML
+      const tempDiv = document.createElement('div');
+      tempDiv.innerHTML = html;
+      
+      // Apply styles to headings
+      tempDiv.querySelectorAll('h1.agreement-title').forEach(h => {
+        h.style.cssText = 'font-size: 24px; font-weight: 800; color: var(--primary-green); margin-top: 20px; margin-bottom: 10px; border-bottom: 2px solid var(--primary-green); padding-bottom: 8px; line-height: 1.3;';
+      });
+      
+      tempDiv.querySelectorAll('h2').forEach(h => {
+        h.style.cssText = 'color: var(--primary-green); font-size: 20px; margin-top: 20px; margin-bottom: 8px; border-bottom: 2px solid var(--primary-green); padding-bottom: 6px; font-weight: 700; line-height: 1.3;';
+      });
+      
+      tempDiv.querySelectorAll('h3').forEach(h => {
+        h.style.cssText = 'color: var(--dark-green); font-size: 16px; margin-top: 12px; margin-bottom: 6px; font-weight: 600; line-height: 1.3;';
+      });
+      
+      // Style paragraphs
+      tempDiv.querySelectorAll('p').forEach(p => {
+        p.style.cssText = 'margin-bottom: 8px; color: var(--charcoal); line-height: 1.5;';
+      });
+      
+      // Style agreement title
+      tempDiv.querySelectorAll('h1.agreement-title').forEach(h => {
+        h.style.cssText = 'font-size: 24px; font-weight: 800; color: var(--primary-green); margin-top: 20px; margin-bottom: 10px; border-bottom: 2px solid var(--primary-green); padding-bottom: 8px; line-height: 1.3;';
+      });
+      
+      // Style agreement subtitle
+      tempDiv.querySelectorAll('p.agreement-subtitle').forEach(p => {
+        p.style.cssText = 'margin-bottom: 12px; font-size: 14px; color: var(--dark-green); line-height: 1.4;';
+      });
+      
+      // Style highlight sections
+      tempDiv.querySelectorAll('.highlight').forEach(div => {
+        div.style.cssText = 'background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(218, 165, 32, 0.1)); padding: 15px; border-left: 5px solid var(--kente-gold); margin: 12px 0; border-radius: 8px; box-shadow: 0 4px 12px rgba(218, 165, 32, 0.2);';
+      });
+      
+      // Style whereas sections
+      tempDiv.querySelectorAll('.whereas-section').forEach(div => {
+        div.style.cssText = 'margin-top: 12px; margin-bottom: 12px;';
+      });
+      
+      tempDiv.querySelectorAll('.whereas-section h3').forEach(h => {
+        h.style.cssText = 'color: var(--dark-green); font-size: 16px; margin-top: 0; margin-bottom: 8px; font-weight: 600; line-height: 1.3;';
+      });
+      
+      // Style lists
+      tempDiv.querySelectorAll('ul').forEach(ul => {
+        ul.style.cssText = 'margin-left: 20px; margin-top: 8px; margin-bottom: 12px; padding-left: 0;';
+      });
+      
+      tempDiv.querySelectorAll('li').forEach(li => {
+        li.style.cssText = 'margin-bottom: 6px; color: var(--charcoal); line-height: 1.5;';
+      });
+      
+      // Style footer info
+      tempDiv.querySelectorAll('.footer-info').forEach(div => {
+        div.style.cssText = 'margin-top: 20px; padding: 15px; background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05)); border-radius: 8px;';
+      });
+      
+      tempDiv.querySelectorAll('.footer-info p').forEach(p => {
+        p.style.cssText = 'margin-bottom: 6px; color: var(--charcoal); line-height: 1.4; font-size: 13px;';
+      });
+      
+      return tempDiv.innerHTML;
+    }
+    
+    function formatAgreementText(text) {
+      if (!text) return '<p>Agreement text not available.</p>';
+      
+      // Convert plain text to HTML with better formatting
+      let html = text;
+      
+      // Split into paragraphs (double newlines)
+      const paragraphs = html.split(/\n\n+/).filter(p => p.trim().length > 0);
+      
+      html = paragraphs.map(para => {
+        para = para.trim();
+        
+        // Check if it's a main heading (all caps or very short and bold-looking)
+        if (para.match(/^[A-Z][A-Z\s]{15,}$/) || para.match(/^[A-Z][A-Z\s]{5,}[A-Z]$/)) {
+          return `<h2>${para}</h2>`;
+        }
+        
+        // Check if it's a numbered section heading
+        if (para.match(/^\d+\.\s+[A-Z]/)) {
+          return `<h3>${para}</h3>`;
+        }
+        
+        // Check if it starts with WHEREAS or similar
+        if (para.match(/^(WHEREAS|THEREFORE|NOW THEREFORE)/i)) {
+          return `<h3 style="color: var(--dark-green); margin-top: 25px;">${para}</h3>`;
+        }
+        
+        // Regular paragraph - convert single newlines to <br>
+        para = para.replace(/\n/g, '<br>');
+        
+        // Check for highlight sections (strong text at start)
+        if (para.match(/^<strong>/)) {
+          return `<div class="highlight" style="background: linear-gradient(135deg, rgba(255, 215, 0, 0.15), rgba(218, 165, 32, 0.1)); padding: 20px; border-left: 5px solid var(--kente-gold); margin: 25px 0; border-radius: 8px;"><p>${para}</p></div>`;
+        }
+        
+        return `<p>${para}</p>`;
+      }).join('');
+      
+      return html;
+    }
+    
+    function goBack() {
+      // Try to go back to dashboard, or platform dashboard if coming from there
+      if (document.referrer && document.referrer.includes('dashboard')) {
+        window.history.back();
+      } else {
+        window.location.href = '/dashboard';
+      }
+    }
+    
+    async function downloadPDF() {
+      if (!window.currentAgreement) {
+        alert('Agreement data not available for download.');
+        return;
+      }
+      
+      try {
+        // Wait for jsPDF to be available
+        let jsPDFLib = null;
+        let attempts = 0;
+        const maxAttempts = 100;
+        
+        while (!jsPDFLib && attempts < maxAttempts) {
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.jsPDF;
+            break;
+          }
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.default.jsPDF;
+            break;
+          }
+          if (typeof window.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF;
+            break;
+          }
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        if (!jsPDFLib) {
+          alert('PDF library not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        const agreement = window.currentAgreement;
+        const doc = new jsPDFLib({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        // Header
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text(agreement.type, 20, 20);
+        
+        // Meta information
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Version: ${agreement.version}`, 20, 30);
+        doc.text(`Signed By: ${agreement.userName}`, 20, 35);
+        doc.text(`Signed Date: ${agreement.signedDate}`, 20, 40);
+        
+        // Agreement text
+        doc.setFontSize(9);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
+        const maxWidth = pageWidth - (margin * 2);
+        
+        let yPos = 50;
+        const lines = doc.splitTextToSize(agreement.text || 'Agreement text not available', maxWidth);
+        
+        lines.forEach((line) => {
+          if (yPos > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(line, margin, yPos);
+          yPos += 5;
+        });
+        
+        // Footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+          doc.text('MediForge Legal Agreement Copy', pageWidth / 2, pageHeight - 5, { align: 'center' });
+        }
+        
+        // Save
+        const filename = `${agreement.type.replace(/[^a-z0-9]/gi, '_')}_${agreement.userName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        doc.save(filename);
+        
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF: ' + error.message);
+      }
+    }
+    
+    // Load agreement on page load
+    window.addEventListener('DOMContentLoaded', loadAgreement);
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

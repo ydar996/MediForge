@@ -1,0 +1,1287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescription Management - MediForge</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <link rel="stylesheet" href="css/logout-button.css">
+    <link rel="icon" type="image/svg+xml" href="favicon.svg">
+  <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 0;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+
+    .prescription-container {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 10px;
+            background: white;
+            min-height: 100vh;
+            box-shadow: 0 0 20px rgba(0,0,0,0.1);
+    }
+    
+    .prescription-header {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            color: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 15px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+        }
+
+        .prescription-header h1 {
+            margin: 0;
+            font-size: 1.5rem;
+        }
+
+        .patient-info {
+            text-align: right;
+            font-size: 0.9rem;
+    }
+    
+    .prescription-form {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 30px;
+    }
+    
+    .form-section {
+            margin-bottom: 30px;
+      padding: 20px;
+            background: white;
+      border-radius: 8px;
+            border: 1px solid #e9ecef;
+    }
+    
+    .form-section h3 {
+            color: #495057;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 2px solid #007bff;
+    }
+    
+    .form-group {
+            margin-bottom: 10px;
+    }
+    
+    .form-group label {
+      display: block;
+            margin-bottom: 8px;
+      font-weight: 600;
+            color: #495057;
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+            padding: 12px;
+            border: 1px solid #ced4da;
+            border-radius: 6px;
+      font-size: 14px;
+            transition: border-color 0.3s ease;
+        }
+
+        .form-group input:focus,
+        .form-group select:focus,
+        .form-group textarea:focus {
+            outline: none;
+            border-color: #007bff;
+            box-shadow: 0 0 0 3px rgba(0,123,255,0.1);
+    }
+    
+    .required {
+      color: #dc3545;
+    }
+    
+    .medication-item {
+            background: white;
+            border: 1px solid #e9ecef;
+      border-radius: 8px;
+            padding: 20px;
+            margin-bottom: 10px;
+            position: relative;
+    }
+    
+    .medication-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+            margin-bottom: 10px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
+    }
+    
+    .medication-number {
+            font-weight: 600;
+            color: #007bff;
+            font-size: 1.1rem;
+    }
+    
+    .remove-medication {
+      background: #dc3545;
+      color: white;
+      border: none;
+            padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+        .remove-medication:hover {
+            background: #c82333;
+        }
+    
+    .add-medication-btn {
+      background: #28a745;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+            margin-bottom: 10px;
+    }
+    
+    .add-medication-btn:hover {
+      background: #218838;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 15px;
+      justify-content: center;
+      margin-top: 30px;
+      padding-top: 20px;
+      border-top: 2px solid #007bff;
+            flex-wrap: wrap;
+    }
+    
+        .action-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 500;
+            transition: all 0.3s ease;
+            min-width: 120px;
+        }
+
+        .action-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 8px rgba(0,0,0,0.2);
+        }
+
+        .btn-preview { background: #007bff; color: white; }
+        .btn-save { background: #28a745; color: white; }
+        .btn-download { background: #17a2b8; color: white; }
+        .btn-print { background: #ffc107; color: #212529; }
+        .btn-email { background: #007bff; color: white; }
+        .btn-clear { background: #dc3545; color: white; }
+        .btn-close { background: #6c757d; color: white; }
+
+        .prescription-preview {
+            background: white;
+            border: 1px solid #e9ecef;
+            border-radius: 8px;
+            padding: 15px;
+            margin-top: 30px;
+            display: none;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+
+        .preview-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 20px;
+            border-bottom: 2px solid #007bff;
+        }
+
+        .preview-header h2 {
+            color: #007bff;
+            margin: 0;
+        }
+
+        .preview-section {
+            margin-bottom: 25px;
+        }
+
+        .preview-section h3 {
+            color: #495057;
+      margin-bottom: 15px;
+            font-size: 1.1rem;
+        }
+
+        .preview-section p {
+            margin: 5px 0;
+            color: #6c757d;
+        }
+
+        .medication-list {
+            margin-top: 20px;
+        }
+
+        .medication-item-preview {
+            background: #f8f9fa;
+            border: 1px solid #e9ecef;
+            border-radius: 6px;
+            padding: 15px;
+            margin-bottom: 10px;
+        }
+
+        .medication-name {
+            font-weight: 600;
+            color: #007bff;
+            margin-bottom: 8px;
+        }
+
+        .medication-details {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 10px;
+            font-size: 14px;
+        }
+
+        .signature-section {
+            margin-top: 30px;
+            padding-top: 20px;
+            border-top: 1px solid #e9ecef;
+        }
+
+        .signature-canvas {
+            border: 1px solid #ced4da;
+            border-radius: 4px;
+            cursor: crosshair;
+            margin-bottom: 10px;
+        }
+
+        .signature-controls {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 10px;
+        }
+
+        .signature-btn {
+            padding: 8px 16px;
+            border: 1px solid #ced4da;
+            background: white;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 12px;
+        }
+
+        .signature-btn:hover {
+            background: #f8f9fa;
+    }
+    
+    /* Electronic signature styles */
+    #electronic-signature {
+      display: none;
+      visibility: hidden;
+    }
+    
+    #electronic-signature.visible {
+      display: block !important;
+      visibility: visible !important;
+      opacity: 1 !important;
+    }
+    
+    #electronic-signature p {
+      margin: 0;
+      padding: 10px;
+      font-size: 16px;
+      font-weight: bold;
+      color: #007bff;
+    }
+    
+    .drug-suggestions {
+      position: absolute;
+            top: 100%;
+            left: 0;
+            right: 0;
+      background: white;
+            border: 1px solid #ced4da;
+      border-top: none;
+            border-radius: 0 0 4px 4px;
+      max-height: 200px;
+      overflow-y: auto;
+      z-index: 10000;
+      display: none;
+      box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+      margin-top: -1px;
+    }
+    
+    .form-group {
+      position: relative;
+    }
+    
+    .drug-suggestion {
+      padding: 8px 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+    }
+    
+    .drug-suggestion:hover {
+      background-color: #f5f5f5;
+    }
+    
+    .drug-name {
+      font-weight: bold;
+      color: #007bff;
+    }
+    
+    .drug-strength {
+      font-size: 12px;
+      color: #666;
+    }
+    
+    /* Compact layout for one-page prescription */
+    .prescription-form {
+      font-size: 13px;
+    }
+    
+    .form-group {
+      margin-bottom: 8px;
+    }
+    
+    .medication-item {
+      padding: 10px;
+      margin-bottom: 8px;
+    }
+    
+    .signature-section {
+      margin-top: 10px;
+    }
+    
+    .action-buttons {
+      margin-top: 10px;
+    }
+    
+    .btn {
+      padding: 8px 12px;
+      font-size: 12px;
+    }
+    
+    input, select, textarea {
+      padding: 6px 8px;
+      font-size: 12px;
+    }
+    
+    label {
+      font-size: 12px;
+      margin-bottom: 4px;
+    }
+    
+    /* Print optimization for one page */
+    @media print {
+      * {
+        -webkit-print-color-adjust: exact !important;
+        color-adjust: exact !important;
+      }
+      
+      body {
+        margin: 0;
+        padding: 0px;
+        font-size: 6px;
+        line-height: 0.8;
+        background: white !important;
+      }
+      
+      .prescription-container {
+        max-width: none;
+        margin: 0;
+        padding: 0px;
+        box-shadow: none;
+        background: white !important;
+        page-break-inside: avoid;
+      }
+      
+      .prescription-header {
+        padding: 1px;
+        margin-bottom: 1px;
+        background: #f8f9fa !important;
+        -webkit-print-color-adjust: exact;
+        font-size: 7px;
+      }
+      
+      .prescription-form {
+        padding: 0px;
+        margin-bottom: 0px;
+        background: white !important;
+      }
+      
+      .form-group {
+        margin-bottom: 1px;
+        page-break-inside: avoid;
+      }
+      
+      .medication-item {
+        padding: 1px;
+        margin-bottom: 1px;
+        page-break-inside: avoid;
+        border: 1px solid #ddd;
+        background: white !important;
+        font-size: 6px;
+      }
+      
+      .signature-section {
+        margin-top: 1px;
+        page-break-inside: avoid;
+        background: white !important;
+        font-size: 6px;
+      }
+      
+      .action-buttons {
+        display: none !important;
+      }
+      
+      .btn {
+        display: none !important;
+      }
+      
+      input, select, textarea {
+        border: 1px solid #ccc;
+        padding: 1px;
+        font-size: 7px;
+        background: white !important;
+        height: 16px;
+      }
+      
+      .drug-suggestions {
+        display: none !important;
+      }
+      
+      .strength-suggestions {
+        display: none !important;
+      }
+      
+      .patient-info, .prescriber-info {
+        font-size: 7px;
+        line-height: 1.0;
+        margin-bottom: 2px;
+      }
+      
+      .medication-header {
+        font-size: 7px;
+        margin-bottom: 1px;
+      }
+      
+      .medication-number {
+        font-weight: bold;
+      }
+      
+      .remove-medication {
+        display: none !important;
+      }
+      
+      .signature-pad {
+        min-height: 30px;
+        border: 1px solid #ccc !important;
+        background: white !important;
+        padding: 5px;
+      }
+      
+      .electronic-signature {
+        font-size: 6px;
+        line-height: 1.0;
+      }
+      
+      .dosage-calculator {
+        display: none !important;
+      }
+      
+      .interaction-alert, .allergy-alert {
+        display: none !important;
+      }
+      
+      h3 {
+        font-size: 8px;
+        margin: 2px 0;
+      }
+      
+      h4 {
+        font-size: 7px;
+        margin: 1px 0;
+      }
+      
+      label {
+        font-size: 6px;
+        margin-bottom: 1px;
+      }
+      
+      small {
+        font-size: 5px;
+      }
+    }
+    
+    .drug-suggestion {
+      padding: 10px;
+      cursor: pointer;
+            border-bottom: 1px solid #f8f9fa;
+    }
+    
+    .drug-suggestion:hover {
+      background: #f8f9fa;
+    }
+    
+    .drug-suggestion:last-child {
+      border-bottom: none;
+    }
+    
+        .dosage-calculator {
+            background: #e8f5e8;
+            border: 1px solid #28a745;
+            border-radius: 6px;
+            padding: 15px;
+            margin-top: 15px;
+        }
+
+        .dosage-calculator h4 {
+            color: #155724;
+            margin: 0 0 15px 0;
+        }
+
+        .calc-result {
+            background: white;
+            border: 1px solid #28a745;
+      border-radius: 4px;
+      padding: 10px;
+      margin-top: 10px;
+            font-weight: 600;
+            color: #155724;
+        }
+
+        .loading {
+      display: none;
+      text-align: center;
+      padding: 20px;
+            color: #6c757d;
+        }
+
+        .error {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #f5c6cb;
+        }
+
+        .success {
+            background: #d4edda;
+            color: #155724;
+            padding: 10px;
+            border-radius: 4px;
+            margin: 10px 0;
+            border: 1px solid #c3e6cb;
+        }
+
+        @media (max-width: 768px) {
+            .prescription-container {
+                padding: 10px;
+            }
+            
+            .prescription-header {
+                flex-direction: column;
+      text-align: center;
+    }
+    
+            .patient-info {
+      text-align: center;
+                margin-top: 10px;
+      }
+      
+      .action-buttons {
+        flex-direction: column;
+                align-items: center;
+            }
+            
+            .action-btn {
+                width: 100%;
+                max-width: 300px;
+      }
+    }
+  </style>
+</head>
+<body>
+  <div class="prescription-container">
+    <!-- Navigation Buttons -->
+    <div style="display: flex; gap: 10px; margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 8px; align-items: center;">
+      <button type="button" onclick="goToClinicalNote()" style="flex: 1; padding: 10px 15px; background: #007bff; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+        ← Back to Clinical Note
+      </button>
+      <button type="button" onclick="goToDashboard()" style="flex: 1; padding: 10px 15px; background: #6c757d; color: white; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; transition: background 0.3s;">
+        🏠 Go to Dashboard
+      </button>
+    </div>
+    <style>
+      button[onclick="goToClinicalNote()"]:hover {
+        background: #0056b3 !important;
+      }
+      button[onclick="goToDashboard()"]:hover {
+        background: #5a6268 !important;
+      }
+    </style>
+    
+    <!-- Header -->
+    <div class="prescription-header">
+      <div>
+        <h1>📋 Prescription Management</h1>
+                <p id="prescription-patient-info">Loading patient information...</p>
+      </div>
+            <div class="patient-info">
+                <div id="prescriber-info">Loading prescriber information...</div>
+                <!-- Hidden form fields for data collection -->
+                <input type="hidden" id="prescriber-name">
+                <input type="hidden" id="prescriber-license">
+                <input type="hidden" id="prescriber-specialty">
+                <input type="hidden" id="prescriber-address">
+                <input type="hidden" id="prescriber-phone">
+                <input type="hidden" id="prescriber-email">
+                <input type="hidden" id="prescriber-org">
+                <input type="hidden" id="patient-name">
+                <input type="hidden" id="patient-dob">
+                <input type="hidden" id="patient-gender">
+                <input type="hidden" id="patient-id">
+                <input type="hidden" id="patient-allergies">
+      </div>
+    </div>
+
+    <!-- Prescription Form -->
+        <div class="prescription-form">
+      <div class="form-section">
+                <h3>📋 Prescription Details</h3>
+                <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+        <div class="form-group">
+                        <label for="prescription-date">Prescription Date <span class="required">*</span></label>
+          <input type="date" id="prescription-date" required>
+        </div>
+        <div class="form-group">
+          <label for="prescription-id">Prescription ID</label>
+                        <input type="text" id="prescription-id" readonly style="background: #f8f9fa;">
+                    </div>
+        </div>
+        <div class="form-group">
+                    <label for="prescription-diagnosis">Diagnosis/Indication <span class="required">*</span></label>
+                    <div id="prescription-diagnosis-container" style="position: relative;">
+                        <input type="text" id="prescription-diagnosis" required placeholder="Search disease name..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
+          </div>
+                    <small style="color: #666; font-size: 12px;">Search and select from ICD-11 database</small>
+        </div>
+      </div>
+
+      <!-- Medications Section -->
+            <div class="form-section">
+        <h3>💊 Medications</h3>
+        <button type="button" class="add-medication-btn" onclick="addMedication()">
+          ➕ Add Medication
+        </button>
+                <div id="medications-container">
+                    <!-- Medications will be added here dynamically -->
+                </div>
+      </div>
+
+      <!-- Signature Section -->
+            <div class="form-section">
+                <h3>✍️ Digital Signature</h3>
+                <div class="signature-section">
+                    <div class="signature-controls" style="display: none;">
+                        <button type="button" class="signature-btn" onclick="clearSignature()">Clear Signature</button>
+                        <button type="button" class="signature-btn" onclick="saveSignature()">Save Signature</button>
+        </div>
+                    <div id="signature-pad" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer; background: #f9f9f9; min-height: 80px;" onclick="window.signElectronically && window.signElectronically()">
+                        <p id="signature-text">Click here to sign electronically</p>
+                        <div id="electronic-signature">
+                            <p style="margin: 0; padding: 10px; font-size: 16px; font-weight: bold;">Electronically signed by <span id="signer-name"></span> <span id="signature-timestamp"></span></p>
+                        </div>
+                    </div>
+                    <canvas id="signature-canvas" class="signature-canvas" width="400" height="100" style="display: none;"></canvas>
+                    <input type="hidden" id="signature-date">
+                    <small id="signature-instruction" style="color: #666; font-size: 12px;">Click above to electronically sign this prescription</small>
+        </div>
+      </div>
+
+      <!-- Action Buttons -->
+      <div class="action-buttons">
+                <button type="button" class="action-btn btn-preview" onclick="previewPrescription()">
+          👁️ Preview
+        </button>
+                <button type="button" class="action-btn btn-save" onclick="savePrescription()">
+          💾 Save Prescription
+        </button>
+                <button type="button" class="action-btn btn-download" onclick="downloadPrescriptionAsImage()">
+                    📥 Download As Image
+                </button>
+                <button type="button" class="action-btn btn-print" onclick="printPrescription()">
+          🖨️ Print
+        </button>
+                <button type="button" class="action-btn btn-email" onclick="emailPrescription()">
+          📧 Email
+        </button>
+                <button type="button" class="action-btn btn-clear" onclick="clearPrescriptionForm()">
+          🗑️ Clear Form
+        </button>
+                <button type="button" class="action-btn btn-close" onclick="goBack()">
+                    ← Back to Encounters
+                </button>
+      </div>
+        </div>
+
+    <!-- Prescription Preview -->
+    <div id="prescription-preview" class="prescription-preview">
+      <!-- Preview content will be generated here -->
+    </div>
+
+        <!-- Loading Indicator -->
+        <div id="loading-indicator" class="loading">
+            <div>⏳ Processing...</div>
+        </div>
+  </div>
+
+    <!-- Scripts -->
+    <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+    <script src="js/utils.js"></script>  <!-- Standardized utilities -->
+    <script src="js/universal-data-loader.js?v=20251213233000"></script>
+    <script src="js/patients.js?v=20260507-rx-mnemonic"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>  <!-- Load savePatientToSupabase function and resolvePatientByIdentifier for Supabase sync -->
+    <script src="js/icd-selector.js?v=105"></script>
+    <script src="js/prescriptions-supabase.js?v=20260506-rx-number-override"></script>  <!-- createPrescription/updatePrescription so Pharmacy dashboard receives signed prescriptions -->
+    <script src="js/prescriptions.js?v=20260507-rx-mnemonic"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <script>
+        // Page-specific initialization for prescription.html
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('Prescription page loaded - initializing...');
+            
+            // Wait for external scripts to load, then initialize
+            setTimeout(() => {
+                if (typeof initializePrescriptionForm === 'function') {
+                    console.log('External prescription functions loaded, initializing...');
+                    initializePrescriptionForm();
+                    
+                    // Populate hidden form fields with displayed data
+                    populateHiddenFields();
+                    
+                    // Initialize search functionality
+                    initializeSearchFunctionality();
+                } else {
+                    console.error('External prescription functions not loaded!');
+                }
+            }, 100);
+        });
+        
+        // Initialize search functionality for diagnosis and medications
+        function initializeSearchFunctionality() {
+            console.log('🔍 Initializing search functionality...');
+            
+            // Initialize ICD selector for diagnosis field
+            setTimeout(() => {
+                if (typeof createIcdSelector === 'function') {
+                    console.log('🔍 Creating ICD selector for diagnosis field...');
+                    createIcdSelector('prescription-diagnosis', false, 'prescription-diagnosis');
+                    console.log('✅ ICD selector initialized for diagnosis');
+                } else {
+                    console.warn('⚠️ createIcdSelector function not available');
+                }
+            }, 200);
+            
+            // The medication search is already initialized by the external prescriptions.js
+            // when addMedication() is called, but let's ensure it's working
+            console.log('🔍 Medication search will be initialized when medications are added');
+        }
+        
+        // Function to populate hidden form fields with displayed data
+        async function populateHiddenFields() {
+            // Get URL parameters
+            const urlParams = new URLSearchParams(window.location.search);
+            const patientId = urlParams.get('patientId');
+            
+            // Load patient data and populate hidden fields
+            if (patientId) {
+                // Expose current patient to limit logs in shared loaders
+                window.CURRENT_PATIENT_ID = patientId;
+                // AWAIT the patient data load to ensure it completes
+                await loadPatientDataForHiddenFields(patientId);
+            } else {
+                console.error('❌ populateHiddenFields: No patientId found in URL parameters');
+                document.getElementById('prescription-patient-info').innerHTML = '<span style="color: red; font-weight: bold;">Error: Patient ID not found in URL!</span>';
+            }
+            
+            // Load prescriber data and populate hidden fields
+            await loadPrescriberDataForHiddenFields();
+        }
+        
+        // Load patient data for hidden fields - Supabase-first approach
+        async function loadPatientDataForHiddenFields(patientId) {
+            try {
+                console.log('🔍 loadPatientDataForHiddenFields: Starting...');
+                console.log('🔍 loadPatientDataForHiddenFields: patientId from URL:', patientId);
+                
+                // Use resolvePatientByIdentifier if available (handles UUID and display IDs)
+                let patient = null;
+                if (typeof window.resolvePatientByIdentifier === 'function') {
+                    console.log('🔍 loadPatientDataForHiddenFields: Using resolvePatientByIdentifier...');
+                    patient = await window.resolvePatientByIdentifier(patientId);
+                    console.log('🔍 loadPatientDataForHiddenFields: resolvePatientByIdentifier returned:', patient ? `Patient found: ${patient.id || patient.patient_id || patient._supabaseUuid}` : 'null');
+                } else {
+                    console.warn('⚠️ loadPatientDataForHiddenFields: resolvePatientByIdentifier not available, using fallback...');
+                    
+                    // Fallback: Wait for Supabase to be ready with proper retry mechanism
+                    let patients = [];
+                    let supabaseReady = false;
+                    let attempts = 0;
+                    const maxAttempts = 20; // 10 seconds total
+                    
+                    while (!supabaseReady && attempts < maxAttempts) {
+                        attempts++;
+                        console.log(`🔄 Attempt ${attempts}/${maxAttempts} - Waiting for Supabase...`);
+                        
+                        try {
+                            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                                // Try to load with Supabase priority
+                                patients = await window.loadPatientsWithSupabasePriority();
+                                supabaseReady = true;
+                                console.log('✅ Supabase data loaded successfully');
+                            } else {
+                                console.log('⚠️ Supabase function not available, waiting...');
+                                await new Promise(resolve => setTimeout(resolve, 500));
+                            }
+                        } catch (error) {
+                            console.log(`⚠️ Supabase attempt ${attempts} failed:`, error.message);
+                            await new Promise(resolve => setTimeout(resolve, 500));
+                        }
+                    }
+                    
+                    // If Supabase still not ready, fall back to localStorage
+                    if (!supabaseReady) {
+                        console.warn('⚠️ Supabase not ready after maximum attempts, using localStorage fallback');
+                        // Try loadPatientsWithSupabasePriority first, then fallback
+                        try {
+                            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                                patients = await window.loadPatientsWithSupabasePriority();
+                            } else {
+                                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                            }
+                        } catch (error) {
+                            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                        }
+                    }
+                    
+                    // Try to find by UUID first, then by patient_id or patientNumber
+                    patient = patients.find(p => p.id === patientId) ||
+                              patients.find(p => p._supabaseUuid === patientId) ||
+                              patients.find(p => p.patient_id === patientId || p.patientNumber === patientId);
+                    console.log('🔍 loadPatientDataForHiddenFields: Fallback lookup result:', patient ? `Patient found: ${patient.id || patient.patient_id}` : 'null');
+                }
+                
+                if (patient) {
+                    // Canonical id for hidden fields (prefer MFA-MC via getPatientIdForDisplay when URL matches)
+                    const displayIdRaw =
+                      (typeof window.getPatientIdentifier === 'function'
+                        ? window.getPatientIdentifier(patient)
+                        : null) ||
+                      patient.patient_id ||
+                      (patient.id &&
+                      !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id)
+                        ? patient.id
+                        : null);
+                    const displayIdForm =
+                      typeof window.getPatientIdForDisplay === 'function'
+                        ? window.getPatientIdForDisplay(patient, patientId) || displayIdRaw
+                        : displayIdRaw;
+                    const displayIdShown =
+                      typeof window.patientMrnDisplay === 'function'
+                        ? window.patientMrnDisplay(patient, patientId)
+                        : displayIdRaw;
+
+                    // Populate hidden patient fields
+                    document.getElementById('patient-name').value = `${patient.firstName} ${patient.lastName}`;
+                    document.getElementById('patient-dob').value = patient.dob || '';
+                    document.getElementById('patient-gender').value = patient.gender || '';
+                    document.getElementById('patient-id').value = displayIdForm;
+                    document.getElementById('patient-allergies').value = patient.allergies ? 
+                        patient.allergies.map(a => `${a.allergen} (${a.reaction})`).join(', ') : 'None known';
+                    
+                    // Also update the displayed patient info with full details
+                    // Handle both camelCase (localStorage) and snake_case (Supabase) formats
+                    const addr1 = patient.addressLine1 || patient.address_line1 || '';
+                    const addr2 = patient.addressLine2 || patient.address_line2 || '';
+                    const city = patient.city || '';
+                    const state = patient.state || '';
+                    const country = patient.country || '';
+                    const patientAddress = [
+                        addr1,
+                        addr2,
+                        city,
+                        state,
+                        country
+                    ].filter(part => part.trim()).join(', ') || 'Not specified';
+                    const patientPhone = patient.phone || 'Not specified';
+                    
+                    document.getElementById('prescription-patient-info').innerHTML = `
+                        <strong>Patient:</strong> ${patient.firstName} ${patient.lastName}<br>
+                        <strong>ID:</strong> ${displayIdShown}<br>
+                        <strong>DOB:</strong> ${patient.dob || 'Not specified'}<br>
+                        <strong>Gender:</strong> ${patient.gender || 'Not specified'}<br>
+                        <strong>Address:</strong> ${patientAddress}<br>
+                        <strong>Phone:</strong> ${patientPhone}
+                    `;
+                    
+                    console.log('✅ Patient data loaded successfully:', patient.firstName, patient.lastName, 'ID:', displayIdForm);
+                } else {
+                    console.error('❌ loadPatientDataForHiddenFields: Patient not found! Identifier:', patientId);
+                    document.getElementById('prescription-patient-info').innerHTML = '<span style="color: red; font-weight: bold;">Error: Patient not found!</span>';
+                }
+            } catch (error) {
+                console.error('❌ Error loading patient data for hidden fields:', error);
+                document.getElementById('prescription-patient-info').textContent = 'Error loading patient data';
+            }
+        }
+        
+        // Load prescriber data for hidden fields
+        async function loadPrescriberDataForHiddenFields() {
+            try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                
+                if (!user) {
+                    console.error('❌ User not found in localStorage');
+                    document.getElementById('prescriber-info').textContent = 'User not logged in';
+                    return;
+                }
+                
+                // Base values from localStorage
+                let orgAddressLine1 = user.orgAddressLine1 || '';
+                let orgAddressLine2 = user.orgAddressLine2 || '';
+                let orgCity = user.orgCity || '';
+                let orgState = user.orgState || '';
+                let orgCountry = user.orgCountry || '';
+                let orgPhone = user.orgPhone || '';
+                
+                // IMPORTANT: For consistency with edit-profile, do not override
+                // values from localStorage with Supabase. The prescription header
+                // should reflect the user's current profile entries.
+                
+                const orgAddressForHidden = [
+                    orgAddressLine1,
+                    orgAddressLine2,
+                    orgCity,
+                    orgState,
+                    orgCountry
+                ].filter(part => part && part.trim()).join(', ') || 'Not specified';
+                let orgPhoneDisplay = orgPhone || 'Not specified';
+                
+                // Hybrid: If a helper exists, try refining contact from Supabase
+                if (typeof window.getOrganizationContact === 'function') {
+                    try {
+                        const c = await window.getOrganizationContact();
+                        const fromHelperAddress = [c.addressLine1, c.addressLine2, c.city, c.state, c.country]
+                          .filter(part => part && part.trim()).join(', ');
+                        if (fromHelperAddress) {
+                            orgAddressLine1 = c.addressLine1 || orgAddressLine1;
+                            orgAddressLine2 = c.addressLine2 || orgAddressLine2;
+                            orgCity = c.city || orgCity;
+                            orgState = c.state || orgState;
+                            orgCountry = c.country || orgCountry;
+                        }
+                        if (c.phone) orgPhoneDisplay = c.phone;
+                    } catch (e) { /* ignore */ }
+                }
+
+                // Populate hidden prescriber fields
+                document.getElementById('prescriber-name').value = `${user.firstName} ${user.lastName}`;
+                document.getElementById('prescriber-license').value = user.medicalLicenseNumber || 'Not specified';
+                document.getElementById('prescriber-specialty').value = user.role || 'Doctor';
+                document.getElementById('prescriber-address').value = orgAddressForHidden;
+                document.getElementById('prescriber-phone').value = orgPhoneDisplay;
+                document.getElementById('prescriber-email').value = user.username + '@' + (user.org || 'clinic').toLowerCase().replace(/\s+/g, '') + '.com';
+                document.getElementById('prescriber-org').value = user.org || 'Medical Clinic';
+                
+                // Update the displayed prescriber info
+                document.getElementById('prescriber-info').innerHTML = `
+                    <strong>Prescriber:</strong> ${user.firstName} ${user.lastName}<br>
+                    <strong>Role:</strong> ${user.role || 'Doctor'}<br>
+                    <strong>License:</strong> ${user.medicalLicenseNumber || 'Not specified'}<br>
+                    <strong>Organization:</strong> ${user.org || 'Medical Clinic'}<br>
+                    <strong>Address:</strong> ${orgAddressForHidden}<br>
+                    <strong>Phone:</strong> ${orgPhoneDisplay}
+                `;
+                
+                console.log('✅ Prescriber data loaded successfully:', user.firstName, user.lastName);
+            } catch (error) {
+                console.error('❌ Error loading prescriber data for hidden fields:', error);
+                document.getElementById('prescriber-info').textContent = 'Error loading user data';
+            }
+        }
+
+        // Navigation function to go back to clinical note
+        function goToClinicalNote() {
+            try {
+                const urlParams = new URLSearchParams(window.location.search);
+                const patientId = urlParams.get('patientId');
+                const visitDate = urlParams.get('visitDate');
+                
+                if (patientId && visitDate) {
+                    // Navigate to clinical note with patient ID and visit date
+                    window.location.href = `clinical-note.html?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(visitDate)}`;
+                } else if (document.referrer && document.referrer.includes('clinical-note')) {
+                    // If referrer is clinical note, go back to it
+                    window.location.href = document.referrer;
+                } else {
+                    // Fallback: try to get patient ID from localStorage or use history
+                    const patientIdFromStorage = document.getElementById('patient-id')?.value;
+                    if (patientIdFromStorage) {
+                        window.location.href = `clinical-note.html?patientId=${encodeURIComponent(patientIdFromStorage)}`;
+                    } else if (window.history.length > 1) {
+                        window.history.back();
+                    } else {
+                        window.location.href = 'dashboard.html';
+                    }
+                }
+            } catch (e) {
+                console.error('Error navigating to clinical note:', e);
+                window.location.href = 'dashboard.html';
+            }
+        }
+        
+        // Navigation function to go to dashboard
+        function goToDashboard() {
+            try {
+                window.location.href = 'dashboard.html';
+            } catch (e) {
+                console.error('Error navigating to dashboard:', e);
+                // Fallback to index if dashboard fails
+                window.location.href = 'index.html';
+            }
+        }
+        
+        // Back navigation handler for the Encounters button
+        function goBack() {
+            // Prefer returning to patient encounters if referrer missing
+            const fallbackUrl = 'patient-encounters.html';
+            try {
+                if (document.referrer && document.referrer.includes('patient-encounters')) {
+                    window.location.href = document.referrer;
+                } else if (window.history.length > 1) {
+                    window.history.back();
+                    // Some browsers may block back; also set a timeout fallback
+                    setTimeout(() => {
+                        if (!document.hidden) {
+                            window.location.href = fallbackUrl;
+                        }
+                    }, 300);
+                } else {
+                    window.location.href = fallbackUrl;
+                }
+            } catch (e) {
+                window.location.href = fallbackUrl;
+            }
+        }
+
+        // Electronic signature function
+        function signElectronically() {
+            console.log('🖊️ signElectronically called - START');
+            console.log('🖊️ CLICK EVENT FIRED!');
+            try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                console.log('👤 User data:', user);
+                const signerName = user ? `Dr ${user.firstName} ${user.lastName}` : 'Dr Current Doctor';
+                const now = new Date();
+                const timestamp = now.toLocaleString('en-US', {
+                    hour: 'numeric',
+                    minute: '2-digit',
+                    hour12: true,
+                    month: '2-digit',
+                    day: '2-digit',
+                    year: 'numeric'
+                });
+                
+                console.log('🖊️ Signer name:', signerName);
+                console.log('🖊️ Timestamp:', timestamp);
+                
+                // Get all elements
+                const signatureText = document.getElementById('signature-text');
+                const electronicSignature = document.getElementById('electronic-signature');
+                const signerNameElement = document.getElementById('signer-name');
+                const signatureTimestampElement = document.getElementById('signature-timestamp');
+                const signaturePad = document.getElementById('signature-pad');
+                const signatureDateInput = document.getElementById('signature-date');
+                
+                console.log('🔍 Elements found:', {
+                    signatureText: !!signatureText,
+                    electronicSignature: !!electronicSignature,
+                    signerNameElement: !!signerNameElement,
+                    signatureTimestampElement: !!signatureTimestampElement,
+                    signaturePad: !!signaturePad
+                });
+                
+                // Hide the click text completely - remove from DOM
+                if (signatureText) {
+                    signatureText.remove(); // Actually remove it from the DOM
+                    console.log('✅ Signature text removed');
+                }
+                
+                // Hide the instruction text below
+                const instructionText = document.getElementById('signature-instruction');
+                if (instructionText) {
+                    instructionText.remove();
+                    console.log('✅ Instruction text removed');
+                }
+                
+                // Show the electronic signature - replace the entire signature area content
+                if (electronicSignature) {
+                    // Remove inline display: none from HTML
+                    electronicSignature.style.removeProperty('display');
+                    electronicSignature.style.removeProperty('visibility');
+                    // Add visible class for CSS
+                    electronicSignature.classList.add('visible');
+                    // Also set styles directly as backup
+                    electronicSignature.style.setProperty('display', 'block', 'important');
+                    electronicSignature.style.setProperty('visibility', 'visible', 'important');
+                    electronicSignature.style.setProperty('opacity', '1', 'important');
+                    console.log('✅ Electronic signature shown');
+                }
+                
+                // Set the signature text
+                if (signerNameElement) {
+                    signerNameElement.textContent = signerName;
+                    console.log('✅ Signer name set:', signerName);
+                }
+                if (signatureTimestampElement) {
+                    signatureTimestampElement.textContent = timestamp;
+                    console.log('✅ Timestamp set:', timestamp);
+                }
+                
+                // Set the signature date for the form
+                if (signatureDateInput) {
+                    signatureDateInput.value = now.toISOString();
+                    console.log('✅ Signature date set');
+                }
+                
+                // Update the signature pad styling
+                if (signaturePad) {
+                    signaturePad.style.border = '2px solid #28a745';
+                    signaturePad.style.background = '#d4edda';
+                    signaturePad.style.cursor = 'default';
+                    signaturePad.style.minHeight = '80px';
+                    console.log('✅ Signature pad styled');
+                }
+                
+                console.log('✅ Electronic signature applied:', signerName, timestamp);
+                
+                // Show success message that auto-dismisses after 3 seconds
+                const successDiv = document.createElement('div');
+                successDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #28a745; color: white; padding: 15px; border-radius: 5px; z-index: 10000; max-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+                successDiv.innerHTML = '<strong>✓ Signed!</strong><br>Prescription electronically signed!';
+                document.body.appendChild(successDiv);
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    if (successDiv.parentElement) {
+                        successDiv.remove();
+                    }
+                }, 3000);
+                
+            } catch (error) {
+                console.error('❌ Error applying electronic signature:', error);
+                
+                // Show error message that auto-dismisses after 3 seconds
+                const errorDiv = document.createElement('div');
+                errorDiv.style.cssText = 'position: fixed; top: 20px; right: 20px; background: #dc3545; color: white; padding: 15px; border-radius: 5px; z-index: 10000; max-width: 300px; box-shadow: 0 4px 6px rgba(0,0,0,0.1);';
+                errorDiv.innerHTML = '<strong>Error!</strong><br>Error applying signature: ' + error.message;
+                document.body.appendChild(errorDiv);
+                
+                // Auto-dismiss after 3 seconds
+                setTimeout(() => {
+                    if (errorDiv.parentElement) {
+                        errorDiv.remove();
+                    }
+                }, 3000);
+            }
+        }
+        
+        // Make function globally available
+        window.signElectronically = signElectronically;
+        
+        // Log that function is globally available
+        console.log('✅ signElectronically function registered globally');
+        console.log('🔍 DEBUG: Testing if function exists:', typeof window.signElectronically);
+        
+        // Test clicking immediately after registration
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('🔍 DEBUG: DOM loaded, checking signature pad...');
+            const pad = document.getElementById('signature-pad');
+            if (pad) {
+                console.log('✅ Signature pad found');
+                console.log('🔍 DEBUG: Adding click listener...');
+                pad.addEventListener('click', function(e) {
+                    console.log('🔍 DEBUG: Click detected on signature pad!');
+                    console.log('🔍 DEBUG: Calling signElectronically...');
+                    if (typeof signElectronically === 'function') {
+                        signElectronically();
+            } else {
+                        console.error('❌ signElectronically is not a function:', typeof signElectronically);
+                    }
+                });
+            } else {
+                console.error('❌ Signature pad not found!');
+            }
+        });
+        
+        // Test function to verify signature display
+        function testSignature() {
+            console.log('🧪 Testing signature display...');
+            const electronicSignature = document.getElementById('electronic-signature');
+            const signerName = document.getElementById('signer-name');
+            const signatureTimestamp = document.getElementById('signature-timestamp');
+            
+            if (electronicSignature) {
+                electronicSignature.style.display = 'block';
+                electronicSignature.style.visibility = 'visible';
+                console.log('✅ Electronic signature shown');
+            }
+            
+            if (signerName) {
+                signerName.textContent = 'Dr Test Doctor';
+                console.log('✅ Signer name set');
+            }
+            
+            if (signatureTimestamp) {
+                signatureTimestamp.textContent = '10/29/2025, 7:00 AM';
+                console.log('✅ Timestamp set');
+            }
+        }
+        
+        // Make test function available
+        window.testSignature = testSignature;
+  </script>  
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

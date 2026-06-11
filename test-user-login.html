@@ -1,0 +1,355 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Test User Login - Debug Tool</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 900px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #dc3545;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 5px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 600px;
+            overflow-y: auto;
+        }
+        .result-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .result-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .result-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Test User Login - Debug Tool</h1>
+        <p><strong>Purpose:</strong> Test login with username and password to see exactly what's happening and why it fails.</p>
+        
+        <div class="form-group">
+            <label for="username">Username*:</label>
+            <input type="text" id="username" placeholder="Enter username (e.g., MisMuse)" required>
+        </div>
+        
+        <div class="form-group">
+            <label for="password">Password*:</label>
+            <input type="password" id="password" placeholder="Enter password" required>
+        </div>
+        
+        <button onclick="testLogin()">🔐 Test Login</button>
+        <button onclick="checkUserDetails()">🔍 Check User Details</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            return supabase;
+        }
+
+        function logResult(message, type = 'info') {
+            const div = document.getElementById('result');
+            div.className = `result result-${type}`;
+            div.textContent = message;
+        }
+
+        async function checkUserDetails() {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                logResult('Please enter a username.', 'error');
+                return;
+            }
+            
+            logResult('🔍 Checking user details...', 'info');
+            
+            try {
+                initSupabase();
+                
+                let report = `═══════════════════════════════════════════════════════\n`;
+                report += `USER DETAILS CHECK\n`;
+                report += `Username: ${username}\n`;
+                report += `═══════════════════════════════════════════════════════\n\n`;
+                
+                // Get user from database
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id, username, email, auth_user_id, organization_id')
+                    .eq('username', username)
+                    .maybeSingle();
+                
+                if (userError || !userData) {
+                    report += `❌ User not found in database!\n`;
+                    logResult(report, 'error');
+                    return;
+                }
+                
+                report += `✅ User found in database:\n`;
+                report += `   User ID: ${userData.id}\n`;
+                report += `   Username: ${userData.username}\n`;
+                report += `   Email in DB: ${userData.email || 'NOT SET'}\n`;
+                report += `   Auth User ID: ${userData.auth_user_id || 'MISSING'}\n\n`;
+                
+                if (!userData.auth_user_id) {
+                    report += `❌ CRITICAL: No auth_user_id - user cannot login!\n`;
+                    logResult(report, 'error');
+                    return;
+                }
+                
+                // Check Supabase Auth
+                report += `📋 Checking Supabase Auth...\n`;
+                try {
+                    const authResponse = await fetch('/.netlify/functions/secure-supabase', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            kind: 'rpc',
+                            identifier: 'diagnose_user_auth',
+                            payload: {
+                                p_username: username,
+                                p_auth_user_id: userData.auth_user_id,
+                                p_user_id: userData.id
+                            }
+                        })
+                    });
+                    
+                    const authResult = await authResponse.json();
+                    if (authResult.success && authResult.diagnosis) {
+                        const d = authResult.diagnosis;
+                        report += `✅ Auth user found:\n`;
+                        report += `   Email in Auth: ${d.authUser.email}\n`;
+                        report += `   Expected Email: ${d.expectedEmail || 'N/A'}\n`;
+                        report += `   Email Matches: ${d.emailMatchesExpected ? 'YES ✅' : 'NO ❌'}\n\n`;
+                        
+                        if (!d.emailMatchesExpected) {
+                            report += `⚠️ PROBLEM: Email mismatch!\n`;
+                            report += `   Auth has: ${d.authUser.email}\n`;
+                            report += `   Expected: ${d.expectedEmail}\n`;
+                            report += `   This will cause login to fail!\n\n`;
+                        }
+                    }
+                } catch (err) {
+                    report += `⚠️ Could not check Auth: ${err.message}\n\n`;
+                }
+                
+                // Check what email login handler would use
+                report += `📋 Login Handler Email Resolution:\n`;
+                const dbEmail = userData.email;
+                const fallbackEmail = `${username}@mediforge.app`;
+                const emailToUse = dbEmail || fallbackEmail;
+                
+                report += `   Email from DB: ${dbEmail || 'NOT SET'}\n`;
+                report += `   Fallback email: ${fallbackEmail}\n`;
+                report += `   Email login will use: ${emailToUse}\n\n`;
+                
+                logResult(report, 'info');
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+
+        async function testLogin() {
+            const username = document.getElementById('username').value.trim();
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                logResult('Please enter both username and password.', 'error');
+                return;
+            }
+            
+            logResult('🔐 Testing login...', 'info');
+            
+            try {
+                initSupabase();
+                
+                let report = `═══════════════════════════════════════════════════════\n`;
+                report += `LOGIN TEST\n`;
+                report += `Username: ${username}\n`;
+                report += `Password: ${password.substring(0, 3)}*** (hidden)\n`;
+                report += `═══════════════════════════════════════════════════════\n\n`;
+                
+                // Step 1: Get user from database
+                report += `📋 Step 1: Looking up user in database...\n`;
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id, username, email, auth_user_id')
+                    .eq('username', username)
+                    .maybeSingle();
+                
+                if (userError || !userData) {
+                    report += `❌ User not found in database!\n`;
+                    report += `   Error: ${userError?.message || 'User does not exist'}\n\n`;
+                    logResult(report, 'error');
+                    return;
+                }
+                
+                report += `✅ User found:\n`;
+                report += `   Username: ${userData.username}\n`;
+                report += `   Email in DB: ${userData.email || 'NOT SET'}\n`;
+                report += `   Auth User ID: ${userData.auth_user_id || 'MISSING'}\n\n`;
+                
+                if (!userData.auth_user_id) {
+                    report += `❌ CRITICAL: No auth_user_id - cannot login!\n`;
+                    logResult(report, 'error');
+                    return;
+                }
+                
+                // Step 2: Determine email to use
+                report += `📋 Step 2: Determining email for login...\n`;
+                const dbEmail = userData.email;
+                const fallbackEmail = `${username}@mediforge.app`;
+                const emailToUse = dbEmail || fallbackEmail;
+                
+                report += `   Email from DB: ${dbEmail || 'NOT SET'}\n`;
+                report += `   Fallback email: ${fallbackEmail}\n`;
+                report += `   Will try login with: ${emailToUse}\n\n`;
+                
+                // Step 3: Try login with this email
+                report += `📋 Step 3: Attempting login with Supabase Auth...\n`;
+                report += `   Email: ${emailToUse}\n`;
+                report += `   Password: ${password.substring(0, 3)}***\n\n`;
+                
+                const { data: authData, error: authError } = await supabase.auth.signInWithPassword({
+                    email: emailToUse,
+                    password: password
+                });
+                
+                if (authError) {
+                    report += `❌ LOGIN FAILED!\n\n`;
+                    report += `Error: ${authError.message}\n`;
+                    report += `Error Code: ${authError.status || 'N/A'}\n\n`;
+                    
+                    // Try alternative email formats
+                    report += `📋 Step 4: Trying alternative email formats...\n\n`;
+                    
+                    const alternatives = [
+                        `${username}@mediforge.app`,
+                        `${username}@example.com`,
+                        userData.email
+                    ].filter(e => e && e !== emailToUse);
+                    
+                    for (const altEmail of alternatives) {
+                        report += `   Trying: ${altEmail}...\n`;
+                        const { error: altError } = await supabase.auth.signInWithPassword({
+                            email: altEmail,
+                            password: password
+                        });
+                        
+                        if (!altError) {
+                            report += `   ✅ SUCCESS with ${altEmail}!\n`;
+                            await supabase.auth.signOut();
+                            report += `\n   ⚠️ PROBLEM FOUND: Email mismatch!\n`;
+                            report += `   Login works with: ${altEmail}\n`;
+                            report += `   But login handler uses: ${emailToUse}\n`;
+                            report += `   This is why login fails!\n\n`;
+                            logResult(report, 'error');
+                            return;
+                        } else {
+                            report += `   ❌ Failed: ${altError.message}\n`;
+                        }
+                    }
+                    
+                    report += `\n═══════════════════════════════════════════════════════\n`;
+                    report += `DIAGNOSIS:\n`;
+                    report += `═══════════════════════════════════════════════════════\n\n`;
+                    report += `The password is INCORRECT or not set in Supabase Auth.\n\n`;
+                    report += `SOLUTION:\n`;
+                    report += `1. Use force-password-reset.html to reset password\n`;
+                    report += `2. Make sure it uses the correct email format\n`;
+                    report += `3. Verify password works after reset\n\n`;
+                    
+                    logResult(report, 'error');
+                } else {
+                    // Success!
+                    report += `✅ LOGIN SUCCESSFUL!\n\n`;
+                    report += `Email used: ${emailToUse}\n`;
+                    report += `Auth User ID: ${authData.user.id}\n`;
+                    report += `Session created: Yes\n\n`;
+                    report += `✅ Password is CORRECT\n`;
+                    report += `✅ Login works with this email format\n\n`;
+                    
+                    // Sign out immediately
+                    await supabase.auth.signOut();
+                    
+                    logResult(report, 'success');
+                }
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+
+

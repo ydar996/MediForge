@@ -1,0 +1,356 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Corrected Migration Code</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .issue { background: #f8d7da; border: 1px solid #f5c6cb; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .fix { background: #d4edda; border: 1px solid #c3e6cb; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .code { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; font-family: monospace; overflow-x: auto; }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; margin: 10px; font-size: 16px; }
+        .btn:hover { background: #0056b3; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Corrected Migration Code</h1>
+        
+        <div class="issue">
+            <h3>❌ Issues with the Original Code:</h3>
+            <ol>
+                <li><strong>Missing variable definitions:</strong> <code>orgId</code>, <code>patients</code>, <code>supabasePatient</code>, <code>appPatients</code> are not defined</li>
+                <li><strong>Incomplete loop:</strong> The loop doesn't define <code>supabasePatient</code> for each iteration</li>
+                <li><strong>Missing error handling:</strong> No error checking for the insert operations</li>
+                <li><strong>Incomplete function:</strong> The <code>loadPatients</code> function doesn't actually display the patients</li>
+                <li><strong>Missing data conversion:</strong> No conversion from backup format to Supabase format</li>
+            </ol>
+        </div>
+        
+        <div class="fix">
+            <h3>✅ Here's the Corrected Complete Code:</h3>
+        </div>
+        
+        <button class="btn" onclick="copyCorrectedCode()">📋 Copy Corrected Code</button>
+        
+        <div class="code" id="correctedCode">
+// COMPLETE CORRECTED MIGRATION CODE - Paste this in your EHR app console
+console.log('🚀 Starting complete backup migration...');
+
+// First, let's get the backup data (you'll need to provide this)
+const backupData = {
+    // This will be populated by the analysis tool
+    "organizationData": {
+        "Mecure Clinics": {
+            "patients": [
+                // Your 7 patients will be here
+            ]
+        }
+    }
+};
+
+// Extract patients from the correct location
+const patients = backupData.organizationData["Mecure Clinics"].patients;
+
+console.log('📊 Found', patients.length, 'patients in backup');
+
+// Get Supabase client
+const supabaseClient = window.supabaseClient;
+if (!supabaseClient) {
+    console.error('❌ Supabase client not available');
+    return;
+}
+
+// Organization ID for Mecure Clinics
+const orgId = '576522cc-e769-4fb4-9487-3d150857d970';
+
+// STEP 1: Clear existing patients first (prevents duplicates)
+console.log('🗑️ Clearing existing patients...');
+const { error: deleteError } = await supabaseClient
+    .from('patients')
+    .delete()
+    .eq('organization_id', orgId);
+
+if (deleteError) {
+    console.log('⚠️ Warning clearing existing patients:', deleteError.message);
+} else {
+    console.log('✅ Cleared existing patients');
+}
+
+// STEP 2: Insert fresh data from backup
+console.log('🔄 Migrating patients...');
+let successCount = 0;
+let errorCount = 0;
+
+for (let i = 0; i < patients.length; i++) {
+    const patient = patients[i];
+    
+    try {
+        // Convert backup format to Supabase format
+        const supabasePatient = {
+            patient_id: patient.id || patient.patient_id || `PAT_${Date.now()}_${i}`,
+            organization_id: orgId,
+            first_name: patient.firstName || patient.first_name || '',
+            middle_name: patient.middleName || patient.middle_name || '',
+            last_name: patient.lastName || patient.last_name || '',
+            date_of_birth: patient.dob || patient.date_of_birth || patient.dateOfBirth || null,
+            gender: patient.gender || '',
+            marital_status: patient.maritalStatus || patient.marital_status || '',
+            phone: patient.phone || '',
+            email: patient.email || '',
+            address: patient.addressLine1 || patient.address || patient.address_line1 || '',
+            city: patient.city || '',
+            state: patient.state || '',
+            country: patient.country || '',
+            blood_group: patient.bloodGroup || patient.blood_group || '',
+            allergies: JSON.stringify(patient.allergies || []),
+            chronic_conditions: JSON.stringify(patient.conditions || patient.chronic_conditions || []),
+            emergency_contact_name: `${patient.emergencyFirstName || ''} ${patient.emergencyLastName || ''}`.trim(),
+            emergency_contact_phone: patient.emergencyPhone || patient.emergency_phone || '',
+            emergency_contact_relationship: patient.emergencyRelationship || patient.emergency_relationship || '',
+            created_at: patient.createdDate || patient.created_at || new Date().toISOString(),
+            updated_at: patient.updatedDate || patient.updated_at || new Date().toISOString()
+        };
+        
+        const { error } = await supabaseClient
+            .from('patients')
+            .insert([supabasePatient]);
+        
+        if (error) {
+            console.error(`❌ Error migrating ${patient.firstName || patient.first_name} ${patient.lastName || patient.last_name}:`, error.message);
+            errorCount++;
+        } else {
+            console.log(`✅ Migrated ${patient.firstName || patient.first_name} ${patient.lastName || patient.last_name} (DOB: ${patient.dob || patient.date_of_birth || 'N/A'})`);
+            successCount++;
+        }
+    } catch (error) {
+        console.error(`❌ Error processing patient ${i}:`, error.message);
+        errorCount++;
+    }
+}
+
+console.log(`🎉 Migration complete! Success: ${successCount}, Errors: ${errorCount}`);
+
+// STEP 3: Verify migration
+console.log('🔍 Verifying migration...');
+const { data: verifyPatients, error: verifyError } = await supabaseClient
+    .from('patients')
+    .select('*')
+    .eq('organization_id', orgId);
+
+if (verifyError) {
+    console.error('❌ Verification error:', verifyError.message);
+} else {
+    const withDob = verifyPatients.filter(p => p.date_of_birth);
+    console.log(`✅ Verification complete: ${verifyPatients.length} patients in Supabase`);
+    console.log(`✅ ${withDob.length} patients with DOB data`);
+    
+    // STEP 4: Replace app data (prevents duplicates)
+    console.log('🔄 Updating app data...');
+    
+    // Convert to app format
+    const appPatients = verifyPatients.map(patient => ({
+        id: patient.patient_id,
+        firstName: patient.first_name || '',
+        middleName: patient.middle_name || '',
+        lastName: patient.last_name || '',
+        dob: patient.date_of_birth,
+        gender: patient.gender || '',
+        maritalStatus: patient.marital_status || '',
+        phone: patient.phone || '',
+        email: patient.email || '',
+        addressLine1: patient.address || '',
+        city: patient.city || '',
+        state: patient.state || '',
+        country: patient.country || '',
+        bloodGroup: patient.blood_group || '',
+        allergies: JSON.parse(patient.allergies || '[]'),
+        conditions: JSON.parse(patient.chronic_conditions || '[]'),
+        emergencyFirstName: patient.emergency_contact_name?.split(' ')[0] || '',
+        emergencyLastName: patient.emergency_contact_name?.split(' ').slice(1).join(' ') || '',
+        emergencyPhone: patient.emergency_contact_phone || '',
+        emergencyRelationship: patient.emergency_contact_relationship || '',
+        createdDate: patient.created_at,
+        updatedDate: patient.updated_at,
+        visits: [],
+        immunizations: [],
+        prescriptions: [],
+        hasDiabetes: false
+    }));
+    
+    // Replace localStorage with fresh data
+    localStorage.setItem('mecure_patients', JSON.stringify(appPatients));
+    console.log('✅ Updated localStorage with fresh Supabase data');
+    
+    // STEP 5: Make app use Supabase as source
+    window.loadPatients = async function(page = 1) {
+        console.log('🔄 Loading patients from Supabase (primary source)...');
+        
+        const { data: patients, error } = await supabaseClient
+            .from('patients')
+            .select('*')
+            .eq('organization_id', orgId);
+        
+        if (error) {
+            console.error('❌ Error loading from Supabase:', error);
+            return;
+        }
+        
+        console.log('✅ Loaded', patients.length, 'patients from Supabase');
+        
+        // Convert to app format
+        const appPatients = patients.map(patient => ({
+            id: patient.patient_id,
+            firstName: patient.first_name || '',
+            middleName: patient.middle_name || '',
+            lastName: patient.last_name || '',
+            dob: patient.date_of_birth,
+            gender: patient.gender || '',
+            maritalStatus: patient.marital_status || '',
+            phone: patient.phone || '',
+            email: patient.email || '',
+            addressLine1: patient.address || '',
+            city: patient.city || '',
+            state: patient.state || '',
+            country: patient.country || '',
+            bloodGroup: patient.blood_group || '',
+            allergies: JSON.parse(patient.allergies || '[]'),
+            conditions: JSON.parse(patient.chronic_conditions || '[]'),
+            emergencyFirstName: patient.emergency_contact_name?.split(' ')[0] || '',
+            emergencyLastName: patient.emergency_contact_name?.split(' ').slice(1).join(' ') || '',
+            emergencyPhone: patient.emergency_contact_phone || '',
+            emergencyRelationship: patient.emergency_contact_relationship || '',
+            createdDate: patient.created_at,
+            updatedDate: patient.updated_at,
+            visits: [],
+            immunizations: [],
+            prescriptions: [],
+            hasDiabetes: false
+        }));
+        
+        // Update localStorage
+        localStorage.setItem('mecure_patients', JSON.stringify(appPatients));
+        
+        // Display patients
+        displayPatients(appPatients, page);
+    };
+    
+    // Helper function to display patients
+    function displayPatients(patients, page) {
+        // Sort patients
+        patients.sort((a, b) => {
+            const nameA = `${a.firstName} ${a.lastName}`.toLowerCase();
+            const nameB = `${b.firstName} ${b.lastName}`.toLowerCase();
+            return nameA.localeCompare(nameB);
+        });
+        
+        // Pagination
+        const patientsPerPage = 10;
+        const startIndex = (page - 1) * patientsPerPage;
+        const endIndex = startIndex + patientsPerPage;
+        const paginatedPatients = patients.slice(startIndex, endIndex);
+        
+        // Display patients
+        const tbody = document.getElementById('patient-list');
+        if (tbody) {
+            tbody.innerHTML = '';
+            
+            if (paginatedPatients.length === 0) {
+                tbody.innerHTML = '<tr><td colspan="4">No patients found.</td></tr>';
+            } else {
+                paginatedPatients.forEach(patient => {
+                    const row = document.createElement("tr");
+                    row.innerHTML = `
+                        <td>${patient.firstName} ${patient.lastName}</td>
+                        <td>${patient.dob}</td>
+                        <td>${patient.gender}</td>
+                        <td>
+                            <button onclick="viewPatient('${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">View</button>
+                            <button onclick="editPatient('${patient.id}')" style="background-color: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Edit</button>
+                            <button onclick="deletePatient('${patient.id}')" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Delete</button>
+                            <button onclick="addEncounter('${patient.id}')" style="background-color: #fd7e14; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Encounter</button>
+                            <button onclick="addAppointment('${patient.id}')" style="background-color: #6f42c1; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Appointment</button>
+                            <button onclick="printPatientSummary('${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">📄 Print Patient Summary</button>
+                        </td>
+                    `;
+                    tbody.appendChild(row);
+                });
+            }
+        }
+        
+        // Update pagination
+        const totalPages = Math.ceil(patients.length / patientsPerPage);
+        const paginationDiv = document.getElementById('pagination-controls');
+        if (paginationDiv) {
+            paginationDiv.innerHTML = '';
+            if (totalPages > 1) {
+                for (let i = 1; i <= totalPages; i++) {
+                    const button = document.createElement('button');
+                    button.textContent = i;
+                    button.style.margin = '5px';
+                    button.style.padding = '5px 10px';
+                    button.style.backgroundColor = i === page ? '#007bff' : '#f8f9fa';
+                    button.style.color = i === page ? 'white' : 'black';
+                    button.style.border = '1px solid #dee2e6';
+                    button.style.borderRadius = '3px';
+                    button.style.cursor = 'pointer';
+                    button.onclick = () => window.loadPatients(i);
+                    paginationDiv.appendChild(button);
+                }
+            }
+        }
+    }
+    
+    console.log('✅ App sync complete! Loading patients...');
+    window.loadPatients(1);
+}
+
+console.log('🎉 Complete migration and sync finished!');
+        </div>
+        
+        <div class="fix">
+            <h3>✅ Key Fixes Made:</h3>
+            <ul>
+                <li><strong>Added variable definitions:</strong> All variables are now properly defined</li>
+                <li><strong>Complete data conversion:</strong> Proper conversion from backup format to Supabase format</li>
+                <li><strong>Error handling:</strong> Comprehensive error checking and logging</li>
+                <li><strong>Complete function:</strong> Full <code>loadPatients</code> function with display logic</li>
+                <li><strong>Verification step:</strong> Checks that migration was successful</li>
+                <li><strong>Progress logging:</strong> Shows progress and results</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function copyCorrectedCode() {
+            const code = document.getElementById('correctedCode').textContent;
+            navigator.clipboard.writeText(code).then(() => {
+                alert('✅ Corrected code copied to clipboard!');
+            }).catch(() => {
+                // Fallback
+                const textArea = document.createElement('textarea');
+                textArea.value = code;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                alert('✅ Corrected code copied to clipboard!');
+            });
+        }
+    </script>  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+
+</html>
+
+
+
+
+
+

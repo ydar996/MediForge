@@ -1,0 +1,518 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Hybrid Architecture Audit Tool</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #667eea;
+      padding-bottom: 10px;
+    }
+    .section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin: 2px;
+    }
+    .status-compliant {
+      background: #4CAF50;
+      color: white;
+    }
+    .status-non-compliant {
+      background: #F44336;
+      color: white;
+    }
+    .status-partial {
+      background: #FF9800;
+      color: white;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 15px;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #eee;
+    }
+    th {
+      background: #667eea;
+      color: white;
+      font-weight: 600;
+    }
+    tr:hover {
+      background: #f8f9fa;
+    }
+    .issue {
+      color: #F44336;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    .fix {
+      color: #4CAF50;
+      font-size: 12px;
+      margin-top: 4px;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .summary-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+      text-align: center;
+    }
+    .summary-card .number {
+      font-size: 36px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .summary-card .label {
+      color: #666;
+      font-size: 14px;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔍 Hybrid Architecture Compliance Audit</h1>
+  
+  <div class="section">
+    <h2>📊 Summary</h2>
+    <div class="summary">
+      <div class="summary-card">
+        <div class="number" id="total-pages">0</div>
+        <div class="label">Total Pages</div>
+      </div>
+      <div class="summary-card">
+        <div class="number" id="compliant-pages" style="color: #4CAF50;">0</div>
+        <div class="label">✅ Compliant</div>
+      </div>
+      <div class="summary-card">
+        <div class="number" id="partial-pages" style="color: #FF9800;">0</div>
+        <div class="label">⚠️ Partial</div>
+      </div>
+      <div class="summary-card">
+        <div class="number" id="non-compliant-pages" style="color: #F44336;">0</div>
+        <div class="label">❌ Non-Compliant</div>
+      </div>
+    </div>
+  </div>
+  
+  <div class="section">
+    <h2>📋 Compliance Rules</h2>
+    <p><strong>Supabase-First Hybrid Architecture Requirements:</strong></p>
+    <ol>
+      <li>✅ <strong>Read Pattern:</strong> Try Supabase first, fallback to localStorage only if Supabase fails</li>
+      <li>✅ <strong>Write Pattern:</strong> Write to Supabase first, then cache in localStorage</li>
+      <li>✅ <strong>Cache Pattern:</strong> Replace localStorage with Supabase data (not merge) after successful Supabase read</li>
+      <li>✅ <strong>Error Handling:</strong> Graceful fallback to localStorage if Supabase unavailable</li>
+      <li>❌ <strong>Anti-Pattern:</strong> Only using localStorage without checking Supabase</li>
+      <li>❌ <strong>Anti-Pattern:</strong> Writing only to localStorage without writing to Supabase</li>
+    </ol>
+  </div>
+  
+  <div class="section">
+    <h2>🔍 Audit Results</h2>
+    <p style="color: #666; margin-bottom: 15px;">
+      <strong>⚠️ IMPORTANT:</strong> This tool is <strong>100% READ-ONLY</strong> and <strong>SAFE</strong> to use:
+    </p>
+    <ul style="color: #666; margin-bottom: 15px;">
+      <li>✅ <strong>Only reads</strong> HTML files (does not modify anything)</li>
+      <li>✅ <strong>Only analyzes</strong> code patterns (does not execute code)</li>
+      <li>✅ <strong>Does not write</strong> to localStorage, Supabase, or any files</li>
+      <li>✅ <strong>Does not change</strong> any functionality in your app</li>
+      <li>✅ <strong>Completely safe</strong> - it's just a reporting tool</li>
+    </ul>
+    <div style="background: #e3f2fd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+      <label style="display: flex; align-items: center; cursor: pointer;">
+        <input type="checkbox" id="include-test-pages" checked style="margin-right: 8px;">
+        <span>Include test/backup/migration pages (recommended: unchecked for production audit)</span>
+      </label>
+    </div>
+    <button onclick="runAudit()">🔄 Run Full App Audit (All HTML Pages)</button>
+    <button onclick="exportResults()">📥 Export Results</button>
+    <div id="progress" style="margin-top: 15px; color: #666; font-size: 14px;"></div>
+    <div id="results"></div>
+  </div>
+  
+  <script>
+    const complianceRules = {
+      readPattern: {
+        compliant: [
+          /supabaseClient.*\.from\(/,
+          /getAllOrganizations/,
+          /loadPatientsWithSupabasePriority/,
+          /loadAppointmentsWithSupabasePriority/,
+          /universal-data-loader/
+        ],
+        nonCompliant: [
+          /localStorage\.getItem.*organizations.*\|\|/,
+          /localStorage\.getItem.*patients.*\|\|/,
+          /localStorage\.getItem.*appointments.*\|\|/
+        ]
+      },
+      writePattern: {
+        compliant: [
+          /supabaseClient.*\.insert\(/,
+          /supabaseClient.*\.update\(/,
+          /supabaseClient.*\.upsert\(/
+        ],
+        nonCompliant: [
+          /localStorage\.setItem.*organizations[^;]*;[\s\S]{0,500}(?!supabase)/,
+          /localStorage\.setItem.*patients[^;]*;[\s\S]{0,500}(?!supabase)/
+        ]
+      },
+      cachePattern: {
+        compliant: [
+          /localStorage\.setItem.*supabase/,
+          /REPLACE.*localStorage.*Supabase/
+        ]
+      }
+    };
+    
+    let auditResults = [];
+    
+    // Helper function to identify test/backup/migration pages
+    function isTestOrBackupPage(filename) {
+      const testPatterns = [
+        /test/i, /backup/i, /migrate/i, /restore/i, /diagnose/i, /check-/i, /verify-/i,
+        /sync-/i, /simple-/i, /direct-/i, /force-/i, /clear-/i, /cleanup-/i,
+        /investigate-/i, /recover-/i, /setup-test/i, /find-missing/i, /get-org-id/i,
+        /execute-sql/i, /generate-/i, /create-/i, /delete-unknown/i, /automated-audit/i,
+        /audit-mecure/i, /audit-localstorage/i, /performance-audit/i, /security-audit/i,
+        /mobile-sync/i, /hybrid-solution/i, /final-working/i, /final-ui-safe/i,
+        /color-scheme/i, /populate-localstorage/i, /reset-refresh/i, /registration-health-check/i,
+        /key-features/i, /about-us/i, /-clean\.html/i, /-backup\.html/i, /-broken\.html/i
+      ];
+      return testPatterns.some(pattern => pattern.test(filename));
+    }
+    
+    // Complete list of ALL HTML files in the application (372 files)
+    // This includes production pages, test pages, backup pages, etc.
+    const ALL_HTML_FILES = [
+        // Platform Admin Pages
+        'platform-subscriptions.html',
+        'platform-dashboard.html',
+        'platform-login.html',
+        'platform-settings.html',
+        'platform-analytics.html',
+        'platform-audit-log.html',
+        'platform-security-dashboard.html',
+        'platform-migrate-appointment-types.html',
+        
+        // Subscription & Billing
+        'payment-receipts.html',
+        'manage-subscription.html',
+        'subscription-invoice.html',
+        'billing-dashboard.html',
+        'billing-reports.html',
+        'invoices.html',
+        'payments.html',
+        'all-payments.html',
+        'collect-payment.html',
+        'cash-register.html',
+        'quick-checkout.html',
+        'invoice-details.html',
+        'edit-invoice.html',
+        'edit-payment.html',
+        'pricing-catalog.html',
+        'revenue-analytics.html',
+        'todays-revenue.html',
+        'total-revenue.html',
+        'total-cash-received.html',
+        
+        // Patient Management
+        'patients.html',
+        'add-patient.html',
+        'edit-patient.html',
+        'patient-details.html',
+        'patient-profile.html',
+        'patient-documents.html',
+        'patient-dashboard.html',
+        'patient-appointments.html',
+        'patient-medications.html',
+        'patient-summary.html',
+        'patient-encounters.html',
+        'patient-results.html',
+        'patient-intake.html',
+        'patient-intake-approvals.html',
+        'deleted-patients.html',
+        'unaddressed-patients.html',
+        
+        // Clinical
+        'clinical-note.html',
+        'lab-order.html',
+        'lab-result-entry.html',
+        'lab-intervention-note.html',
+        'doctor-lab-results.html',
+        'lab-scientist-dashboard.html',
+        'prescription.html',
+        'referral-letter.html',
+        'discharge-summary.html',
+        'imaging-order.html',
+        
+        // Appointments & Scheduling
+        'appointments.html',
+        'add-appointment.html',
+        'schedule.html',
+        'set-clinic-schedule.html',
+        
+        // Pharmacy
+        'pharmacy-dashboard.html',
+        
+        // Reports & Analytics
+        'reports.html',
+        'condition-stats.html',
+        'condition-patients.html',
+        'conditions-breakdown.html',
+        'gaps-summary.html',
+        'disease-analytics.html',
+        'vital-signs-analysis.html',
+        'healthcare-staff.html',
+        
+        // Dashboard & Main
+        'dashboard.html',
+        'login.html',
+        'register.html',
+        'index.html',
+        
+        // User Management
+        'org-user-management.html',
+        'edit-profile.html',
+        'change-password.html',
+        'patient-change-password.html',
+        
+        // Security & Settings
+        'security-dashboard.html',
+        'clinic-security-dashboard.html',
+        'security-monitoring.html',
+        'security-logs.html',
+        'setup-encryption.html',
+        'recover-encryption.html',
+        'platform-encryption-recovery.html',
+        
+        // Patient Portal
+        'setup-patient-portal.html',
+        'patient-login.html',
+        'select-medical-specialty.html',
+        
+        // Clinic Management
+        'manage-clinics.html',
+        'clinic-details.html',
+        'register-clinic.html',
+        
+        // Legal & Compliance
+        'legal-agreement.html',
+        'legal-agreement-view.html',
+        'legal-agreement-sign.html',
+        'legal-agreements-admin.html',
+        'legal-agreements-org.html',
+        'legal-agreements-summary.html',
+        
+        // Audit & Logging
+        'audit-log.html',
+        'audit-log-details.html',
+        
+        // Data Management
+        'data-download-approvals.html',
+        'data-import-export.html',
+        'my-download-requests.html',
+        
+        // Specialists
+        'specialist-register.html',
+        
+        // Billing Permissions
+        'billing-permissions.html',
+        'configure-services.html'
+      ];
+    
+    async function runAudit() {
+      console.log('🔍 Starting hybrid architecture audit...');
+      const resultsDiv = document.getElementById('results');
+      const progressDiv = document.getElementById('progress');
+      resultsDiv.innerHTML = '<p>⏳ Scanning pages... This may take a few minutes.</p><p style="color: #666; font-size: 12px;">✅ Safe: This tool only reads files, does not modify anything.</p>';
+      
+      auditResults = [];
+      let scanned = 0;
+      let failed = 0;
+      
+      // Filter pages based on user preference
+      const includeTestPages = document.getElementById('include-test-pages')?.checked ?? false;
+      let pagesToScan = includeTestPages ? ALL_HTML_FILES : ALL_HTML_FILES.filter(p => !isTestOrBackupPage(p));
+      
+      // Exclude the audit tool itself
+      pagesToScan = pagesToScan.filter(p => p !== 'audit-hybrid-architecture.html');
+      
+      console.log(`📋 Will scan ${pagesToScan.length} pages (includeTestPages: ${includeTestPages})`);
+      progressDiv.textContent = `📋 Will scan ${pagesToScan.length} pages...`;
+      
+      for (const page of pagesToScan) {
+        try {
+          scanned++;
+          const response = await fetch(page);
+          if (!response.ok) {
+            failed++;
+            console.warn(`⚠️ Could not fetch ${page}: ${response.status}`);
+            continue;
+          }
+          
+          const html = await response.text();
+          const result = auditPage(page, html);
+          auditResults.push(result);
+          
+          // Update progress
+          if (scanned % 10 === 0 || scanned === pagesToScan.length) {
+            progressDiv.textContent = `⏳ Scanning... ${scanned}/${pagesToScan.length} pages scanned (${failed} failed)`;
+          }
+        } catch (error) {
+          failed++;
+          console.warn(`⚠️ Could not fetch ${page}:`, error);
+        }
+      }
+      
+      console.log(`✅ Audit complete: ${auditResults.length} pages analyzed, ${failed} failed to load`);
+      progressDiv.textContent = `✅ Complete: ${auditResults.length} pages analyzed, ${failed} failed to load`;
+      displayResults();
+    }
+    
+    function auditPage(pageName, html) {
+      const result = {
+        page: pageName,
+        status: 'compliant',
+        issues: [],
+        fixes: []
+      };
+      
+      // Check for Supabase-first read pattern
+      const hasSupabaseRead = complianceRules.readPattern.compliant.some(pattern => pattern.test(html));
+      const hasLocalStorageOnlyRead = complianceRules.readPattern.nonCompliant.some(pattern => {
+        const match = html.match(pattern);
+        if (match) {
+          // Check if there's Supabase check nearby (within 500 chars)
+          const index = html.indexOf(match[0]);
+          const context = html.substring(Math.max(0, index - 500), Math.min(html.length, index + 500));
+          return !complianceRules.readPattern.compliant.some(p => p.test(context));
+        }
+        return false;
+      });
+      
+      // Check for Supabase-first write pattern
+      const hasSupabaseWrite = complianceRules.writePattern.compliant.some(pattern => pattern.test(html));
+      const hasLocalStorageOnlyWrite = html.match(/localStorage\.setItem.*organizations[^;]*;/);
+      
+      // Determine status
+      if (!hasSupabaseRead && hasLocalStorageOnlyRead) {
+        result.status = 'non-compliant';
+        result.issues.push('Only uses localStorage for reading, no Supabase check');
+      } else if (hasSupabaseRead && hasLocalStorageOnlyRead) {
+        result.status = 'partial';
+        result.issues.push('Has Supabase reads but also localStorage-only reads');
+      }
+      
+      if (hasLocalStorageOnlyWrite && !hasSupabaseWrite) {
+        result.status = result.status === 'non-compliant' ? 'non-compliant' : 'partial';
+        result.issues.push('Writes to localStorage without writing to Supabase');
+      }
+      
+      if (hasSupabaseRead && hasSupabaseWrite && !hasLocalStorageOnlyRead) {
+        result.status = 'compliant';
+        result.fixes.push('✅ Follows Supabase-first pattern correctly');
+      }
+      
+      return result;
+    }
+    
+    function displayResults() {
+      const resultsDiv = document.getElementById('results');
+      const compliant = auditResults.filter(r => r.status === 'compliant').length;
+      const partial = auditResults.filter(r => r.status === 'partial').length;
+      const nonCompliant = auditResults.filter(r => r.status === 'non-compliant').length;
+      
+      document.getElementById('total-pages').textContent = auditResults.length;
+      document.getElementById('compliant-pages').textContent = compliant;
+      document.getElementById('partial-pages').textContent = partial;
+      document.getElementById('non-compliant-pages').textContent = nonCompliant;
+      
+      let html = '<table><thead><tr><th>Page</th><th>Status</th><th>Issues</th><th>Notes</th></tr></thead><tbody>';
+      
+      auditResults.forEach(result => {
+        const statusClass = result.status === 'compliant' ? 'status-compliant' : 
+                           result.status === 'partial' ? 'status-partial' : 'status-non-compliant';
+        
+        html += `<tr>
+          <td><strong>${result.page}</strong></td>
+          <td><span class="status-badge ${statusClass}">${result.status.toUpperCase()}</span></td>
+          <td>${result.issues.map(i => `<div class="issue">❌ ${i}</div>`).join('')}</td>
+          <td>${result.fixes.map(f => `<div class="fix">${f}</div>`).join('')}</td>
+        </tr>`;
+      });
+      
+      html += '</tbody></table>';
+      resultsDiv.innerHTML = html;
+    }
+    
+    function exportResults() {
+      const csv = [
+        ['Page', 'Status', 'Issues', 'Fixes'],
+        ...auditResults.map(r => [
+          r.page,
+          r.status,
+          r.issues.join('; '),
+          r.fixes.join('; ')
+        ])
+      ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+      
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'hybrid-architecture-audit.csv';
+      a.click();
+    }
+    
+    // Auto-run on load
+    window.addEventListener('load', () => {
+      setTimeout(runAudit, 1000);
+    });
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,399 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migrate Users to Supabase</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .migration-container {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .status-box {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 20px 0;
+      font-family: monospace;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+    }
+    .log-success {
+      color: green;
+    }
+    .log-error {
+      color: red;
+    }
+    .log-info {
+      color: blue;
+    }
+    .log-warning {
+      color: orange;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    .danger-button {
+      background: #f44336;
+    }
+    .danger-button:hover {
+      background: #da190b;
+    }
+    .summary {
+      background: #e3f2fd;
+      padding: 15px;
+      border-left: 4px solid #2196F3;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="migration-container">
+    <h1>?? User Migration Tool</h1>
+    <p>This tool migrates users from localStorage to Supabase Authentication.</p>
+
+    <div class="summary">
+      <h3>Summary:</h3>
+      <p><strong>Users in localStorage:</strong> <span id="local-count">0</span></p>
+      <p><strong>Organizations in localStorage:</strong> <span id="org-count">0</span></p>
+    </div>
+
+    <h3>Migration Steps:</h3>
+    <ol>
+      <li>Click "Analyze Users" to see what will be migrated</li>
+      <li>Review the analysis</li>
+      <li>Click "Migrate to Supabase" to start migration</li>
+      <li>Wait for completion (don't close this page!)</li>
+    </ol>
+
+    <div>
+      <button id="analyze-btn" onclick="analyzeUsers()">1. Analyze Users</button>
+      <button id="migrate-btn" onclick="migrateUsers()" disabled>2. Migrate to Supabase</button>
+      <button onclick="window.location.href='dashboard'">Back to Dashboard</button>
+    </div>
+
+    <div class="status-box" id="status-log">
+      <div class="log-info">Click "Analyze Users" to begin...</div>
+    </div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>
+
+  <script>
+    let usersToMigrate = [];
+    let organizationsData = {};
+
+    // Logging helper
+    function log(message, type = 'info') {
+      const statusLog = document.getElementById('status-log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      statusLog.appendChild(entry);
+      statusLog.scrollTop = statusLog.scrollHeight;
+      console.log(message);
+    }
+
+    // Analyze users in localStorage
+    function analyzeUsers() {
+      try {
+        log('Starting analysis...', 'info');
+        
+        // Get users from localStorage
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        usersToMigrate = users;
+        
+        // Get organizations from localStorage
+        organizationsData = JSON.parse(localStorage.getItem('organizations') || '{}');
+        
+        // Update counts
+        document.getElementById('local-count').textContent = users.length;
+        document.getElementById('org-count').textContent = Object.keys(organizationsData).length;
+        
+        log(`Found ${users.length} users in localStorage`, 'success');
+        log(`Found ${Object.keys(organizationsData).length} organizations in localStorage`, 'success');
+        
+        // List users
+        log('--- Users to migrate: ---', 'info');
+        users.forEach((user, index) => {
+          log(`${index + 1}. ${user.firstName} ${user.lastName} (${user.username}) - ${user.role} at ${user.org}`, 'info');
+        });
+        
+        if (users.length === 0) {
+          log('No users found! You need at least one user to migrate.', 'error');
+          return;
+        }
+        
+        log('Analysis complete! Review the list above.', 'success');
+        log('Click "Migrate to Supabase" when ready.', 'success');
+        
+        // Enable migrate button
+        document.getElementById('migrate-btn').disabled = false;
+        
+      } catch (error) {
+        log(`Error during analysis: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Migrate users to Supabase
+    async function migrateUsers() {
+      try {
+        // Disable buttons during migration
+        document.getElementById('analyze-btn').disabled = true;
+        document.getElementById('migrate-btn').disabled = true;
+        
+        log('=== STARTING MIGRATION ===', 'info');
+        log('Do NOT close this page!', 'warning');
+        
+        if (!supabaseClient) {
+          log('ERROR: Supabase client not initialized!', 'error');
+          return;
+        }
+        
+        if (usersToMigrate.length === 0) {
+          log('No users to migrate. Run analysis first.', 'error');
+          return;
+        }
+        
+        // First, we need to get or create organizations in Supabase
+        log('\n--- Step 1: Organizations ---', 'info');
+        const orgMap = {}; // Map of org name -> org UUID
+        
+        for (const orgName of Object.keys(organizationsData)) {
+          try {
+            log(`Processing organization: ${orgName}...`, 'info');
+            
+            // Note: We'll create organizations in Day 3, for now we'll just create placeholder
+            // or we can check if org exists
+            const { data: existingOrg, error: checkError } = await supabaseClient
+              .from('organizations')
+              .select('id, name')
+              .eq('name', orgName)
+              .maybeSingle();
+            
+            if (existingOrg) {
+              log(`Organization "${orgName}" already exists in Supabase`, 'success');
+              orgMap[orgName] = existingOrg.id;
+            } else {
+              log(`Organization "${orgName}" not found in Supabase yet`, 'warning');
+              log(`We'll need to create organizations first (Day 3 task)`, 'warning');
+              log(`For now, we'll skip this organization's users`, 'warning');
+              // Skip this org for now
+            }
+          } catch (error) {
+            log(`Error processing org "${orgName}": ${error.message}`, 'error');
+          }
+        }
+        
+        if (Object.keys(orgMap).length === 0) {
+          log('\n?? NO ORGANIZATIONS FOUND IN SUPABASE', 'error');
+          log('You need to create organizations first!', 'error');
+          log('Let me create a default organization for testing...', 'info');
+          
+          // Create a default organization for testing
+          try {
+            const { data: newOrg, error: createError } = await supabaseClient
+              .from('organizations')
+              .insert({
+                name: usersToMigrate[0].org,
+                country: organizationsData[usersToMigrate[0].org]?.country || 'Nigeria',
+                currency: 'NGN',
+                org_code: 'TEST-' + Date.now(),
+                status: 'active'
+              })
+              .select()
+              .single();
+            
+            if (createError) {
+              log(`Error creating default organization: ${createError.message}`, 'error');
+              log('Migration cannot continue without organizations.', 'error');
+              return;
+            }
+            
+            log(`Created default organization: ${newOrg.name}`, 'success');
+            orgMap[newOrg.name] = newOrg.id;
+          } catch (error) {
+            log(`Failed to create organization: ${error.message}`, 'error');
+            return;
+          }
+        }
+        
+        log(`\n--- Step 2: Migrating ${usersToMigrate.length} users ---`, 'info');
+        
+        let successCount = 0;
+        let errorCount = 0;
+        let skippedCount = 0;
+        
+        for (const user of usersToMigrate) {
+          try {
+            // Skip if organization not in Supabase
+            if (!orgMap[user.org]) {
+              log(`Skipping ${user.username} - organization "${user.org}" not in Supabase`, 'warning');
+              skippedCount++;
+              continue;
+            }
+            
+            log(`\nMigrating: ${user.firstName} ${user.lastName} (${user.username})...`, 'info');
+            
+            // Generate email (Supabase Auth requires email)
+            // Format: username@temp.ehrapp.local
+            const email = `${user.username}@temp.ehrapp.local`;
+            
+            // For migration, we'll use a temporary password that user can change later
+            // We can't use their hashed password directly as Supabase needs plain text to hash it
+            const tempPassword = 'ChangeMe123!'; // User will change this on first login
+            
+            // Create auth user
+            log(`Creating Supabase Auth user for ${email}...`, 'info');
+            
+            // Use signUp for each user
+            const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+              email: email,
+              password: tempPassword,
+              options: {
+                data: {
+                  first_name: user.firstName,
+                  last_name: user.lastName,
+                  username: user.username
+                },
+                emailRedirectTo: undefined // Don't send confirmation email for temp accounts
+              }
+            });
+            
+            if (authError) {
+              // Check if user already exists
+              if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
+                log(`User ${email} already exists in Supabase Auth`, 'warning');
+                // Try to get existing user
+                // For now, skip this user
+                log(`Skipping ${user.username} - already migrated`, 'info');
+                skippedCount++;
+                continue;
+              }
+              throw authError;
+            }
+            
+            log(`Auth user created for ${email}`, 'success');
+            
+            const authUserId = authData.user.id;
+            
+            // Now create profile in public.users table
+            log(`Creating user profile in database...`, 'info');
+            
+            const { data: profileData, error: profileError } = await supabaseClient
+              .from('users')
+              .insert({
+                auth_user_id: authUserId,
+                username: user.username,
+                first_name: user.firstName,
+                last_name: user.lastName,
+                gender: user.gender || 'Male',
+                role: user.role,
+                organization_id: orgMap[user.org],
+                medical_license_number: user.medicalLicenseNumber || null
+              })
+              .select()
+              .single();
+            
+            if (profileError) {
+              log(`Error creating profile: ${profileError.message}`, 'error');
+              throw profileError;
+            }
+            
+            log(`? Successfully migrated ${user.username}!`, 'success');
+            log(`   Temp password: ${tempPassword} (user should change this)`, 'info');
+            successCount++;
+            
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 500));
+            
+          } catch (error) {
+            log(`? Error migrating ${user.username}: ${error.message}`, 'error');
+            console.error(error);
+            errorCount++;
+          }
+        }
+        
+        log('\n=== MIGRATION COMPLETE ===', 'success');
+        log(`? Successfully migrated: ${successCount} users`, 'success');
+        if (skippedCount > 0) {
+          log(`?? Skipped: ${skippedCount} users (already exist or org missing)`, 'warning');
+        }
+        if (errorCount > 0) {
+          log(`? Errors: ${errorCount} users`, 'error');
+        }
+        
+        log('\n?? IMPORTANT NOTES:', 'warning');
+        log('1. All migrated users have temporary password: ChangeMe123!', 'warning');
+        log('2. Users should log in and change their password immediately', 'warning');
+        log('3. You can now test login with Supabase Auth!', 'success');
+        
+        // Re-enable analyze button
+        document.getElementById('analyze-btn').disabled = false;
+        
+      } catch (error) {
+        log(`FATAL ERROR: ${error.message}`, 'error');
+        console.error(error);
+        // Re-enable buttons
+        document.getElementById('analyze-btn').disabled = false;
+        document.getElementById('migrate-btn').disabled = false;
+      }
+    }
+
+    // Initialize on load
+    window.addEventListener('DOMContentLoaded', () => {
+      log('Migration tool ready. Click "Analyze Users" to begin.', 'info');
+      analyzeUsers(); // Auto-run analysis
+    });
+  </script>  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+
+
+

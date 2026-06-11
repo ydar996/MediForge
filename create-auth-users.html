@@ -1,0 +1,262 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <title>Create Supabase Auth Users</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 40px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        h1 { color: #667eea; text-align: center; }
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            margin: 10px 5px;
+        }
+        .btn:hover { transform: translateY(-2px); }
+        .log {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            margin-top: 20px;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        .success { color: #68d391; }
+        .error { color: #fc8181; }
+        .warning { color: #f6ad55; }
+        .info { color: #63b3ed; }
+        .user-card {
+            background: #f8f9fa;
+            padding: 15px;
+            margin: 10px 0;
+            border-radius: 6px;
+            border-left: 4px solid #667eea;
+        }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    
+  </script>
+
+    <div class="container">
+        <h1>?? Create Supabase Auth Users</h1>
+        
+        <div class="user-card">
+            <h3>Users to Create:</h3>
+            <ul>
+                <li><strong>ydar2</strong> - Email: ydar2@example.com - Password: (from backup SHA256)</li>
+                <li><strong>ydar3</strong> - Email: ydar3@example.com - Password: ydar103</li>
+            </ul>
+        </div>
+
+        <button class="btn" onclick="createAllUsers()">Create Auth Users</button>
+        <button class="btn" onclick="clearLog()">Clear Log</button>
+
+        <div class="log" id="log"></div>
+    </div>
+
+    
+  
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `<div class="${type}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        async function createAllUsers() {
+            log('?? Starting user creation process...', 'info');
+            
+            // Get Mecure Clinics org ID
+            const { data: org } = await supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', 'Mecure Clinics')
+                .single();
+            
+            if (!org) {
+                log('? Mecure Clinics not found', 'error');
+                return;
+            }
+            
+            const orgId = org.id;
+            log(`? Found Mecure Clinics (ID: ${orgId})`, 'success');
+
+            // User 1: ydar2 (needs special handling for SHA256 password)
+            log('\n?? Creating user: ydar2', 'info');
+            await createUser({
+                username: 'ydar2',
+                email: 'ydar2@example.com',
+                password: 'ydar102', // Using a default password since SHA256 can't be reversed
+                firstName: 'Yinka',
+                lastName: 'Daramola',
+                role: 'Doctor',
+                gender: 'Male',
+                organizationId: orgId,
+                medicalLicenseNumber: '201025'
+            });
+
+            // User 2: ydar3
+            log('\n?? Creating user: ydar3', 'info');
+            await createUser({
+                username: 'ydar3',
+                email: 'ydar3@example.com',
+                password: 'ydar103',
+                firstName: 'Ydar3',
+                lastName: 'User',
+                role: 'Doctor',
+                gender: 'Male',
+                organizationId: orgId,
+                medicalLicenseNumber: 'R101010'
+            });
+
+            log('\n?? User creation process complete!', 'success');
+            log('\n?? LOGIN CREDENTIALS FOR TESTING:', 'info');
+            log('???????????????????????????????????????', 'info');
+            log('Username: ydar2', 'success');
+            log('Password: ydar102', 'success');
+            log('???????????????????????????????????????', 'info');
+            log('Username: ydar3', 'success');
+            log('Password: ydar103', 'success');
+            log('???????????????????????????????????????', 'info');
+        }
+
+        async function createUser(userData) {
+            try {
+                // Check if auth user already exists
+                log(`  ?? Checking if ${userData.username} already exists...`, 'info');
+                
+                // Try to create auth user
+                const { data: authData, error: authError } = await supabaseClient.auth.signUp({
+                    email: userData.email,
+                    password: userData.password,
+                    options: {
+                        data: {
+                            username: userData.username,
+                            first_name: userData.firstName,
+                            last_name: userData.lastName
+                        }
+                    }
+                });
+
+                if (authError) {
+                    if (authError.message.includes('already registered')) {
+                        log(`  ?? ${userData.username} already has an auth account`, 'warning');
+                        log(`  ??  You can login with: ${userData.username} / ${userData.password}`, 'info');
+                        return;
+                    }
+                    log(`  ? Error creating auth for ${userData.username}: ${authError.message}`, 'error');
+                    return;
+                }
+
+                if (!authData.user) {
+                    log(`  ? No user returned for ${userData.username}`, 'error');
+                    return;
+                }
+
+                log(`  ? Auth user created for ${userData.username}`, 'success');
+                log(`  ?? Email: ${userData.email}`, 'info');
+                log(`  ?? Password: ${userData.password}`, 'info');
+
+                // Check if profile exists
+                const { data: existingProfile } = await supabaseClient
+                    .from('users')
+                    .select('id')
+                    .eq('username', userData.username)
+                    .maybeSingle();
+
+                if (existingProfile) {
+                    // Update existing profile with auth_user_id
+                    const { error: updateError } = await supabaseClient
+                        .from('users')
+                        .update({ auth_user_id: authData.user.id })
+                        .eq('username', userData.username);
+
+                    if (updateError) {
+                        log(`  ?? Error updating profile: ${updateError.message}`, 'warning');
+                    } else {
+                        log(`  ? Profile updated with auth_user_id`, 'success');
+                    }
+                } else {
+                    // Create new profile
+                    const { error: profileError } = await supabaseClient
+                        .from('users')
+                        .insert([{
+                            auth_user_id: authData.user.id,
+                            username: userData.username,
+                            first_name: userData.firstName,
+                            last_name: userData.lastName,
+                            gender: userData.gender,
+                            role: userData.role,
+                            organization_id: userData.organizationId,
+                            medical_license_number: userData.medicalLicenseNumber
+                        }]);
+
+                    if (profileError) {
+                        log(`  ?? Error creating profile: ${profileError.message}`, 'warning');
+                    } else {
+                        log(`  ? User profile created`, 'success');
+                    }
+                }
+
+            } catch (error) {
+                log(`  ? Exception: ${error.message}`, 'error');
+            }
+        }
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+
+

@@ -1,0 +1,919 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admission Form - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+      --warm-orange: #FF8C00;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .form-row-3 {
+      display: grid;
+      grid-template-columns: 1fr 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .patient-info-box {
+      background: linear-gradient(135deg, var(--soft-white), var(--ivory));
+      padding: 15px;
+      border-radius: 8px;
+      border-left: 6px solid var(--primary-green);
+      margin-bottom: 20px;
+    }
+    
+    .pre-admission-tests {
+      background: var(--soft-white);
+      padding: 10px;
+      border-radius: 6px;
+      margin-top: 10px;
+    }
+    
+    .test-item {
+      padding: 8px;
+      margin: 5px 0;
+      background: white;
+      border-radius: 4px;
+      border-left: 3px solid var(--adire-blue);
+    }
+    
+    .test-item.abnormal {
+      border-left-color: var(--coral);
+      background: #fff3cd;
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back</button>
+    
+    <h1>🏥 Patient Admission Form</h1>
+    
+    <!-- Patient Information (Pre-populated) -->
+    <div class="patient-info-box" id="patient-info">
+      <strong>Loading patient information...</strong>
+    </div>
+    
+    <form id="admission-form" onsubmit="handleAdmissionSubmit(event)">
+      <!-- Admission Type & Basic Info -->
+      <div class="form-section">
+        <h2>Admission Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Admission Type *</label>
+            <select id="admission-type" required>
+              <option value="elective">Elective</option>
+              <option value="emergency">Emergency</option>
+              <option value="transfer">Transfer</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Admission Date/Time *</label>
+            <input type="datetime-local" id="admission-datetime" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Reason for Admission *</label>
+          <textarea id="admission-reason" rows="3" required placeholder="Enter primary reason for admission"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Source of Admission</label>
+          <select id="admission-source">
+            <option value="outpatient">Outpatient Clinic</option>
+            <option value="er">Emergency Room</option>
+            <option value="transfer">Transfer from Another Facility</option>
+            <option value="direct">Direct Admission</option>
+          </select>
+        </div>
+      </div>
+      
+      <!-- Insurance & Verification -->
+      <div class="form-section">
+        <h2>Insurance & Verification</h2>
+        <div class="form-group">
+          <label>
+            <input type="checkbox" id="insurance-verified" style="width: auto; margin-right: 8px;">
+            Insurance Verified
+          </label>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Insurance Provider</label>
+            <input type="text" id="insurance-provider" placeholder="e.g., NHIS, Private Insurance">
+          </div>
+          <div class="form-group">
+            <label>Policy Number</label>
+            <input type="text" id="insurance-policy" placeholder="Policy/ID number">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Consent Forms -->
+      <div class="form-section">
+        <h2>Consent Forms</h2>
+        <div class="checkbox-group">
+          <div class="checkbox-item">
+            <input type="checkbox" id="consent-treatment" value="treatment">
+            <label for="consent-treatment">Treatment Consent</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="consent-surgery" value="surgery">
+            <label for="consent-surgery">Surgery Consent (if applicable)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="consent-anesthesia" value="anesthesia">
+            <label for="consent-anesthesia">Anesthesia Consent (if applicable)</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="consent-blood" value="blood">
+            <label for="consent-blood">Blood Transfusion Consent</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="consent-research" value="research">
+            <label for="consent-research">Research Participation Consent</label>
+          </div>
+          <div class="checkbox-item">
+            <input type="checkbox" id="consent-privacy" value="privacy">
+            <label for="consent-privacy">Privacy/HIPAA Consent</label>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Pre-Admission Testing -->
+      <div class="form-section">
+        <h2>Pre-Admission Testing</h2>
+        <div id="pre-admission-tests" class="pre-admission-tests">
+          <p>No pre-admission tests found. Tests ordered before admission will appear here.</p>
+        </div>
+        <button type="button" class="btn-secondary" onclick="loadPreAdmissionTests()">Refresh Tests</button>
+      </div>
+      
+      <!-- Bed Assignment -->
+      <div class="form-section">
+        <h2>Bed Assignment</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Room</label>
+            <select id="room-selection" onchange="loadAvailableBeds()">
+              <option value="">Select a room...</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Bed</label>
+            <select id="bed-selection">
+              <option value="">Select a bed...</option>
+            </select>
+          </div>
+        </div>
+        <p style="color: #666; font-size: 13px; margin-top: 10px;">
+          <em>Note: Bed assignment can also be done later from the Admissions Dashboard.</em>
+        </p>
+      </div>
+      
+      <!-- Initial Orders -->
+      <div class="form-section">
+        <h2>Initial Orders</h2>
+        <div class="form-group">
+          <label>Diet</label>
+          <select id="initial-diet">
+            <option value="">None</option>
+            <option value="regular">Regular Diet</option>
+            <option value="soft">Soft Diet</option>
+            <option value="liquid">Liquid Diet</option>
+            <option value="npo">NPO (Nothing by Mouth)</option>
+            <option value="diabetic">Diabetic Diet</option>
+            <option value="cardiac">Cardiac Diet</option>
+            <option value="renal">Renal Diet</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Activity Level</label>
+          <select id="initial-activity">
+            <option value="">None</option>
+            <option value="bedrest">Bed Rest</option>
+            <option value="bedrest-bathroom">Bed Rest with Bathroom Privileges</option>
+            <option value="ambulatory">Ambulatory</option>
+            <option value="ambulatory-assist">Ambulatory with Assistance</option>
+            <option value="chair">Up in Chair</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Initial Medications</label>
+          <textarea id="initial-medications" rows="3" placeholder="List any immediate medications needed (can be added via prescription system later)"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Additional Initial Orders</label>
+          <textarea id="additional-orders" rows="3" placeholder="Any other initial orders or instructions"></textarea>
+        </div>
+      </div>
+      
+      <!-- Additional Notes -->
+      <div class="form-section">
+        <h2>Additional Notes</h2>
+        <div class="form-group">
+          <label>Admission Notes</label>
+          <textarea id="admission-notes" rows="4" placeholder="Any additional notes about the admission"></textarea>
+        </div>
+      </div>
+      
+      <!-- Submit Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="submit">💾 Complete Admission</button>
+        <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    let patientId = null;
+    let visitDate = null;
+    let returnTo = null;
+    let organizationId = null;
+    let patient = null;
+    let rooms = [];
+    let beds = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      patientId =
+        typeof window.getPatientIdFromUrl === 'function'
+          ? window.getPatientIdFromUrl(urlParams)
+          : urlParams.get('patientId') || urlParams.get('patient_id') || urlParams.get('id');
+      if (typeof window.ensurePatientIdQueryParam === 'function') {
+        window.ensurePatientIdQueryParam();
+      }
+      visitDate = urlParams.get('visitDate') || new Date().toISOString().split('T')[0];
+      returnTo = urlParams.get('returnTo');
+      
+      if (!patientId) {
+        alert('Missing patient ID. Open a patient chart, start a clinical note, then click Admit Patient — or pick a patient from the Patients list first.');
+        window.location.href = '/patients';
+        return;
+      }
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+      
+      // Load patient data
+      await loadPatientData();
+      
+      // Set default admission datetime to now
+      const now = new Date();
+      const datetimeLocal = now.toISOString().slice(0, 16);
+      document.getElementById('admission-datetime').value = datetimeLocal;
+      
+      // Load rooms and beds
+      await loadRooms();
+      
+      // Load pre-admission tests
+      await loadPreAdmissionTests();
+    });
+    
+    async function loadPatientData() {
+      try {
+        // Use resolvePatientByIdentifier to find patient (handles both UUID and display ID)
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          // Fallback: Load from Supabase or localStorage
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            const patients = await window.loadPatientsWithSupabasePriority();
+            patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+          } else {
+            const stored = localStorage.getItem(getDataKey("patients"));
+            const patients = stored ? JSON.parse(stored) : [];
+            patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+          }
+        }
+        
+        // Get display patient ID (MECXXX format)
+        let displayPatientId = patientId;
+        if (typeof getPatientIdentifier === 'function') {
+          displayPatientId = getPatientIdentifier(patient) || patientId;
+        } else if (patient) {
+          displayPatientId = patient.patient_id || patient.patientNumber || patient.id;
+        }
+        
+        // Get patient name
+        let patientName = 'Unknown Patient';
+        if (patient) {
+          patientName = patient.name || 
+                       (patient.firstName && patient.lastName ? `${patient.firstName} ${patient.lastName}` : '') ||
+                       (patient.first_name && patient.last_name ? `${patient.first_name} ${patient.last_name}` : '') ||
+                       'Unknown Patient';
+        }
+        
+        // Get organization info
+        let orgName = 'Unknown Organization';
+        try {
+          if (typeof window.resolveOrganizationDisplayName === 'function') {
+            orgName = await window.resolveOrganizationDisplayName(organizationId);
+          } else if (window.supabaseClient && organizationId && typeof window.isOrganizationUuid === 'function' && window.isOrganizationUuid(organizationId)) {
+            const { data: org } = await window.supabaseClient
+              .from('organizations')
+              .select('name')
+              .eq('id', organizationId)
+              .maybeSingle();
+            if (org && org.name) orgName = org.name;
+          }
+          if (orgName === 'Unknown Organization') {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            if (user.org && (!window.isOrganizationUuid || !window.isOrganizationUuid(user.org))) {
+              orgName = user.org;
+            } else {
+              orgName = user.organizationName || orgName;
+            }
+          }
+        } catch (e) {
+          console.warn('Could not load organization name:', e);
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          if (user.org) orgName = user.org;
+        }
+        
+        // Get current user (doctor/staff) info
+        let doctorName = 'Unknown';
+        let doctorRole = '';
+        try {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          doctorName = user.username || 
+                      (user.firstName && user.lastName ? `${user.firstName} ${user.lastName}` : '') ||
+                      (user.first_name && user.last_name ? `${user.first_name} ${user.last_name}` : '') ||
+                      user.name ||
+                      'Unknown';
+          doctorRole = user.role || '';
+        } catch (e) {
+          console.warn('Could not load user info:', e);
+        }
+        
+        // Format date of birth
+        let dob = 'N/A';
+        if (patient) {
+          const dobValue = patient.dateOfBirth || patient.date_of_birth || patient.dob;
+          if (dobValue) {
+            try {
+              const dobDate = new Date(dobValue);
+              dob = dobDate.toLocaleDateString();
+            } catch (e) {
+              dob = dobValue;
+            }
+          }
+        }
+        
+        // Format visit date
+        let visitDateFormatted = visitDate;
+        try {
+          const visitDateObj = new Date(visitDate);
+          visitDateFormatted = visitDateObj.toLocaleDateString();
+        } catch (e) {
+          // Keep original format
+        }
+        
+        // Display patient info with all details
+        document.getElementById('patient-info').innerHTML = `
+          <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 15px; margin-bottom: 15px;">
+            <div>
+              <h3 style="margin: 0 0 10px 0; color: var(--primary-green);">👤 Patient Information</h3>
+              <p style="margin: 5px 0;"><strong>Name:</strong> ${patientName}</p>
+              <p style="margin: 5px 0;"><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, patientId) : displayPatientId}</p>
+              <p style="margin: 5px 0;"><strong>Date of Birth:</strong> ${dob}</p>
+              <p style="margin: 5px 0;"><strong>Gender:</strong> ${patient ? (patient.gender || 'N/A') : 'N/A'}</p>
+              <p style="margin: 5px 0;"><strong>Visit Date:</strong> ${visitDateFormatted}</p>
+            </div>
+            <div>
+              <h3 style="margin: 0 0 10px 0; color: var(--primary-green);">🏥 Organization & Staff</h3>
+              <p style="margin: 5px 0;"><strong>Organization:</strong> ${orgName}</p>
+              <p style="margin: 5px 0;"><strong>Admitting Staff:</strong> ${doctorName}${doctorRole ? ` (${doctorRole})` : ''}</p>
+              <p style="margin: 5px 0;"><strong>Admission Date/Time:</strong> ${new Date().toLocaleString()}</p>
+            </div>
+          </div>
+        `;
+      } catch (error) {
+        console.error('Error loading patient data:', error);
+        document.getElementById('patient-info').innerHTML = `
+          <p style="color: red;"><strong>Error loading patient information.</strong></p>
+          <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patientId, patientId) : patientId}</p>
+          <p><strong>Visit Date:</strong> ${visitDate}</p>
+        `;
+      }
+    }
+    
+    async function loadRooms() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('is_active', true)
+            .order('room_name', { ascending: true });
+          
+          if (error) throw error;
+          rooms = data || [];
+        } else {
+          const stored = localStorage.getItem(`rooms_${organizationId}`);
+          rooms = stored ? JSON.parse(stored).filter(r => r.is_active) : [];
+        }
+        
+        const roomSelect = document.getElementById('room-selection');
+        roomSelect.innerHTML = '<option value="">Select a room...</option>';
+        rooms.forEach(room => {
+          const option = document.createElement('option');
+          option.value = room.id;
+          option.textContent = `${room.room_name} (${room.room_type})`;
+          roomSelect.appendChild(option);
+        });
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    }
+    
+    async function loadAvailableBeds() {
+      const roomId = document.getElementById('room-selection').value;
+      if (!roomId) {
+        document.getElementById('bed-selection').innerHTML = '<option value="">Select a bed...</option>';
+        return;
+      }
+      
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('beds')
+            .select('*')
+            .eq('room_id', roomId)
+            .eq('organization_id', organizationId)
+            .eq('is_active', true)
+            .eq('is_occupied', false)
+            .order('bed_number', { ascending: true });
+          
+          if (error) throw error;
+          beds = data || [];
+        } else {
+          const stored = localStorage.getItem(`beds_${organizationId}`);
+          beds = stored ? JSON.parse(stored).filter(b => 
+            b.room_id === roomId && b.is_active && !b.is_occupied
+          ) : [];
+        }
+        
+        const bedSelect = document.getElementById('bed-selection');
+        bedSelect.innerHTML = '<option value="">Select a bed...</option>';
+        beds.forEach(bed => {
+          const option = document.createElement('option');
+          option.value = bed.id;
+          option.textContent = `${bed.bed_name || bed.bed_number} (${bed.bed_type})`;
+          bedSelect.appendChild(option);
+        });
+        
+        if (beds.length === 0) {
+          bedSelect.innerHTML = '<option value="">No available beds in this room</option>';
+        }
+      } catch (error) {
+        console.error('Error loading beds:', error);
+      }
+    }
+    
+    async function loadPreAdmissionTests() {
+      try {
+        // Load orders for this patient/visit that were created before admission
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('patient_id', patientId)
+            .eq('organization_id', organizationId)
+            .lte('created_at', new Date().toISOString())
+            .order('created_at', { ascending: false })
+            .limit(20);
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            displayPreAdmissionTests(data);
+          } else {
+            document.getElementById('pre-admission-tests').innerHTML = 
+              '<p>No pre-admission tests found.</p>';
+          }
+        } else {
+          document.getElementById('pre-admission-tests').innerHTML = 
+            '<p>Pre-admission tests will be displayed when available.</p>';
+        }
+      } catch (error) {
+        console.error('Error loading pre-admission tests:', error);
+      }
+    }
+    
+    function displayPreAdmissionTests(tests) {
+      const container = document.getElementById('pre-admission-tests');
+      if (tests.length === 0) {
+        container.innerHTML = '<p>No pre-admission tests found.</p>';
+        return;
+      }
+      
+      container.innerHTML = tests.map(order => {
+        const testItems = order.selected_items || [];
+        const abnormal = order.status === 'abnormal' || order.status === 'critical';
+        return `
+          <div class="test-item ${abnormal ? 'abnormal' : ''}">
+            <strong>${order.type === 'lab' ? 'Lab' : 'Imaging'} Order</strong> - 
+            ${new Date(order.created_at).toLocaleDateString()}<br>
+            <em>Tests: ${testItems.map(t => t.name || t).join(', ')}</em>
+            ${order.status ? `<br><strong>Status:</strong> ${order.status}` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function generateAdmissionIdNumber() {
+      try {
+        if (window.supabaseClient) {
+          // Get the highest admission_id number for this organization
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('admission_id')
+            .eq('organization_id', organizationId)
+            .order('created_at', { ascending: false })
+            .limit(100);
+          
+          if (!error && data && data.length > 0) {
+            // Extract numbers from existing admission IDs (e.g., "ADM-001" -> 1)
+            const numbers = data
+              .map(adm => adm.admission_id)
+              .filter(id => id && typeof id === 'string' && id.includes('ADM-'))
+              .map(id => {
+                const match = id.match(/ADM-(\d{3,6})$/);
+                const num = match ? parseInt(match[1], 10) : NaN;
+                return isNaN(num) ? 0 : num;
+              });
+            
+            if (numbers.length > 0) {
+              const maxNum = Math.max(...numbers);
+              return String(maxNum + 1).padStart(4, '0'); // Format as "0001", "0002", etc.
+            }
+          }
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`admissions_${organizationId}`);
+          const admissions = stored ? JSON.parse(stored) : [];
+          
+          if (admissions.length > 0) {
+            const numbers = admissions
+              .map(adm => adm.admission_id)
+              .filter(id => id && typeof id === 'string' && id.includes('ADM-'))
+              .map(id => {
+                const match = id.match(/ADM-(\d{3,6})$/);
+                const num = match ? parseInt(match[1], 10) : NaN;
+                return isNaN(num) ? 0 : num;
+              });
+            
+            if (numbers.length > 0) {
+              const maxNum = Math.max(...numbers);
+              return String(maxNum + 1).padStart(4, '0');
+            }
+          }
+        }
+        
+        // Start from 001 if no admissions exist
+        return '0001';
+      } catch (error) {
+        console.warn('Error generating admission ID, using timestamp:', error);
+        return String(Date.now() % 10000).padStart(4, '0'); // Fallback to last 4 digits of timestamp
+      }
+    }
+    
+    async function handleAdmissionSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        // Get form data
+        const admissionData = {
+          patient_id: patientId,
+          organization_id: organizationId,
+          visit_date: visitDate,
+          admission_type: document.getElementById('admission-type').value,
+          admission_date: new Date(document.getElementById('admission-datetime').value).toISOString(),
+          admission_reason: document.getElementById('admission-reason').value.trim(),
+          insurance_verified: document.getElementById('insurance-verified').checked,
+          consents_signed: getConsentsSigned(),
+          pre_admission_testing: await getPreAdmissionTesting(),
+          initial_orders: getInitialOrders(),
+          room_id: document.getElementById('room-selection').value || null,
+          bed_id: document.getElementById('bed-selection').value || null,
+          status: document.getElementById('bed-selection').value ? 'assigned' : 'admitted',
+          notes: document.getElementById('admission-notes').value.trim() || null
+        };
+        
+        // Get current user info
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        admissionData.admitting_doctor = user.username || user.firstName + ' ' + user.lastName || 'Unknown';
+        admissionData.admitting_doctor_id = user.id || null;
+        
+        // Generate short admission ID
+        const admissionIdNumber = await generateAdmissionIdNumber();
+        const orgPrefix = typeof window.getOrganizationPrefix === 'function'
+          ? window.getOrganizationPrefix()
+          : 'ORG';
+        const admissionId = `${orgPrefix}-ADM-${admissionIdNumber}`;
+        
+        // Add admission_id field for display (keep UUID as id for database)
+        admissionData.admission_id = admissionId;
+        
+        // SUPABASE-FIRST: Save to Supabase
+        let savedAdmissionId = null;
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .insert(admissionData)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          savedAdmissionId = data.id;
+          
+          // If bed assigned, update bed status
+          if (admissionData.bed_id) {
+            await window.supabaseClient
+              .from('beds')
+              .update({
+                is_occupied: true,
+                current_patient_id: patientId,
+                current_admission_id: data.id
+              })
+              .eq('id', admissionData.bed_id);
+          }
+          
+          console.log('✅ Admission saved to Supabase:', data);
+          alert(`Patient admitted successfully! Admission ID: ${admissionId}`);
+        } else {
+          // Fallback to localStorage
+          const admissions = JSON.parse(localStorage.getItem(`admissions_${organizationId}`) || "[]");
+          const newAdmission = { 
+            ...admissionData, 
+            id: `adm_${Date.now()}`, 
+            admission_id: admissionId,
+            created_at: new Date().toISOString() 
+          };
+          admissions.push(newAdmission);
+          localStorage.setItem(`admissions_${organizationId}`, JSON.stringify(admissions));
+          
+          savedAdmissionId = newAdmission.id;
+          
+          if (admissionData.bed_id) {
+            const storedBeds = JSON.parse(localStorage.getItem(`beds_${organizationId}`) || "[]");
+            const bedIndex = storedBeds.findIndex(b => b.id === admissionData.bed_id);
+            if (bedIndex !== -1) {
+              storedBeds[bedIndex].is_occupied = true;
+              storedBeds[bedIndex].current_patient_id = patientId;
+              storedBeds[bedIndex].current_admission_id = newAdmission.id;
+              localStorage.setItem(`beds_${organizationId}`, JSON.stringify(storedBeds));
+            }
+          }
+          
+          console.log('✅ Admission saved to localStorage');
+          alert(`Patient admitted successfully! Admission ID: ${admissionId}`);
+        }
+        
+        // Dispatch event for real-time sync
+        window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+          detail: { action: 'admissionAdded', patientId, visitDate }
+        }));
+        
+        // Redirect to inpatient dashboard or admissions dashboard
+        const admissionIdForUrl = admissionData.admission_id || admissionId;
+        window.location.href = `inpatient-dashboard?admissionId=${admissionIdForUrl}&patientId=${patientId}`;
+      } catch (error) {
+        console.error('Error submitting admission:', error);
+        alert('Error submitting admission: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function getConsentsSigned() {
+      const consents = [];
+      if (document.getElementById('consent-treatment').checked) consents.push('treatment');
+      if (document.getElementById('consent-surgery').checked) consents.push('surgery');
+      if (document.getElementById('consent-anesthesia').checked) consents.push('anesthesia');
+      if (document.getElementById('consent-blood').checked) consents.push('blood');
+      if (document.getElementById('consent-research').checked) consents.push('research');
+      if (document.getElementById('consent-privacy').checked) consents.push('privacy');
+      return consents;
+    }
+
+    function getAdmissionIdForUrl(admissionId) {
+      if (window.compactAdmissionId) {
+        return window.compactAdmissionId(admissionId);
+      }
+      return admissionId;
+    }
+    
+    async function getPreAdmissionTesting() {
+      try {
+        if (window.supabaseClient) {
+          const { data } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('patient_id', patientId)
+            .eq('organization_id', organizationId)
+            .lte('created_at', new Date().toISOString())
+            .order('created_at', { ascending: false })
+            .limit(20);
+          
+          return data || [];
+        }
+        return [];
+      } catch (error) {
+        console.error('Error getting pre-admission testing:', error);
+        return [];
+      }
+    }
+    
+    function getInitialOrders() {
+      return {
+        diet: document.getElementById('initial-diet').value || null,
+        activity: document.getElementById('initial-activity').value || null,
+        medications: document.getElementById('initial-medications').value.trim() || null,
+        additional: document.getElementById('additional-orders').value.trim() || null
+      };
+    }
+    
+    function goBack() {
+      if (returnTo === 'blood-pressure-check-note' && visitDate) {
+        window.location.href = `blood-pressure-check-note.html?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(visitDate)}`;
+      } else if (returnTo === 'clinical-note' && visitDate) {
+        window.location.href = `clinical-note.html?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(visitDate)}`;
+      } else if (visitDate) {
+        window.location.href = `clinical-note.html?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(visitDate)}`;
+      } else {
+        window.location.href = `patient-details.html?id=${encodeURIComponent(patientId)}`;
+      }
+    }
+    
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+  </script>
+</body>
+</html>
+

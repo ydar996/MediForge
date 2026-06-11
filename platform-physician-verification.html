@@ -1,0 +1,411 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Physician verification - Platform Admin</title>
+  <link rel="stylesheet" href="css/styles.css?v=260">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/data/medical-regulatory-bodies-africa.js?v=20251022120000"></script>
+  <script src="js/physician-verification-core.js?v=9"></script>
+  <style>
+    body { max-width: 1400px; margin: 0 auto; padding: 20px; background: #f5f7fa; }
+    table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 8px rgba(0,0,0,0.06); }
+    th, td { padding: 10px 12px; text-align: left; border-bottom: 1px solid #eee; font-size: 14px; vertical-align: top; }
+    th { background: #667eea; color: #fff; font-weight: 600; }
+    tr:hover td { background: #fafafa; }
+    .badge { display: inline-block; padding: 2px 8px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .b-pending { background: #e3f2fd; color: #1565c0; }
+    .b-ok { background: #e8f5e9; color: #2e7d32; }
+    .b-no { background: #ffebee; color: #c62828; }
+    .b-new { background: #fff8e1; color: #f57f17; }
+    button.sm { padding: 6px 10px; margin: 2px; border: none; border-radius: 6px; cursor: pointer; font-size: 12px; font-weight: 600; }
+    .modal-bg { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 1000; align-items: center; justify-content: center; }
+    .modal-bg.open { display: flex; }
+    .modal { background: #fff; padding: 24px; border-radius: 12px; max-width: 520px; width: 92%; max-height: 90vh; overflow: auto; }
+    .modal h3 { margin-top: 0; }
+    textarea { width: 100%; min-height: 72px; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <h1><i class="fa-solid fa-user-doctor" aria-hidden="true"></i> Physician credential verification</h1>
+  <p style="color:#666;">Review regulatory registration and medical diploma uploads by organization. Approve, reject, or extend access by 30 or 45 days.</p>
+  <p style="color:#555;font-size:14px;max-width:960px;line-height:1.5;"><strong>Deadline column:</strong> A date appears only after a verification record exists for that physician. Records are created when they first hit a gated session, open the verification page, or when you use <strong>+30 days</strong> / <strong>+45 days</strong> (which creates the row and sets the 90-day window). Others show “not started” until then.</p>
+
+  <button type="button" onclick="window.location.href='platform-dashboard'" class="sm" style="background:#607d8b;color:#fff;margin-bottom:16px;">
+    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Platform dashboard
+  </button>
+
+  <div id="loading">Loading…</div>
+  <div id="table-wrap" style="display:none; overflow-x:auto;">
+    <table>
+      <thead>
+        <tr>
+          <th>Organization</th>
+          <th>Physician</th>
+          <th>Status</th>
+          <th>Deadline</th>
+          <th>Submitted</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="tbody"></tbody>
+    </table>
+  </div>
+  <p id="err" style="color:#c62828; display:none;"></p>
+
+  <div class="modal-bg" id="modal-action">
+    <div class="modal">
+      <h3 id="modal-title">Review</h3>
+      <p id="modal-meta" class="muted" style="color:#666;font-size:14px;"></p>
+      <label for="modal-notes">Notes (required for rejection; optional for approval)</label>
+      <textarea id="modal-notes"></textarea>
+      <div style="margin-top:16px;">
+        <button type="button" class="sm" style="background:#2e7d32;color:#fff;" id="btn-approve">Approve</button>
+        <button type="button" class="sm" style="background:#c62828;color:#fff;" id="btn-reject">Reject</button>
+        <button type="button" class="sm" style="background:#757575;color:#fff;" id="btn-modal-close">Cancel</button>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/session-timeout.js"></script>
+  <script>
+    (function () {
+      var BUCKET = 'physician-verification-docs';
+      var rows = [];
+      var modalRow = null;
+
+      function badge(st) {
+        var c = 'b-new';
+        if (st === 'pending_review') c = 'b-pending';
+        else if (st === 'approved') c = 'b-ok';
+        else if (st === 'rejected') c = 'b-no';
+        else if (st === 'not_submitted') c = 'b-new';
+        else if (st === 'not_started') c = 'b-new';
+        var label = String(st || '').replace(/_/g, ' ');
+        return '<span class="badge ' + c + '">' + label + '</span>';
+      }
+
+      function openModal(row) {
+        modalRow = row;
+        document.getElementById('modal-meta').textContent =
+          (row.organizations && row.organizations.name) + ' — ' +
+          (row.users && (row.users.first_name || '') + ' ' + (row.users.last_name || '')).trim() + ' (' + (row.users && row.users.username) + ')';
+        document.getElementById('modal-notes').value = row.review_notes || '';
+        document.getElementById('modal-action').classList.add('open');
+      }
+
+      function closeModal() {
+        modalRow = null;
+        document.getElementById('modal-action').classList.remove('open');
+      }
+
+      async function signedUrl(path) {
+        if (!path) return null;
+        var sb = window.supabaseClient;
+        var r = await sb.storage.from(BUCKET).createSignedUrl(path, 3600);
+        if (r.error) throw r.error;
+        return r.data && r.data.signedUrl;
+      }
+
+      async function ensureVerificationRow(sb, row) {
+        if (row.id) return row;
+        var ins = await sb
+          .from('physician_verifications')
+          .insert({ user_id: row.user_id, organization_id: row.organization_id })
+          .select('*')
+          .single();
+        if (ins.error) throw ins.error;
+        return Object.assign({}, row, ins.data, { users: row.users, organizations: row.organizations });
+      }
+
+      async function loadGrid() {
+        var sb = window.supabaseClient;
+        document.getElementById('loading').style.display = 'block';
+        document.getElementById('table-wrap').style.display = 'none';
+        document.getElementById('err').style.display = 'none';
+        try {
+          var roleOr =
+            'role.ilike.%doctor%,role.ilike.%physician%,role.eq.md,role.eq.MD,role.eq.dr,role.eq.Dr,role.eq.Dr.,role.eq.dr.';
+          var uq = await sb
+            .from('users')
+            .select(
+              'id, organization_id, username, email, first_name, last_name, role, organizations!users_organization_id_fkey(name)'
+            )
+            .or(roleOr)
+            .limit(5000);
+          if (uq.error) {
+            uq = await sb
+              .from('users')
+              .select('id, organization_id, username, email, first_name, last_name, role')
+              .or(roleOr)
+              .limit(5000);
+            if (uq.error) throw uq.error;
+            var orgIds = [
+              ...new Set((uq.data || []).map(function (u) { return u.organization_id; }).filter(Boolean))
+            ];
+            var orgMap = {};
+            if (orgIds.length) {
+              var oq = await sb.from('organizations').select('id,name').in('id', orgIds);
+              if (!oq.error && oq.data) oq.data.forEach(function (o) { orgMap[o.id] = { name: o.name }; });
+            }
+            (uq.data || []).forEach(function (u) {
+              u.organizations = orgMap[u.organization_id] || null;
+            });
+          }
+          var doctorUsers = (uq.data || []).filter(function (u) {
+            if (!u.organization_id) return false;
+            return (
+              typeof window.isDoctorRoleForVerification === 'function' &&
+              window.isDoctorRoleForVerification(u.role)
+            );
+          });
+          var vq = await sb.from('physician_verifications').select('*');
+          if (vq.error) throw vq.error;
+          var vmap = {};
+          (vq.data || []).forEach(function (v) {
+            vmap[v.user_id] = v;
+          });
+          rows = doctorUsers.map(function (u) {
+            var v = vmap[u.id];
+            var org = u.organizations || {};
+            var usr = {
+              username: u.username,
+              email: u.email,
+              first_name: u.first_name,
+              last_name: u.last_name,
+              role: u.role
+            };
+            if (v) {
+              return Object.assign({}, v, { users: usr, organizations: org });
+            }
+            return {
+              id: null,
+              user_id: u.id,
+              organization_id: u.organization_id,
+              review_status: 'not_started',
+              verification_access_until: null,
+              submitted_for_review_at: null,
+              mdcn_storage_path: null,
+              diploma_storage_path: null,
+              regulatory_body_notes: null,
+              reviewed_at: null,
+              reviewed_by_auth_user_id: null,
+              review_notes: null,
+              extension_granted_count: 0,
+              users: usr,
+              organizations: org
+            };
+          });
+          rows.sort(function (a, b) {
+            var na = (a.organizations && a.organizations.name) || '';
+            var nb = (b.organizations && b.organizations.name) || '';
+            if (na !== nb) return na.localeCompare(nb);
+            var ua = (a.users && a.users.username) || '';
+            var ub = (b.users && b.users.username) || '';
+            return ua.localeCompare(ub);
+          });
+          render();
+        } catch (e) {
+          console.error(e);
+          document.getElementById('err').textContent = 'Could not load: ' + (e.message || e);
+          document.getElementById('err').style.display = 'block';
+        } finally {
+          document.getElementById('loading').style.display = 'none';
+          document.getElementById('table-wrap').style.display = 'block';
+        }
+      }
+
+      function render() {
+        var tb = document.getElementById('tbody');
+        tb.innerHTML = '';
+        rows.forEach(function (row) {
+          var tr = document.createElement('tr');
+          var org = row.organizations && row.organizations.name;
+          var u = row.users || {};
+          var name = ((u.first_name || '') + ' ' + (u.last_name || '')).trim() || u.username || '—';
+          var sub = row.submitted_for_review_at
+            ? new Date(row.submitted_for_review_at).toLocaleString()
+            : '—';
+          var deadline;
+          if (row.verification_access_until) {
+            deadline = new Date(row.verification_access_until).toLocaleString();
+          } else {
+            deadline =
+              '<span style="color:#666;font-size:12px;line-height:1.35;">Not started — no record yet (no deadline until first gated use, verification page visit, or +30/+45).</span>';
+          }
+
+          var uid = row.user_id;
+          var actions = '';
+          actions +=
+            '<button type="button" class="sm" style="background:#1565c0;color:#fff;" data-a="view" data-uid="' +
+            uid +
+            '">View files</button>';
+          if (row.review_status === 'pending_review' && row.id) {
+            actions +=
+              '<button type="button" class="sm" style="background:#6a1b9a;color:#fff;" data-a="decide" data-uid="' +
+              uid +
+              '">Approve / reject</button>';
+          }
+          actions +=
+            '<button type="button" class="sm" style="background:#00838f;color:#fff;" data-a="ext30" data-uid="' +
+            uid +
+            '">+30 days</button>';
+          actions +=
+            '<button type="button" class="sm" style="background:#00695c;color:#fff;" data-a="ext45" data-uid="' +
+            uid +
+            '">+45 days</button>';
+
+          tr.innerHTML =
+            '<td>' + (org || '—') + '</td>' +
+            '<td>' + name + '<br><span style="color:#888;font-size:12px;">' + (u.email || '') + '</span></td>' +
+            '<td>' + badge(row.review_status) + '</td>' +
+            '<td>' + deadline + '</td>' +
+            '<td>' + sub + '</td>' +
+            '<td>' + actions + '</td>';
+          tb.appendChild(tr);
+        });
+
+        tb.onclick = async function (ev) {
+          var t = ev.target;
+          if (!t || !t.getAttribute) return;
+          var uid = t.getAttribute('data-uid');
+          var a = t.getAttribute('data-a');
+          if (!uid || !a) return;
+          var row = rows.filter(function (r) { return r.user_id === uid; })[0];
+          if (!row) return;
+
+          if (a === 'view') {
+            try {
+              if (row.mdcn_storage_path) {
+                var u1 = await signedUrl(row.mdcn_storage_path);
+                if (u1) window.open(u1, '_blank', 'noopener');
+              }
+              if (row.diploma_storage_path) {
+                var u2 = await signedUrl(row.diploma_storage_path);
+                if (u2) window.open(u2, '_blank', 'noopener');
+              }
+              if (!row.mdcn_storage_path && !row.diploma_storage_path) {
+                alert('No files uploaded yet.');
+              }
+            } catch (e) {
+              alert('Could not open files: ' + (e.message || e));
+            }
+            return;
+          }
+
+          if (a === 'decide') {
+            openModal(row);
+            return;
+          }
+
+          if (a === 'ext30' || a === 'ext45') {
+            var days = a === 'ext30' ? 30 : 45;
+            if (!confirm('Extend access deadline by ' + days + ' days from the later of now and the current deadline?')) return;
+            try {
+              var sb = window.supabaseClient;
+              var workRow = await ensureVerificationRow(sb, row);
+              var idx = rows.findIndex(function (r) { return r.user_id === uid; });
+              if (idx !== -1) rows[idx] = workRow;
+              row = workRow;
+              var cur = row.verification_access_until
+                ? new Date(row.verification_access_until).getTime()
+                : Date.now();
+              var base = Math.max(Date.now(), cur);
+              var newUntil = new Date(base + days * 86400000).toISOString();
+              var upd = await sb
+                .from('physician_verifications')
+                .update({
+                  verification_access_until: newUntil,
+                  extension_granted_count: (row.extension_granted_count || 0) + 1
+                })
+                .eq('id', row.id);
+              if (upd.error) throw upd.error;
+              await loadGrid();
+            } catch (e) {
+              alert('Extension failed: ' + (e.message || e));
+            }
+          }
+        };
+      }
+
+      document.getElementById('btn-modal-close').onclick = closeModal;
+      document.getElementById('btn-approve').onclick = async function () {
+        if (!modalRow) return;
+        try {
+          var sb = window.supabaseClient;
+          var authRes = await sb.auth.getUser();
+          var authId = authRes.data && authRes.data.user && authRes.data.user.id;
+          var notes = document.getElementById('modal-notes').value.trim();
+          var upd = await sb
+            .from('physician_verifications')
+            .update({
+              review_status: 'approved',
+              reviewed_at: new Date().toISOString(),
+              reviewed_by_auth_user_id: authId,
+              review_notes: notes || null
+            })
+            .eq('id', modalRow.id);
+          if (upd.error) throw upd.error;
+          closeModal();
+          await loadGrid();
+        } catch (e) {
+          alert('Approve failed: ' + (e.message || e));
+        }
+      };
+      document.getElementById('btn-reject').onclick = async function () {
+        if (!modalRow) return;
+        var notes = document.getElementById('modal-notes').value.trim();
+        if (!notes) {
+          alert('Please add notes explaining the rejection.');
+          return;
+        }
+        try {
+          var sb = window.supabaseClient;
+          var authRes = await sb.auth.getUser();
+          var authId = authRes.data && authRes.data.user && authRes.data.user.id;
+          var upd = await sb
+            .from('physician_verifications')
+            .update({
+              review_status: 'rejected',
+              reviewed_at: new Date().toISOString(),
+              reviewed_by_auth_user_id: authId,
+              review_notes: notes
+            })
+            .eq('id', modalRow.id);
+          if (upd.error) throw upd.error;
+          closeModal();
+          await loadGrid();
+        } catch (e) {
+          alert('Reject failed: ' + (e.message || e));
+        }
+      };
+
+      document.addEventListener('DOMContentLoaded', async function () {
+        var pa = null;
+        try {
+          pa = JSON.parse(localStorage.getItem('platformAdmin') || 'null');
+        } catch (e) {}
+        if (!pa) {
+          window.location.href = 'platform-login';
+          return;
+        }
+        if (!window.supabaseClient) {
+          document.getElementById('err').textContent = 'Supabase client not ready.';
+          document.getElementById('err').style.display = 'block';
+          document.getElementById('loading').style.display = 'none';
+          return;
+        }
+        await loadGrid();
+      });
+    })();
+  </script>
+</body>
+</html>

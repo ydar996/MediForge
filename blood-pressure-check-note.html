@@ -1,0 +1,718 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="theme-color" content="#008753">
+  <title>Blood Pressure Check Note</title>
+  <link rel="stylesheet" href="css/styles.css?v=242">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.umd.min.js"></script>
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --light-green: rgba(0, 135, 83, 0.1);
+      --nigerian-white: #FFFFFF;
+      --gold: #FFD700;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --ivory: #FFFFF0;
+      --soft-white: #FAFAFA;
+      --charcoal: #36454F;
+      --critical-red: #dc3545;
+      --critical-bg: rgba(220, 53, 69, 0.08);
+    }
+    body { font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; max-width: 1200px; margin: 0 auto; padding: 20px; background: linear-gradient(135deg, var(--soft-white) 0%, var(--ivory) 100%); color: var(--charcoal); }
+    .container { background: var(--nigerian-white); padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15), 0 0 30px rgba(218, 165, 32, 0.08); border: 1px solid rgba(0, 135, 83, 0.2); }
+    h1 { color: var(--primary-green); margin-bottom: 20px; text-shadow: 1px 1px 2px rgba(0, 135, 83, 0.2); border-bottom: 3px solid var(--kente-gold); padding-bottom: 12px; }
+    h2 { color: var(--dark-green); margin-top: 30px; margin-bottom: 15px; border-bottom: 2px solid var(--kente-gold); padding-bottom: 10px; }
+    h3 { color: var(--dark-green); margin-top: 20px; margin-bottom: 10px; }
+    .form-group { margin-bottom: 20px; }
+    label { display: block; font-weight: 600; color: var(--dark-green); margin-bottom: 5px; }
+    textarea { width: 100%; padding: 10px; border: 2px solid rgba(0, 135, 83, 0.3); border-radius: 8px; font-size: 14px; box-sizing: border-box; min-height: 80px; }
+    input[type="number"], input[type="text"] { padding: 8px; border: 2px solid rgba(0, 135, 83, 0.2); border-radius: 6px; margin-right: 10px; margin-bottom: 8px; }
+    input:focus { border-color: var(--primary-green); outline: none; box-shadow: 0 0 0 2px rgba(0, 135, 83, 0.2); }
+    button { background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%); color: white; border: 2px solid var(--kente-gold); padding: 12px 24px; border-radius: 8px; cursor: pointer; font-size: 14px; font-weight: 600; margin-right: 10px; margin-top: 10px; box-shadow: 0 2px 8px rgba(0, 135, 83, 0.3); transition: all 0.3s ease; }
+    button:hover { background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4); border-color: var(--gold); }
+    table { width: 100%; border-collapse: collapse; margin-top: 10px; border-radius: 10px; overflow: hidden; border: 2px solid var(--primary-green); box-shadow: 0 2px 12px rgba(0, 135, 83, 0.15); }
+    table th, table td { padding: 12px; text-align: left; border: 1px solid rgba(0, 135, 83, 0.2); }
+    table th { background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); color: white; font-weight: 600; }
+    table tr:nth-child(even) { background: var(--light-green); }
+    .bp-critical { background: var(--critical-bg) !important; color: var(--critical-red); font-weight: 700; }
+    .bp-critical .critical-badge { display: inline-block; background: var(--critical-red); color: white; padding: 2px 8px; border-radius: 4px; font-size: 11px; margin-left: 8px; }
+    .back-button { background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%); border-color: var(--charcoal); }
+    .back-button:hover { background: linear-gradient(135deg, #5a6268 0%, #6c757d 100%); border-color: var(--kente-gold); }
+    .button-group { display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap; }
+    .patient-details-button { background: linear-gradient(135deg, var(--adire-blue) 0%, #2E4BC6 100%); border: 2px solid var(--kente-gold); }
+    .patient-details-button:hover { background: linear-gradient(135deg, #2E4BC6 0%, var(--adire-blue) 100%); border-color: var(--gold); }
+    .bp-chart-container { margin: 20px 0; padding: 15px; background: linear-gradient(135deg, var(--light-green) 0%, rgba(218, 165, 32, 0.05) 100%); border-radius: 10px; max-height: 300px; border: 1px solid rgba(0, 135, 83, 0.2); box-shadow: 0 2px 10px rgba(0, 135, 83, 0.1); }
+    .vitals-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(140px, 1fr)); gap: 12px; margin-bottom: 15px; }
+    .vitals-grid label { margin-bottom: 2px; color: var(--dark-green); }
+    .admit-btn { background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); border: 2px solid var(--kente-gold); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Blood Pressure Check Note</h1>
+    <div class="button-group">
+      <button class="back-button" onclick="window.location.href='appointments'">← Back to Appointments</button>
+      <button class="back-button" onclick="window.location.href='dashboard'">🏠 Back to Dashboard</button>
+      <button class="back-button patient-details-button" onclick="goToPatientDetails()">👤 Go to Patient Details</button>
+    </div>
+
+    <div id="patient-info" style="margin-bottom: 30px; padding: 15px; background: #e8f5e9; border-radius: 6px; border-left: 4px solid var(--primary-green);">
+      <strong id="note-title">Loading patient information...</strong>
+    </div>
+
+    <!-- 1. Reason for Visit -->
+    <h2>Reason for Visit</h2>
+    <div class="form-group">
+      <label for="reason-for-visit">Brief reason for visit:</label>
+      <textarea id="reason-for-visit" placeholder="Enter brief reason for blood pressure check visit..."></textarea>
+    </div>
+
+    <!-- 2. General Vitals (first set only) -->
+    <h2>General Vitals</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">Record the first set of vitals (full vitals including temperature, pulse, etc.).</p>
+    <div id="general-vitals-section">
+      <div id="general-vitals-display" style="margin-bottom: 15px;"></div>
+      <div id="general-vitals-form" style="display: none; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
+        <div class="vitals-grid">
+          <div><label>Temp (°C)</label><input type="number" id="bp-temp" step="0.1" min="30" max="45"></div>
+          <div><label>Heart Rate (bpm)</label><input type="number" id="bp-hr" min="30" max="200"></div>
+          <div><label>Resp Rate</label><input type="number" id="bp-rr" min="8" max="40"></div>
+          <div><label>Systolic (mmHg)</label><input type="number" id="bp-systolic" min="60" max="250"></div>
+          <div><label>Diastolic (mmHg)</label><input type="number" id="bp-diastolic" min="40" max="150"></div>
+          <div><label>O2 Sat (%)</label><input type="number" id="bp-o2sat" min="70" max="100" step="0.1"></div>
+          <div><label>Height (cm)</label><input type="number" id="bp-height" step="0.1" min="30" max="250"></div>
+          <div id="bp-weight-cell"><label>Weight (kg)</label><input type="number" id="bp-weight" step="0.1" min="1" max="300"></div>
+          <div><label>Pain (0-10)</label><input type="number" id="bp-pain" min="0" max="10"></div>
+        </div>
+        <label for="bp-notes">Notes:</label>
+        <input type="text" id="bp-notes" style="width: 100%;">
+        <div style="margin-top: 10px;">
+          <button type="button" onclick="addGeneralVitals()">Add General Vitals</button>
+          <button type="button" onclick="cancelGeneralVitalsForm()" style="background: #6c757d;">Cancel</button>
+        </div>
+      </div>
+      <button type="button" id="show-general-vitals-btn" onclick="document.getElementById('general-vitals-form').style.display='block'; document.getElementById('show-general-vitals-btn').style.display='none'; updateBpWeightInputConfig();">+ Add General Vitals</button>
+    </div>
+
+    <!-- 3. Blood Pressure Readings (multiple, with flow chart) -->
+    <h2>Blood Pressure Readings</h2>
+    <p style="color: #666; font-size: 14px; margin-bottom: 10px;">Record additional BP readings. Critical values (Systolic ≥180 or ≤90, Diastolic ≥120 or ≤60) are flagged and sent to the alerts dashboard.</p>
+    <div id="add-bp-reading-form" style="display: none; padding: 15px; background: #f8f9fa; border-radius: 8px; margin-bottom: 15px;">
+      <div class="vitals-grid">
+        <div><label>Systolic (mmHg) *</label><input type="number" id="new-systolic" min="60" max="250" required></div>
+        <div><label>Diastolic (mmHg) *</label><input type="number" id="new-diastolic" min="40" max="150" required></div>
+        <div><label>Heart Rate (optional)</label><input type="number" id="new-hr" min="30" max="200"></div>
+      </div>
+      <div style="margin-top: 10px;">
+        <button type="button" onclick="addBpReading()">Add BP Reading</button>
+        <button type="button" onclick="cancelAddBpReading()" style="background: #6c757d;">Cancel</button>
+      </div>
+    </div>
+    <button type="button" id="add-bp-reading-btn" onclick="document.getElementById('add-bp-reading-form').style.display='block'; document.getElementById('add-bp-reading-btn').style.display='none';">+ Add BP Reading</button>
+
+    <div id="bp-readings-table" style="margin-top: 15px;"></div>
+
+    <!-- BP Flow Chart -->
+    <h3>Blood Pressure Trend (Flow Chart)</h3>
+    <div class="bp-chart-container">
+      <canvas id="bp-flow-chart"></canvas>
+    </div>
+
+    <!-- 5. Admit Button -->
+    <h2>Admission</h2>
+    <div style="margin: 20px 0;">
+      <button type="button" id="admit-patient-btn" class="admit-btn" onclick="openAdmissionForm()" style="display: none;">
+        🏥 Admit Patient
+      </button>
+    </div>
+
+    <!-- Save -->
+    <div class="button-group" style="margin-top: 30px; padding-top: 20px; border-top: 2px solid var(--primary-green);">
+      <button class="back-button" onclick="window.location.href='appointments'">← Back to Appointments</button>
+      <button type="button" onclick="saveBloodPressureCheckNote(true)" style="background: linear-gradient(135deg, var(--kente-gold), #FFD700);">
+        💾 Save Blood Pressure Check Note
+      </button>
+      <button class="back-button" onclick="window.location.href='dashboard'">🏠 Back to Dashboard</button>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/main.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/appointments.js?v=20260416140000-appointment-org-reconcile"></script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+
+  <script>
+    let bpChart = null;
+
+    // Standard critical BP thresholds (hypertensive crisis / hypotension)
+    const BP_CRITICAL = {
+      systolicHigh: 180,
+      systolicLow: 90,
+      diastolicHigh: 120,
+      diastolicLow: 60
+    };
+    function isCriticalBp(systolic, diastolic) {
+      if (!systolic && !diastolic) return false;
+      const s = parseInt(systolic, 10);
+      const d = parseInt(diastolic, 10);
+      return (s >= BP_CRITICAL.systolicHigh || s <= BP_CRITICAL.systolicLow || d >= BP_CRITICAL.diastolicHigh || d <= BP_CRITICAL.diastolicLow);
+    }
+
+    function updateBpWeightInputConfig() {
+      if (typeof window.getWeightInputConfig !== 'function') return;
+      const cfg = window.getWeightInputConfig();
+      const cell = document.getElementById('bp-weight-cell');
+      const inp = document.getElementById('bp-weight');
+      if (cell && inp) {
+        cell.innerHTML = `<label>${cfg.label}</label><input type="number" id="bp-weight" step="0.1" min="${cfg.min}" max="${cfg.max}" placeholder="${cfg.placeholder}">`;
+      }
+    }
+
+    function validateBpVitals(v) {
+      const errs = [];
+      if (v.temp && v.temp.trim() !== '') {
+        const t = parseFloat(v.temp);
+        if (isNaN(t) || t < 30 || t > 45) errs.push('Temp must be 30–45°C');
+      }
+      if (v.hr && v.hr.trim() !== '') {
+        const hr = parseInt(v.hr, 10);
+        if (isNaN(hr) || hr < 30 || hr > 200) errs.push('Heart rate must be 30–200 bpm');
+      }
+      if (v.rr && v.rr.trim() !== '') {
+        const rr = parseInt(v.rr, 10);
+        if (isNaN(rr) || rr < 8 || rr > 40) errs.push('Respiratory rate must be 8–40');
+      }
+      if (v.systolic && v.systolic.trim() !== '') {
+        const s = parseInt(v.systolic, 10);
+        if (isNaN(s) || s < 60 || s > 250) errs.push('Systolic must be 60–250 mmHg');
+      }
+      if (v.diastolic && v.diastolic.trim() !== '') {
+        const d = parseInt(v.diastolic, 10);
+        if (isNaN(d) || d < 40 || d > 150) errs.push('Diastolic must be 40–150 mmHg');
+      }
+      if (v.o2sat && v.o2sat.trim() !== '') {
+        const o2 = parseFloat(v.o2sat);
+        if (isNaN(o2) || o2 < 70 || o2 > 100) errs.push('O2 Sat must be 70–100%');
+      }
+      if (v.height && v.height.trim() !== '') {
+        const h = parseFloat(v.height);
+        if (isNaN(h) || h < 30 || h > 250) errs.push('Height must be 30–250 cm');
+      }
+      if (v.weight && v.weight.trim() !== '') {
+        const wKg = typeof window.parseWeightInputToKg === 'function' ? window.parseWeightInputToKg(v.weight) : parseFloat(v.weight);
+        if (wKg === null || isNaN(wKg) || wKg < 1 || wKg > 300) errs.push('Weight out of valid range (1–300 kg or 2.2–660 lbs)');
+      }
+      if (v.pain && v.pain.trim() !== '') {
+        const p = parseInt(v.pain, 10);
+        if (isNaN(p) || p < 0 || p > 10) errs.push('Pain must be 0–10');
+      }
+      return errs;
+    }
+
+    // Use getDataKey from main.js (do not redefine - would overwrite and cause recursion)
+    async function loadBloodPressureCheckNote() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+
+      if (!patientId || !visitDate) {
+        alert("Missing patient ID or visit date");
+        window.location.href = "appointments";
+        return;
+      }
+
+      let patient = null;
+      try {
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+        }
+      } catch (e) {
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      }
+
+      if (!patient) {
+        alert(`Patient not found: ${patientId}`);
+        window.location.href = "appointments";
+        return;
+      }
+
+      const schedRaw = urlParams.get('scheduledPatientName');
+      if (schedRaw && typeof window.reconcileAppointmentUrlPatientId === 'function') {
+        try {
+          const sched = decodeURIComponent(schedRaw);
+          const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || patientId;
+          const orgCtx = (patient.organizationId || patient.organization_id)
+            ? { organizationId: patient.organizationId, organization_id: patient.organization_id }
+            : null;
+          const fixedId = await window.reconcileAppointmentUrlPatientId(displayId, sched, orgCtx);
+          if (fixedId && fixedId !== displayId && typeof window.resolvePatientByIdentifier === 'function') {
+            const p2 = await window.resolvePatientByIdentifier(fixedId);
+            if (p2) {
+              patient = p2;
+              const np = new URLSearchParams(window.location.search);
+              np.set('patientId', fixedId);
+              history.replaceState({}, '', `${window.location.pathname}?${np.toString()}`);
+            }
+          }
+        } catch (e) {
+          console.warn('Blood pressure note: scheduled name reconcile:', e);
+        }
+      }
+
+      const displayPatientId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || 'N/A';
+      document.getElementById("note-title").textContent = `Blood Pressure Check for ${patient.firstName} ${patient.lastName} (ID: ${displayPatientId}) on ${visitDate}`;
+
+      if (!patient.visits) patient.visits = [];
+      let visit = patient.visits.find(v => v.date === visitDate);
+      if (!visit) {
+        visit = { date: visitDate, bloodPressureCheck: { reasonForVisit: '', generalVitals: null, bpReadings: [] } };
+        patient.visits.push(visit);
+      }
+      if (!visit.bloodPressureCheck) {
+        visit.bloodPressureCheck = { reasonForVisit: '', generalVitals: null, bpReadings: [] };
+      }
+
+      document.getElementById("reason-for-visit").value = visit.bloodPressureCheck.reasonForVisit || '';
+      renderGeneralVitals(visit.bloodPressureCheck.generalVitals);
+      renderBpReadings(visit.bloodPressureCheck.bpReadings);
+      renderBpChart(visit.bloodPressureCheck.generalVitals, visit.bloodPressureCheck.bpReadings);
+      checkAdmitButtonVisibility();
+      persistPatient(patient);
+      updateBpWeightInputConfig();
+      setupBpAutosave();
+    }
+
+    function updateBpWeightInputConfig() {
+      const cell = document.getElementById('bp-weight-cell');
+      const input = document.getElementById('bp-weight');
+      if (!cell || !input || typeof window.getWeightInputConfig !== 'function') return;
+      const cfg = window.getWeightInputConfig();
+      const label = cell.querySelector('label');
+      if (label) label.textContent = cfg.label;
+      input.min = cfg.min;
+      input.max = cfg.max;
+      input.placeholder = cfg.placeholder;
+    }
+
+    let bpReasonAutosaveTimer = null;
+    function setupBpAutosave() {
+      const reasonEl = document.getElementById('reason-for-visit');
+      if (!reasonEl) return;
+      reasonEl.removeEventListener('input', bpReasonAutosaveHandler);
+      reasonEl.addEventListener('input', bpReasonAutosaveHandler);
+    }
+    function bpReasonAutosaveHandler() {
+      clearTimeout(bpReasonAutosaveTimer);
+      bpReasonAutosaveTimer = setTimeout(() => saveBloodPressureCheckNote(false), 600);
+    }
+
+    function renderGeneralVitals(v) {
+      const disp = document.getElementById("general-vitals-display");
+      const form = document.getElementById("general-vitals-form");
+      const btn = document.getElementById("show-general-vitals-btn");
+      if (!v) {
+        disp.innerHTML = '';
+        form.style.display = 'none';
+        btn.style.display = 'inline-block';
+        return;
+      }
+      btn.style.display = 'none';
+      const wDisplay = (typeof window.formatWeightForDisplay === 'function' ? window.formatWeightForDisplay(v.weight) : (v.weight ? v.weight + ' kg' : '-'));
+      disp.innerHTML = `<div style="padding: 12px; background: #e8f5e9; border-radius: 6px;">
+        Temp: ${v.temp || '-'}°C | HR: ${v.hr || '-'} bpm | RR: ${v.rr || '-'} | BP: ${v.systolic || '-'}/${v.diastolic || '-'} mmHg |
+        O2: ${v.o2sat || '-'}% | H: ${v.height || '-'} cm | W: ${wDisplay} | Pain: ${v.pain ?? '-'}
+        ${v.notes ? '<br>Notes: ' + v.notes : ''}
+      </div>`;
+    }
+
+    function validateBpVitals(v) {
+      const err = [];
+      if (v.temp != null && v.temp !== '') { const t = parseFloat(v.temp); if (isNaN(t) || t < 30 || t > 45) err.push('Temp: 30-45°C'); }
+      if (v.hr != null && v.hr !== '') { const hr = parseFloat(v.hr); if (isNaN(hr) || hr < 30 || hr > 200) err.push('HR: 30-200 bpm'); }
+      if (v.rr != null && v.rr !== '') { const rr = parseFloat(v.rr); if (isNaN(rr) || rr < 8 || rr > 40) err.push('RR: 8-40'); }
+      if (v.systolic != null && v.systolic !== '') { const s = parseFloat(v.systolic); if (isNaN(s) || s < 60 || s > 250) err.push('Systolic: 60-250 mmHg'); }
+      if (v.diastolic != null && v.diastolic !== '') { const d = parseFloat(v.diastolic); if (isNaN(d) || d < 40 || d > 150) err.push('Diastolic: 40-150 mmHg'); }
+      if (v.o2sat != null && v.o2sat !== '') { const o = parseFloat(v.o2sat); if (isNaN(o) || o < 70 || o > 100) err.push('O2: 70-100%'); }
+      if (v.height != null && v.height !== '') { const h = parseFloat(v.height); if (isNaN(h) || h < 30 || h > 250) err.push('Height: 30-250 cm'); }
+      if (v.weight != null && v.weight !== '') {
+        const wk = typeof window.parseWeightInputToKg === 'function' ? window.parseWeightInputToKg(v.weight) : parseFloat(v.weight);
+        if (wk == null || isNaN(wk) || wk < 1 || wk > 300) err.push('Weight: 1-300 kg (or 2.2-660 lbs)');
+      }
+      if (v.pain != null && v.pain !== '') { const p = parseFloat(v.pain); if (isNaN(p) || p < 0 || p > 10) err.push('Pain: 0-10'); }
+      return err;
+    }
+
+    async function addGeneralVitals() {
+      const s = document.getElementById("bp-systolic").value;
+      const d = document.getElementById("bp-diastolic").value;
+      const weightRaw = document.getElementById("bp-weight").value || null;
+      const weightKg = (weightRaw && typeof window.parseWeightInputToKg === 'function') ? window.parseWeightInputToKg(weightRaw) : (weightRaw ? parseFloat(weightRaw) : null);
+      const v = {
+        temp: document.getElementById("bp-temp").value || null,
+        hr: document.getElementById("bp-hr").value || null,
+        rr: document.getElementById("bp-rr").value || null,
+        systolic: s || null,
+        diastolic: d || null,
+        o2sat: document.getElementById("bp-o2sat").value || null,
+        height: document.getElementById("bp-height").value || null,
+        weight: weightKg != null ? String(weightKg) : null,
+        pain: document.getElementById("bp-pain").value || null,
+        notes: document.getElementById("bp-notes").value || null,
+        timestamp: new Date().toISOString(),
+        visitDate: new URLSearchParams(window.location.search).get("visitDate"),
+        isCritical: isCriticalBp(s, d),
+        source: 'blood-pressure-check'
+      };
+      const valErr = validateBpVitals({ ...v, weight: weightRaw });
+      if (valErr.length) { alert('Invalid value(s): ' + valErr.join(', ')); return; }
+      let bmi = null;
+      if (v.height && v.weight) {
+        const hm = parseFloat(v.height) / 100;
+        const wk = parseFloat(v.weight);
+        if (hm > 0 && wk > 0) bmi = (wk / (hm * hm)).toFixed(1);
+      }
+      v.bmi = bmi;
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      let patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      let patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      if (!patient && typeof window.loadPatientsWithSupabasePriority === 'function') {
+        patients = await window.loadPatientsWithSupabasePriority();
+        patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      }
+      if (!patient) { alert("Patient not found"); return; }
+
+      if (!patient.visits) patient.visits = [];
+      let visit = patient.visits.find(x => x.date === visitDate);
+      if (!visit) { visit = { date: visitDate, bloodPressureCheck: { reasonForVisit: '', generalVitals: null, bpReadings: [] } }; patient.visits.push(visit); }
+      if (!visit.bloodPressureCheck) visit.bloodPressureCheck = { reasonForVisit: '', generalVitals: null, bpReadings: [] };
+      visit.bloodPressureCheck.generalVitals = v;
+      const reasonEl = document.getElementById("reason-for-visit");
+      if (reasonEl) visit.bloodPressureCheck.reasonForVisit = reasonEl.value || visit.bloodPressureCheck.reasonForVisit || '';
+
+      patient.vitals = patient.vitals || [];
+      const vitalEntry = { ...v, visitDate };
+      patient.vitals.push(vitalEntry);
+
+      const idx = patients.findIndex(p => p.id === patient.id || p.patient_id === patient.patient_id);
+      if (idx >= 0) patients[idx] = patient; else patients.push(patient);
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+
+      if (typeof window.savePatientToSupabase === 'function') {
+        await window.savePatientToSupabase(patient).catch(e => console.warn('Supabase sync:', e));
+      }
+      if (typeof window.saveClinicalNoteToSupabase === 'function') {
+        try { await window.saveClinicalNoteToSupabase(patient); } catch (e) { console.warn('Clinical note sync:', e); }
+      }
+      if (v.isCritical) notifyCriticalBp(patient, v);
+
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: { patientId: patient.id || patient.patient_id, action: 'vitalsAdded', data: v }
+      }));
+
+      document.getElementById("general-vitals-form").style.display = 'none';
+      document.getElementById("show-general-vitals-btn").style.display = 'none';
+      ['bp-temp','bp-hr','bp-rr','bp-systolic','bp-diastolic','bp-o2sat','bp-height','bp-weight','bp-pain','bp-notes'].forEach(id => { const el = document.getElementById(id); if (el) el.value = ''; });
+      renderGeneralVitals(v);
+      renderBpChart(v, visit.bloodPressureCheck.bpReadings);
+    }
+
+    function cancelGeneralVitalsForm() {
+      document.getElementById("general-vitals-form").style.display = 'none';
+      const v = new URLSearchParams(window.location.search);
+      let patient = null;
+      try {
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        patient = patients.find(p => p.id === v.get("patientId") || p.patient_id === v.get("patientId"));
+      } catch (_) {}
+      const visit = patient?.visits?.find(x => x.date === v.get("visitDate"));
+      const hasGeneral = visit?.bloodPressureCheck?.generalVitals;
+      document.getElementById("show-general-vitals-btn").style.display = hasGeneral ? 'none' : 'inline-block';
+    }
+
+    async function addBpReading() {
+      const s = document.getElementById("new-systolic").value;
+      const d = document.getElementById("new-diastolic").value;
+      const hrVal = document.getElementById("new-hr").value;
+      if (!s || !d) { alert("Systolic and diastolic are required."); return; }
+      const sNum = parseInt(s, 10), dNum = parseInt(d, 10);
+      if (sNum < 60 || sNum > 250) { alert("Systolic must be 60-250 mmHg."); return; }
+      if (dNum < 40 || dNum > 150) { alert("Diastolic must be 40-150 mmHg."); return; }
+      if (hrVal) { const h = parseInt(hrVal, 10); if (h < 30 || h > 200) { alert("Heart rate must be 30-200 bpm."); return; } }
+      const reading = {
+        systolic: sNum,
+        diastolic: dNum,
+        hr: hrVal || null,
+        timestamp: new Date().toISOString(),
+        isCritical: isCriticalBp(s, d)
+      };
+
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      let patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      let patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      if (!patient && typeof window.loadPatientsWithSupabasePriority === 'function') {
+        patients = await window.loadPatientsWithSupabasePriority();
+        patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      }
+      if (!patient) { alert("Patient not found."); return; }
+      doAddBpReading(patient, reading, patients, patientId, visitDate);
+    }
+
+    function doAddBpReading(patient, reading, patients, patientId, visitDate) {
+      if (!patient.visits) patient.visits = [];
+      let visit = patient.visits.find(x => x.date === visitDate);
+      if (!visit) { visit = { date: visitDate, bloodPressureCheck: { reasonForVisit: '', generalVitals: null, bpReadings: [] } }; patient.visits.push(visit); }
+      if (!visit.bloodPressureCheck) visit.bloodPressureCheck = { reasonForVisit: '', generalVitals: null, bpReadings: [] };
+      visit.bloodPressureCheck.bpReadings.push(reading);
+      const reasonEl = document.getElementById("reason-for-visit");
+      if (reasonEl) visit.bloodPressureCheck.reasonForVisit = reasonEl.value || visit.bloodPressureCheck.reasonForVisit || '';
+
+      patient.vitals = patient.vitals || [];
+      patient.vitals.push({
+        systolic: reading.systolic,
+        diastolic: reading.diastolic,
+        hr: reading.hr,
+        timestamp: reading.timestamp,
+        visitDate,
+        isCritical: reading.isCritical,
+        source: 'blood-pressure-check'
+      });
+
+      const idx = patients.findIndex(p => p.id === patient.id || p.patient_id === patient.patient_id);
+      if (idx >= 0) patients[idx] = patient; else patients.push(patient);
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+
+      if (typeof window.savePatientToSupabase === 'function') {
+        window.savePatientToSupabase(patient).catch(e => console.warn('Supabase sync:', e));
+      }
+      if (reading.isCritical) notifyCriticalBp(patient, reading);
+
+      window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+        detail: { patientId: patient.id || patient.patient_id, action: 'vitalsAdded', data: reading }
+      }));
+
+      document.getElementById("new-systolic").value = '';
+      document.getElementById("new-diastolic").value = '';
+      document.getElementById("new-hr").value = '';
+      document.getElementById("add-bp-reading-form").style.display = 'none';
+      document.getElementById("add-bp-reading-btn").style.display = 'inline-block';
+      renderBpReadings(visit.bloodPressureCheck.bpReadings);
+      renderBpChart(visit.bloodPressureCheck.generalVitals, visit.bloodPressureCheck.bpReadings);
+    }
+
+    function cancelAddBpReading() {
+      document.getElementById("add-bp-reading-form").style.display = 'none';
+      document.getElementById("add-bp-reading-btn").style.display = 'inline-block';
+    }
+
+    function notifyCriticalBp(patient, reading) {
+      window.dispatchEvent(new CustomEvent('criticalBpRecorded', { detail: { patient, reading } }));
+    }
+
+    function renderBpReadings(readings) {
+      const cont = document.getElementById("bp-readings-table");
+      if (!readings || readings.length === 0) {
+        cont.innerHTML = '<p style="color:#888; font-style:italic;">No BP readings recorded yet.</p>';
+        return;
+      }
+      cont.innerHTML = `
+        <table>
+          <thead><tr><th>Time</th><th>Systolic</th><th>Diastolic</th><th>HR</th><th>Status</th></tr></thead>
+          <tbody>
+            ${readings.map(r => {
+              const cls = r.isCritical ? 'bp-critical' : '';
+              const badge = r.isCritical ? '<span class="critical-badge">CRITICAL</span>' : '';
+              return `<tr class="${cls}"><td>${new Date(r.timestamp).toLocaleTimeString()}</td><td>${r.systolic}</td><td>${r.diastolic}</td><td>${r.hr || '-'}</td><td>${badge}</td></tr>`;
+            }).join('')}
+          </tbody>
+        </table>`;
+    }
+
+    function renderBpChart(generalVitals, readings) {
+      const allPoints = [];
+      if (generalVitals && generalVitals.systolic && generalVitals.diastolic) {
+        allPoints.push({ systolic: parseInt(generalVitals.systolic, 10), diastolic: parseInt(generalVitals.diastolic, 10), label: 'Initial' });
+      }
+      if (readings && readings.length) {
+        readings.forEach((r, i) => allPoints.push({ systolic: r.systolic, diastolic: r.diastolic, label: `BP ${i + 1}` }));
+      }
+      if (allPoints.length === 0) {
+        if (bpChart) { bpChart.destroy(); bpChart = null; }
+        return;
+      }
+      const labels = allPoints.map(p => p.label);
+      const systolics = allPoints.map(p => p.systolic);
+      const diastolics = allPoints.map(p => p.diastolic);
+      const ctx = document.getElementById("bp-flow-chart");
+      if (!ctx) return;
+      if (bpChart) bpChart.destroy();
+      bpChart = new Chart(ctx, {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'Systolic (mmHg)', data: systolics, borderColor: '#dc3545', backgroundColor: 'rgba(220,53,69,0.1)', fill: true },
+            { label: 'Diastolic (mmHg)', data: diastolics, borderColor: '#4169E1', backgroundColor: 'rgba(65,105,225,0.1)', fill: true }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: true,
+          scales: {
+            y: { min: 40, max: 200, title: { display: true, text: 'mmHg' } }
+          }
+        }
+      });
+    }
+
+    async function checkAdmitButtonVisibility() {
+      try {
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        if (!organizationId) {
+          document.getElementById("admit-patient-btn").style.display = 'none';
+          return;
+        }
+        let inPatientEnabled =
+          typeof window.isInPatientServicesEnabled === 'function'
+            ? await window.isInPatientServicesEnabled(organizationId)
+            : false;
+        document.getElementById("admit-patient-btn").style.display = inPatientEnabled ? 'inline-block' : 'none';
+      } catch (e) {
+        document.getElementById("admit-patient-btn").style.display = 'none';
+      }
+    }
+
+    function openAdmissionForm() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId =
+        typeof window.getPatientIdFromUrl === 'function'
+          ? window.getPatientIdFromUrl(urlParams)
+          : urlParams.get('patientId') || urlParams.get('patient_id') || urlParams.get('id');
+      const visitDate = urlParams.get('visitDate');
+      if (!patientId) { alert('Missing patient ID.'); return; }
+      let url = `admission-form.html?patientId=${encodeURIComponent(patientId)}&returnTo=blood-pressure-check-note`;
+      if (visitDate) url += `&visitDate=${encodeURIComponent(visitDate)}`;
+      window.location.href = url;
+    }
+
+    async function goToPatientDetails() {
+      let patientId = new URLSearchParams(window.location.search).get('patientId');
+      if (!patientId) { alert('Patient ID not found.'); return; }
+      if (typeof window.normalizePatientIdForUrl === 'function') {
+        try { patientId = await window.normalizePatientIdForUrl(patientId); } catch (_) {}
+      }
+      window.location.href = `patient-details?id=${patientId}`;
+    }
+
+    function persistPatient(patient) {
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const idx = patients.findIndex(p => p.id === patient.id || p.patient_id === patient.patient_id || p._supabaseUuid === patient._supabaseUuid);
+      if (idx >= 0) patients[idx] = patient; else patients.push(patient);
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+    }
+
+    async function saveBloodPressureCheckNote(showAlert) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      if (!patientId || !visitDate) { if (showAlert) alert("Missing patient ID or visit date"); return; }
+
+      let patient = null;
+      try {
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+        }
+      } catch (e) {
+        const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+      }
+      if (!patient) { if (showAlert) alert("Patient not found"); return; }
+
+      if (!patient.visits) patient.visits = [];
+      let visit = patient.visits.find(v => v.date === visitDate);
+      if (!visit) { visit = { date: visitDate, bloodPressureCheck: {} }; patient.visits.push(visit); }
+      if (!visit.bloodPressureCheck) visit.bloodPressureCheck = { reasonForVisit: '', generalVitals: null, bpReadings: [] };
+
+      // CRITICAL: Merge with localStorage to preserve generalVitals and bpReadings.
+      // saveBloodPressureCheckNote can overwrite patient; if the fetched patient had empty bloodPressureCheck
+      // (e.g. from Supabase merge), we would wipe existing vitals. Always preserve existing BP data.
+      const localPatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const localPatient = localPatients.find(p => p.id === patientId || p.patient_id === patientId || p._supabaseUuid === patient._supabaseUuid);
+      if (localPatient && localPatient.visits) {
+        const localVisit = localPatient.visits.find(v => v.date === visitDate);
+        if (localVisit && localVisit.bloodPressureCheck) {
+          const lp = localVisit.bloodPressureCheck;
+          if (lp.generalVitals != null) visit.bloodPressureCheck.generalVitals = lp.generalVitals;
+          if (lp.bpReadings && Array.isArray(lp.bpReadings) && lp.bpReadings.length > 0) visit.bloodPressureCheck.bpReadings = lp.bpReadings;
+        }
+      }
+
+      visit.bloodPressureCheck.reasonForVisit = document.getElementById("reason-for-visit").value;
+
+      persistPatient(patient);
+      if (typeof window.savePatientToSupabase === 'function') {
+        try { await window.savePatientToSupabase(patient); } catch (e) { console.warn('Supabase save:', e); }
+      }
+      if (showAlert) alert("Blood Pressure Check note saved successfully!");
+    }
+
+    let bpAutosaveTimer = null;
+    function setupBpAutosave() {
+      const reasonEl = document.getElementById('reason-for-visit');
+      if (!reasonEl) return;
+      reasonEl.removeEventListener('input', debouncedBpAutosave);
+      reasonEl.addEventListener('input', debouncedBpAutosave);
+      window.addEventListener('weightUnitChanged', () => {
+        const v = new URLSearchParams(window.location.search);
+        let patient = null;
+        try {
+          const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          patient = patients.find(p => p.id === v.get("patientId") || p.patient_id === v.get("patientId"));
+        } catch (_) {}
+        const visit = patient?.visits?.find(x => x.date === v.get("visitDate"));
+        if (visit?.bloodPressureCheck?.generalVitals) renderGeneralVitals(visit.bloodPressureCheck.generalVitals);
+        updateBpWeightInputConfig();
+      });
+    }
+    function debouncedBpAutosave() {
+      clearTimeout(bpAutosaveTimer);
+      bpAutosaveTimer = setTimeout(() => saveBloodPressureCheckNote(false), 600);
+    }
+
+    window.addEventListener('load', loadBloodPressureCheckNote);
+  </script>
+</body>
+</html>

@@ -1,0 +1,941 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Referral Letter</title>
+  <link rel="stylesheet" href="css/styles.css?v=122">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    table { border-collapse: collapse; width: 100%; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #4CAF50; color: white; }
+    .button-container {
+      margin: 20px 0;
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    button {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: bold;
+      transition: background-color 0.3s;
+    }
+    #save-btn {
+      background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+      color: white;
+    }
+    #save-btn:hover {
+      background: linear-gradient(135deg, #218838 0%, #1aa179 100%);
+    }
+    #download-btn {
+      background: linear-gradient(135deg, #FF8C00 0%, #CD7F32 100%);
+      color: white;
+    }
+    #download-btn:hover {
+      background: linear-gradient(135deg, #e67e00 0%, #b8732e 100%);
+    }
+    #print-btn {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+    }
+    #email-btn {
+      background: linear-gradient(135deg, #17a2b8 0%, #138496 100%);
+      color: white;
+    }
+    #fax-btn {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: white;
+    }
+    #back-btn {
+      background: linear-gradient(135deg, #dc3545 0%, #c82333 100%);
+      color: white;
+    }
+    @media print {
+      .button-container { display: none; }
+      button { display: none; }
+      body { margin: 0; font-size: 12pt; }
+    }
+  </style>
+  <script src="js/main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <script src="js/patient-id-normalizer.js?v=1"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+</head>
+<body>
+  <h1>Referral Letter</h1>
+  <div id="referral-info"></div>
+  <div class="button-container">
+    <button id="save-btn" onclick="saveReferralToRecords()"><i class="fa-solid fa-floppy-disk" aria-hidden="true"></i> Save to Patient Records</button>
+    <button id="download-btn" onclick="downloadReferralAsImage()"><i class="fa-solid fa-download" aria-hidden="true"></i> Download as Image</button>
+    <button id="print-btn" onclick="window.print()"><i class="fa-solid fa-print" aria-hidden="true"></i> Print</button>
+    <button id="email-btn"><i class="fa-solid fa-envelope" aria-hidden="true"></i> Email</button>
+    <button id="fax-btn"><i class="fa-solid fa-fax" aria-hidden="true"></i> Fax (Copy for Fax)</button>
+    <button id="back-btn" onclick="backToNote()"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Clinical Note</button>
+  </div>
+
+  <script>
+    // Back to clinical note
+    function backToNote() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      window.location.href = `/clinical-note?patientId=${patientId}&visitDate=${visitDate}`;
+    }
+
+    // Save referral to patient records and update generated referrals table
+    function saveReferralToRecords() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      const specialistId = urlParams.get("specialistId");
+      const referralIndex = urlParams.get("referralIndex");
+
+      if (!patientId || !visitDate || referralIndex === null) {
+        alert("Missing patient or referral information. Cannot save.");
+        return;
+      }
+
+      try {
+        // Supabase-first: Load patients from Supabase, fallback to localStorage
+        let patients = [];
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const orgId = user.organization_id || user.organizationId;
+            
+            if (orgId) {
+              const { data: supabasePatients, error } = await window.supabaseClient
+                .from('patients')
+                .select('*')
+                .eq('organization_id', orgId);
+              
+              if (!error && supabasePatients) {
+                patients = supabasePatients.map(p => ({
+                  id: p.id || p.patient_id,
+                  patient_id: p.patient_id,
+                  firstName: p.first_name,
+                  lastName: p.last_name,
+                  first_name: p.first_name,
+                  last_name: p.last_name,
+                  ...p
+                }));
+                localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+              }
+            }
+          }
+        } catch (error) {
+          console.warn('[Referral Letter] Supabase load failed, falling back to localStorage:', error);
+        }
+        
+        // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
+        if (patients.length === 0) {
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+          } catch (error) {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+        }
+        
+        const patient = patients.find(p => p.id === patientId);
+        
+        if (!patient) {
+          alert("Patient not found in records.");
+          return;
+        }
+
+        const visit = patient.visits.find(v => v.date === visitDate);
+        if (!visit) {
+          alert("Visit not found in records.");
+          return;
+        }
+
+        // Ensure SOAP structure exists
+        if (!visit.soap) {
+          visit.soap = {};
+        }
+        if (!visit.soap.plan) {
+          visit.soap.plan = {};
+        }
+        if (!visit.soap.plan.referrals) {
+          visit.soap.plan.referrals = [];
+        }
+
+        const referralIndexNum = parseInt(referralIndex);
+        if (referralIndexNum < 0 || referralIndexNum >= visit.soap.plan.referrals.length) {
+          alert("Referral not found in visit records.");
+          return;
+        }
+
+        const referral = visit.soap.plan.referrals[referralIndexNum];
+        
+        // Mark referral as saved
+        referral.status = 'Saved';
+        referral.savedAt = new Date().toISOString();
+
+        // Save to localStorage
+        localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+
+        // Trigger sync event to update the generated referrals table on clinical-note.html
+        window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+          detail: { 
+            patientId, 
+            action: 'referralSaved', 
+            data: { visitDate, referralIndex: referralIndexNum, referral } 
+          }
+        }));
+
+        // Show success notification
+        alert("? Referral saved to patient records successfully!");
+
+        // Optionally redirect back to clinical note
+        setTimeout(() => {
+          backToNote();
+        }, 1000);
+      } catch (error) {
+        console.error("Error saving referral:", error);
+        alert("Error saving referral: " + error.message);
+      }
+    }
+
+    window.onload = function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      const specialistId = urlParams.get("specialistId");
+      const referralIndex = urlParams.get("referralIndex");
+      
+      if (!patientId || !visitDate || !specialistId || referralIndex === null) {
+        document.getElementById("referral-info").innerHTML = "<p style='color: red;'>Missing required information. Cannot display referral.</p>";
+        return;
+      }
+
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (error) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient) {
+        document.getElementById("referral-info").innerHTML = "<p style='color: red;'>Patient not found.</p>";
+        return;
+      }
+
+      const visit = patient.visits.find(v => v.date === visitDate);
+      if (!visit || !visit.soap || !visit.soap.plan || !visit.soap.plan.referrals) {
+        document.getElementById("referral-info").innerHTML = "<p style='color: red;'>Visit or referral not found.</p>";
+        return;
+      }
+
+      const referralIndexNum = parseInt(referralIndex);
+      const referral = visit.soap.plan.referrals[referralIndexNum];
+      if (!referral) {
+        document.getElementById("referral-info").innerHTML = "<p style='color: red;'>Referral not found.</p>";
+        return;
+      }
+
+      // Load specialists (checking both keys for compatibility)
+      let specialists = JSON.parse(localStorage.getItem(getDataKey("specialists")) || "[]");
+      if (specialists.length === 0) {
+        const oldSpecialists = JSON.parse(localStorage.getItem("specialists") || "[]");
+        if (oldSpecialists.length > 0) {
+          localStorage.setItem(getDataKey("specialists"), JSON.stringify(oldSpecialists));
+          specialists = oldSpecialists;
+        }
+      }
+
+      // Try to find specialist with multiple matching strategies
+      let specialist = specialists.find(s => s.id === specialistId);
+      if (!specialist && specialistId) {
+        specialist = specialists.find(s => s.id && String(s.id) === String(specialistId));
+      }
+
+      if (!specialist) {
+        document.getElementById("referral-info").innerHTML = "<p style='color: red;'>Specialist not found.</p>";
+        return;
+      }
+
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user || !user.username) {
+        document.getElementById("referral-info").innerHTML = "<p style='color: red;'>User information not found.</p>";
+        return;
+      }
+
+      // Handle both data structures: specialist.details (old) and direct properties (new)
+      const specialistFirstName = specialist.details?.firstName || specialist.firstName || '';
+      const specialistLastName = specialist.details?.lastName || specialist.lastName || '';
+      const specialistSpecialty = specialist.specialty || specialist.details?.specialty || '';
+      const specialistTelephone = specialist.details?.telephone || specialist.telephone || 'N/A';
+      const specialistFax = specialist.details?.fax || specialist.fax || 'N/A';
+      const specialistEmail = specialist.details?.email || specialist.email || 'N/A';
+      const specialistAddressLine1 = specialist.details?.addressLine1 || specialist.addressLine1 || '';
+      const specialistAddressLine2 = specialist.details?.addressLine2 || specialist.addressLine2 || '';
+      const specialistCity = specialist.details?.city || specialist.city || '';
+      const specialistState = specialist.details?.state || specialist.state || '';
+      const specialistCountry = specialist.details?.country || specialist.country || '';
+
+      // Helper function to format medications
+      function formatMedications(medications) {
+        if (!medications || medications.length === 0) return '';
+        return medications.map(med => {
+          let result = med.name;
+          if (med.dosage) result += ` ${med.dosage}`;
+          if (med.notes) result += ` (${med.notes})`;
+          return result;
+        }).join(', ');
+      }
+
+      // Helper function to format allergies
+      function formatAllergies(allergies) {
+        if (!allergies || allergies.length === 0) return '';
+        return allergies.map(allergy => {
+          let result = allergy.allergen;
+          if (allergy.reaction) result += ` - ${allergy.reaction}`;
+          if (allergy.severity) result += ` (${allergy.severity})`;
+          return result;
+        }).join(', ');
+      }
+
+      // Helper function to format past medical history
+      function formatMedicalHistory(history) {
+        if (!history || history.length === 0) return '';
+        return history.map(h => {
+          let result = h.event;
+          if (h.date) result += ` (${h.date})`;
+          return result;
+        }).join(', ');
+      }
+
+      // Helper function to get recent investigations/results
+      function getRecentInvestigations() {
+        let investigations = [];
+        
+        // Get lab results from current visit
+        if (visit.soap && visit.soap.objective && visit.soap.objective.labOrders && visit.soap.objective.labOrders.length > 0) {
+          investigations.push(`Recent Lab Orders: ${visit.soap.objective.labOrders.join(', ')}`);
+        }
+        
+        // Get imaging results from current visit
+        if (visit.soap && visit.soap.objective && visit.soap.objective.imagingOrders && visit.soap.objective.imagingOrders.length > 0) {
+          investigations.push(`Recent Imaging Orders: ${visit.soap.objective.imagingOrders.join(', ')}`);
+        }
+        
+        // Get lab results from patient's lab results
+        if (patient.labResults && patient.labResults.length > 0) {
+          const recentLabResults = patient.labResults.slice(-3); // Get last 3 lab results
+          const labSummary = recentLabResults.map(lab => `${lab.testName}: ${lab.result || 'Results pending'}`).join(', ');
+          investigations.push(`Recent Lab Results: ${labSummary}`);
+        }
+        
+        // Get imaging results from patient's imaging results
+        if (patient.imagingResults && patient.imagingResults.length > 0) {
+          const recentImagingResults = patient.imagingResults.slice(-3); // Get last 3 imaging results
+          const imagingSummary = recentImagingResults.map(img => `${img.studyType}: ${img.result || 'Results pending'}`).join(', ');
+          investigations.push(`Recent Imaging Results: ${imagingSummary}`);
+        }
+        
+        return investigations.join('; ');
+      }
+
+      // Helper function to get full name from user object
+      function getUserFullName(userObj) {
+        if (userObj.firstName && userObj.lastName) {
+          return `${userObj.firstName} ${userObj.lastName}`;
+        }
+        return userObj.username;
+      }
+
+      // Helper function to format date for display
+      function formatDisplayDate(dateString) {
+        if (!dateString) return 'Not specified';
+        try {
+          const date = new Date(dateString);
+          return date.toLocaleDateString('en-US', {
+            year: 'numeric',
+            month: 'short',
+            day: 'numeric'
+          });
+        } catch (e) {
+          return dateString;
+        }
+      }
+
+      // Generate patient medical summary (similar to patient-summary.html)
+      function generatePatientMedicalSummary(patient) {
+        let summaryHTML = '';
+
+        // Allergies Section
+        const allergies = patient.allergies || [];
+        if (allergies.length > 0) {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #dc3545; margin-bottom: 10px; font-size: 16px;">Allergies</h4>
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-bottom: 15px;">
+                <thead>
+                  <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Allergen</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Reaction</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Severity</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Onset Date</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${allergies.map(allergy => `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${allergy.allergen || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${allergy.reaction || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${allergy.severity || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${formatDisplayDate(allergy.onsetDate)}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #dc3545; margin-bottom: 10px; font-size: 16px;">Allergies</h4>
+              <p style="color: #666; font-style: italic;">No known allergies recorded.</p>
+            </div>
+          `;
+        }
+
+        // Current Medications Section (from prescriptions)
+        const prescriptions = patient.prescriptions || [];
+        const currentMeds = [];
+        prescriptions.forEach(prescription => {
+          if (prescription.medications && Array.isArray(prescription.medications)) {
+            prescription.medications.forEach(med => {
+              currentMeds.push({
+                name: med.name,
+                dosage: med.dosage || med.strength || '',
+                frequency: med.frequency || med.directions || '',
+                route: med.route || '',
+                startDate: prescription.date,
+                prescriber: prescription.prescriber?.name || prescription.doctorName || 'Unknown'
+              });
+            });
+          }
+        });
+
+        // Also check patient.medications (historical medications)
+        if (patient.medications && Array.isArray(patient.medications)) {
+          patient.medications.forEach(med => {
+            if (!currentMeds.some(m => m.name === med.name && m.dosage === (med.dosage || med.strength))) {
+              currentMeds.push({
+                name: med.name,
+                dosage: med.dosage || med.strength || '',
+                frequency: med.frequency || med.directions || '',
+                route: med.route || '',
+                startDate: med.startDate || '',
+                prescriber: med.prescriber || 'Unknown'
+              });
+            }
+          });
+        }
+
+        if (currentMeds.length > 0) {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">Current Medications</h4>
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-bottom: 15px;">
+                <thead>
+                  <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Medication</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Dosage</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Frequency/Route</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Start Date</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Prescriber</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${currentMeds.map(med => `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${med.name}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${med.dosage || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${med.frequency || 'Not specified'}${med.route ? ` (${med.route})` : ''}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${formatDisplayDate(med.startDate)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${med.prescriber}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">Current Medications</h4>
+              <p style="color: #666; font-style: italic;">No current medications recorded.</p>
+            </div>
+          `;
+        }
+
+        // Problems/Diagnoses Section
+        const diagnoses = patient.diagnoses || [];
+        if (diagnoses.length > 0) {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">Problems/Diagnoses</h4>
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-bottom: 15px;">
+                <thead>
+                  <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Diagnosis</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">ICD Code</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Status</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Notes</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${diagnoses.map(diagnosis => `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis.diagnosis || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis.icdCode || diagnosis.code || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis.status || 'Active'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${formatDisplayDate(diagnosis.date || diagnosis.diagnosisDate)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${diagnosis.notes || 'No notes'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">Problems/Diagnoses</h4>
+              <p style="color: #666; font-style: italic;">No diagnoses recorded.</p>
+            </div>
+          `;
+        }
+
+        // Immunizations Section
+        const immunizations = patient.immunizations || [];
+        if (immunizations.length > 0) {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">Immunizations</h4>
+              <table style="width: 100%; border-collapse: collapse; border: 1px solid #ddd; margin-bottom: 15px;">
+                <thead>
+                  <tr style="background-color: #f8f9fa;">
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Vaccine</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Date Administered</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Lot Number</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Reaction</th>
+                    <th style="padding: 8px; border: 1px solid #ddd; text-align: left;">Series Status</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  ${immunizations.map(immunization => `
+                    <tr>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${immunization.vaccine || immunization.name || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${formatDisplayDate(immunization.date || immunization.administeredDate)}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${immunization.lotNumber || 'Not specified'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${immunization.reaction || 'None'}</td>
+                      <td style="padding: 8px; border: 1px solid #ddd;">${immunization.seriesStatus || 'Complete'}</td>
+                    </tr>
+                  `).join('')}
+                </tbody>
+              </table>
+            </div>
+          `;
+        } else {
+          summaryHTML += `
+            <div style="margin-bottom: 20px;">
+              <h4 style="color: #4CAF50; margin-bottom: 10px; font-size: 16px;">Immunizations</h4>
+              <p style="color: #666; font-style: italic;">No immunizations recorded.</p>
+            </div>
+          `;
+        }
+
+        return summaryHTML;
+      }
+
+      // Determine the referring provider name
+      let referringProviderName = getUserFullName(user);
+      let referringProviderRole = user.role || 'Doctor';
+      let referringProviderOrg = user.org || 'Unknown Organization';
+      let referringProviderAddress = `${user.orgAddressLine1 || ''} ${user.orgAddressLine2 || ''}, ${user.orgCity || ''}, ${user.orgState || ''}, ${user.orgCountry || ''}`.trim();
+      if (!referringProviderAddress || referringProviderAddress === ', , ,') {
+        referringProviderAddress = 'Not specified';
+      }
+      let referringProviderContact = `Phone: ${user.orgPhone || 'N/A'}, Email: ${user.email || 'N/A'}`;
+
+      // If current user is not a doctor, find the doctor who saw the patient in this visit
+      if (user.role && user.role.toLowerCase() !== 'doctor') {
+        // Look for the doctor who created this visit
+        if (visit.createdBy) {
+          // Try to find the doctor's information from the visit
+          const doctorInfo = visit.createdBy;
+          referringProviderName = getUserFullName(doctorInfo);
+          referringProviderRole = doctorInfo.role || 'Doctor';
+          
+          // Use doctor's organization info if available
+          if (doctorInfo.org) {
+            referringProviderOrg = doctorInfo.org;
+          }
+          if (doctorInfo.orgAddressLine1) {
+            referringProviderAddress = `${doctorInfo.orgAddressLine1} ${doctorInfo.orgAddressLine2 || ''}, ${doctorInfo.orgCity}, ${doctorInfo.orgState}, ${doctorInfo.orgCountry}`;
+          }
+          if (doctorInfo.orgPhone || doctorInfo.email) {
+            referringProviderContact = `Phone: ${doctorInfo.orgPhone || 'N/A'}, Email: ${doctorInfo.email || 'N/A'}`;
+          }
+        }
+      }
+
+      // Build referral content
+      let referralContent = `
+        <h2 style="text-align: center; color: #4CAF50; margin-bottom: 30px;">MEDICAL REFERRAL LETTER</h2>
+        
+        <div style="margin-bottom: 20px;">
+          <p><strong>Date:</strong> ${new Date().toLocaleDateString()}</p>
+          <p><strong>Referring Provider:</strong> ${referringProviderName} (${referringProviderRole}), ${referringProviderOrg}</p>
+          <p><strong>Provider Address:</strong> ${referringProviderAddress}</p>
+          <p><strong>Provider Contact:</strong> ${referringProviderContact}</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <p><strong>Referred To:</strong> ${specialistFirstName} ${specialistLastName}${specialistSpecialty ? ` (${specialistSpecialty})` : ''}</p>
+          <p><strong>Specialist Contact:</strong> Phone: ${specialistTelephone}, Fax: ${specialistFax}, Email: ${specialistEmail}</p>
+          <p><strong>Specialist Address:</strong> ${specialistAddressLine1} ${specialistAddressLine2 || ''}, ${specialistCity}, ${specialistState}, ${specialistCountry}</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">PATIENT INFORMATION</h3>
+          <p><strong>Patient Name:</strong> ${patient.firstName} ${patient.middleName || ''} ${patient.lastName}</p>
+          <p><strong>Date of Birth:</strong> ${patient.dob || patient.dateOfBirth || 'Not specified'}</p>
+          <p><strong>Gender:</strong> ${patient.gender || 'Not specified'}</p>
+          <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, patientId) : ((typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || (patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id) ? patient.id : 'N/A'))}</p>
+      `;
+
+      // Add patient contact information if available
+      if (patient.phone || patient.email) {
+        referralContent += `<p><strong>Patient Contact Information:</strong>`;
+        if (patient.phone) referralContent += ` Phone: ${patient.phone}`;
+        if (patient.phone && patient.email) referralContent += `;`;
+        if (patient.email) referralContent += ` Email: ${patient.email}`;
+        referralContent += `</p>`;
+      }
+
+      // Add patient address if available - handle both camelCase and snake_case formats
+      const addr1 = patient.addressLine1 || patient.address_line1 || '';
+      const addr2 = patient.addressLine2 || patient.address_line2 || '';
+      const city = patient.city || '';
+      const state = patient.state || '';
+      const country = patient.country || '';
+      
+      if (addr1) {
+        const addressParts = [addr1];
+        if (addr2) addressParts.push(addr2);
+        const locationParts = [];
+        if (city) locationParts.push(city);
+        if (state) locationParts.push(state);
+        if (country) locationParts.push(country);
+        if (locationParts.length > 0) addressParts.push(locationParts.join(', '));
+        referralContent += `<p><strong>Patient Address:</strong> ${addressParts.join(', ')}</p>`;
+      } else if (patient.address) {
+        referralContent += `<p><strong>Patient Address:</strong> ${patient.address}</p>`;
+      }
+
+      referralContent += `</div>`;
+
+      // Add past medical history if available
+      const medicalHistory = formatMedicalHistory(patient.medicalHistory);
+      if (medicalHistory) {
+        referralContent += `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">PAST MEDICAL HISTORY</h3>
+            <p>${medicalHistory}</p>
+          </div>
+        `;
+      }
+
+      // Add current medications if available
+      const currentMedications = formatMedications(patient.medications);
+      if (currentMedications) {
+        referralContent += `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">CURRENT MEDICATIONS</h3>
+            <p>${currentMedications}</p>
+          </div>
+        `;
+      }
+
+      // Add allergies if available
+      const allergies = formatAllergies(patient.allergies);
+      if (allergies) {
+        referralContent += `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #dc3545; border-bottom: 2px solid #dc3545; padding-bottom: 5px;">ALLERGIES</h3>
+            <p><strong>Known Allergies:</strong> ${allergies}</p>
+          </div>
+        `;
+      }
+
+      // Add relevant investigations/results if available
+      const investigations = getRecentInvestigations();
+      if (investigations) {
+        referralContent += `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">RELEVANT INVESTIGATIONS/RESULTS</h3>
+            <p>${investigations}</p>
+          </div>
+        `;
+      }
+
+      // Add patient medical summary
+      const medicalSummary = generatePatientMedicalSummary(patient);
+      if (medicalSummary) {
+        referralContent += `
+          <div style="margin-bottom: 20px; page-break-inside: avoid;">
+            <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px; margin-top: 30px;">PATIENT MEDICAL SUMMARY</h3>
+            ${medicalSummary}
+          </div>
+        `;
+      }
+
+      // Add current diagnoses and reason for referral
+      referralContent += `
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">CURRENT DIAGNOSES</h3>
+          <p><strong>Primary Diagnoses:</strong> ${referral.diagnoses ? referral.diagnoses.join(', ') : 'Not specified'}</p>
+        </div>
+
+        <div style="margin-bottom: 20px;">
+          <h3 style="color: #4CAF50; border-bottom: 2px solid #4CAF50; padding-bottom: 5px;">REASON FOR REFERRAL</h3>
+          <p>${referral.note || 'Not specified'}</p>
+        </div>
+      `;
+
+      // Add urgency/priority if specified in referral
+      if (referral.urgency) {
+        const urgencyColor = referral.urgency.toLowerCase() === 'emergency' ? '#dc3545' : 
+                            referral.urgency.toLowerCase() === 'urgent' ? '#ffc107' : '#28a745';
+        referralContent += `
+          <div style="margin-bottom: 20px;">
+            <h3 style="color: ${urgencyColor}; border-bottom: 2px solid ${urgencyColor}; padding-bottom: 5px;">PRIORITY/URGENCY</h3>
+            <p><strong>Priority Level:</strong> <span style="color: ${urgencyColor}; font-weight: bold; text-transform: uppercase;">${referral.urgency}</span></p>
+          </div>
+        `;
+      }
+
+      // Add closing
+      referralContent += `
+        <div style="margin-top: 30px; text-align: center;">
+          <p>Thank you for accepting this referral. Please contact me if you need any additional information.</p>
+          <p style="margin-top: 20px;"><strong>Best regards,</strong></p>
+          <p><strong>${referringProviderName}</strong></p>
+          <p>${referringProviderRole}, ${referringProviderOrg}</p>
+        </div>
+      `;
+
+      // Display the referral
+      document.getElementById("referral-info").innerHTML = referralContent;
+      
+      // Email button
+      document.getElementById("email-btn").addEventListener("click", function() {
+        const subject = encodeURIComponent(`Referral for ${patient.firstName} ${patient.lastName}`);
+        const body = encodeURIComponent(document.getElementById("referral-info").innerText);
+        window.location.href = `mailto:${specialistEmail}?subject=${subject}&body=${body}`;
+      });
+      
+      // Fax button (copy content)
+      document.getElementById("fax-btn").addEventListener("click", function() {
+        navigator.clipboard.writeText(document.getElementById("referral-info").innerText).then(() => {
+          alert("? Content copied to clipboard for fax.");
+        }).catch(err => {
+          alert("? Failed to copy content. Please select and copy manually.");
+        });
+      });
+    };
+
+    // Download referral letter as image
+    function downloadReferralAsImage() {
+      console.log('[Referral Letter] Starting referral letter image download...');
+      
+      try {
+        const referralInfo = document.getElementById("referral-info");
+        
+        if (!referralInfo || !referralInfo.innerHTML.trim()) {
+          alert('No referral content found to download.');
+          return;
+        }
+
+        // Show loading message
+        const downloadBtn = document.getElementById("download-btn");
+        const originalText = downloadBtn.innerHTML;
+        downloadBtn.innerHTML = '? Generating Image...';
+        downloadBtn.disabled = true;
+
+        // Create a temporary container with proper styling for image capture
+        const tempContainer = document.createElement('div');
+        tempContainer.style.cssText = `
+          position: fixed;
+          top: -9999px;
+          left: -9999px;
+          width: 210mm;
+          min-height: 297mm;
+          background: white;
+          padding: 40px;
+          font-family: Arial, sans-serif;
+          font-size: 14px;
+          line-height: 1.6;
+          color: #333;
+          box-sizing: border-box;
+        `;
+
+        // Clone the referral content
+        tempContainer.innerHTML = referralInfo.innerHTML;
+        document.body.appendChild(tempContainer);
+
+        // Configure html2canvas options
+        const options = {
+          backgroundColor: '#ffffff',
+          scale: 2,
+          useCORS: true,
+          logging: false,
+          width: tempContainer.scrollWidth,
+          height: tempContainer.scrollHeight,
+          windowWidth: tempContainer.scrollWidth,
+          windowHeight: tempContainer.scrollHeight
+        };
+
+        // Capture as image
+        html2canvas(tempContainer, options).then(canvas => {
+          // Remove temporary container
+          document.body.removeChild(tempContainer);
+
+          // Create download link
+          const urlParams = new URLSearchParams(window.location.search);
+          const patientId = urlParams.get("patientId");
+          const timestamp = new Date().toISOString().replace(/[:.]/g, '-');
+          const filename = `Referral-${patientId || 'Letter'}-${timestamp}.png`;
+
+          // Convert canvas to blob and download
+          canvas.toBlob(function(blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement('a');
+            link.href = url;
+            link.download = filename;
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+            URL.revokeObjectURL(url);
+
+            // Restore button
+            downloadBtn.innerHTML = originalText;
+            downloadBtn.disabled = false;
+
+            // Show success message
+            showPageSuccessMessage('Referral letter downloaded as image successfully!');
+          }, 'image/png');
+        }).catch(error => {
+          console.error('[Referral Letter] Error capturing referral as image:', error);
+          document.body.removeChild(tempContainer);
+          downloadBtn.innerHTML = originalText;
+          downloadBtn.disabled = false;
+          alert('? Error downloading image. Please try again.');
+        });
+
+      } catch (error) {
+        console.error('[Referral Letter] Error in referral image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+
+    // Show success message
+    function showPageSuccessMessage(message) {
+      const notification = document.createElement('div');
+      notification.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: linear-gradient(135deg, #28a745 0%, #20c997 100%);
+        color: white;
+        padding: 15px 25px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-size: 14px;
+        font-weight: bold;
+        animation: slideIn 0.3s ease-out;
+      `;
+      notification.innerHTML = `&#10004; ${message}`;
+      document.body.appendChild(notification);
+
+      setTimeout(() => {
+        notification.style.animation = 'slideOut 0.3s ease-out';
+        setTimeout(() => {
+          document.body.removeChild(notification);
+        }, 300);
+      }, 3000);
+    }
+
+    // Add animation styles
+    const style = document.createElement('style');
+    style.textContent = `
+      @keyframes slideIn {
+        from {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+        to {
+          transform: translateX(0);
+          opacity: 1;
+        }
+      }
+      @keyframes slideOut {
+        from {
+          transform: translateX(0);
+          opacity: 1;
+        }
+        to {
+          transform: translateX(100%);
+          opacity: 0;
+        }
+      }
+    `;
+    document.head.appendChild(style);
+  </script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

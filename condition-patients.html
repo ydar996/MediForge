@@ -1,0 +1,158 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patients with Condition</title>
+  <link rel="stylesheet" href="css/styles.css">
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1 id="page-title">Patients with Condition</h1>
+  <div id="summary-stats" style="margin-bottom: 20px;"></div>
+  <table class="condition-patients-table">
+    <thead>
+      <tr>
+        <th>Name</th>
+        <th>Age</th>
+        <th>Gender</th>
+        <th>Tribe</th>
+      </tr>
+    </thead>
+    <tbody id="patient-list"></tbody>
+  </table>
+  <a href="conditions-breakdown">Back to Conditions Breakdown</a>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+  </script>
+  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>  <!-- General helpers -->
+  <script src="js/table-alignment-fix.js?v=1"></script>  <!-- Table alignment fix -->
+  <script>
+    function calculateAge(dob) {
+      const birthDate = new Date(dob);
+      const today = new Date();
+      let age = today.getFullYear() - birthDate.getFullYear();
+      const m = today.getMonth() - birthDate.getMonth();
+      if (m < 0 || (m === 0 && today.getDate() < birthDate.getDate())) {
+        age--;
+      }
+      return age;
+    }
+
+    window.onload = async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const condition = decodeURIComponent(urlParams.get("condition"));
+      document.getElementById("page-title").innerHTML = `Patients with "${condition}"`;
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const orgId = user.organization_id || user.organizationId;
+          
+          if (orgId) {
+            const { data: supabasePatients, error } = await window.supabaseClient
+              .from('patients')
+              .select('*')
+              .eq('organization_id', orgId);
+            
+            if (!error && supabasePatients) {
+              patients = supabasePatients.map(p => ({
+                id: p.id || p.patient_id,
+                patient_id: p.patient_id,
+                firstName: p.first_name,
+                lastName: p.last_name,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                ...p
+              }));
+              localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('?? Supabase load failed, falling back to localStorage:', error);
+      }
+      
+      // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
+      if (patients.length === 0) {
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+        } catch (error) {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      }
+      
+      const filtered = patients.filter(patient => 
+        patient.diagnoses?.some(d => d.diagnosis === condition)
+      );
+
+      // Compute summary stats
+      const total = filtered.length;
+      const genderStats = { male: 0, female: 0 };
+      const tribeStats = {};
+      filtered.forEach(patient => {
+        const gender = patient.gender.toLowerCase();
+        if (gender === 'male') genderStats.male++;
+        else if (gender === 'female') genderStats.female++;
+        const tribe = patient.tribe || 'Unknown';
+        tribeStats[tribe] = (tribeStats[tribe] || 0) + 1;
+      });
+
+      let genderStr = `Gender: Male (${Math.round((genderStats.male / total) * 100 || 0)}%), Female (${Math.round((genderStats.female / total) * 100 || 0)}%)`;
+      let tribeStr = 'Tribes: ' + Object.entries(tribeStats)
+        .map(([tribe, count]) => `${tribe} (${Math.round((count / total) * 100 || 0)}%)`)
+        .join(', ');
+      
+      document.getElementById("summary-stats").innerHTML = `<p>${genderStr} | ${tribeStr}</p>`;
+
+      // Display patient list
+      const tbody = document.getElementById("patient-list");
+      filtered.forEach(patient => {
+        const row = document.createElement("tr");
+        const age = calculateAge(patient.dob);
+        row.innerHTML = `
+          <td><a href="patient-details?id=${patient.id}">${patient.firstName} ${patient.lastName}</a></td>
+          <td>${age}</td>
+          <td>${patient.gender}</td>
+          <td>${patient.tribe || 'Unknown'}</td>
+        `;
+        tbody.appendChild(row);
+      });
+    };
+  </script>  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+

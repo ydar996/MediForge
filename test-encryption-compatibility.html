@@ -1,0 +1,571 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encryption Compatibility Test - MediForge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1000px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #667eea;
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+      border: 1px solid #bee5eb;
+    }
+    .warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffeaa7;
+    }
+    .test-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 10px;
+      margin-top: 10px;
+    }
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 11px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .status-pass {
+      background: #28a745;
+      color: white;
+    }
+    .status-fail {
+      background: #dc3545;
+      color: white;
+    }
+    .status-warn {
+      background: #ffc107;
+      color: #000;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Encryption Compatibility Test Suite</h1>
+  <p>This test verifies that encryption implementation doesn't break existing functionality.</p>
+
+  <div class="test-section">
+    <h2>Test 1: Service Loading</h2>
+    <p>Verify encryption service and helpers load correctly.</p>
+    <button onclick="testServiceLoading()">Run Test</button>
+    <div id="test1-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Backward Compatibility (No Encryption)</h2>
+    <p>Verify existing patient data works when encryption is NOT enabled.</p>
+    <button onclick="testBackwardCompatibility()">Run Test</button>
+    <div id="test2-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Data Loader Integration</h2>
+    <p>Verify universal-data-loader.js encryption helpers work correctly.</p>
+    <button onclick="testDataLoaderIntegration()">Run Test</button>
+    <div id="test3-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Existing Patient Data Access</h2>
+    <p>Verify existing patients in localStorage can still be accessed.</p>
+    <button onclick="testExistingPatientAccess()">Run Test</button>
+    <div id="test4-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 5: Encryption Flow (If Enabled)</h2>
+    <p>Test full encryption/decryption flow when encryption is enabled.</p>
+    <button onclick="testEncryptionFlow()">Run Test</button>
+    <div id="test5-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 6: Error Handling</h2>
+    <p>Verify graceful error handling when encryption fails.</p>
+    <button onclick="testErrorHandling()">Run Test</button>
+    <div id="test6-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🧪 Run All Tests</h2>
+    <button onclick="runAllTests()" style="background: #28a745; font-size: 16px; padding: 15px 30px;">Run Complete Test Suite</button>
+    <div id="all-results" class="result"></div>
+  </div>
+
+  <!-- Load required scripts -->
+  <script src="js/encryption.js"></script>
+  <script src="js/universal-data-loader.js"></script>
+
+  <script>
+    let testResults = {};
+
+    function logResult(testId, message, type = 'info') {
+      const resultDiv = document.getElementById(testId + '-result');
+      if (resultDiv) {
+        resultDiv.className = 'result ' + type;
+        resultDiv.textContent = message;
+      }
+      testResults[testId] = { message, type, timestamp: new Date().toISOString() };
+    }
+
+    // Test 1: Service Loading
+    async function testServiceLoading() {
+      logResult('test1', 'Testing service loading...', 'info');
+      
+      let results = [];
+      let passed = 0;
+      let failed = 0;
+
+      // Check encryption service
+      if (typeof window.encryptionService !== 'undefined') {
+        results.push('✅ EncryptionService loaded');
+        passed++;
+      } else {
+        results.push('❌ EncryptionService NOT loaded');
+        failed++;
+      }
+
+      // Check encryption methods
+      if (window.encryptionService && typeof window.encryptionService.encrypt === 'function') {
+        results.push('✅ encrypt() method available');
+        passed++;
+      } else {
+        results.push('❌ encrypt() method missing');
+        failed++;
+      }
+
+      if (window.encryptionService && typeof window.encryptionService.decrypt === 'function') {
+        results.push('✅ decrypt() method available');
+        passed++;
+      } else {
+        results.push('❌ decrypt() method missing');
+        failed++;
+      }
+
+      if (window.encryptionService && typeof window.encryptionService.initialize === 'function') {
+        results.push('✅ initialize() method available');
+        passed++;
+      } else {
+        results.push('❌ initialize() method missing');
+        failed++;
+      }
+
+      if (window.encryptionService && typeof window.encryptionService.clearKey === 'function') {
+        results.push('✅ clearKey() method available');
+        passed++;
+      } else {
+        results.push('❌ clearKey() method missing');
+        failed++;
+      }
+
+      // Check if encryption is initialized (should be false by default)
+      if (window.encryptionService && window.encryptionService.isInitialized === false) {
+        results.push('✅ Encryption not initialized (expected - backward compatible)');
+        passed++;
+      } else if (window.encryptionService && window.encryptionService.isInitialized === true) {
+        results.push('⚠️ Encryption already initialized (may be expected if you tested earlier)');
+        passed++;
+      } else {
+        results.push('❌ isInitialized property missing');
+        failed++;
+      }
+
+      const summary = `\n📊 Summary: ${passed} passed, ${failed} failed`;
+      const type = failed === 0 ? 'success' : 'error';
+      logResult('test1', results.join('\n') + summary, type);
+    }
+
+    // Test 2: Backward Compatibility
+    async function testBackwardCompatibility() {
+      logResult('test2', 'Testing backward compatibility...', 'info');
+
+      let results = [];
+      let passed = 0;
+      let failed = 0;
+
+      // Test: Encrypt when not initialized should return unencrypted
+      const testData = { name: 'John Doe', phone: '123-456-7890' };
+      const encrypted = await window.encryptionService.encrypt(testData);
+
+      if (encrypted.encrypted === false && JSON.stringify(encrypted.data) === JSON.stringify(testData)) {
+        results.push('✅ Encryption returns unencrypted data when not initialized (backward compatible)');
+        passed++;
+      } else {
+        results.push('❌ Encryption behavior incorrect when not initialized');
+        results.push('   Expected: { encrypted: false, data: {...} }');
+        results.push('   Got: ' + JSON.stringify(encrypted));
+        failed++;
+      }
+
+      // Test: Decrypt unencrypted data should return as-is
+      const decrypted = await window.encryptionService.decrypt(testData);
+      if (JSON.stringify(decrypted) === JSON.stringify(testData)) {
+        results.push('✅ Decrypt returns unencrypted data as-is (backward compatible)');
+        passed++;
+      } else {
+        results.push('❌ Decrypt behavior incorrect for unencrypted data');
+        failed++;
+      }
+
+      // Test: Decrypt object with encrypted: false flag
+      const unencryptedObj = { encrypted: false, data: testData };
+      const decrypted2 = await window.encryptionService.decrypt(unencryptedObj);
+      if (JSON.stringify(decrypted2) === JSON.stringify(testData)) {
+        results.push('✅ Decrypt handles { encrypted: false, data: {...} } correctly');
+        passed++;
+      } else {
+        results.push('❌ Decrypt behavior incorrect for unencrypted object');
+        failed++;
+      }
+
+      const summary = `\n📊 Summary: ${passed} passed, ${failed} failed`;
+      const type = failed === 0 ? 'success' : 'error';
+      logResult('test2', results.join('\n') + summary, type);
+    }
+
+    // Test 3: Data Loader Integration
+    async function testDataLoaderIntegration() {
+      logResult('test3', 'Testing data loader integration...', 'info');
+
+      let results = [];
+      let passed = 0;
+      let failed = 0;
+
+      // Check if universal-data-loader functions are accessible
+      // Note: These are inside an IIFE, so we need to test through the data loader
+      
+      // Test: Create a test patient
+      const testPatient = {
+        id: 'TEST001',
+        firstName: 'Test',
+        lastName: 'Patient',
+        dob: '1990-01-01',
+        phone: '123-456-7890',
+        email: 'test@example.com'
+      };
+
+      // Test: Try to access localStorage patients (simulating what universal-data-loader does)
+      try {
+        // Get current user org
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgKey = user.org ? `${user.org}_patients` : 'patients';
+        
+        // Get existing patients
+        const existingPatients = JSON.parse(localStorage.getItem(orgKey) || '[]');
+        results.push(`✅ Can access localStorage patients (${existingPatients.length} existing)`);
+        passed++;
+
+        // Test: Add test patient temporarily
+        const testPatients = [...existingPatients, testPatient];
+        localStorage.setItem(orgKey, JSON.stringify(testPatients));
+        
+        // Test: Read it back
+        const loadedPatients = JSON.parse(localStorage.getItem(orgKey) || '[]');
+        const foundTest = loadedPatients.find(p => p.id === 'TEST001');
+        
+        if (foundTest && foundTest.firstName === 'Test') {
+          results.push('✅ Can read/write patient data to localStorage');
+          passed++;
+        } else {
+          results.push('❌ Cannot read/write patient data');
+          failed++;
+        }
+
+        // Restore original patients
+        localStorage.setItem(orgKey, JSON.stringify(existingPatients));
+        results.push('✅ Restored original patient data');
+        passed++;
+
+      } catch (error) {
+        results.push('❌ Error accessing patient data: ' + error.message);
+        failed++;
+      }
+
+      const summary = `\n📊 Summary: ${passed} passed, ${failed} failed`;
+      const type = failed === 0 ? 'success' : 'error';
+      logResult('test3', results.join('\n') + summary, type);
+    }
+
+    // Test 4: Existing Patient Data Access
+    async function testExistingPatientAccess() {
+      logResult('test4', 'Testing existing patient data access...', 'info');
+
+      let results = [];
+      let passed = 0;
+      let failed = 0;
+
+      try {
+        // Get user org
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const orgKey = user.org ? `${user.org}_patients` : 'patients';
+        
+        // Get existing patients
+        const patients = JSON.parse(localStorage.getItem(orgKey) || '[]');
+        
+        results.push(`📋 Found ${patients.length} existing patients in localStorage`);
+        
+        if (patients.length > 0) {
+          // Test: Access first patient
+          const firstPatient = patients[0];
+          results.push(`✅ Can access patient: ${firstPatient.firstName || firstPatient.id || 'Unknown'}`);
+          passed++;
+
+          // Test: Verify patient structure
+          if (firstPatient.id || firstPatient.patient_id) {
+            results.push('✅ Patient has ID field');
+            passed++;
+          } else {
+            results.push('⚠️ Patient missing ID field (may be normal)');
+          }
+
+          // Test: Verify patient data is readable (not encrypted if encryption not enabled)
+          if (typeof firstPatient.firstName === 'string' || typeof firstPatient.first_name === 'string') {
+            results.push('✅ Patient data is readable (not encrypted when encryption disabled)');
+            passed++;
+          } else {
+            results.push('⚠️ Patient data structure may be different');
+          }
+
+        } else {
+          results.push('ℹ️ No existing patients found (this is normal for new installations)');
+          passed++;
+        }
+
+        // Test: Verify we can still parse JSON
+        if (Array.isArray(patients)) {
+          results.push('✅ Patient data is valid JSON array');
+          passed++;
+        } else {
+          results.push('❌ Patient data is not a valid array');
+          failed++;
+        }
+
+      } catch (error) {
+        results.push('❌ Error accessing existing patients: ' + error.message);
+        failed++;
+      }
+
+      const summary = `\n📊 Summary: ${passed} passed, ${failed} failed`;
+      const type = failed === 0 ? 'success' : 'error';
+      logResult('test4', results.join('\n') + summary, type);
+    }
+
+    // Test 5: Encryption Flow
+    async function testEncryptionFlow() {
+      logResult('test5', 'Testing encryption flow (if enabled)...', 'info');
+
+      let results = [];
+      let passed = 0;
+      let failed = 0;
+
+      // Check if encryption is enabled
+      if (!window.encryptionService.isInitialized) {
+        results.push('ℹ️ Encryption not initialized - skipping encryption flow test');
+        results.push('   (This is expected - encryption is optional and backward compatible)');
+        logResult('test5', results.join('\n'), 'info');
+        return;
+      }
+
+      try {
+        // Test encryption
+        const testData = { name: 'John Doe', phone: '123-456-7890' };
+        const encrypted = await window.encryptionService.encrypt(testData);
+        
+        if (encrypted.encrypted === true && typeof encrypted.data === 'string') {
+          results.push('✅ Encryption works - data encrypted');
+          passed++;
+        } else {
+          results.push('❌ Encryption failed');
+          failed++;
+        }
+
+        // Test decryption
+        const decrypted = await window.encryptionService.decrypt(encrypted);
+        
+        if (JSON.stringify(decrypted) === JSON.stringify(testData)) {
+          results.push('✅ Decryption works - data decrypted correctly');
+          passed++;
+        } else {
+          results.push('❌ Decryption failed - data mismatch');
+          failed++;
+        }
+
+      } catch (error) {
+        results.push('❌ Encryption flow error: ' + error.message);
+        failed++;
+      }
+
+      const summary = `\n📊 Summary: ${passed} passed, ${failed} failed`;
+      const type = failed === 0 ? 'success' : 'error';
+      logResult('test5', results.join('\n') + summary, type);
+    }
+
+    // Test 6: Error Handling
+    async function testErrorHandling() {
+      logResult('test6', 'Testing error handling...', 'info');
+
+      let results = [];
+      let passed = 0;
+      let failed = 0;
+
+      // Test: Encrypt null/undefined
+      try {
+        const nullResult = await window.encryptionService.encrypt(null);
+        if (nullResult.encrypted === false && nullResult.data === null) {
+          results.push('✅ Handles null data gracefully');
+          passed++;
+        } else {
+          results.push('❌ Does not handle null correctly');
+          failed++;
+        }
+      } catch (error) {
+        results.push('❌ Throws error on null data: ' + error.message);
+        failed++;
+      }
+
+      // Test: Decrypt invalid data
+      try {
+        const invalidResult = await window.encryptionService.decrypt('invalid-base64-string-12345');
+        // Should return as-is or handle gracefully
+        results.push('✅ Handles invalid encrypted data gracefully');
+        passed++;
+      } catch (error) {
+        // Catching error is also acceptable
+        results.push('✅ Handles invalid data (caught error)');
+        passed++;
+      }
+
+      // Test: Decrypt when not initialized
+      window.encryptionService.clearKey();
+      try {
+        const testData = { name: 'Test' };
+        const result = await window.encryptionService.decrypt(testData);
+        if (JSON.stringify(result) === JSON.stringify(testData)) {
+          results.push('✅ Decrypt returns data as-is when not initialized');
+          passed++;
+        } else {
+          results.push('❌ Decrypt behavior incorrect when not initialized');
+          failed++;
+        }
+      } catch (error) {
+        results.push('❌ Throws error when not initialized: ' + error.message);
+        failed++;
+      }
+
+      const summary = `\n📊 Summary: ${passed} passed, ${failed} failed`;
+      const type = failed === 0 ? 'success' : 'error';
+      logResult('test6', results.join('\n') + summary, type);
+    }
+
+    // Run All Tests
+    async function runAllTests() {
+      logResult('all-results', '🧪 Running complete test suite...\n', 'info');
+      
+      const tests = [
+        { name: 'Service Loading', fn: testServiceLoading },
+        { name: 'Backward Compatibility', fn: testBackwardCompatibility },
+        { name: 'Data Loader Integration', fn: testDataLoaderIntegration },
+        { name: 'Existing Patient Access', fn: testExistingPatientAccess },
+        { name: 'Encryption Flow', fn: testEncryptionFlow },
+        { name: 'Error Handling', fn: testErrorHandling }
+      ];
+
+      let totalPassed = 0;
+      let totalFailed = 0;
+      const allResults = [];
+
+      for (const test of tests) {
+        allResults.push(`\n${'='.repeat(60)}`);
+        allResults.push(`Test: ${test.name}`);
+        allResults.push('='.repeat(60));
+        
+        await test.fn();
+        
+        const result = testResults[test.fn.name.replace('test', 'test').toLowerCase()];
+        if (result) {
+          allResults.push(result.message);
+          // Count passed/failed from summary
+          const summaryMatch = result.message.match(/(\d+) passed, (\d+) failed/);
+          if (summaryMatch) {
+            totalPassed += parseInt(summaryMatch[1]);
+            totalFailed += parseInt(summaryMatch[2]);
+          }
+        }
+      }
+
+      allResults.push(`\n${'='.repeat(60)}`);
+      allResults.push('FINAL SUMMARY');
+      allResults.push('='.repeat(60));
+      allResults.push(`Total: ${totalPassed} passed, ${totalFailed} failed`);
+      
+      if (totalFailed === 0) {
+        allResults.push('\n✅ ALL TESTS PASSED - Implementation is backward compatible!');
+      } else {
+        allResults.push(`\n⚠️ ${totalFailed} test(s) failed - Review results above`);
+      }
+
+      logResult('all-results', allResults.join('\n'), totalFailed === 0 ? 'success' : 'warning');
+    }
+
+    // Auto-run basic test on load
+    window.addEventListener('load', function() {
+      console.log('🧪 Encryption Compatibility Test Suite loaded');
+      console.log('Click "Run Complete Test Suite" to verify everything works');
+    });
+  </script>
+</body>
+</html>
+

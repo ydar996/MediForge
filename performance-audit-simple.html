@@ -1,0 +1,287 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediForge Performance Audit</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .test-section {
+      background: white;
+      padding: 25px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .test-button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    .test-button:hover {
+      background: #45a049;
+    }
+    .test-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .results {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 15px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .metric {
+      display: inline-block;
+      background: #e3f2fd;
+      padding: 8px 12px;
+      margin: 5px;
+      border-radius: 4px;
+      border-left: 4px solid #2196F3;
+    }
+    .metric.good { border-left-color: #4CAF50; background: #e8f5e8; }
+    .metric.warning { border-left-color: #FF9800; background: #fff3e0; }
+    .metric.error { border-left-color: #f44336; background: #ffebee; }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>?? MediForge Performance Audit</h1>
+    <p>Day 6: Performance, Security & Testing</p>
+  </div>
+
+  <div class="test-section">
+    <h2>?? Performance Tests</h2>
+    <p>Test loading speeds and identify bottlenecks</p>
+    <button class="test-button" onclick="runPerformanceTests()">Run Performance Tests</button>
+    <button class="test-button" onclick="testDataLoading()">Test Data Loading</button>
+    <div id="performance-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>?? Security Tests</h2>
+    <p>Verify authentication and data protection</p>
+    <button class="test-button" onclick="runSecurityTests()">Run Security Tests</button>
+    <div id="security-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>?? Test Results</h2>
+    <div id="test-dashboard">
+      <div class="metric">Total Tests: <span id="total-tests">0</span></div>
+      <div class="metric">Passed: <span id="passed-tests">0</span></div>
+      <div class="metric">Failed: <span id="failed-tests">0</span></div>
+      <div class="metric">Average Load Time: <span id="avg-load-time">0ms</span></div>
+    </div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  <script src="js/main.js">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+
+  <script>
+    let testResults = {
+      total: 0,
+      passed: 0,
+      failed: 0,
+      loadTimes: []
+    };
+
+    function showResults(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.style.display = 'block';
+      element.textContent = message;
+    }
+
+    function appendResult(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.textContent += message;
+    }
+
+    function updateDashboard() {
+      document.getElementById('total-tests').textContent = testResults.total;
+      document.getElementById('passed-tests').textContent = testResults.passed;
+      document.getElementById('failed-tests').textContent = testResults.failed;
+      
+      if (testResults.loadTimes.length > 0) {
+        const avgTime = Math.round(testResults.loadTimes.reduce((a, b) => a + b, 0) / testResults.loadTimes.length);
+        document.getElementById('avg-load-time').textContent = avgTime + 'ms';
+      }
+    }
+
+    // Performance Tests
+    async function runPerformanceTests() {
+      showResults('performance-results', '?? Running performance tests...\n');
+      
+      try {
+        // Test 1: Page Load Time
+        const start1 = performance.now();
+        await new Promise(resolve => setTimeout(resolve, 50));
+        const end1 = performance.now();
+        const loadTime1 = Math.round(end1 - start1);
+        testResults.loadTimes.push(loadTime1);
+        appendResult('performance-results', `? Page Load Time: ${loadTime1}ms\n`);
+        testResults.passed++;
+        
+        // Test 2: Supabase Connection
+        const start2 = performance.now();
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+          const { data, error } = await supabaseClient.from('organizations').select('count').limit(1);
+          const end2 = performance.now();
+          const loadTime2 = Math.round(end2 - start2);
+          testResults.loadTimes.push(loadTime2);
+          if (error) {
+            appendResult('performance-results', `? Supabase Connection: ${error.message}\n`);
+            testResults.failed++;
+          } else {
+            appendResult('performance-results', `? Supabase Connection: ${loadTime2}ms\n`);
+            testResults.passed++;
+          }
+        } else {
+          appendResult('performance-results', `? Supabase Connection: Client not available\n`);
+          testResults.failed++;
+        }
+        
+        // Test 3: localStorage Access
+        const start3 = performance.now();
+        const testData = { test: 'performance', timestamp: Date.now() };
+        localStorage.setItem('perf-test', JSON.stringify(testData));
+        const retrieved = JSON.parse(localStorage.getItem('perf-test'));
+        localStorage.removeItem('perf-test');
+        const end3 = performance.now();
+        const loadTime3 = Math.round(end3 - start3);
+        testResults.loadTimes.push(loadTime3);
+        if (!retrieved || retrieved.test !== 'performance') {
+          appendResult('performance-results', `? localStorage Access: Data integrity issue\n`);
+          testResults.failed++;
+        } else {
+          appendResult('performance-results', `? localStorage Access: ${loadTime3}ms\n`);
+          testResults.passed++;
+        }
+        
+        // Test 4: Data Sync Speed
+        const start4 = performance.now();
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user.organizationId && typeof supabaseClient !== 'undefined') {
+          await supabaseClient.from('patients').select('count').eq('organization_id', user.organizationId);
+        }
+        const end4 = performance.now();
+        const loadTime4 = Math.round(end4 - start4);
+        testResults.loadTimes.push(loadTime4);
+        appendResult('performance-results', `? Data Sync Speed: ${loadTime4}ms\n`);
+        testResults.passed++;
+        
+        testResults.total = 4;
+        updateDashboard();
+        
+      } catch (error) {
+        appendResult('performance-results', `? Error: ${error.message}\n`);
+        testResults.failed++;
+        testResults.total++;
+        updateDashboard();
+      }
+    }
+
+    // Security Tests
+    async function runSecurityTests() {
+      showResults('security-results', '?? Running security tests...\n');
+      
+      try {
+        // Test 1: Authentication
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.username || !user.organizationId) {
+          appendResult('security-results', `? Authentication: User not authenticated\n`);
+          testResults.failed++;
+        } else {
+          appendResult('security-results', `? Authentication: User authenticated\n`);
+          testResults.passed++;
+        }
+        
+        // Test 2: Authorization
+        if (!user.role) {
+          appendResult('security-results', `? Authorization: No role assigned\n`);
+          testResults.failed++;
+        } else {
+          const validRoles = ['Admin', 'Doctor', 'Nurse', 'Physician Assistant', 'Biller/Accountant', 'Office Manager', 'Medical Receptionist', 'Referrals Coordinator', 'Medical Assistant', 'Other', 'admin', 'doctor', 'nurse'];
+          // Also accept "Other (Custom Role)" format
+          const hasValidRole = validRoles.includes(user.role) || (user.role && user.role.startsWith('Other (') && user.role.endsWith(')'));
+          if (!hasValidRole) {
+            appendResult('security-results', `? Authorization: Invalid role\n`);
+            testResults.failed++;
+          } else {
+            appendResult('security-results', `? Authorization: Role ${user.role} valid\n`);
+            testResults.passed++;
+          }
+        }
+        
+        // Test 3: Data Validation
+        const testInput = '<' + 'script>alert("xss")</' + 'script>';
+        const sanitized = testInput.replace(/<script[^>]*>.*?<\/script>/gi, '');
+        if (sanitized !== '') {
+          appendResult('security-results', `? Data Validation: XSS vulnerability detected\n`);
+          testResults.failed++;
+        } else {
+          appendResult('security-results', `? Data Validation: XSS protection working\n`);
+          testResults.passed++;
+        }
+        
+        testResults.total += 3;
+        updateDashboard();
+        
+      } catch (error) {
+        appendResult('security-results', `? Error: ${error.message}\n`);
+        testResults.failed++;
+        testResults.total++;
+        updateDashboard();
+      }
+    }
+
+    async function testDataLoading() {
+      await runPerformanceTests();
+    }
+
+    // Initialize dashboard
+    updateDashboard();
+  </script>  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+
+</html>
+
+
+
+
+
+

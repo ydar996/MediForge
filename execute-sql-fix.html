@@ -1,0 +1,148 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Execute SQL Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #dc3545; color: white; padding: 20px 40px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin: 10px; }
+        .btn:hover { background: #c82333; }
+        .btn.success { background: #28a745; }
+        .log { background: #000; color: #0f0; padding: 15px; font-family: monospace; height: 400px; overflow-y: auto; margin: 20px 0; border-radius: 5px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Execute SQL Fix</h1>
+        <p>This will execute the SQL fix directly in your Supabase database.</p>
+        
+        <button class="btn" onclick="executeSQLFix()">?? Execute SQL Fix</button>
+        <button class="btn success" onclick="verifyFix()">? Verify Fix</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        async function executeSQLFix() {
+            log('?? Executing SQL fix...');
+            
+            const dobUpdates = [
+                { id: 'MEC0001', dob: '1964-01-02' },
+                { id: 'MEC0002', dob: '1970-01-03' },
+                { id: 'MEC0003', dob: '1975-05-22' },
+                { id: 'MEC0004', dob: '1969-05-01' },
+                { id: 'MEC0005', dob: '1980-01-01' },
+                { id: 'MEC0006', dob: '1987-01-01' },
+                { id: 'MEC0007', dob: '1990-01-01' }
+            ];
+            
+            let successCount = 0;
+            
+            for (const update of dobUpdates) {
+                try {
+                    const { error } = await supabase
+                        .from('patients')
+                        .update({ 
+                            date_of_birth: update.dob,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('patient_id', update.id)
+                        .eq('organization_id', ORG_ID);
+                    
+                    if (error) {
+                        log(`? Error updating ${update.id}: ${error.message}`);
+                    } else {
+                        log(`? Updated ${update.id} with DOB: ${update.dob}`);
+                        successCount++;
+                    }
+                } catch (error) {
+                    log(`? Error updating ${update.id}: ${error.message}`);
+                }
+            }
+            
+            log(`?? SQL fix complete! ${successCount}/7 patients updated`);
+            log('?? Now click "Verify Fix" to confirm the data is correct');
+        }
+        
+        async function verifyFix() {
+            log('?? Verifying fix...');
+            
+            try {
+                const { data: patients, error } = await supabase
+                    .from('patients')
+                    .select('patient_id, first_name, last_name, date_of_birth')
+                    .eq('organization_id', ORG_ID)
+                    .order('patient_id');
+                
+                if (error) {
+                    log(`? Error: ${error.message}`);
+                    return;
+                }
+                
+                const patientsWithDOB = patients.filter(p => p.date_of_birth);
+                const patientsWithoutDOB = patients.filter(p => !p.date_of_birth);
+                
+                log(`? Verification complete:`);
+                log(`?? Patients with DOB: ${patientsWithDOB.length}`);
+                log(`? Patients without DOB: ${patientsWithoutDOB.length}`);
+                
+                if (patientsWithDOB.length > 0) {
+                    log('?? Patients with DOB data:');
+                    patientsWithDOB.forEach(patient => {
+                        log(`   � ${patient.first_name} ${patient.last_name} (${patient.patient_id}): ${patient.date_of_birth}`);
+                    });
+                }
+                
+                if (patientsWithDOB.length >= 7) {
+                    log('?? SUCCESS! DOB data is now in the database');
+                    log('?? Go to your EHR app and refresh - the DOB data should now show correctly');
+                } else {
+                    log('?? Some patients still missing DOB data');
+                }
+                
+            } catch (error) {
+                log(`? Error: ${error.message}`);
+            }
+        }
+        
+        // Auto-run on load
+        window.addEventListener('load', () => {
+            log('?? SQL Fix tool ready');
+            log('?? Click "Execute SQL Fix" to update the database');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

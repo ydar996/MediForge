@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Database Data Leakage</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background-color: #dc3545; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #c82333; }
+        #output { background-color: #f8f9fa; padding: 10px; border: 1px solid #ddd; border-radius: 3px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🚨 URGENT: Fix Database Data Leakage</h1>
+    
+    <div class="section info">
+        <h3>Problem Identified</h3>
+        <p><strong>Issue:</strong> Patient "Haruna Ishola" (EKO0001) is in Supabase database with wrong organization_id</p>
+        <p><strong>Root Cause:</strong> Data is coming from Supabase, not localStorage. The cleanup only affects localStorage.</p>
+        <p><strong>Solution:</strong> Delete the leaked patient record from Supabase database directly.</p>
+    </div>
+
+    <div class="section">
+        <h3>Step 1: Check Current Data</h3>
+        <button onclick="checkLeakedData()">Check for Leaked Data in Supabase</button>
+        <div id="check-status"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 2: Fix Database</h3>
+        <button onclick="deleteLeakedData()">Delete Leaked Patient from Database</button>
+        <div id="fix-status"></div>
+    </div>
+
+    <div class="section">
+        <h3>Step 3: Verify Fix</h3>
+        <button onclick="verifyFix()">Verify Data is Clean</button>
+        <div id="verify-status"></div>
+    </div>
+
+    <div class="section">
+        <h3>Console Output</h3>
+        <div id="output"></div>
+    </div>
+
+    <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        function addToOutput(message, type = 'log') {
+            const output = document.getElementById('output');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            output.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToOutput(args.join(' '), 'log');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToOutput(args.join(' '), 'warn');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToOutput(args.join(' '), 'error');
+        };
+
+        async function checkLeakedData() {
+            console.log('🔍 Checking for leaked data in Supabase...');
+            
+            try {
+                // Wait for Supabase client with longer timeout
+                console.log('⏳ Waiting for Supabase client to initialize...');
+                let retries = 0;
+                while (retries < 20 && (!window.supabaseClient || !window.supabaseClient.from)) {
+                    console.log(`⏳ Attempt ${retries + 1}/20 - Supabase client not ready yet...`);
+                    await new Promise(resolve => setTimeout(resolve, 1000));
+                    retries++;
+                }
+                
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not available after 20 seconds');
+                }
+                
+                console.log('✅ Supabase client is ready');
+                
+                // Check for EKO0001 patient
+                const { data: patients, error } = await window.supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('id', 'EKO0001');
+                
+                if (error) {
+                    throw new Error(`Supabase error: ${error.message}`);
+                }
+                
+                console.log('📊 Found patients with EKO0001:', patients.length);
+                
+                if (patients.length > 0) {
+                    const patient = patients[0];
+                    console.log('🚨 LEAKED DATA FOUND:');
+                    console.log('   Patient ID:', patient.id);
+                    console.log('   Name:', patient.firstName, patient.lastName);
+                    console.log('   Organization ID:', patient.organization_id);
+                    console.log('   This patient belongs to Eko Clinics but is accessible to Axiom Medical!');
+                    
+                    document.getElementById('check-status').innerHTML = 
+                        '<div class="error">🚨 LEAKED DATA CONFIRMED: EKO0001 found in database</div>';
+                } else {
+                    console.log('✅ No leaked data found');
+                    document.getElementById('check-status').innerHTML = 
+                        '<div class="success">✅ No leaked data found</div>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Error checking data:', error);
+                document.getElementById('check-status').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function deleteLeakedData() {
+            console.log('🗑️ Deleting leaked patient data from Supabase...');
+            
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                // Delete EKO0001 patient from database
+                const { data, error } = await window.supabaseClient
+                    .from('patients')
+                    .delete()
+                    .eq('id', 'EKO0001');
+                
+                if (error) {
+                    throw new Error(`Delete error: ${error.message}`);
+                }
+                
+                console.log('✅ Successfully deleted EKO0001 from database');
+                console.log('📊 Deleted records:', data);
+                
+                document.getElementById('fix-status').innerHTML = 
+                    '<div class="success">✅ Leaked patient data deleted from database</div>';
+                
+            } catch (error) {
+                console.error('❌ Error deleting data:', error);
+                document.getElementById('fix-status').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        async function verifyFix() {
+            console.log('🔍 Verifying fix...');
+            
+            try {
+                if (!window.supabaseClient) {
+                    throw new Error('Supabase client not available');
+                }
+                
+                // Check if EKO0001 still exists
+                const { data: patients, error } = await window.supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('id', 'EKO0001');
+                
+                if (error) {
+                    throw new Error(`Supabase error: ${error.message}`);
+                }
+                
+                if (patients.length === 0) {
+                    console.log('✅ VERIFICATION SUCCESS: EKO0001 no longer exists in database');
+                    document.getElementById('verify-status').innerHTML = 
+                        '<div class="success">✅ VERIFIED: Leaked data successfully removed from database</div>';
+                } else {
+                    console.log('❌ VERIFICATION FAILED: EKO0001 still exists');
+                    document.getElementById('verify-status').innerHTML = 
+                        '<div class="error">❌ VERIFICATION FAILED: Data still exists</div>';
+                }
+                
+            } catch (error) {
+                console.error('❌ Error verifying fix:', error);
+                document.getElementById('verify-status').innerHTML = 
+                    '<div class="error">❌ Error: ' + error.message + '</div>';
+            }
+        }
+
+        // Initialize
+        console.log('🚨 Database Data Leakage Fix Tool Loaded');
+        console.log('📋 This tool will directly fix the Supabase database');
+    </script>
+</body>
+</html>

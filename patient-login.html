@@ -1,0 +1,326 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="format-detection" content="telephone=no">
+  <meta name="msapplication-tap-highlight" content="no">
+  <meta name="theme-color" content="#008751">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Patient Portal Login - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    :root {
+      --nigerian-green: #008751;
+      --nigerian-green-dark: #006B3F;
+      --nigerian-white: #FFFFFF;
+      --nigerian-gold: #FFD700;
+      --warm-beige: #F5F5DC;
+    }
+    
+    * {
+      margin: 0;
+      padding: 0;
+      box-sizing: border-box;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: linear-gradient(135deg, var(--nigerian-green) 0%, var(--nigerian-green-dark) 100%);
+      min-height: 100vh;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+    }
+    
+    .login-container {
+      background: var(--nigerian-white);
+      border-radius: 20px;
+      box-shadow: 0 20px 60px rgba(0, 0, 0, 0.3);
+      padding: 40px;
+      width: 100%;
+      max-width: 450px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .login-container::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 6px;
+      background: linear-gradient(90deg, var(--nigerian-green) 33%, var(--nigerian-white) 33%, var(--nigerian-white) 66%, var(--nigerian-gold) 66%);
+    }
+    
+    .login-header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .login-header h1 {
+      color: var(--nigerian-green);
+      font-size: 2rem;
+      font-weight: 700;
+      margin: 0 0 10px 0;
+    }
+    
+    .login-header .subtitle {
+      color: #666;
+      font-size: 0.95rem;
+      margin: 0;
+    }
+    
+    .login-header .welcome-text {
+      color: var(--nigerian-green);
+      font-size: 0.9rem;
+      margin-top: 8px;
+      font-style: italic;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      color: #333;
+      font-weight: 600;
+      margin-bottom: 8px;
+      font-size: 0.95rem;
+    }
+    
+    .form-group input {
+      width: 100%;
+      padding: 14px 16px;
+      border: 2px solid #e1e5e9;
+      border-radius: 10px;
+      font-size: 1rem;
+      transition: all 0.3s ease;
+      box-sizing: border-box;
+    }
+    
+    .form-group input:focus {
+      outline: none;
+      border-color: var(--nigerian-green);
+      box-shadow: 0 0 0 3px rgba(0, 135, 81, 0.1);
+    }
+    
+    .login-button {
+      width: 100%;
+      background: linear-gradient(135deg, var(--nigerian-green) 0%, var(--nigerian-green-dark) 100%);
+      color: var(--nigerian-white);
+      border: none;
+      padding: 16px 20px;
+      border-radius: 10px;
+      font-size: 1.1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 4px 15px rgba(0, 135, 81, 0.3);
+      margin-top: 10px;
+    }
+    
+    .login-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 135, 81, 0.4);
+    }
+    
+    .login-button:active {
+      transform: translateY(0);
+    }
+    
+    .login-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .info-box {
+      background: var(--warm-beige);
+      border-left: 4px solid var(--nigerian-green);
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-size: 0.9rem;
+      color: #555;
+    }
+    
+    .info-box strong {
+      color: var(--nigerian-green);
+    }
+    
+    .error-message {
+      background: #fee;
+      color: #c33;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #fcc;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+    
+    .footer-links {
+      text-align: center;
+      margin-top: 25px;
+      padding-top: 25px;
+      border-top: 1px solid #e1e5e9;
+    }
+    
+    .footer-links a {
+      color: var(--nigerian-green);
+      text-decoration: none;
+      font-size: 0.9rem;
+      font-weight: 500;
+    }
+    
+    .footer-links a:hover {
+      text-decoration: underline;
+    }
+    
+    .loading-spinner {
+      display: none;
+      text-align: center;
+      margin-top: 10px;
+    }
+    
+    .loading-spinner.show {
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <div class="login-container">
+    <div class="login-header">
+      <h1>🏥 Patient Portal</h1>
+      <p class="subtitle">Access Your Medical Records</p>
+      <p class="welcome-text">Welcome! Please login to view your health information</p>
+    </div>
+    
+    <div class="info-box">
+      <strong>📧 First Time Login?</strong><br>
+      Use the username and password sent to you via email or SMS. You'll be asked to create a new password on first login.
+    </div>
+    
+    <div class="error-message" id="errorMessage"></div>
+    
+    <form id="patientLoginForm">
+      <div class="form-group">
+        <label for="username">Username or Email</label>
+        <input 
+          type="text" 
+          id="username" 
+          name="username" 
+          placeholder="Enter your username or email"
+          required 
+          autocomplete="username"
+        >
+      </div>
+      
+      <div class="form-group">
+        <label for="password">Password</label>
+        <input 
+          type="password" 
+          id="password" 
+          name="password" 
+          placeholder="Enter your password"
+          required
+          autocomplete="current-password"
+        >
+      </div>
+      
+      <button type="submit" class="login-button" id="loginButton">
+        Login to Portal
+      </button>
+      
+      <div class="loading-spinner" id="loadingSpinner">
+        <p style="color: var(--nigerian-green);">Loading...</p>
+      </div>
+    </form>
+    
+    <div class="footer-links">
+      <a href="login">Staff Login</a> | 
+      <a href="#" onclick="alert('Please contact your clinic for assistance with patient portal access.'); return false;">Need Help?</a>
+    </div>
+  </div>
+
+  <!-- Supabase Client (pinned version + SRI for supply-chain protection) -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/validation.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/public-auth-rpc.js?v=20260416120000"></script>
+  <script src="js/rate-limiter.js?v=20260214"></script>
+  <script src="js/patient-auth.js?v=20260416120000"></script>
+  
+  <script>
+    document.getElementById('patientLoginForm').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      const usernameRaw = document.getElementById('username').value;
+      const passwordRaw = document.getElementById('password').value;
+      const errorMessage = document.getElementById('errorMessage');
+      const loginButton = document.getElementById('loginButton');
+      const loadingSpinner = document.getElementById('loadingSpinner');
+      
+      // Input validation (central validation layer)
+      const validation = window.Validation && window.Validation.validateLoginInput
+        ? window.Validation.validateLoginInput(usernameRaw, passwordRaw)
+        : { valid: true, sanitized: { username: (usernameRaw || '').trim(), password: passwordRaw } };
+      if (!validation.valid) {
+        errorMessage.textContent = validation.error || 'Invalid input';
+        errorMessage.classList.add('show');
+        return;
+      }
+      const { username, password } = validation.sanitized;
+      
+      // Clear previous errors
+      errorMessage.classList.remove('show');
+      errorMessage.textContent = '';
+      loginButton.disabled = true;
+      loadingSpinner.classList.add('show');
+      
+      try {
+        // Attempt patient login
+        const result = await window.patientLogin(username, password);
+        
+        if (result.success) {
+          // Check if password reset is required
+          if (result.passwordResetRequired) {
+            // Redirect to password change page
+            window.location.href = '/patient-change-password?firstLogin=true';
+          } else {
+            // Redirect to patient dashboard
+            window.location.href = '/patient-dashboard';
+          }
+        } else {
+          throw new Error(result.error || 'Login failed');
+        }
+      } catch (error) {
+        errorMessage.textContent = error.message || 'Login failed. Please check your credentials and try again.';
+        errorMessage.classList.add('show');
+        loginButton.disabled = false;
+        loadingSpinner.classList.remove('show');
+      }
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

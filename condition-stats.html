@@ -1,0 +1,557 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Condition Stats</title>
+  <link rel="stylesheet" href="css/styles.css?v=206">
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      /* Primary Nigerian Colors */
+      --primary-green: #008753;        /* Nigerian flag green */
+      --dark-green: #006b42;           /* Deep forest green */
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      
+      /* Nigerian Flag Colors */
+      --nigerian-white: #FFFFFF;       /* White stripe */
+      --nigerian-green: #008753;       /* Green stripe */
+      
+      /* Traditional Nigerian Colors */
+      --gold: #FFD700;                 /* Nigerian gold/amber */
+      --dark-gold: #B8860B;            /* Dark gold */
+      --bronze: #CD7F32;               /* Bronze accent */
+      --earth-brown: #8B4513;          /* Earthy brown */
+      --warm-orange: #FF8C00;          /* Warm orange */
+      --deep-red: #8B0000;             /* Deep red accent */
+      
+      /* Cultural Accent Colors */
+      --kente-gold: #DAA520;           /* Kente cloth gold */
+      --adire-blue: #4169E1;           /* Adire indigo blue */
+      --coral: #FF7F50;                /* Coral accent */
+      --ivory: #FFFFF0;                /* Ivory/cream */
+      
+      /* Neutral Palette */
+      --warm-gray: #F5F5DC;            /* Warm beige */
+      --charcoal: #36454F;             /* Charcoal text */
+      --soft-white: #FAFAFA;           /* Soft white background */
+    }
+    
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background: linear-gradient(135deg, var(--soft-white) 0%, var(--ivory) 100%);
+      line-height: 1.4;
+      color: var(--charcoal);
+    }
+    
+    h1 {
+      color: var(--primary-green);
+      margin-bottom: 20px;
+      text-align: center;
+      font-weight: 600;
+      text-shadow: 2px 2px 4px rgba(0, 135, 83, 0.2);
+      border-bottom: 3px solid var(--gold);
+      padding-bottom: 10px;
+    }
+    
+    .btn {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      padding: 10px 20px;
+      text-decoration: none;
+      border-radius: 5px;
+      display: inline-block;
+      margin-bottom: 20px;
+      border: 2px solid var(--gold);
+      cursor: pointer;
+      font-weight: 500;
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.3), 0 0 10px rgba(255, 215, 0, 0.1);
+      transition: all 0.3s ease;
+      margin-right: 10px;
+      position: relative;
+      overflow: hidden;
+    }
+    
+    .btn::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 215, 0, 0.3), transparent);
+      transition: left 0.5s;
+    }
+    
+    .btn:hover::before {
+      left: 100%;
+    }
+    
+    .btn:hover {
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4), 0 0 15px rgba(255, 215, 0, 0.2);
+      transform: translateY(-2px);
+      border-color: var(--kente-gold);
+    }
+    
+    /* Table Styling - Nigerian Heritage Theme with Full Color Palette */
+    body .condition-stats-table,
+    html body .condition-stats-table {
+      width: 100% !important;
+      border-collapse: collapse !important;
+      background: var(--nigerian-white) !important;
+      border-radius: 8px !important;
+      overflow: hidden !important;
+      box-shadow: 0 4px 15px rgba(0, 135, 83, 0.2), 0 0 20px rgba(255, 215, 0, 0.1) !important;
+      table-layout: fixed !important;
+      margin-bottom: 20px !important;
+      display: table !important;
+      border: 2px solid var(--primary-green) !important;
+    }
+    
+    body .condition-stats-table thead,
+    html body .condition-stats-table thead {
+      display: table-header-group !important;
+    }
+    
+    body .condition-stats-table tbody,
+    html body .condition-stats-table tbody {
+      display: table-row-group !important;
+    }
+    
+    body .condition-stats-table tr,
+    html body .condition-stats-table tr {
+      display: table-row !important;
+    }
+    
+    body .condition-stats-table th,
+    body .condition-stats-table td,
+    html body .condition-stats-table th,
+    html body .condition-stats-table td {
+      display: table-cell !important;
+      box-sizing: border-box !important;
+      vertical-align: top !important;
+      padding: 12px 10px !important;
+      border: 1px solid rgba(0, 135, 83, 0.2) !important;
+      word-wrap: break-word !important;
+      overflow-wrap: break-word !important;
+    }
+    
+    /* Nigerian Heritage Theme Headers - OVERRIDE ALL OTHER STYLES */
+    body .condition-stats-table th,
+    html body .condition-stats-table th {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%) !important;
+      color: white !important;
+      font-weight: 600 !important;
+      font-size: 14px !important;
+      border: 1px solid var(--dark-green) !important;
+      border-bottom: 2px solid var(--gold) !important;
+      text-align: left !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.2) !important;
+      position: relative !important;
+    }
+    
+    body .condition-stats-table th::after,
+    html body .condition-stats-table th::after {
+      content: '';
+      position: absolute;
+      bottom: 0;
+      left: 0;
+      right: 0;
+      height: 2px;
+      background: linear-gradient(90deg, var(--gold), var(--kente-gold), var(--gold));
+    }
+    
+    body .condition-stats-table td,
+    html body .condition-stats-table td {
+      background: var(--nigerian-white) !important;
+      text-align: left !important;
+      color: var(--charcoal) !important;
+    }
+    
+    body .condition-stats-table tr:nth-child(even) td,
+    html body .condition-stats-table tr:nth-child(even) td {
+      background: linear-gradient(135deg, var(--light-green) 0%, var(--ivory) 100%) !important;
+    }
+    
+    body .condition-stats-table tr:hover td,
+    html body .condition-stats-table tr:hover td {
+      background: linear-gradient(135deg, var(--accent-green) 0%, rgba(255, 215, 0, 0.1) 100%) !important;
+      transition: background 0.2s ease !important;
+      border-left: 3px solid var(--warm-orange) !important;
+    }
+    
+    body .condition-stats-table a,
+    html body .condition-stats-table a {
+      color: var(--adire-blue) !important;
+      text-decoration: none !important;
+      font-weight: 600 !important;
+      padding: 2px 4px !important;
+      border-radius: 3px !important;
+      transition: all 0.2s ease !important;
+    }
+    
+    body .condition-stats-table a:hover,
+    html body .condition-stats-table a:hover {
+      color: var(--primary-green) !important;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.2), rgba(255, 140, 0, 0.1)) !important;
+      text-decoration: none !important;
+      padding: 2px 4px !important;
+    }
+    
+    #logged-in-info {
+      color: var(--charcoal) !important;
+      font-size: 12px;
+      background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05)) !important;
+      padding: 5px 10px !important;
+      border-radius: 5px !important;
+      border-left: 3px solid var(--bronze) !important;
+    }
+    
+    /* Additional decorative elements using full color palette */
+    body {
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-green), var(--gold), var(--warm-orange), var(--adire-blue), var(--primary-green));
+      z-index: 1000;
+      opacity: 0.6;
+    }
+  </style>
+</head>
+<body>
+  <div style="margin-bottom: 20px;">
+    <button class="btn" onclick="window.location.href='dashboard'">&larr; Back to Dashboard</button>
+    <button class="btn" onclick="window.location.href='conditions-breakdown'">&larr; Back to Conditions Breakdown</button>
+  </div>
+  <h1 id="page-title">Condition Stats</h1>
+  <table id="stats-table" class="condition-stats-table">
+    <thead>
+      <tr>
+        <th>Medical Condition</th>
+        <th>Gender Breakdown</th>
+        <th>Tribe Breakdown</th>
+        <th>Age Breakdown</th>
+      </tr>
+    </thead>
+    <tbody id="stats-body"></tbody>
+  </table>
+  <div style="margin-top: 20px;">
+    <button class="btn" onclick="window.location.href='dashboard'">&larr; Back to Dashboard</button>
+    <button class="btn" onclick="window.location.href='conditions-breakdown'">&larr; Back to Conditions Breakdown</button>
+  </div>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251019050000"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=20251019050000"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251019043800"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=20251019050000"></script>
+  
+  <!-- Script for condition stats logic -->
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+    
+    // Load and display condition statistics
+    async function loadConditionStats() {
+      try {
+        // Use universal data loader for Supabase-first approach
+        const patients = await window.loadPatientsWithSupabasePriority();
+        
+        if (!patients || !Array.isArray(patients) || patients.length === 0) {
+          console.warn('?? No patients found');
+          displayConditionStats([]);
+          return;
+        }
+        
+        // Process condition statistics
+        const statsData = processConditionStats(patients);
+        displayConditionStats(statsData);
+      } catch (error) {
+        console.error('\u26A0\uFE0F Error loading condition stats:', error);
+        const tbody = document.getElementById('stats-body');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--deep-red); background: linear-gradient(135deg, rgba(139, 0, 0, 0.1), rgba(255, 140, 0, 0.05)) !important;">
+            <span style="color: var(--deep-red); font-size: 18px;">&#9888;</span> Error loading data. Please refresh the page.
+          </td></tr>`;
+        }
+      }
+    }
+    
+    // Process patients data to extract condition statistics
+    function processConditionStats(patients) {
+      const conditionStatsMap = new Map();
+      const patientProcessed = new Set(); // Track which patients we've processed per condition
+      
+      patients.forEach(patient => {
+        if (!patient) return;
+        
+        // Check both diagnoses (clinical notes) and conditions (chronic conditions)
+        const allDiagnoses = [];
+        
+        // Add diagnoses from patient.diagnoses
+        if (patient.diagnoses && Array.isArray(patient.diagnoses)) {
+          patient.diagnoses.forEach(diag => {
+            if (diag.diagnosis) {
+              // Extract diagnosis name (may include ICD code like "A00 - Cholera")
+              const diagnosisName = diag.diagnosis.includes(' - ') 
+                ? diag.diagnosis.split(' - ').slice(1).join(' - ').trim() 
+                : diag.diagnosis.trim();
+              if (diagnosisName) {
+                allDiagnoses.push(diagnosisName);
+              }
+            }
+          });
+        }
+        
+        // Add chronic conditions from patient.conditions
+        if (patient.conditions && Array.isArray(patient.conditions)) {
+          patient.conditions.forEach(condition => {
+            if (condition.name) {
+              allDiagnoses.push(condition.name);
+            } else if (typeof condition === 'string') {
+              allDiagnoses.push(condition);
+            }
+          });
+        }
+        
+        // Process each diagnosis
+        allDiagnoses.forEach(diagnosisName => {
+          // Only count each patient once per condition
+          const patientConditionKey = `${patient.id}_${diagnosisName}`;
+          if (patientProcessed.has(patientConditionKey)) return;
+          patientProcessed.add(patientConditionKey);
+          
+          if (!conditionStatsMap.has(diagnosisName)) {
+            conditionStatsMap.set(diagnosisName, {
+              name: diagnosisName,
+              genderBreakdown: { male: 0, female: 0 },
+              tribeBreakdown: new Set(),
+              ageBreakdown: { '0-18': 0, '19-25': 0, '26-65': 0, '66+': 0 }
+            });
+          }
+          
+          const stats = conditionStatsMap.get(diagnosisName);
+          
+          // Gender breakdown
+          const gender = patient.gender ? patient.gender.toLowerCase() : '';
+          if (gender === 'male') stats.genderBreakdown.male++;
+          else if (gender === 'female') stats.genderBreakdown.female++;
+          
+          // Tribe breakdown
+          if (patient.tribe) stats.tribeBreakdown.add(patient.tribe);
+          
+          // Age breakdown
+          const dob = patient.dateOfBirth || patient.dob;
+          if (dob) {
+            const age = calculateAge(dob);
+            if (!isNaN(age) && age >= 0) {
+              if (age <= 18) stats.ageBreakdown['0-18']++;
+              else if (age <= 25) stats.ageBreakdown['19-25']++;
+              else if (age <= 65) stats.ageBreakdown['26-65']++;
+              else stats.ageBreakdown['66+']++;
+            }
+          }
+        });
+      });
+      
+      return Array.from(conditionStatsMap.values());
+    }
+    
+    // Calculate age from date of birth
+    function calculateAge(dateOfBirth) {
+      if (!dateOfBirth) return 0;
+      try {
+        const today = new Date();
+        const birthDate = new Date(dateOfBirth);
+        if (isNaN(birthDate.getTime())) return 0;
+        let age = today.getFullYear() - birthDate.getFullYear();
+        const monthDiff = today.getMonth() - birthDate.getMonth();
+        if (monthDiff < 0 || (monthDiff === 0 && today.getDate() < birthDate.getDate())) {
+          age--;
+        }
+        return age >= 0 ? age : 0;
+      } catch (e) {
+        return 0;
+      }
+    }
+    
+    // Display condition statistics in table
+    function displayConditionStats(statsData) {
+      const tbody = document.getElementById('stats-body');
+      if (!tbody) return;
+      
+      tbody.innerHTML = '';
+      
+      if (statsData.length === 0) {
+        tbody.innerHTML = `<tr><td colspan="4" style="text-align: center; padding: 20px; color: var(--charcoal); background: linear-gradient(135deg, rgba(255, 215, 0, 0.1), rgba(255, 140, 0, 0.05)) !important;">
+          <span style="color: var(--warm-orange); font-size: 18px;">&#128202;</span> No condition statistics available
+        </td></tr>`;
+        return;
+      }
+      
+      statsData.forEach(condition => {
+        const row = document.createElement('tr');
+        const total = condition.genderBreakdown.male + condition.genderBreakdown.female;
+        
+        // Format gender breakdown with percentages
+        let genderBreakdown = 'N/A';
+        if (total > 0) {
+          const malePct = Math.round((condition.genderBreakdown.male / total) * 100);
+          const femalePct = Math.round((condition.genderBreakdown.female / total) * 100);
+          genderBreakdown = `Male: ${malePct}%, Female: ${femalePct}%`;
+        }
+        
+        // Format tribe breakdown
+        const tribes = Array.from(condition.tribeBreakdown);
+        let tribeBreakdown = 'N/A';
+        if (tribes.length > 0) {
+          tribeBreakdown = tribes.join(', ');
+        }
+        
+        // Format age breakdown with percentages
+        const totalAge = condition.ageBreakdown['0-18'] + condition.ageBreakdown['19-25'] + 
+                        condition.ageBreakdown['26-65'] + condition.ageBreakdown['66+'];
+        let ageBreakdown = 'N/A';
+        if (totalAge > 0) {
+          const age0_18Pct = Math.round((condition.ageBreakdown['0-18'] / totalAge) * 100);
+          const age19_25Pct = Math.round((condition.ageBreakdown['19-25'] / totalAge) * 100);
+          const age26_65Pct = Math.round((condition.ageBreakdown['26-65'] / totalAge) * 100);
+          const age66PlusPct = Math.round((condition.ageBreakdown['66+'] / totalAge) * 100);
+          ageBreakdown = `0-18: ${age0_18Pct}%, 19-25: ${age19_25Pct}%, 26-65: ${age26_65Pct}%, 66+: ${age66PlusPct}%`;
+        }
+        
+        const encodedCondition = encodeURIComponent(condition.name);
+        // Use alternating color accents for condition links
+        const linkColor = statsData.indexOf(condition) % 4 === 0 ? 'var(--adire-blue)' :
+                         statsData.indexOf(condition) % 4 === 1 ? 'var(--primary-green)' :
+                         statsData.indexOf(condition) % 4 === 2 ? 'var(--warm-orange)' :
+                         'var(--bronze)';
+        
+        row.innerHTML = `
+          <td><a href="condition-patients?condition=${encodedCondition}" style="color: ${linkColor} !important; text-decoration: none; font-weight: 600;">${condition.name}</a></td>
+          <td style="color: var(--charcoal);">${genderBreakdown}</td>
+          <td style="color: var(--charcoal);">${tribeBreakdown}</td>
+          <td style="color: var(--charcoal);">${ageBreakdown}</td>
+        `;
+        tbody.appendChild(row);
+      });
+      
+      // Forcefully enforce theme after data is loaded
+      setTimeout(() => {
+        enforceTableStyles();
+      }, 50);
+    }
+    
+    // Forcefully enforce Nigerian Heritage theme on table headers and rows
+    function enforceTableStyles() {
+      const table = document.querySelector('.condition-stats-table');
+      if (!table) return;
+      
+      // Enforce Nigerian Heritage green gradient on headers (using all theme colors)
+      const headers = table.querySelectorAll('thead th');
+      headers.forEach((th, index) => {
+        // Primary green to dark green gradient with gold bottom border
+        th.style.setProperty('background', 'linear-gradient(135deg, #008753 0%, #006b42 100%)', 'important');
+        th.style.setProperty('color', 'white', 'important');
+        th.style.setProperty('font-weight', '600', 'important');
+        th.style.setProperty('font-size', '14px', 'important');
+        th.style.setProperty('border', '1px solid #006b42', 'important');
+        th.style.setProperty('border-bottom', '2px solid #FFD700', 'important'); // Gold accent
+        th.style.setProperty('text-align', 'left', 'important');
+        th.style.setProperty('text-shadow', '1px 1px 2px rgba(0, 0, 0, 0.2)', 'important');
+        th.style.setProperty('padding', '12px 10px', 'important');
+      });
+      
+      // Apply alternating row colors with full Nigerian Heritage palette
+      const rows = table.querySelectorAll('tbody tr');
+      rows.forEach((row, index) => {
+        const cells = row.querySelectorAll('td');
+        cells.forEach((cell, cellIndex) => {
+          // Use different color schemes based on row position for visual variety
+          if (index % 4 === 0) {
+            // Light green to ivory gradient (uses green + ivory)
+            cell.style.setProperty('background', 'linear-gradient(135deg, rgba(0, 135, 83, 0.1) 0%, rgba(255, 255, 240, 1) 100%)', 'important');
+          } else if (index % 4 === 1) {
+            // Pure white
+            cell.style.setProperty('background', '#FFFFFF', 'important');
+          } else if (index % 4 === 2) {
+            // Warm beige/gold tint (uses warm-gray + gold)
+            cell.style.setProperty('background', 'linear-gradient(135deg, rgba(245, 245, 220, 0.5) 0%, rgba(255, 215, 0, 0.05) 100%)', 'important');
+          } else {
+            // Soft white
+            cell.style.setProperty('background', '#FAFAFA', 'important');
+          }
+          
+          cell.style.setProperty('color', '#36454F', 'important'); // Charcoal text
+          cell.style.setProperty('border', '1px solid rgba(0, 135, 83, 0.2)', 'important');
+          
+          // Add hover effect with warm orange accent
+          cell.addEventListener('mouseenter', function() {
+            this.style.setProperty('background', 'linear-gradient(135deg, rgba(0, 135, 83, 0.15) 0%, rgba(255, 140, 0, 0.08) 100%)', 'important');
+            this.style.setProperty('border-left', '3px solid #FF8C00', 'important'); // Warm orange
+          });
+          cell.addEventListener('mouseleave', function() {
+            // Restore original background
+            if (index % 4 === 0) {
+              this.style.setProperty('background', 'linear-gradient(135deg, rgba(0, 135, 83, 0.1) 0%, rgba(255, 255, 240, 1) 100%)', 'important');
+            } else if (index % 4 === 1) {
+              this.style.setProperty('background', '#FFFFFF', 'important');
+            } else if (index % 4 === 2) {
+              this.style.setProperty('background', 'linear-gradient(135deg, rgba(245, 245, 220, 0.5) 0%, rgba(255, 215, 0, 0.05) 100%)', 'important');
+            } else {
+              this.style.setProperty('background', '#FAFAFA', 'important');
+            }
+            this.style.setProperty('border-left', '1px solid rgba(0, 135, 83, 0.2)', 'important');
+          });
+        });
+      });
+    }
+    
+    // Initialize page when DOM is loaded
+    document.addEventListener('DOMContentLoaded', function() {
+      loadConditionStats();
+      
+      // Enforce theme styles multiple times to ensure they stick
+      enforceTableStyles();
+      setTimeout(enforceTableStyles, 100);
+      setTimeout(enforceTableStyles, 500);
+      setTimeout(enforceTableStyles, 1000);
+      
+      // Re-enforce after data loads
+      setTimeout(() => {
+        enforceTableStyles();
+        setTimeout(enforceTableStyles, 100);
+      }, 1500);
+    });
+  </script>
+
+</body>
+</html>
+

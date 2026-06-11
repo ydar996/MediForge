@@ -1,0 +1,512 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Order Results - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=217">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 12px 24px;
+      background: #008753;
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: background 0.3s;
+    }
+    
+    .back-button:hover {
+      background: #006b42;
+      color: white;
+    }
+    
+    .results-container {
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+      margin-bottom: 20px;
+    }
+    
+    .patient-info {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+    }
+    
+    .patient-info h2 { margin: 0 0 10px 0; font-size: 24px; }
+    .patient-info p { margin: 5px 0; opacity: 0.9; }
+    
+    .order-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border-left: 4px solid #008753;
+    }
+    
+    .order-info h3 { margin: 0 0 15px 0; color: #008753; font-size: 20px; }
+    .order-info-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; }
+    .order-info-item { display: flex; flex-direction: column; }
+    .order-info-label { font-size: 12px; color: #666; text-transform: uppercase; letter-spacing: 0.5px; margin-bottom: 5px; }
+    .order-info-value { font-size: 16px; color: #333; font-weight: 600; }
+    
+    .test-header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 20px;
+      border-radius: 8px 8px 0 0;
+      margin-bottom: 0;
+    }
+    
+    .test-header h3 { margin: 0; font-size: 22px; }
+    
+    .test-content {
+      background: white;
+      border: 2px solid #008753;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      padding: 30px;
+      margin-bottom: 30px;
+    }
+    
+    .result-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f8f9fa;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+      display: grid;
+      grid-template-columns: 200px 1fr;
+      gap: 20px;
+      align-items: center;
+    }
+    
+    .result-label { font-weight: 600; color: #333; font-size: 14px; text-transform: capitalize; }
+    .result-value { font-size: 18px; color: #008753; font-weight: 500; }
+    
+    .notes-section { margin-top: 30px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #008753; }
+    .notes-section h4 { margin: 0 0 10px 0; color: #008753; }
+    .file-section { margin-top: 20px; padding: 20px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #008753; }
+    .file-section h4 { margin: 0 0 10px 0; color: #008753; }
+    .file-link { display: inline-block; padding: 10px 20px; background: #008753; color: white; text-decoration: none; border-radius: 6px; margin-top: 10px; }
+    .file-link:hover { background: #006b42; color: white; }
+    
+    .results-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    
+    .results-table th, .results-table td {
+      border: 1px solid #ddd;
+      padding: 10px 12px;
+      text-align: left;
+    }
+    
+    .results-table th {
+      background: #008753;
+      color: white;
+      font-weight: 600;
+    }
+    
+    .results-table tr:nth-child(even) { background: #f8f9fa; }
+    
+    .attachment-item {
+      padding: 15px;
+      margin: 10px 0;
+      background: #f8f9fa;
+      border-left: 4px solid #008753;
+      border-radius: 4px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .attachment-item h4 { margin: 0; color: #333; }
+    .attachment-actions { display: flex; gap: 10px; }
+    .btn-view, .btn-download {
+      padding: 8px 16px;
+      border-radius: 6px;
+      font-weight: 600;
+      cursor: pointer;
+      text-decoration: none;
+      border: none;
+      font-size: 14px;
+    }
+    .btn-view { background: #28a745; color: white; }
+    .btn-download { background: #17a2b8; color: white; }
+    
+    .loading { text-align: center; padding: 40px; color: #666; }
+    .empty-state { text-align: center; padding: 60px 20px; color: #666; }
+    .empty-state h3 { color: #333; margin-bottom: 10px; }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 14px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    .status-completed { background: #28a745; color: white; }
+    
+    @media (max-width: 768px) {
+      .result-item { grid-template-columns: 1fr; }
+      .order-info-grid { grid-template-columns: 1fr; }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <a class="back-button" id="back-link" href="/patient-details">← Back to Patient Details</a>
+    <h1>Lab Order Results</h1>
+  </div>
+  
+  <div id="results-content">
+    <div class="loading">Loading results...</div>
+  </div>
+  
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/lab-results-manager.js"></script>
+  <script src="js/format-lab-order-serial.js"></script>
+  <script src="js/patient-id-normalizer.js?v=1"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script>
+    const urlParams = new URLSearchParams(window.location.search);
+    const orderId = urlParams.get('orderId');
+    const returnUrl = urlParams.get('returnUrl');
+    const patientId = urlParams.get('patientId');
+    
+    if (returnUrl) {
+      document.getElementById('back-link').href = returnUrl;
+    } else if (patientId) {
+      document.getElementById('back-link').href = 'patient-details?id=' + encodeURIComponent(patientId);
+    }
+    
+    (async function() {
+      const contentDiv = document.getElementById('results-content');
+      
+      if (!orderId) {
+        contentDiv.innerHTML = '<div class="empty-state"><h3>Invalid Request</h3><p>Missing order ID. Please go back and try again.</p></div>';
+        return;
+      }
+      
+      const getSupabase = async () => {
+        if (typeof window.getLabSupabaseClient === 'function') return await window.getLabSupabaseClient();
+        return window.supabaseClient || null;
+      };
+      
+      try {
+        const supabase = await getSupabase();
+        if (!supabase) {
+          throw new Error('Database connection not available');
+        }
+        
+        const { data: order, error: orderError } = await supabase
+          .from('orders')
+          .select('*')
+          .eq('id', orderId)
+          .maybeSingle();
+        
+        if (orderError || !order) {
+          throw new Error('Order not found');
+        }
+        
+        let results = {};
+        if (order.results) {
+          if (typeof order.results === 'string') {
+            try { results = JSON.parse(order.results); } catch (e) { results = {}; }
+          } else if (typeof order.results === 'object') {
+            results = order.results;
+          }
+        }
+        
+        let patient = null;
+        const pid = order.patient_id;
+        if (pid && typeof window.resolvePatientByIdentifier === 'function') {
+          try { patient = await window.resolvePatientByIdentifier(pid); } catch (e) {}
+        }
+        if (!patient && pid) {
+          const dk = typeof window.getDataKey === 'function' ? window.getDataKey('patients') : 'patients';
+          const patients = JSON.parse(localStorage.getItem(dk) || '[]');
+          patient = patients.find(p => p.id === pid || p.patient_id === pid || p._supabaseUuid === pid);
+        }
+        
+        const patientName = patient ? `${patient.firstName || patient.first_name || ''} ${patient.lastName || patient.last_name || ''}`.trim() : (pid || 'Unknown');
+        const displayPatientId = (patient && typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || (patient ? (patient.patient_id || patient.patientNumber || (patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id) ? patient.id : null)) : null) || pid || 'N/A';
+        const displayPatientIdUi =
+          typeof window.patientMrnDisplay === 'function'
+            ? patient
+              ? window.patientMrnDisplay(patient, patientId || pid)
+              : window.patientMrnDisplay(displayPatientId)
+            : displayPatientId;
+        const patientDob = patient ? (patient.date_of_birth || patient.dateOfBirth || patient.dob || 'N/A') : 'N/A';
+        const patientGender = patient ? (patient.gender || 'N/A') : 'N/A';
+        const orderDate = order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : 'N/A';
+        const serialNum = typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serial_number || order.id?.substring(0, 8), order.id, order) : (order.serial_number || order.id?.substring(0, 8));
+        
+        let orderedByName = 'Unknown';
+        let completedDate = 'N/A';
+        let orgName = 'Medical Clinic';
+        let orgAddress = '';
+        let orgPhone = '';
+        try {
+          if (supabase && order.created_by) {
+            const ud = await supabase.from('users').select('first_name, last_name, username, role').eq('username', order.created_by).maybeSingle();
+            if (ud && ud.data) {
+              const fn = ud.data.first_name || '', ln = ud.data.last_name || '';
+              const fullName = (fn && ln) ? fn + ' ' + ln : (fn || ln || ud.data.username || '');
+              const role = (ud.data.role || '').toLowerCase();
+              const title = role.includes('lab') || role.includes('scientist') ? 'Medical Lab Scientist' : (role.includes('doctor') || role.includes('physician') ? 'Dr.' : (role.includes('nurse') ? 'Nurse' : 'Dr.'));
+              orderedByName = (title ? title + ' ' : '') + fullName;
+            } else { orderedByName = 'Dr. ' + (order.created_by || ''); }
+          }
+          if (supabase && order.organization_id) {
+            const orgData = await supabase.from('organizations').select('name, address_line1, address_line2, city, state, country, phone').eq('id', order.organization_id).maybeSingle();
+            if (orgData && orgData.data) {
+              orgName = orgData.data.name || orgName;
+              orgAddress = [orgData.data.address_line1, orgData.data.address_line2, orgData.data.city, orgData.data.state, orgData.data.country].filter(Boolean).join(', ');
+              orgPhone = orgData.data.phone || '';
+            }
+          }
+        } catch (e) { console.warn('Could not fetch provider/org:', e); }
+        
+        const metadataFields = ['status','entered_at','entered_by','auditTrail','completed_at','completed_by','reviewed_at','reviewed_by','doctor_note','doctor_note_by','doctor_note_updated_at','started_at','started_by','file_name','file_data','file_type','file_size','_attachments'];
+        
+        function getResultDisplayValue(value) {
+          if (value === null || value === undefined || value === '') return '';
+          if (typeof value === 'object' && !Array.isArray(value)) {
+            if (value.value !== undefined && value.value !== null && value.value !== '') {
+              let display = String(value.value);
+              if (value.unit && value.unit !== '') display += ' ' + value.unit;
+              if (value.normalRange && value.normalRange !== '') display += ' (Range: ' + value.normalRange + ')';
+              if (value.reactionStrength && value.reactionStrength !== '') display += ' [' + value.reactionStrength + ']';
+              return display;
+            }
+            if (value.comments !== undefined) return String(value.comments);
+            return '';
+          }
+          return String(value);
+        }
+        
+        function collectResultFields(obj, fields, prefix) {
+          if (!obj || typeof obj !== 'object') return;
+          for (const k in obj) {
+            if (!k || k.charAt(0) === '_' || metadataFields.includes(k)) continue;
+            const r = obj[k];
+            if (!r) continue;
+            if (typeof r === 'object' && r !== null) {
+              const disp = getResultDisplayValue(r);
+              if (disp !== '' && disp !== 'Not Tested') {
+                fields.push({ key: prefix || k, value: r, displayValue: disp });
+              } else if (r.results && typeof r.results === 'object') {
+                collectResultFields(r.results, fields, k);
+              } else {
+                collectResultFields(r, fields, k);
+              }
+            }
+          }
+        }
+        
+        for (const tn of Object.keys(results || {})) {
+          if (results[tn] && results[tn].completed_at) {
+            completedDate = new Date(results[tn].completed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+            break;
+          }
+        }
+        
+        let html = `
+          <div class="patient-info">
+            <h2>${(patientName || 'Unknown').replace(/</g,'&lt;')}</h2>
+            <p>Patient ID: ${String(displayPatientIdUi).replace(/</g,'&lt;')} | DOB: ${String(patientDob).replace(/</g,'&lt;')} | Gender: ${String(patientGender).replace(/</g,'&lt;')}</p>
+          </div>
+          <div class="order-info">
+            <h3>Order Information</h3>
+            <div class="order-info-grid">
+              <div class="order-info-item">
+                <div class="order-info-label">Order Number</div>
+                <div class="order-info-value">${String(serialNum).replace(/</g,'&lt;')}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Ordered By</div>
+                <div class="order-info-value">${String(orderedByName).replace(/</g,'&lt;')}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Order Date</div>
+                <div class="order-info-value">${orderDate}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Completed Date</div>
+                <div class="order-info-value">${String(completedDate).replace(/</g,'&lt;')}</div>
+              </div>
+              <div class="order-info-item">
+                <div class="order-info-label">Type</div>
+                <div class="order-info-value">${(order.type === 'lab' ? 'Lab Order' : 'Imaging Order').replace(/</g,'&lt;')}</div>
+              </div>
+            </div>
+          </div>
+        `;
+        
+        const isArrayResults = Array.isArray(results) || (results && results._attachments);
+        const atts = isArrayResults ? (Array.isArray(results) ? results : (results._attachments || [])) : [];
+        
+        if (atts.length > 0) {
+          html += '<div class="results-container"><h3>Attached Results</h3>';
+          atts.forEach((att, idx) => {
+            const name = (att.name || 'Result ' + (idx + 1)).replace(/</g,'&lt;');
+            const dataUrl = att.data || (att.attachment && att.attachment.data) || '';
+            html += `
+              <div class="attachment-item">
+                <h4>${name}</h4>
+                <div class="attachment-actions">
+                  ${dataUrl ? `<button class="btn-view" onclick="viewAttachment('${idx}')">View</button>` : ''}
+                  ${dataUrl ? `<button class="btn-download" onclick="downloadAttachment('${idx}','${name.replace(/'/g,"\\'")}')">Download</button>` : ''}
+                </div>
+              </div>
+            `;
+          });
+          html += '</div>';
+          html += `
+            <div class="results-container" style="background: #f8f9fa; padding: 20px;">
+              <div style="text-align: center; color: #666;">
+                <p style="margin: 5px 0; font-weight: 600;">${orgName.replace(/</g,'&lt;')}</p>
+                ${orgAddress ? '<p style="margin: 5px 0;">' + orgAddress.replace(/</g,'&lt;') + '</p>' : ''}
+                ${orgPhone ? '<p style="margin: 5px 0;">Phone: ' + orgPhone.replace(/</g,'&lt;') + '</p>' : ''}
+              </div>
+            </div>
+          `;
+          window._attachmentsCache = atts;
+        } else if (results && typeof results === 'object' && Object.keys(results).length > 0) {
+          const testNames = Object.keys(results).filter(k => k && k.charAt(0) !== '_' && !metadataFields.includes(k));
+          const displayableTests = testNames.filter(tn => {
+            const tr = results[tn];
+            if (!tr || typeof tr !== 'object') return false;
+            if (tr.status === 'completed') return true;
+            if (tr.value !== undefined && tr.value !== null && tr.value !== '') return true;
+            const fields = [];
+            collectResultFields(tr, fields);
+            return fields.length > 0;
+          });
+          
+          if (displayableTests.length > 0) {
+            displayableTests.forEach(testName => {
+              const testResults = results[testName];
+              const resultFields = [];
+              collectResultFields(testResults, resultFields);
+              
+              if (resultFields.length > 0) {
+                let testHtml = `
+                  <div class="results-container">
+                    <div class="test-header">
+                      <h3>${String(testName).replace(/</g,'&lt;')} <span class="status-badge status-completed">✓ Completed</span></h3>
+                    </div>
+                    <div class="test-content">
+                `;
+                resultFields.forEach(({ key, value, displayValue }) => {
+                  const label = (value && typeof value === 'object' && value.label) ? value.label : (key || '').replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+                  testHtml += `
+                    <div class="result-item">
+                      <div class="result-label">${label.replace(/</g,'&lt;')}</div>
+                      <div class="result-value">${(displayValue || '').replace(/</g,'&lt;')}</div>
+                    </div>
+                  `;
+                });
+                if (testResults.notes) {
+                  testHtml += `
+                    <div class="notes-section">
+                      <h4>Additional Notes</h4>
+                      <p>${String(testResults.notes).replace(/</g,'&lt;')}</p>
+                    </div>
+                  `;
+                }
+                if (testResults.file_name) {
+                  const fileData = testResults.file_data ? 'data:' + (testResults.file_type || 'application/pdf') + ';base64,' + testResults.file_data : '';
+                  testHtml += `
+                    <div class="file-section">
+                      <h4>Result File</h4>
+                      <p>${String(testResults.file_name).replace(/</g,'&lt;')}</p>
+                      ${fileData ? '<a href="' + fileData + '" target="_blank" class="file-link">📄 View File</a>' : ''}
+                    </div>
+                  `;
+                }
+                testHtml += '</div></div>';
+                html += testHtml;
+              }
+            });
+            
+            html += `
+              <div class="results-container" style="background: #f8f9fa; padding: 20px;">
+                <div style="text-align: center; color: #666;">
+                  <p style="margin: 5px 0; font-weight: 600;">${orgName.replace(/</g,'&lt;')}</p>
+                  ${orgAddress ? '<p style="margin: 5px 0;">' + orgAddress.replace(/</g,'&lt;') + '</p>' : ''}
+                  ${orgPhone ? '<p style="margin: 5px 0;">Phone: ' + orgPhone.replace(/</g,'&lt;') + '</p>' : ''}
+                </div>
+              </div>
+            `;
+          } else {
+            html += '<div class="empty-state"><h3>No Results</h3><p>No completed results found for this order.</p></div>';
+          }
+        } else {
+          html += '<div class="empty-state"><h3>No Results</h3><p>No results found for this order.</p></div>';
+        }
+        
+        contentDiv.innerHTML = html;
+        
+        window.viewAttachment = function(idx) {
+          const att = window._attachmentsCache && window._attachmentsCache[idx];
+          if (!att) return;
+          const d = att.data || (att.attachment && att.attachment.data);
+          if (!d) return;
+          const url = (typeof d === 'string' && !d.startsWith('data:')) ? 'data:' + (att.type || 'application/pdf') + ';base64,' + d : d;
+          window.open(url, '_blank', 'width=800,height=600');
+        };
+        
+        window.downloadAttachment = function(idx, name) {
+          const att = window._attachmentsCache && window._attachmentsCache[idx];
+          if (!att) return;
+          const d = att.data || (att.attachment && att.attachment.data);
+          if (!d) return;
+          const url = (typeof d === 'string' && !d.startsWith('data:')) ? 'data:' + (att.type || 'application/pdf') + ';base64,' + d : d;
+          const ext = (att.type || '').includes('pdf') ? 'pdf' : ((att.type || '').includes('image') ? 'png' : 'pdf');
+          const a = document.createElement('a');
+          a.href = url;
+          a.download = (name || 'result').replace(/[^a-zA-Z0-9._-]/g, '_') + '.' + ext;
+          a.click();
+        };
+        
+      } catch (error) {
+        console.error('Error loading results:', error);
+        contentDiv.innerHTML = '<div class="empty-state"><h3>Error Loading Results</h3><p>' + (error.message || 'An error occurred.').replace(/</g,'&lt;') + '</p></div>';
+      }
+    })();
+  </script>
+</body>
+</html>

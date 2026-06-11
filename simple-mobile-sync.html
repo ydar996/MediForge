@@ -1,0 +1,172 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Mobile Sync</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .sync-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .sync-success { background: #d4edda; border-color: #c3e6cb; }
+        .sync-error { background: #f8d7da; border-color: #f5c6cb; }
+        .sync-warning { background: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <h1>Simple Mobile Data Sync</h1>
+    <p>This is a simplified version that works even if Supabase has connection issues.</p>
+    
+    <button onclick="showLocalStorageData()" class="btn-primary">?? Show localStorage Data</button>
+    <button onclick="copyDataToClipboard()" class="btn-success">?? Copy Data to Clipboard</button>
+    <button onclick="clearLocalStorage()" class="btn-warning">??? Clear localStorage</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        function showLocalStorageData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Loading localStorage data...</p>';
+            
+            try {
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let html = '<h3>?? localStorage Data Found:</h3>';
+                
+                if (Object.keys(localOrgs).length === 0) {
+                    html += '<div class="sync-item sync-warning">?? No organizations in localStorage</div>';
+                } else {
+                    html += '<h4>Organizations:</h4>';
+                    Object.entries(localOrgs).forEach(([name, org]) => {
+                        const syncStatus = org.id ? '? Synced to Supabase' : '? Not synced to Supabase';
+                        html += `
+                            <div class="sync-item">
+                                <strong>${name}</strong> - ${syncStatus}<br>
+                                Country: ${org.country || 'N/A'} | State: ${org.state || 'N/A'} | City: ${org.city || 'N/A'}<br>
+                                Created: ${org.createdAt || 'N/A'}<br>
+                                ID: ${org.id || 'Not synced to Supabase'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (localUsers.length === 0) {
+                    html += '<div class="sync-item sync-warning">?? No users in localStorage</div>';
+                } else {
+                    html += '<h4>Users:</h4>';
+                    localUsers.forEach(user => {
+                        const syncStatus = user.organizationId ? '? Synced to Supabase' : '? Not synced to Supabase';
+                        html += `
+                            <div class="sync-item">
+                                <strong>${user.firstName} ${user.lastName}</strong> (${user.username}) - ${syncStatus}<br>
+                                Organization: ${user.org || 'N/A'} | Role: ${user.role || 'N/A'}<br>
+                                Organization ID: ${user.organizationId || 'Not synced to Supabase'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                html += `
+                    <div class="sync-item sync-warning" style="margin-top: 20px;">
+                        <h4>?? Manual Sync Instructions:</h4>
+                        <p>Since automatic Supabase sync is having issues, you can:</p>
+                        <ol>
+                            <li><strong>Copy the data above</strong> and manually add it to Supabase</li>
+                            <li><strong>Use the platform dashboard</strong> and click "Force Refresh All Data"</li>
+                            <li><strong>Contact support</strong> with the data above for manual sync</li>
+                        </ol>
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="sync-item sync-error">? Error loading localStorage: ${error.message}</div>`;
+            }
+        }
+        
+        function copyDataToClipboard() {
+            try {
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let dataText = 'MOBILE REGISTRATION DATA\n';
+                dataText += '========================\n\n';
+                
+                dataText += 'ORGANIZATIONS:\n';
+                Object.entries(localOrgs).forEach(([name, org]) => {
+                    dataText += `- ${name}\n`;
+                    dataText += `  Country: ${org.country || 'N/A'}\n`;
+                    dataText += `  State: ${org.state || 'N/A'}\n`;
+                    dataText += `  City: ${org.city || 'N/A'}\n`;
+                    dataText += `  Created: ${org.createdAt || 'N/A'}\n`;
+                    dataText += `  ID: ${org.id || 'Not synced'}\n\n`;
+                });
+                
+                dataText += 'USERS:\n';
+                localUsers.forEach(user => {
+                    dataText += `- ${user.firstName} ${user.lastName} (${user.username})\n`;
+                    dataText += `  Organization: ${user.org || 'N/A'}\n`;
+                    dataText += `  Role: ${user.role || 'N/A'}\n`;
+                    dataText += `  Organization ID: ${user.organizationId || 'Not synced'}\n\n`;
+                });
+                
+                navigator.clipboard.writeText(dataText).then(() => {
+                    document.getElementById('results').innerHTML = '<div class="sync-item sync-success">? Data copied to clipboard! You can now paste it elsewhere.</div>';
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = dataText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    document.getElementById('results').innerHTML = '<div class="sync-item sync-success">? Data copied to clipboard! You can now paste it elsewhere.</div>';
+                });
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="sync-item sync-error">? Error copying data: ${error.message}</div>`;
+            }
+        }
+        
+        function clearLocalStorage() {
+            if (confirm('Are you sure you want to clear all localStorage data? This cannot be undone.')) {
+                localStorage.removeItem('organizations');
+                localStorage.removeItem('users');
+                localStorage.removeItem('patients');
+                localStorage.removeItem('appointments');
+                document.getElementById('results').innerHTML = '<div class="sync-item sync-success">? localStorage cleared</div>';
+            }
+        }
+        
+        // Auto-load data when page loads
+        document.addEventListener('DOMContentLoaded', showLocalStorageData);
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

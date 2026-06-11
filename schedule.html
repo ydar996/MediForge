@@ -1,0 +1,227 @@
+<!-- Purpose: Displays appointments in daily, weekly, and monthly calendar views. Uses JS to generate dynamic content from localStorage. -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Schedule Calendar</title>
+  <link rel="stylesheet" href="css/styles.css?v=169">
+  <style>
+    .back-btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: bold;
+      font-size: 14px;
+      transition: all 0.2s ease;
+      text-decoration: none;
+      display: inline-block;
+      min-width: 160px;
+      text-align: center;
+      height: 48px;
+      line-height: 24px;
+      box-sizing: border-box;
+    }
+    
+    .view-btn {
+      background: linear-gradient(135deg, #007bff 0%, #0056b3 100%);
+      color: white;
+    }
+    
+    .view-btn:hover {
+      background: linear-gradient(135deg, #0056b3 0%, #004085 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(0, 123, 255, 0.3);
+    }
+    
+    .view-btn.config-btn {
+      background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%) !important;
+      color: white !important;
+    }
+    
+    .view-btn.config-btn:hover {
+      background: linear-gradient(135deg, #1e7e34 0%, #155724 100%) !important;
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+    
+    .back-btn {
+      background: linear-gradient(135deg, #6c757d 0%, #5a6268 100%);
+      color: white;
+    }
+    
+    .back-btn:hover {
+      background: linear-gradient(135deg, #5a6268 0%, #495057 100%);
+      transform: translateY(-1px);
+      box-shadow: 0 4px 12px rgba(108, 117, 125, 0.3);
+    }
+    
+    .view-btn.active {
+      background: linear-gradient(135deg, #ffc107 0%, #e0a800 100%);
+      color: #212529;
+      box-shadow: 0 4px 12px rgba(255, 193, 7, 0.3);
+    }
+    
+    /* Remove any conflicting alignment rules */
+    
+    /* Button container specific styling */
+    .button-container {
+      display: flex;
+      gap: 15px;
+      align-items: stretch;
+      flex-wrap: wrap;
+      justify-content: flex-start;
+    }
+    
+    /* Force all buttons to have identical dimensions and perfect alignment */
+    .button-container > * {
+      height: 48px !important;
+      min-width: 160px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      vertical-align: top !important;
+      margin: 0 !important;
+      padding: 12px 24px !important;
+      box-sizing: border-box !important;
+      border: none !important;
+      border-radius: 6px !important;
+      font-weight: bold !important;
+      font-size: 14px !important;
+      line-height: 1 !important;
+      text-align: center !important;
+    }
+    
+    /* Ensure all buttons are on the same baseline and override global styles */
+    .button-container {
+      align-items: flex-start !important;
+    }
+    
+    /* Override global button styles that are causing alignment issues */
+    .button-container button {
+      width: auto !important;
+      margin: 0 !important;
+      padding: 12px 24px !important;
+    }
+    
+    /* Ensure all buttons have identical positioning */
+    .button-container > button {
+      position: relative !important;
+      left: 0 !important;
+      right: auto !important;
+      transform: none !important;
+    }
+  </style>
+</head>
+<body>
+  <h1 id="page-title">Schedule Calendar</h1>
+  <div class="button-container" style="margin-bottom: 20px;">
+    <a href="dashboard" class="back-btn" style="height: 48px !important; min-width: 160px !important; margin: 0 !important; padding: 12px 24px !important; box-sizing: border-box !important; vertical-align: top !important; width: auto !important; position: relative !important; left: 0 !important; display: flex !important; align-items: center !important; justify-content: center !important;">← Back to Dashboard</a>
+    <button onclick="showView('daily')" class="view-btn" style="height: 48px !important; min-width: 160px !important; margin: 0 !important; padding: 12px 24px !important; box-sizing: border-box !important; vertical-align: top !important; width: auto !important; position: relative !important; left: 0 !important;">Daily View</button>
+    <button onclick="showView('weekly')" class="view-btn" style="height: 48px !important; min-width: 160px !important; margin: 0 !important; padding: 12px 24px !important; box-sizing: border-box !important; vertical-align: top !important; width: auto !important; position: relative !important; left: 0 !important;">Weekly View</button>
+    <button onclick="showView('monthly')" class="view-btn" style="height: 48px !important; min-width: 160px !important; margin: 0 !important; padding: 12px 24px !important; box-sizing: border-box !important; vertical-align: top !important; width: auto !important; position: relative !important; left: 0 !important;">Monthly View</button>
+    <button onclick="window.location.href='set-clinic-schedule'" class="view-btn config-btn" style="height: 48px !important; min-width: 160px !important; margin: 0 !important; padding: 12px 24px !important; box-sizing: border-box !important; vertical-align: top !important; width: auto !important; position: relative !important; left: 0 !important;">Configure Schedule</button>
+  </div>
+  <div id="calendar-container"></div>  <!-- Where calendar content is generated -->
+  
+  <div style="margin-top: 30px; text-align: center;">
+    <a href="dashboard" class="back-btn">← Back to Dashboard</a>
+  </div>
+  
+  <script>
+    // TRACE LOGGING: Schedule page Supabase CDN library fix v169
+    console.log('[SCHEDULE] TRACE: schedule.html loaded - Supabase CDN library fix v169');
+    console.log('[SCHEDULE] TRACE: Added Supabase CDN library for proper Supabase initialization');
+    console.log('[SCHEDULE] TRACE: Schedule page now has complete Supabase setup');
+    console.log('[SCHEDULE] TRACE: Deployment timestamp:', new Date().toISOString());
+    console.log('[SCHEDULE] TRACE: CSS version updated to v169 for cache busting');
+    
+    // Dynamic page title with org
+    const user = JSON.parse(localStorage.getItem("user"));
+    if (user) {
+      document.getElementById("page-title").innerHTML = `Schedule Calendar for ${user.org}`;
+    }
+    
+    // TRACE LOGGING: Page initialization complete
+    console.log('[SCHEDULE] TRACE: Page initialization complete for org:', user?.org || 'Unknown');
+    console.log('[SCHEDULE] TRACE: Supabase CDN library fix ready for verification');
+  </script>
+  
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  
+  <script>
+    // Display logged-in user info with org
+    const userFooter = JSON.parse(localStorage.getItem("user"));
+    if (userFooter) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    }
+  </script>
+  
+  <script src="js/vendor/supabase.min.js"></script>  <!-- Supabase CDN library -->
+  <script src="js/supabase-client.js?v=202510220113130113131313"></script>  <!-- Supabase client initialization -->
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/appointments.js?v=20260416140000-appointment-org-reconcile"></script>  <!-- Loads schedule logic -->
+  <script src="js/main.js?v=202510220113130113131313"></script>  <!-- General helpers -->
+  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>  <!-- Universal sync status indicator -->
+  
+  <script>
+    // Handle active state for view buttons
+    function showViewWithActive(view) {
+      // Remove active class from all view buttons
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        btn.classList.remove('active');
+      });
+      
+      // Add active class to clicked button
+      const activeBtn = document.querySelector(`button[onclick="showView('${view}')"]`);
+      if (activeBtn) {
+        activeBtn.classList.add('active');
+      }
+      
+      // Call the original showView function
+      showView(view);
+    }
+    
+    // Override the onclick handlers to use the new function
+    document.addEventListener('DOMContentLoaded', function() {
+      document.querySelectorAll('.view-btn').forEach(btn => {
+        const onclick = btn.getAttribute('onclick');
+        if (onclick && onclick.includes('showView')) {
+          const view = onclick.match(/showView\('(\w+)'\)/)[1];
+          btn.onclick = () => showViewWithActive(view);
+        }
+      });
+      
+      // Set initial active state (default to monthly)
+      showViewWithActive('monthly');
+    });
+  </script>
+
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('[OK] Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

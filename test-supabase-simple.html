@@ -1,0 +1,88 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Supabase Test</title>
+</head>
+<body>
+    <h1>Simple Supabase Test</h1>
+    <div id="results"></div>
+    
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        console.log('🧪 Simple Supabase test...');
+        
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        // Create minimal client
+        const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        async function testSupabase() {
+            const results = document.getElementById('results');
+            
+            try {
+                console.log('🔍 Testing basic connection...');
+                results.innerHTML = '<p>🔍 Testing Supabase connection...</p>';
+                
+                // Test 1: Try to get session (this should work even with RLS)
+                console.log('🔍 Test 1: Getting session...');
+                const { data: session, error: sessionError } = await supabase.auth.getSession();
+                
+                if (sessionError) {
+                    console.error('❌ Session error:', sessionError);
+                    results.innerHTML += '<p style="color: red;">❌ Session failed: ' + sessionError.message + '</p>';
+                } else {
+                    console.log('✅ Session successful:', session);
+                    results.innerHTML += '<p style="color: green;">✅ Session check passed</p>';
+                }
+                
+                // Test 2: Try to sign up a user (this tests auth)
+                console.log('🔍 Test 2: Testing auth signup...');
+                const testEmail = 'test' + Date.now() + '@mediforge.app';
+                const testPassword = 'testpassword123';
+                
+                const { data: signup, error: signupError } = await supabase.auth.signUp({
+                    email: testEmail,
+                    password: testPassword
+                });
+                
+                if (signupError) {
+                    console.error('❌ Signup error:', signupError);
+                    results.innerHTML += '<p style="color: red;">❌ Signup failed: ' + signupError.message + '</p>';
+                } else {
+                    console.log('✅ Signup successful:', signup);
+                    results.innerHTML += '<p style="color: green;">✅ Auth signup works</p>';
+                }
+                
+                // Test 3: Try database access (this might fail with RLS)
+                console.log('🔍 Test 3: Testing database access...');
+                const { data: orgs, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('id')
+                    .limit(1);
+                
+                if (orgError) {
+                    console.error('❌ Database error:', orgError);
+                    results.innerHTML += '<p style="color: orange;">⚠️ Database access failed: ' + orgError.message + '</p>';
+                    results.innerHTML += '<p style="color: blue;">💡 This might be due to RLS policies - this is normal for anonymous users</p>';
+                } else {
+                    console.log('✅ Database access successful:', orgs);
+                    results.innerHTML += '<p style="color: green;">✅ Database access works</p>';
+                }
+                
+            } catch (err) {
+                console.error('❌ Test failed:', err);
+                results.innerHTML += '<p style="color: red;">❌ Test failed: ' + err.message + '</p>';
+            }
+        }
+        
+        testSupabase();
+    </script>
+</body>
+</html>
+
+
+

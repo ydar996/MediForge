@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Encryption Service Test - MediForge</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin: 20px 0;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    button {
+      background: #667eea;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #5568d3;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      background: #f0f0f0;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 12px;
+    }
+    .success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+    input {
+      padding: 8px;
+      margin: 5px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      width: 300px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 Encryption Service Test</h1>
+  <p>This page tests the encryption service to ensure it works correctly without breaking existing functionality.</p>
+
+  <div class="test-section">
+    <h2>1. Service Initialization</h2>
+    <p>Test if encryption service is loaded and can be initialized.</p>
+    <button onclick="testInitialization()">Test Initialization</button>
+    <div id="init-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>2. Encryption/Decryption</h2>
+    <p>Test encrypting and decrypting data.</p>
+    <input type="text" id="test-data" placeholder="Enter test data" value='{"name": "John Doe", "phone": "123-456-7890"}'>
+    <button onclick="testEncryption()">Test Encryption</button>
+    <div id="encrypt-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>3. Backward Compatibility</h2>
+    <p>Test that unencrypted data still works when encryption is not initialized.</p>
+    <button onclick="testBackwardCompatibility()">Test Backward Compatibility</button>
+    <div id="backward-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>4. Field-Level Encryption</h2>
+    <p>Test encrypting specific fields in an object.</p>
+    <button onclick="testFieldEncryption()">Test Field Encryption</button>
+    <div id="field-result" class="result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>5. Patient Data Encryption</h2>
+    <p>Test encrypting patient data (simulated).</p>
+    <button onclick="testPatientEncryption()">Test Patient Encryption</button>
+    <div id="patient-result" class="result"></div>
+  </div>
+
+  <!-- Load encryption service -->
+  <script src="js/encryption.js"></script>
+
+  <script>
+    // Test 1: Initialization
+    async function testInitialization() {
+      const resultDiv = document.getElementById('init-result');
+      resultDiv.className = 'result info';
+      resultDiv.textContent = 'Testing initialization...';
+
+      try {
+        // Check if service exists
+        if (typeof window.encryptionService === 'undefined') {
+          resultDiv.className = 'result error';
+          resultDiv.textContent = '❌ ERROR: EncryptionService not found!';
+          return;
+        }
+
+        resultDiv.textContent = '✅ EncryptionService found\n';
+
+        // Test initialization with test org ID and password
+        const testOrgId = 'test-org-' + Date.now();
+        const testPassword = 'TestPassword123!';
+        
+        const initialized = await window.encryptionService.initialize(testOrgId, testPassword);
+        
+        if (initialized) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent += '✅ Initialization successful!\n';
+          resultDiv.textContent += `✅ Encryption enabled: ${window.encryptionService.isInitialized}\n`;
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent += '❌ Initialization failed';
+        }
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = '❌ ERROR: ' + error.message;
+      }
+    }
+
+    // Test 2: Encryption/Decryption
+    async function testEncryption() {
+      const resultDiv = document.getElementById('encrypt-result');
+      const testDataInput = document.getElementById('test-data');
+      const testData = testDataInput.value;
+
+      resultDiv.className = 'result info';
+      resultDiv.textContent = 'Testing encryption...';
+
+      try {
+        // Parse JSON if possible
+        let dataToEncrypt;
+        try {
+          dataToEncrypt = JSON.parse(testData);
+        } catch (e) {
+          dataToEncrypt = testData;
+        }
+
+        // Initialize if not already
+        if (!window.encryptionService.isInitialized) {
+          const testOrgId = 'test-org-' + Date.now();
+          await window.encryptionService.initialize(testOrgId, 'TestPassword123!');
+        }
+
+        // Encrypt
+        const encrypted = await window.encryptionService.encrypt(dataToEncrypt);
+        resultDiv.textContent = 'Original data: ' + JSON.stringify(dataToEncrypt, null, 2) + '\n\n';
+        resultDiv.textContent += 'Encrypted: ' + JSON.stringify(encrypted, null, 2) + '\n\n';
+
+        // Decrypt
+        const decrypted = await window.encryptionService.decrypt(encrypted);
+        resultDiv.textContent += 'Decrypted: ' + JSON.stringify(decrypted, null, 2) + '\n\n';
+
+        // Verify
+        const originalStr = JSON.stringify(dataToEncrypt);
+        const decryptedStr = JSON.stringify(decrypted);
+        
+        if (originalStr === decryptedStr) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent += '✅ SUCCESS: Encryption/Decryption working correctly!';
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent += '❌ ERROR: Decrypted data does not match original!';
+        }
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = '❌ ERROR: ' + error.message;
+      }
+    }
+
+    // Test 3: Backward Compatibility
+    async function testBackwardCompatibility() {
+      const resultDiv = document.getElementById('backward-result');
+      resultDiv.className = 'result info';
+      resultDiv.textContent = 'Testing backward compatibility...';
+
+      try {
+        // Test data without encryption initialized
+        window.encryptionService.clearKey();
+
+        const testData = { name: 'John Doe', phone: '123-456-7890' };
+
+        // Should return unencrypted data
+        const encrypted = await window.encryptionService.encrypt(testData);
+        
+        if (encrypted.encrypted === false) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent = '✅ SUCCESS: Backward compatibility working!\n';
+          resultDiv.textContent += '✅ Unencrypted data returned when encryption not initialized\n';
+          resultDiv.textContent += '✅ Data: ' + JSON.stringify(encrypted.data, null, 2);
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent = '❌ ERROR: Data was encrypted when it should not be!';
+        }
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = '❌ ERROR: ' + error.message;
+      }
+    }
+
+    // Test 4: Field-Level Encryption
+    async function testFieldEncryption() {
+      const resultDiv = document.getElementById('field-result');
+      resultDiv.className = 'result info';
+      resultDiv.textContent = 'Testing field-level encryption...';
+
+      try {
+        // Initialize
+        if (!window.encryptionService.isInitialized) {
+          const testOrgId = 'test-org-' + Date.now();
+          await window.encryptionService.initialize(testOrgId, 'TestPassword123!');
+        }
+
+        const patient = {
+          id: 'PAT001',
+          firstName: 'John',
+          lastName: 'Doe',
+          phone: '123-456-7890',
+          email: 'john@example.com',
+          publicField: 'This should not be encrypted'
+        };
+
+        const sensitiveFields = ['firstName', 'lastName', 'phone', 'email'];
+
+        // Encrypt fields
+        const encrypted = await window.encryptionService.encryptFields(patient, sensitiveFields);
+        resultDiv.textContent = 'Original patient: ' + JSON.stringify(patient, null, 2) + '\n\n';
+        resultDiv.textContent += 'Encrypted patient: ' + JSON.stringify(encrypted, null, 2) + '\n\n';
+
+        // Decrypt fields
+        const decrypted = await window.encryptionService.decryptFields(encrypted, sensitiveFields);
+        resultDiv.textContent += 'Decrypted patient: ' + JSON.stringify(decrypted, null, 2) + '\n\n';
+
+        // Verify
+        if (decrypted.firstName === patient.firstName && 
+            decrypted.lastName === patient.lastName &&
+            decrypted.phone === patient.phone &&
+            decrypted.email === patient.email &&
+            decrypted.publicField === patient.publicField) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent += '✅ SUCCESS: Field-level encryption working correctly!';
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent += '❌ ERROR: Decrypted fields do not match!';
+        }
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = '❌ ERROR: ' + error.message;
+      }
+    }
+
+    // Test 5: Patient Data Encryption
+    async function testPatientEncryption() {
+      const resultDiv = document.getElementById('patient-result');
+      resultDiv.className = 'result info';
+      resultDiv.textContent = 'Testing patient data encryption...';
+
+      try {
+        // Initialize
+        if (!window.encryptionService.isInitialized) {
+          const testOrgId = 'test-org-' + Date.now();
+          await window.encryptionService.initialize(testOrgId, 'TestPassword123!');
+        }
+
+        // Simulate patient data
+        const patient = {
+          id: 'PAT001',
+          firstName: 'John',
+          lastName: 'Doe',
+          dob: '1990-01-01',
+          phone: '123-456-7890',
+          email: 'john@example.com',
+          address: '123 Main St',
+          city: 'Lagos',
+          state: 'Lagos',
+          country: 'Nigeria',
+          insuranceProvider: 'ABC Insurance',
+          medicalHistory: ['Hypertension', 'Diabetes']
+        };
+
+        const sensitiveFields = [
+          'firstName', 'lastName', 'dob', 'phone', 'email',
+          'address', 'city', 'state', 'country',
+          'insuranceProvider', 'medicalHistory'
+        ];
+
+        // Encrypt
+        const encrypted = await window.encryptionService.encryptFields(patient, sensitiveFields);
+        
+        // Simulate saving to localStorage
+        localStorage.setItem('test_encrypted_patient', JSON.stringify(encrypted));
+
+        // Simulate loading from localStorage
+        const loaded = JSON.parse(localStorage.getItem('test_encrypted_patient'));
+
+        // Decrypt
+        const decrypted = await window.encryptionService.decryptFields(loaded, sensitiveFields);
+
+        resultDiv.textContent = 'Original patient: ' + JSON.stringify(patient, null, 2) + '\n\n';
+        resultDiv.textContent += 'Encrypted (first 100 chars): ' + JSON.stringify(encrypted).substring(0, 100) + '...\n\n';
+        resultDiv.textContent += 'Decrypted patient: ' + JSON.stringify(decrypted, null, 2) + '\n\n';
+
+        // Verify
+        const originalStr = JSON.stringify(patient);
+        const decryptedStr = JSON.stringify(decrypted);
+        
+        if (originalStr === decryptedStr) {
+          resultDiv.className = 'result success';
+          resultDiv.textContent += '✅ SUCCESS: Patient data encryption working correctly!';
+          resultDiv.textContent += '\n✅ Data can be encrypted, stored, loaded, and decrypted!';
+        } else {
+          resultDiv.className = 'result error';
+          resultDiv.textContent += '❌ ERROR: Decrypted patient data does not match original!';
+        }
+
+        // Cleanup
+        localStorage.removeItem('test_encrypted_patient');
+      } catch (error) {
+        resultDiv.className = 'result error';
+        resultDiv.textContent = '❌ ERROR: ' + error.message;
+        console.error('Patient encryption test error:', error);
+      }
+    }
+  </script>
+</body>
+</html>
+

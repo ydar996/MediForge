@@ -1,0 +1,466 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>User Authentication Diagnostic Tool - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  
+  <style>
+    body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      background: #f5f5f5;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+    }
+    
+    .header h1 {
+      margin: 0 0 10px 0;
+    }
+    
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+    }
+    
+    .card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 20px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    input, select {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 6px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    input:focus, select:focus {
+      outline: none;
+      border-color: #008753;
+    }
+    
+    button {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+    }
+    
+    button:hover {
+      background: #006b42;
+    }
+    
+    button.secondary {
+      background: #6c757d;
+    }
+    
+    button.secondary:hover {
+      background: #5a6268;
+    }
+    
+    .log-container {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 600px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+    
+    .log-entry {
+      margin-bottom: 8px;
+      padding: 4px 0;
+    }
+    
+    .log-entry.info {
+      color: #4ec9b0;
+    }
+    
+    .log-entry.success {
+      color: #4ec9b0;
+      font-weight: 600;
+    }
+    
+    .log-entry.error {
+      color: #f48771;
+      font-weight: 600;
+    }
+    
+    .log-entry.warning {
+      color: #dcdcaa;
+    }
+    
+    .result-box {
+      background: #f8f9fa;
+      border-left: 4px solid #008753;
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 20px;
+    }
+    
+    .result-box.error {
+      border-left-color: #dc3545;
+      background: #fff5f5;
+    }
+    
+    .result-box.warning {
+      border-left-color: #ffc107;
+      background: #fffbf0;
+    }
+    
+    pre {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      overflow-x: auto;
+      margin: 10px 0;
+    }
+    
+    .loading {
+      display: inline-block;
+      width: 16px;
+      height: 16px;
+      border: 2px solid #008753;
+      border-top-color: transparent;
+      border-radius: 50%;
+      animation: spin 0.6s linear infinite;
+      margin-right: 8px;
+      vertical-align: middle;
+    }
+    
+    @keyframes spin {
+      to { transform: rotate(360deg); }
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🔍 User Authentication Diagnostic Tool</h1>
+    <p>Comprehensive diagnostic tool to troubleshoot user authentication issues</p>
+  </div>
+
+  <div class="card">
+    <h2>Search User</h2>
+    <div class="form-group">
+      <label for="search-type">Search By:</label>
+      <select id="search-type">
+        <option value="username">Username</option>
+        <option value="user-id">User ID (from users table)</option>
+        <option value="auth-user-id">Auth User ID (from Supabase Auth)</option>
+      </select>
+    </div>
+    
+    <div class="form-group">
+      <label for="search-value">Value:</label>
+      <input type="text" id="search-value" placeholder="Enter username, user ID, or auth user ID">
+    </div>
+    
+    <button onclick="runDiagnostic()">🔍 Run Diagnostic</button>
+    <button class="secondary" onclick="clearLogs()">Clear Logs</button>
+  </div>
+
+  <div class="card">
+    <h2>Diagnostic Logs</h2>
+    <div id="log-container" class="log-container">
+      <div class="log-entry info">Ready. Enter search criteria above and click "Run Diagnostic".</div>
+    </div>
+  </div>
+
+  <div id="result-container"></div>
+
+  <script>
+    function log(message, type = 'info') {
+      const container = document.getElementById('log-container');
+      const entry = document.createElement('div');
+      entry.className = `log-entry ${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      container.appendChild(entry);
+      container.scrollTop = container.scrollHeight;
+      console.log(`[DIAGNOSTIC] ${message}`);
+    }
+
+    function clearLogs() {
+      document.getElementById('log-container').innerHTML = '';
+      document.getElementById('result-container').innerHTML = '';
+      log('Logs cleared', 'info');
+    }
+
+    async function runDiagnostic() {
+      clearLogs();
+      
+      const searchType = document.getElementById('search-type').value;
+      const searchValue = document.getElementById('search-value').value.trim();
+      
+      if (!searchValue) {
+        log('❌ Please enter a search value', 'error');
+        return;
+      }
+
+      log(`Starting diagnostic for: ${searchType} = "${searchValue}"`, 'info');
+      
+      try {
+        // Step 1: Check Supabase client
+        log('Step 1: Checking Supabase client...', 'info');
+        if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+          throw new Error('Supabase client not initialized');
+        }
+        log('✅ Supabase client available', 'success');
+
+        // Step 2: Query users table
+        log('Step 2: Querying users table...', 'info');
+        let userRecord = null;
+        let authUserId = null;
+        
+        if (searchType === 'username') {
+          log(`   Searching users table for username: "${searchValue}"`, 'info');
+          const { data: users, error: usersError } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('username', searchValue);
+          
+          if (usersError) {
+            log(`   ❌ Error querying users table: ${usersError.message}`, 'error');
+            log(`   Error details: ${JSON.stringify(usersError)}`, 'error');
+          } else {
+            log(`   ✅ Query successful. Found ${users?.length || 0} record(s)`, 'success');
+            if (users && users.length > 0) {
+              userRecord = users[0];
+              authUserId = userRecord.auth_user_id;
+              log(`   ✅ User found in users table:`, 'success');
+              log(`      ID: ${userRecord.id}`, 'info');
+              log(`      Username: ${userRecord.username}`, 'info');
+              log(`      Auth User ID: ${authUserId || 'MISSING ⚠️'}`, authUserId ? 'success' : 'warning');
+              log(`      Email: ${userRecord.email || 'N/A'}`, 'info');
+              log(`      Role: ${userRecord.role || 'N/A'}`, 'info');
+            } else {
+              log(`   ⚠️ No user found with username "${searchValue}"`, 'warning');
+            }
+          }
+        } else if (searchType === 'user-id') {
+          log(`   Searching users table for ID: "${searchValue}"`, 'info');
+          const { data: user, error: userError } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('id', searchValue)
+            .single();
+          
+          if (userError) {
+            log(`   ❌ Error querying users table: ${userError.message}`, 'error');
+            log(`   Error details: ${JSON.stringify(userError)}`, 'error');
+          } else if (user) {
+            userRecord = user;
+            authUserId = user.auth_user_id;
+            log(`   ✅ User found in users table:`, 'success');
+            log(`      ID: ${userRecord.id}`, 'info');
+            log(`      Username: ${userRecord.username}`, 'info');
+            log(`      Auth User ID: ${authUserId || 'MISSING ⚠️'}`, authUserId ? 'success' : 'warning');
+          } else {
+            log(`   ⚠️ No user found with ID "${searchValue}"`, 'warning');
+          }
+        } else if (searchType === 'auth-user-id') {
+          authUserId = searchValue;
+          log(`   Using provided Auth User ID: "${searchValue}"`, 'info');
+          
+          // Try to find user in users table by auth_user_id
+          const { data: users, error: usersError } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('auth_user_id', searchValue);
+          
+          if (!usersError && users && users.length > 0) {
+            userRecord = users[0];
+            log(`   ✅ Found user in users table with this auth_user_id`, 'success');
+            log(`      Username: ${userRecord.username}`, 'info');
+          }
+        }
+
+        // Step 3: Query Supabase Auth (if we have auth_user_id)
+        let authUserData = null;
+        if (authUserId) {
+          log('Step 3: Querying Supabase Auth...', 'info');
+          log(`   Using Auth User ID: "${authUserId}"`, 'info');
+          
+          if (typeof window.secureSupabaseRpc === 'function') {
+            log('   Using secureSupabaseRpc to query Auth...', 'info');
+            try {
+              const result = await window.secureSupabaseRpc('diagnose_user_auth', {
+                p_auth_user_id: authUserId,
+                p_username: userRecord?.username,
+                p_user_id: userRecord?.id
+              });
+              
+              log(`   ✅ Secure RPC call successful`, 'success');
+              log(`   Response: ${JSON.stringify(result, null, 2)}`, 'info');
+              
+              const diagnosis = result?.diagnosis || result?.data?.diagnosis;
+              if (diagnosis && diagnosis.authUser) {
+                authUserData = diagnosis.authUser;
+                log(`   ✅ Auth user data retrieved:`, 'success');
+                log(`      Email: ${authUserData.email}`, 'info');
+                log(`      Created: ${authUserData.createdAt || 'N/A'}`, 'info');
+                log(`      Last Sign In: ${authUserData.lastSignIn || 'Never'}`, 'info');
+              }
+            } catch (rpcError) {
+              log(`   ❌ Secure RPC call failed: ${rpcError.message}`, 'error');
+              log(`   Error details: ${JSON.stringify(rpcError)}`, 'error');
+            }
+          } else {
+            log('   ⚠️ secureSupabaseRpc not available', 'warning');
+          }
+        } else {
+          log('Step 3: Skipping Auth query (no auth_user_id available)', 'warning');
+        }
+
+        // Step 4: Display results
+        log('Step 4: Compiling results...', 'info');
+        displayResults(userRecord, authUserData, searchValue);
+
+      } catch (error) {
+        log(`❌ Diagnostic failed: ${error.message}`, 'error');
+        log(`Stack trace: ${error.stack}`, 'error');
+        displayError(error);
+      }
+    }
+
+    function displayResults(userRecord, authUserData, searchValue) {
+      const container = document.getElementById('result-container');
+      let html = '<div class="card">';
+      html += '<h2>Diagnostic Results</h2>';
+      
+      if (!userRecord && !authUserData) {
+        html += '<div class="result-box error">';
+        html += '<h3>❌ User Not Found</h3>';
+        html += `<p>No user found matching "${searchValue}" in either the users table or Supabase Auth.</p>`;
+        html += '</div>';
+      } else {
+        if (userRecord) {
+          html += '<div class="result-box">';
+          html += '<h3>✅ Users Table Record</h3>';
+          html += '<pre>' + JSON.stringify(userRecord, null, 2) + '</pre>';
+          html += '</div>';
+        } else {
+          html += '<div class="result-box warning">';
+          html += '<h3>⚠️ Users Table Record Missing</h3>';
+          html += '<p>User not found in users table but may exist in Supabase Auth.</p>';
+          html += '</div>';
+        }
+        
+        if (authUserData) {
+          html += '<div class="result-box">';
+          html += '<h3>✅ Supabase Auth Record</h3>';
+          html += '<pre>' + JSON.stringify(authUserData, null, 2) + '</pre>';
+          html += '</div>';
+        } else {
+          html += '<div class="result-box error">';
+          html += '<h3>❌ Supabase Auth Record Missing</h3>';
+          if (userRecord && !userRecord.auth_user_id) {
+            html += '<p><strong>CRITICAL:</strong> User exists in users table but has no auth_user_id.</p>';
+            html += '<p>This means the user is NOT registered in Supabase Auth, which explains login failures.</p>';
+            html += '<p><strong>Solution:</strong> The user needs to be properly registered in Supabase Auth.</p>';
+          } else {
+            html += '<p>User not found in Supabase Auth.</p>';
+          }
+          html += '</div>';
+        }
+        
+        // Recommendations
+        html += '<div class="result-box">';
+        html += '<h3>💡 Recommendations</h3>';
+        html += '<ul>';
+        
+        if (userRecord && !userRecord.auth_user_id) {
+          html += '<li><strong>CRITICAL:</strong> User needs to be registered in Supabase Auth</li>';
+          html += '<li>Try resetting password - this may create the Auth record</li>';
+          html += '<li>If password reset fails, user may need to be re-registered</li>';
+        } else if (userRecord && authUserData) {
+          const expectedEmail = `${userRecord.username}@mediforge.app`;
+          if (authUserData.email !== expectedEmail) {
+            html += `<li>Email mismatch: Auth has "${authUserData.email}" but expected "${expectedEmail}"</li>`;
+            html += '<li>Try resetting password - this will update the email format</li>';
+          } else {
+            html += '<li>User appears to be properly configured</li>';
+            html += '<li>If login still fails, check password reset status</li>';
+          }
+        }
+        
+        html += '</ul>';
+        html += '</div>';
+      }
+      
+      html += '</div>';
+      container.innerHTML = html;
+      
+      log('✅ Diagnostic complete', 'success');
+    }
+
+    function displayError(error) {
+      const container = document.getElementById('result-container');
+      container.innerHTML = `
+        <div class="card">
+          <div class="result-box error">
+            <h3>❌ Error</h3>
+            <p><strong>Message:</strong> ${error.message}</p>
+            <pre>${error.stack || JSON.stringify(error, null, 2)}</pre>
+          </div>
+        </div>
+      `;
+    }
+
+    // Allow Enter key to trigger search
+    document.getElementById('search-value').addEventListener('keypress', function(e) {
+      if (e.key === 'Enter') {
+        runDiagnostic();
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+
+

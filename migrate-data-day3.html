@@ -1,0 +1,350 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Day 3: Data Migration</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+    .status-box {
+      background: #f5f5f5;
+      padding: 20px;
+      border-radius: 5px;
+      margin: 15px 0;
+      font-family: monospace;
+      font-size: 13px;
+      max-height: 500px;
+      overflow-y: auto;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    .success { color: green; font-weight: bold; }
+    .error { color: red; font-weight: bold; }
+    .warning { color: orange; font-weight: bold; }
+    .info { color: blue; }
+    .summary {
+      background: #e3f2fd;
+      padding: 15px;
+      border-left: 4px solid #2196F3;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>?? Day 3: Data Migration Tool</h1>
+    <p>This tool migrates your data from localStorage to Supabase.</p>
+
+    <div class="summary">
+      <h3>Data Summary:</h3>
+      <p><strong>Patients:</strong> <span id="patient-count">0</span></p>
+      <p><strong>Appointments:</strong> <span id="appointment-count">0</span></p>
+      <p><strong>Organization ID:</strong> <span id="org-id">Loading...</span></p>
+    </div>
+
+    <h3>Migration Steps:</h3>
+    <button id="step1-btn" onclick="step1_analyzeData()">Step 1: Analyze Data</button>
+    <button id="step2-btn" onclick="step2_migratePatients()" disabled>Step 2: Migrate Patients</button>
+    <button id="step3-btn" onclick="step3_migrateAppointments()" disabled>Step 3: Migrate Appointments</button>
+    <button onclick="window.location.href='dashboard'">Back to Dashboard</button>
+
+    <div class="status-box" id="status-log">
+      <div class="info">Ready to migrate. Click "Step 1" to begin...</div>
+    </div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113110113111311"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>
+
+  <script>
+    let patientsToMigrate = [];
+    let appointmentsToMigrate = [];
+    let orgId = '576522cc-e769-4fb4-9487-3d150857d970'; // Your org ID from Day 2
+
+    function log(message, type = 'info') {
+      const statusLog = document.getElementById('status-log');
+      const entry = document.createElement('div');
+      entry.className = type;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      statusLog.appendChild(entry);
+      statusLog.scrollTop = statusLog.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLog() {
+      document.getElementById('status-log').innerHTML = '';
+    }
+
+    // Step 1: Analyze Data
+    function step1_analyzeData() {
+      clearLog();
+      log('=== STEP 1: ANALYZING DATA ===', 'info');
+      
+      try {
+        // Get patients
+        patientsToMigrate = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+        document.getElementById('patient-count').textContent = patientsToMigrate.length;
+        log(`Found ${patientsToMigrate.length} patients in localStorage`, 'success');
+        
+        patientsToMigrate.forEach((p, i) => {
+          log(`  ${i+1}. ${p.id} - ${p.firstName} ${p.lastName}`, 'info');
+        });
+
+        // Get appointments
+        appointmentsToMigrate = JSON.parse(localStorage.getItem('Mecure Clinics_appointments') || '[]');
+        document.getElementById('appointment-count').textContent = appointmentsToMigrate.length;
+        log(`\nFound ${appointmentsToMigrate.length} appointments in localStorage`, 'success');
+
+        // Show org ID
+        document.getElementById('org-id').textContent = orgId;
+        log(`\nOrganization ID: ${orgId}`, 'info');
+
+        log('\n? Analysis complete! Ready to migrate.', 'success');
+        log('Click "Step 2" to migrate patients.', 'info');
+
+        // Enable next button
+        document.getElementById('step2-btn').disabled = false;
+
+      } catch (error) {
+        log(`? Error during analysis: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Step 2: Migrate Patients
+    async function step2_migratePatients() {
+      clearLog();
+      log('=== STEP 2: MIGRATING PATIENTS ===', 'info');
+      log('Do NOT close this page!', 'warning');
+
+      document.getElementById('step2-btn').disabled = true;
+
+      try {
+        if (!supabaseClient) {
+          log('? Supabase client not initialized!', 'error');
+          return;
+        }
+
+        if (patientsToMigrate.length === 0) {
+          log('?? No patients to migrate', 'warning');
+          document.getElementById('step3-btn').disabled = false;
+          return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        let skippedCount = 0;
+
+        for (const patient of patientsToMigrate) {
+          try {
+            log(`\nMigrating: ${patient.id} - ${patient.firstName} ${patient.lastName}...`, 'info');
+
+            // Check if patient already exists
+            const { data: existing, error: checkError } = await supabaseClient
+              .from('patients')
+              .select('patient_id')
+              .eq('patient_id', patient.id)
+              .maybeSingle();
+
+            if (existing) {
+              log(`  ?? Patient ${patient.id} already exists in Supabase - skipping`, 'warning');
+              skippedCount++;
+              continue;
+            }
+
+            // Prepare patient data for Supabase (BASIC COLUMNS ONLY)
+            const patientData = {
+              patient_id: patient.id,
+              first_name: patient.firstName,
+              last_name: patient.lastName,
+              gender: patient.gender || 'Male',
+              date_of_birth: patient.dateOfBirth || null,
+              phone: patient.phone || '',
+              organization_id: orgId
+            };
+            
+            // Note: Only migrating basic fields for now
+            // Other fields (address, allergies, etc.) can be added later
+
+            // Insert into Supabase
+            const { data, error } = await supabaseClient
+              .from('patients')
+              .insert(patientData)
+              .select()
+              .single();
+
+            if (error) {
+              log(`  ? Error: ${error.message}`, 'error');
+              errorCount++;
+            } else {
+              log(`  ? Successfully migrated ${patient.id}`, 'success');
+              successCount++;
+            }
+
+            // Small delay to avoid rate limiting
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+          } catch (error) {
+            log(`  ? Error migrating ${patient.id}: ${error.message}`, 'error');
+            errorCount++;
+          }
+        }
+
+        log('\n=== PATIENT MIGRATION COMPLETE ===', 'success');
+        log(`? Successfully migrated: ${successCount} patients`, 'success');
+        if (skippedCount > 0) log(`?? Skipped (already exist): ${skippedCount} patients`, 'warning');
+        if (errorCount > 0) log(`? Errors: ${errorCount} patients`, 'error');
+
+        log('\nClick "Step 3" to migrate appointments.', 'info');
+        document.getElementById('step3-btn').disabled = false;
+
+      } catch (error) {
+        log(`? Fatal error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Step 3: Migrate Appointments
+    async function step3_migrateAppointments() {
+      clearLog();
+      log('=== STEP 3: MIGRATING APPOINTMENTS ===', 'info');
+      log('Do NOT close this page!', 'warning');
+
+      document.getElementById('step3-btn').disabled = true;
+
+      try {
+        if (!supabaseClient) {
+          log('? Supabase client not initialized!', 'error');
+          return;
+        }
+
+        if (appointmentsToMigrate.length === 0) {
+          log('?? No appointments to migrate', 'warning');
+          log('\n?? MIGRATION COMPLETE!', 'success');
+          return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        let skippedCount = 0;
+
+        for (const appt of appointmentsToMigrate) {
+          try {
+            log(`\nMigrating appointment: ${appt.patientName} on ${appt.date}...`, 'info');
+
+            // Check if appointment already exists (by date + time + patient)
+            const { data: existing, error: checkError } = await supabaseClient
+              .from('appointments')
+              .select('id')
+              .eq('patient_id', appt.patientId)
+              .eq('appointment_date', appt.date)
+              .eq('appointment_time', appt.time)
+              .maybeSingle();
+
+            if (existing) {
+              log(`  ?? Appointment already exists - skipping`, 'warning');
+              skippedCount++;
+              continue;
+            }
+
+            // Prepare appointment data
+            const apptData = {
+              patient_id: appt.patientId,
+              appointment_date: appt.date,
+              appointment_time: appt.time,
+              reason: appt.reason || '',
+              status: appt.status || 'scheduled',
+              notes: appt.notes || '',
+              organization_id: orgId
+            };
+
+            // Insert into Supabase
+            const { data, error } = await supabaseClient
+              .from('appointments')
+              .insert(apptData)
+              .select()
+              .single();
+
+            if (error) {
+              log(`  ? Error: ${error.message}`, 'error');
+              errorCount++;
+            } else {
+              log(`  ? Successfully migrated appointment`, 'success');
+              successCount++;
+            }
+
+            // Small delay
+            await new Promise(resolve => setTimeout(resolve, 300));
+
+          } catch (error) {
+            log(`  ? Error: ${error.message}`, 'error');
+            errorCount++;
+          }
+        }
+
+        log('\n=== APPOINTMENT MIGRATION COMPLETE ===', 'success');
+        log(`? Successfully migrated: ${successCount} appointments`, 'success');
+        if (skippedCount > 0) log(`?? Skipped (already exist): ${skippedCount} appointments`, 'warning');
+        if (errorCount > 0) log(`? Errors: ${errorCount} appointments`, 'error');
+
+        log('\n?????? DAY 3 MIGRATION COMPLETE! ??????', 'success');
+        log('\nVerify your data in Supabase Dashboard:', 'info');
+        log('  - Table Editor ? patients (should have 7 patients)', 'info');
+        log('  - Table Editor ? appointments (should have 13 appointments)', 'info');
+
+      } catch (error) {
+        log(`? Fatal error: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Auto-run analysis on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      log('Migration tool ready. Click "Step 1" to begin.', 'info');
+      document.getElementById('org-id').textContent = orgId;
+    });
+  </script>  <script src="js/universal-sync-status.js?v=202510220113110113111311"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+

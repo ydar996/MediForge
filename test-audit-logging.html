@@ -1,0 +1,194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Audit Logging</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+    }
+    button {
+      padding: 10px 20px;
+      margin: 10px;
+      font-size: 16px;
+      cursor: pointer;
+      background: #4CAF50;
+      color: white;
+      border: none;
+      border-radius: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    #output {
+      margin-top: 20px;
+      padding: 15px;
+      background: #f5f5f5;
+      border-radius: 5px;
+      white-space: pre-wrap;
+    }
+    .success { color: green; }
+    .error { color: red; }
+    .info { color: blue; }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Audit Logging to Supabase</h1>
+  <p>This page helps you test if audit logs are being saved to Supabase.</p>
+  
+  <button onclick="testAuditLog()">Test Audit Log</button>
+  <button onclick="checkUserInfo()">Check User Info</button>
+  <button onclick="checkSupabaseFunctions()">Check Supabase Functions</button>
+  <button onclick="viewRecentLogs()">View Recent Logs</button>
+  
+  <div id="output"></div>
+
+  <!-- Load required scripts -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/security.js?v=1"></script>
+  <script src="js/main.js?v=20251112063500"></script>
+
+  <script>
+    function log(message, type = 'info') {
+      const output = document.getElementById('output');
+      const className = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+      const timestamp = new Date().toLocaleTimeString();
+      output.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
+      output.scrollTop = output.scrollHeight;
+      console.log(message);
+    }
+
+    async function checkUserInfo() {
+      log('=== Checking User Info ===', 'info');
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const platformAdmin = JSON.parse(localStorage.getItem('platformAdmin') || 'null');
+        
+        log(`Username: ${user.username || 'NOT SET'}`, user.username ? 'success' : 'error');
+        log(`Role: ${user.role || 'NOT SET'}`, user.role ? 'success' : 'error');
+        log(`Organization: ${user.org || 'NOT SET'}`, user.org ? 'success' : 'error');
+        log(`Organization ID: ${user.organizationId || 'NOT SET'}`, user.organizationId ? 'success' : 'info');
+        log(`Platform Admin: ${platformAdmin ? 'YES' : 'NO'}`, platformAdmin ? 'success' : 'info');
+        
+        if (!user.username) {
+          log('⚠️ ERROR: No user logged in! Please log in first.', 'error');
+        }
+      } catch (error) {
+        log(`❌ Error checking user info: ${error.message}`, 'error');
+      }
+    }
+
+    async function checkSupabaseFunctions() {
+      log('=== Checking Supabase Functions ===', 'info');
+      try {
+        const hasSupabaseClient = typeof window.supabaseClient !== 'undefined' && window.supabaseClient;
+        log(`window.supabaseClient: ${hasSupabaseClient ? '✅ Available' : '❌ Not available'}`, hasSupabaseClient ? 'success' : 'error');
+        
+        const hasSecureSupabaseRpc = typeof window.secureSupabaseRpc === 'function';
+        log(`window.secureSupabaseRpc: ${hasSecureSupabaseRpc ? '✅ Available' : '❌ Not available'}`, hasSecureSupabaseRpc ? 'success' : 'error');
+        
+        const hasSecureSupabaseInsert = typeof window.secureSupabaseInsert === 'function';
+        log(`window.secureSupabaseInsert: ${hasSecureSupabaseInsert ? '✅ Available' : '❌ Not available'}`, hasSecureSupabaseInsert ? 'success' : 'error');
+        
+        const hasLogAuditEvent = typeof window.logAuditEvent === 'function';
+        log(`window.logAuditEvent: ${hasLogAuditEvent ? '✅ Available' : '❌ Not available'}`, hasLogAuditEvent ? 'success' : 'error');
+        
+        if (!hasSecureSupabaseInsert) {
+          log('⚠️ ERROR: secureSupabaseInsert is not available! Audit logs cannot be saved to Supabase.', 'error');
+        }
+        
+        if (!hasLogAuditEvent) {
+          log('⚠️ ERROR: logAuditEvent is not available! Cannot create audit logs.', 'error');
+        }
+      } catch (error) {
+        log(`❌ Error checking functions: ${error.message}`, 'error');
+      }
+    }
+
+    async function testAuditLog() {
+      log('=== Testing Audit Log ===', 'info');
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!user.username) {
+          log('❌ ERROR: No user logged in! Please log in first.', 'error');
+          return;
+        }
+
+        if (typeof window.logAuditEvent !== 'function') {
+          log('❌ ERROR: logAuditEvent function is not available!', 'error');
+          return;
+        }
+
+        log(`Creating test audit log for user: ${user.username}`, 'info');
+        
+        const testAction = 'test_audit_log_' + Date.now();
+        await window.logAuditEvent(testAction, {
+          test: true,
+          timestamp: new Date().toISOString(),
+          source: 'test-audit-logging.html'
+        });
+        
+        log(`✅ Audit log created: ${testAction}`, 'success');
+        log('📝 Check the browser console for "✅ Audit log saved to Supabase" message', 'info');
+        log('📝 Wait 30 seconds, then click "View Recent Logs" to verify it was saved', 'info');
+        
+      } catch (error) {
+        log(`❌ Error creating audit log: ${error.message}`, 'error');
+        log(`❌ Error details: ${error.stack}`, 'error');
+      }
+    }
+
+    async function viewRecentLogs() {
+      log('=== Viewing Recent Audit Logs ===', 'info');
+      try {
+        if (typeof window.secureSupabaseRpc !== 'function') {
+          log('❌ ERROR: secureSupabaseRpc is not available!', 'error');
+          return;
+        }
+
+        log('Fetching security summary for last 24 hours...', 'info');
+        const summary = await window.secureSupabaseRpc('get_security_summary', { p_time_window_hours: 24 });
+        log(`Response: ${JSON.stringify(summary, null, 2)}`, 'info');
+        
+        if (summary && summary.data && Array.isArray(summary.data) && summary.data.length > 0) {
+          const data = summary.data[0];
+          log(`✅ Total Events: ${data.total_events || 0}`, data.total_events > 0 ? 'success' : 'info');
+          log(`✅ Failed Logins: ${data.failed_logins || 0}`, 'info');
+          log(`✅ Successful Logins: ${data.successful_logins || 0}`, 'info');
+          log(`✅ Unique Users: ${data.unique_users || 0}`, 'info');
+        } else if (Array.isArray(summary) && summary.length > 0) {
+          const data = summary[0];
+          log(`✅ Total Events: ${data.total_events || 0}`, data.total_events > 0 ? 'success' : 'info');
+          log(`✅ Failed Logins: ${data.failed_logins || 0}`, 'info');
+          log(`✅ Successful Logins: ${data.successful_logins || 0}`, 'info');
+          log(`✅ Unique Users: ${data.unique_users || 0}`, 'info');
+        } else {
+          log('⚠️ No audit logs found in the last 24 hours', 'info');
+          log('💡 Try clicking "Test Audit Log" first, then wait 30 seconds and check again', 'info');
+        }
+        
+      } catch (error) {
+        log(`❌ Error fetching logs: ${error.message}`, 'error');
+        log(`❌ Error details: ${error.stack}`, 'error');
+      }
+    }
+
+    // Auto-run checks on page load
+    window.addEventListener('load', () => {
+      log('🧪 Test Audit Logging Page Loaded', 'info');
+      setTimeout(() => {
+        checkUserInfo();
+        checkSupabaseFunctions();
+      }, 1000);
+    });
+  </script>
+</body>
+</html>
+

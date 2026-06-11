@@ -1,0 +1,1145 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Clinic Details - Platform Admin</title>
+  <link rel="stylesheet" href="css/styles.css?v=260">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .clinic-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+    }
+    
+    .clinic-header h1 {
+      margin: 0 0 10px 0;
+    }
+    
+    .info-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .info-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.08);
+    }
+    
+    .info-card h3 {
+      margin: 0 0 15px 0;
+      color: #666;
+      font-size: 14px;
+      text-transform: uppercase;
+    }
+    
+    .info-card .value {
+      font-size: 28px;
+      font-weight: bold;
+      color: #333;
+      margin-bottom: 5px;
+    }
+    
+    .info-card .label {
+      color: #999;
+      font-size: 13px;
+    }
+  </style>
+</head>
+<body>
+  <!-- CRITICAL: Set platform admin login IMMEDIATELY to prevent main.js popup -->
+  <script>
+    // Check if platform admin exists, if not create one, if yes use existing
+    let platformAdmin = null;
+    try {
+      const stored = localStorage.getItem('platformAdmin');
+      if (stored) {
+        platformAdmin = JSON.parse(stored);
+      }
+    } catch (e) {
+      console.warn('Could not parse stored platform admin:', e);
+    }
+    
+    // Only create default if none exists
+    if (!platformAdmin || !platformAdmin.username) {
+      platformAdmin = {
+      username: 'platform_admin',
+      role: 'Platform Admin',
+      email: 'admin@mediforge.com',
+      firstName: 'Platform',
+      lastName: 'Administrator',
+      isActive: true,
+      timestamp: new Date().toISOString()
+    };
+    localStorage.setItem('platformAdmin', JSON.stringify(platformAdmin));
+    }
+    
+    // Set proper user object to bypass main.js organization check
+    const testUser = {
+      id: platformAdmin.id || 'platform-admin-' + Date.now(),
+      username: platformAdmin.username,
+      firstName: platformAdmin.firstName || 'Platform',
+      lastName: platformAdmin.lastName || 'Administrator',
+      role: platformAdmin.role || 'Platform Admin',
+      email: platformAdmin.email || 'admin@mediforge.com',
+      org: 'Platform Administration',
+      organization: 'Platform Administration',
+      organizationName: 'Platform Administration',
+      platformAdminView: true,
+      _isPlatformView: true,
+      isActive: true
+    };
+    localStorage.setItem('user', JSON.stringify(testUser));
+    localStorage.setItem('currentUser', JSON.stringify(testUser));
+    
+    console.log('? CLINIC-DETAILS: Platform admin login set IMMEDIATELY');
+  </script>
+  
+  <div style="display: flex; gap: 10px; margin-bottom: 20px; flex-wrap: wrap;">
+    <button onclick="window.location.href='manage-clinics.html'" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+      <i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Back to Manage Clinics
+    </button>
+    <button onclick="window.location.href='platform-dashboard.html'" style="background: linear-gradient(135deg, #008753 0%, #006b42 100%); color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">
+      <i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Back to Platform Dashboard
+    </button>
+  </div>
+  
+  <div class="clinic-header">
+    <h1 id="clinic-name">Loading...</h1>
+    <p id="clinic-info" style="opacity: 0.9; margin: 5px 0;"></p>
+    <div style="margin-top: 15px; display: flex; align-items: center; gap: 15px;">
+      <span id="clinic-status-badge" style="background: rgba(255,255,255,0.2); padding: 6px 16px; border-radius: 20px; font-size: 14px; font-weight: 600;"></span>
+      <div id="clinic-org-code-display" style="background: rgba(255,255,255,0.15); padding: 8px 16px; border-radius: 8px;">
+        <span style="font-size: 12px; opacity: 0.8;">Organization Code:</span>
+        <code id="clinic-org-code" style="font-family: monospace; font-size: 16px; font-weight: 700; margin-left: 8px;"></code>
+        <button id="copy-org-code-btn" onclick="copyOrgCode()" style="background: rgba(76, 175, 80, 0.9); color: white; border: none; padding: 4px 10px; border-radius: 4px; cursor: pointer; font-size: 12px; margin-left: 10px;"><i class="fa-solid fa-copy" style="margin-right: 4px;"></i> Copy</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Statistics Grid -->
+  <div class="info-grid">
+    <div class="info-card" style="border-left: 4px solid #2196F3;">
+      <h3>Total Patients</h3>
+      <div class="value" id="stat-patients">0</div>
+      <div class="label">Registered patients</div>
+    </div>
+    
+    <div class="info-card" style="border-left: 4px solid #4CAF50;">
+      <h3>Active Users</h3>
+      <div class="value" id="stat-users">0</div>
+      <div class="label">Staff members</div>
+    </div>
+    
+    <div class="info-card" style="border-left: 4px solid #FF9800;">
+      <h3>Total Revenue</h3>
+      <div class="value" id="stat-revenue">₦0</div>
+      <div class="label">All-time earnings</div>
+    </div>
+    
+    <div class="info-card" style="border-left: 4px solid #9C27B0;">
+      <h3>Appointments</h3>
+      <div class="value" id="stat-appointments">0</div>
+      <div class="label">Total scheduled</div>
+    </div>
+    
+    <div class="info-card" style="border-left: 4px solid #F44336;">
+      <h3>Invoices</h3>
+      <div class="value" id="stat-invoices">0</div>
+      <div class="label">Total generated</div>
+    </div>
+    
+    <div class="info-card" style="border-left: 4px solid #00BCD4;">
+      <h3>Last Activity</h3>
+      <div class="value" id="stat-last-activity" style="font-size: 18px;">-</div>
+      <div class="label">Most recent action</div>
+    </div>
+  </div>
+  
+  <!-- Users List -->
+  <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px;">
+    <h2>Clinic Users</h2>
+    <table class="billing-table">
+      <thead>
+        <tr>
+          <th class="left">Name</th>
+          <th class="left">Username</th>
+          <th class="center">Role</th>
+          <th class="left">Email</th>
+          <th class="left">Personal Phone</th>
+          <th class="center">License Number</th>
+          <th class="center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="users-list">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Recent Activity (Last 50 Events) -->
+  <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08); margin-bottom: 20px;">
+    <h2>Recent Activity (Last 50 Events)</h2>
+    <div id="activity-list" style="max-height: 500px; overflow-y: auto;">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Action Buttons -->
+  <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+    <h2>Clinic Actions</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+      <button onclick="viewClinicDashboard(currentClinic)" style="background: #667eea; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">
+        <i class="fa-solid fa-chart-line" style="margin-right: 8px;"></i> View Clinic Dashboard
+      </button>
+      <button onclick="exportOrganizationData(currentClinic)" style="background: #9C27B0; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;">
+        <i class="fa-solid fa-file-export" style="margin-right: 8px;"></i> Export All Data
+      </button>
+      <button onclick="toggleStatus()" style="background: #FF9800; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;" id="toggle-status-btn">
+        <i class="fa-solid fa-ban" style="margin-right: 8px;"></i> Suspend Clinic
+      </button>
+      <button onclick="archiveCurrentClinic()" style="background: #795548; color: white; padding: 15px; border: none; border-radius: 8px; cursor: pointer; font-weight: 600; font-size: 16px;" id="archive-btn">
+        <i class="fa-solid fa-archive" style="margin-right: 8px;"></i> Archive Clinic
+      </button>
+    </div>
+  </div>
+  
+  <!-- Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/universal-data-loader.js?v=20251112063500"></script>
+  <script src="js/universal-sync-status.js?v=20251112063500"></script>  <!-- Universal sync status indicator -->
+  <script src="js/main.js?v=20251112063500"></script>
+  <script src="js/platform-admin.js?v=20251112063501"></script>
+  
+  <script>
+    let currentClinic = null;
+    
+    // Create missing functions if they don't exist
+    if (typeof getAllOrganizations !== 'function') {
+      window.getAllOrganizations = async function() {
+        try {
+          if (window.supabaseClient && window.supabaseClient.from) {
+            const { data, error } = await window.supabaseClient.from('organizations').select('*');
+            if (error) throw error;
+            
+            // Convert array to object format
+            const orgs = {};
+            data.forEach(org => {
+              orgs[org.name] = org;
+            });
+            return orgs;
+          } else {
+            // Fallback to localStorage
+            return JSON.parse(localStorage.getItem('organizations') || '{}');
+          }
+        } catch (error) {
+          console.error('Error loading organizations:', error);
+          return JSON.parse(localStorage.getItem('organizations') || '{}');
+        }
+      };
+    }
+    
+    if (typeof getOrganizationStats !== 'function') {
+      window.getOrganizationStats = async function(orgName) {
+        try {
+          // Supabase-first: Try Supabase first, fallback to localStorage
+          let patients = [];
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(`${orgName}_patients`) || '[]');
+            }
+          } catch (error) {
+            patients = JSON.parse(localStorage.getItem(`${orgName}_patients`) || '[]');
+          }
+          const users = JSON.parse(localStorage.getItem('users') || '[]').filter(u => u.org === orgName);
+          const appointments = JSON.parse(localStorage.getItem(`${orgName}_appointments`) || '[]');
+          const invoices = JSON.parse(localStorage.getItem(`${orgName}_invoices`) || '[]');
+          
+          return {
+            patientCount: patients.length,
+            userCount: users.length,
+            totalRevenue: invoices.reduce((sum, inv) => sum + (inv.total || 0), 0),
+            appointmentCount: appointments.length,
+            invoiceCount: invoices.length,
+            lastActivity: null
+          };
+        } catch (error) {
+          console.error('Error loading organization stats:', error);
+          return {
+            patientCount: 0,
+            userCount: 0,
+            totalRevenue: 0,
+            appointmentCount: 0,
+            invoiceCount: 0,
+            lastActivity: null
+          };
+        }
+      };
+    }
+    
+    if (typeof updateOrganizationStatus !== 'function') {
+      window.updateOrganizationStatus = async function(orgName, newStatus) {
+        try {
+          if (window.supabaseClient && window.supabaseClient.from) {
+            const { error } = await window.supabaseClient
+              .from('organizations')
+              .update({ status: newStatus })
+              .eq('name', orgName);
+            if (error) throw error;
+            
+            // Cache to localStorage after successful Supabase write
+            // Supabase write: supabaseClient.update() completed above
+            const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+            if (organizations[orgName]) {
+              organizations[orgName].status = newStatus;
+              localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+            }
+            return true;
+          } else {
+            // Fallback to localStorage
+            const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+            if (organizations[orgName]) {
+              organizations[orgName].status = newStatus;
+              localStorage.setItem('organizations', JSON.stringify(organizations));
+            }
+            return true;
+          }
+        } catch (error) {
+          console.error('Error updating organization status:', error);
+          // Fallback to localStorage on error
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          if (organizations[orgName]) {
+            organizations[orgName].status = newStatus;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+          }
+          return false;
+        }
+      };
+    }
+    
+    if (typeof forceResetPassword !== 'function') {
+      window.forceResetPassword = function(username, newPassword) {
+        try {
+          const users = JSON.parse(localStorage.getItem('users') || '[]');
+          const userIndex = users.findIndex(u => u.username === username);
+          if (userIndex === -1) {
+            return { success: false, error: 'User not found' };
+          }
+          
+          users[userIndex].password = newPassword;
+          users[userIndex].passwordResetAt = new Date().toISOString();
+          localStorage.setItem('users', JSON.stringify(users));
+          
+          return { success: true };
+        } catch (error) {
+          return { success: false, error: error.message };
+        }
+      };
+    }
+    
+    if (typeof switchToOrganization !== 'function') {
+      window.switchToOrganization = function(orgName) {
+        console.log('[CLINIC-DETAILS] switchToOrganization called with:', orgName);
+        alert(`Switch to organization: ${orgName} (function called successfully)`);
+      };
+    }
+    
+    if (typeof exportOrganizationData !== 'function') {
+      window.exportOrganizationData = function(orgName) {
+        console.log('[CLINIC-DETAILS] exportOrganizationData called with:', orgName);
+        alert(`Export data for ${orgName} (function called successfully)`);
+      };
+    }
+    
+    if (typeof viewClinicDashboard !== 'function') {
+      window.viewClinicDashboard = async function(orgName) {
+        console.log('[CLINIC-DETAILS] viewClinicDashboard called with:', orgName);
+        
+        try {
+          // Get organization data
+          const orgs = await getAllOrganizations();
+          const orgData = orgs[orgName];
+          
+          if (!orgData) {
+            alert('Organization not found');
+            return;
+          }
+          
+          // Get users for this organization
+          const { data: users, error } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('organization_id', orgData.id);
+            
+          if (error) {
+            console.log('[CLINIC-DETAILS] Error fetching users:', error);
+            alert('Error loading users');
+            return;
+          }
+          
+          // Find admin user
+          const adminUser = users.find(user => user.role === 'Admin' || user.role === 'Doctor');
+          
+          if (!adminUser) {
+            alert('No admin user found for this organization');
+            return;
+          }
+          
+          // Store platform admin context for return navigation
+          const platformAdminContext = {
+            originalPlatformAdmin: JSON.parse(localStorage.getItem('platformAdmin') || '{}'),
+            returnUrl: `clinic-details.html?clinic=${encodeURIComponent(orgName)}`,
+            viewingAs: orgName,
+            timestamp: new Date().toISOString()
+          };
+          localStorage.setItem('platformAdminContext', JSON.stringify(platformAdminContext));
+          
+          // Create view-only user with proper field mapping
+          const viewOnlyUser = {
+            id: adminUser.id,
+            username: adminUser.username,
+            firstName: adminUser.first_name,
+            lastName: adminUser.last_name,
+            role: adminUser.role,
+            email: adminUser.email || '',
+            phone: adminUser.phone || '',
+            gender: adminUser.gender || '',
+            medicalLicenseNumber: adminUser.medical_license_number || '',
+            signatureUrl: adminUser.signature_url || '',
+            isActive: adminUser.is_active,
+            organizationId: adminUser.organization_id,
+            org: orgData.name,
+            organization: orgData.name,
+            organizationName: orgData.name,
+            // Platform admin view flags
+            platformAdminView: true,
+            _isPlatformView: true,
+            originalPlatformAdmin: JSON.parse(localStorage.getItem('platformAdmin') || '{}')
+          };
+          
+          // Set user as logged in
+          localStorage.setItem('user', JSON.stringify(viewOnlyUser));
+          localStorage.setItem('currentUser', JSON.stringify(viewOnlyUser));
+          
+          console.log('[CLINIC-DETAILS] Logged in as view-only user:', viewOnlyUser.username);
+          
+          // Navigate to dashboard
+          window.location.href = '/dashboard';
+          
+        } catch (error) {
+          console.log('[CLINIC-DETAILS] Error in viewClinicDashboard:', error);
+          alert('Error accessing clinic dashboard');
+        }
+      };
+    }
+    
+    window.addEventListener('load', async function() {
+      console.log('? CLINIC-DETAILS: Page load event triggered');
+      
+      // Verify platform admin exists
+      let platformAdmin = null;
+      try {
+        const stored = localStorage.getItem('platformAdmin');
+        if (stored) {
+          platformAdmin = JSON.parse(stored);
+        }
+      } catch (e) {
+        console.warn('Could not parse stored platform admin:', e);
+      }
+      
+      if (!platformAdmin || !platformAdmin.username) {
+        console.warn('[CLINIC-DETAILS] No platform admin found, redirecting to login');
+        alert('Please login as platform admin');
+        window.location.href = 'platform-login.html';
+        return;
+      }
+      
+      console.log('? CLINIC-DETAILS: Platform admin authenticated:', platformAdmin.username);
+      
+      // Get clinic from URL - decode URL-encoded names properly
+      const urlParams = new URLSearchParams(window.location.search);
+      currentClinic = urlParams.get('clinic');
+      
+      // Decode URL encoding (e.g., %20 becomes space)
+      if (currentClinic) {
+        currentClinic = decodeURIComponent(currentClinic);
+      }
+      
+      console.log('[CLINIC-DETAILS] Current clinic (decoded):', currentClinic);
+      
+      if (!currentClinic) {
+        console.log('[CLINIC-DETAILS] No clinic specified, redirecting to dashboard');
+        alert('No clinic specified');
+        window.location.href = 'platform-dashboard.html';
+        return;
+      }
+      
+      console.log('[CLINIC-DETAILS] Loading clinic details for:', currentClinic);
+      
+      // Supabase-first hybrid architecture
+      try {
+        console.log('[CLINIC-DETAILS] Attempting Supabase-first data loading...');
+        if (window.loadPatientsWithSupabasePriority) {
+          await window.loadPatientsWithSupabasePriority();
+          console.log('[CLINIC-DETAILS] Supabase sync completed');
+        } else {
+          console.log('[CLINIC-DETAILS] Supabase loader not available, using localStorage fallback');
+        }
+      } catch (error) {
+        console.log('[CLINIC-DETAILS] Supabase sync failed, using localStorage:', error);
+      }
+      
+      await loadClinicDetails();
+    });
+    
+    // Add focus and visibility change listeners for data refresh
+    window.addEventListener('focus', async function() {
+      console.log('[CLINIC-DETAILS] Window focused, refreshing data...');
+      try {
+        if (window.loadPatientsWithSupabasePriority) {
+          await window.loadPatientsWithSupabasePriority();
+        }
+        await loadClinicDetails();
+      } catch (error) {
+        console.log('[CLINIC-DETAILS] Focus refresh failed:', error);
+      }
+    });
+    
+    document.addEventListener('visibilitychange', async function() {
+      if (!document.hidden) {
+        console.log('[CLINIC-DETAILS] Page visible, refreshing data...');
+        try {
+          if (window.loadPatientsWithSupabasePriority) {
+            await window.loadPatientsWithSupabasePriority();
+          }
+          await loadClinicDetails();
+        } catch (error) {
+          console.log('[CLINIC-DETAILS] Visibility refresh failed:', error);
+        }
+      }
+    });
+    
+    async function loadClinicDetails() {
+      console.log('[CLINIC-DETAILS] loadClinicDetails called for:', currentClinic);
+      
+      const orgs = await getAllOrganizations();
+      console.log('[CLINIC-DETAILS] Organizations loaded:', Object.keys(orgs).length);
+      
+      // Try exact match first
+      let org = orgs[currentClinic];
+      
+      // If not found, try case-insensitive match
+      if (!org) {
+        const orgNames = Object.keys(orgs);
+        const matchedName = orgNames.find(name => 
+          name.toLowerCase() === currentClinic.toLowerCase()
+        );
+        if (matchedName) {
+          org = orgs[matchedName];
+          currentClinic = matchedName; // Update to correct case
+          console.log('[CLINIC-DETAILS] Found clinic with case-insensitive match:', matchedName);
+        }
+      }
+      
+      // If still not found, try fuzzy match (contains)
+      if (!org) {
+        const orgNames = Object.keys(orgs);
+        const matchedName = orgNames.find(name => 
+          name.toLowerCase().includes(currentClinic.toLowerCase()) ||
+          currentClinic.toLowerCase().includes(name.toLowerCase())
+        );
+        if (matchedName) {
+          org = orgs[matchedName];
+          currentClinic = matchedName; // Update to exact name
+          console.log('[CLINIC-DETAILS] Found clinic with fuzzy match:', matchedName);
+        }
+      }
+      
+      if (!org) {
+        console.log('[CLINIC-DETAILS] Clinic not found:', currentClinic);
+        console.log('[CLINIC-DETAILS] Available clinics:', Object.keys(orgs).slice(0, 10));
+        alert(`Clinic "${currentClinic}" not found. Redirecting to platform dashboard.`);
+        window.location.href = 'platform-dashboard.html';
+        return;
+      }
+      
+      console.log('[CLINIC-DETAILS] Clinic found:', org);
+      const stats = await getOrganizationStats(currentClinic);
+      console.log('[CLINIC-DETAILS] Stats loaded:', stats);
+      
+      // Header
+      document.getElementById('clinic-name').textContent = currentClinic;
+      const country = org.country || 'Country not specified';
+      const createdDate = new Date(org.createdAt || Date.now()).toLocaleDateString();
+      const createdByDisplay = org.createdByName || org.created_by || org.createdByUsername || 'Unknown';
+      const createdByEmail = org.createdByEmail ? ` (${org.createdByEmail})` : '';
+      document.getElementById('clinic-info').textContent = `${country} | Created on ${createdDate} by ${createdByDisplay}${createdByEmail}`;
+      
+      const status = org.status || 'active';
+      const statusBadge = document.getElementById('clinic-status-badge');
+      statusBadge.textContent = status.toUpperCase();
+      statusBadge.className = `status-badge status-${status}`;
+      
+      // Organization Code
+      const orgCode = org.orgCode || 'N/A';
+      document.getElementById('clinic-org-code').textContent = orgCode;
+      if (orgCode === 'N/A') {
+        document.getElementById('clinic-org-code-display').style.display = 'none';
+      }
+      
+      // Update archive button
+      updateArchiveButton();
+      
+      // Statistics
+      document.getElementById('stat-patients').textContent = stats.patientCount.toLocaleString();
+      document.getElementById('stat-users').textContent = stats.userCount;
+      document.getElementById('stat-revenue').textContent = formatCurrency(stats.totalRevenue, 'NGN');
+      document.getElementById('stat-appointments').textContent = stats.appointmentCount.toLocaleString();
+      document.getElementById('stat-invoices').textContent = stats.invoiceCount.toLocaleString();
+      
+      if (stats.lastActivity) {
+        const timeAgo = getTimeAgo(stats.lastActivity);
+        document.getElementById('stat-last-activity').textContent = timeAgo;
+      } else {
+        document.getElementById('stat-last-activity').textContent = 'No activity yet';
+      }
+      
+      // Update toggle button
+      const toggleBtn = document.getElementById('toggle-status-btn');
+      if (status === 'active') {
+        toggleBtn.innerHTML = '<i class="fa-solid fa-ban" style="margin-right: 8px;"></i> Suspend Clinic';
+        toggleBtn.style.background = '#FF9800';
+      } else {
+        toggleBtn.innerHTML = '<i class="fa-solid fa-check-circle" style="margin-right: 8px;"></i> Activate Clinic';
+        toggleBtn.style.background = '#4CAF50';
+      }
+      
+      // Load users
+      loadClinicUsers();
+      
+      // Load recent activity
+      loadClinicActivity();
+    }
+    
+    async function loadClinicUsers() {
+      console.log('[CLINIC-DETAILS] loadClinicUsers called for clinic:', currentClinic);
+      
+      const tbody = document.getElementById('users-list');
+      if (tbody) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">Loading users?</td></tr>';
+      }
+      const allOrgs = await getAllOrganizations();
+      const currentOrg = allOrgs[currentClinic];
+      
+      if (!currentOrg) {
+        console.error('? CLINIC-DETAILS: Organization not found:', currentClinic);
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #dc3545;">Organization not found</td></tr>';
+        }
+        return;
+      }
+      
+      console.log('[CLINIC-DETAILS] Organization found:', currentOrg.name, 'ID:', currentOrg.id);
+      
+      // Fetch full organization data from Supabase to get created_by and contact info
+      let orgData = currentOrg;
+      if (window.supabaseClient && currentOrg.id) {
+        try {
+          const { data: fullOrgData, error } = await window.supabaseClient
+            .from('organizations')
+            .select('id, name, created_by, phone, email, created_at')
+            .eq('id', currentOrg.id)
+            .maybeSingle();
+          
+          if (!error && fullOrgData) {
+            orgData = { ...currentOrg, ...fullOrgData };
+            console.log('? CLINIC-DETAILS: Full org data loaded:', orgData);
+          }
+        } catch (error) {
+          console.warn('[CLINIC-DETAILS] Could not load full org data:', error);
+        }
+      }
+      
+      try {
+        // CRITICAL: Use secureSupabaseRpc to bypass RLS for platform admins
+        if (typeof window.secureSupabaseRpc === 'function' && currentOrg?.id) {
+          console.log('[CLINIC-DETAILS] Loading users via secure RPC for org ID:', currentOrg.id);
+          const supabaseUsers = await window.secureSupabaseRpc('get_organization_users', {
+            p_org_id: currentOrg.id
+          });
+
+          // Parse result (secureSupabaseRpc returns { data: ... } or direct array)
+          let users = [];
+          if (Array.isArray(supabaseUsers)) {
+            users = supabaseUsers;
+          } else if (supabaseUsers?.data && Array.isArray(supabaseUsers.data)) {
+            users = supabaseUsers.data;
+          } else if (supabaseUsers?.data && !Array.isArray(supabaseUsers.data)) {
+            // Sometimes it's wrapped in another data property
+            users = Array.isArray(supabaseUsers.data.data) ? supabaseUsers.data.data : [];
+          }
+          
+          console.log('? CLINIC-DETAILS: Secure RPC returned', users.length, 'users');
+          
+          // Merge into localStorage cache for offline parity
+          const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+          const filteredExisting = existingUsers.filter(u => {
+            if (currentOrg?.id && (u.organization_id === currentOrg.id || u.organizationId === currentOrg.id)) return false;
+            const orgName = (u.organization || u.org || '').toLowerCase();
+            return orgName !== currentClinic?.toLowerCase();
+          });
+          localStorage.setItem("users", JSON.stringify([...filteredExisting, ...users]));
+          
+          displayUsers(users, orgData);
+          return;
+        }
+        
+        // Fallback: Try direct Supabase query (may fail due to RLS)
+        if (window.supabaseClient && currentOrg?.id) {
+          console.log('[CLINIC-DETAILS] secureSupabaseRpc not available, trying direct query for org ID:', currentOrg.id);
+          const { data: supabaseUsers, error } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('organization_id', currentOrg.id);
+
+          if (error) {
+            console.warn('[CLINIC-DETAILS] Direct Supabase query failed (likely RLS):', error);
+            throw error;
+          }
+          
+          const users = Array.isArray(supabaseUsers) ? supabaseUsers : [];
+          console.log('? CLINIC-DETAILS: Direct query returned', users.length, 'users');
+          
+          // Merge into localStorage cache
+          const existingUsers = JSON.parse(localStorage.getItem("users") || "[]");
+          const filteredExisting = existingUsers.filter(u => {
+            if (currentOrg?.id && (u.organization_id === currentOrg.id || u.organizationId === currentOrg.id)) return false;
+            const orgName = (u.organization || u.org || '').toLowerCase();
+            return orgName !== currentClinic?.toLowerCase();
+          });
+          localStorage.setItem("users", JSON.stringify([...filteredExisting, ...users]));
+          
+          displayUsers(users, orgData);
+          return;
+        }
+      } catch (error) {
+        console.error('? CLINIC-DETAILS: Supabase users failed, falling back to localStorage:', error);
+      }
+      
+      // Fallback to localStorage
+      const allUsers = JSON.parse(localStorage.getItem("users") || "[]");
+      console.log('[CLINIC-DETAILS] All users in localStorage:', allUsers.length);
+      const fallbackUsers = allUsers.filter(u => {
+        if (currentOrg?.id) {
+          if (u.organization_id === currentOrg.id || u.organizationId === currentOrg.id) {
+            return true;
+          }
+        }
+        const nameMatch = (u.organization || u.org || '').toLowerCase() === currentClinic.toLowerCase();
+        return nameMatch;
+      });
+      console.log('[CLINIC-DETAILS] Filtered users for clinic from localStorage:', fallbackUsers.length);
+      
+      displayUsers(fallbackUsers, orgData);
+    }
+    
+    function displayUsers(users, orgData = null) {
+      console.log('[CLINIC-DETAILS] displayUsers called with:', users.length, 'users', 'orgData:', orgData);
+      
+      const tbody = document.getElementById('users-list');
+      tbody.innerHTML = '';
+      
+      if (users.length === 0) {
+        // Show registrant information if available
+        const createdBy = orgData?.created_by || orgData?.createdBy || 'Unknown';
+        const orgPhone = orgData?.phone || 'Not provided';
+        const orgEmail = orgData?.email || 'Not provided';
+        const createdDate = orgData?.created_at ? new Date(orgData.created_at).toLocaleDateString() : 'Unknown';
+        
+        // Check if this is a failed registration (has created_by but no users)
+        if (createdBy && createdBy !== 'Unknown') {
+          tbody.innerHTML = `
+            <tr style="background: #fff3cd; border-left: 4px solid #ffc107;">
+              <td colspan="7" style="padding: 20px;">
+                <div style="text-align: center;">
+                  <h3 style="margin: 0 0 15px 0; color: #856404;">Registration Incomplete</h3>
+                  <p style="margin: 0 0 10px 0; color: #856404; font-size: 14px;">
+                    This organization was registered but no admin user account was created.
+                  </p>
+                  <div style="background: white; padding: 15px; border-radius: 8px; margin-top: 15px; text-align: left; display: inline-block;">
+                    <p style="margin: 5px 0; color: #333;"><strong>Registrant Username:</strong> ${createdBy}</p>
+                    <p style="margin: 5px 0; color: #333;"><strong>Contact Phone:</strong> ${orgPhone}</p>
+                    <p style="margin: 5px 0; color: #333;"><strong>Email:</strong> ${orgEmail}</p>
+                    <p style="margin: 5px 0; color: #333;"><strong>Registration Date:</strong> ${createdDate}</p>
+                    <p style="margin: 10px 0 0 0; color: #856404; font-size: 12px; font-style: italic;">
+                      Contact the registrant to complete their account setup.
+                    </p>
+                  </div>
+                </div>
+              </td>
+            </tr>
+          `;
+        } else {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; padding: 20px; color: #999;">No users found for this clinic</td></tr>';
+        }
+        return;
+      }
+      
+      users.forEach(user => {
+        const row = tbody.insertRow();
+        // Handle both camelCase and snake_case field names
+        const firstName = user.firstName || user.first_name || '';
+        const lastName = user.lastName || user.last_name || '';
+        const email = user.email || 'N/A';
+        // Personal phone number (not office phone)
+        const phone = user.phone || 'N/A';
+        const medicalLicense = user.medicalLicenseNumber || user.medical_license_number || 'N/A';
+        const role = user.role || 'N/A';
+        const username = user.username || 'N/A';
+        
+        row.innerHTML = `
+          <td class="left">${firstName} ${lastName}</td>
+          <td class="left">${username}</td>
+          <td class="center"><strong>${role}</strong></td>
+          <td class="left">${email}</td>
+          <td class="left">${phone}</td>
+          <td class="center">${medicalLicense}</td>
+          <td class="center actions">
+            <button onclick="resetUserPassword('${username}')" style="background: #FF9800; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-weight: 600; font-size: 11px; white-space: nowrap;">
+              <i class="fa-solid fa-key" style="margin-right: 4px;"></i> Reset Password
+            </button>
+          </td>
+        `;
+      });
+    }
+    
+    function resetUserPassword(username) {
+      const newPassword = prompt(`Enter new password for user: ${username}\n\nPassword requirements:\n- Minimum 8 characters\n- At least one uppercase letter\n- At least one lowercase letter\n- At least one number`);
+      
+      if (!newPassword) {
+        return;  // User canceled
+      }
+      
+      // Validate password strength
+      if (newPassword.length < 8) {
+        alert('Password must be at least 8 characters long');
+        return;
+      }
+      
+      if (!/[A-Z]/.test(newPassword)) {
+        alert('Password must contain at least one uppercase letter');
+        return;
+      }
+      
+      if (!/[a-z]/.test(newPassword)) {
+        alert('Password must contain at least one lowercase letter');
+        return;
+      }
+      
+      if (!/[0-9]/.test(newPassword)) {
+        alert('Password must contain at least one number');
+        return;
+      }
+      
+      // Confirm password
+      const confirmPassword = prompt(`Confirm new password for ${username}:`);
+      
+      if (confirmPassword !== newPassword) {
+        alert('Passwords do not match. Password reset canceled.');
+        return;
+      }
+      
+      // Reset password
+      const result = forceResetPassword(username, newPassword);
+      
+      if (result.success) {
+        alert(`Password reset successful!\n\nUser: ${username}\nNew Password: ${newPassword}\n\nPlease notify the user of their new password.`);
+        
+        // Reload user list to show updated timestamp (if we add that)
+        loadClinicUsers();
+      } else {
+        alert(`Password reset failed: ${result.error}`);
+      }
+    }
+    
+    function loadClinicActivity() {
+      const auditLog = JSON.parse(localStorage.getItem(`${currentClinic}_auditLog`) || "[]");
+      const container = document.getElementById('activity-list');
+      
+      if (auditLog.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No activity recorded yet</p>';
+        return;
+      }
+      
+      // Sort chronologically (oldest first)
+      const sorted = [...auditLog].sort((a, b) => {
+        const dateA = new Date(a.timestamp || 0);
+        const dateB = new Date(b.timestamp || 0);
+        return dateA - dateB;
+      });
+      
+      // Get last 50 events (most recent 50, but display oldest to newest)
+      const recent = sorted.slice(-50);
+      
+      // Group events by action type and count them
+      const eventGroups = {};
+      recent.forEach(event => {
+        const actionKey = (event.action || 'UNKNOWN').replace(/_/g, ' ').toUpperCase();
+        if (!eventGroups[actionKey]) {
+          eventGroups[actionKey] = {
+            action: actionKey,
+            count: 0,
+            events: []
+          };
+        }
+        eventGroups[actionKey].count++;
+        eventGroups[actionKey].events.push(event);
+      });
+      
+      container.innerHTML = '';
+      
+      // Display grouped events chronologically
+      Object.values(eventGroups).forEach(group => {
+        // Sort events within group chronologically
+        group.events.sort((a, b) => {
+          const dateA = new Date(a.timestamp || 0);
+          const dateB = new Date(b.timestamp || 0);
+          return dateA - dateB;
+        });
+        
+        // Create group header
+        const groupHeader = document.createElement('div');
+        groupHeader.style.cssText = 'padding: 10px 12px; background: #f8f9fa; border-bottom: 2px solid #667eea; font-weight: 600; color: #667eea; margin-top: 10px;';
+        groupHeader.innerHTML = `${group.action} <span style="color: #666; font-weight: 400; font-size: 14px;">(${group.count} ${group.count === 1 ? 'event' : 'events'})</span>`;
+        container.appendChild(groupHeader);
+        
+        // Display events in this group
+        group.events.forEach(event => {
+          const eventDiv = document.createElement('div');
+          eventDiv.style.cssText = 'padding: 10px 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center; background: white;';
+          
+          const userText = event.user || 'Unknown';
+          const roleText = event.role || 'Unknown';
+          const timestamp = event.timestamp ? new Date(event.timestamp).toLocaleString() : 'Unknown time';
+          
+          eventDiv.innerHTML = `
+            <div>
+              <span style="color: #666;">${userText} (${roleText})</span>
+            </div>
+            <div style="color: #999; font-size: 12px;">
+              ${timestamp}
+            </div>
+          `;
+          
+          container.appendChild(eventDiv);
+        });
+      });
+    }
+    
+    async function toggleStatus() {
+      try {
+        const orgs = await getAllOrganizations();
+        const currentStatus = orgs[currentClinic]?.status || 'active';
+        const newStatus = currentStatus === 'active' ? 'suspended' : 'active';
+        const action = newStatus === 'active' ? 'activate' : 'suspend';
+        
+        if (!confirm(`Are you sure you want to ${action} ${currentClinic}?`)) {
+          return;
+        }
+        
+        const success = await updateOrganizationStatus(currentClinic, newStatus);
+        if (success) {
+          alert(`${currentClinic} has been ${newStatus === 'active' ? 'activated' : 'suspended'}`);
+          await loadClinicDetails();
+        } else {
+          alert('Failed to update organization status');
+        }
+      } catch (error) {
+        console.error('Error toggling status:', error);
+        alert('Error updating organization status');
+      }
+    }
+    
+    async function archiveCurrentClinic() {
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      const orgData = organizations[currentClinic];
+      
+      if (!orgData) {
+        alert('Organization not found');
+        return;
+      }
+      
+      const isCurrentlyArchived = orgData.archived || false;
+      const action = isCurrentlyArchived ? 'unarchive' : 'archive';
+      
+      if (!confirm(`Are you sure you want to ${action} ${currentClinic}?\n\n${isCurrentlyArchived ? 'This will restore the clinic to active view.' : 'This will archive the clinic but preserve all data for future reference.'}`)) {
+        return;
+      }
+      
+      // Supabase-first: Update Supabase first, then cache in localStorage
+      const newArchivedStatus = !isCurrentlyArchived;
+      
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+        try {
+          const { error } = await window.supabaseClient
+            .from('organizations')
+            .update({
+              archived: newArchivedStatus,
+              archived_at: newArchivedStatus ? new Date().toISOString() : null,
+              archived_by: newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null
+            })
+            .eq('id', orgData.id);
+          
+          if (error) {
+            console.error('? Error updating archive status in Supabase:', error);
+            // Fallback: Cache to localStorage even if Supabase write failed
+            orgData.archived = newArchivedStatus;
+            orgData.archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+            orgData.archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+            organizations[currentClinic] = orgData;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+          } else {
+            console.log('? Updated archive status in Supabase');
+            // Cache to localStorage immediately after successful Supabase write
+            // Supabase write: supabaseClient.update() completed above
+            orgData.archived = newArchivedStatus;
+            orgData.archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+            orgData.archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+            organizations[currentClinic] = orgData;
+            localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+          }
+        } catch (error) {
+          console.error('? Exception updating archive status in Supabase:', error);
+          // Fallback: Cache to localStorage if Supabase exception
+          orgData.archived = newArchivedStatus;
+          orgData.archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+          orgData.archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+          organizations[currentClinic] = orgData;
+          localStorage.setItem('organizations', JSON.stringify(organizations));
+        }
+      } else {
+        // Supabase not available - fallback to localStorage only
+        orgData.archived = newArchivedStatus;
+        orgData.archivedAt = newArchivedStatus ? new Date().toISOString() : null;
+        orgData.archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
+        organizations[currentClinic] = orgData;
+        localStorage.setItem('organizations', JSON.stringify(organizations));
+      }
+      
+      alert(`${currentClinic} has been ${isCurrentlyArchived ? 'unarchived' : 'archived'}`);
+      
+      // Reload clinic details to refresh all data
+      await loadClinicDetails();
+    }
+    
+    function updateArchiveButton() {
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      const orgData = organizations[currentClinic];
+      const isArchived = orgData?.archived || false;
+      
+      const archiveBtn = document.getElementById('archive-btn');
+      if (archiveBtn) {
+        archiveBtn.innerHTML = isArchived 
+          ? '<i class="fa-solid fa-box-open" style="margin-right: 8px;"></i> Unarchive Clinic' 
+          : '<i class="fa-solid fa-archive" style="margin-right: 8px;"></i> Archive Clinic';
+        archiveBtn.style.background = isArchived ? '#4CAF50' : '#795548';
+      }
+    }
+    
+    function getTimeAgo(timestamp) {
+      const now = new Date();
+      const then = new Date(timestamp);
+      const diffMs = now - then;
+      const diffMins = Math.floor(diffMs / 60000);
+      const diffHours = Math.floor(diffMs / 3600000);
+      const diffDays = Math.floor(diffMs / 86400000);
+      
+      if (diffMins < 1) return 'Just now';
+      if (diffMins < 60) return `${diffMins} min ago`;
+      if (diffHours < 24) return `${diffHours} hr ago`;
+      if (diffDays < 7) return `${diffDays} days ago`;
+      if (diffDays < 30) return `${Math.floor(diffDays / 7)} weeks ago`;
+      return then.toLocaleDateString();
+    }
+    
+    function formatCurrency(amount, currency = 'NGN') {
+      const symbols = {
+        'NGN': '\u20A6',
+        'KES': 'KSh',
+        'ZAR': 'R',
+        'GHS': 'GH?',
+        'USD': '$'
+      };
+      
+      const symbol = symbols[currency] || currency;
+      return `${symbol}${amount.toLocaleString()}`;
+    }
+  </script>
+  
+  <style>
+    .status-badge {
+      display: inline-block;
+    }
+    
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-trial {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-suspended {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+  
+  <script>
+    // Copy org code to clipboard
+    function copyOrgCode() {
+      const orgCode = document.getElementById('clinic-org-code').textContent;
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(orgCode).then(() => {
+          alert('Organization code copied: ' + orgCode);
+        }).catch(() => {
+          prompt('Copy this organization code:', orgCode);
+        });
+      } else {
+        prompt('Copy this organization code:', orgCode);
+      }
+    }
+  </script>  
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

@@ -1,0 +1,476 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Authentication System</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .test-container {
+      max-width: 900px;
+      margin: 30px auto;
+      padding: 20px;
+    }
+    .test-section {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    .test-section h3 {
+      color: #555;
+      margin-top: 20px;
+    }
+    .status-box {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      margin: 15px 0;
+      font-family: monospace;
+      font-size: 13px;
+      max-height: 300px;
+      overflow-y: auto;
+    }
+    .status-box pre {
+      margin: 0;
+      white-space: pre-wrap;
+      word-wrap: break-word;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      font-size: 14px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    button:disabled {
+      background: #cccccc;
+      cursor: not-allowed;
+    }
+    .test-button {
+      background: #2196F3;
+    }
+    .test-button:hover {
+      background: #0b7dda;
+    }
+    .success {
+      color: green;
+      font-weight: bold;
+    }
+    .error {
+      color: red;
+      font-weight: bold;
+    }
+    .warning {
+      color: orange;
+      font-weight: bold;
+    }
+    .info {
+      color: blue;
+    }
+    .badge {
+      display: inline-block;
+      padding: 5px 10px;
+      border-radius: 3px;
+      font-size: 12px;
+      font-weight: bold;
+      margin: 5px;
+    }
+    .badge-success {
+      background: #d4edda;
+      color: #155724;
+    }
+    .badge-error {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .badge-warning {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .badge-info {
+      background: #d1ecf1;
+      color: #0c5460;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <h1>🧪 Authentication System Test Suite</h1>
+    <p>Use this page to verify that Supabase Authentication is working correctly.</p>
+
+    <!-- Test 1: Supabase Connection -->
+    <div class="test-section">
+      <h2>Test 1: Supabase Connection</h2>
+      <p>Verify that Supabase client is initialized and can connect to the database.</p>
+      <button class="test-button" onclick="testSupabaseConnection()">Run Test</button>
+      <div id="test1-result" class="status-box">Click "Run Test" to begin...</div>
+    </div>
+
+    <!-- Test 2: Check Current Session -->
+    <div class="test-section">
+      <h2>Test 2: Current Session Status</h2>
+      <p>Check if you are currently logged in and have a valid session.</p>
+      <button class="test-button" onclick="testCurrentSession()">Check Session</button>
+      <button onclick="viewSessionDetails()">View Session Details</button>
+      <div id="test2-result" class="status-box">Click "Check Session" to begin...</div>
+    </div>
+
+    <!-- Test 3: Organizations in Supabase -->
+    <div class="test-section">
+      <h2>Test 3: Organizations</h2>
+      <p>List all organizations in Supabase database.</p>
+      <button class="test-button" onclick="testOrganizations()">List Organizations</button>
+      <div id="test3-result" class="status-box">Click "List Organizations" to begin...</div>
+    </div>
+
+    <!-- Test 4: Users in Supabase -->
+    <div class="test-section">
+      <h2>Test 4: Users</h2>
+      <p>List all users in Supabase database (requires authentication).</p>
+      <button class="test-button" onclick="testUsers()">List Users</button>
+      <div id="test4-result" class="status-box">Click "List Users" to begin...</div>
+    </div>
+
+    <!-- Test 5: RLS Test -->
+    <div class="test-section">
+      <h2>Test 5: Row Level Security (RLS)</h2>
+      <p>Test if RLS allows authenticated operations.</p>
+      <button class="test-button" onclick="testRLS()">Test RLS</button>
+      <div id="test5-result" class="status-box">Click "Test RLS" to begin...</div>
+    </div>
+
+    <!-- Test 6: Logout Test -->
+    <div class="test-section">
+      <h2>Test 6: Logout</h2>
+      <p>Test the logout functionality.</p>
+      <button class="test-button" onclick="testLogout()">Test Logout</button>
+      <div id="test6-result" class="status-box">Click "Test Logout" to begin...</div>
+    </div>
+
+    <div style="margin-top: 30px; text-align: center;">
+      <a href="login">← Back to Login</a> |
+      <a href="dashboard">Dashboard</a> |
+      <a href="migrate-users">User Migration Tool</a>
+    </div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  <script src="js/supabase-auth.js"></script>
+
+  <script>
+    function log(elementId, message, type = 'info') {
+      const element = document.getElementById(elementId);
+      const timestamp = new Date().toLocaleTimeString();
+      const className = type === 'success' ? 'success' : type === 'error' ? 'error' : type === 'warning' ? 'warning' : 'info';
+      element.innerHTML += `<div class="${className}">[${timestamp}] ${message}</div>`;
+      element.scrollTop = element.scrollHeight;
+    }
+
+    function clearLog(elementId) {
+      document.getElementById(elementId).innerHTML = '';
+    }
+
+    // Test 1: Supabase Connection
+    async function testSupabaseConnection() {
+      clearLog('test1-result');
+      log('test1-result', 'Testing Supabase connection...', 'info');
+
+      try {
+        if (!supabaseClient) {
+          log('test1-result', '❌ FAILED: Supabase client not initialized', 'error');
+          return;
+        }
+
+        log('test1-result', '✅ Supabase client exists', 'success');
+
+        // Try a simple query
+        const { data, error, count } = await supabaseClient
+          .from('organizations')
+          .select('*', { count: 'exact', head: true });
+
+        if (error) {
+          log('test1-result', `⚠️ Query returned error: ${error.message}`, 'warning');
+          log('test1-result', 'This might be normal if RLS is blocking unauthenticated requests', 'info');
+        } else {
+          log('test1-result', `✅ Successfully connected to Supabase`, 'success');
+          log('test1-result', `   Database is accessible`, 'success');
+        }
+
+      } catch (error) {
+        log('test1-result', `❌ ERROR: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Test 2: Current Session
+    async function testCurrentSession() {
+      clearLog('test2-result');
+      log('test2-result', 'Checking current session...', 'info');
+
+      try {
+        const result = await checkAuthentication();
+
+        if (result.authenticated) {
+          log('test2-result', '✅ You are LOGGED IN', 'success');
+          log('test2-result', `   User: ${result.user.firstName} ${result.user.lastName}`, 'info');
+          log('test2-result', `   Username: ${result.user.username}`, 'info');
+          log('test2-result', `   Email: ${result.user.email}`, 'info');
+          log('test2-result', `   Role: ${result.user.role}`, 'info');
+          log('test2-result', `   Organization: ${result.user.org}`, 'info');
+        } else {
+          log('test2-result', '❌ You are NOT logged in', 'error');
+          log('test2-result', '   Please go to login.html and log in first', 'info');
+        }
+
+      } catch (error) {
+        log('test2-result', `❌ ERROR: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    function viewSessionDetails() {
+      clearLog('test2-result');
+      log('test2-result', '=== SESSION DETAILS ===', 'info');
+
+      // Check localStorage
+      const user = localStorage.getItem('user');
+      const session = localStorage.getItem('supabase_session');
+
+      if (user) {
+        log('test2-result', 'User data in localStorage:', 'info');
+        log('test2-result', user, 'info');
+      } else {
+        log('test2-result', 'No user data in localStorage', 'warning');
+      }
+
+      if (session) {
+        log('test2-result', '\nSupabase session exists', 'success');
+        try {
+          const sessionObj = JSON.parse(session);
+          log('test2-result', `Access token: ${sessionObj.access_token?.substring(0, 50)}...`, 'info');
+          log('test2-result', `Expires at: ${new Date(sessionObj.expires_at * 1000).toLocaleString()}`, 'info');
+        } catch (e) {
+          log('test2-result', 'Could not parse session', 'error');
+        }
+      } else {
+        log('test2-result', 'No Supabase session in localStorage', 'warning');
+      }
+    }
+
+    // Test 3: Organizations
+    async function testOrganizations() {
+      clearLog('test3-result');
+      log('test3-result', 'Fetching organizations from Supabase...', 'info');
+
+      try {
+        const { data, error, count } = await supabaseClient
+          .from('organizations')
+          .select('*', { count: 'exact' });
+
+        if (error) {
+          log('test3-result', `❌ ERROR: ${error.message}`, 'error');
+          log('test3-result', 'Possible reasons:', 'info');
+          log('test3-result', '1. RLS is blocking (need to be logged in)', 'info');
+          log('test3-result', '2. No organizations created yet', 'info');
+          return;
+        }
+
+        if (data.length === 0) {
+          log('test3-result', '⚠️ No organizations found', 'warning');
+          log('test3-result', 'You need to create an organization first!', 'info');
+          log('test3-result', 'See: sql-scripts/create-initial-organization.sql', 'info');
+          return;
+        }
+
+        log('test3-result', `✅ Found ${count} organization(s):`, 'success');
+        data.forEach((org, index) => {
+          log('test3-result', `\n${index + 1}. ${org.name}`, 'info');
+          log('test3-result', `   ID: ${org.id}`, 'info');
+          log('test3-result', `   Org Code: ${org.org_code}`, 'info');
+          log('test3-result', `   Country: ${org.country}`, 'info');
+          log('test3-result', `   Currency: ${org.currency}`, 'info');
+        });
+
+      } catch (error) {
+        log('test3-result', `❌ ERROR: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Test 4: Users
+    async function testUsers() {
+      clearLog('test4-result');
+      log('test4-result', 'Fetching users from Supabase...', 'info');
+
+      try {
+        const { data, error, count } = await supabaseClient
+          .from('users')
+          .select(`
+            *,
+            organizations (
+              name,
+              org_code
+            )
+          `, { count: 'exact' });
+
+        if (error) {
+          log('test4-result', `❌ ERROR: ${error.message}`, 'error');
+          if (error.code === 'PGRST301' || error.message.includes('policy')) {
+            log('test4-result', 'This is likely due to RLS policies', 'warning');
+            log('test4-result', 'You need to be logged in to view users', 'info');
+          }
+          return;
+        }
+
+        if (data.length === 0) {
+          log('test4-result', '⚠️ No users found in Supabase', 'warning');
+          log('test4-result', 'Users need to be migrated from localStorage', 'info');
+          log('test4-result', 'See: DAY-2-INSTRUCTIONS.md', 'info');
+          return;
+        }
+
+        log('test4-result', `✅ Found ${count} user(s):`, 'success');
+        data.forEach((user, index) => {
+          log('test4-result', `\n${index + 1}. ${user.first_name} ${user.last_name}`, 'info');
+          log('test4-result', `   Username: ${user.username}`, 'info');
+          log('test4-result', `   Role: ${user.role}`, 'info');
+          log('test4-result', `   Gender: ${user.gender}`, 'info');
+          log('test4-result', `   Organization: ${user.organizations?.name || 'N/A'}`, 'info');
+        });
+
+      } catch (error) {
+        log('test4-result', `❌ ERROR: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Test 5: RLS
+    async function testRLS() {
+      clearLog('test5-result');
+      log('test5-result', 'Testing Row Level Security...', 'info');
+
+      try {
+        // First check if logged in
+        const authCheck = await checkAuthentication();
+
+        if (!authCheck.authenticated) {
+          log('test5-result', '❌ You are not logged in', 'error');
+          log('test5-result', 'RLS test requires authentication', 'info');
+          log('test5-result', 'Please log in first at login', 'info');
+          return;
+        }
+
+        log('test5-result', '✅ Authenticated as: ' + authCheck.user.username, 'success');
+        log('test5-result', '\nTesting if RLS allows read operations...', 'info');
+
+        // Try to read from organizations
+        const { data: orgData, error: orgError } = await supabaseClient
+          .from('organizations')
+          .select('*')
+          .limit(1);
+
+        if (orgError) {
+          log('test5-result', `❌ Read organizations: FAILED - ${orgError.message}`, 'error');
+        } else {
+          log('test5-result', `✅ Read organizations: ALLOWED`, 'success');
+        }
+
+        // Try to read from users
+        const { data: userData, error: userError } = await supabaseClient
+          .from('users')
+          .select('*')
+          .limit(1);
+
+        if (userError) {
+          log('test5-result', `❌ Read users: FAILED - ${userError.message}`, 'error');
+        } else {
+          log('test5-result', `✅ Read users: ALLOWED`, 'success');
+        }
+
+        // Try to read from patients
+        const { data: patientData, error: patientError } = await supabaseClient
+          .from('patients')
+          .select('*')
+          .limit(1);
+
+        if (patientError) {
+          log('test5-result', `❌ Read patients: FAILED - ${patientError.message}`, 'error');
+        } else {
+          log('test5-result', `✅ Read patients: ALLOWED`, 'success');
+        }
+
+        log('test5-result', '\n=== RLS TEST COMPLETE ===', 'info');
+        log('test5-result', 'If all tests show ALLOWED, RLS is working correctly!', 'success');
+
+      } catch (error) {
+        log('test5-result', `❌ ERROR: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Test 6: Logout
+    async function testLogout() {
+      clearLog('test6-result');
+      log('test6-result', 'Testing logout functionality...', 'info');
+
+      try {
+        const result = await logoutFromSupabase();
+
+        if (result.success) {
+          log('test6-result', '✅ Logout successful', 'success');
+          log('test6-result', 'Session cleared from localStorage', 'info');
+          log('test6-result', 'Supabase session terminated', 'info');
+          log('test6-result', '\nYou can now test logging in again', 'info');
+          
+          setTimeout(() => {
+            if (confirm('Logout successful! Redirect to login page?')) {
+              window.location.href = 'login';
+            }
+          }, 2000);
+        } else {
+          log('test6-result', '❌ Logout failed', 'error');
+        }
+
+      } catch (error) {
+        log('test6-result', `❌ ERROR: ${error.message}`, 'error');
+        console.error(error);
+      }
+    }
+
+    // Auto-run Test 1 on page load
+    window.addEventListener('DOMContentLoaded', () => {
+      console.log('Test page loaded');
+      setTimeout(() => {
+        testSupabaseConnection();
+        testCurrentSession();
+      }, 500);
+    });
+  </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+
+
+
+

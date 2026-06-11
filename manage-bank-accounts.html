@@ -1,0 +1,494 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Manage Bank Accounts - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=225">
+  <style>
+    .bank-account-form {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .bank-account-form label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: #333;
+    }
+    
+    .bank-account-form input,
+    .bank-account-form select {
+      width: 100%;
+      padding: 8px 12px;
+      margin-bottom: 15px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .bank-account-form button {
+      background: #4CAF50;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: bold;
+    }
+    
+    .bank-account-form button:hover {
+      background: #45a049;
+    }
+    
+    .bank-accounts-list {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    
+    .bank-account-item {
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      padding: 15px;
+      margin-bottom: 10px;
+      background: #f9f9f9;
+    }
+    
+    .bank-account-item h4 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    
+    .bank-account-item p {
+      margin: 5px 0;
+      color: #666;
+    }
+    
+    .bank-account-actions {
+      margin-top: 10px;
+    }
+    
+    .bank-account-actions button {
+      background: #007bff;
+      color: white;
+      padding: 6px 12px;
+      border: none;
+      border-radius: 3px;
+      cursor: pointer;
+      margin-right: 5px;
+      font-size: 12px;
+    }
+    
+    .bank-account-actions button:hover {
+      background: #0056b3;
+    }
+    
+    .bank-account-actions button.delete {
+      background: #dc3545;
+    }
+    
+    .bank-account-actions button.delete:hover {
+      background: #c82333;
+    }
+  </style>
+</head>
+<body>
+  <h1>🏦 Manage Bank Accounts</h1>
+  
+  <div style="margin-bottom: 20px;">
+    <a href="billing-dashboard" style="background-color: #007bff; color: white; padding: 10px 20px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block;">
+      ← Back to Billing Dashboard
+    </a>
+  </div>
+  
+  <div class="bank-account-form">
+    <h2 id="form-title">Add New Bank Account</h2>
+    <form id="bank-account-form">
+      <label for="bank-name">Bank Name*:</label>
+      <input type="text" id="bank-name" required placeholder="e.g., KCB Bank">
+      
+      <label for="account-name">Account Name*:</label>
+      <input type="text" id="account-name" required placeholder="Account holder name">
+      
+      <label for="account-number">Account Number*:</label>
+      <input type="text" id="account-number" required placeholder="Account number">
+      
+      <label for="account-type">Account Type*:</label>
+      <select id="account-type" required>
+        <option value="">Select Account Type</option>
+        <option value="Current">Current Account</option>
+        <option value="Savings">Savings Account</option>
+        <option value="Business">Business Account</option>
+        <option value="Other">Other</option>
+      </select>
+      
+      <label for="swift-code">SWIFT Code (Optional):</label>
+      <input type="text" id="swift-code" placeholder="SWIFT/BIC code">
+      
+      <label for="routing-number">Routing Number (Optional):</label>
+      <input type="text" id="routing-number" placeholder="Routing number">
+      
+      <label for="branch">Branch (Optional):</label>
+      <input type="text" id="branch" placeholder="Branch name or location">
+      
+      <label for="currency">Currency*:</label>
+      <select id="currency" required>
+        <option value="">Select Currency</option>
+        <option value="NGN">NGN - Nigerian Naira</option>
+        <option value="USD">USD - US Dollar</option>
+        <option value="GBP">GBP - British Pound</option>
+        <option value="EUR">EUR - Euro</option>
+        <option value="KES">KES - Kenyan Shilling</option>
+        <option value="GHS">GHS - Ghanaian Cedi</option>
+        <option value="ZAR">ZAR - South African Rand</option>
+        <option value="UGX">UGX - Ugandan Shilling</option>
+        <option value="TZS">TZS - Tanzanian Shilling</option>
+        <option value="ETB">ETB - Ethiopian Birr</option>
+      </select>
+      
+      <label for="notes">Notes (Optional):</label>
+      <textarea id="notes" rows="3" placeholder="Any additional notes about this account..."></textarea>
+      
+      <button type="submit" id="submit-btn">Add Bank Account</button>
+      <button type="button" onclick="cancelEdit()" id="cancel-btn" style="background: #6c757d; display: none; margin-left: 10px;">Cancel</button>
+    </form>
+  </div>
+  
+  <div class="bank-accounts-list">
+    <h2>Bank Accounts</h2>
+    <div id="bank-accounts-list">
+      <p style="text-align: center; color: #666; padding: 20px;">Loading bank accounts...</p>
+    </div>
+  </div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113090113091309"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113090113091309"></script>
+  
+  <script>
+    let editingAccountId = null;
+    
+    // Get bank accounts storage key
+    function getBankAccountsKey() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      return `${org}_bank_accounts`;
+    }
+    
+    // Get all bank accounts
+    async function getAllBankAccounts() {
+      const key = getBankAccountsKey();
+      let accounts = [];
+      
+      // Try Supabase first
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const orgId = user.organizationId || user.organization_id;
+          
+          if (orgId) {
+            // Check if organization_bank_accounts table exists, if not use JSONB in organizations table
+            const { data: orgData, error: orgError } = await window.supabaseClient
+              .from('organizations')
+              .select('bank_accounts')
+              .eq('id', orgId)
+              .maybeSingle();
+            
+            if (!orgError && orgData && orgData.bank_accounts) {
+              accounts = Array.isArray(orgData.bank_accounts) ? orgData.bank_accounts : [];
+            } else {
+              // Try organization_bank_accounts table
+              const { data: bankAccounts, error: bankError } = await window.supabaseClient
+                .from('organization_bank_accounts')
+                .select('*')
+                .eq('organization_id', orgId);
+              
+              if (!bankError && bankAccounts && Array.isArray(bankAccounts)) {
+                accounts = bankAccounts.map(ba => ({
+                  id: ba.id,
+                  bankName: ba.bank_name,
+                  accountName: ba.account_name,
+                  accountNumber: ba.account_number,
+                  accountType: ba.account_type,
+                  swiftCode: ba.swift_code || '',
+                  routingNumber: ba.routing_number || '',
+                  branch: ba.branch || '',
+                  currency: ba.currency,
+                  notes: ba.notes || '',
+                  isDefault: ba.is_default || false,
+                  createdAt: ba.created_at
+                }));
+              }
+            }
+            
+            // Cache in localStorage
+            localStorage.setItem(key, JSON.stringify(accounts));
+          }
+        } catch (error) {
+          console.error('Error loading bank accounts from Supabase:', error);
+        }
+      }
+      
+      // Fallback to localStorage
+      if (accounts.length === 0) {
+        const cached = localStorage.getItem(key);
+        accounts = cached ? JSON.parse(cached) : [];
+      }
+      
+      return accounts;
+    }
+    
+    // Save bank accounts
+    async function saveBankAccounts(accounts) {
+      const key = getBankAccountsKey();
+      localStorage.setItem(key, JSON.stringify(accounts));
+      
+      // Try to save to Supabase
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const orgId = user.organizationId || user.organization_id;
+          
+          if (orgId) {
+            // Try to update organizations table with bank_accounts JSONB
+            const { error: updateError } = await window.supabaseClient
+              .from('organizations')
+              .update({ bank_accounts: accounts })
+              .eq('id', orgId);
+            
+            if (updateError) {
+              console.warn('Could not update bank accounts in organizations table:', updateError);
+              // Try organization_bank_accounts table instead
+              // First, delete existing accounts
+              await window.supabaseClient
+                .from('organization_bank_accounts')
+                .delete()
+                .eq('organization_id', orgId);
+              
+              // Then insert new ones
+              if (accounts.length > 0) {
+                const supabaseAccounts = accounts.map(acc => ({
+                  organization_id: orgId,
+                  bank_name: acc.bankName,
+                  account_name: acc.accountName,
+                  account_number: acc.accountNumber,
+                  account_type: acc.accountType,
+                  swift_code: acc.swiftCode || null,
+                  routing_number: acc.routingNumber || null,
+                  branch: acc.branch || null,
+                  currency: acc.currency,
+                  notes: acc.notes || null,
+                  is_default: acc.isDefault || false
+                }));
+                
+                const { error: insertError } = await window.supabaseClient
+                  .from('organization_bank_accounts')
+                  .insert(supabaseAccounts);
+                
+                if (insertError) {
+                  console.warn('Could not save bank accounts to Supabase:', insertError);
+                }
+              }
+            }
+          }
+        } catch (error) {
+          console.error('Error saving bank accounts to Supabase:', error);
+        }
+      }
+    }
+    
+    // Load and display bank accounts
+    async function loadBankAccounts() {
+      const accounts = await getAllBankAccounts();
+      const container = document.getElementById('bank-accounts-list');
+      
+      if (accounts.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #666; padding: 20px;">No bank accounts found. Add your first bank account above.</p>';
+        return;
+      }
+      
+      let html = '';
+      accounts.forEach((account, index) => {
+        html += `
+          <div class="bank-account-item">
+            <h4>${account.bankName} ${account.isDefault ? '<span style="background: #4CAF50; color: white; padding: 2px 8px; border-radius: 3px; font-size: 12px; margin-left: 10px;">Default</span>' : ''}</h4>
+            <p><strong>Account Name:</strong> ${account.accountName}</p>
+            <p><strong>Account Number:</strong> ${account.accountNumber}</p>
+            <p><strong>Account Type:</strong> ${account.accountType}</p>
+            <p><strong>Currency:</strong> ${account.currency}</p>
+            ${account.swiftCode ? `<p><strong>SWIFT Code:</strong> ${account.swiftCode}</p>` : ''}
+            ${account.routingNumber ? `<p><strong>Routing Number:</strong> ${account.routingNumber}</p>` : ''}
+            ${account.branch ? `<p><strong>Branch:</strong> ${account.branch}</p>` : ''}
+            ${account.notes ? `<p><strong>Notes:</strong> ${account.notes}</p>` : ''}
+            <div class="bank-account-actions">
+              <button onclick="editBankAccount(${index})">Edit</button>
+              ${!account.isDefault ? `<button onclick="setDefaultBankAccount(${index})">Set as Default</button>` : ''}
+              <button class="delete" onclick="deleteBankAccount(${index})">Delete</button>
+            </div>
+          </div>
+        `;
+      });
+      
+      container.innerHTML = html;
+    }
+    
+    // Add or update bank account
+    async function saveBankAccount(accountData) {
+      const accounts = await getAllBankAccounts();
+      
+      if (editingAccountId !== null) {
+        // Update existing account
+        accounts[editingAccountId] = {
+          ...accounts[editingAccountId],
+          ...accountData,
+          updatedAt: new Date().toISOString()
+        };
+      } else {
+        // Add new account
+        const newAccount = {
+          id: Date.now().toString(),
+          ...accountData,
+          isDefault: accounts.length === 0, // First account is default
+          createdAt: new Date().toISOString()
+        };
+        accounts.push(newAccount);
+      }
+      
+      await saveBankAccounts(accounts);
+      await loadBankAccounts();
+      
+      // Reset form
+      document.getElementById('bank-account-form').reset();
+      document.getElementById('form-title').textContent = 'Add New Bank Account';
+      document.getElementById('submit-btn').textContent = 'Add Bank Account';
+      document.getElementById('cancel-btn').style.display = 'none';
+      editingAccountId = null;
+      
+      alert(editingAccountId !== null ? 'Bank account updated successfully!' : 'Bank account added successfully!');
+    }
+    
+    // Edit bank account
+    function editBankAccount(index) {
+      const accounts = JSON.parse(localStorage.getItem(getBankAccountsKey()) || "[]");
+      const account = accounts[index];
+      
+      if (!account) {
+        alert('Bank account not found');
+        return;
+      }
+      
+      editingAccountId = index;
+      
+      // Populate form
+      document.getElementById('bank-name').value = account.bankName || '';
+      document.getElementById('account-name').value = account.accountName || '';
+      document.getElementById('account-number').value = account.accountNumber || '';
+      document.getElementById('account-type').value = account.accountType || '';
+      document.getElementById('swift-code').value = account.swiftCode || '';
+      document.getElementById('routing-number').value = account.routingNumber || '';
+      document.getElementById('branch').value = account.branch || '';
+      document.getElementById('currency').value = account.currency || '';
+      document.getElementById('notes').value = account.notes || '';
+      
+      // Update UI
+      document.getElementById('form-title').textContent = 'Edit Bank Account';
+      document.getElementById('submit-btn').textContent = 'Update Bank Account';
+      document.getElementById('cancel-btn').style.display = 'inline-block';
+      
+      // Scroll to form
+      document.querySelector('.bank-account-form').scrollIntoView({ behavior: 'smooth' });
+    }
+    
+    // Set default bank account
+    async function setDefaultBankAccount(index) {
+      const accounts = await getAllBankAccounts();
+      
+      // Remove default from all accounts
+      accounts.forEach(acc => acc.isDefault = false);
+      
+      // Set selected account as default
+      accounts[index].isDefault = true;
+      
+      await saveBankAccounts(accounts);
+      await loadBankAccounts();
+      
+      alert('Default bank account updated successfully!');
+    }
+    
+    // Delete bank account
+    async function deleteBankAccount(index) {
+      if (!confirm('Are you sure you want to delete this bank account?')) {
+        return;
+      }
+      
+      const accounts = await getAllBankAccounts();
+      accounts.splice(index, 1);
+      
+      await saveBankAccounts(accounts);
+      await loadBankAccounts();
+      
+      alert('Bank account deleted successfully!');
+    }
+    
+    // Cancel edit
+    function cancelEdit() {
+      document.getElementById('bank-account-form').reset();
+      document.getElementById('form-title').textContent = 'Add New Bank Account';
+      document.getElementById('submit-btn').textContent = 'Add Bank Account';
+      document.getElementById('cancel-btn').style.display = 'none';
+      editingAccountId = null;
+    }
+    
+    // Handle form submission
+    document.getElementById('bank-account-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      
+      const accountData = {
+        bankName: document.getElementById('bank-name').value.trim(),
+        accountName: document.getElementById('account-name').value.trim(),
+        accountNumber: document.getElementById('account-number').value.trim(),
+        accountType: document.getElementById('account-type').value,
+        swiftCode: document.getElementById('swift-code').value.trim(),
+        routingNumber: document.getElementById('routing-number').value.trim(),
+        branch: document.getElementById('branch').value.trim(),
+        currency: document.getElementById('currency').value,
+        notes: document.getElementById('notes').value.trim()
+      };
+      
+      // Validate required fields
+      if (!accountData.bankName || !accountData.accountName || !accountData.accountNumber || 
+          !accountData.accountType || !accountData.currency) {
+        alert('Please fill in all required fields.');
+        return;
+      }
+      
+      saveBankAccount(accountData);
+    });
+    
+    // Load bank accounts on page load
+    window.addEventListener('load', function() {
+      loadBankAccounts();
+    });
+  </script>
+  
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>
+

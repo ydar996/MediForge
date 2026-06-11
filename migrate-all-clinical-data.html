@@ -1,0 +1,727 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Complete Clinical Data Migration</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover {
+            transform: translateY(-2px);
+        }
+        
+        .btn:disabled {
+            opacity: 0.5;
+            cursor: not-allowed;
+        }
+        
+        .log {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry {
+            margin: 3px 0;
+            padding: 2px 0;
+        }
+        
+        .log-entry.success { color: #68d391; }
+        .log-entry.error { color: #fc8181; }
+        .log-entry.warning { color: #f6ad55; }
+        .log-entry.info { color: #63b3ed; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(150px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .stat-box .number {
+            font-size: 32px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-box .label {
+            font-size: 12px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e2e8f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <!-- Supabase SDK -->
+    
+  </script>
+
+    <div class="container">
+        <h1>?? Complete Clinical Data Migration</h1>
+        <p class="subtitle">Migrating ALL patient data including encounters, vitals, diagnoses, medications, prescriptions, lab orders, imaging, referrals, and billing</p>
+        
+        <div class="section">
+            <h2>?? Step 1: Load Backup File</h2>
+            <input type="file" id="backup-file" accept=".json" style="margin-bottom: 15px;">
+            <button class="btn" onclick="loadBackup()">Load Backup</button>
+            
+            <div class="stats-grid" id="backup-stats" style="display: none;">
+                <div class="stat-box">
+                    <div class="number" id="stat-patients">0</div>
+                    <div class="label">Patients</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-visits">0</div>
+                    <div class="label">Visits</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-vitals">0</div>
+                    <div class="label">Vitals</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-diagnoses">0</div>
+                    <div class="label">Diagnoses</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-medications">0</div>
+                    <div class="label">Medications</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-prescriptions">0</div>
+                    <div class="label">Prescriptions</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-medical-history">0</div>
+                    <div class="label">Medical History</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-preventive">0</div>
+                    <div class="label">Preventive Care</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-lab-orders">0</div>
+                    <div class="label">Lab Orders</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="stat-imaging-orders">0</div>
+                    <div class="label">Imaging Orders</div>
+                </div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>?? Step 2: Migrate All Clinical Data</h2>
+            <button class="btn" id="migrate-btn" onclick="startMigration()" disabled>Start Full Migration</button>
+            <button class="btn" onclick="clearLogs()">Clear Logs</button>
+            
+            <div class="progress-bar" style="display: none;" id="progress-bar">
+                <div class="progress-fill" id="progress-fill">0%</div>
+            </div>
+        </div>
+        
+        <div class="log" id="migration-log"></div>
+    </div>
+
+    
+  
+        let backupData = null;
+        let orgId = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('migration-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateProgress(percent, text) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressFill = document.getElementById('progress-fill');
+            progressBar.style.display = 'block';
+            progressFill.style.width = `${percent}%`;
+            progressFill.textContent = text || `${percent}%`;
+        }
+
+        function clearLogs() {
+            document.getElementById('migration-log').innerHTML = '';
+        }
+
+        async function loadBackup() {
+            const fileInput = document.getElementById('backup-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a backup file');
+                return;
+            }
+
+            log('?? Reading backup file...', 'info');
+            
+            try {
+                const text = await file.text();
+                const cleanedText = text.replace(/"followup":\s*"[^"]*",\s*"followUp"/g, '"followUp"');
+                backupData = JSON.parse(cleanedText);
+                
+                log('? Backup file loaded successfully', 'success');
+                
+                // Calculate stats
+                const mecureData = backupData.organizationData?.['Mecure Clinics'];
+                if (mecureData) {
+                    const patients = mecureData.patients || [];
+                    
+                    let totalVisits = 0, totalVitals = 0, totalDiagnoses = 0;
+                    let totalMedications = 0, totalPrescriptions = 0, totalMedicalHistory = 0;
+                    let totalPreventive = 0, totalLabOrders = 0, totalImagingOrders = 0;
+                    
+                    patients.forEach(p => {
+                        totalVisits += (p.visits || []).length;
+                        totalDiagnoses += (p.diagnoses || []).length;
+                        totalMedications += (p.medications || []).length;
+                        totalPrescriptions += (p.prescriptions || []).length;
+                        totalMedicalHistory += (p.medicalHistory || []).length;
+                        totalPreventive += (p.preventiveGaps || []).length;
+                        
+                        (p.visits || []).forEach(v => {
+                            if (v.soap?.objective?.vitals) {
+                                totalVitals += Array.isArray(v.soap.objective.vitals) ? v.soap.objective.vitals.length : 1;
+                            }
+                            if (v.soap?.objective?.labOrders) {
+                                totalLabOrders += v.soap.objective.labOrders.length;
+                            }
+                            if (v.soap?.objective?.imagingOrders) {
+                                totalImagingOrders += v.soap.objective.imagingOrders.length;
+                            }
+                        });
+                    });
+                    
+                    document.getElementById('stat-patients').textContent = patients.length;
+                    document.getElementById('stat-visits').textContent = totalVisits;
+                    document.getElementById('stat-vitals').textContent = totalVitals;
+                    document.getElementById('stat-diagnoses').textContent = totalDiagnoses;
+                    document.getElementById('stat-medications').textContent = totalMedications;
+                    document.getElementById('stat-prescriptions').textContent = totalPrescriptions;
+                    document.getElementById('stat-medical-history').textContent = totalMedicalHistory;
+                    document.getElementById('stat-preventive').textContent = totalPreventive;
+                    document.getElementById('stat-lab-orders').textContent = totalLabOrders;
+                    document.getElementById('stat-imaging-orders').textContent = totalImagingOrders;
+                    
+                    document.getElementById('backup-stats').style.display = 'grid';
+                    document.getElementById('migrate-btn').disabled = false;
+                    
+                    log(`?? Found: ${totalVisits} visits, ${totalVitals} vitals, ${totalDiagnoses} diagnoses`, 'info');
+                    log(`?? Found: ${totalMedications} medications, ${totalPrescriptions} prescriptions`, 'info');
+                    log(`?? Found: ${totalLabOrders} lab orders, ${totalImagingOrders} imaging orders`, 'info');
+                } else {
+                    log('?? No Mecure Clinics data found in backup', 'warning');
+                }
+            } catch (error) {
+                log(`? Error loading backup: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function startMigration() {
+            if (!backupData) {
+                alert('Please load a backup file first');
+                return;
+            }
+
+            if (!supabaseClient) {
+                log('? Supabase client not initialized', 'error');
+                return;
+            }
+
+            document.getElementById('migrate-btn').disabled = true;
+            log('?? Starting COMPLETE clinical data migration...', 'info');
+            log('?? This will take several minutes. Please wait...', 'warning');
+            
+            try {
+                // Get organization ID
+                await getOrganizationId();
+                
+                const patients = backupData.organizationData?.['Mecure Clinics']?.patients || [];
+                const totalSteps = patients.length;
+                
+                for (let i = 0; i < patients.length; i++) {
+                    const patient = patients[i];
+                    log(`\n?? Processing patient ${i + 1}/${totalSteps}: ${patient.firstName} ${patient.lastName}`, 'info');
+                    
+                    await migratePatientClinicalData(patient);
+                    
+                    const progress = Math.floor(((i + 1) / totalSteps) * 100);
+                    updateProgress(progress, `Processing patient ${i + 1}/${totalSteps}...`);
+                }
+                
+                log('\n?? COMPLETE MIGRATION FINISHED!', 'success');
+                updateProgress(100, '? Complete');
+                
+            } catch (error) {
+                log(`? Migration failed: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                document.getElementById('migrate-btn').disabled = false;
+            }
+        }
+
+        async function getOrganizationId() {
+            const orgData = backupData.organizations?.['Mecure Clinics'];
+            const { data: orgs } = await supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', 'Mecure Clinics')
+                .single();
+            
+            if (!orgs) throw new Error('Mecure Clinics not found in Supabase');
+            orgId = orgs.id;
+            log(`? Using organization ID: ${orgId}`, 'success');
+        }
+
+        async function migratePatientClinicalData(patient) {
+            // 1. Migrate Encounters (Visits)
+            await migrateEncounters(patient);
+            
+            // 2. Migrate Diagnoses
+            await migrateDiagnoses(patient);
+            
+            // 3. Migrate Medications
+            await migrateMedications(patient);
+            
+            // 4. Migrate Prescriptions
+            await migratePrescriptions(patient);
+            
+            // 5. Migrate Medical History
+            await migrateMedicalHistory(patient);
+            
+            // 6. Migrate Preventive Care
+            await migratePreventiveCare(patient);
+        }
+
+        async function migrateEncounters(patient) {
+            const visits = patient.visits || [];
+            if (visits.length === 0) return;
+            
+            log(`  ?? Migrating ${visits.length} encounters...`, 'info');
+            
+            for (const visit of visits) {
+                // Check if encounter already exists
+                const { data: existing } = await supabaseClient
+                    .from('patient_encounters')
+                    .select('id')
+                    .eq('patient_id', patient.id)
+                    .eq('encounter_date', visit.date)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                const encounterData = {
+                    patient_id: patient.id,
+                    organization_id: orgId,
+                    encounter_date: visit.date,
+                    symptoms: visit.symptoms || null,
+                    diagnosis: visit.diagnosis || null,
+                    prescription: visit.prescription || null
+                };
+                
+                // SOAP Notes
+                if (visit.soap) {
+                    if (visit.soap.subjective) {
+                        encounterData.soap_subjective_cc = visit.soap.subjective.cc || null;
+                        encounterData.soap_subjective_hpi = visit.soap.subjective.hpi || null;
+                        encounterData.soap_subjective_fh = visit.soap.subjective.fh || null;
+                        encounterData.soap_subjective_sh = visit.soap.subjective.sh || null;
+                        encounterData.soap_subjective_ros = visit.soap.subjective.ros || null;
+                    }
+                    
+                    if (visit.soap.objective) {
+                        encounterData.soap_objective_physical = visit.soap.objective.physical || null;
+                        encounterData.soap_objective_labs = visit.soap.objective.labs || null;
+                        encounterData.soap_objective_no_labs = visit.soap.objective.noLabs || false;
+                        encounterData.soap_objective_no_imaging = visit.soap.objective.noImaging || false;
+                    }
+                    
+                    if (visit.soap.assessment) {
+                        encounterData.soap_assessment_differential = visit.soap.assessment.differential || null;
+                        encounterData.soap_assessment_status = visit.soap.assessment.status || null;
+                    }
+                    
+                    if (visit.soap.plan) {
+                        encounterData.soap_plan_treatments = visit.soap.plan.treatments || null;
+                        encounterData.soap_plan_testing = visit.soap.plan.testing || null;
+                        encounterData.soap_plan_referrals = visit.soap.plan.referrals || null;
+                        encounterData.soap_plan_education = visit.soap.plan.education || null;
+                        encounterData.soap_plan_followup = visit.soap.plan.followup || visit.soap.plan.followUp || null;
+                    }
+                }
+                
+                const { data: newEncounter, error } = await supabaseClient
+                    .from('patient_encounters')
+                    .insert([encounterData])
+                    .select()
+                    .single();
+                
+                if (error) {
+                    log(`    ?? Error migrating encounter: ${error.message}`, 'warning');
+                    continue;
+                }
+                
+                // Migrate vitals for this encounter
+                if (visit.soap?.objective?.vitals) {
+                    await migrateVitals(patient.id, newEncounter.id, visit.soap.objective.vitals);
+                }
+                
+                // Migrate lab orders for this encounter
+                if (visit.soap?.objective?.labOrders && visit.soap.objective.labOrders.length > 0) {
+                    await migrateLabOrders(patient.id, newEncounter.id, visit.soap.objective.labOrders, visit.date);
+                }
+                
+                // Migrate imaging orders for this encounter
+                if (visit.soap?.objective?.imagingOrders && visit.soap.objective.imagingOrders.length > 0) {
+                    await migrateImagingOrders(patient.id, newEncounter.id, visit.soap.objective.imagingOrders, visit.date);
+                }
+            }
+            
+            log(`  ? Encounters migrated`, 'success');
+        }
+
+        async function migrateVitals(patientId, encounterId, vitalsData) {
+            const vitalsArray = Array.isArray(vitalsData) ? vitalsData : [vitalsData];
+            
+            for (const vitals of vitalsArray) {
+                if (typeof vitals !== 'object') continue;
+                
+                const vitalData = {
+                    encounter_id: encounterId,
+                    patient_id: patientId,
+                    organization_id: orgId,
+                    temperature: vitals.temp ? parseFloat(vitals.temp) : null,
+                    heart_rate: vitals.hr ? parseInt(vitals.hr) : null,
+                    respiratory_rate: vitals.rr ? parseInt(vitals.rr) : null,
+                    systolic_bp: vitals.systolic ? parseInt(vitals.systolic) : null,
+                    diastolic_bp: vitals.diastolic ? parseInt(vitals.diastolic) : null,
+                    oxygen_saturation: vitals.o2sat ? parseInt(vitals.o2sat) : null,
+                    height: vitals.height ? parseFloat(vitals.height) : null,
+                    weight: vitals.weight ? parseFloat(vitals.weight) : null,
+                    bmi: vitals.bmi ? parseFloat(vitals.bmi) : null,
+                    pain_score: vitals.pain ? parseInt(vitals.pain) : null,
+                    notes: vitals.notes || null
+                };
+                
+                await supabaseClient
+                    .from('vital_signs')
+                    .insert([vitalData]);
+            }
+        }
+
+        async function migrateDiagnoses(patient) {
+            const diagnoses = patient.diagnoses || [];
+            if (diagnoses.length === 0) return;
+            
+            log(`  ?? Migrating ${diagnoses.length} diagnoses...`, 'info');
+            
+            for (const diag of diagnoses) {
+                const { data: existing } = await supabaseClient
+                    .from('diagnoses')
+                    .select('id')
+                    .eq('patient_id', patient.id)
+                    .eq('diagnosis_date', diag.date)
+                    .eq('diagnosis_description', diag.diagnosis)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                await supabaseClient
+                    .from('diagnoses')
+                    .insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        diagnosis_date: diag.date,
+                        diagnosis_description: diag.diagnosis,
+                        notes: diag.notes || null
+                    }]);
+            }
+            
+            log(`  ? Diagnoses migrated`, 'success');
+        }
+
+        async function migrateMedications(patient) {
+            const medications = patient.medications || [];
+            if (medications.length === 0) return;
+            
+            log(`  ?? Migrating ${medications.length} medications...`, 'info');
+            
+            for (const med of medications) {
+                const { data: existing } = await supabaseClient
+                    .from('medications')
+                    .select('id')
+                    .eq('patient_id', patient.id)
+                    .eq('medication_name', med.name)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                await supabaseClient
+                    .from('medications')
+                    .insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        medication_name: med.name,
+                        dosage: med.dosage || null,
+                        frequency: med.frequency || null,
+                        route: med.route || null,
+                        start_date: med.startDate || null,
+                        prescribing_doctor: med.prescribedBy || null,
+                        notes: med.notes || null
+                    }]);
+            }
+            
+            log(`  ? Medications migrated`, 'success');
+        }
+
+        async function migratePrescriptions(patient) {
+            const prescriptions = patient.prescriptions || [];
+            if (prescriptions.length === 0) return;
+            
+            log(`  ?? Migrating ${prescriptions.length} prescriptions...`, 'info');
+            
+            for (const rx of prescriptions) {
+                await supabaseClient
+                    .from('prescriptions')
+                    .insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        prescription_date: rx.date,
+                        medication_name: rx.medication,
+                        dosage: rx.dosage || null,
+                        frequency: rx.frequency || null,
+                        duration: rx.duration || null,
+                        quantity: rx.quantity ? parseInt(rx.quantity) : null,
+                        refills: rx.refills ? parseInt(rx.refills) : null,
+                        prescribing_doctor: rx.prescribedBy || null
+                    }]);
+            }
+            
+            log(`  ? Prescriptions migrated`, 'success');
+        }
+
+        async function migrateMedicalHistory(patient) {
+            const history = patient.medicalHistory || [];
+            if (history.length === 0) return;
+            
+            log(`  ?? Migrating ${history.length} medical history items...`, 'info');
+            
+            for (const item of history) {
+                const { data: existing } = await supabaseClient
+                    .from('medical_history')
+                    .select('id')
+                    .eq('patient_id', patient.id)
+                    .eq('event_date', item.date)
+                    .eq('event_description', item.event)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                await supabaseClient
+                    .from('medical_history')
+                    .insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        event_date: item.date,
+                        event_description: item.event,
+                        notes: item.notes || null
+                    }]);
+            }
+            
+            log(`  ? Medical history migrated`, 'success');
+        }
+
+        async function migratePreventiveCare(patient) {
+            const preventive = patient.preventiveGaps || [];
+            if (preventive.length === 0) return;
+            
+            log(`  ?? Migrating ${preventive.length} preventive care items...`, 'info');
+            
+            for (const item of preventive) {
+                const { data: existing } = await supabaseClient
+                    .from('preventive_care')
+                    .select('id')
+                    .eq('patient_id', patient.id)
+                    .eq('intervention_name', item.intervention)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                await supabaseClient
+                    .from('preventive_care')
+                    .insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        intervention_name: item.intervention,
+                        addressed: item.addressed || false,
+                        addressed_date: item.markedDate || null
+                    }]);
+            }
+            
+            log(`  ? Preventive care migrated`, 'success');
+        }
+
+        async function migrateLabOrders(patientId, encounterId, labOrders, orderDate) {
+            for (const order of labOrders) {
+                await supabaseClient
+                    .from('lab_orders')
+                    .insert([{
+                        patient_id: patientId,
+                        organization_id: orgId,
+                        encounter_id: encounterId,
+                        order_date: orderDate,
+                        test_name: order.test || order.name || 'Lab Test',
+                        test_code: order.code || null,
+                        priority: order.priority || 'routine',
+                        status: order.status || 'pending',
+                        ordering_doctor: order.doctor || null,
+                        notes: order.notes || null
+                    }]);
+            }
+        }
+
+        async function migrateImagingOrders(patientId, encounterId, imagingOrders, orderDate) {
+            for (const order of imagingOrders) {
+                await supabaseClient
+                    .from('imaging_orders')
+                    .insert([{
+                        patient_id: patientId,
+                        organization_id: orgId,
+                        encounter_id: encounterId,
+                        order_date: orderDate,
+                        imaging_type: order.type || 'Imaging Study',
+                        body_part: order.bodyPart || null,
+                        priority: order.priority || 'routine',
+                        status: order.status || 'pending',
+                        ordering_doctor: order.doctor || null,
+                        notes: order.notes || null
+                    }]);
+            }
+        }
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+
+

@@ -1,0 +1,241 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple Data Cleanup</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .container { max-width: 800px; margin: 0 auto; }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .button { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .button:hover { background: #0056b3; }
+        .danger { background: #dc3545; }
+        .danger:hover { background: #c82333; }
+        .success { background: #28a745; }
+        .success:hover { background: #218838; }
+        .log { background: #f8f9fa; border: 1px solid #dee2e6; padding: 10px; margin: 10px 0; border-radius: 5px; font-family: monospace; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Simple Data Cleanup Tool</h1>
+        
+        <div class="section">
+            <h3>Current Data Status (localStorage)</h3>
+            <button class="button" onclick="checkLocalData()">Check Local Data</button>
+            <div id="local-data-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Cleanup Actions</h3>
+            <button class="button danger" onclick="cleanupLocalData()">?? Clean Duplicate Data</button>
+            <button class="button success" onclick="fixVitalsStructure()">?? Fix Vitals Structure</button>
+            <div id="cleanup-log" class="log"></div>
+        </div>
+
+        <div class="section">
+            <h3>Instructions</h3>
+            <p><strong>Step 1:</strong> Click "Check Local Data" to see current status</p>
+            <p><strong>Step 2:</strong> Click "Clean Duplicate Data" to remove duplicates from localStorage</p>
+            <p><strong>Step 3:</strong> Click "Fix Vitals Structure" to ensure vitals work properly</p>
+            <p><strong>Step 4:</strong> Go back to clinical note page and hard refresh (Ctrl+F5)</p>
+            <p><strong>Step 5:</strong> Run the SQL script in Supabase to clean the database</p>
+        </div>
+    </div>
+
+    <script>
+        function log(message, logId = 'cleanup-log') {
+            const element = document.getElementById(logId);
+            element.textContent += new Date().toLocaleTimeString() + ': ' + message + '\n';
+            element.scrollTop = element.scrollHeight;
+            console.log(message);
+        }
+
+        function clearLog(logId = 'cleanup-log') {
+            document.getElementById(logId).textContent = '';
+        }
+
+        function checkLocalData() {
+            clearLog('local-data-log');
+            log('?? Checking localStorage data...', 'local-data-log');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem("Mecure Clinics_patients") || "[]");
+                log(`?? Found ${patients.length} patients in localStorage`, 'local-data-log');
+                
+                patients.forEach(patient => {
+                    const allergies = patient.allergies || [];
+                    const diagnoses = patient.diagnoses || [];
+                    const immunizations = patient.immunizations || [];
+                    const medicalHistory = patient.medicalHistory || [];
+                    
+                    log(`?? ${patient.id} (${patient.firstName} ${patient.lastName}):`, 'local-data-log');
+                    log(`   Allergies: ${allergies.length} entries`, 'local-data-log');
+                    log(`   Diagnoses: ${diagnoses.length} entries`, 'local-data-log');
+                    log(`   Immunizations: ${immunizations.length} entries`, 'local-data-log');
+                    log(`   Medical History: ${medicalHistory.length} entries`, 'local-data-log');
+                    
+                    // Check for duplicates
+                    const allergyDuplicates = allergies.length - new Set(allergies.map(a => JSON.stringify(a))).size;
+                    const diagnosisDuplicates = diagnoses.length - new Set(diagnoses.map(d => JSON.stringify(d))).size;
+                    const immunizationDuplicates = immunizations.length - new Set(immunizations.map(i => JSON.stringify(i))).size;
+                    const historyDuplicates = medicalHistory.length - new Set(medicalHistory.map(h => JSON.stringify(h))).size;
+                    
+                    if (allergyDuplicates > 0 || diagnosisDuplicates > 0 || immunizationDuplicates > 0 || historyDuplicates > 0) {
+                        log(`   ?? DUPLICATES FOUND:`, 'local-data-log');
+                        if (allergyDuplicates > 0) log(`     Allergies: ${allergyDuplicates} duplicates`, 'local-data-log');
+                        if (diagnosisDuplicates > 0) log(`     Diagnoses: ${diagnosisDuplicates} duplicates`, 'local-data-log');
+                        if (immunizationDuplicates > 0) log(`     Immunizations: ${immunizationDuplicates} duplicates`, 'local-data-log');
+                        if (historyDuplicates > 0) log(`     Medical History: ${historyDuplicates} duplicates`, 'local-data-log');
+                    }
+                });
+                
+            } catch (error) {
+                log('? Error: ' + error.message, 'local-data-log');
+            }
+        }
+
+        function cleanupLocalData() {
+            clearLog();
+            log('?? Starting localStorage cleanup...');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem("Mecure Clinics_patients") || "[]");
+                log(`?? Processing ${patients.length} patients...`);
+                
+                let totalCleaned = 0;
+                
+                patients.forEach(patient => {
+                    const originalAllergies = patient.allergies || [];
+                    const originalDiagnoses = patient.diagnoses || [];
+                    const originalImmunizations = patient.immunizations || [];
+                    const originalMedicalHistory = patient.medicalHistory || [];
+                    
+                    // Deduplicate each array
+                    patient.allergies = deduplicateArray(originalAllergies);
+                    patient.diagnoses = deduplicateArray(originalDiagnoses);
+                    patient.immunizations = deduplicateArray(originalImmunizations);
+                    patient.medicalHistory = deduplicateArray(originalMedicalHistory);
+                    
+                    const allergiesCleaned = originalAllergies.length - patient.allergies.length;
+                    const diagnosesCleaned = originalDiagnoses.length - patient.diagnoses.length;
+                    const immunizationsCleaned = originalImmunizations.length - patient.immunizations.length;
+                    const historyCleaned = originalMedicalHistory.length - patient.medicalHistory.length;
+                    
+                    const patientCleaned = allergiesCleaned + diagnosesCleaned + immunizationsCleaned + historyCleaned;
+                    totalCleaned += patientCleaned;
+                    
+                    if (patientCleaned > 0) {
+                        log(`? Cleaned ${patient.id}:`);
+                        if (allergiesCleaned > 0) log(`   Allergies: ${allergiesCleaned} duplicates removed`);
+                        if (diagnosesCleaned > 0) log(`   Diagnoses: ${diagnosesCleaned} duplicates removed`);
+                        if (immunizationsCleaned > 0) log(`   Immunizations: ${immunizationsCleaned} duplicates removed`);
+                        if (historyCleaned > 0) log(`   Medical History: ${historyCleaned} duplicates removed`);
+                    }
+                });
+                
+                // Save cleaned data back to localStorage
+                localStorage.setItem("Mecure Clinics_patients", JSON.stringify(patients));
+                
+                log(`?? Cleanup completed! Removed ${totalCleaned} duplicate entries total.`);
+                
+            } catch (error) {
+                log('? Error: ' + error.message);
+            }
+        }
+
+        function deduplicateArray(arr) {
+            const seen = new Set();
+            return arr.filter(item => {
+                const key = JSON.stringify(item);
+                if (seen.has(key)) {
+                    return false;
+                }
+                seen.add(key);
+                return true;
+            });
+        }
+
+        function fixVitalsStructure() {
+            clearLog();
+            log('?? Fixing vitals structure...');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem("Mecure Clinics_patients") || "[]");
+                log(`?? Found ${patients.length} patients in localStorage`);
+                
+                let fixedCount = 0;
+                
+                patients.forEach(patient => {
+                    if (!patient.visits) {
+                        patient.visits = [];
+                        log(`?? Added visits array to ${patient.id}`);
+                        fixedCount++;
+                    }
+                    
+                    // Ensure each visit has proper SOAP structure
+                    patient.visits.forEach(visit => {
+                        if (!visit.soap) {
+                            visit.soap = {
+                                subjective: {},
+                                objective: {},
+                                assessment: {},
+                                plan: {}
+                            };
+                            log(`?? Added SOAP structure to visit ${visit.date} for ${patient.id}`);
+                            fixedCount++;
+                        }
+                        
+                        if (!visit.soap.objective) {
+                            visit.soap.objective = {};
+                            log(`?? Added objective structure to visit ${visit.date} for ${patient.id}`);
+                            fixedCount++;
+                        }
+                        
+                        if (!visit.soap.objective.vitals) {
+                            visit.soap.objective.vitals = [];
+                            log(`?? Added vitals array to visit ${visit.date} for ${patient.id}`);
+                            fixedCount++;
+                        }
+                    });
+                });
+                
+                // Save back to localStorage
+                localStorage.setItem("Mecure Clinics_patients", JSON.stringify(patients));
+                log(`? Vitals structure fixed! Made ${fixedCount} fixes.`);
+                
+            } catch (error) {
+                log('? Error: ' + error.message);
+            }
+        }
+
+        // Auto-check data on page load
+        window.addEventListener('load', () => {
+            checkLocalData();
+        });
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

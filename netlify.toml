@@ -1,0 +1,786 @@
+headersOrigin = "config"
+redirectsOrigin = "config"
+plugins = []
+
+[functions]
+
+[functions."*"]
+
+[functions."appointment-reminders-daily"]
+  timeout = 26
+
+[build]
+# Fail deploy if user-facing HTML still has ? / ?? icon placeholders (UTF-8 / copy-paste guard).
+command = "node scripts/inject-supabase-env.cjs && npm run check"
+publish = "."
+publishOrigin = "config"
+
+  [build.environment]
+    # Documentation-only paths omitted from secret scan (must not contain live keys)
+    SECRETS_SCAN_OMIT_PATHS = "Correct deployment pipeline.txt"
+
+  [build.processing]
+
+    [build.processing.css]
+
+    [build.processing.html]
+
+    [build.processing.images]
+
+    [build.processing.js]
+
+  [build.services]
+
+[[headers]]
+for = "/*"
+
+  [headers.values]
+  X-Frame-Options = "DENY"
+  X-XSS-Protection = "1; mode=block"
+  X-Content-Type-Options = "nosniff"
+  Referrer-Policy = "strict-origin-when-cross-origin"
+  Strict-Transport-Security = "max-age=31536000; includeSubDomains; preload"
+  Permissions-Policy = "camera=(), microphone=(), geolocation=(), payment=()"
+  Cross-Origin-Opener-Policy = "same-origin"
+  Cross-Origin-Resource-Policy = "same-origin"
+  # CSP including report-uri for violation reporting (handled by csp-report Netlify function)
+  # CSP: removed 'unsafe-eval' to reduce XSS risk (dev test). If scripts break, revert.
+  Content-Security-Policy = "default-src 'self'; script-src 'self' 'unsafe-inline' https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://js.paystack.co; connect-src 'self' https://*.supabase.co wss://*.supabase.co https://cdn.jsdelivr.net https://cdnjs.cloudflare.com https://api.paystack.co; img-src 'self' data: blob: https:; style-src 'self' 'unsafe-inline' https://fonts.googleapis.com https://paystack.com https://cdnjs.cloudflare.com; font-src 'self' https://fonts.gstatic.com https://cdnjs.cloudflare.com; frame-src 'self' https://checkout.paystack.com https://js.paystack.co; frame-ancestors 'none'; base-uri 'self'; form-action 'self' https://*.supabase.co https://api.paystack.co; object-src 'none'; upgrade-insecure-requests; block-all-mixed-content; report-uri /.netlify/functions/csp-report"
+
+[[headers]]
+for = "/*.js"
+
+  [headers.values]
+  Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/*.css"
+
+  [headers.values]
+  Cache-Control = "public, max-age=31536000, immutable"
+
+[[headers]]
+for = "/*.html"
+
+  [headers.values]
+  Cache-Control = "public, max-age=0, must-revalidate"
+
+[[headers]]
+for = "/.well-known/security.txt"
+
+  [headers.values]
+  Content-Type = "text/plain; charset=utf-8"
+  Cache-Control = "public, max-age=86400"
+
+# Canonical production hostname: redirect www Netlify alias to apex (TLS + scanner alignment).
+[[redirects]]
+from = "https://www.mediforge.netlify.app/*"
+to = "https://mediforge.netlify.app/:splat"
+status = 301
+force = true
+
+[[redirects]]
+from = "/*.html"
+to = "/:splat"
+status = 301
+force = true
+
+  [redirects.query]
+
+  [redirects.conditions]
+  path = [
+    "!/*.js",
+    "!/*.css",
+    "!/*.json",
+    "!/*.svg",
+    "!/*.png",
+    "!/*.jpg",
+    "!/*.jpeg",
+    "!/*.gif",
+    "!/*.ico",
+    "!/*.woff",
+    "!/*.woff2",
+    "!/*.map"
+  ]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/register"
+to = "/register.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/login"
+to = "/login.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patient-login"
+to = "/patient-login.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/dashboard"
+to = "/dashboard.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patients"
+to = "/patients.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/add-patient"
+to = "/add-patient.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/edit-patient"
+to = "/edit-patient.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patient-details"
+to = "/patient-details.html"
+status = 200
+force = true
+
+  [redirects.query]
+  pass = true
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/clinical-note"
+to = "/clinical-note.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/blood-pressure-check-note"
+to = "/blood-pressure-check-note.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/blood-pressure-alerts-dashboard"
+to = "/blood-pressure-alerts-dashboard.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/blood-pressure-alerts-patient"
+to = "/blood-pressure-alerts-patient.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/lab-intervention-note"
+to = "/lab-intervention-note.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patient-documents"
+to = "/patient-documents.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/appointments"
+to = "/appointments.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/add-appointment"
+to = "/add-appointment.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/schedule"
+to = "/schedule.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/reports"
+to = "/reports.html"
+status = 200
+force = false
+[[redirects]]
+from = "/patient-intake.html"
+to = "/patient-intake"
+status = 301
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patient-intake"
+to = "/patient-intake.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patient-intake-approvals.html"
+to = "/patient-intake-approvals"
+status = 301
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/patient-intake-approvals"
+to = "/patient-intake-approvals.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/billing-dashboard"
+to = "/billing-dashboard.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/manage-subscription"
+to = "/manage-subscription.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/platform-login"
+to = "/platform-login.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/platform-dashboard"
+to = "/platform-dashboard.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/platform-settings"
+to = "/platform-settings.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/platform-subscriptions"
+to = "/platform-subscriptions.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/about-us"
+to = "/about-us.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/key-features"
+to = "/key-features.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/brochure.html"
+to = "/brochure"
+status = 301
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/brochure"
+to = "/brochure.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/how-to-use-offline-capabilities.html"
+to = "/how-to-use-offline-capabilities"
+status = 301
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/how-to-use-offline-capabilities"
+to = "/how-to-use-offline-capabilities.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/clinic-security-dashboard"
+to = "/clinic-security-dashboard.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/platform-security-dashboard"
+to = "/platform-security-dashboard.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/security-monitoring"
+to = "/security-monitoring.html"
+status = 200
+force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/test-audit-logging"
+to = "/test-audit-logging.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/verify-audit-logging-production"
+to = "/verify-audit-logging-production.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/audit-log-details"
+to = "/audit-log-details.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/security-logs"
+to = "/security-logs.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/org-user-management"
+to = "/org-user-management.html"
+
+[[redirects]]
+from = "/diagnose-user-auth"
+to = "/diagnose-user-auth.html"
+status = 200
+force = false
+
+[[redirects]]
+from = "/change-password"
+to = "/change-password.html"
+status = 200
+force = false
+
+[[redirects]]
+  from = "/find-missing-clinic"
+  to = "/find-missing-clinic.html"
+
+[[redirects]]
+  from = "/find-missing-patients"
+  to = "/find-missing-patients.html"
+status = 200
+force = false
+
+[[redirects]]
+  from = "/recover-lost-patient"
+  to = "/recover-lost-patient.html"
+status = 200
+
+[[redirects]]
+  from = "/find-missing-users"
+  to = "/find-missing-users.html"
+  status = 301
+force = false
+
+[[redirects]]
+  from = "/recover-missing-users-admin"
+  to = "/recover-missing-users-admin.html"
+  status = 301
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/data-download-approvals"
+  to = "/data-download-approvals.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/my-download-requests"
+  to = "/my-download-requests.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/pharmacy-dashboard"
+  to = "/pharmacy-dashboard.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/pharmacy-inventory-details"
+  to = "/pharmacy-inventory-details.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/legal-agreement"
+  to = "/legal-agreement.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/legal-agreement-sign"
+  to = "/legal-agreement-sign.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/legal-agreements-admin"
+  to = "/legal-agreements-admin.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/legal-agreements-org"
+  to = "/legal-agreements-org.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/legal-agreement-view"
+  to = "/legal-agreement-view.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/legal-agreements-summary"
+  to = "/legal-agreements-summary.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+  from = "/practice-proposal"
+  to = "/mediforge-practice-proposal.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/messages"
+  to = "/messages.html"
+
+[[redirects]]
+  from = "/appointment-reminder-settings"
+  to = "/appointment-reminder-settings.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/appointment-sms-reminders"
+  to = "/appointment-sms-reminders.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/upcoming-appointments"
+  to = "/upcoming-appointments.html"
+  status = 200
+  force = false
+
+[[redirects]]
+  from = "/verify-message-delivery"
+  to = "/verify-message-delivery.html"
+  status = 200
+  force = false
+
+  [redirects.query]
+
+  [redirects.conditions]
+
+  [redirects.headers]
+
+[[redirects]]
+from = "/*"
+to = "/:splat.html"
+status = 200
+force = false
+
+  [redirects.query]
+  pass = true
+
+  [redirects.conditions]
+  path = [
+    "!/*.html",
+    "!/*.js",
+    "!/*.css",
+    "!/*.json",
+    "!/*.svg",
+    "!/*.png",
+    "!/*.jpg",
+    "!/*.jpeg",
+    "!/*.gif",
+    "!/*.ico",
+    "!/*.woff",
+    "!/*.woff2",
+    "!/*.map",
+    "!/assets/*",
+    "!/css/*",
+    "!/js/*",
+    "!/data/*",
+    "!/sql-scripts/*",
+    "!/patient-details"
+  ]
+
+  [redirects.headers]

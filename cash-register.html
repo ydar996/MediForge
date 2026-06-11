@@ -1,0 +1,573 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cash Register - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=222">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113080113081308"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=286"></script>
+  <script src="js/cash-register.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <style>
+    /* Use full width for cash register */
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    #cash-transactions-table th:nth-child(1),
+    #cash-transactions-table td:nth-child(1) { width: 12%; }
+    #cash-transactions-table th:nth-child(2),
+    #cash-transactions-table td:nth-child(2) { width: 10%; }
+    #cash-transactions-table th:nth-child(3),
+    #cash-transactions-table td:nth-child(3) { width: 15%; }
+    #cash-transactions-table th:nth-child(4),
+    #cash-transactions-table td:nth-child(4) { width: 43%; }
+    #cash-transactions-table th:nth-child(5),
+    #cash-transactions-table td:nth-child(5) { width: 20%; }
+  </style>
+</head>
+<body>
+  <h1>&#128181; Cash Register</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">&#8592; Back</button>
+
+  <div id="no-session" style="max-width: 700px; margin: 20px auto; background: white; padding: 30px; border-radius: 8px; text-align: center;">
+    <h2>Cash Register is Closed</h2>
+    <p>Open the cash register to start recording transactions</p>
+    <label for="opening-balance">Opening Balance:</label>
+    <input type="number" id="opening-balance" value="0" step="0.01" style="text-align: center; font-size: 20px; padding: 10px;">
+    <button onclick="openRegister()" style="background: #4CAF50; color: white; font-size: 18px; padding: 20px; margin-top: 20px; border: none; border-radius: 4px; cursor: pointer;">
+      &#128214; Open Cash Register
+    </button>
+  </div>
+
+  <div id="active-session" style="display: none;">
+    <div style="margin: 20px 0; background: #e8f5e9; padding: 20px; border-radius: 8px;">
+      <h2 style="margin-top: 0;">Current Session</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px;">
+        <div>
+          <strong>Opening Balance:</strong><br>
+          <span id="sess-opening"></span>
+          <button onclick="adjustOpeningBalance()" style="background: #2196F3; color: white; padding: 3px 8px; border: none; border-radius: 3px; cursor: pointer; font-size: 11px; margin-left: 5px;">Edit</button>
+        </div>
+        <div><strong>Cash In:</strong><br><span id="sess-in" style="color: green;"></span></div>
+        <div><strong>Cash Out:</strong><br><span id="sess-out" style="color: red;"></span></div>
+        <div><strong>Expected Balance:</strong><br><span id="sess-expected"></span></div>
+      </div>
+      <div style="margin-top: 15px;">
+        <button onclick="closeRegister()" style="background: #f44336; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer; margin-right: 10px;">&#128683; Close Register</button>
+        <button onclick="resetOpeningBalance()" style="background: #FF9800; color: white; padding: 10px 20px; border: none; border-radius: 4px; cursor: pointer;">Reset Opening Balance to ₦0</button>
+      </div>
+    </div>
+
+    <div style="margin: 20px 0;">
+      <h2>Today's Transactions</h2>
+      <table class="billing-table" id="cash-transactions-table">
+        <thead>
+          <tr>
+            <th class="center">Time</th>
+            <th class="center">Type</th>
+            <th class="right">Amount</th>
+            <th class="left">Description</th>
+            <th class="left">Reference</th>
+            <th class="center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="transactions-list"></tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Historical Transactions Section -->
+  <div style="margin: 40px 0; padding: 20px; background: white; border-radius: 8px; box-shadow: 0 2px 4px rgba(0,0,0,0.1);">
+    <h2>Historical Transactions</h2>
+    <div style="margin-bottom: 20px; display: flex; gap: 10px; flex-wrap: wrap; align-items: center;">
+      <label>Start Date:</label>
+      <input type="date" id="history-start-date" style="padding: 5px;">
+      <label>End Date:</label>
+      <input type="date" id="history-end-date" style="padding: 5px;">
+      <button onclick="loadHistoricalTransactions()" style="background: #2196F3; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">Load History</button>
+      <button onclick="loadAllHistoricalTransactions()" style="background: #4CAF50; color: white; padding: 8px 15px; border: none; border-radius: 4px; cursor: pointer;">View All</button>
+    </div>
+    <table class="billing-table" id="historical-transactions-table">
+      <thead>
+        <tr>
+          <th class="center">Date</th>
+          <th class="center">Time</th>
+          <th class="center">Type</th>
+          <th class="right">Amount</th>
+          <th class="left">Description</th>
+          <th class="left">Reference</th>
+          <th class="center">Session Status</th>
+          <th class="center">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="historical-transactions-list"></tbody>
+    </table>
+    <div id="historical-summary" style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 4px;"></div>
+  </div>
+  <script>
+    window.addEventListener('load', function() {
+      
+      // Wait for all scripts to load, then auto-open/close check
+      setTimeout(function() {
+        if (typeof initializeCashRegister === 'function') {
+          initializeCashRegister();
+        }
+        
+        // Then display current session
+        setTimeout(checkSession, 300);
+      }, 500);
+    });
+
+    function checkSession() {
+      const getSessionFn = window.getCurrentCashSession || getCurrentCashSession;
+      if (typeof getSessionFn !== 'function') {
+        console.error('getCurrentCashSession function not available');
+        showNoSession();
+        return;
+      }
+      
+      const session = getSessionFn();
+      if (session) {
+        showActiveSession(session);
+      } else {
+        showNoSession();
+      }
+    }
+
+    function showNoSession() {
+      document.getElementById('no-session').style.display = 'block';
+      document.getElementById('active-session').style.display = 'none';
+    }
+
+    function showActiveSession(session) {
+      console.log('Displaying active session:', {
+        id: session.id,
+        date: session.date,
+        openingBalance: session.openingBalance,
+        totalCashIn: session.totalCashIn,
+        totalCashOut: session.totalCashOut,
+        expectedClosing: session.expectedClosing,
+        transactionCount: session.transactions ? session.transactions.length : 0
+      });
+      
+      document.getElementById('no-session').style.display = 'none';
+      document.getElementById('active-session').style.display = 'block';
+      
+      const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+      };
+      
+      const currency = getCurrencyFn();
+      
+      document.getElementById('sess-opening').textContent = formatCurrencyFn(session.openingBalance, currency);
+      document.getElementById('sess-in').textContent = formatCurrencyFn(session.totalCashIn, currency);
+      document.getElementById('sess-out').textContent = formatCurrencyFn(session.totalCashOut, currency);
+      document.getElementById('sess-expected').textContent = formatCurrencyFn(session.expectedClosing, currency);
+      
+      displayTransactions(session);
+    }
+
+    function displayTransactions(session) {
+      const tbody = document.getElementById('transactions-list');
+      tbody.innerHTML = '';
+      
+      if (!session.transactions || session.transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center;">No transactions yet</td></tr>';
+        return;
+      }
+      
+      const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+      };
+      
+      const currency = getCurrencyFn();
+      
+      session.transactions.forEach(tx => {
+        const row = tbody.insertRow();
+        const time = new Date(tx.timestamp).toLocaleTimeString();
+        row.innerHTML = `
+          <td class="center">${time}</td>
+          <td class="center" style="color: ${tx.type === 'in' ? 'green' : 'red'}; font-weight: bold;">${tx.type.toUpperCase()}</td>
+          <td class="amount">${formatCurrencyFn(tx.amount, currency)}</td>
+          <td class="left">${tx.description}</td>
+          <td class="left">${tx.reference}</td>
+          <td class="center">
+            <button onclick="deleteTransaction('${session.id}', '${tx.id}')" style="background: #f44336; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">Delete</button>
+          </td>
+        `;
+      });
+    }
+
+    function openRegister() {
+      const balance = parseFloat(document.getElementById('opening-balance').value) || 0;
+      const openRegisterFn = window.openCashRegister || openCashRegister;
+      
+      if (typeof openRegisterFn !== 'function') {
+        alert('Cash register functions are not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      const session = openRegisterFn(balance);
+      if (session) {
+        checkSession();
+      } else {
+        alert('Failed to open cash register. Please try again.');
+      }
+    }
+
+    function closeRegister() {
+      const closeRegisterFn = window.closeCashRegister || closeCashRegister;
+      
+      if (typeof closeRegisterFn !== 'function') {
+        alert('Cash register functions are not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      const actualBalance = prompt('Enter actual closing balance:');
+      if (actualBalance === null) return;
+      
+      const notes = prompt('Any notes? (optional)');
+      const session = closeRegisterFn(parseFloat(actualBalance), notes);
+      
+      if (session) {
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const currency = getCurrencyFn();
+        alert(`Cash register closed.\nExpected: ${formatCurrencyFn(session.expectedClosing, currency)}\nActual: ${formatCurrencyFn(session.closingBalance, currency)}\nDifference: ${formatCurrencyFn(session.discrepancy, currency)}`);
+        checkSession();
+      } else {
+        alert('Failed to close cash register. Please try again.');
+      }
+    }
+
+    // Auto-refresh every 30 seconds
+    setInterval(function() {
+      const getSessionFn = window.getCurrentCashSession || getCurrentCashSession;
+      if (typeof getSessionFn === 'function') {
+        const session = getSessionFn();
+        if (session) {
+          showActiveSession(session);
+        }
+      }
+    }, 30000);
+
+    // Load historical transactions
+    async function loadHistoricalTransactions() {
+      try {
+        const startDate = document.getElementById('history-start-date').value;
+        const endDate = document.getElementById('history-end-date').value;
+        
+        // Show loading state
+        const tbody = document.getElementById('historical-transactions-list');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Loading transactions...</td></tr>';
+        }
+        
+        const getAllCashTransactionsFn = window.getAllCashTransactions;
+        if (typeof getAllCashTransactionsFn !== 'function') {
+          console.error('getAllCashTransactions function not available');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Cash register functions not loaded. Please refresh the page.</td></tr>';
+          }
+          return;
+        }
+        
+        console.log('🔍 loadHistoricalTransactions: Calling getAllCashTransactions with date range:', { startDate: startDate || 'ALL', endDate: endDate || 'ALL' });
+        
+        // getAllCashTransactions is now async, so await it
+        const transactions = await getAllCashTransactionsFn(startDate || null, endDate || null);
+        
+        console.log('🔍 loadHistoricalTransactions: Received', transactions.length, 'transactions');
+        
+        displayHistoricalTransactions(transactions);
+      } catch (error) {
+        console.error('Error loading historical transactions:', error);
+        const tbody = document.getElementById('historical-transactions-list');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Error loading transactions: ' + (error.message || 'Unknown error') + '</td></tr>';
+        }
+      }
+    }
+
+    // Load all historical transactions
+    async function loadAllHistoricalTransactions() {
+      try {
+        // Show loading state
+        const tbody = document.getElementById('historical-transactions-list');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px;">Loading all transactions...</td></tr>';
+        }
+        
+        // Clear date filters
+        document.getElementById('history-start-date').value = '';
+        document.getElementById('history-end-date').value = '';
+        
+        const getAllCashTransactionsFn = window.getAllCashTransactions;
+        if (typeof getAllCashTransactionsFn !== 'function') {
+          console.error('getAllCashTransactions function not available');
+          if (tbody) {
+            tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Cash register functions not loaded. Please refresh the page.</td></tr>';
+          }
+          return;
+        }
+        
+        console.log('🔍 loadAllHistoricalTransactions: Calling getAllCashTransactions with NO date filters (ALL payments)');
+        
+        // getAllCashTransactions is now async, so await it
+        const transactions = await getAllCashTransactionsFn(null, null);
+        
+        console.log('🔍 loadAllHistoricalTransactions: Received', transactions.length, 'transactions');
+        
+        displayHistoricalTransactions(transactions);
+      } catch (error) {
+        console.error('Error loading all transactions:', error);
+        const tbody = document.getElementById('historical-transactions-list');
+        if (tbody) {
+          tbody.innerHTML = '<tr><td colspan="8" style="text-align: center; padding: 20px; color: #f44336;">Error loading transactions: ' + (error.message || 'Unknown error') + '</td></tr>';
+        }
+      }
+    }
+
+    // Display historical transactions
+    function displayHistoricalTransactions(transactions) {
+      const tbody = document.getElementById('historical-transactions-list');
+      tbody.innerHTML = '';
+      
+      if (!transactions || transactions.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="8" style="text-align: center;">No historical transactions found</td></tr>';
+        document.getElementById('historical-summary').innerHTML = '';
+        return;
+      }
+      
+      const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+      };
+      
+      const currency = getCurrencyFn();
+      
+      let totalCashIn = 0;
+      let totalCashOut = 0;
+      
+      transactions.forEach(tx => {
+        const row = tbody.insertRow();
+        const dateTime = new Date(tx.timestamp);
+        const date = dateTime.toLocaleDateString();
+        const time = dateTime.toLocaleTimeString();
+        
+        if (tx.type === 'in') {
+          totalCashIn += tx.amount;
+        } else if (tx.type === 'out') {
+          totalCashOut += tx.amount;
+        }
+        
+        const isExternalPayment = tx.sessionId === 'external_payment';
+        const statusBadge = isExternalPayment
+          ? '<span style="background: #2196F3; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px;">EXTERNAL</span>'
+          : tx.sessionStatus === 'open' 
+          ? '<span style="background: #4CAF50; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px;">OPEN</span>'
+          : '<span style="background: #999; color: white; padding: 3px 8px; border-radius: 3px; font-size: 11px;">CLOSED</span>';
+        
+        // Only show delete button for register transactions, not external payments
+        const deleteButton = isExternalPayment
+          ? '<span style="color: #666; font-size: 12px;">N/A</span>'
+          : `<button onclick="deleteTransaction('${tx.sessionId}', '${tx.id}', ${tx.sessionStatus === 'closed'})" style="background: #f44336; color: white; padding: 5px 10px; border: none; border-radius: 3px; cursor: pointer; font-size: 12px;">Delete</button>`;
+        
+        row.innerHTML = `
+          <td class="center">${date}</td>
+          <td class="center">${time}</td>
+          <td class="center" style="color: ${tx.type === 'in' ? 'green' : 'red'}; font-weight: bold;">${tx.type.toUpperCase()}</td>
+          <td class="amount">${formatCurrencyFn(tx.amount, currency)}</td>
+          <td class="left">${tx.description}</td>
+          <td class="left">${tx.reference}</td>
+          <td class="center">${statusBadge}</td>
+          <td class="center">${deleteButton}</td>
+        `;
+      });
+      
+      // Display summary
+      const netCash = totalCashIn - totalCashOut;
+      document.getElementById('historical-summary').innerHTML = `
+        <strong>Summary:</strong> 
+        Cash In: ${formatCurrencyFn(totalCashIn, currency)} | 
+        Cash Out: ${formatCurrencyFn(totalCashOut, currency)} | 
+        Net: ${formatCurrencyFn(netCash, currency)} | 
+        Total Transactions: ${transactions.length}
+      `;
+    }
+
+    // Delete transaction
+    function deleteTransaction(sessionId, transactionId, isClosedSession) {
+      const warning = isClosedSession 
+        ? 'This transaction is from a closed session. Deleting it will recalculate the session totals and discrepancy. Are you sure you want to proceed?'
+        : 'Are you sure you want to delete this transaction? This action cannot be undone.';
+      
+      if (!confirm(warning)) {
+        return;
+      }
+      
+      const deleteCashTransactionFn = window.deleteCashTransaction || function() { return false; };
+      const success = deleteCashTransactionFn(sessionId, transactionId);
+      
+      if (success) {
+        alert('Transaction deleted successfully. Session totals have been recalculated.');
+        // Refresh current session if it's the active one
+        checkSession();
+        // Force reload historical transactions immediately
+        setTimeout(() => {
+          loadHistoricalTransactions();
+        }, 100);
+      } else {
+        alert('Failed to delete transaction. Please try again.');
+      }
+    }
+
+    // Adjust opening balance
+    function adjustOpeningBalance() {
+      try {
+        const getSessionFn = window.getCurrentCashSession || function() { return null; };
+        const session = getSessionFn();
+        if (!session) {
+          alert('No active cash session found');
+          return;
+        }
+        
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const currency = getCurrencyFn();
+        const currentBalance = parseFloat(session.openingBalance) || 0;
+        const formattedBalance = formatCurrencyFn(currentBalance, currency);
+        const newBalance = prompt(`Current opening balance: ${formattedBalance}\n\nEnter new opening balance:`, currentBalance);
+        
+        if (newBalance === null) return; // User cancelled
+        
+        const newBal = parseFloat(newBalance);
+        if (isNaN(newBal)) {
+          alert('Invalid amount. Please enter a valid number.');
+          return;
+        }
+        
+        const updateOpeningBalanceFn = window.updateCashSessionOpeningBalance;
+        if (typeof updateOpeningBalanceFn !== 'function') {
+          console.error('updateCashSessionOpeningBalance function not available');
+          alert('Cash register functions not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        console.log('Attempting to update opening balance:', { sessionId: session.id, oldBalance: currentBalance, newBalance: newBal });
+        const success = updateOpeningBalanceFn(session.id, newBal);
+        
+        if (success) {
+          alert('Opening balance updated successfully');
+          checkSession();
+          // Refresh dashboard if it's open
+          if (window.loadBillingStats) {
+            setTimeout(() => window.loadBillingStats(), 500);
+          }
+        } else {
+          console.error('updateOpeningBalanceFn returned false');
+          alert('Failed to update opening balance. Check console for details.');
+        }
+      } catch (error) {
+        console.error('❌ Error in adjustOpeningBalance:', error);
+        alert('An error occurred while updating opening balance: ' + error.message);
+      }
+    }
+
+    // Reset opening balance to 0
+    function resetOpeningBalance() {
+      try {
+        if (!confirm('Are you sure you want to reset the opening balance to ₦0? This will affect the cash on hand calculation.')) {
+          return;
+        }
+        
+        const getSessionFn = window.getCurrentCashSession || function() { return null; };
+        const session = getSessionFn();
+        if (!session) {
+          alert('No active cash session found');
+          return;
+        }
+        
+        const updateOpeningBalanceFn = window.updateCashSessionOpeningBalance;
+        if (typeof updateOpeningBalanceFn !== 'function') {
+          console.error('updateCashSessionOpeningBalance function not available');
+          alert('Cash register functions not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        console.log('Attempting to reset opening balance:', { sessionId: session.id });
+        const success = updateOpeningBalanceFn(session.id, 0);
+        
+        if (success) {
+          alert('Opening balance reset to ₦0.00');
+          checkSession();
+          // Refresh dashboard if it's open
+          if (window.loadBillingStats) {
+            setTimeout(() => window.loadBillingStats(), 500);
+          }
+        } else {
+          console.error('updateOpeningBalanceFn returned false');
+          alert('Failed to reset opening balance. Check console for details.');
+        }
+      } catch (error) {
+        console.error('❌ Error in resetOpeningBalance:', error);
+        alert('An error occurred while resetting opening balance: ' + error.message);
+      }
+    }
+
+    // Set default date range (last 90 days to catch more historical data)
+    window.addEventListener('load', function() {
+      const endDate = new Date();
+      const startDate = new Date();
+      startDate.setDate(startDate.getDate() - 90); // Extended to 90 days to catch older payments
+      
+      document.getElementById('history-end-date').value = endDate.toISOString().split('T')[0];
+      document.getElementById('history-start-date').value = startDate.toISOString().split('T')[0];
+      
+      // Auto-load historical transactions on page load
+      setTimeout(() => {
+        loadHistoricalTransactions().catch(error => {
+          console.error('Error auto-loading historical transactions:', error);
+        });
+      }, 1000);
+    });
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

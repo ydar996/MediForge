@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Supabase Connection</title>
+  <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+  </style>
+</head>
+<body>
+    <h1>Supabase Connection Test</h1>
+    <p>This page tests if Supabase client is working properly.</p>
+    
+    <button onclick="testSupabaseConnection()" class="btn-primary">?? Test Supabase Connection</button>
+    <button onclick="testOrganizationsQuery()" class="btn-success">?? Test Organizations Query</button>
+    
+    <div id="results"></div>
+    
+    <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js"></script>
+  <script>
+        async function testSupabaseConnection() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Testing Supabase connection...</p>';
+            
+            try {
+                // Test 1: Check if Supabase library is loaded
+                let html = '<h3>?? Supabase Connection Test Results:</h3>';
+      
+      if (typeof window.supabase === 'undefined') {
+                    html += '<div class="test-item error">? Supabase library not loaded</div>';
+                } else {
+                    html += '<div class="test-item success">? Supabase library loaded</div>';
+                }
+                
+                // Test 2: Check if our client is initialized
+                if (typeof window.supabaseClient === 'undefined') {
+                    html += '<div class="test-item error">? Supabase client not initialized</div>';
+                } else {
+                    html += '<div class="test-item success">? Supabase client initialized</div>';
+                    
+                    // Test 3: Try a simple connection test
+                    try {
+        const { data, error } = await window.supabaseClient
+          .from('organizations')
+                            .select('count')
+                            .limit(1);
+        
+        if (error) {
+                            html += `<div class="test-item error">? Supabase query failed: ${error.message}</div>`;
+          } else {
+                            html += '<div class="test-item success">? Supabase query successful</div>';
+                        }
+                    } catch (queryError) {
+                        html += `<div class="test-item error">? Supabase query error: ${queryError.message}</div>`;
+                    }
+                }
+                
+                // Test 4: Check localStorage data
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                html += '<h4>?? localStorage Data:</h4>';
+                html += `<div class="test-item">Organizations: ${Object.keys(localOrgs).length}</div>`;
+                html += `<div class="test-item">Users: ${localUsers.length}</div>`;
+                
+                if (Object.keys(localOrgs).length > 0) {
+                    html += '<h5>Organizations in localStorage:</h5>';
+                    Object.entries(localOrgs).forEach(([name, org]) => {
+                        const syncStatus = org.id ? '? Synced' : '? Not synced';
+                        html += `<div class="test-item">${name} - ${syncStatus}</div>`;
+                    });
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-item error">? Test failed: ${error.message}</div>`;
+            }
+        }
+        
+        async function testOrganizationsQuery() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Testing organizations query...</p>';
+            
+            try {
+                if (!window.supabaseClient) {
+                    resultsDiv.innerHTML = '<div class="test-item error">? Supabase client not available</div>';
+                    return;
+                }
+                
+                const { data: orgs, error } = await window.supabaseClient
+                    .from('organizations')
+          .select('*')
+                    .order('created_at', { ascending: false });
+        
+        if (error) {
+                    resultsDiv.innerHTML = `<div class="test-item error">? Query failed: ${error.message}</div>`;
+                    return;
+                }
+                
+                let html = '<h3>?? Organizations in Supabase:</h3>';
+                if (orgs && orgs.length > 0) {
+                    orgs.forEach(org => {
+                        const createdDate = new Date(org.created_at).toLocaleString();
+                        html += `
+                            <div class="test-item success">
+                                <strong>${org.name}</strong><br>
+                                ID: ${org.id}<br>
+                                Country: ${org.country || 'N/A'}<br>
+                                Created: ${createdDate}
+                            </div>
+                        `;
+                    });
+          } else {
+                    html += '<div class="test-item warning">?? No organizations found in Supabase</div>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="test-item error">? Query error: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-test on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('?? Auto-testing Supabase connection...');
+            setTimeout(testSupabaseConnection, 1000);
+        });
+    </script>
+</body>
+</html>

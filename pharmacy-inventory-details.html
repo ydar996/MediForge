@@ -1,0 +1,126 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy Inventory Details</title>
+  <link rel="stylesheet" href="css/styles.css?v=217">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #f5f5dc; margin: 20px; }
+    .container { max-width: 1200px; margin: 0 auto; }
+    .back-link { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: #008753; color: white; text-decoration: none; border-radius: 8px; }
+    .back-link:hover { background: #006b42; }
+    h1 { margin: 0 0 8px 0; color: #333; }
+    .subtitle { color: #666; margin-bottom: 24px; }
+    table { width: 100%; border-collapse: collapse; background: white; border-radius: 8px; overflow: hidden; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+    th, td { padding: 12px; text-align: left; border-bottom: 1px solid #eee; }
+    th { background: #008753; color: white; font-weight: 600; }
+    tr:hover { background: #f9f9f9; }
+    .stock-out { color: #dc3545; font-weight: 600; }
+    .stock-low { color: #ff8c00; font-weight: 600; }
+    .empty { padding: 40px; text-align: center; color: #666; background: white; border-radius: 8px; }
+    .loading { padding: 40px; text-align: center; color: #666; }
+  </style>
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/billing.js"></script>
+  <script src="js/pharmacy-manager.js"></script>
+  <script src="js/pharmacy-inventory-analytics.js"></script>
+</head>
+<body>
+  <div class="container">
+    <a href="pharmacy-dashboard" class="back-link">← Back to Pharmacy Dashboard</a>
+    <h1 id="page-title">Inventory Details</h1>
+    <p class="subtitle" id="page-subtitle">Loading…</p>
+    <div id="content">
+      <div class="loading">Loading…</div>
+    </div>
+  </div>
+  <script src="js/logout-button.js"></script>
+  <script>
+    (async function() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (user.role !== 'Pharmacist' && user.role !== 'pharmacist') {
+        document.getElementById('content').innerHTML = '<div class="empty"><h2>Access Denied</h2><p>Pharmacist role required.</p><a href="dashboard">Go to Dashboard</a></div>';
+        return;
+      }
+      const params = new URLSearchParams(window.location.search);
+      const type = params.get('type') || 'total-items';
+      const currency = typeof window.getDefaultCurrency === 'function' ? window.getDefaultCurrency() : 'NGN';
+      const fmt = (v) => (typeof window.formatCurrency === 'function' ? window.formatCurrency(v, currency) : (currency === 'NGN' ? '₦' : '$') + (v || 0));
+      let inventory = [];
+      try {
+        inventory = typeof window.getEnrichedInventory === 'function' ? await window.getEnrichedInventory() : await window.getMedicationInventory();
+      } catch (e) {
+        inventory = await window.getMedicationInventory();
+      }
+      let items = [];
+      let title = '';
+      let subtitle = '';
+      if (type === 'total-items') {
+        items = inventory;
+        title = 'All Inventory Items';
+        subtitle = items.length + ' medications in inventory';
+      } else if (type === 'low-stock') {
+        items = inventory.filter(i => i.status === 'Low Stock' || i.status === 'Out of Stock');
+        title = 'Low Stock & Out of Stock';
+        subtitle = items.length + ' medications need attention';
+      } else if (type === 'near-expiry') {
+        items = inventory.filter(i => i.near_expiry && !i.expired);
+        title = 'Near Expiry (&lt;30 days)';
+        subtitle = items.length + ' medications expiring soon';
+      } else if (type === 'expired') {
+        items = inventory.filter(i => i.expired);
+        title = 'Expired Items';
+        subtitle = items.length + ' medications have expired';
+      } else if (type === 'expiry-risk') {
+        items = inventory.filter(i => i.near_expiry || i.expired).sort((a,b) => (a.days_to_expiry ?? 9999) - (b.days_to_expiry ?? 9999));
+        title = 'Expiry Risk (Near & Expired)';
+        subtitle = items.length + ' medications';
+      } else {
+        items = inventory;
+        title = 'Inventory Details';
+        subtitle = items.length + ' items';
+      }
+      document.getElementById('page-title').textContent = title;
+      document.getElementById('page-subtitle').textContent = subtitle;
+      if (items.length === 0) {
+        document.getElementById('content').innerHTML = '<div class="empty"><p>No items match this filter.</p></div>';
+        return;
+      }
+      const esc = (v) => String(v ?? '').replace(/</g, '&lt;').replace(/"/g, '&quot;');
+      const rows = items.map(i => {
+        const qty = i.quantity_on_hand ?? i.current_stock ?? 0;
+        const status = i.status ?? (qty === 0 ? 'Out of Stock' : qty <= (i.reorder_level ?? i.minimum_stock ?? 0) ? 'Low Stock' : 'In Stock');
+        const statusClass = status === 'Out of Stock' ? 'stock-out' : status === 'Low Stock' ? 'stock-low' : '';
+        const expiry = i.expiry_date ? new Date(i.expiry_date).toLocaleDateString() : '—';
+        const daysLeft = i.days_to_expiry != null ? i.days_to_expiry : '—';
+        return `<tr>
+          <td><strong>${esc(i.medication_name)}</strong></td>
+          <td>${esc(i.strength)}</td>
+          <td>${esc(i.form)}</td>
+          <td>${esc(i.manufacturer) || '—'}</td>
+          <td>${esc(i.batch_number) || '—'}</td>
+          <td>${expiry}</td>
+          <td>${daysLeft}</td>
+          <td class="${statusClass}">${qty}</td>
+          <td>${status}</td>
+          <td>${fmt(i.cost_price ?? i.cost_per_unit)}</td>
+          <td>${fmt(i.selling_price ?? i.selling_price_per_unit)}</td>
+        </tr>`;
+      }).join('');
+      document.getElementById('content').innerHTML = `
+        <table>
+          <thead><tr>
+            <th>Medication</th><th>Strength</th><th>Form</th><th>Manufacturer</th><th>Batch</th>
+            <th>Expiry</th><th>Days Left</th><th>Qty</th><th>Status</th><th>Cost</th><th>Selling</th>
+          </tr></thead>
+          <tbody>${rows}</tbody>
+        </table>
+      `;
+    })();
+  </script>
+</body>
+</html>

@@ -1,0 +1,1149 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Audit Log Details - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=20251112063500"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251112063500"></script>
+  
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      /* Primary Nigerian Colors */
+      --primary-green: #008753;        /* Nigerian flag green */
+      --dark-green: #006b42;           /* Deep forest green */
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      
+      /* Nigerian Flag Colors */
+      --nigerian-white: #FFFFFF;       /* White stripe */
+      --nigerian-green: #008753;       /* Green stripe */
+      
+      /* Traditional Nigerian Colors */
+      --gold: #FFD700;                 /* Nigerian gold/amber */
+      --dark-gold: #B8860B;            /* Dark gold */
+      --bronze: #CD7F32;               /* Bronze accent */
+      --warm-orange: #FF8C00;          /* Warm orange */
+      
+      /* Neutral Palette */
+      --charcoal: #36454F;             /* Charcoal text */
+      --soft-white: #FAFAFA;           /* Soft white background */
+    }
+    
+    body {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+      background: var(--soft-white);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    
+    .page-header {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+    }
+    
+    .page-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+      display: flex;
+      align-items: center;
+      gap: 10px;
+    }
+    
+    .page-header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .back-link {
+      display: inline-block;
+      margin-top: 15px;
+      color: white;
+      text-decoration: underline;
+      font-size: 14px;
+    }
+    
+    .back-link:hover {
+      opacity: 0.8;
+    }
+    
+    .filter-badge {
+      display: inline-block;
+      background: rgba(255, 255, 255, 0.2);
+      padding: 5px 15px;
+      border-radius: 20px;
+      font-size: 14px;
+      margin-top: 10px;
+    }
+    
+    .controls-section {
+      background: white;
+      padding: 20px;
+      border-radius: 12px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+      gap: 15px;
+    }
+    
+    .time-filter {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    
+    .time-filter button {
+      padding: 8px 16px;
+      border: 2px solid var(--primary-green);
+      background: white;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.3s;
+      color: var(--dark-green);
+      font-weight: 500;
+    }
+    
+    .time-filter button:hover {
+      border-color: var(--dark-green);
+      color: var(--dark-green);
+      background: var(--light-green);
+    }
+    
+    .time-filter button.active {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: white;
+      border-color: var(--dark-green);
+      font-weight: 600;
+    }
+    
+    .time-filter button.active:hover {
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+      border-color: var(--dark-green);
+      color: white;
+    }
+    
+    .stats-info {
+      display: flex;
+      gap: 20px;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .stat-item {
+      display: flex;
+      flex-direction: column;
+    }
+    
+    .stat-label {
+      font-size: 12px;
+      color: #666;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .stat-value {
+      font-size: 20px;
+      font-weight: bold;
+      color: var(--primary-green);
+    }
+    
+    .events-container {
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      overflow: hidden;
+    }
+    
+    .table-wrapper {
+      overflow-x: auto;
+    }
+    
+    .events-table {
+      width: 100%;
+      border-collapse: collapse;
+      table-layout: fixed;
+      min-width: 1200px;
+    }
+    
+    .events-table thead {
+      background: #f8f9fa;
+      position: sticky;
+      top: 0;
+      z-index: 10;
+    }
+    
+    .events-table th {
+      padding: 12px 10px;
+      text-align: left;
+      font-weight: 600;
+      color: #333;
+      border-bottom: 2px solid #ddd;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+      word-wrap: break-word;
+    }
+    
+    .events-table th:nth-child(1) { width: 13%; } /* Timestamp */
+    .events-table th:nth-child(2) { width: 11%; } /* Username */
+    .events-table th:nth-child(3) { width: 18%; } /* Action */
+    .events-table th:nth-child(4) { width: 10%; } /* Role */
+    .events-table th:nth-child(5) { width: 13%; } /* Organization */
+    .events-table th:nth-child(6) { width: 12%; } /* IP Address */
+    .events-table th:nth-child(7) { width: 33%; } /* Details */
+    
+    .events-table td {
+      padding: 12px 10px;
+      border-bottom: 1px solid #eee;
+      font-size: 13px;
+      word-wrap: break-word;
+      word-break: break-word;
+      vertical-align: top;
+      overflow-wrap: break-word;
+      hyphens: auto;
+    }
+    
+    .events-table tbody tr {
+      transition: background 0.2s;
+    }
+    
+    .events-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .event-action {
+      font-weight: 600;
+      color: var(--primary-green);
+      font-family: monospace;
+      font-size: 12px;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .event-details-json {
+      background: #f8f9fa;
+      padding: 8px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 11px;
+      line-height: 1.4;
+      max-height: 120px;
+      overflow-y: auto;
+      overflow-x: hidden;
+      white-space: pre-wrap;
+      word-break: break-word;
+      border: 1px solid #e0e0e0;
+      display: block;
+    }
+    
+    .event-details-json:empty::before {
+      content: '-';
+      color: #999;
+    }
+    
+    .event-details-json::-webkit-scrollbar {
+      width: 6px;
+      height: 6px;
+    }
+    
+    .event-details-json::-webkit-scrollbar-track {
+      background: #f1f1f1;
+      border-radius: 3px;
+    }
+    
+    .event-details-json::-webkit-scrollbar-thumb {
+      background: #888;
+      border-radius: 3px;
+    }
+    
+    .event-details-json::-webkit-scrollbar-thumb:hover {
+      background: #555;
+    }
+    
+    .badge {
+      display: inline-block;
+      padding: 4px 10px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 500;
+      word-break: break-word;
+      overflow-wrap: break-word;
+      max-width: 100%;
+    }
+    
+    .badge-role {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    
+    .badge-org {
+      background: #f3e5f5;
+      color: #7b1fa2;
+    }
+    
+    .badge-platform {
+      background: #fff3e0;
+      color: #e65100;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+      font-size: 16px;
+    }
+    
+    .loading::after {
+      content: '...';
+      animation: dots 1.5s steps(4, end) infinite;
+    }
+    
+    @keyframes dots {
+      0%, 20% { content: '.'; }
+      40% { content: '..'; }
+      60%, 100% { content: '...'; }
+    }
+    
+    .error {
+      background: #fff5f5;
+      color: #8B0000;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px 0;
+      border-left: 4px solid #8B0000;
+    }
+    
+    .no-data {
+      text-align: center;
+      padding: 60px;
+      color: #666;
+    }
+    
+    .no-data-icon {
+      font-size: 48px;
+      margin-bottom: 15px;
+      opacity: 0.5;
+    }
+    
+    .timestamp {
+      font-family: monospace;
+      font-size: 12px;
+      color: #666;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .username {
+      font-weight: 500;
+      color: #333;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    .ip-address {
+      font-family: monospace;
+      font-size: 12px;
+      color: #666;
+      word-break: break-word;
+      overflow-wrap: break-word;
+    }
+    
+    @media (max-width: 1200px) {
+      .events-table th:nth-child(1) { width: 12%; }
+      .events-table th:nth-child(2) { width: 10%; }
+      .events-table th:nth-child(3) { width: 17%; }
+      .events-table th:nth-child(4) { width: 9%; }
+      .events-table th:nth-child(5) { width: 12%; }
+      .events-table th:nth-child(6) { width: 11%; }
+      .events-table th:nth-child(7) { width: 39%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="page-header">
+    <h1>📋 Audit Log Details</h1>
+    <p id="page-description">View detailed audit log entries</p>
+    <span class="filter-badge" id="filter-badge"></span>
+    <a href="security-monitoring" class="back-link">← Back to Security Monitoring</a>
+  </div>
+
+  <div id="auth-check" class="error" style="display: none;">
+    ⚠️ You must be logged in as a platform administrator to access this page.
+  </div>
+
+  <div id="content-area" style="display: none;">
+    <div class="controls-section">
+      <div class="time-filter">
+        <button class="active" data-hours="1">Last Hour</button>
+        <button data-hours="24">Last 24 Hours</button>
+        <button data-hours="168">Last 7 Days</button>
+        <button data-hours="720">Last 30 Days</button>
+      </div>
+      <div class="stats-info">
+        <div class="stat-item">
+          <span class="stat-label">Total Events</span>
+          <span class="stat-value" id="total-count">-</span>
+        </div>
+      </div>
+    </div>
+
+    <div class="events-container">
+      <div id="loading" class="loading">Loading events</div>
+      <div id="error" class="error" style="display: none;"></div>
+      <div id="no-data" class="no-data" style="display: none;">
+        <div class="no-data-icon">📭</div>
+        <div>No events found for this filter</div>
+      </div>
+      <div class="table-wrapper" id="table-wrapper" style="display: none;">
+        <table class="events-table">
+          <thead>
+            <tr>
+              <th>Timestamp</th>
+              <th>Username</th>
+              <th>Action</th>
+              <th>Role</th>
+              <th>Organization</th>
+              <th>IP Address</th>
+              <th>Details</th>
+            </tr>
+          </thead>
+          <tbody id="events-tbody">
+          </tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    // Check if user is platform admin
+    async function checkPlatformAdmin() {
+      try {
+        const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+        
+        if (!platformAdmin) {
+          console.warn('⚠️ AUDIT-LOG-DETAILS: No platform admin session found.');
+          document.getElementById('auth-check').style.display = 'block';
+          return false;
+        }
+        
+        console.log('✅ Platform admin session found:', platformAdmin.username);
+        document.getElementById('content-area').style.display = 'block';
+        return true;
+      } catch (error) {
+        console.error('❌ Error checking platform admin status:', error);
+        document.getElementById('auth-check').style.display = 'block';
+        return false;
+      }
+    }
+
+    // Get filter from URL
+    function getFilterFromURL() {
+      const params = new URLSearchParams(window.location.search);
+      return params.get('filter') || 'all';
+    }
+
+    // Get filter title
+    function getFilterTitle(filter) {
+      const titles = {
+        'all': 'All Events',
+        'login_failed': 'Failed Login Attempts',
+        'failed_logins': 'Failed Login Attempts',
+        'login_success': 'Successful Logins',
+        'user_login_supabase': 'User Logins',
+        'unauthorized_access_attempt': 'Unauthorized Access Attempts',
+        'by_ip': 'Events by IP Address',
+        'by_user': 'Events by User',
+        'system_health': 'System Health Events',
+        'user_activity': 'User Activity',
+        'data_exported': 'Data Exports',
+        'patient_viewed': 'Patient Accesses',
+        'high_risk': 'High Risk Events',
+        'medium_risk': 'Medium Risk Events',
+        'low_risk': 'Low Risk Events'
+      };
+      return titles[filter] || 'Event Details';
+    }
+
+    // Load events
+    async function loadEvents(filter, hours = null) {
+      // Default time windows based on filter type
+      if (hours === null) {
+        if (filter === 'login_failed' || filter === 'failed_logins') {
+          hours = 720; // 30 days for failed logins
+        } else if (filter === 'system_health') {
+          hours = 168; // 7 days for system health
+        } else {
+          hours = 24; // Default 24 hours
+        }
+      }
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const noDataEl = document.getElementById('no-data');
+      const tableWrapper = document.getElementById('table-wrapper');
+      const tbodyEl = document.getElementById('events-tbody');
+      const totalCountEl = document.getElementById('total-count');
+      
+      loadingEl.style.display = 'block';
+      errorEl.style.display = 'none';
+      noDataEl.style.display = 'none';
+      tableWrapper.style.display = 'none';
+      tbodyEl.innerHTML = '';
+      
+      console.log(`📊 Loading events for filter: ${filter}, hours: ${hours} (${hours / 24} days)`);
+      
+      // Get URL parameters
+      const urlParams = new URLSearchParams(window.location.search);
+      const organizationFilter = urlParams.get('organization');
+      const actionFilter = urlParams.get('action');
+      const riskFilter = urlParams.get('risk');
+      const ipFilter = urlParams.get('ip');
+      
+      console.log('🔍 URL parameters:', { filter, organizationFilter, actionFilter, riskFilter, ipFilter });
+      
+      try {
+        let events = [];
+        let allLogs = null;
+        
+        // For failed logins, try using the same RPC function that security-monitoring uses
+        if ((filter === 'login_failed' || filter === 'failed_logins') && typeof window.secureSupabaseRpc === 'function') {
+          console.log('🔍 TRACE: Attempting to use get_suspicious_activity RPC (same as security-monitoring)...');
+          try {
+            const rpcResponse = await window.secureSupabaseRpc('get_suspicious_activity', {
+              p_time_window_hours: hours
+            });
+            console.log('🔍 TRACE: RPC response type:', typeof rpcResponse);
+            console.log('🔍 TRACE: RPC response:', JSON.stringify(rpcResponse, null, 2));
+            
+            let rpcData = [];
+            if (Array.isArray(rpcResponse)) {
+              rpcData = rpcResponse;
+            } else if (rpcResponse && typeof rpcResponse === 'object') {
+              rpcData = Array.isArray(rpcResponse.data) ? rpcResponse.data : [];
+            }
+            
+            // Filter for login_failed actions and matching IP if provided
+            const filteredRpcData = rpcData.filter(item => {
+              const action = (item.action || '').toLowerCase();
+              const matchesAction = action === 'login_failed' || action.includes('login_failed');
+              
+              if (!matchesAction) return false;
+              
+              if (ipFilter && ipFilter !== 'all') {
+                const ip = item.ip_address || item.ip || '';
+                return ip === ipFilter || ip.includes(ipFilter);
+              }
+              
+              return true;
+            });
+            
+            console.log(`🔍 TRACE: RPC returned ${rpcData.length} total items, ${filteredRpcData.length} matched login_failed`);
+            console.log('🔍 TRACE: Sample RPC items:', filteredRpcData.slice(0, 3));
+            
+            // Convert RPC format to event format
+            if (filteredRpcData.length > 0) {
+              // Need to fetch the actual audit log entries for these IPs/actions
+              // The RPC returns aggregated data, so we need to query the individual events
+              const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+              
+              // Get all unique IPs and actions from RPC response
+              const uniqueIPs = [...new Set(filteredRpcData.map(item => item.ip_address || item.ip).filter(ip => ip))];
+              console.log(`🔍 TRACE: Querying for events from IPs:`, uniqueIPs);
+              
+              if (uniqueIPs.length > 0) {
+                const { data: ipEvents, error: ipError } = await window.supabaseClient
+                  .from('audit_logs')
+                  .select('*')
+                  .in('ip_address', uniqueIPs)
+                  .gte('timestamp', timeThreshold)
+                  .order('timestamp', { ascending: false })
+                  .limit(1000);
+                
+                if (ipError) {
+                  console.error('❌ TRACE: Error querying by IP:', ipError);
+                } else {
+                  console.log(`🔍 TRACE: Found ${ipEvents?.length || 0} events matching IPs`);
+                  
+                  // Filter for failed login indicators
+                  events = (ipEvents || []).filter(log => {
+                    const action = (log.action || '').toLowerCase();
+                    const details = log.details || {};
+                    let detailsObj = details;
+                    
+                    if (typeof details === 'string') {
+                      try {
+                        detailsObj = JSON.parse(details);
+                      } catch (e) {
+                        // Keep as string
+                      }
+                    }
+                    
+                    // Check if this is a failed login
+                    if (action.includes('failed') || action === 'login_failed') {
+                      return true;
+                    }
+                    
+                    // Check details for failed login indicators
+                    if (typeof detailsObj === 'object' && detailsObj !== null) {
+                      if (detailsObj.error || 
+                          detailsObj.failed === true || 
+                          detailsObj.success === false ||
+                          (detailsObj.message && typeof detailsObj.message === 'string' && 
+                           (detailsObj.message.toLowerCase().includes('failed') || 
+                            detailsObj.message.toLowerCase().includes('incorrect') ||
+                            detailsObj.message.toLowerCase().includes('invalid')))) {
+                        return true;
+                      }
+                    }
+                    
+                    return false;
+                  });
+                  
+                  console.log(`🔍 TRACE: Filtered to ${events.length} failed login events`);
+                  
+                  if (events.length > 0) {
+                    // Enrich with organization names
+                    const orgIdsToResolve = [...new Set(events
+                      .filter(e => !e.organization_name && e.organization_id)
+                      .map(e => e.organization_id))];
+                    
+                    if (orgIdsToResolve.length > 0) {
+                      const { data: orgs } = await window.supabaseClient
+                        .from('organizations')
+                        .select('id, name')
+                        .in('id', orgIdsToResolve);
+                      
+                      const orgMap = {};
+                      (orgs || []).forEach(org => {
+                        orgMap[org.id] = org.name;
+                      });
+                      
+                      events = events.map(event => ({
+                        ...event,
+                        organization_name: event.organization_name || orgMap[event.organization_id] || null
+                      }));
+                    }
+                    
+                    // Skip the rest of the query logic since we have events
+                    console.log(`✅ TRACE: Using ${events.length} events from RPC-based query`);
+                  }
+                }
+              }
+            }
+          } catch (rpcError) {
+            console.warn('⚠️ TRACE: RPC call failed, falling back to direct query:', rpcError);
+          }
+        }
+        
+        // Fallback: fetch audit_logs via secure proxy (bypasses RLS) or direct Supabase query
+        if (events.length === 0) {
+          console.log('📊 TRACE: Fetching audit logs (proxy first, then direct)...');
+          console.log(`📅 Time window: Last ${hours} hours (${hours / 24} days)`);
+          
+          const timeThreshold = new Date(Date.now() - hours * 60 * 60 * 1000).toISOString();
+          console.log(`📅 Time threshold: ${timeThreshold}`);
+          
+          // Prefer secure proxy so platform admins see data regardless of Supabase RLS
+          if (typeof window.secureSupabaseSelect === 'function') {
+            try {
+              const filters = { timestamp: { operator: 'gte', value: timeThreshold } };
+              if (organizationFilter && organizationFilter !== 'all' && organizationFilter !== 'Multiple') {
+                filters.organization_name = organizationFilter;
+              }
+              if (ipFilter && ipFilter !== 'all') {
+                filters.ip_address = ipFilter;
+              }
+              allLogs = await window.secureSupabaseSelect('audit_logs', {
+                filters: filters,
+                order: { column: 'timestamp', ascending: false },
+                limit: 1000
+              });
+              if (!Array.isArray(allLogs)) allLogs = [];
+              console.log('📊 Retrieved ' + allLogs.length + ' audit logs via secure proxy');
+            } catch (proxyErr) {
+              console.warn('⚠️ secureSupabaseSelect failed, trying direct query:', proxyErr);
+              allLogs = null;
+            }
+          }
+          
+          if (allLogs === null && typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+            let query = window.supabaseClient
+              .from('audit_logs')
+              .select('*')
+              .gte('timestamp', timeThreshold)
+              .order('timestamp', { ascending: false })
+              .limit(1000);
+            if (organizationFilter && organizationFilter !== 'all' && organizationFilter !== 'Multiple') {
+              query = query.eq('organization_name', organizationFilter);
+            }
+            if (ipFilter && ipFilter !== 'all') {
+              query = query.eq('ip_address', ipFilter);
+            }
+            const { data, error: queryError } = await query;
+            if (queryError) {
+              console.error('❌ Error querying audit_logs:', queryError);
+              throw queryError;
+            }
+            allLogs = data || [];
+            console.log('📊 Retrieved ' + (allLogs.length) + ' audit logs from direct Supabase query');
+          }
+          
+          if (allLogs === null) {
+            throw new Error('Supabase client not available and secure proxy failed');
+          }
+          
+          console.log(`🔍 TRACE: Sample log actions:`, [...new Set((allLogs || []).slice(0, 10).map(l => l.action))]);
+        }
+        
+        // Filter client-side based on filter type
+        if (events.length === 0 && allLogs) {
+        if (filter === 'by_ip' || filter === 'by_user') {
+          // Group by IP or User
+          if (filter === 'by_ip') {
+            const ipMap = {};
+            (allLogs || []).forEach(event => {
+              const ip = event.ip_address || 'Unknown';
+              if (!ipMap[ip]) ipMap[ip] = [];
+              ipMap[ip].push(event);
+            });
+            
+            events = [];
+            Object.keys(ipMap).sort().forEach(ip => {
+              events.push(...ipMap[ip]);
+            });
+          } else if (filter === 'by_user') {
+            const userMap = {};
+            (allLogs || []).forEach(event => {
+              const user = event.username || 'Unknown';
+              if (!userMap[user]) userMap[user] = [];
+              userMap[user].push(event);
+            });
+            
+            events = [];
+            Object.keys(userMap).sort().forEach(user => {
+              events.push(...userMap[user]);
+            });
+          }
+        } else {
+          // Filter by action type
+          let actionPatterns = [];
+          
+          if (actionFilter) {
+            // Use URL parameter if provided - check for exact match first, then pattern match
+            const actionLower = actionFilter.toLowerCase();
+            if (actionLower === 'login_failed') {
+              // For login_failed, include all variations - be very broad
+              actionPatterns = ['login_failed', 'password_change_failed', 'unauthorized_access', 'unauthorized', 'failed'];
+            } else {
+              actionPatterns = [actionLower];
+            }
+          } else if (filter === 'failed_logins' || filter === 'login_failed') {
+            // Be very broad in matching failed login attempts
+            actionPatterns = ['login_failed', 'password_change_failed', 'unauthorized_access', 'unauthorized', 'failed'];
+          } else if (filter === 'login_success' || filter === 'user_login_supabase') {
+            actionPatterns = ['login_success', 'user_login_supabase', 'platform_admin_login'];
+          } else if (filter === 'system_health') {
+            actionPatterns = ['error', 'system', 'connection', 'performance', 'timeout'];
+          } else if (filter === 'user_activity') {
+            actionPatterns = ['patient_viewed', 'patient_updated', 'patient_created', 'appointment'];
+          } else if (filter === 'data_exported') {
+            actionPatterns = ['exported'];
+          } else if (filter === 'patient_viewed') {
+            actionPatterns = ['patient_viewed', 'patient_updated', 'patient_edited'];
+          } else if (filter === 'high_risk') {
+            actionPatterns = ['failed', 'unauthorized', 'delete', 'breach'];
+          } else if (filter === 'medium_risk') {
+            actionPatterns = ['export', 'delete', 'password'];
+          } else if (filter === 'low_risk') {
+            actionPatterns = ['view', 'read', 'login_success'];
+          } else if (filter !== 'all') {
+            actionPatterns = [filter.toLowerCase()];
+          }
+          
+          if (actionPatterns.length > 0 && filter !== 'all') {
+            // First, log all unique actions in the dataset for debugging
+            const allUniqueActions = [...new Set((allLogs || []).map(log => log.action))];
+            console.log(`📋 All unique actions in dataset (${allUniqueActions.length}):`, allUniqueActions);
+            
+            events = (allLogs || []).filter(log => {
+              const action = (log.action || '').toLowerCase();
+              
+              // Check action field first
+              let matches = actionPatterns.some(pattern => {
+                return action === pattern || action.includes(pattern);
+              });
+              
+              // For failed logins, also check details JSONB field
+              if (!matches && (filter === 'login_failed' || filter === 'failed_logins')) {
+                const details = log.details || {};
+                let detailsObj = details;
+                
+                // Parse details if it's a string
+                if (typeof details === 'string') {
+                  try {
+                    detailsObj = JSON.parse(details);
+                  } catch (e) {
+                    // Keep as string
+                  }
+                }
+                
+                // Check if this is a failed login based on details
+                if (typeof detailsObj === 'object' && detailsObj !== null) {
+                  // Check for failed login indicators in details
+                  if (detailsObj.error || 
+                      detailsObj.failed === true || 
+                      detailsObj.success === false ||
+                      (detailsObj.message && typeof detailsObj.message === 'string' && 
+                       (detailsObj.message.toLowerCase().includes('failed') || 
+                        detailsObj.message.toLowerCase().includes('incorrect') ||
+                        detailsObj.message.toLowerCase().includes('invalid')))) {
+                    matches = true;
+                    console.log(`✅ Found failed login in details for action: ${log.action}`, detailsObj);
+                  }
+                }
+              }
+              
+              return matches;
+            });
+            
+            console.log(`🔍 Filtered to ${events.length} events matching patterns: ${actionPatterns.join(', ')}`);
+            if (events.length > 0) {
+              console.log(`📋 Sample actions found:`, [...new Set(events.slice(0, 10).map(e => e.action))]);
+              console.log(`📋 Sample timestamps:`, events.slice(0, 5).map(e => e.timestamp));
+              // Log sample details to see structure
+              console.log(`📋 Sample details:`, events.slice(0, 3).map(e => ({ action: e.action, details: e.details })));
+            } else {
+              console.warn(`⚠️ No events matched patterns. Checking if any actions contain 'failed' or 'login'...`);
+              const failedActions = (allLogs || []).filter(log => {
+                const action = (log.action || '').toLowerCase();
+                return action.includes('failed') || action.includes('login');
+              });
+              console.log(`📋 Found ${failedActions.length} events with 'failed' or 'login' in action:`, [...new Set(failedActions.map(e => e.action))]);
+              
+              // Also check details for failed login indicators
+              const failedInDetails = (allLogs || []).filter(log => {
+                const details = log.details || {};
+                let detailsObj = details;
+                if (typeof details === 'string') {
+                  try {
+                    detailsObj = JSON.parse(details);
+                  } catch (e) {
+                    return false;
+                  }
+                }
+                if (typeof detailsObj === 'object' && detailsObj !== null) {
+                  return detailsObj.error || detailsObj.failed === true || detailsObj.success === false ||
+                         (detailsObj.message && typeof detailsObj.message === 'string' && 
+                          (detailsObj.message.toLowerCase().includes('failed') || 
+                           detailsObj.message.toLowerCase().includes('incorrect')));
+                }
+                return false;
+              });
+              console.log(`📋 Found ${failedInDetails.length} events with failed indicators in details:`, failedInDetails.slice(0, 3).map(e => ({ action: e.action, details: e.details })));
+            }
+          } else {
+            events = allLogs || [];
+            console.log(`📊 Using all ${events.length} events (no filter)`);
+          }
+          
+          // Additional IP address filter if needed (for specific IP from security-monitoring)
+          const ipFilter = urlParams.get('ip');
+          if (ipFilter && ipFilter !== 'all') {
+            const beforeIpFilter = events.length;
+            events = events.filter(log => {
+              const ip = log.ip_address || '';
+              return ip === ipFilter || ip.includes(ipFilter);
+            });
+            console.log(`🔍 Filtered by IP ${ipFilter}: ${beforeIpFilter} -> ${events.length} events`);
+          }
+        }
+        
+        // Enrich with organization names if needed
+        const orgIdsToResolve = [...new Set(events
+          .filter(e => !e.organization_name && e.organization_id)
+          .map(e => e.organization_id))];
+        
+        if (orgIdsToResolve.length > 0) {
+          console.log(`🔍 Resolving ${orgIdsToResolve.length} organization names...`);
+          const { data: orgs } = await window.supabaseClient
+            .from('organizations')
+            .select('id, name')
+            .in('id', orgIdsToResolve);
+          
+          const orgMap = {};
+          (orgs || []).forEach(org => {
+            orgMap[org.id] = org.name;
+          });
+          
+          events = events.map(event => ({
+            ...event,
+            organization_name: event.organization_name || orgMap[event.organization_id] || null
+          }));
+        }
+        
+        console.log(`✅ Loaded ${events.length} events from database`);
+        console.log(`🔍 TRACE: Final events breakdown:`);
+        console.log(`  - Total events: ${events.length}`);
+        if (events.length > 0) {
+          console.log(`  - Actions:`, [...new Set(events.map(e => e.action))]);
+          console.log(`  - IPs:`, [...new Set(events.map(e => e.ip_address).filter(ip => ip))]);
+          console.log(`  - Usernames:`, [...new Set(events.map(e => e.username).filter(u => u))]);
+          console.log(`  - Organizations:`, [...new Set(events.map(e => e.organization_name).filter(o => o))]);
+          console.log(`  - Sample event:`, {
+            action: events[0].action,
+            username: events[0].username,
+            ip_address: events[0].ip_address,
+            organization_name: events[0].organization_name,
+            details: events[0].details
+          });
+        }
+        }
+        
+        // Apply risk filter if specified
+        if (riskFilter && riskFilter !== 'all') {
+          const beforeRiskFilter = events.length;
+          events = events.filter(event => getRiskLevel(event) === riskFilter);
+          console.log(`🔍 Applied risk filter "${riskFilter}": ${beforeRiskFilter} -> ${events.length} events`);
+        }
+        
+        loadingEl.style.display = 'none';
+        totalCountEl.textContent = events.length;
+        
+        console.log(`✅ Processed ${events.length} events for filter: ${filter}, hours: ${hours}`);
+        
+        if (events.length === 0) {
+          noDataEl.style.display = 'block';
+          noDataEl.innerHTML = `
+            <div class="no-data-icon">📭</div>
+            <div>No events found for this filter</div>
+            <div style="margin-top: 10px; font-size: 12px; color: #999;">
+              Filter: ${filter} | Time window: Last ${hours / 24} days
+            </div>
+            <div style="margin-top: 16px; font-size: 12px; color: #666; max-width: 520px; text-align: left; margin-left: auto; margin-right: auto;">
+              <strong>Why might this be empty?</strong><br>
+              • No activity has been recorded yet in the selected time window (logins, failed logins, and other actions are written to the <code>audit_logs</code> table in Supabase).<br>
+              • If you expect to see data, ensure audit events are being written (e.g. from login and security flows) and that the secure proxy or Supabase RLS allows platform admins to read them.
+            </div>
+          `;
+          return;
+        }
+        
+        // Display events
+        tbodyEl.innerHTML = '';
+        events.forEach(event => {
+          const row = document.createElement('tr');
+          const timestamp = event.timestamp ? new Date(event.timestamp).toLocaleString() : 'Unknown';
+          const details = event.details ? JSON.stringify(event.details, null, 2) : '';
+          
+          // Extract organization name with better normalization
+          let orgName = event.organization_name || null;
+          if (!orgName && event.organization_id) {
+            orgName = 'Unknown Org';
+          } else if (!orgName) {
+            orgName = 'Platform';
+          }
+          // Normalize "unknown" variations
+          if (orgName && (orgName.toLowerCase() === 'unknown' || orgName === 'Loading...')) {
+            orgName = 'Unknown';
+          }
+          const orgBadge = event.organization_id ? 'badge-org' : 'badge-platform';
+          
+          // Extract username with better normalization
+          let username = event.username || event.user_name || null;
+          if (!username && event.details) {
+            let detailsObj = event.details;
+            if (typeof detailsObj === 'string') {
+              try {
+                detailsObj = JSON.parse(detailsObj);
+              } catch (e) {
+                // Keep as string
+              }
+            }
+            if (typeof detailsObj === 'object' && detailsObj !== null) {
+              username = detailsObj.username || detailsObj.user || null;
+            }
+          }
+          username = username || 'Unknown';
+          // Normalize "unknown" variations
+          if (username.toLowerCase() === 'unknown') {
+            username = 'Unknown';
+          }
+          
+          const action = event.action || 'Unknown';
+          const role = event.role || '';
+          
+          // Extract IP address with better normalization
+          let ipAddress = event.ip_address || null;
+          if (!ipAddress && event.details) {
+            let detailsObj = event.details;
+            if (typeof detailsObj === 'string') {
+              try {
+                detailsObj = JSON.parse(detailsObj);
+              } catch (e) {
+                // Keep as string
+              }
+            }
+            if (typeof detailsObj === 'object' && detailsObj !== null) {
+              ipAddress = detailsObj.ip_address || detailsObj.ip || null;
+            }
+          }
+          ipAddress = ipAddress || '-';
+          
+          row.innerHTML = `
+            <td><span class="timestamp">${timestamp}</span></td>
+            <td><span class="username">${username}</span></td>
+            <td><span class="event-action">${action}</span></td>
+            <td>${role ? `<span class="badge badge-role">${role}</span>` : '-'}</td>
+            <td><span class="badge ${orgBadge}">${orgName}</span></td>
+            <td><span class="ip-address">${ipAddress}</span></td>
+            <td><div class="event-details-json" title="${details ? 'Click to scroll for full details' : '-'}">${details || '-'}</div></td>
+          `;
+          tbodyEl.appendChild(row);
+        });
+        
+        tableWrapper.style.display = 'block';
+        console.log(`✅ Loaded ${events.length} events for filter: ${filter}`);
+        
+      } catch (error) {
+        console.error('❌ Error loading events:', error);
+        loadingEl.style.display = 'none';
+        errorEl.style.display = 'block';
+        errorEl.textContent = `Error loading events: ${error.message}`;
+      }
+    }
+
+    // Setup time filter buttons
+    function setupTimeFilters() {
+      document.querySelectorAll('.time-filter button').forEach(button => {
+        button.addEventListener('click', function() {
+          const hours = parseInt(this.dataset.hours);
+          
+          // Update active state
+          this.parentElement.querySelectorAll('button').forEach(btn => btn.classList.remove('active'));
+          this.classList.add('active');
+          
+          // Reload events
+          const filter = getFilterFromURL();
+          loadEvents(filter, hours);
+        });
+      });
+    }
+
+    // Risk level calculation (same as platform-security-dashboard)
+    function getRiskLevel(log) {
+      const action = (log.action || '').toLowerCase();
+      const details = log.details || {};
+      
+      // High risk events
+      if (action.includes('failed') || 
+          action.includes('unauthorized') || 
+          action.includes('breach') ||
+          action.includes('security') ||
+          (action.includes('delete') && (action.includes('patient') || action.includes('invoice'))) ||
+          (details.attempt_count && details.attempt_count > 3)) {
+        return 'high';
+      }
+      
+      // Medium risk events
+      if (action.includes('export') || 
+          action.includes('delete') ||
+          action.includes('password') ||
+          action.includes('admin') ||
+          action.includes('payment_deleted')) {
+        return 'medium';
+      }
+      
+      // Low risk events
+      if (action.includes('view') || 
+          action.includes('read') ||
+          action.includes('login_success') ||
+          action.includes('user_login_supabase')) {
+        return 'low';
+      }
+      
+      // Default to informational
+      return 'info';
+    }
+    
+    // Initialize page
+    async function initialize() {
+      console.log('🛡️ Initializing audit-log-details page...');
+      
+      const isAdmin = await checkPlatformAdmin();
+      if (!isAdmin) {
+        console.warn('⚠️ Not a platform admin, access denied');
+        return;
+      }
+
+      const filter = getFilterFromURL();
+      const urlParams = new URLSearchParams(window.location.search);
+      const ipParam = urlParams.get('ip');
+      const actionParam = urlParams.get('action');
+      let filterTitle = getFilterTitle(filter);
+      if (ipParam && ipParam !== 'all') {
+        filterTitle = (actionParam || filter) + ' from ' + ipParam;
+      }
+      
+      console.log(`📋 Filter: ${filter} -> Title: ${filterTitle}`);
+      
+      // Update page title and description
+      document.title = `${filterTitle} - Audit Log Details - MediForge`;
+      document.getElementById('page-description').textContent = filterTitle;
+      document.getElementById('filter-badge').textContent = `Filter: ${filterTitle}`;
+      
+      setupTimeFilters();
+      
+      // Wait a bit for scripts to load
+      await new Promise(resolve => setTimeout(resolve, 500));
+      
+      // Determine default hours based on filter
+      let defaultHours = null;
+      if (filter === 'login_failed' || filter === 'failed_logins') {
+        defaultHours = 720; // 30 days
+      } else if (filter === 'system_health') {
+        defaultHours = 168; // 7 days
+      } else {
+        defaultHours = 24; // Default 24 hours
+      }
+      
+      await loadEvents(filter, defaultHours);
+      
+      console.log('✅ Page initialization complete');
+    }
+
+    // Wait for DOM and scripts to load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', initialize);
+    } else {
+      initialize();
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

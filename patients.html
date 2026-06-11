@@ -1,0 +1,166 @@
+<!-- Purpose: Shows a list of all patients. Users can search by name and click to view details. Data loads from localStorage. Updated table headers for new fields (e.g., DOB instead of age, full name). -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patients</title>
+  <link rel="stylesheet" href="css/styles.css?v=169">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <!-- Auto Cache Buster for Mobile -->
+  <!-- DISABLED: Auto cache buster removed to prevent mobile refresh loops -->
+  
+  <style>
+    .patients-header-actions a {
+      background-color: #0c3b2e !important;
+      border: 2px solid #06251c !important;
+      color: #ffffff !important;
+      text-shadow: 0 1px 1px rgba(0, 0, 0, 0.35);
+    }
+    .patients-header-actions .back-dashboard {
+      background-color: #1b4f9c !important;
+      border-color: #123468 !important;
+    }
+    .patients-header-actions .add-patient {
+      background-color: #008753 !important;
+      border-color: #006b42 !important;
+    }
+    .patients-footer-actions {
+      background-color: #f6f1e7 !important;
+    }
+    .patients-footer-actions .export-btn {
+      background-color: #b36b00 !important;
+      border: 2px solid #7a4300 !important;
+      color: #ffffff !important;
+    }
+    .patients-footer-actions .add-patient {
+      background-color: #008753 !important;
+      border-color: #006b42 !important;
+    }
+    .patients-footer-actions .back-dashboard {
+      background-color: #1b4f9c !important;
+      border-color: #123468 !important;
+    }
+  </style>
+  
+  <!-- Load log filter early to suppress noise -->
+  <script src="js/log-filter.js?v=20260131"></script>
+  <!-- Supabase SDK - self-hosted to avoid tracking prevention blocking CDN -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251112030500"></script>
+</head>
+<body>
+  <div style="position: fixed; top: 10px; right: 10px; font-size: 14px; color: #333;" id="org-info"></div>  <!-- Top right org display -->
+  
+  <div class="patients-header-actions" style="margin-bottom: 20px;">
+    <a class="back-dashboard" href="dashboard" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 10px; display: inline-block; min-width: 160px; text-align: center;">← Back to Dashboard</a>
+  </div>
+  
+  <h1 id="page-title">Patient List</h1>
+  
+  <div class="patients-header-actions" style="margin-bottom: 20px; text-align: center;">
+    <a class="add-patient" href="add-patient" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; min-width: 160px; text-align: center;">+ Add New Patient</a>
+  </div>
+  
+  <input type="text" id="search" placeholder="Search by name...">
+  <table id="patients-table" class="patients-list-table">
+    <thead>
+      <tr>
+        <th>Full Name <button onclick="sortPatients('name')">Sort</button></th>  <!-- Updated from Name -->
+        <th>Date of Birth <button onclick="sortPatients('dob')">Sort</button></th>  <!-- Updated from Age -->
+        <th>Gender</th>
+        <th>Actions</th>
+      </tr>
+    </thead>
+    <tbody id="patient-list"></tbody>  <!-- Where patient rows will be added by JS -->
+  </table>
+  <div id="pagination-controls"></div>  <!-- New: For pagination nav -->
+  
+  <div class="patients-footer-actions" style="margin-top: 30px; padding: 20px; background-color: #f8f9fa; border-radius: 5px; text-align: center;">
+    <button id="export-btn" class="export-btn" style="padding: 12px 24px; border: none; border-radius: 5px; font-weight: bold; margin-right: 15px; cursor: pointer; min-width: 140px;">📊 Export to CSV</button>
+    <a class="add-patient" href="add-patient" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; margin-right: 15px; display: inline-block; min-width: 160px; text-align: center;">+ Add New Patient</a>
+    <a class="back-dashboard" href="dashboard" style="padding: 12px 24px; text-decoration: none; border-radius: 5px; font-weight: bold; display: inline-block; min-width: 160px; text-align: center;">← Back to Dashboard</a>
+  </div>
+  <script>
+    // Dynamic page title with org fallback
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    let org = user.org || 'Unknown Organization';  // Fallback if undefined
+    
+    // Fix: Convert organization ID to readable name
+    if (org === '576522cc-e769-4fb4-9487-3d150857d970') {
+      org = 'Mecure Clinics';
+    }
+    
+    document.getElementById("page-title").innerHTML = `Patient List for ${org}`;
+    document.getElementById("org-info").innerHTML = `${org}`;
+  </script>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  <script>
+    // Display logged-in user info with fallback
+    const userFooter = JSON.parse(localStorage.getItem("user") || "{}");
+    let footerOrg = userFooter.org || 'Unknown Organization';  // Fallback if undefined
+    
+    // Fix: Convert organization ID to readable name
+    if (footerOrg === '576522cc-e769-4fb4-9487-3d150857d970') {
+      footerOrg = 'Mecure Clinics';
+    }
+    
+    if (userFooter.username && userFooter.role) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${footerOrg} is logged in`;
+    } else {
+      document.getElementById("logged-in-info").innerHTML = 'Guest is logged in';
+    }
+  </script>
+  <!-- Critical scripts loaded immediately -->
+  <script src="js/main.js?v=20251112030500"></script>  <!-- General helpers -->
+  
+  <!-- Core scripts -->
+  <script src="js/universal-data-loader.js?v=20251112200000"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/ehr-org-patient-id.js?v=20260429180000"></script>
+  <script src="js/supabase-patients.js?v=20260429180000"></script>
+  <script src="js/patient-id-normalizer.js?v=2"></script>  <!-- Patient ID normalization system - MUST load before patients.js -->
+  <script src="js/patients.js?v=20260131"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>  <!-- Canonical patient UUID vs display id (after patients.js) -->
+  <script src="js/patient-sync-recovery.js?v=20250117"></script>  <!-- Auto-sync patients from localStorage to Supabase -->
+  <script src="js/universal-sync-status.js?v=20260131"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Non-critical scripts loaded asynchronously -->
+  <script src="js/preventive.js?v=111" defer></script>  <!-- Loads preventive logic -->
+  <script src="js/platform-readonly.js?v=20260131" defer></script>  <!-- Read-only mode -->
+  <script src="js/table-alignment-fix.js?v=1" defer></script>  <!-- Table alignment fix -->
+  <script src="js/reports.js?v=112" defer></script>  <!-- For export -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js?v=20260131"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+  <!-- Performance optimization -->
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    // DISABLED: Service worker registration disabled to prevent mobile refresh loops
+    /*
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('🔧 Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+    */
+  </script>
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  
+  <!-- Cache Clearing Utility -->
+  <script src="clear-all-cache.js"></script>  <!-- Complete cache clearing utility -->
+</body>
+</html>

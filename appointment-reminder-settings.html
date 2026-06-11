@@ -1,0 +1,284 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <title>Appointment Reminder Settings - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous">
+  <style>
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; padding: 20px; background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%); min-height: 100vh; }
+    .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,135,83,0.15); border: 2px solid #008753; }
+    h1 { color: #008753; margin-bottom: 10px; }
+    .back-btn { display: inline-block; margin-bottom: 20px; padding: 10px 20px; background: linear-gradient(135deg, #008753, #006b42); color: white; border: none; border-radius: 6px; font-weight: 600; cursor: pointer; font-size: 14px; text-decoration: none; }
+    .back-btn:hover { opacity: 0.9; }
+    .form-group { margin-bottom: 20px; }
+    .form-group label { display: block; font-weight: 600; color: #36454F; margin-bottom: 8px; }
+    .form-group select, .form-group input[type="number"] { padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px; }
+    .form-group select { max-width: 120px; }
+    .lead-time-row { display: flex; gap: 12px; align-items: center; flex-wrap: wrap; }
+    .lead-time-row select { flex: 0 0 auto; }
+    .form-group small { display: block; color: #666; font-size: 12px; margin-top: 5px; }
+    .info-box { background: #e8f5e9; padding: 15px; border-radius: 8px; border-left: 4px solid #008753; margin-bottom: 20px; font-size: 14px; color: #333; }
+    button[type="submit"] { background: linear-gradient(135deg, #008753, #006b42); color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; }
+    button[type="submit"]:hover { opacity: 0.9; }
+    .success { color: #008753; margin-top: 10px; }
+    .error { color: #d32f2f; margin-top: 10px; }
+  </style>
+</head>
+<body>
+  <button type="button" class="back-btn" onclick="window.location.href='dashboard'"><i class="fa-solid fa-arrow-left" style="margin-right:6px;"></i>Back to Dashboard</button>
+  <div class="container">
+    <h1><i class="fa-solid fa-bell" style="margin-right:10px;"></i>Appointment Reminder Settings</h1>
+    <p style="color:#666;margin-bottom:25px;">Configure when and how appointment reminders are sent to doctors and patients.</p>
+    
+    <div class="info-box">
+      <strong>How reminders work:</strong> Reminders are sent as in-app notifications when staff or patients log in.
+      <ul style="margin:10px 0 0 20px;">
+        <li>First reminder at your chosen lead time (e.g. 14 days before)</li>
+        <li>Second reminder 7 days before the appointment</li>
+        <li>In the final 7 days: a reminder every day (if enabled)</li>
+      </ul>
+    </div>
+    
+    <form id="reminder-settings-form">
+      <div class="form-group">
+        <label>When to start reminders (before appointment)</label>
+        <div class="lead-time-row">
+          <select id="reminder-lead-number" required></select>
+          <select id="reminder-lead-unit">
+            <option value="days">days</option>
+            <option value="weeks">weeks</option>
+          </select>
+          <span>before</span>
+        </div>
+        <small>First reminder will be sent this many days before each appointment.</small>
+      </div>
+      <div class="form-group">
+        <label><input type="checkbox" id="daily-reminders-enabled" checked> Send daily reminders in the final 7 days</label>
+        <small>When enabled, both doctor and patient receive a reminder every day for the week leading up to the appointment.</small>
+      </div>
+      <button type="submit"><i class="fa-solid fa-save" style="margin-right:8px;"></i>Save Settings</button>
+      <div id="save-feedback"></div>
+    </form>
+
+    <div style="margin-top:30px;padding-top:20px;border-top:1px solid #e0e0e0;">
+      <h3 style="color:#008753;margin-bottom:10px;"><i class="fa-solid fa-play" style="margin-right:8px;"></i>Test Reminders</h3>
+      <p style="color:#666;font-size:14px;">Reminders normally run once daily at 8 AM. Run them now to create notifications for upcoming appointments (useful for testing).</p>
+      <button type="button" id="ping-btn" style="margin-right:8px;margin-top:10px;padding:10px 14px;background:#555;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+        Ping
+      </button>
+      <button type="button" id="test-connection-btn" style="margin-right:10px;margin-top:10px;padding:10px 16px;background:#666;color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+        <i class="fa-solid fa-plug" style="margin-right:6px;"></i>Test Connection
+      </button>
+      <button type="button" id="run-reminders-btn" style="margin-top:10px;padding:10px 20px;background:linear-gradient(135deg,#008753,#006b42);color:white;border:none;border-radius:6px;cursor:pointer;font-weight:600;">
+        <i class="fa-solid fa-bolt" style="margin-right:6px;"></i>Run Reminders Now
+      </button>
+      <div id="run-reminders-feedback" style="margin-top:10px;font-size:14px;"></div>
+    </div>
+
+    <div style="margin-top:30px;padding-top:20px;border-top:1px solid #e0e0e0;">
+      <h3 style="color:#008753;margin-bottom:10px;"><i class="fa-solid fa-mobile-screen" style="margin-right:8px;"></i>SMS Reminders</h3>
+      <p style="color:#666;font-size:14px;">Staff can copy preformatted SMS messages to send to patients with upcoming appointments.</p>
+      <a href="appointment-sms-reminders" style="display:inline-block;margin-top:10px;color:#008753;font-weight:600;text-decoration:none;">Open SMS Reminders Page →</a>
+    </div>
+  </div>
+  
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/logout-button.js"></script>
+  
+  <script>
+    const DAY_OPTS = [1, 2, 3, 5, 7, 14, 21];
+    const WEEK_OPTS = [1, 2, 3, 4];
+
+    function getLeadDays() {
+      const num = parseInt(document.getElementById('reminder-lead-number').value, 10);
+      const unit = document.getElementById('reminder-lead-unit').value;
+      return unit === 'weeks' ? num * 7 : num;
+    }
+
+    function fillNumberOptions(unit) {
+      const sel = document.getElementById('reminder-lead-number');
+      const opts = unit === 'weeks' ? WEEK_OPTS : DAY_OPTS;
+      sel.innerHTML = opts.map(n => `<option value="${n}">${n}</option>`).join('');
+    }
+
+    function setFromLeadDays(days) {
+      const numSel = document.getElementById('reminder-lead-number');
+      const unitSel = document.getElementById('reminder-lead-unit');
+      if (days % 7 === 0 && days >= 7 && days <= 28) {
+        unitSel.value = 'weeks';
+        fillNumberOptions('weeks');
+        numSel.value = String(days / 7);
+      } else {
+        unitSel.value = 'days';
+        fillNumberOptions('days');
+        numSel.value = String(DAY_OPTS.includes(days) ? days : 14);
+      }
+    }
+
+    window.addEventListener('load', async () => {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      if (!user.username || !user.organizationId) {
+        alert('Please log in to access this page.');
+        window.location.href = 'login';
+        return;
+      }
+      const orgId = user.organizationId || user.organization_id;
+      if (!orgId || !orgId.includes('-')) {
+        document.getElementById('save-feedback').innerHTML = '<span class="error">Cannot load settings: organization ID not found.</span>';
+        return;
+      }
+
+      fillNumberOptions('days');
+      document.getElementById('reminder-lead-unit').addEventListener('change', function () {
+        const days = getLeadDays();
+        fillNumberOptions(this.value);
+        if (this.value === 'weeks' && days >= 7 && days <= 28 && days % 7 === 0) {
+          document.getElementById('reminder-lead-number').value = String(days / 7);
+        } else if (this.value === 'days' && DAY_OPTS.includes(days)) {
+          document.getElementById('reminder-lead-number').value = String(days);
+        } else if (this.value === 'weeks') {
+          document.getElementById('reminder-lead-number').value = '2';
+        } else {
+          document.getElementById('reminder-lead-number').value = '14';
+        }
+      });
+
+      try {
+        const { data: org, error } = await window.supabaseClient
+          .from('organizations')
+          .select('settings')
+          .eq('id', orgId)
+          .single();
+        if (error) throw error;
+        const s = org?.settings || {};
+        setFromLeadDays(s.reminder_lead_days ?? 14);
+        document.getElementById('daily-reminders-enabled').checked = s.daily_reminders_enabled !== false;
+      } catch (e) {
+        console.error('Load reminder settings:', e);
+        document.getElementById('save-feedback').innerHTML = '<span class="error">Could not load settings. Using defaults.</span>';
+      }
+
+      document.getElementById('reminder-settings-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const feedback = document.getElementById('save-feedback');
+        const leadDays = getLeadDays();
+        const dailyEnabled = document.getElementById('daily-reminders-enabled').checked;
+        try {
+          const { data: org } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', orgId)
+            .single();
+          const current = org?.settings || {};
+          const newSettings = { ...current, reminder_lead_days: leadDays, daily_reminders_enabled: dailyEnabled };
+          const { error } = await window.supabaseClient
+            .from('organizations')
+            .update({ settings: newSettings, updated_at: new Date().toISOString() })
+            .eq('id', orgId);
+          if (error) throw error;
+          feedback.innerHTML = '<span class="success"><i class="fa-solid fa-check" style="margin-right:6px;"></i>Settings saved successfully.</span>';
+        } catch (err) {
+          console.error('Save reminder settings:', err);
+          feedback.innerHTML = '<span class="error">Could not save settings: ' + (err.message || 'Unknown error') + '</span>';
+        }
+      });
+
+      document.getElementById('ping-btn').addEventListener('click', async () => {
+        const feedback = document.getElementById('run-reminders-feedback');
+        const btn = document.getElementById('ping-btn');
+        feedback.innerHTML = '<span style="color:#666;">Pinging…</span>';
+        btn.disabled = true;
+        const url = window.location.origin + '/.netlify/functions/appointment-reminders-daily?ping=1';
+        try {
+          const res = await fetch(url);
+          const rawText = await res.text();
+          let data = {};
+          try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) { data = {}; }
+          if (res.ok && data.ping) {
+            feedback.innerHTML = '<span class="success">Ping OK – function runtime is working.</span>';
+          } else {
+            feedback.innerHTML = '<span class="error">Ping failed: ' + (res.status) + ' ' + (rawText || res.statusText) + '</span>';
+          }
+        } catch (err) {
+          feedback.innerHTML = '<span class="error">Ping failed: ' + (err.message || 'Request failed') + '</span>';
+        }
+        btn.disabled = false;
+      });
+
+      document.getElementById('test-connection-btn').addEventListener('click', async () => {
+        const feedback = document.getElementById('run-reminders-feedback');
+        const btn = document.getElementById('test-connection-btn');
+        feedback.innerHTML = '<span style="color:#666;">Testing…</span>';
+        btn.disabled = true;
+        const url = window.location.origin + '/.netlify/functions/appointment-reminders-daily?test=1';
+        console.log('[Test Connection] Fetching:', url);
+        try {
+          const res = await fetch(url);
+          const rawText = await res.text();
+          let data = {};
+          try { data = rawText ? JSON.parse(rawText) : {}; } catch (_) { data = {}; }
+          if (res.ok && data.test) {
+            feedback.innerHTML = '<span class="success">' + (data.message || 'Connection OK') + '</span>';
+          } else {
+            const errMsg = (data && data.error) ? data.error : (rawText || res.statusText || 'Request failed');
+            feedback.innerHTML = '<span class="error">' + errMsg + '</span>';
+          }
+        } catch (err) {
+          feedback.innerHTML = '<span class="error">' + (err.message || 'Request failed') + '</span>';
+        }
+        btn.disabled = false;
+      });
+
+      document.getElementById('run-reminders-btn').addEventListener('click', async () => {
+        const feedback = document.getElementById('run-reminders-feedback');
+        const btn = document.getElementById('run-reminders-btn');
+        feedback.innerHTML = '<span style="color:#666;">Running…</span>';
+        btn.disabled = true;
+        const url = window.location.origin + '/.netlify/functions/appointment-reminders-daily';
+        console.log('[Run Reminders] Fetching:', url);
+        try {
+          const res = await fetch(url);
+          const rawText = await res.text();
+          console.log('[Run Reminders] Response:', res.status, res.statusText, 'body length:', rawText?.length || 0);
+          if (res.status >= 400) {
+            console.error('[Run Reminders] Error response body:', rawText);
+          }
+          let data = {};
+          try {
+            data = rawText ? JSON.parse(rawText) : {};
+          } catch (_) {
+            console.error('[Run Reminders] JSON parse failed, raw body:', rawText?.slice(0, 500));
+            data = {};
+          }
+          if (res.status === 403) {
+            feedback.innerHTML = '<span class="error">Unauthorized. Add <code>?key=</code> and your CRON_SECRET value to the URL when running manually.</span>';
+          } else if (res.ok) {
+            const sent = (data.log || []).filter(l => typeof l === 'string' && l.startsWith('Sent reminder')).length;
+            feedback.innerHTML = '<span class="success">Done. ' + (data.log?.length ? sent + ' reminder(s) created. Check Messages &amp; Tasks. <small>Log: ' + (data.log || []).slice(0, 5).join('; ') + '</small>' : 'No reminders due.') + '</span>';
+          } else {
+            const errMsg = (data && data.error) ? data.error : (res.status === 500 ? 'Server error (500). ' : '') + (res.statusText || 'Request failed');
+            const needsEnvHint = (errMsg + '').toLowerCase().includes('missing supabase') || (errMsg + '').toLowerCase().includes('set supabase_url');
+            const hint = needsEnvHint ? ' Add SUPABASE_URL and SUPABASE_SERVICE_ROLE_KEY in Netlify → Site settings → Environment variables, then redeploy.' : '';
+            let display = errMsg + hint;
+            if (res.status === 500 && !(data && data.error) && rawText) {
+              const preview = rawText.length > 600 ? rawText.slice(0, 600) + '…' : rawText;
+              display += '<br><br><strong>Server response (for debugging):</strong><br><code style="font-size:11px;word-break:break-all;display:block;margin-top:4px;">' + preview.replace(/</g, '&lt;').replace(/>/g, '&gt;') + '</code>';
+            }
+            feedback.innerHTML = '<span class="error">' + display + '</span>';
+          }
+        } catch (err) {
+          console.error('[Run Reminders] Fetch failed:', err);
+          feedback.innerHTML = '<span class="error">' + (err.message || 'Request failed') + '</span>';
+        }
+        btn.disabled = false;
+      });
+    });
+  </script>
+</body>
+</html>

@@ -1,0 +1,692 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Appointment</title>
+  <link rel="stylesheet" href="css/styles.css">
+</head>
+<body>
+
+  <div style="margin-bottom: 20px; display: flex; gap: 10px; align-items: center;">
+    <a href="appointments" style="padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Appointments</a>
+    <a href='/' style='padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;'>← Back to Dashboard</a>
+  </div>
+  <h1>Edit Appointment</h1>
+  <form id="edit-appointment-form">
+    <input type="hidden" id="appointmentId">
+    <input type="hidden" id="supabaseRowId">
+    <label for="patientSearch">Patient Search:</label>
+    <input type="text" id="patientSearch" placeholder="Search by name or date of birth..." required style="min-height: 44px; font-size: 16px; padding: 10px;">
+    <div id="patient-results" style="display: none; max-height: 200px; overflow-y: auto; border: 1px solid #ccc; background: white; position: absolute; z-index: 1000; width: 100%;"></div>
+    <input type="hidden" id="patientName" required>
+    <input type="hidden" id="patientId" required>
+    <div id="selected-patient" style="margin-top: 5px; padding: 5px; background: #e8f5e8; border-radius: 4px; display: none;"></div>
+    <label for="date">Date:</label>
+    <input type="date" id="date" required style="min-height: 44px; font-size: 16px; padding: 10px;">
+    <label for="time">Time Slot:</label>
+    <select id="time" required style="min-height: 44px; font-size: 16px; padding: 10px;">
+      <option value="">Select a time slot...</option>
+    </select>
+    <label for="appointmentType">Appointment Type:</label>
+    <select id="appointmentType" required style="min-height: 44px; font-size: 16px; padding: 10px;">
+      <option value="">Select appointment type...</option>
+    </select>
+    <label for="doctor">Doctor:</label>
+    <select id="doctor" onchange="handleDoctorSelection()" style="min-height: 44px; font-size: 16px; padding: 10px;">
+      <option value="">Select a doctor...</option>
+    </select>
+    <input type="text" id="doctorCustom" placeholder="Enter doctor name manually" style="display: none; margin-top: 5px; min-height: 44px; font-size: 16px; padding: 10px;">
+    <label for="notes">Notes:</label>
+    <textarea id="notes" style="min-height: 80px; font-size: 16px; padding: 10px;"></textarea>
+    <button type="submit" style="min-height: 44px; min-width: 120px; font-size: 16px; padding: 12px 24px; touch-action: manipulation;">Save Changes</button>
+  </form>
+  <div style="margin-top: 20px; display: flex; gap: 10px; align-items: center;">
+    <a href="appointments" style="padding: 8px 16px; background-color: #007bff; color: white; text-decoration: none; border-radius: 4px; display: inline-block;">← Back to Appointments</a>
+    <a href='/' style='padding: 8px 16px; background-color: #6c757d; color: white; text-decoration: none; border-radius: 4px; display: inline-block;'>← Back to Dashboard</a>
+  </div>
+  <!-- Load Supabase SDK directly for mobile compatibility -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113070113071307?v=1"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/universal-data-loader.js?v=202510220113070113071307"></script>
+  <script src="js/main.js?v=202510220113070113071307"></script>
+  <script src="js/pricing.js"></script>
+  <script src="js/appointment-types.js"></script>
+  <script src="js/appointments.js?v=20260416140000-appointment-org-reconcile"></script>
+  <script src="js/universal-sync-status.js?v=202510220113070113071307"></script>
+  <script>
+    window.addEventListener('load', async function() {
+      // Get appointment ID from URL
+      const urlParams = new URLSearchParams(window.location.search);
+      const appointmentId = urlParams.get('id');
+      
+      if (!appointmentId) {
+        alert('No appointment ID provided. Redirecting to appointments page.');
+        window.location.href = 'appointments';
+        return;
+      }
+      
+      // Remove any minimum date restriction
+      const dateInput = document.getElementById('date');
+      if (dateInput) {
+        dateInput.removeAttribute('min');
+        dateInput.setAttribute('min', '1900-01-01');
+      }
+      
+      // Setup form controls and populate dropdowns FIRST
+      setupPatientSearch();
+      loadAvailableSlots();
+      await loadDoctors();
+      await loadAppointmentTypes();
+      
+      // THEN load appointment data (so dropdowns are ready when we try to set values)
+      await loadAppointmentForEdit(appointmentId);
+      
+      // Setup form submission
+      document.getElementById('edit-appointment-form').addEventListener('submit', handleEditAppointmentSubmit);
+    });
+    
+    // Load appointment data for editing
+    async function loadAppointmentForEdit(appointmentId) {
+      try {
+        // Try Supabase first - appointmentId can be UUID (from id col) or composite (appointment_id)
+        let appointment = null;
+        const isUuid = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(appointmentId || '').trim());
+        if (window.supabaseClient) {
+          if (isUuid) {
+            const { data: supabaseAppt, error } = await window.supabaseClient
+              .from('appointments')
+              .select('*')
+              .eq('id', appointmentId)
+              .single();
+            if (!error && supabaseAppt) {
+              appointment = supabaseAppt;
+              appointment.id = appointment.appointment_id || appointment.id;
+              appointment.supabaseId = supabaseAppt.id;
+            }
+          }
+          if (!appointment) {
+            const { data: supabaseAppt2, error: err2 } = await window.supabaseClient
+              .from('appointments')
+              .select('*')
+              .eq('appointment_id', appointmentId)
+              .maybeSingle();
+            if (!err2 && supabaseAppt2) {
+              appointment = supabaseAppt2;
+              appointment.id = appointment.appointment_id || appointment.id;
+              appointment.supabaseId = supabaseAppt2.id;
+            }
+          }
+          if (appointment) console.log('✅ Loaded appointment from Supabase:', appointment);
+        }
+        
+        // Fallback to localStorage
+        if (!appointment) {
+          const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+          appointment = appointments.find(a => a.id === appointmentId || (a.supabaseId && a.supabaseId === appointmentId));
+          if (appointment) console.log('✅ Loaded appointment from localStorage:', appointment);
+        }
+        
+        if (!appointment) {
+          alert('Appointment not found. Redirecting to appointments page.');
+          window.location.href = 'appointments';
+          return;
+        }
+        
+        // Check if clinical note is locked
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          const patient = await window.resolvePatientByIdentifier(appointment.patient_id || appointment.patientId);
+          if (patient && patient.visits) {
+            const visit = patient.visits.find(v => v.date === appointment.date || v.date === appointment.date);
+            if (visit && visit.soap && visit.soap.locked === true) {
+              alert("This appointment cannot be edited because the clinical note has been locked. Please unlock the note first if you need to make changes.");
+              window.location.href = 'appointments';
+              return;
+            }
+          }
+        }
+        
+        // Populate form fields
+        document.getElementById('appointmentId').value = appointment.id;
+        document.getElementById('supabaseRowId').value = appointment.supabaseId || '';
+        document.getElementById('date').value = appointment.date;
+        
+        // Normalize time format (remove seconds if present)
+        let timeValue = appointment.time || '';
+        if (timeValue && timeValue.includes(':') && timeValue.split(':').length === 3) {
+          // Time has seconds, remove them
+          timeValue = timeValue.substring(0, 5); // Takes "HH:MM"
+        }
+        document.getElementById('time').value = timeValue;
+        document.getElementById('notes').value = appointment.notes || '';
+        
+        // Set patient
+        const patientId = appointment.patient_id || appointment.patientId;
+        const patientName = appointment.patientName || appointment.patient_name;
+        
+        if (patientId && patientName) {
+          document.getElementById('patientId').value = patientId;
+          document.getElementById('patientName').value = patientName;
+          document.getElementById('patientSearch').value = patientName;
+          const sel = document.getElementById('selected-patient');
+          sel.textContent = `Selected: ${patientName}`;
+          sel.setAttribute('data-locked-name', patientName);
+          sel.style.display = 'block';
+        }
+        
+        // Set dropdown values (dropdowns should already be populated)
+        // Set doctor
+        if (appointment.doctor) {
+          const doctorSelect = document.getElementById('doctor');
+          if (doctorSelect && doctorSelect.options.length > 1) {
+            // Check if the doctor is in the list
+            const doctorName = appointment.doctor.replace(/^Dr\.\s*/i, '').trim(); // Remove "Dr." prefix if present
+            const doctorOption = Array.from(doctorSelect.options).find(opt => {
+              const optValue = opt.value.replace(/^Dr\.\s*/i, '').trim();
+              return optValue === doctorName || opt.value === appointment.doctor;
+            });
+            
+            if (doctorOption && doctorOption.value !== 'other') {
+              doctorSelect.value = doctorOption.value;
+            } else {
+              // If not in list, use "other" and set custom value
+              doctorSelect.value = 'other';
+              const doctorCustom = document.getElementById('doctorCustom');
+              if (doctorCustom) {
+                doctorCustom.value = appointment.doctor;
+                doctorCustom.style.display = 'block';
+              }
+            }
+          }
+        }
+        
+        // Set appointment type (legacy lab catalog rows, old labels, and consolidated lab type)
+        const typeSelect = document.getElementById('appointmentType');
+        if (typeSelect && typeSelect.options.length > 1 && typeof window.applyAppointmentTypeToSelect === 'function') {
+          await window.applyAppointmentTypeToSelect(typeSelect, appointment);
+        }
+        
+      } catch (error) {
+        console.error('Error loading appointment:', error);
+        alert('Error loading appointment data. Please try again.');
+        window.location.href = 'appointments';
+      }
+    }
+    
+    // Handle form submission
+    async function handleEditAppointmentSubmit(e) {
+      e.preventDefault();
+      
+      const appointmentId = document.getElementById('appointmentId').value;
+      let patientId = document.getElementById('patientId').value;
+      const patientName = document.getElementById('patientName').value;
+      const date = document.getElementById('date').value;
+      const time = document.getElementById('time').value;
+      const appointmentTypeId = document.getElementById('appointmentType').value;
+      const doctorSelect = document.getElementById('doctor');
+      const doctorCustom = document.getElementById('doctorCustom');
+      const doctorName = doctorSelect.value === 'other' ? doctorCustom.value.trim() : doctorSelect.value;
+      const notes = document.getElementById('notes').value;
+      
+      if (!patientId || !patientName) {
+        alert('Please select a patient.');
+        return;
+      }
+
+      const isUuid = (s) => s && typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.trim());
+      if (isUuid(patientId) && typeof window.reconcileFormPatientRowWithDisplayedName === 'function') {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgId = user.organizationId || user.organization_id;
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          orgId = organizations[user.org]?.id;
+        }
+        const fixed = await window.reconcileFormPatientRowWithDisplayedName(patientId, patientName, { orgId, dob: null });
+        if (fixed && isUuid(fixed) && fixed !== patientId) {
+          console.warn('Edit appointment: reconciled patient UUID to match name on form.');
+          patientId = fixed;
+          document.getElementById('patientId').value = fixed;
+        }
+      }
+      
+      if (!appointmentTypeId) {
+        alert('Please select an appointment type.');
+        return;
+      }
+      
+      if (!doctorName) {
+        alert('Please select or enter a doctor name.');
+        return;
+      }
+      
+      // Get appointment type details
+      const prevAppts = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+      const prevAppt = prevAppts.find(a => a.id === appointmentId);
+      const appointmentType = await window.getAppointmentTypeById(appointmentTypeId);
+      const appointmentTypeName = appointmentType && appointmentType.name
+        ? appointmentType.name
+        : (prevAppt && prevAppt.appointment_type) || String(appointmentTypeId || '');
+      
+      const updatedAppointment = {
+        id: appointmentId,
+        patientId: patientId,
+        patient_id: patientId,
+        patientName: patientName,
+        patient_name: patientName,
+        date: date,
+        time: time,
+        doctor: doctorName,
+        appointment_type: appointmentTypeName,
+        appointment_type_id: appointmentTypeId,
+        notes: notes,
+        status: 'scheduled',
+        organization_id: JSON.parse(localStorage.getItem("user") || "{}").organizationId
+      };
+      
+      // Show sync status
+      const syncStatus = document.createElement('div');
+      syncStatus.id = 'sync-status';
+      syncStatus.style.cssText = `
+        position: fixed; top: 50%; left: 50%; transform: translate(-50%, -50%);
+        background: #f8f9fa; border: 2px solid #007bff; border-radius: 8px;
+        padding: 20px; z-index: 10000; text-align: center; max-width: 300px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+      `;
+      syncStatus.innerHTML = `
+        <div style="font-weight: bold; margin-bottom: 10px;">🔄 Saving changes...</div>
+        <div id="sync-details" style="font-size: 14px; color: #666;"></div>
+      `;
+      document.body.appendChild(syncStatus);
+      
+      try {
+        // Update in Supabase first
+        if (window.supabaseClient) {
+          try {
+            const supabaseClient = window.supabaseClient;
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            let orgId = updatedAppointment.organization_id || user.organizationId || user.organization_id;
+            
+            if (!orgId && user.org) {
+              const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+              const orgData = organizations[user.org];
+              if (orgData && orgData.id) {
+                orgId = orgData.id;
+              }
+            }
+            
+            // Normalize status to lowercase
+            const normalizedStatus = (updatedAppointment.status || 'scheduled').toLowerCase().trim();
+            const allowedStatuses = ['scheduled', 'completed', 'cancelled', 'no_show'];
+            const finalStatus = allowedStatuses.includes(normalizedStatus) ? normalizedStatus : 'scheduled';
+            
+            // Normalize time
+            let normalizedTime = updatedAppointment.time;
+            if (normalizedTime && normalizedTime.split(':').length === 2) {
+              normalizedTime = normalizedTime + ':00';
+            }
+            
+            // Use new date+time for appointment_id so the row stays consistent (prevents duplicates)
+            const newAppointmentId = `${date}_${(time || '').replace(/:/g, '')}`;
+            const supabaseAppointment = {
+              appointment_id: newAppointmentId,
+              patient_id: updatedAppointment.patientId,
+              patient_name: updatedAppointment.patientName,
+              appointment_date: updatedAppointment.date,
+              appointment_time: normalizedTime || updatedAppointment.time,
+              doctor_name: updatedAppointment.doctor,
+              appointment_type: updatedAppointment.appointment_type,
+              notes: updatedAppointment.notes,
+              status: finalStatus,
+              organization_id: orgId,
+              duration_minutes: 30
+            };
+            
+            // Prefer Supabase row UUID for update - most reliable, prevents duplicate on wrong match
+            const supabaseRowId = document.getElementById('supabaseRowId').value?.trim();
+            let updateQuery = supabaseClient.from('appointments').update(supabaseAppointment);
+            if (supabaseRowId && /^[0-9a-f-]{36}$/i.test(supabaseRowId)) {
+              updateQuery = updateQuery.eq('id', supabaseRowId);
+            } else {
+              updateQuery = updateQuery.eq('appointment_id', appointmentId).eq('organization_id', orgId);
+            }
+            const { data: updateData, error: updateError } = await updateQuery;
+            
+            if (updateError) {
+              console.error('❌ Error updating appointment in Supabase:', updateError);
+              document.getElementById('sync-details').textContent = '⚠️ Cloud sync failed, saved locally';
+            } else {
+              document.getElementById('sync-details').textContent = '✅ Saved to cloud';
+            }
+          } catch (error) {
+            console.error('❌ Exception updating appointment in Supabase:', error);
+            document.getElementById('sync-details').textContent = '⚠️ Cloud sync failed, saved locally';
+          }
+        }
+        
+        // Update in localStorage
+        const appointmentsKey = getDataKey("appointments");
+        let appointments = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
+        const index = appointments.findIndex(a => a.id === appointmentId);
+        
+        if (index !== -1) {
+          appointments[index] = { ...appointments[index], ...updatedAppointment };
+          localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
+        } else {
+          // If not found, add it
+          appointments.push(updatedAppointment);
+          localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
+        }
+        
+        setTimeout(() => {
+          syncStatus.remove();
+          alert('Appointment updated successfully!');
+          window.location.href = 'appointments';
+        }, 1000);
+        
+      } catch (error) {
+        console.error('Error updating appointment:', error);
+        syncStatus.remove();
+        alert('Error updating appointment. Please try again.');
+      }
+    }
+    
+    // Copy functions from add-appointment.html
+    function setupPatientSearch() {
+      const patientSearch = document.getElementById('patientSearch');
+      const patientResults = document.getElementById('patient-results');
+      const patientNameInput = document.getElementById('patientName');
+      const patientIdInput = document.getElementById('patientId');
+      const selectedPatient = document.getElementById('selected-patient');
+      
+      patientSearch.addEventListener('input', async function() {
+        const query = this.value.trim();
+        
+        if (query.length < 2) {
+          patientResults.style.display = 'none';
+          return;
+        }
+        
+        // Load patients
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          const patientsKey = getDataKey("patients");
+          patients = JSON.parse(localStorage.getItem(patientsKey) || "[]");
+        }
+        
+        // Filter patients
+        const filtered = patients.filter(p => {
+          const fullName = `${p.firstName || p.first_name || ''} ${p.lastName || p.last_name || ''}`.toLowerCase();
+          const dob = (p.dob || p.date_of_birth || '').toLowerCase();
+          const dis = (p.id || p.patient_id || '').toLowerCase();
+          const queryLower = query.toLowerCase();
+          
+          return fullName.includes(queryLower) || dob.includes(queryLower) || dis.includes(queryLower);
+        }).slice(0, 10);
+        
+        if (filtered.length === 0) {
+          patientResults.innerHTML = '<div style="padding: 10px; text-align: center; color: #666;">No patients found</div>';
+          patientResults.style.display = 'block';
+          return;
+        }
+        
+        patientResults.innerHTML = filtered.map(p => {
+          const fullName = `${p.firstName || p.first_name || ''} ${p.lastName || p.last_name || ''}`;
+          const dob = p.dob || p.date_of_birth || '';
+          // appointments.patient_id must be patients.id (UUID), not org display id (MFA-MC…)
+          const displayId = p.id || p.patient_id || '';
+          const rowUuid = p._supabaseUuid || p._supabaseId || p.supabaseUuid || p.supabase_uuid
+            || (displayId && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(displayId).trim()) ? String(displayId).trim() : '');
+          return `
+            <div style="padding: 10px; border-bottom: 1px solid #eee; cursor: pointer;" 
+                 onclick="selectPatient('${(rowUuid || '').replace(/'/g, "\\'")}', '${fullName.replace(/'/g, "\\'")}', '${(displayId || '').replace(/'/g, "\\'")}')">
+              <strong>${fullName}</strong><br>
+              <small>DOB: ${dob} | ID: ${displayId}</small>
+            </div>
+          `;
+        }).join('');
+        
+        patientResults.style.display = 'block';
+      });
+      
+      // Hide results when clicking outside
+      document.addEventListener('click', function(e) {
+        if (!patientSearch.contains(e.target) && !patientResults.contains(e.target)) {
+          patientResults.style.display = 'none';
+        }
+      });
+      
+      window.selectPatient = function(id, name, displayIdLabel) {
+        if (!id || !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(id).trim())) {
+          console.error('selectPatient: expected row UUID for appointments.patient_id, got:', id);
+          alert('Could not set patient: internal ID missing. Re-open the page or pick the patient again.');
+          return;
+        }
+        patientIdInput.value = id.trim();
+        patientNameInput.value = name;
+        patientSearch.value = name;
+        selectedPatient.textContent = `Selected: ${name}${displayIdLabel ? ' | ' + displayIdLabel : ''}`;
+        selectedPatient.setAttribute('data-locked-name', name);
+        selectedPatient.style.display = 'block';
+        patientResults.style.display = 'none';
+      };
+    }
+    
+    function getClinicSchedule() {
+      const config = JSON.parse(localStorage.getItem(getDataKey("clinic-schedule")) || '{}');
+      return {
+        startTime: config.startTime || "08:00",
+        endTime: config.endTime || "18:00",
+        slotDuration: config.slotDuration || 20,
+        lunchBreak: config.lunchBreak || { enabled: false },
+        workingDays: config.workingDays || ["monday", "tuesday", "wednesday", "thursday", "friday"]
+      };
+    }
+    
+    function getAllSlots() {
+      const schedule = getClinicSchedule();
+      const slots = [];
+      
+      const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
+      const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
+      
+      let hour = startHour;
+      let minute = startMinute;
+      
+      while (hour < endHour || (hour === endHour && minute < endMinute)) {
+        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
+        
+        // Check if this slot conflicts with lunch break
+        if (schedule.lunchBreak && schedule.lunchBreak.enabled) {
+          const [lunchHour, lunchMinute] = schedule.lunchBreak.startTime.split(':').map(Number);
+          const lunchEndTime = new Date(2000, 0, 1, lunchHour, lunchMinute + schedule.lunchBreak.duration);
+          const currentTime = new Date(2000, 0, 1, hour, minute);
+          
+          if (currentTime >= new Date(2000, 0, 1, lunchHour, lunchMinute) && currentTime < lunchEndTime) {
+            minute += schedule.slotDuration;
+            if (minute >= 60) {
+              minute = 0;
+              hour++;
+            }
+            continue;
+          }
+        }
+        
+        slots.push(timeStr);
+        minute += schedule.slotDuration;
+        if (minute >= 60) {
+          minute = 0;
+          hour++;
+        }
+      }
+      
+      return slots;
+    }
+    
+    function loadAvailableSlots() {
+      const timeSelect = document.getElementById('time');
+      
+      timeSelect.innerHTML = '<option value="">Select a time slot...</option>';
+      
+      const slots = getAllSlots();
+      slots.forEach(slot => {
+        const option = document.createElement('option');
+        option.value = slot;
+        option.textContent = slot;
+        timeSelect.appendChild(option);
+      });
+    }
+    
+    async function loadDoctors() {
+      const doctorSelect = document.getElementById("doctor");
+      if (!doctorSelect) return;
+      
+      const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+      let orgId = currentUser.organizationId || currentUser.organization_id;
+      
+      if (!orgId && currentUser.org) {
+        const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+        const orgData = organizations[currentUser.org];
+        if (orgData && orgData.id) {
+          orgId = orgData.id;
+        } else if (typeof currentUser.org === 'string' && currentUser.org.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          orgId = currentUser.org;
+        }
+      }
+      
+      let users = [];
+      
+      if (window.supabaseClient && orgId) {
+        try {
+          const { data: supabaseUsers, error } = await window.supabaseClient
+            .from('users')
+            .select('*')
+            .eq('organization_id', orgId);
+          
+          if (!error && supabaseUsers && supabaseUsers.length > 0) {
+            users = supabaseUsers.map(su => ({
+              id: su.id,
+              username: su.username,
+              firstName: su.first_name || su.firstName || '',
+              lastName: su.last_name || su.lastName || '',
+              email: su.email || '',
+              role: su.role || '',
+              organizationId: su.organization_id,
+              organization_id: su.organization_id
+            }));
+          }
+        } catch (error) {
+          console.warn('⚠️ Supabase query failed:', error);
+        }
+      }
+      
+      if (users.length === 0) {
+        users = JSON.parse(localStorage.getItem(getDataKey("users")) || "[]");
+      }
+      
+      const doctors = users.filter(user => {
+        const role = (user.role || '').toLowerCase();
+        return role === "doctor" || role.includes("doctor");
+      });
+      
+      doctorSelect.innerHTML = '<option value="">Select a doctor...</option>';
+      
+      doctors.forEach(doctor => {
+        const firstName = doctor.firstName || doctor.first_name || '';
+        const lastName = doctor.lastName || doctor.last_name || '';
+        if (firstName && lastName) {
+          const option = document.createElement("option");
+          option.value = `${firstName} ${lastName}`;
+          option.textContent = `Dr. ${firstName} ${lastName}`;
+          doctorSelect.appendChild(option);
+        }
+      });
+      
+      const otherOption = document.createElement("option");
+      otherOption.value = "other";
+      otherOption.textContent = "Other (Enter manually)";
+      doctorSelect.appendChild(otherOption);
+    }
+    
+    async function loadAppointmentTypes() {
+      const typeSelect = document.getElementById("appointmentType");
+      if (!typeSelect) return;
+      
+      try {
+        const types = await window.getAppointmentTypes();
+        
+        const categories = {};
+        types.forEach(type => {
+          if (!categories[type.category]) {
+            categories[type.category] = [];
+          }
+          categories[type.category].push(type);
+        });
+        
+        typeSelect.innerHTML = '<option value="">Select appointment type...</option>';
+        
+        const standardCategories = ['Consultation', 'Laboratory', 'Vitals'];
+        const otherCategories = Object.keys(categories).filter(cat => !standardCategories.includes(cat));
+        
+        standardCategories.forEach(category => {
+          if (categories[category]) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            categories[category].forEach(type => {
+              const option = document.createElement('option');
+              option.value = type.id;
+              option.textContent = type.name;
+              optgroup.appendChild(option);
+            });
+            typeSelect.appendChild(optgroup);
+          }
+        });
+        
+        otherCategories.forEach(category => {
+          if (categories[category]) {
+            const optgroup = document.createElement('optgroup');
+            optgroup.label = category;
+            categories[category].forEach(type => {
+              const option = document.createElement('option');
+              option.value = type.id;
+              option.textContent = type.name;
+              optgroup.appendChild(option);
+            });
+            typeSelect.appendChild(optgroup);
+          }
+        });
+      } catch (error) {
+        console.error('Error loading appointment types:', error);
+      }
+    }
+    
+    function handleDoctorSelection() {
+      const doctorSelect = document.getElementById("doctor");
+      const doctorCustom = document.getElementById("doctorCustom");
+      
+      if (doctorSelect.value === "other") {
+        doctorCustom.style.display = "block";
+        doctorCustom.required = true;
+        doctorCustom.focus();
+      } else {
+        doctorCustom.style.display = "none";
+        doctorCustom.required = false;
+        doctorCustom.value = "";
+      }
+    }
+  </script>
+</body>
+</html>
+

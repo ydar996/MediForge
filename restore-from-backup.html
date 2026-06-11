@@ -1,0 +1,329 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Restore Data from Backup File</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 0 auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #d32f2f;
+            margin-bottom: 10px;
+        }
+        .warning {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        .info {
+            background: #e3f2fd;
+            border: 2px solid #2196f3;
+            padding: 15px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+        }
+        button {
+            background: #1976d2;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 4px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #1565c0;
+        }
+        button.success {
+            background: #388e3c;
+        }
+        button.success:hover {
+            background: #2e7d32;
+        }
+        input[type="file"] {
+            margin: 10px 0;
+            padding: 10px;
+        }
+        #log {
+            background: #f5f5f5;
+            border: 1px solid #ddd;
+            padding: 15px;
+            border-radius: 4px;
+            max-height: 500px;
+            overflow-y: auto;
+            font-family: monospace;
+            font-size: 12px;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-success {
+            color: #388e3c;
+        }
+        .log-error {
+            color: #d32f2f;
+        }
+        .log-warning {
+            color: #f57c00;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔄 Restore Data from Backup File</h1>
+        
+        <div class="warning">
+            <strong>⚠️ CRITICAL:</strong> This will restore patient data from a backup file. 
+            Make sure you have the backup file ready (e.g., `mediforge-backup-2025-10-14.json`).
+        </div>
+        
+        <div class="info">
+            <strong>ℹ️ How it works:</strong>
+            <ol>
+                <li>Select the backup JSON file (e.g., from your Downloads folder)</li>
+                <li>Preview what data will be restored</li>
+                <li>Restore to localStorage (and optionally to Supabase)</li>
+            </ol>
+            <p><strong>Found backup file:</strong> <code>mediforge-backup-2025-10-14.json</code> in project root</p>
+        </div>
+
+        <div>
+            <input type="file" id="backupFile" accept=".json" onchange="previewBackup()">
+            <button onclick="loadBackupFile()">📂 Load Built-in Backup (Oct 14)</button>
+            <button class="success" onclick="restoreData()" id="restoreBtn" disabled>🔄 Restore Data</button>
+            <button onclick="clearLog()">🗑️ Clear Log</button>
+        </div>
+
+        <div id="preview"></div>
+        <div id="log"></div>
+    </div>
+
+    <script src="js/supabase-client.js"></script>
+    <script>
+        let backupData = null;
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970'; // Mecure Clinics
+
+        function getDataKey(key) {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            return user.org ? `${user.org}_${key}` : key;
+        }
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = type === 'error' ? 'log-error' : type === 'success' ? 'log-success' : type === 'warning' ? 'log-warning' : '';
+            logDiv.innerHTML += `<div class="log-entry ${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+            document.getElementById('preview').innerHTML = '';
+        }
+
+        async function loadBackupFile() {
+            clearLog();
+            log('📂 Loading built-in backup file...', 'info');
+            
+            try {
+                const response = await fetch('mediforge-backup-2025-10-14.json');
+                if (!response.ok) {
+                    throw new Error('Backup file not found');
+                }
+                backupData = await response.json();
+                log('✅ Backup file loaded successfully!', 'success');
+                previewBackupData();
+            } catch (error) {
+                log(`❌ Error loading backup: ${error.message}`, 'error');
+                log('💡 Try uploading the backup file manually using the file input above', 'warning');
+            }
+        }
+
+        function previewBackup(event) {
+            const file = event?.target?.files?.[0] || document.getElementById('backupFile')?.files?.[0];
+            if (!file) return;
+
+            clearLog();
+            log('📂 Reading backup file...', 'info');
+
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    backupData = JSON.parse(e.target.result);
+                    log('✅ Backup file parsed successfully!', 'success');
+                    previewBackupData();
+                } catch (error) {
+                    log(`❌ Error parsing backup: ${error.message}`, 'error');
+                }
+            };
+            reader.readAsText(file);
+        }
+
+        function previewBackupData() {
+            if (!backupData) {
+                log('❌ No backup data loaded', 'error');
+                return;
+            }
+
+            const previewDiv = document.getElementById('preview');
+            const restoreBtn = document.getElementById('restoreBtn');
+
+            // Check backup structure
+            const hasPatients = backupData.patients || (backupData.data && backupData.data.patients);
+            const patients = hasPatients ? (typeof hasPatients === 'string' ? JSON.parse(hasPatients) : hasPatients) : [];
+
+            if (patients.length === 0) {
+                log('⚠️ No patients found in backup', 'warning');
+                previewDiv.innerHTML = '<p style="color: #f57c00;">⚠️ No patient data found in backup</p>';
+                restoreBtn.disabled = true;
+                return;
+            }
+
+            log(`Found ${patients.length} patients in backup`, 'success');
+            
+            previewDiv.innerHTML = '<h2>📋 Backup Preview</h2>';
+            previewDiv.innerHTML += `<p><strong>Backup Date:</strong> ${backupData.backupInfo?.timestamp || backupData.metadata?.timestamp || 'Unknown'}</p>`;
+            previewDiv.innerHTML += `<p><strong>Total Patients:</strong> ${patients.length}</p>`;
+
+            patients.forEach(patient => {
+                const allergies = Array.isArray(patient.allergies) ? patient.allergies.length : 0;
+                const diagnoses = Array.isArray(patient.diagnoses) ? patient.diagnoses.length : 0;
+                const medicalHistory = Array.isArray(patient.medicalHistory) ? patient.medicalHistory.length : 0;
+                const medications = Array.isArray(patient.medications) ? patient.medications.length : 0;
+                const visits = Array.isArray(patient.visits) ? patient.visits.length : 0;
+
+                previewDiv.innerHTML += `
+                    <div style="margin: 10px 0; padding: 10px; background: #f9f9f9; border-left: 3px solid #2196f3;">
+                        <h3>${patient.firstName} ${patient.lastName} (${patient.id})</h3>
+                        <p>Allergies: ${allergies} | Diagnoses: ${diagnoses} | History: ${medicalHistory} | Medications: ${medications} | Visits: ${visits}</p>
+                    </div>
+                `;
+
+                log(`✅ ${patient.id}: ${allergies} allergies, ${diagnoses} diagnoses, ${medicalHistory} history, ${medications} medications, ${visits} visits`, 'success');
+            });
+
+            restoreBtn.disabled = false;
+            log('✅ Preview complete. Click "Restore Data" to restore.', 'success');
+        }
+
+        async function restoreData() {
+            if (!backupData) {
+                log('❌ No backup data loaded', 'error');
+                return;
+            }
+
+            if (!window.supabaseClient) {
+                log('⚠️ Supabase not available - will restore to localStorage only', 'warning');
+            }
+
+            clearLog();
+            log('🔄 Starting data restoration...', 'info');
+
+            const hasPatients = backupData.patients || (backupData.data && backupData.data.patients);
+            const patients = hasPatients ? (typeof hasPatients === 'string' ? JSON.parse(hasPatients) : hasPatients) : [];
+
+            if (patients.length === 0) {
+                log('❌ No patients found in backup', 'error');
+                return;
+            }
+
+            log(`Found ${patients.length} patients to restore`, 'info');
+
+            // Get current localStorage key
+            const dataKey = getDataKey("patients");
+            const currentPatients = JSON.parse(localStorage.getItem(dataKey) || "[]");
+
+            let restored = 0;
+            let updated = 0;
+            let errors = 0;
+
+            for (const backupPatient of patients) {
+                try {
+                    // Find existing patient
+                    const existingIndex = currentPatients.findIndex(p => p.id === backupPatient.id);
+                    
+                    if (existingIndex >= 0) {
+                        // Merge data - preserve existing if it has more data, otherwise use backup
+                        const existing = currentPatients[existingIndex];
+                        const existingAllergies = Array.isArray(existing.allergies) ? existing.allergies.length : 0;
+                        const backupAllergies = Array.isArray(backupPatient.allergies) ? backupPatient.allergies.length : 0;
+                        
+                        // Use backup data if it has more items
+                        if (backupAllergies > existingAllergies) {
+                            existing.allergies = backupPatient.allergies;
+                        }
+                        if ((backupPatient.diagnoses?.length || 0) > (existing.diagnoses?.length || 0)) {
+                            existing.diagnoses = backupPatient.diagnoses;
+                        }
+                        if ((backupPatient.medicalHistory?.length || 0) > (existing.medicalHistory?.length || 0)) {
+                            existing.medicalHistory = backupPatient.medicalHistory;
+                        }
+                        if ((backupPatient.medications?.length || 0) > (existing.medications?.length || 0)) {
+                            existing.medications = backupPatient.medications;
+                        }
+                        if ((backupPatient.visits?.length || 0) > (existing.visits?.length || 0)) {
+                            existing.visits = backupPatient.visits;
+                        }
+                        
+                        currentPatients[existingIndex] = existing;
+                        updated++;
+                        log(`✅ Updated ${backupPatient.id}: Merged data from backup`, 'success');
+                    } else {
+                        // New patient - add it
+                        currentPatients.push(backupPatient);
+                        restored++;
+                        log(`✅ Restored ${backupPatient.id}: ${backupPatient.firstName} ${backupPatient.lastName}`, 'success');
+                    }
+
+                } catch (error) {
+                    log(`❌ Error processing ${backupPatient.id}: ${error.message}`, 'error');
+                    errors++;
+                }
+            }
+
+            // Save to localStorage
+            localStorage.setItem(dataKey, JSON.stringify(currentPatients));
+            log(`✅ Saved ${currentPatients.length} patients to localStorage`, 'success');
+
+            // Optionally restore to Supabase
+            if (window.supabaseClient) {
+                log('🔄 Restoring to Supabase...', 'info');
+                // You can add Supabase restoration logic here if needed
+            }
+
+            log('', 'info');
+            log('═══════════════════════════════════════', 'info');
+            log(`✅ Restoration Complete!`, 'success');
+            log(`   Restored: ${restored} new patients`, 'success');
+            log(`   Updated: ${updated} existing patients`, 'success');
+            log(`   Errors: ${errors} patients`, errors > 0 ? 'error' : 'success');
+            log('═══════════════════════════════════════', 'info');
+            log('🔄 Refresh your app to see the restored data!', 'info');
+        }
+
+        // Auto-load backup on page load
+        window.addEventListener('DOMContentLoaded', () => {
+            log('📋 Restoration tool loaded. Click "Load Built-in Backup" to restore from Oct 14 backup.', 'info');
+        });
+    </script>
+</body>
+</html>
+

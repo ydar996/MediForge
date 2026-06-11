@@ -1,0 +1,267 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>?? Audit localStorage Usage</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 1200px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .critical { border-left: 4px solid #d32f2f; background: #ffebee; }
+        .important { border-left: 4px solid #f57c00; background: #fff3e0; }
+        .moderate { border-left: 4px solid #1976d2; background: #e3f2fd; }
+        .low { border-left: 4px solid #388e3c; background: #e8f5e9; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .warning { color: #f57c00; }
+        .info { color: #1976d2; }
+        table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background: #f5f5f5; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Audit localStorage Usage</h1>
+        <p><strong>Purpose:</strong> Identify all critical resources using localStorage that need Supabase migration</p>
+        
+        <div class="section critical">
+            <h3>?? CRITICAL FILES (Must Migrate First)</h3>
+            <p>These files handle core application functionality and user data:</p>
+            <table>
+                <tr><th>File</th><th>Purpose</th><th>localStorage Usage</th><th>Priority</th></tr>
+                <tr><td>js/auth.js</td><td>User authentication & management</td><td>users, organizations, user sessions</td><td>CRITICAL</td></tr>
+                <tr><td>js/patients.js</td><td>Patient data management</td><td>patients, patient records</td><td>CRITICAL</td></tr>
+                <tr><td>js/appointments.js</td><td>Appointment scheduling</td><td>appointments, schedules</td><td>CRITICAL</td></tr>
+                <tr><td>js/billing.js</td><td>Billing & payments</td><td>invoices, payments, transactions</td><td>CRITICAL</td></tr>
+                <tr><td>js/main.js</td>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script><td>Core utilities & data isolation</td><td>user sessions, data keys</td><td>CRITICAL</td></tr>
+            </table>
+        </div>
+
+        <div class="section important">
+            <h3>?? IMPORTANT FILES (Migrate Second)</h3>
+            <p>These files handle important but secondary functionality:</p>
+            <table>
+                <tr><th>File</th><th>Purpose</th><th>localStorage Usage</th><th>Priority</th></tr>
+                <tr><td>js/prescriptions.js</td><td>Prescription management</td><td>prescriptions, drug data</td><td>HIGH</td></tr>
+                <tr><td>js/reports.js</td><td>Reporting & analytics</td><td>report data, analytics</td><td>HIGH</td></tr>
+                <tr><td>js/platform-admin.js</td><td>Platform administration</td><td>platform data, admin settings</td><td>HIGH</td></tr>
+                <tr><td>js/security.js</td><td>Security & audit logging</td><td>audit logs, security data</td><td>HIGH</td></tr>
+            </table>
+        </div>
+
+        <div class="section moderate">
+            <h3>?? MODERATE FILES (Migrate Third)</h3>
+            <p>These files handle supporting functionality:</p>
+            <table>
+                <tr><th>File</th><th>Purpose</th><th>localStorage Usage</th><th>Priority</th></tr>
+                <tr><td>js/specialists.js</td><td>Specialist management</td><td>specialist data</td><td>MEDIUM</td></tr>
+                <tr><td>js/conditions.js</td><td>Medical conditions</td><td>condition data</td><td>MEDIUM</td></tr>
+                <tr><td>js/backup.js</td><td>Data backup</td><td>backup data</td><td>MEDIUM</td></tr>
+                <tr><td>js/performance.js</td><td>Performance monitoring</td><td>performance data</td><td>MEDIUM</td></tr>
+            </table>
+        </div>
+
+        <div class="section">
+            <h3>?? Migration Actions</h3>
+            <button onclick="startMigration()">Start Critical Migration</button>
+            <button onclick="checkCurrentStatus()">Check Current Status</button>
+            <button onclick="generateMigrationPlan()">Generate Migration Plan</button>
+        </div>
+
+        <div class="section">
+            <h3>?? Migration Status</h3>
+            <div id="migrationStatus"></div>
+        </div>
+
+        <div class="section">
+            <h3>?? Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        async function initSupabase() {
+            if (!supabase) {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    log('? Supabase client initialized', 'success');
+                    return true;
+                } catch (error) {
+                    log('? Error initializing Supabase: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        function checkCurrentStatus() {
+            log('?? Checking current localStorage usage...');
+            
+            const criticalKeys = ['users', 'organizations', 'patients', 'appointments', 'invoices', 'user'];
+            const foundKeys = [];
+            
+            criticalKeys.forEach(key => {
+                if (localStorage.getItem(key)) {
+                    foundKeys.push(key);
+                    log(`?? Found localStorage key: ${key}`, 'warning');
+                }
+            });
+            
+            if (foundKeys.length === 0) {
+                log('? No critical localStorage keys found', 'success');
+            } else {
+                log(`? Found ${foundKeys.length} critical localStorage keys that need migration`, 'error');
+            }
+            
+            // Check Supabase tables
+            checkSupabaseTables();
+        }
+
+        async function checkSupabaseTables() {
+            if (!await initSupabase()) return;
+            
+            log('?? Checking Supabase tables...');
+            
+            const tables = ['users', 'organizations', 'patients', 'appointments', 'invoices'];
+            
+            for (const table of tables) {
+                try {
+                    const { data, error } = await supabase
+                        .from(table)
+                        .select('count')
+                        .limit(1);
+                    
+                    if (error) {
+                        log(`? Table ${table}: ${error.message}`, 'error');
+                    } else {
+                        log(`? Table ${table}: Accessible`, 'success');
+                    }
+                } catch (e) {
+                    log(`? Table ${table}: Exception - ${e.message}`, 'error');
+                }
+            }
+        }
+
+        function generateMigrationPlan() {
+            log('?? Generating migration plan...');
+            
+            const migrationPlan = `
+CRITICAL MIGRATION PLAN:
+
+1. AUTHENTICATION (js/auth.js)
+   - Migrate users table to Supabase
+   - Migrate organizations table to Supabase
+   - Update login/logout to use Supabase
+   - Remove localStorage user management
+
+2. PATIENTS (js/patients.js)
+   - Migrate patients table to Supabase
+   - Update patient CRUD operations
+   - Implement organization-based data isolation
+   - Remove localStorage patient storage
+
+3. APPOINTMENTS (js/appointments.js)
+   - Migrate appointments table to Supabase
+   - Update scheduling logic
+   - Implement organization-based filtering
+   - Remove localStorage appointment storage
+
+4. BILLING (js/billing.js)
+   - Migrate invoices table to Supabase
+   - Migrate payments table to Supabase
+   - Update billing calculations
+   - Remove localStorage billing storage
+
+5. CORE UTILITIES (js/main.js)
+   - Update getDataKey to use Supabase organization_id
+   - Remove localStorage data isolation
+   - Update session management
+            `;
+            
+            log(migrationPlan, 'info');
+        }
+
+        function startMigration() {
+            log('?? Starting critical migration process...');
+            log('?? This is a complex migration that requires careful planning', 'warning');
+            log('?? Recommendation: Migrate one module at a time with extensive testing', 'info');
+            
+            // Show migration steps
+            const steps = [
+                '1. Backup all localStorage data',
+                '2. Create Supabase tables if missing',
+                '3. Migrate authentication system',
+                '4. Migrate patient management',
+                '5. Migrate appointment system',
+                '6. Migrate billing system',
+                '7. Update all dependent files',
+                '8. Test thoroughly',
+                '9. Remove localStorage dependencies'
+            ];
+            
+            steps.forEach(step =>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script> {
+                log(step, 'info');
+            });
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('?? localStorage audit tool loaded and ready');
+            log('?? Use this tool to plan and execute localStorage to Supabase migration');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+
+

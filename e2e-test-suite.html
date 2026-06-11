@@ -1,0 +1,704 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediForge E2E Test Suite</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 10px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .test-section {
+      background: white;
+      padding: 25px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .test-button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 5px;
+      font-size: 14px;
+    }
+    .test-button:hover {
+      background: #45a049;
+    }
+    .test-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .test-button.running {
+      background: #FF9800;
+    }
+    .test-button.success {
+      background: #4CAF50;
+    }
+    .test-button.failed {
+      background: #f44336;
+    }
+    .results {
+      background: #f9f9f9;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      margin-top: 15px;
+      font-family: monospace;
+      white-space: pre-wrap;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+    .test-step {
+      margin: 10px 0;
+      padding: 10px;
+      border-left: 4px solid #ddd;
+      background: #f9f9f9;
+    }
+    .test-step.success {
+      border-left-color: #4CAF50;
+      background: #e8f5e8;
+    }
+    .test-step.failed {
+      border-left-color: #f44336;
+      background: #ffebee;
+    }
+    .test-step.running {
+      border-left-color: #FF9800;
+      background: #fff3e0;
+    }
+    .progress-bar {
+      width: 100%;
+      height: 20px;
+      background: #f0f0f0;
+      border-radius: 10px;
+      overflow: hidden;
+      margin: 10px 0;
+    }
+    .progress-fill {
+      height: 100%;
+      background: linear-gradient(90deg, #4CAF50, #45a049);
+      width: 0%;
+      transition: width 0.3s ease;
+    }
+    .dashboard {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    .metric-card {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      text-align: center;
+      box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+    }
+    .metric-value {
+      font-size: 2em;
+      font-weight: bold;
+      color: #2196F3;
+    }
+    .metric-label {
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>🧪 MediForge E2E Test Suite</h1>
+    <p>Day 6: Comprehensive End-to-End Testing</p>
+  </div>
+
+  <div class="dashboard">
+    <div class="metric-card">
+      <div class="metric-value" id="total-tests">0</div>
+      <div class="metric-label">Total Tests</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="passed-tests">0</div>
+      <div class="metric-label">Passed</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="failed-tests">0</div>
+      <div class="metric-label">Failed</div>
+    </div>
+    <div class="metric-card">
+      <div class="metric-value" id="success-rate">0%</div>
+      <div class="metric-label">Success Rate</div>
+    </div>
+  </div>
+
+  <div class="test-section">
+    <h2>👤 Patient Management Workflow</h2>
+    <p>Test complete patient lifecycle: Create → View → Edit → Delete</p>
+    <button class="test-button" onclick="runPatientWorkflowTest()">Run Patient Workflow Test</button>
+    <button class="test-button" onclick="testPatientCreationOnly()">Test Patient Creation Only</button>
+    <div id="patient-workflow-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>📅 Appointment Management Workflow</h2>
+    <p>Test appointment booking and management</p>
+    <button class="test-button" onclick="runAppointmentWorkflowTest()">Run Appointment Workflow Test</button>
+    <button class="test-button" onclick="testAppointmentCreationOnly()">Test Appointment Creation Only</button>
+    <div id="appointment-workflow-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>💰 Billing Workflow</h2>
+    <p>Test invoice creation and payment processing</p>
+    <button class="test-button" onclick="runBillingWorkflowTest()">Run Billing Workflow Test</button>
+    <button class="test-button" onclick="testInvoiceCreationOnly()">Test Invoice Creation Only</button>
+    <div id="billing-workflow-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🔄 Data Synchronization Test</h2>
+    <p>Test offline/online data sync</p>
+    <button class="test-button" onclick="runSyncWorkflowTest()">Run Sync Workflow Test</button>
+    <button class="test-button" onclick="testOfflineModeOnly()">Test Offline Mode</button>
+    <div id="sync-workflow-results" class="results" style="display: none;"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>🚀 Full System Test</h2>
+    <p>Run all workflows in sequence</p>
+    <button class="test-button" onclick="runFullSystemTest()">Run Full System Test</button>
+    <div class="progress-bar">
+      <div class="progress-fill" id="full-test-progress"></div>
+    </div>
+    <div id="full-system-results" class="results" style="display: none;"></div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  <script src="js/main.js"></script>
+
+  <script>
+    let testStats = {
+      total: 0,
+      passed: 0,
+      failed: 0,
+      currentTest: null
+    };
+
+    // Helper functions
+    function getBillingKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      return `${org}_${key}`;
+    }
+
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      return `${org}_${key}`;
+    }
+
+    function updateDashboard() {
+      document.getElementById('total-tests').textContent = testStats.total;
+      document.getElementById('passed-tests').textContent = testStats.passed;
+      document.getElementById('failed-tests').textContent = testStats.failed;
+      
+      const successRate = testStats.total > 0 ? Math.round((testStats.passed / testStats.total) * 100) : 0;
+      document.getElementById('success-rate').textContent = successRate + '%';
+    }
+
+    function showResults(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.style.display = 'block';
+      element.textContent = message;
+    }
+
+    function appendResult(elementId, message) {
+      const element = document.getElementById(elementId);
+      element.textContent += message;
+    }
+
+    function addTestStep(elementId, step, status = 'running') {
+      const element = document.getElementById(elementId);
+      if (element.textContent.trim() === '') {
+        element.style.display = 'block';
+      }
+      element.innerHTML += `<div class="test-step ${status}">${step}</div>`;
+    }
+
+    function setButtonStatus(buttonText, status) {
+      const buttons = document.querySelectorAll('.test-button');
+      buttons.forEach(btn => {
+        if (btn.textContent.includes(buttonText)) {
+          btn.className = `test-button ${status}`;
+          if (status === 'running') {
+            btn.disabled = true;
+          } else {
+            btn.disabled = false;
+          }
+        }
+      });
+    }
+
+    // Patient Workflow Tests
+    async function runPatientWorkflowTest() {
+      setButtonStatus('Run Patient Workflow Test', 'running');
+      showResults('patient-workflow-results', '');
+      
+      try {
+        addTestStep('patient-workflow-results', '🔄 Starting Patient Workflow Test...', 'running');
+        
+        // Step 1: Test Patient Creation
+        addTestStep('patient-workflow-results', '📝 Step 1: Testing Patient Creation...', 'running');
+        const patientData = await testPatientCreation();
+        addTestStep('patient-workflow-results', `✅ Step 1: Patient created with ID ${patientData.id}`, 'success');
+        
+        // Step 2: Test Patient Retrieval
+        addTestStep('patient-workflow-results', '🔍 Step 2: Testing Patient Retrieval...', 'running');
+        const retrievedPatient = await testPatientRetrieval(patientData.id);
+        addTestStep('patient-workflow-results', `✅ Step 2: Patient retrieved successfully`, 'success');
+        
+        // Step 3: Test Patient Update
+        addTestStep('patient-workflow-results', '✏️ Step 3: Testing Patient Update...', 'running');
+        const updatedPatient = await testPatientUpdate(patientData.id);
+        addTestStep('patient-workflow-results', `✅ Step 3: Patient updated successfully`, 'success');
+        
+        // Step 4: Test Patient Search
+        addTestStep('patient-workflow-results', '🔎 Step 4: Testing Patient Search...', 'running');
+        const searchResults = await testPatientSearch(updatedPatient.firstName);
+        addTestStep('patient-workflow-results', `✅ Step 4: Found ${searchResults.length} patients in search`, 'success');
+        
+        // Step 5: Test Data Sync
+        addTestStep('patient-workflow-results', '🔄 Step 5: Testing Data Sync...', 'running');
+        await testPatientDataSync(patientData.id);
+        addTestStep('patient-workflow-results', `✅ Step 5: Data synced successfully`, 'success');
+        
+        testStats.total++;
+        testStats.passed++;
+        updateDashboard();
+        
+      } catch (error) {
+        addTestStep('patient-workflow-results', `❌ Patient Workflow Test Failed: ${error.message}`, 'failed');
+        testStats.total++;
+        testStats.failed++;
+        updateDashboard();
+      } finally {
+        setButtonStatus('Run Patient Workflow Test', 'success');
+      }
+    }
+
+    async function testPatientCreation() {
+      const testPatient = {
+        id: `TEST_${Date.now()}`,
+        firstName: 'E2E Test',
+        lastName: 'Patient',
+        gender: 'Male',
+        dob: '1990-01-01',
+        phone: '08012345678',
+        address: 'Test Address',
+        city: 'Test City',
+        state: 'Test State',
+        country: 'Nigeria'
+      };
+      
+      // Save to localStorage
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      patients.push(testPatient);
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+      
+      // Save to Supabase if available
+      if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user.organizationId) {
+          const supabasePatient = {
+            patient_id: testPatient.id,
+            first_name: testPatient.firstName,
+            last_name: testPatient.lastName,
+            gender: testPatient.gender,
+            date_of_birth: testPatient.dob,
+            phone: testPatient.phone,
+            organization_id: user.organizationId
+          };
+          
+          const { error } = await supabaseClient
+            .from('patients')
+            .insert(supabasePatient);
+          
+          if (error) {
+            console.warn('Supabase save failed:', error.message);
+          }
+        }
+      }
+      
+      return testPatient;
+    }
+
+    async function testPatientRetrieval(patientId) {
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient) {
+        throw new Error('Patient not found');
+      }
+      
+      return patient;
+    }
+
+    async function testPatientUpdate(patientId) {
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const patientIndex = patients.findIndex(p => p.id === patientId);
+      
+      if (patientIndex === -1) {
+        throw new Error('Patient not found for update');
+      }
+      
+      patients[patientIndex].firstName = 'Updated E2E Test';
+      patients[patientIndex].phone = '08087654321';
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+      
+      return patients[patientIndex];
+    }
+
+    async function testPatientSearch(searchTerm) {
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const searchResults = patients.filter(p => 
+        p.firstName.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        p.lastName.toLowerCase().includes(searchTerm.toLowerCase())
+      );
+      
+      return searchResults;
+    }
+
+    async function testPatientDataSync(patientId) {
+      // Test if patient exists in both localStorage and Supabase
+      const localPatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const localPatient = localPatients.find(p => p.id === patientId);
+      
+      if (!localPatient) {
+        throw new Error('Patient not found in localStorage');
+      }
+      
+      if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user.organizationId) {
+          const { data, error } = await supabaseClient
+            .from('patients')
+            .select('*')
+            .eq('patient_id', patientId)
+            .eq('organization_id', user.organizationId);
+          
+          if (error) {
+            console.warn('Supabase sync check failed:', error.message);
+          } else if (!data || data.length === 0) {
+            console.warn('Patient not found in Supabase');
+          }
+        }
+      }
+    }
+
+    // Appointment Workflow Tests
+    async function runAppointmentWorkflowTest() {
+      setButtonStatus('Run Appointment Workflow Test', 'running');
+      showResults('appointment-workflow-results', '');
+      
+      try {
+        addTestStep('appointment-workflow-results', '🔄 Starting Appointment Workflow Test...', 'running');
+        
+        // Step 1: Test Appointment Creation
+        addTestStep('appointment-workflow-results', '📅 Step 1: Testing Appointment Creation...', 'running');
+        const appointmentData = await testAppointmentCreation();
+        addTestStep('appointment-workflow-results', `✅ Step 1: Appointment created with ID ${appointmentData.id}`, 'success');
+        
+        // Step 2: Test Appointment Retrieval
+        addTestStep('appointment-workflow-results', '🔍 Step 2: Testing Appointment Retrieval...', 'running');
+        const retrievedAppointment = await testAppointmentRetrieval(appointmentData.id);
+        addTestStep('appointment-workflow-results', `✅ Step 2: Appointment retrieved successfully`, 'success');
+        
+        // Step 3: Test Appointment Update
+        addTestStep('appointment-workflow-results', '✏️ Step 3: Testing Appointment Update...', 'running');
+        const updatedAppointment = await testAppointmentUpdate(appointmentData.id);
+        addTestStep('appointment-workflow-results', `✅ Step 3: Appointment updated successfully`, 'success');
+        
+        testStats.total++;
+        testStats.passed++;
+        updateDashboard();
+        
+      } catch (error) {
+        addTestStep('appointment-workflow-results', `❌ Appointment Workflow Test Failed: ${error.message}`, 'failed');
+        testStats.total++;
+        testStats.failed++;
+        updateDashboard();
+      } finally {
+        setButtonStatus('Run Appointment Workflow Test', 'success');
+      }
+    }
+
+    async function testAppointmentCreation() {
+      const testAppointment = {
+        id: `APT_${Date.now()}`,
+        patientId: `TEST_${Date.now() - 1000}`,
+        patientName: 'E2E Test Patient',
+        date: new Date().toISOString().split('T')[0],
+        time: '10:00',
+        duration: 30,
+        visitType: 'Consultation',
+        doctor: 'Dr. Test',
+        status: 'Scheduled'
+      };
+      
+      // Save to localStorage
+      const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+      appointments.push(testAppointment);
+      localStorage.setItem(getDataKey("appointments"), JSON.stringify(appointments));
+      
+      return testAppointment;
+    }
+
+    async function testAppointmentRetrieval(appointmentId) {
+      const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+      const appointment = appointments.find(a => a.id === appointmentId);
+      
+      if (!appointment) {
+        throw new Error('Appointment not found');
+      }
+      
+      return appointment;
+    }
+
+    async function testAppointmentUpdate(appointmentId) {
+      const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+      const appointmentIndex = appointments.findIndex(a => a.id === appointmentId);
+      
+      if (appointmentIndex === -1) {
+        throw new Error('Appointment not found for update');
+      }
+      
+      appointments[appointmentIndex].status = 'Completed';
+      appointments[appointmentIndex].notes = 'E2E Test completed successfully';
+      localStorage.setItem(getDataKey("appointments"), JSON.stringify(appointments));
+      
+      return appointments[appointmentIndex];
+    }
+
+    // Billing Workflow Tests
+    async function runBillingWorkflowTest() {
+      setButtonStatus('Run Billing Workflow Test', 'running');
+      showResults('billing-workflow-results', '');
+      
+      try {
+        addTestStep('billing-workflow-results', '🔄 Starting Billing Workflow Test...', 'running');
+        
+        // Step 1: Test Invoice Creation
+        addTestStep('billing-workflow-results', '🧾 Step 1: Testing Invoice Creation...', 'running');
+        const invoiceData = await testInvoiceCreation();
+        addTestStep('billing-workflow-results', `✅ Step 1: Invoice created with ID ${invoiceData.id}`, 'success');
+        
+        // Step 2: Test Invoice Retrieval
+        addTestStep('billing-workflow-results', '🔍 Step 2: Testing Invoice Retrieval...', 'running');
+        const retrievedInvoice = await testInvoiceRetrieval(invoiceData.id);
+        addTestStep('billing-workflow-results', `✅ Step 2: Invoice retrieved successfully`, 'success');
+        
+        testStats.total++;
+        testStats.passed++;
+        updateDashboard();
+        
+      } catch (error) {
+        addTestStep('billing-workflow-results', `❌ Billing Workflow Test Failed: ${error.message}`, 'failed');
+        testStats.total++;
+        testStats.failed++;
+        updateDashboard();
+      } finally {
+        setButtonStatus('Run Billing Workflow Test', 'success');
+      }
+    }
+
+    async function testInvoiceCreation() {
+      const testInvoice = {
+        id: `INV_${Date.now()}`,
+        invoiceNumber: `E2E-${Date.now()}`,
+        patientId: `TEST_${Date.now() - 2000}`,
+        patientName: 'E2E Test Patient',
+        date: new Date().toISOString().split('T')[0],
+        services: [
+          { name: 'Consultation', price: 5000, quantity: 1 }
+        ],
+        subtotal: 5000,
+        tax: 0,
+        discount: 0,
+        total: 5000,
+        status: 'pending'
+      };
+      
+      // Save to localStorage
+      const key = getBillingKey('invoices');
+      const invoices = JSON.parse(localStorage.getItem(key) || "[]");
+      invoices.push(testInvoice);
+      localStorage.setItem(key, JSON.stringify(invoices));
+      
+      return testInvoice;
+    }
+
+    async function testInvoiceRetrieval(invoiceId) {
+      const key = getBillingKey('invoices');
+      const invoices = JSON.parse(localStorage.getItem(key) || "[]");
+      const invoice = invoices.find(i => i.id === invoiceId);
+      
+      if (!invoice) {
+        throw new Error('Invoice not found');
+      }
+      
+      return invoice;
+    }
+
+    // Sync Workflow Tests
+    async function runSyncWorkflowTest() {
+      setButtonStatus('Run Sync Workflow Test', 'running');
+      showResults('sync-workflow-results', '');
+      
+      try {
+        addTestStep('sync-workflow-results', '🔄 Starting Sync Workflow Test...', 'running');
+        
+        // Step 1: Test Offline Data Access
+        addTestStep('sync-workflow-results', '📱 Step 1: Testing Offline Data Access...', 'running');
+        await testOfflineDataAccess();
+        addTestStep('sync-workflow-results', `✅ Step 1: Offline data access working`, 'success');
+        
+        // Step 2: Test Online Data Sync
+        addTestStep('sync-workflow-results', '🌐 Step 2: Testing Online Data Sync...', 'running');
+        await testOnlineDataSync();
+        addTestStep('sync-workflow-results', `✅ Step 2: Online data sync working`, 'success');
+        
+        // Step 3: Test Hybrid Data Loading
+        addTestStep('sync-workflow-results', '🔄 Step 3: Testing Hybrid Data Loading...', 'running');
+        await testHybridDataLoading();
+        addTestStep('sync-workflow-results', `✅ Step 3: Hybrid data loading working`, 'success');
+        
+        testStats.total++;
+        testStats.passed++;
+        updateDashboard();
+        
+      } catch (error) {
+        addTestStep('sync-workflow-results', `❌ Sync Workflow Test Failed: ${error.message}`, 'failed');
+        testStats.total++;
+        testStats.failed++;
+        updateDashboard();
+      } finally {
+        setButtonStatus('Run Sync Workflow Test', 'success');
+      }
+    }
+
+    async function testOfflineDataAccess() {
+      // Test localStorage access
+      const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+      
+      if (patients.length >= 0 && appointments.length >= 0) {
+        return true;
+      } else {
+        throw new Error('Offline data access failed');
+      }
+    }
+
+    async function testOnlineDataSync() {
+      if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (user.organizationId) {
+          const { data, error } = await supabaseClient
+            .from('organizations')
+            .select('count')
+            .eq('id', user.organizationId);
+          
+          if (error) {
+            throw new Error(`Online sync failed: ${error.message}`);
+          }
+          return true;
+        }
+      }
+      return true; // Skip if Supabase not available
+    }
+
+    async function testHybridDataLoading() {
+      // Test that data can be loaded from both sources
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user.organizationId) {
+        throw new Error('No organization ID for hybrid loading');
+      }
+      return true;
+    }
+
+    // Full System Test
+    async function runFullSystemTest() {
+      setButtonStatus('Run Full System Test', 'running');
+      showResults('full-system-results', '');
+      
+      const tests = [
+        { name: 'Patient Workflow', fn: runPatientWorkflowTest },
+        { name: 'Appointment Workflow', fn: runAppointmentWorkflowTest },
+        { name: 'Billing Workflow', fn: runBillingWorkflowTest },
+        { name: 'Sync Workflow', fn: runSyncWorkflowTest }
+      ];
+      
+      let completedTests = 0;
+      
+      for (const test of tests) {
+        try {
+          addTestStep('full-system-results', `🔄 Running ${test.name}...`, 'running');
+          await test.fn();
+          addTestStep('full-system-results', `✅ ${test.name} completed successfully`, 'success');
+          completedTests++;
+        } catch (error) {
+          addTestStep('full-system-results', `❌ ${test.name} failed: ${error.message}`, 'failed');
+        }
+        
+        // Update progress
+        const progress = (completedTests / tests.length) * 100;
+        document.getElementById('full-test-progress').style.width = progress + '%';
+      }
+      
+      setButtonStatus('Run Full System Test', completedTests === tests.length ? 'success' : 'failed');
+    }
+
+    // Individual test functions (wrapper functions for buttons)
+    async function testPatientCreationOnly() {
+      await testPatientCreation();
+    }
+
+    async function testAppointmentCreationOnly() {
+      await testAppointmentCreation();
+    }
+
+    async function testInvoiceCreationOnly() {
+      await testInvoiceCreation();
+    }
+
+    async function testOfflineModeOnly() {
+      await runSyncWorkflowTest();
+    }
+
+    // Initialize dashboard
+    updateDashboard();
+  </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+

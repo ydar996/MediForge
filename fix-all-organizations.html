@@ -1,0 +1,520 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix All Organizations - Consistency Check</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .section {
+            margin: 30px 0;
+            padding: 20px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            background: #fafafa;
+        }
+        .section h2 {
+            margin-top: 0;
+            color: #007bff;
+        }
+        .result {
+            margin: 15px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            max-height: 500px;
+            overflow-y: auto;
+        }
+        .result-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .result-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .result-warning {
+            background: #fff3cd;
+            border-left: 4px solid #ffc107;
+            color: #856404;
+        }
+        .result-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        table {
+            width: 100%;
+            border-collapse: collapse;
+            margin: 15px 0;
+        }
+        th, td {
+            padding: 10px;
+            text-align: left;
+            border-bottom: 1px solid #ddd;
+        }
+        th {
+            background: #007bff;
+            color: white;
+        }
+        tr:hover {
+            background: #f5f5f5;
+        }
+        .badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 12px;
+            font-weight: bold;
+        }
+        .badge-success {
+            background: #d4edda;
+            color: #155724;
+        }
+        .badge-error {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        .badge-warning {
+            background: #fff3cd;
+            color: #856404;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix All Organizations - Consistency Check</h1>
+        <p><strong>Purpose:</strong> Ensure ALL organizations have consistent data structure and can be registered to by users.</p>
+        
+        <div class="section">
+            <h2>Step 1: Check All Organizations</h2>
+            <button onclick="checkAllOrganizations()">Check All Organizations</button>
+            <div id="check-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Step 2: Fix Missing Organization Codes</h2>
+            <button onclick="fixMissingOrgCodes()" class="success">Fix Missing Org Codes</button>
+            <div id="fix-codes-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Step 3: Check User Counts</h2>
+            <button onclick="checkUserCounts()">Check User Counts</button>
+            <div id="user-count-result"></div>
+        </div>
+        
+        <div class="section">
+            <h2>Step 4: Fix All Issues Automatically</h2>
+            <button onclick="fixAllIssues()" class="success">🔧 Fix All Issues</button>
+            <div id="fix-all-result"></div>
+        </div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            return supabase;
+        }
+
+        function logResult(elementId, message, type = 'info') {
+            const div = document.getElementById(elementId);
+            div.className = `result result-${type}`;
+            div.textContent = message;
+        }
+
+        function generateOrgCode(orgName) {
+            // Generate a unique org code based on organization name
+            // Format: First 3 letters of org name + random 8 chars
+            const prefix = orgName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, '');
+            const random = Math.random().toString(36).substring(2, 10).toUpperCase();
+            return `${prefix}-${random}`;
+        }
+
+        async function checkAllOrganizations() {
+            initSupabase();
+            logResult('check-result', 'Checking all organizations...', 'info');
+            
+            try {
+                const { data: orgs, error } = await supabase
+                    .from('organizations')
+                    .select('id, name, org_code, country, status, created_at')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    logResult('check-result', `❌ Error: ${error.message}`, 'error');
+                    return;
+                }
+                
+                if (!orgs || orgs.length === 0) {
+                    logResult('check-result', 'No organizations found in database.', 'warning');
+                    return;
+                }
+                
+                let result = `📊 Found ${orgs.length} organization(s)\n\n`;
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                
+                const issues = [];
+                const good = [];
+                
+                orgs.forEach((org, idx) => {
+                    const hasOrgCode = org.org_code && org.org_code.trim() !== '';
+                    const hasName = org.name && org.name.trim() !== '';
+                    const hasCountry = org.country && org.country.trim() !== '';
+                    const isActive = org.status === 'active' || !org.status;
+                    
+                    const orgIssues = [];
+                    if (!hasOrgCode) orgIssues.push('Missing org_code');
+                    if (!hasName) orgIssues.push('Missing name');
+                    if (!hasCountry) orgIssues.push('Missing country');
+                    if (!isActive) orgIssues.push(`Status: ${org.status}`);
+                    
+                    if (orgIssues.length > 0) {
+                        issues.push({ org, issues: orgIssues });
+                    } else {
+                        good.push(org);
+                    }
+                });
+                
+                result += `✅ COMPLETE: ${good.length} organization(s)\n`;
+                result += `❌ INCOMPLETE: ${issues.length} organization(s)\n\n`;
+                
+                if (issues.length > 0) {
+                    result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                    result += `❌ ORGANIZATIONS WITH ISSUES:\n`;
+                    result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                    
+                    issues.forEach((item, idx) => {
+                        result += `${idx + 1}. ${item.org.name || 'Unnamed'}\n`;
+                        result += `   ID: ${item.org.id}\n`;
+                        result += `   Issues: ${item.issues.join(', ')}\n`;
+                        result += `   Org Code: ${item.org.org_code || 'MISSING'}\n`;
+                        result += `   Country: ${item.org.country || 'MISSING'}\n`;
+                        result += `   Status: ${item.org.status || 'active'}\n`;
+                        result += `   Created: ${item.org.created_at || 'Unknown'}\n\n`;
+                    });
+                }
+                
+                if (good.length > 0) {
+                    result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                    result += `✅ COMPLETE ORGANIZATIONS:\n`;
+                    result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                    
+                    good.forEach((org, idx) => {
+                        result += `${idx + 1}. ${org.name}\n`;
+                        result += `   Code: ${org.org_code}\n`;
+                        result += `   Country: ${org.country}\n\n`;
+                    });
+                }
+                
+                result += `\n━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                result += `SUMMARY:\n`;
+                result += `  • Total: ${orgs.length}\n`;
+                result += `  • Complete: ${good.length}\n`;
+                result += `  • Need Fixing: ${issues.length}\n`;
+                
+                logResult('check-result', result, issues.length > 0 ? 'warning' : 'success');
+                
+            } catch (error) {
+                logResult('check-result', `❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+
+        async function fixMissingOrgCodes() {
+            initSupabase();
+            logResult('fix-codes-result', 'Fixing missing organization codes...', 'info');
+            
+            try {
+                // Get all organizations
+                const { data: orgs, error: fetchError } = await supabase
+                    .from('organizations')
+                    .select('id, name, org_code')
+                    .order('created_at', { ascending: false });
+                
+                if (fetchError) {
+                    logResult('fix-codes-result', `❌ Error fetching organizations: ${fetchError.message}`, 'error');
+                    return;
+                }
+                
+                const missingCodes = orgs.filter(org => !org.org_code || org.org_code.trim() === '');
+                
+                if (missingCodes.length === 0) {
+                    logResult('fix-codes-result', '✅ All organizations already have org_codes!', 'success');
+                    return;
+                }
+                
+                let result = `Found ${missingCodes.length} organization(s) without org_code\n\n`;
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                
+                let fixed = 0;
+                let failed = 0;
+                
+                for (const org of missingCodes) {
+                    const newCode = generateOrgCode(org.name || 'ORG');
+                    
+                    result += `Fixing: ${org.name || 'Unnamed'}\n`;
+                    result += `  ID: ${org.id}\n`;
+                    result += `  New Code: ${newCode}\n`;
+                    
+                    // Check if code already exists
+                    const { data: existing, error: checkError } = await supabase
+                        .from('organizations')
+                        .select('id')
+                        .eq('org_code', newCode)
+                        .maybeSingle();
+                    
+                    if (existing) {
+                        result += `  ⚠️ Code already exists, generating new one...\n`;
+                        // Generate with timestamp to ensure uniqueness
+                        const timestamp = Date.now().toString(36).toUpperCase();
+                        const uniqueCode = `${newCode}-${timestamp}`;
+                        
+                        const { error: updateError } = await supabase
+                            .from('organizations')
+                            .update({ org_code: uniqueCode })
+                            .eq('id', org.id);
+                        
+                        if (updateError) {
+                            result += `  ❌ Failed: ${updateError.message}\n\n`;
+                            failed++;
+                        } else {
+                            result += `  ✅ Fixed with code: ${uniqueCode}\n\n`;
+                            fixed++;
+                        }
+                    } else {
+                        const { error: updateError } = await supabase
+                            .from('organizations')
+                            .update({ org_code: newCode })
+                            .eq('id', org.id);
+                        
+                        if (updateError) {
+                            result += `  ❌ Failed: ${updateError.message}\n\n`;
+                            failed++;
+                        } else {
+                            result += `  ✅ Fixed!\n\n`;
+                            fixed++;
+                        }
+                    }
+                }
+                
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                result += `SUMMARY:\n`;
+                result += `  • Fixed: ${fixed}\n`;
+                result += `  • Failed: ${failed}\n`;
+                result += `  • Total: ${missingCodes.length}\n`;
+                
+                logResult('fix-codes-result', result, failed > 0 ? 'warning' : 'success');
+                
+            } catch (error) {
+                logResult('fix-codes-result', `❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+
+        async function checkUserCounts() {
+            initSupabase();
+            logResult('user-count-result', 'Checking user counts for all organizations...', 'info');
+            
+            try {
+                // Get all organizations
+                const { data: orgs, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('id, name, org_code')
+                    .order('name', { ascending: true });
+                
+                if (orgError) {
+                    logResult('user-count-result', `❌ Error: ${orgError.message}`, 'error');
+                    return;
+                }
+                
+                // Get user counts for each organization
+                let result = `📊 User Counts by Organization\n\n`;
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                
+                const orgsWithZeroUsers = [];
+                
+                for (const org of orgs) {
+                    const { data: users, error: userError } = await supabase
+                        .from('users')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('organization_id', org.id);
+                    
+                    const userCount = userError ? 0 : (users?.length || 0);
+                    
+                    result += `${org.name}\n`;
+                    result += `  Code: ${org.org_code || 'MISSING'}\n`;
+                    result += `  Users: ${userCount}\n`;
+                    
+                    if (userCount === 0) {
+                        result += `  ⚠️ WARNING: No users linked!\n`;
+                        orgsWithZeroUsers.push(org);
+                    }
+                    result += `\n`;
+                }
+                
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                result += `SUMMARY:\n`;
+                result += `  • Total Organizations: ${orgs.length}\n`;
+                result += `  • Organizations with 0 users: ${orgsWithZeroUsers.length}\n`;
+                
+                if (orgsWithZeroUsers.length > 0) {
+                    result += `\n⚠️ Organizations with no users:\n`;
+                    orgsWithZeroUsers.forEach(org => {
+                        result += `  • ${org.name} (${org.org_code || 'NO CODE'})\n`;
+                    });
+                }
+                
+                logResult('user-count-result', result, orgsWithZeroUsers.length > 0 ? 'warning' : 'success');
+                
+            } catch (error) {
+                logResult('user-count-result', `❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+
+        async function fixAllIssues() {
+            initSupabase();
+            logResult('fix-all-result', 'Fixing all issues automatically...', 'info');
+            
+            try {
+                let result = `🔧 Fixing All Issues\n\n`;
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n`;
+                
+                // Step 1: Fix missing org_codes
+                result += `Step 1: Fixing missing org_codes...\n`;
+                const { data: orgs, error: fetchError } = await supabase
+                    .from('organizations')
+                    .select('id, name, org_code, country, status')
+                    .order('created_at', { ascending: false });
+                
+                if (fetchError) {
+                    logResult('fix-all-result', `❌ Error: ${fetchError.message}`, 'error');
+                    return;
+                }
+                
+                const missingCodes = orgs.filter(org => !org.org_code || org.org_code.trim() === '');
+                let codesFixed = 0;
+                
+                for (const org of missingCodes) {
+                    const newCode = generateOrgCode(org.name || 'ORG');
+                    const { error: updateError } = await supabase
+                        .from('organizations')
+                        .update({ org_code: newCode })
+                        .eq('id', org.id);
+                    
+                    if (!updateError) {
+                        codesFixed++;
+                        result += `  ✅ Fixed org_code for: ${org.name}\n`;
+                    }
+                }
+                
+                result += `\n✅ Fixed ${codesFixed} missing org_code(s)\n\n`;
+                
+                // Step 2: Check for missing countries
+                result += `Step 2: Checking for missing countries...\n`;
+                const missingCountries = orgs.filter(org => !org.country || org.country.trim() === '');
+                
+                if (missingCountries.length > 0) {
+                    result += `  ⚠️ Found ${missingCountries.length} organization(s) without country\n`;
+                    result += `  (Manual fix may be required)\n\n`;
+                } else {
+                    result += `  ✅ All organizations have countries\n\n`;
+                }
+                
+                // Step 3: Check user counts
+                result += `Step 3: Checking user counts...\n`;
+                const orgsWithZeroUsers = [];
+                
+                for (const org of orgs) {
+                    const { data: users } = await supabase
+                        .from('users')
+                        .select('id', { count: 'exact', head: true })
+                        .eq('organization_id', org.id);
+                    
+                    const userCount = users?.length || 0;
+                    if (userCount === 0) {
+                        orgsWithZeroUsers.push(org);
+                    }
+                }
+                
+                if (orgsWithZeroUsers.length > 0) {
+                    result += `  ⚠️ Found ${orgsWithZeroUsers.length} organization(s) with 0 users:\n`;
+                    orgsWithZeroUsers.forEach(org => {
+                        result += `    • ${org.name} (${org.org_code || 'NO CODE'})\n`;
+                    });
+                    result += `  (Use create-user-for-org.html to add users)\n\n`;
+                } else {
+                    result += `  ✅ All organizations have at least one user\n\n`;
+                }
+                
+                result += `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n`;
+                result += `✅ FIX COMPLETE!\n\n`;
+                result += `Summary:\n`;
+                result += `  • Org codes fixed: ${codesFixed}\n`;
+                result += `  • Missing countries: ${missingCountries.length}\n`;
+                result += `  • Organizations with 0 users: ${orgsWithZeroUsers.length}\n\n`;
+                result += `All organizations should now be consistent!\n`;
+                
+                logResult('fix-all-result', result, 'success');
+                
+            } catch (error) {
+                logResult('fix-all-result', `❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+    </script>
+</body>
+</html>
+

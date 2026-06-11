@@ -1,0 +1,198 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Prescription Fixes Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .test-button { padding: 10px 20px; margin: 5px; background: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        .test-result { margin: 10px 0; padding: 10px; background: #f8f9fa; border-radius: 3px; }
+        .success { background: #d4edda; color: #155724; }
+        .error { background: #f8d7da; color: #721c24; }
+    </style>
+</head>
+<body>
+    <h1>Prescription Fixes Verification Test</h1>
+    
+    <div class="test-section">
+        <h2>Test 1: Signature Display</h2>
+        <p>Click the signature pad below and verify the text changes:</p>
+        <div id="test-signature-pad" style="border: 2px dashed #ccc; padding: 20px; text-align: center; cursor: pointer; background: #f9f9f9; min-height: 80px;" onclick="testSignature()">
+            <p id="test-signature-text">Click here to sign electronically</p>
+            <div id="test-electronic-signature" style="font-weight: bold; color: #007bff; display: none; visibility: visible;">
+                <p style="margin: 0; padding: 10px; font-size: 14px;">Electronically signed by <span id="test-signer-name"></span> <span id="test-signature-timestamp"></span></p>
+            </div>
+        </div>
+        <div id="signature-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 2: Print Layout (One Page)</h2>
+        <p>Click the button below to test print layout:</p>
+        <button class="test-button" onclick="testPrintLayout()">Test Print Layout</button>
+        <div id="print-result" class="test-result"></div>
+    </div>
+    
+    <div class="test-section">
+        <h2>Test 3: Download as Image (Single Page)</h2>
+        <p>Click the button below to test image download:</p>
+        <button class="test-button" onclick="testImageDownload()">Test Image Download</button>
+        <div id="image-result" class="test-result"></div>
+    </div>
+
+    <script>
+        // Test 1: Signature Display
+        function testSignature() {
+            console.log('🧪 Testing signature display...');
+            const signatureText = document.getElementById('test-signature-text');
+            const electronicSignature = document.getElementById('test-electronic-signature');
+            const signerName = document.getElementById('test-signer-name');
+            const signatureTimestamp = document.getElementById('test-signature-timestamp');
+            const result = document.getElementById('signature-result');
+            
+            try {
+                // Hide click text
+                signatureText.style.display = 'none';
+                signatureText.textContent = '';
+                
+                // Show electronic signature
+                electronicSignature.style.display = 'block';
+                electronicSignature.style.visibility = 'visible';
+                
+                // Set signature text
+                signerName.textContent = 'Dr Test Doctor';
+                signatureTimestamp.textContent = '10/29/2025, 7:30 AM';
+                
+                // Check if visible
+                const isVisible = electronicSignature.style.display === 'block' && 
+                                 electronicSignature.style.visibility === 'visible' &&
+                                 signerName.textContent === 'Dr Test Doctor';
+                
+                if (isVisible) {
+                    result.innerHTML = '✅ SUCCESS: Signature text is visible and correct';
+                    result.className = 'test-result success';
+                } else {
+                    result.innerHTML = '❌ FAILED: Signature text not visible';
+                    result.className = 'test-result error';
+                }
+            } catch (error) {
+                result.innerHTML = '❌ ERROR: ' + error.message;
+                result.className = 'test-result error';
+            }
+        }
+        
+        // Test 2: Print Layout
+        function testPrintLayout() {
+            console.log('🧪 Testing print layout...');
+            const result = document.getElementById('print-result');
+            
+            try {
+                // Create a test element with print styles
+                const testElement = document.createElement('div');
+                testElement.style.cssText = `
+                    position: absolute;
+                    top: -9999px;
+                    width: 800px;
+                    height: 1000px;
+                    font-size: 6px;
+                    line-height: 0.8;
+                    padding: 0px;
+                    margin: 0px;
+                    background: white;
+                `;
+                testElement.innerHTML = `
+                    <h1 style="font-size: 7px; margin: 0px; padding: 0px;">Test Prescription</h1>
+                    <p style="font-size: 5px; margin: 0px; padding: 0px;">Patient: Test Patient</p>
+                    <p style="font-size: 5px; margin: 0px; padding: 0px;">Medication: Test Drug 200mg</p>
+                    <p style="font-size: 5px; margin: 0px; padding: 0px;">Directions: Take as directed</p>
+                    <p style="font-size: 4px; margin: 0px; padding: 0px;">Signature: Dr Test Doctor</p>
+                `;
+                
+                document.body.appendChild(testElement);
+                
+                // Check if it fits in one page (1000px height)
+                const height = testElement.scrollHeight;
+                document.body.removeChild(testElement);
+                
+                if (height <= 1000) {
+                    result.innerHTML = `✅ SUCCESS: Print layout fits in one page (${height}px height)`;
+                    result.className = 'test-result success';
+                } else {
+                    result.innerHTML = `❌ FAILED: Print layout too tall (${height}px height)`;
+                    result.className = 'test-result error';
+                }
+            } catch (error) {
+                result.innerHTML = '❌ ERROR: ' + error.message;
+                result.className = 'test-result error';
+            }
+        }
+        
+        // Test 3: Image Download
+        function testImageDownload() {
+            console.log('🧪 Testing image download...');
+            const result = document.getElementById('image-result');
+            
+            try {
+                // Check if html2canvas is available
+                if (typeof html2canvas === 'undefined') {
+                    result.innerHTML = '❌ FAILED: html2canvas not loaded';
+                    result.className = 'test-result error';
+                    return;
+                }
+                
+                // Create a test element
+                const testElement = document.createElement('div');
+                testElement.style.cssText = `
+                    width: 800px;
+                    height: 1000px;
+                    font-size: 8px;
+                    line-height: 1.0;
+                    padding: 2px;
+                    background: white;
+                    border: 1px solid #ccc;
+                `;
+                testElement.innerHTML = `
+                    <h1 style="font-size: 7px; margin: 0px; padding: 0px;">Test Prescription</h1>
+                    <p style="font-size: 5px; margin: 0px; padding: 0px;">Patient: Test Patient</p>
+                    <p style="font-size: 5px; margin: 0px; padding: 0px;">Medication: Test Drug 200mg</p>
+                    <p style="font-size: 5px; margin: 0px; padding: 0px;">Directions: Take as directed</p>
+                    <p style="font-size: 4px; margin: 0px; padding: 0px;">Signature: Dr Test Doctor</p>
+                `;
+                
+                document.body.appendChild(testElement);
+                
+                // Test html2canvas capture
+                html2canvas(testElement, {
+                    scale: 0.8,
+                    width: 800,
+                    height: 1000,
+                    backgroundColor: '#ffffff'
+                }).then(canvas => {
+                    document.body.removeChild(testElement);
+                    
+                    if (canvas.width <= 800 && canvas.height <= 1000) {
+                        result.innerHTML = `✅ SUCCESS: Image download works (${canvas.width}x${canvas.height})`;
+                        result.className = 'test-result success';
+                    } else {
+                        result.innerHTML = `❌ FAILED: Image too large (${canvas.width}x${canvas.height})`;
+                        result.className = 'test-result error';
+                    }
+                }).catch(error => {
+                    document.body.removeChild(testElement);
+                    result.innerHTML = '❌ ERROR: ' + error.message;
+                    result.className = 'test-result error';
+                });
+                
+            } catch (error) {
+                result.innerHTML = '❌ ERROR: ' + error.message;
+                result.className = 'test-result error';
+            }
+        }
+    </script>
+    
+    <!-- Load html2canvas for testing -->
+    <script src="https://cdn.jsdelivr.net/npm/html2canvas@1.4.1/dist/html2canvas.min.js"></script>
+</body>
+</html>

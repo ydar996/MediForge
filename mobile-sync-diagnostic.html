@@ -1,0 +1,223 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mobile Sync Diagnostic</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ccc; border-radius: 5px; }
+    .error { background-color: #ffebee; border-color: #f44336; }
+    .success { background-color: #e8f5e8; border-color: #4caf50; }
+    .warning { background-color: #fff3e0; border-color: #ff9800; }
+    .info { background-color: #e3f2fd; border-color: #2196f3; }
+    pre { background-color: #f5f5f5; padding: 10px; border-radius: 3px; overflow-x: auto; }
+    .device-info { font-weight: bold; color: #1976d2; }
+  </style>
+</head>
+<body>
+  <h1>?? Mobile Sync Diagnostic Tool</h1>
+  
+  <div id="results"></div>
+  
+  <script>
+    function runMobileDiagnostic() {
+      const results = document.getElementById('results');
+      let html = '';
+      
+      // Device Detection
+      html += '<div class="section info">';
+      html += '<h3>?? Device Information</h3>';
+      const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      const deviceType = isMobile ? 'Mobile Device' : 'Desktop';
+      html += `<div class="device-info">Device Type: ${deviceType}</div>`;
+      html += `<div>User Agent: ${navigator.userAgent}</div>`;
+      html += `<div>Screen Size: ${screen.width}x${screen.height}</div>`;
+      html += `<div>Viewport: ${window.innerWidth}x${window.innerHeight}</div>`;
+      html += '</div>';
+      
+      // User Authentication Check
+      html += '<div class="section">';
+      html += '<h3>?? User Authentication</h3>';
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.username && user.org) {
+        html += `<div class="success">? User logged in: ${user.username} (${user.role})</div>`;
+        html += `<div class="success">? Organization: ${user.org}</div>`;
+        html += `<div class="success">? Organization ID: ${user.organizationId || 'Not set'}</div>`;
+      } else {
+        html += `<div class="error">? User not properly logged in</div>`;
+        html += `<div>User object: <pre>${JSON.stringify(user, null, 2)}</pre></div>`;
+      }
+      html += '</div>';
+      
+      // Data Storage Check
+      html += '<div class="section">';
+      html += '<h3>?? Data Storage</h3>';
+      const patientsKey = user.org ? `${user.org}_patients` : 'patients';
+      const patientsData = localStorage.getItem(patientsKey);
+      if (patientsData) {
+        try {
+          const patients = JSON.parse(patientsData);
+          html += `<div class="success">? Found ${patients.length} patients in localStorage</div>`;
+          html += `<div class="info">Storage key: ${patientsKey}</div>`;
+          if (patients.length > 0) {
+            html += '<div class="info">Sample patient IDs:</div>';
+            html += `<pre>${patients.slice(0, 3).map(p => p.id).join(', ')}</pre>`;
+          }
+        } catch (e) {
+          html += `<div class="error">? Error parsing patients data: ${e.message}</div>`;
+        }
+      } else {
+        html += '<div class="error">? No patients data found in localStorage</div>';
+      }
+      html += '</div>';
+      
+      // Supabase Connection Check
+      html += '<div class="section">';
+      html += '<h3>?? Supabase Connection</h3>';
+      if (window.supabaseClient) {
+        html += '<div class="success">? Supabase client available</div>';
+        html += '<button onclick="testSupabaseConnection()">Test Supabase Connection</button>';
+        html += '<div id="supabase-test-results"></div>';
+      } else {
+        html += '<div class="error">? Supabase client not available</div>';
+      }
+      html += '</div>';
+      
+      // All LocalStorage Keys
+      html += '<div class="section">';
+      html += '<h3>?? All LocalStorage Keys</h3>';
+      const allKeys = Object.keys(localStorage);
+      const patientKeys = allKeys.filter(key => key.includes('patient'));
+      const userKeys = allKeys.filter(key => key.includes('user'));
+      const orgKeys = allKeys.filter(key => key.includes('org'));
+      
+      html += `<div class="info">Total keys: ${allKeys.length}</div>`;
+      html += `<div class="info">Patient-related keys: ${patientKeys.length}</div>`;
+      html += `<div class="info">User-related keys: ${userKeys.length}</div>`;
+      html += `<div class="info">Organization-related keys: ${orgKeys.length}</div>`;
+      
+      html += '<details><summary>Show all keys</summary>';
+      html += `<pre>${allKeys.join('\n')}</pre>`;
+      html += '</details>';
+      html += '</div>';
+      
+      // Sync Status
+      html += '<div class="section">';
+      html += '<h3>?? Sync Status</h3>';
+      html += '<button onclick="testDataSync()">Test Data Sync</button>';
+      html += '<div id="sync-test-results"></div>';
+      html += '</div>';
+      
+      // Recommendations
+      html += '<div class="section warning">';
+      html += '<h3>?? Recommendations for Mobile Consistency</h3>';
+      html += '<ul>';
+      html += '<li><strong>Clear Cache:</strong> Clear browser cache on mobile device</li>';
+      html += '<li><strong>Re-login:</strong> Log out and log back in on mobile</li>';
+      html += '<li><strong>Check Organization:</strong> Ensure same organization is selected</li>';
+      html += '<li><strong>Force Sync:</strong> Use the sync button to force data refresh</li>';
+      html += '<li><strong>Check Network:</strong> Ensure stable internet connection</li>';
+      html += '</ul>';
+      html += '</div>';
+      
+      results.innerHTML = html;
+    }
+    
+    async function testSupabaseConnection() {
+      const results = document.getElementById('supabase-test-results');
+      results.innerHTML = '<div class="warning">?? Testing Supabase connection...</div>';
+      
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('patients')
+            .select('count')
+            .limit(1);
+          
+          if (error) {
+            results.innerHTML = `<div class="error">? Supabase error: ${error.message}</div>`;
+          } else {
+            results.innerHTML = '<div class="success">? Supabase connection successful</div>';
+          }
+        } else {
+          results.innerHTML = '<div class="error">? Supabase client not available</div>';
+        }
+      } catch (error) {
+        results.innerHTML = `<div class="error">? Connection test failed: ${error.message}</div>`;
+      }
+    }
+    
+    async function testDataSync() {
+      const results = document.getElementById('sync-test-results');
+      results.innerHTML = '<div class="warning">?? Testing data sync...</div>';
+      
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          results.innerHTML = `<div class="success">? Data sync successful - ${patients.length} patients loaded</div>`;
+        } else {
+          results.innerHTML = '<div class="error">? Data sync function not available</div>';
+        }
+      } catch (error) {
+        results.innerHTML = `<div class="error">? Data sync failed: ${error.message}</div>`;
+      }
+    }
+    
+    // Load required scripts
+    function loadScript(src) {
+      return new Promise((resolve, reject) => {
+        const script = document.createElement('script');
+        script.src = src;
+        script.onload = resolve;
+        script.onerror = reject;
+        document.head.appendChild(script);
+      });
+    }
+    
+    // Initialize when page loads
+    window.addEventListener('load', async () => {
+      try {
+        // Load main.js for getDataKey function
+        await loadScript('js/main.js');
+        runMobileDiagnostic();
+      } catch (error) {
+        document.getElementById('results').innerHTML = `<div class="error">? Error loading scripts: ${error.message}</div>`;
+      }
+    });
+  </script>
+
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('?? Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</body>
+</html>

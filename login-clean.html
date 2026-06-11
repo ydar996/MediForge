@@ -1,0 +1,219 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+    <title>Login to MediForge (Clean)</title>
+    <link rel="stylesheet" href="css/styles.css">
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+            min-height: 100vh;
+            margin: 0;
+            padding: 0;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .login-container {
+            background: white;
+            padding: 2rem;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            width: 100%;
+            max-width: 400px;
+        }
+        .login-form {
+            display: flex;
+            flex-direction: column;
+            gap: 1rem;
+        }
+        .form-group {
+            display: flex;
+            flex-direction: column;
+        }
+        label {
+            font-weight: 500;
+            margin-bottom: 0.5rem;
+            color: #333;
+        }
+        input {
+            padding: 0.75rem;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            font-size: 1rem;
+        }
+        button {
+            background: #008753;
+            color: white;
+            padding: 0.75rem;
+            border: none;
+            border-radius: 4px;
+            font-size: 1rem;
+            cursor: pointer;
+            margin-top: 1rem;
+        }
+        button:hover {
+            background: #006b42;
+        }
+        .alert {
+            padding: 1rem;
+            border-radius: 4px;
+            margin-bottom: 1rem;
+        }
+        .alert-info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <h2>Login to MediForge</h2>
+        <div class="alert alert-info">
+            <strong>Clean Login Page</strong><br>
+            This page bypasses auto-refresh to prevent infinite loops.
+        </div>
+        
+        <form id="login-form" class="login-form">
+            <div class="form-group">
+                <label for="username">Username or Email:</label>
+                <input type="text" id="username" name="username" required>
+            </div>
+            
+            <div class="form-group">
+                <label for="password">Password:</label>
+                <input type="password" id="password" name="password" required>
+            </div>
+            
+            <button type="submit">Login</button>
+        </form>
+    </div>
+
+    <!-- Supabase Client -->
+    <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js?v=20251022090000"></script>
+    
+    <!-- Universal Scripts -->
+    <script src="js/universal-data-loader.js?v=20251022090000"></script>
+    <script src="js/universal-sync-status.js?v=20251022090000"></script>
+    
+    <!-- Login Handler -->
+    <script src="js/login-handler.js?v=20251022090000"></script>
+    
+    <!-- Disable auto refresh on login page to let sync system work -->
+    <script>
+        console.log('?? Login page - disabling auto refresh to allow proper sync');
+        // Override auto refresh if it exists
+        if (window.autoRefreshEnabled) {
+            window.autoRefreshEnabled = false;
+        }
+    </script>
+    
+    <script>
+        console.log('?? Clean login page loaded - no auto refresh');
+        
+        // Simple login handler without auto refresh
+        document.getElementById('login-form').addEventListener('submit', async function(e) {
+            e.preventDefault();
+            
+            const username = document.getElementById('username').value;
+            const password = document.getElementById('password').value;
+            
+            if (!username || !password) {
+                alert('Please enter both username and password');
+                return;
+            }
+            
+            console.log('Login attempt for:', username);
+            
+            // Show loading state
+            const submitButton = this.querySelector('button[type="submit"]');
+            const originalButtonText = submitButton.textContent;
+            submitButton.textContent = 'Logging in...';
+            submitButton.disabled = true;
+            
+            try {
+                // Try Supabase Auth first
+                if (window.supabaseClient) {
+                    const email = username.includes('@') ? username : `${username}@mediforge.app`;
+                    console.log('Trying Supabase Auth with email:', email);
+                    
+                    const { data, error } = await window.supabaseClient.auth.signInWithPassword({
+                        email: email,
+                        password: password
+                    });
+                    
+                    if (data.user) {
+                        console.log('? Supabase login successful');
+                        alert('Login successful!');
+                        window.location.href = '/dashboard';
+                        return;
+                    } else {
+                        console.log('Supabase login failed:', error);
+                    }
+                }
+                
+                // Fallback to localStorage
+                console.log('Trying localStorage fallback...');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                const localUser = localUsers.find(u => 
+                    u.username === username || 
+                    u.username === email || 
+                    u.email === username
+                );
+                
+                if (localUser) {
+                    // Simple password check
+                    let passwordValid = false;
+                    if (localUser.passwordType === 'sha256') {
+                        const hashedPassword = await hashPassword(password);
+                        passwordValid = hashedPassword === localUser.password;
+                    } else {
+                        passwordValid = btoa(password) === localUser.password;
+                    }
+                    
+                    if (passwordValid) {
+                        console.log('? localStorage login successful');
+                        localStorage.setItem('user', JSON.stringify(localUser));
+                        alert('Login successful!');
+                        window.location.href = '/dashboard';
+                        return;
+                    }
+                }
+                
+                alert('Invalid login credentials');
+                
+            } catch (error) {
+                console.error('Login error:', error);
+                alert('Login failed: ' + error.message);
+            } finally {
+                submitButton.textContent = originalButtonText;
+                submitButton.disabled = false;
+            }
+        });
+        
+        // Simple password hashing
+        async function hashPassword(password) {
+            const encoder = new TextEncoder();
+            const data = encoder.encode(password);
+            const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+            const hashArray = Array.from(new Uint8Array(hashBuffer));
+            return hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        }
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</body>
+</html>

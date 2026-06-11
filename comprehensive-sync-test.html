@@ -1,0 +1,491 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Comprehensive Sync Test - MediForge</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .success { background-color: #d4edda; border-color: #c3e6cb; }
+    .error { background-color: #f8d7da; border-color: #f5c6cb; }
+    .warning { background-color: #fff3cd; border-color: #ffeaa7; }
+    .info { background-color: #d1ecf1; border-color: #bee5eb; }
+    button { padding: 10px 20px; margin: 5px; cursor: pointer; }
+    .results { margin-top: 10px; }
+    pre { background: #f8f9fa; padding: 10px; border-radius: 3px; overflow-x: auto; }
+  </style>
+</head>
+<body>
+  <h1>🔄 Comprehensive Sync Test</h1>
+  <p>This page tests the actual synchronization between localStorage and Supabase to ensure data consistency.</p>
+  
+  <div class="test-section info">
+    <h3>📊 Test Results Summary</h3>
+    <div id="summary-results">Running tests...</div>
+  </div>
+  
+  <div class="test-section">
+    <h3>🔍 Test 1: Supabase Connection</h3>
+    <button onclick="testSupabaseConnection()">Test Connection</button>
+    <div id="connection-results" class="results"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>👥 Test 2: Patients Data Sync</h3>
+    <button onclick="testPatientsSync()">Test Patients Sync</button>
+    <div id="patients-results" class="results"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>📅 Test 3: Appointments Data Sync</h3>
+    <button onclick="testAppointmentsSync()">Test Appointments Sync</button>
+    <div id="appointments-results" class="results"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>🔄 Test 4: Full Sync Test</h3>
+    <button onclick="runFullSyncTest()">Run Full Sync Test</button>
+    <div id="full-sync-results" class="results"></div>
+  </div>
+  
+  <div class="test-section">
+    <h3>📱 Test 5: Cross-Device Consistency</h3>
+    <button onclick="testCrossDeviceConsistency()">Test Cross-Device Consistency</button>
+    <div id="cross-device-results" class="results"></div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  <script src="js/main.js?v=20251018191427"></script>
+  <script src="js/patients.js?v=20251018191427"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/appointments.js?v=20251018191427"></script>
+
+  <script>
+    let testResults = {
+      connection: null,
+      patients: null,
+      appointments: null,
+      fullSync: null,
+      crossDevice: null
+    };
+
+    // Test 1: Supabase Connection
+    async function testSupabaseConnection() {
+      const resultsDiv = document.getElementById('connection-results');
+      resultsDiv.innerHTML = 'Testing...';
+      
+      try {
+        if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+          throw new Error('Supabase client not available');
+        }
+        
+        // Test basic connection
+        const { data, error } = await window.supabaseClient
+          .from('organizations')
+          .select('id')
+          .limit(1);
+        
+        if (error) {
+          throw new Error(`Connection failed: ${error.message}`);
+        }
+        
+        // Test user authentication
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.organizationId && !user.org) {
+          throw new Error('No user organization found');
+        }
+        
+        testResults.connection = { success: true, message: 'Connection successful' };
+        resultsDiv.innerHTML = '<div class="success">✅ Supabase connection successful</div>';
+        
+      } catch (error) {
+        testResults.connection = { success: false, message: error.message };
+        resultsDiv.innerHTML = `<div class="error">❌ Connection failed: ${error.message}</div>`;
+      }
+      
+      updateSummary();
+    }
+
+    // Test 2: Patients Data Sync
+    async function testPatientsSync() {
+      const resultsDiv = document.getElementById('patients-results');
+      resultsDiv.innerHTML = 'Testing...';
+      
+      try {
+        // Get localStorage patients
+        const localStoragePatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        
+        // Get Supabase patients
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgId = user.organizationId;
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[user.org];
+          if (orgData && orgData.id) {
+            orgId = orgData.id;
+          }
+        }
+        if (!orgId) {
+          orgId = '576522cc-e769-4fb4-9487-3d150857d970'; // Default
+        }
+        
+        const { data: supabasePatients, error } = await window.supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        if (error) {
+          throw new Error(`Supabase query failed: ${error.message}`);
+        }
+        
+        const localStorageCount = localStoragePatients.length;
+        const supabaseCount = supabasePatients ? supabasePatients.length : 0;
+        
+        // Check for data consistency
+        let consistencyIssues = [];
+        
+        // Check if localStorage has patients not in Supabase
+        const localStorageIds = new Set(localStoragePatients.map(p => p.id));
+        const supabaseIds = new Set((supabasePatients || []).map(p => p.patient_id));
+        
+        const missingInSupabase = localStoragePatients.filter(p => !supabaseIds.has(p.id));
+        const missingInLocalStorage = (supabasePatients || []).filter(p => !localStorageIds.has(p.patient_id));
+        
+        if (missingInSupabase.length > 0) {
+          consistencyIssues.push(`${missingInSupabase.length} patients in localStorage but not in Supabase`);
+        }
+        
+        if (missingInLocalStorage.length > 0) {
+          consistencyIssues.push(`${missingInLocalStorage.length} patients in Supabase but not in localStorage`);
+        }
+        
+        const isConsistent = consistencyIssues.length === 0;
+        
+        testResults.patients = {
+          success: isConsistent,
+          message: isConsistent ? 'Patients data is consistent' : `Issues found: ${consistencyIssues.join(', ')}`,
+          localStorageCount,
+          supabaseCount,
+          issues: consistencyIssues
+        };
+        
+        let html = `
+          <div class="${isConsistent ? 'success' : 'warning'}">
+            ${isConsistent ? '✅' : '⚠️'} Patients Data Sync Test
+            <br>LocalStorage: ${localStorageCount} patients
+            <br>Supabase: ${supabaseCount} patients
+            ${consistencyIssues.length > 0 ? '<br>Issues: ' + consistencyIssues.join(', ') : ''}
+          </div>
+        `;
+        
+        if (missingInSupabase.length > 0) {
+          html += `<div class="info"><strong>Missing in Supabase:</strong><pre>${JSON.stringify(missingInSupabase.map(p => ({id: p.id, name: p.firstName + ' ' + p.lastName})), null, 2)}</pre></div>`;
+        }
+        
+        if (missingInLocalStorage.length > 0) {
+          html += `<div class="info"><strong>Missing in LocalStorage:</strong><pre>${JSON.stringify(missingInLocalStorage.map(p => ({id: p.patient_id, name: p.first_name + ' ' + p.last_name})), null, 2)}</pre></div>`;
+        }
+        
+        resultsDiv.innerHTML = html;
+        
+      } catch (error) {
+        testResults.patients = { success: false, message: error.message };
+        resultsDiv.innerHTML = `<div class="error">❌ Patients sync test failed: ${error.message}</div>`;
+      }
+      
+      updateSummary();
+    }
+
+    // Test 3: Appointments Data Sync
+    async function testAppointmentsSync() {
+      const resultsDiv = document.getElementById('appointments-results');
+      resultsDiv.innerHTML = 'Testing...';
+      
+      try {
+        // Get localStorage appointments
+        const localStorageAppointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+        
+        // Get Supabase appointments
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgId = user.organizationId;
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[user.org];
+          if (orgData && orgData.id) {
+            orgId = orgData.id;
+          }
+        }
+        if (!orgId) {
+          orgId = '576522cc-e769-4fb4-9487-3d150857d970'; // Default
+        }
+        
+        const { data: supabaseAppointments, error } = await window.supabaseClient
+          .from('appointments')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        if (error) {
+          throw new Error(`Supabase query failed: ${error.message}`);
+        }
+        
+        const localStorageCount = localStorageAppointments.length;
+        const supabaseCount = supabaseAppointments ? supabaseAppointments.length : 0;
+        
+        // Check for data consistency
+        let consistencyIssues = [];
+        
+        // Check if localStorage has appointments not in Supabase
+        const localStorageIds = new Set(localStorageAppointments.map(a => a.id));
+        const supabaseIds = new Set((supabaseAppointments || []).map(a => a.appointment_id));
+        
+        const missingInSupabase = localStorageAppointments.filter(a => !supabaseIds.has(a.id));
+        const missingInLocalStorage = (supabaseAppointments || []).filter(a => !localStorageIds.has(a.appointment_id));
+        
+        if (missingInSupabase.length > 0) {
+          consistencyIssues.push(`${missingInSupabase.length} appointments in localStorage but not in Supabase`);
+        }
+        
+        if (missingInLocalStorage.length > 0) {
+          consistencyIssues.push(`${missingInLocalStorage.length} appointments in Supabase but not in localStorage`);
+        }
+        
+        const isConsistent = consistencyIssues.length === 0;
+        
+        testResults.appointments = {
+          success: isConsistent,
+          message: isConsistent ? 'Appointments data is consistent' : `Issues found: ${consistencyIssues.join(', ')}`,
+          localStorageCount,
+          supabaseCount,
+          issues: consistencyIssues
+        };
+        
+        let html = `
+          <div class="${isConsistent ? 'success' : 'warning'}">
+            ${isConsistent ? '✅' : '⚠️'} Appointments Data Sync Test
+            <br>LocalStorage: ${localStorageCount} appointments
+            <br>Supabase: ${supabaseCount} appointments
+            ${consistencyIssues.length > 0 ? '<br>Issues: ' + consistencyIssues.join(', ') : ''}
+          </div>
+        `;
+        
+        if (missingInSupabase.length > 0) {
+          html += `<div class="info"><strong>Missing in Supabase:</strong><pre>${JSON.stringify(missingInSupabase.map(a => ({id: a.id, patient: a.patientName, date: a.date})), null, 2)}</pre></div>`;
+        }
+        
+        if (missingInLocalStorage.length > 0) {
+          html += `<div class="info"><strong>Missing in LocalStorage:</strong><pre>${JSON.stringify(missingInLocalStorage.map(a => ({id: a.appointment_id, patient: a.patient_name, date: a.appointment_date})), null, 2)}</pre></div>`;
+        }
+        
+        resultsDiv.innerHTML = html;
+        
+      } catch (error) {
+        testResults.appointments = { success: false, message: error.message };
+        resultsDiv.innerHTML = `<div class="error">❌ Appointments sync test failed: ${error.message}</div>`;
+      }
+      
+      updateSummary();
+    }
+
+    // Test 4: Full Sync Test
+    async function runFullSyncTest() {
+      const resultsDiv = document.getElementById('full-sync-results');
+      resultsDiv.innerHTML = 'Running full sync test...';
+      
+      try {
+        // Run sync functions
+        console.log('🔄 Running syncAllPatientsToSupabase...');
+        if (typeof window.syncAllPatientsToSupabase === 'function') {
+          await window.syncAllPatientsToSupabase();
+        } else {
+          console.warn('syncAllPatientsToSupabase function not available');
+        }
+        
+        console.log('🔄 Running syncAllAppointmentsToSupabase...');
+        if (typeof window.syncAllAppointmentsToSupabase === 'function') {
+          await window.syncAllAppointmentsToSupabase();
+        } else {
+          console.warn('syncAllAppointmentsToSupabase function not available');
+        }
+        
+        // Wait a moment for sync to complete
+        await new Promise(resolve => setTimeout(resolve, 2000));
+        
+        // Re-run the sync tests
+        await testPatientsSync();
+        await testAppointmentsSync();
+        
+        const patientsResult = testResults.patients;
+        const appointmentsResult = testResults.appointments;
+        
+        const allConsistent = patientsResult && patientsResult.success && appointmentsResult && appointmentsResult.success;
+        
+        testResults.fullSync = {
+          success: allConsistent,
+          message: allConsistent ? 'Full sync completed successfully' : 'Sync completed but issues remain'
+        };
+        
+        resultsDiv.innerHTML = `
+          <div class="${allConsistent ? 'success' : 'warning'}">
+            ${allConsistent ? '✅' : '⚠️'} Full Sync Test Complete
+            <br>Patients: ${patientsResult ? (patientsResult.success ? '✅' : '❌') : '❓'}
+            <br>Appointments: ${appointmentsResult ? (appointmentsResult.success ? '✅' : '❌') : '❓'}
+          </div>
+        `;
+        
+      } catch (error) {
+        testResults.fullSync = { success: false, message: error.message };
+        resultsDiv.innerHTML = `<div class="error">❌ Full sync test failed: ${error.message}</div>`;
+      }
+      
+      updateSummary();
+    }
+
+    // Test 5: Cross-Device Consistency
+    async function testCrossDeviceConsistency() {
+      const resultsDiv = document.getElementById('cross-device-results');
+      resultsDiv.innerHTML = 'Testing cross-device consistency...';
+      
+      try {
+        // This test simulates what would happen on a different device
+        // by checking if the data in Supabase is complete and consistent
+        
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgId = user.organizationId;
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[user.org];
+          if (orgData && orgData.id) {
+            orgId = orgData.id;
+          }
+        }
+        if (!orgId) {
+          orgId = '576522cc-e769-4fb4-9487-3d150857d970'; // Default
+        }
+        
+        // Get all data from Supabase (as a mobile device would)
+        const [patientsResult, appointmentsResult] = await Promise.all([
+          window.supabaseClient.from('patients').select('*').eq('organization_id', orgId),
+          window.supabaseClient.from('appointments').select('*').eq('organization_id', orgId)
+        ]);
+        
+        if (patientsResult.error) {
+          throw new Error(`Patients query failed: ${patientsResult.error.message}`);
+        }
+        
+        if (appointmentsResult.error) {
+          throw new Error(`Appointments query failed: ${appointmentsResult.error.message}`);
+        }
+        
+        const supabasePatients = patientsResult.data || [];
+        const supabaseAppointments = appointmentsResult.data || [];
+        
+        // Check data quality
+        let issues = [];
+        
+        // Check for missing required fields
+        const patientsWithMissingFields = supabasePatients.filter(p => 
+          !p.patient_id || !p.first_name || !p.last_name || !p.date_of_birth
+        );
+        
+        const appointmentsWithMissingFields = supabaseAppointments.filter(a => 
+          !a.appointment_id || !a.patient_id || !a.appointment_date || !a.appointment_time
+        );
+        
+        if (patientsWithMissingFields.length > 0) {
+          issues.push(`${patientsWithMissingFields.length} patients with missing required fields`);
+        }
+        
+        if (appointmentsWithMissingFields.length > 0) {
+          issues.push(`${appointmentsWithMissingFields.length} appointments with missing required fields`);
+        }
+        
+        // Check for orphaned appointments (appointments without corresponding patients)
+        const patientIds = new Set(supabasePatients.map(p => p.patient_id));
+        const orphanedAppointments = supabaseAppointments.filter(a => !patientIds.has(a.patient_id));
+        
+        if (orphanedAppointments.length > 0) {
+          issues.push(`${orphanedAppointments.length} orphaned appointments (no corresponding patient)`);
+        }
+        
+        const isConsistent = issues.length === 0;
+        
+        testResults.crossDevice = {
+          success: isConsistent,
+          message: isConsistent ? 'Cross-device data is consistent' : `Issues found: ${issues.join(', ')}`,
+          patientCount: supabasePatients.length,
+          appointmentCount: supabaseAppointments.length,
+          issues: issues
+        };
+        
+        let html = `
+          <div class="${isConsistent ? 'success' : 'warning'}">
+            ${isConsistent ? '✅' : '⚠️'} Cross-Device Consistency Test
+            <br>Supabase Patients: ${supabasePatients.length}
+            <br>Supabase Appointments: ${supabaseAppointments.length}
+            ${issues.length > 0 ? '<br>Issues: ' + issues.join(', ') : ''}
+          </div>
+        `;
+        
+        if (orphanedAppointments.length > 0) {
+          html += `<div class="info"><strong>Orphaned Appointments:</strong><pre>${JSON.stringify(orphanedAppointments.map(a => ({id: a.appointment_id, patient_id: a.patient_id, date: a.appointment_date})), null, 2)}</pre></div>`;
+        }
+        
+        resultsDiv.innerHTML = html;
+        
+      } catch (error) {
+        testResults.crossDevice = { success: false, message: error.message };
+        resultsDiv.innerHTML = `<div class="error">❌ Cross-device consistency test failed: ${error.message}</div>`;
+      }
+      
+      updateSummary();
+    }
+
+    // Update summary
+    function updateSummary() {
+      const summaryDiv = document.getElementById('summary-results');
+      
+      const tests = [
+        { name: 'Connection', result: testResults.connection },
+        { name: 'Patients', result: testResults.patients },
+        { name: 'Appointments', result: testResults.appointments },
+        { name: 'Full Sync', result: testResults.fullSync },
+        { name: 'Cross-Device', result: testResults.crossDevice }
+      ];
+      
+      const completedTests = tests.filter(t => t.result !== null);
+      const passedTests = tests.filter(t => t.result && t.result.success);
+      
+      let html = `
+        <strong>Tests Completed: ${completedTests.length}/5</strong><br>
+        <strong>Tests Passed: ${passedTests.length}/${completedTests.length}</strong><br><br>
+      `;
+      
+      tests.forEach(test => {
+        if (test.result) {
+          const status = test.result.success ? '✅' : '❌';
+          html += `${status} ${test.name}: ${test.result.message}<br>`;
+        } else {
+          html += `⏳ ${test.name}: Not tested yet<br>`;
+        }
+      });
+      
+      summaryDiv.innerHTML = html;
+    }
+
+    // Auto-run connection test on page load
+    window.addEventListener('load', function() {
+      setTimeout(testSupabaseConnection, 1000);
+    });
+  </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+

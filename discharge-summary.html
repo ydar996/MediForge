@@ -1,0 +1,950 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Discharge Summary - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .btn-print {
+      background: linear-gradient(135deg, var(--kente-gold), #B8860B);
+    }
+    
+    .item-list {
+      margin-top: 15px;
+    }
+    
+    .item-card {
+      background: var(--soft-white);
+      padding: 10px;
+      margin-bottom: 8px;
+      border-radius: 4px;
+      border-left: 3px solid var(--primary-green);
+    }
+    
+    @media print {
+      .back-button, button, .no-print {
+        display: none;
+      }
+      .container {
+        box-shadow: none;
+        border: none;
+      }
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Inpatient Dashboard</button>
+    
+    <h1>📄 Discharge Summary</h1>
+    
+    <form id="discharge-summary-form" onsubmit="handleDischargeSummarySubmit(event)">
+      <!-- Patient Information (Auto-populated) -->
+      <div class="form-section">
+        <h2>Patient Information</h2>
+        <div id="patient-info" style="background: var(--soft-white); padding: 15px; border-radius: 6px;">
+          <p>Loading patient information...</p>
+        </div>
+      </div>
+      
+      <!-- Admission Information -->
+      <div class="form-section">
+        <h2>Admission Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Admission Date</label>
+            <input type="text" id="admission-date" readonly style="background: var(--soft-white);">
+          </div>
+          <div class="form-group">
+            <label>Discharge Date *</label>
+            <input type="datetime-local" id="discharge-date" required>
+          </div>
+        </div>
+        <div class="form-group">
+          <label>Reason for Admission</label>
+          <input type="text" id="admission-reason" readonly style="background: var(--soft-white);">
+        </div>
+      </div>
+      
+      <!-- Chief Complaint & HPI -->
+      <div class="form-section">
+        <h2>Chief Complaint & History of Present Illness</h2>
+        <div class="form-group">
+          <label>Chief Complaint</label>
+          <textarea id="chief-complaint" rows="2"></textarea>
+        </div>
+        <div class="form-group">
+          <label>History of Present Illness</label>
+          <textarea id="history-present-illness" rows="4"></textarea>
+        </div>
+      </div>
+      
+      <!-- Hospital Course -->
+      <div class="form-section">
+        <h2>Hospital Course</h2>
+        <div class="form-group">
+          <label>Hospital Course Summary</label>
+          <textarea id="hospital-course" rows="6" placeholder="Summary of treatment, procedures, and progress during hospitalization"></textarea>
+        </div>
+      </div>
+      
+      <!-- Procedures Performed -->
+      <div class="form-section">
+        <h2>Procedures Performed</h2>
+        <div id="procedures-list" class="item-list">
+          <p>No procedures documented.</p>
+        </div>
+        <button type="button" onclick="loadProcedures()" class="btn-secondary">🔄 Refresh from Procedure Records</button>
+      </div>
+      
+      <!-- Final Diagnoses -->
+      <div class="form-section">
+        <h2>Final Diagnoses</h2>
+        <div id="diagnoses-list" class="item-list">
+          <p>No diagnoses added yet.</p>
+        </div>
+        <button type="button" onclick="showAddDiagnosisForm()" class="btn-secondary">➕ Add Diagnosis</button>
+        <div id="add-diagnosis-form" style="display: none; margin-top: 10px; padding: 15px; background: var(--soft-white); border-radius: 6px;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Diagnosis *</label>
+              <input type="text" id="new-diagnosis-name" required placeholder="e.g., Hypertension, Type 2 Diabetes">
+            </div>
+            <div class="form-group">
+              <label>ICD Code</label>
+              <input type="text" id="new-diagnosis-icd" placeholder="e.g., I10, E11.9">
+            </div>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addDiagnosis()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddDiagnosisForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Discharge Medications -->
+      <div class="form-section">
+        <h2>Discharge Medications</h2>
+        <div id="medications-list" class="item-list">
+          <p>No medications listed.</p>
+        </div>
+        <button type="button" onclick="loadMedications()" class="btn-secondary">🔄 Load from Prescriptions</button>
+      </div>
+      
+      <!-- Discharge Instructions -->
+      <div class="form-section">
+        <h2>Discharge Instructions</h2>
+        <div class="form-group">
+          <label>General Instructions</label>
+          <textarea id="discharge-instructions" rows="4" placeholder="General discharge instructions for the patient"></textarea>
+        </div>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Activity Restrictions</label>
+            <textarea id="activity-restrictions" rows="3" placeholder="Activity limitations and restrictions"></textarea>
+          </div>
+          <div class="form-group">
+            <label>Diet Instructions</label>
+            <textarea id="diet-instructions" rows="3" placeholder="Dietary restrictions or recommendations"></textarea>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Follow-Up Plan -->
+      <div class="form-section">
+        <h2>Follow-Up Plan</h2>
+        <div class="form-group">
+          <label>Follow-Up Plan</label>
+          <textarea id="followup-plan" rows="4" placeholder="Follow-up care plan and recommendations"></textarea>
+        </div>
+        <div id="followup-appointments-list" class="item-list">
+          <p>No follow-up appointments listed.</p>
+        </div>
+        <button type="button" onclick="loadFollowUps()" class="btn-secondary">🔄 Load from Discharge Planning</button>
+      </div>
+      
+      <!-- Patient Education -->
+      <div class="form-section">
+        <h2>Patient Education Provided</h2>
+        <div id="education-list" class="item-list">
+          <p>No education topics listed.</p>
+        </div>
+        <button type="button" onclick="loadEducation()" class="btn-secondary">🔄 Load from Discharge Planning</button>
+      </div>
+      
+      <!-- Discharging Physician -->
+      <div class="form-section">
+        <h2>Discharging Physician</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Discharging Physician *</label>
+            <input type="text" id="discharging-physician" required>
+          </div>
+          <div class="form-group">
+            <label>Summary Generated At</label>
+            <input type="text" id="summary-generated-at" readonly style="background: var(--soft-white);">
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional Notes -->
+      <div class="form-section">
+        <h2>Additional Notes</h2>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="summary-notes" rows="3"></textarea>
+        </div>
+      </div>
+      
+      <!-- Submit Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 20px; flex-wrap: wrap;">
+        <button type="submit">💾 Save Discharge Summary</button>
+        <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+        <button type="button" class="btn-print" onclick="window.print()">🖨️ Print Summary</button>
+        <button type="button" onclick="autoPopulateSummary()" class="btn-secondary">🔄 Auto-Populate from Records</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let legacyPatientId = null;
+    let organizationId = null;
+    let admission = null;
+    let patient = null;
+    let finalDiagnoses = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId = urlParams.get('patientId');
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+
+      await resolveLegacyPatientId();
+      
+      // Set default discharge date to now
+      const now = new Date();
+      const datetimeLocal = now.toISOString().slice(0, 16);
+      document.getElementById('discharge-date').value = datetimeLocal;
+      document.getElementById('summary-generated-at').value = now.toLocaleString();
+      
+      // Load admission and patient data
+      await Promise.all([
+        loadAdmission(),
+        loadPatient(),
+        loadExistingSummary()
+      ]);
+      
+      // Auto-populate if no existing summary
+      autoPopulateSummary();
+    });
+
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && data?.patient_id) {
+            resolvedId = data.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+    
+    async function loadAdmission() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('*')
+            .eq('id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          admission = data;
+          
+          if (admission) {
+            document.getElementById('admission-date').value = new Date(admission.admission_date).toLocaleString();
+            document.getElementById('admission-reason').value = admission.admission_reason || '';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading admission:', error);
+      }
+    }
+    
+    async function loadPatient() {
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.id === admission?.patient_id);
+        } else {
+          const stored = localStorage.getItem(getDataKey("patients"));
+          const patients = stored ? JSON.parse(stored) : [];
+          patient = patients.find(p => p.id === admission?.patient_id);
+        }
+        
+        if (patient) {
+          const patientName = patient.name || patient.firstName + ' ' + patient.lastName;
+          const displayId = legacyPatientId || (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || admission?.patient_id;
+          document.getElementById('patient-info').innerHTML = `
+            <strong>Patient:</strong> ${patientName} (${displayId})<br>
+            <strong>Date of Birth:</strong> ${patient.dateOfBirth || 'N/A'}<br>
+            <strong>Gender:</strong> ${patient.gender || 'N/A'}
+          `;
+        }
+      } catch (error) {
+        console.error('Error loading patient:', error);
+      }
+    }
+    
+    async function loadExistingSummary() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('discharge_summaries')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          
+          if (data) {
+            populateForm(data);
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing summary:', error);
+      }
+    }
+    
+    function populateForm(summary) {
+      if (summary.discharge_date) {
+        const date = new Date(summary.discharge_date);
+        const datetimeLocal = date.toISOString().slice(0, 16);
+        document.getElementById('discharge-date').value = datetimeLocal;
+      }
+      if (summary.chief_complaint) document.getElementById('chief-complaint').value = summary.chief_complaint;
+      if (summary.history_of_present_illness) document.getElementById('history-present-illness').value = summary.history_of_present_illness;
+      if (summary.hospital_course) document.getElementById('hospital-course').value = summary.hospital_course;
+      if (summary.discharge_instructions) document.getElementById('discharge-instructions').value = summary.discharge_instructions;
+      if (summary.activity_restrictions) document.getElementById('activity-restrictions').value = summary.activity_restrictions;
+      if (summary.diet_instructions) document.getElementById('diet-instructions').value = summary.diet_instructions;
+      if (summary.follow_up_plan) document.getElementById('followup-plan').value = summary.follow_up_plan;
+      if (summary.discharging_physician) document.getElementById('discharging-physician').value = summary.discharging_physician;
+      if (summary.notes) document.getElementById('summary-notes').value = summary.notes;
+      
+      if (summary.final_diagnoses) {
+        finalDiagnoses = summary.final_diagnoses;
+        displayDiagnoses();
+      }
+      
+      if (summary.procedures_performed) {
+        displayProcedures(summary.procedures_performed);
+      }
+      
+      if (summary.discharge_medications) {
+        displayMedications(summary.discharge_medications);
+      }
+      
+      if (summary.follow_up_appointments) {
+        displayFollowUps(summary.follow_up_appointments);
+      }
+      
+      if (summary.patient_education_provided) {
+        displayEducation(summary.patient_education_provided);
+      }
+    }
+    
+    async function autoPopulateSummary() {
+      // Load procedures
+      await loadProcedures();
+      
+      // Load medications
+      await loadMedications();
+      
+      // Load follow-ups and education from discharge planning
+      await loadFollowUps();
+      await loadEducation();
+      
+      // Set discharging physician from current user
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.username || (user.firstName && user.lastName)) {
+        document.getElementById('discharging-physician').value = 
+          user.username || `${user.firstName} ${user.lastName}`;
+      }
+    }
+    
+    async function loadProcedures() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('procedure_records')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId);
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            const procedures = data.map(p => ({
+              name: p.procedure_name,
+              type: p.procedure_type,
+              date: p.actual_date || p.scheduled_date,
+              surgeon: p.surgeon
+            }));
+            displayProcedures(procedures);
+          } else {
+            document.getElementById('procedures-list').innerHTML = '<p>No procedures documented.</p>';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading procedures:', error);
+      }
+    }
+    
+    function displayProcedures(procedures) {
+      const container = document.getElementById('procedures-list');
+      if (!procedures || procedures.length === 0) {
+        container.innerHTML = '<p>No procedures documented.</p>';
+        return;
+      }
+      
+      container.innerHTML = procedures.map(proc => `
+        <div class="item-card">
+          <strong>${proc.name}</strong> (${proc.type})
+          ${proc.date ? `<br><small>Date: ${new Date(proc.date).toLocaleDateString()}</small>` : ''}
+          ${proc.surgeon ? `<br><small>Surgeon: ${proc.surgeon}</small>` : ''}
+        </div>
+      `).join('');
+    }
+    
+    async function loadMedications() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('prescriptions')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .eq('status', 'signed');
+          
+          if (error) throw error;
+          
+          if (data && data.length > 0) {
+            const meds = data.flatMap(p => {
+              try {
+                const medications = typeof p.medications === 'string' ? JSON.parse(p.medications) : p.medications;
+                return Array.isArray(medications) ? medications : [];
+              } catch {
+                return [];
+              }
+            });
+            displayMedications(meds);
+          } else {
+            document.getElementById('medications-list').innerHTML = '<p>No medications listed.</p>';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading medications:', error);
+      }
+    }
+    
+    function displayMedications(medications) {
+      const container = document.getElementById('medications-list');
+      if (!medications || medications.length === 0) {
+        container.innerHTML = '<p>No medications listed.</p>';
+        return;
+      }
+      
+      container.innerHTML = medications.map(med => {
+        const medName = typeof med === 'string' ? med : (med.name || med.medication_name || 'Unknown');
+        const dosage = med.dosage || '';
+        const frequency = med.frequency || '';
+        return `
+          <div class="item-card">
+            <strong>${medName}</strong>
+            ${dosage ? ` - ${dosage}` : ''}
+            ${frequency ? ` ${frequency}` : ''}
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function loadFollowUps() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('discharge_planning')
+            .select('follow_up_appointments')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          
+          if (data && data.follow_up_appointments) {
+            displayFollowUps(data.follow_up_appointments);
+          } else {
+            document.getElementById('followup-appointments-list').innerHTML = '<p>No follow-up appointments listed.</p>';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading follow-ups:', error);
+      }
+    }
+    
+    function displayFollowUps(followUps) {
+      const container = document.getElementById('followup-appointments-list');
+      if (!followUps || followUps.length === 0) {
+        container.innerHTML = '<p>No follow-up appointments listed.</p>';
+        return;
+      }
+      
+      container.innerHTML = followUps.map(appt => `
+        <div class="item-card">
+          <strong>${appt.provider || 'Provider'}</strong>
+          ${appt.date ? `<br><small>Date: ${new Date(appt.date).toLocaleDateString()}</small>` : ''}
+          ${appt.reason ? `<br><small>Reason: ${appt.reason}</small>` : ''}
+        </div>
+      `).join('');
+    }
+    
+    async function loadEducation() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('discharge_planning')
+            .select('education_provided')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (error) throw error;
+          
+          if (data && data.education_provided) {
+            displayEducation(data.education_provided);
+          } else {
+            document.getElementById('education-list').innerHTML = '<p>No education topics listed.</p>';
+          }
+        }
+      } catch (error) {
+        console.error('Error loading education:', error);
+      }
+    }
+    
+    function displayEducation(education) {
+      const container = document.getElementById('education-list');
+      if (!education || education.length === 0) {
+        container.innerHTML = '<p>No education topics listed.</p>';
+        return;
+      }
+      
+      container.innerHTML = education.map(edu => `
+        <div class="item-card">
+          <strong>${edu.topic || 'Topic'}</strong>
+          ${edu.provided_by ? `<br><small>Provided by: ${edu.provided_by}</small>` : ''}
+          ${edu.date ? `<br><small>Date: ${new Date(edu.date).toLocaleDateString()}</small>` : ''}
+        </div>
+      `).join('');
+    }
+    
+    function showAddDiagnosisForm() {
+      document.getElementById('add-diagnosis-form').style.display = 'block';
+    }
+    
+    function hideAddDiagnosisForm() {
+      document.getElementById('add-diagnosis-form').style.display = 'none';
+      document.getElementById('new-diagnosis-name').value = '';
+      document.getElementById('new-diagnosis-icd').value = '';
+    }
+    
+    function addDiagnosis() {
+      const name = document.getElementById('new-diagnosis-name').value.trim();
+      if (!name) {
+        alert('Please enter a diagnosis name.');
+        return;
+      }
+      
+      finalDiagnoses.push({
+        id: `diag_${Date.now()}`,
+        name: name,
+        icd_code: document.getElementById('new-diagnosis-icd').value.trim() || null
+      });
+      
+      hideAddDiagnosisForm();
+      displayDiagnoses();
+    }
+    
+    function removeDiagnosis(id) {
+      finalDiagnoses = finalDiagnoses.filter(d => d.id !== id);
+      displayDiagnoses();
+    }
+    
+    function displayDiagnoses() {
+      const container = document.getElementById('diagnoses-list');
+      if (finalDiagnoses.length === 0) {
+        container.innerHTML = '<p>No diagnoses added yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = finalDiagnoses.map(diag => `
+        <div class="item-card" style="display: flex; justify-content: space-between; align-items: flex-start;">
+          <div>
+            <strong>${diag.name}</strong>
+            ${diag.icd_code ? `<br><small>ICD: ${diag.icd_code}</small>` : ''}
+          </div>
+          <div>
+            <button onclick="removeDiagnosis('${diag.id}')" class="btn-secondary" style="padding: 5px 10px; font-size: 12px;">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    async function handleDischargeSummarySubmit(e) {
+      e.preventDefault();
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        // Collect procedures from display
+        const procedures = [];
+        const procedureCards = document.querySelectorAll('#procedures-list .item-card');
+        procedureCards.forEach(card => {
+          const text = card.textContent.trim();
+          if (text && text !== 'No procedures documented.') {
+            procedures.push({ name: text });
+          }
+        });
+        
+        // Collect medications from display
+        const medications = [];
+        const medCards = document.querySelectorAll('#medications-list .item-card');
+        medCards.forEach(card => {
+          const text = card.textContent.trim();
+          if (text && text !== 'No medications listed.') {
+            medications.push({ name: text });
+          }
+        });
+        
+        // Collect follow-ups from display
+        const followUps = [];
+        const followupCards = document.querySelectorAll('#followup-appointments-list .item-card');
+        followupCards.forEach(card => {
+          const text = card.textContent.trim();
+          if (text && text !== 'No follow-up appointments listed.') {
+            followUps.push({ description: text });
+          }
+        });
+        
+        // Collect education from display
+        const education = [];
+        const eduCards = document.querySelectorAll('#education-list .item-card');
+        eduCards.forEach(card => {
+          const text = card.textContent.trim();
+          if (text && text !== 'No education topics listed.') {
+            education.push({ topic: text });
+          }
+        });
+        
+        const summaryData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          discharge_date: new Date(document.getElementById('discharge-date').value).toISOString(),
+          chief_complaint: document.getElementById('chief-complaint').value.trim() || null,
+          history_of_present_illness: document.getElementById('history-present-illness').value.trim() || null,
+          hospital_course: document.getElementById('hospital-course').value.trim() || null,
+          procedures_performed: procedures.length > 0 ? procedures : null,
+          final_diagnoses: finalDiagnoses.map(d => ({
+            name: d.name,
+            icd_code: d.icd_code
+          })),
+          discharge_medications: medications.length > 0 ? medications : null,
+          discharge_instructions: document.getElementById('discharge-instructions').value.trim() || null,
+          activity_restrictions: document.getElementById('activity-restrictions').value.trim() || null,
+          diet_instructions: document.getElementById('diet-instructions').value.trim() || null,
+          follow_up_plan: document.getElementById('followup-plan').value.trim() || null,
+          follow_up_appointments: followUps.length > 0 ? followUps : null,
+          patient_education_provided: education.length > 0 ? education : null,
+          discharging_physician: document.getElementById('discharging-physician').value.trim(),
+          discharging_physician_id: user.id || null,
+          summary_generated_at: new Date().toISOString(),
+          notes: document.getElementById('summary-notes').value.trim() || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          // Check if summary exists
+          const { data: existing } = await window.supabaseClient
+            .from('discharge_summaries')
+            .select('id')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .maybeSingle();
+          
+          if (existing) {
+            // Update existing
+            const { error } = await window.supabaseClient
+              .from('discharge_summaries')
+              .update(summaryData)
+              .eq('id', existing.id);
+            
+            if (error) throw error;
+            console.log('✅ Discharge summary updated in Supabase');
+          } else {
+            // Insert new
+            const { error } = await window.supabaseClient
+              .from('discharge_summaries')
+              .insert(summaryData);
+            
+            if (error) throw error;
+            console.log('✅ Discharge summary saved to Supabase');
+          }
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`discharge_summaries_${organizationId}`) || "[]";
+          const summaries = JSON.parse(stored);
+          const existingIndex = summaries.findIndex(s => s.admission_id === admissionId);
+          
+          if (existingIndex !== -1) {
+            summaries[existingIndex] = { ...summaryData, id: summaries[existingIndex].id, updated_at: new Date().toISOString() };
+          } else {
+            summaries.push({ ...summaryData, id: `ds_${Date.now()}`, created_at: new Date().toISOString() });
+          }
+          
+          localStorage.setItem(`discharge_summaries_${organizationId}`, JSON.stringify(summaries));
+          console.log('✅ Discharge summary saved to localStorage');
+        }
+        
+        // Update admission status to discharged
+        if (window.supabaseClient && admission) {
+          await window.supabaseClient
+            .from('admissions')
+            .update({
+              status: 'discharged',
+              discharge_date: summaryData.discharge_date
+            })
+            .eq('id', admissionId);
+        }
+        
+        alert('Discharge summary saved successfully!');
+      } catch (error) {
+        console.error('Error saving discharge summary:', error);
+        alert('Error saving discharge summary: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function goBack() {
+      if (admissionId) {
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } else {
+        window.location.href = 'admissions-dashboard';
+      }
+    }
+
+    function getAdmissionIdForUrl() {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+    
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+  </script>
+</body>
+</html>

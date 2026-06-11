@@ -1,0 +1,146 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple DOB Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        .btn:hover { background: #0056b3; }
+        .btn.success { background: #28a745; }
+        .btn:disabled { background: #ccc; cursor: not-allowed; }
+        .log { background: #000; color: #0f0; padding: 15px; font-family: monospace; height: 300px; overflow-y: auto; margin: 20px 0; border-radius: 5px; }
+        .patient { background: #e8f5e8; padding: 10px; margin: 5px 0; border-radius: 5px; border-left: 4px solid #28a745; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Simple DOB Fix</h1>
+        <p>This will update the 7 patients with their correct dates of birth from the backup data.</p>
+        
+        <div class="patient">
+            <strong>Patients to be updated:</strong><br>
+            • MEC0001 (Ola Kolapo) → 1964-01-02<br>
+            • MEC0002 (Kunle Olutiola) → 1970-01-03<br>
+            • MEC0003 (Mohammed Ibrahim) → 1975-05-22<br>
+            • MEC0004 (Toyin Olusanya) → 1969-05-01<br>
+            • MEC0005 (Samson Alagbara) → 1980-01-01<br>
+            • MEC0006 (Toke Makinwa) → 1988-01-01<br>
+            • MEC0007 (Akeju Lawal) → 1987-01-01
+        </div>
+        
+        <button class="btn" onclick="fixDOB()">🚀 Fix All Patient DOB Data</button>
+        <button class="btn success" onclick="verifyFix()">✅ Verify Fix</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970';
+        
+        const patientsToFix = [
+            { id: 'MEC0001', dob: '1964-01-02', name: 'Ola Kolapo' },
+            { id: 'MEC0002', dob: '1970-01-03', name: 'Kunle Olutiola' },
+            { id: 'MEC0003', dob: '1975-05-22', name: 'Mohammed Ibrahim' },
+            { id: 'MEC0004', dob: '1969-05-01', name: 'Toyin Olusanya' },
+            { id: 'MEC0005', dob: '1980-01-01', name: 'Samson Alagbara' },
+            { id: 'MEC0006', dob: '1988-01-01', name: 'Toke Makinwa' },
+            { id: 'MEC0007', dob: '1987-01-01', name: 'Akeju Lawal' }
+        ];
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        async function fixDOB() {
+            log('🚀 Starting DOB fix process...');
+            let fixed = 0;
+            let errors = 0;
+            
+            for (const patient of patientsToFix) {
+                try {
+                    log(`🔧 Updating ${patient.name} (${patient.id}) with DOB: ${patient.dob}`);
+                    
+                    const { error } = await supabase
+                        .from('patients')
+                        .update({ 
+                            date_of_birth: patient.dob,
+                            updated_at: new Date().toISOString()
+                        })
+                        .eq('organization_id', ORG_ID)
+                        .eq('patient_id', patient.id);
+                    
+                    if (error) {
+                        throw error;
+                    }
+                    
+                    fixed++;
+                    log(`✅ Successfully updated ${patient.name}`);
+                    
+                } catch (error) {
+                    errors++;
+                    log(`❌ Error updating ${patient.name}: ${error.message}`);
+                }
+            }
+            
+            log(`🎉 Fix complete! ${fixed} patients updated, ${errors} errors`);
+        }
+        
+        async function verifyFix() {
+            log('🔍 Verifying DOB fix...');
+            
+            try {
+                const { data, error } = await supabase
+                    .from('patients')
+                    .select('patient_id, first_name, last_name, date_of_birth')
+                    .eq('organization_id', ORG_ID)
+                    .in('patient_id', patientsToFix.map(p => p.id));
+                
+                if (error) throw error;
+                
+                log(`📊 Verification Results:`);
+                data.forEach(patient => {
+                    const dob = patient.date_of_birth || 'MISSING';
+                    const status = patient.date_of_birth ? '✅' : '❌';
+                    log(`${status} ${patient.first_name} ${patient.last_name} (${patient.patient_id}): ${dob}`);
+                });
+                
+                const withDOB = data.filter(p => p.date_of_birth).length;
+                log(`📈 Summary: ${withDOB}/${data.length} patients have DOB data`);
+                
+            } catch (error) {
+                log(`❌ Verification error: ${error.message}`);
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            log('🚀 Simple DOB Fix Tool ready');
+            log('💡 Click "Fix All Patient DOB Data" to start');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>
+
+</html>
+
+
+
+
+
+

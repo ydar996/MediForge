@@ -1,0 +1,379 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cleanup Appointments & Patients</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .error { background-color: #ffe6e6; }
+    .warning { background-color: #fff3cd; }
+    .success { background-color: #d4edda; }
+    button { padding: 10px 15px; margin: 5px; cursor: pointer; }
+    .cleanup-btn { background-color: #dc3545; color: white; border: none; border-radius: 4px; }
+    .info-btn { background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .count { font-weight: bold; color: #dc3545; }
+  </style>
+</head>
+<body>
+  <h1>?? Appointments & Patients Cleanup Tool</h1>
+  
+  <!-- Load Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>
+  
+  <div class="section">
+    <h2>?? Current Status</h2>
+    <button class="info-btn" onclick="analyzeData()">?? Analyze Current Data</button>
+    <div id="analysis-results"></div>
+  </div>
+  
+  <div class="section error">
+    <h2>?? Problem Appointments</h2>
+    <button class="info-btn" onclick="findProblemAppointments()">?? Find Problem Appointments</button>
+    <div id="problem-appointments"></div>
+  </div>
+  
+  <div class="section warning">
+    <h2>?? Test Patients to Clean</h2>
+    <button class="info-btn" onclick="findTestPatients()">?? Find Test Patients</button>
+    <button class="cleanup-btn" onclick="deleteTestPatients()">??? Delete Test Patients</button>
+    <div id="test-patients"></div>
+  </div>
+  
+  <div class="section error">
+    <h2>?? Orphaned Appointments</h2>
+    <button class="info-btn" onclick="findOrphanedAppointments()">?? Find Orphaned Appointments</button>
+    <button class="cleanup-btn" onclick="deleteOrphanedAppointments()">??? Delete Orphaned Appointments</button>
+    <div id="orphaned-appointments"></div>
+  </div>
+  
+  <div class="section success">
+    <h2>? Valid Data</h2>
+    <button class="info-btn" onclick="showValidData()">?? Show Valid Appointments</button>
+    <div id="valid-data"></div>
+  </div>
+
+  <script>
+    let currentOrgId = null;
+    let patients = [];
+    let appointments = [];
+
+    async function initialize() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      currentOrgId = user.organizationId || (user.org ? JSON.parse(localStorage.getItem("organizations") || "{}")[user.org]?.id : null);
+      
+      if (!currentOrgId) {
+        alert('No organization ID found. Please login first.');
+        return;
+      }
+      
+      console.log('?? Organization ID:', currentOrgId);
+      
+      // Load patients and appointments
+      await loadPatients();
+      await loadAppointments();
+    }
+
+    async function loadPatients() {
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('patients')
+            .select('*')
+            .eq('organization_id', currentOrgId);
+          
+          if (error) throw error;
+          patients = data || [];
+          console.log('?? Loaded patients:', patients.length);
+        } catch (err) {
+          console.error('? Error loading patients:', err);
+        }
+      }
+    }
+
+    async function loadAppointments() {
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('appointments')
+            .select('*')
+            .eq('organization_id', currentOrgId);
+          
+          if (error) throw error;
+          appointments = data || [];
+          console.log('?? Loaded appointments:', appointments.length);
+        } catch (err) {
+          console.error('? Error loading appointments:', err);
+        }
+      }
+    }
+
+    function analyzeData() {
+      const results = document.getElementById('analysis-results');
+      
+      const patientNames = patients.map(p => `${p.first_name} ${p.last_name}`.trim());
+      const appointmentPatientNames = appointments.map(a => a.patient_name || 'Unknown Patient');
+      
+      const uniqueAppointmentPatients = [...new Set(appointmentPatientNames)];
+      const orphanedAppointments = appointments.filter(a => {
+        const patientName = a.patient_name || 'Unknown Patient';
+        return patientName === 'Unknown Patient' || !patientNames.includes(patientName);
+      });
+      
+      const testPatients = patients.filter(p => {
+        const name = `${p.first_name} ${p.last_name}`.toLowerCase();
+        return name.includes('test') || name.includes('e2e') || name.includes('debug') || name.includes('verified');
+      });
+      
+      results.innerHTML = `
+        <h3>?? Data Analysis Results</h3>
+        <table>
+          <tr><th>Metric</th><th>Count</th></tr>
+          <tr><td>Total Patients in Supabase</td><td class="count">${patients.length}</td></tr>
+          <tr><td>Total Appointments in Supabase</td><td class="count">${appointments.length}</td></tr>
+          <tr><td>Unique Patient Names in Appointments</td><td class="count">${uniqueAppointmentPatients.length}</td></tr>
+          <tr><td>Orphaned Appointments (no matching patient)</td><td class="count">${orphanedAppointments.length}</td></tr>
+          <tr><td>Test Patients (should be deleted)</td><td class="count">${testPatients.length}</td></tr>
+        </table>
+        <p><strong>Issues Found:</strong></p>
+        <ul>
+          <li>${orphanedAppointments.length} appointments reference patients that don't exist</li>
+          <li>${testPatients.length} test patients should be cleaned up</li>
+          <li>${uniqueAppointmentPatients.length - patients.length} more appointment patient names than actual patients</li>
+        </ul>
+      `;
+    }
+
+    function findProblemAppointments() {
+      const results = document.getElementById('problem-appointments');
+      const patientNames = patients.map(p => `${p.first_name} ${p.last_name}`.trim());
+      
+      const problemAppointments = appointments.filter(a => {
+        const patientName = a.patient_name || 'Unknown Patient';
+        return patientName === 'Unknown Patient' || !patientNames.includes(patientName);
+      });
+      
+      let html = `<h3>?? Problem Appointments (${problemAppointments.length})</h3>`;
+      
+      if (problemAppointments.length > 0) {
+        html += '<table><tr><th>Patient Name</th><th>Date</th><th>Time</th><th>Issue</th></tr>';
+        problemAppointments.forEach(apt => {
+          const patientName = apt.patient_name || 'Unknown Patient';
+          const issue = patientName === 'Unknown Patient' ? 'No patient name' : 'Patient not found';
+          html += `<tr><td>${patientName}</td><td>${apt.appointment_date}</td><td>${apt.appointment_time}</td><td>${issue}</td></tr>`;
+        });
+        html += '</table>';
+      } else {
+        html += '<p>? No problem appointments found!</p>';
+      }
+      
+      results.innerHTML = html;
+    }
+
+    function findTestPatients() {
+      const results = document.getElementById('test-patients');
+      
+      const testPatients = patients.filter(p => {
+        const name = `${p.first_name} ${p.last_name}`.toLowerCase();
+        return name.includes('test') || name.includes('e2e') || name.includes('debug') || name.includes('verified');
+      });
+      
+      let html = `<h3>?? Test Patients (${testPatients.length})</h3>`;
+      
+      if (testPatients.length > 0) {
+        html += '<table><tr><th>Patient Name</th><th>ID</th><th>Created</th><th>Related Appointments</th></tr>';
+        testPatients.forEach(patient => {
+          const patientName = `${patient.first_name} ${patient.last_name}`;
+          const relatedAppointments = appointments.filter(a => a.patient_name === patientName).length;
+          html += `<tr><td>${patientName}</td><td>${patient.id}</td><td>${patient.created_at?.split('T')[0] || 'Unknown'}</td><td>${relatedAppointments}</td></tr>`;
+        });
+        html += '</table>';
+        html += '<p><strong>?? Warning:</strong> Deleting these patients will also delete their related appointments!</p>';
+      } else {
+        html += '<p>? No test patients found!</p>';
+      }
+      
+      results.innerHTML = html;
+    }
+
+    async function deleteTestPatients() {
+      if (!confirm('?? This will delete ALL test patients and their related appointments. Are you sure?')) {
+        return;
+      }
+      
+      const testPatients = patients.filter(p => {
+        const name = `${p.first_name} ${p.last_name}`.toLowerCase();
+        return name.includes('test') || name.includes('e2e') || name.includes('debug') || name.includes('verified');
+      });
+      
+      let deletedCount = 0;
+      
+      for (const patient of testPatients) {
+        try {
+          // First delete related appointments
+          const patientName = `${patient.first_name} ${patient.last_name}`;
+          const relatedAppointments = appointments.filter(a => a.patient_name === patientName);
+          
+          for (const appointment of relatedAppointments) {
+            const { error: aptError } = await window.supabaseClient
+              .from('appointments')
+              .delete()
+              .eq('appointment_id', appointment.appointment_id);
+            
+            if (aptError) throw aptError;
+          }
+          
+          // Then delete the patient
+          const { error: patientError } = await window.supabaseClient
+            .from('patients')
+            .delete()
+            .eq('id', patient.id);
+          
+          if (patientError) throw patientError;
+          
+          deletedCount++;
+          console.log(`? Deleted test patient: ${patientName}`);
+        } catch (err) {
+          console.error(`? Error deleting patient ${patient.first_name} ${patient.last_name}:`, err);
+        }
+      }
+      
+      alert(`? Cleanup complete! Deleted ${deletedCount} test patients and their appointments.`);
+      
+      // Reload data
+      await loadPatients();
+      await loadAppointments();
+      findTestPatients();
+      findOrphanedAppointments();
+    }
+
+    function findOrphanedAppointments() {
+      const results = document.getElementById('orphaned-appointments');
+      const patientNames = patients.map(p => `${p.first_name} ${p.last_name}`.trim());
+      
+      const orphanedAppointments = appointments.filter(a => {
+        const patientName = a.patient_name || 'Unknown Patient';
+        return patientName === 'Unknown Patient' || !patientNames.includes(patientName);
+      });
+      
+      let html = `<h3>?? Orphaned Appointments (${orphanedAppointments.length})</h3>`;
+      
+      if (orphanedAppointments.length > 0) {
+        html += '<table><tr><th>Patient Name</th><th>Date</th><th>Time</th><th>Doctor</th><th>Status</th></tr>';
+        orphanedAppointments.forEach(apt => {
+          const patientName = apt.patient_name || 'Unknown Patient';
+          html += `<tr><td>${patientName}</td><td>${apt.appointment_date}</td><td>${apt.appointment_time}</td><td>${apt.doctor || 'Unknown'}</td><td>${apt.status || 'Unknown'}</td></tr>`;
+        });
+        html += '</table>';
+        html += '<p><strong>?? Warning:</strong> These appointments reference patients that no longer exist.</p>';
+      } else {
+        html += '<p>? No orphaned appointments found!</p>';
+      }
+      
+      results.innerHTML = html;
+    }
+
+    async function deleteOrphanedAppointments() {
+      if (!confirm('?? This will delete ALL orphaned appointments (appointments with no matching patient). Are you sure?')) {
+        return;
+      }
+      
+      const patientNames = patients.map(p => `${p.first_name} ${p.last_name}`.trim());
+      const orphanedAppointments = appointments.filter(a => {
+        const patientName = a.patient_name || 'Unknown Patient';
+        return patientName === 'Unknown Patient' || !patientNames.includes(patientName);
+      });
+      
+      let deletedCount = 0;
+      
+      for (const appointment of orphanedAppointments) {
+        try {
+          // Use the correct field name for deletion
+          const { error } = await window.supabaseClient
+            .from('appointments')
+            .delete()
+            .eq('id', appointment.id);
+          
+          if (error) {
+            console.error(`? Error deleting appointment ${appointment.id}:`, error);
+            // Try alternative field names
+            const altError = await window.supabaseClient
+              .from('appointments')
+              .delete()
+              .eq('appointment_id', appointment.appointment_id || appointment.id);
+            
+            if (altError.error) {
+              console.error(`? Alternative deletion also failed:`, altError.error);
+              continue;
+            }
+          }
+          
+          deletedCount++;
+          console.log(`? Deleted orphaned appointment: ${appointment.patient_name || 'Unknown Patient'}`);
+        } catch (err) {
+          console.error(`? Exception deleting appointment ${appointment.id}:`, err);
+        }
+      }
+      
+      alert(`? Cleanup complete! Deleted ${deletedCount} orphaned appointments.`);
+      
+      // Reload data
+      await loadAppointments();
+      findOrphanedAppointments();
+      analyzeData();
+    }
+
+    function showValidData() {
+      const results = document.getElementById('valid-data');
+      const patientNames = patients.map(p => `${p.first_name} ${p.last_name}`.trim());
+      
+      const validAppointments = appointments.filter(a => {
+        const patientName = a.patient_name || 'Unknown Patient';
+        return patientName !== 'Unknown Patient' && patientNames.includes(patientName);
+      });
+      
+      let html = `<h3>? Valid Appointments (${validAppointments.length})</h3>`;
+      
+      if (validAppointments.length > 0) {
+        html += '<table><tr><th>Patient Name</th><th>Date</th><th>Time</th><th>Doctor</th><th>Status</th></tr>';
+        validAppointments.forEach(apt => {
+          html += `<tr><td>${apt.patient_name}</td><td>${apt.appointment_date}</td><td>${apt.appointment_time}</td><td>${apt.doctor || 'Unknown'}</td><td>${apt.status || 'Unknown'}</td></tr>`;
+        });
+        html += '</table>';
+      } else {
+        html += '<p>? No valid appointments found!</p>';
+      }
+      
+      results.innerHTML = html;
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', initialize);
+  </script>  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+

@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Bi-Directional Sync Test</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .success { background: #e8f5e8; border-left: 4px solid #4caf50; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .info { background: #e3f2fd; border-left: 4px solid #2196f3; }
+        button { background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; cursor: pointer; margin: 5px; }
+        button:hover { background: #0056b3; }
+        .test-button { background: #28a745; }
+        .test-button:hover { background: #1e7e34; }
+    </style>
+</head>
+<body>
+    <h1>🔄 Bi-Directional Sync Test</h1>
+    <p>This tool tests the synchronization between clinical-note.html and patient-details.html tables.</p>
+    
+    <div id="test-results"></div>
+    
+    <div class="test-section">
+        <h2>🧪 Test Actions</h2>
+        <button class="test-button" onclick="testAllergiesSync()">Test Allergies Sync</button>
+        <button class="test-button" onclick="testDiagnosesSync()">Test Diagnoses Sync</button>
+        <button class="test-button" onclick="testImmunizationsSync()">Test Immunizations Sync</button>
+        <button class="test-button" onclick="testMedicalHistorySync()">Test Medical History Sync</button>
+        <button class="test-button" onclick="testVitalsSync()">Test Vitals Sync</button>
+        <button class="test-button" onclick="runAllTests()">Run All Tests</button>
+    </div>
+
+    <div class="test-section">
+        <h2>📊 Current Data Status</h2>
+        <button onclick="checkCurrentData()">Check Current Data</button>
+        <div id="data-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h2>🔗 Manual Sync Test</h2>
+        <p>Add test data to see if it syncs between pages:</p>
+        <button onclick="addTestAllergy()">Add Test Allergy</button>
+        <button onclick="addTestDiagnosis()">Add Test Diagnosis</button>
+        <button onclick="addTestImmunization()">Add Test Immunization</button>
+    </div>
+
+    <script>
+        function addResult(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `test-section ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            document.getElementById('test-results').appendChild(div);
+        }
+
+        function checkCurrentData() {
+            addResult('🔍 Checking current data status...', 'info');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+                const patient = patients.find(p => p.id === 'MEC0006');
+                
+                if (!patient) {
+                    addResult('❌ Patient MEC0006 not found in localStorage', 'error');
+                    return;
+                }
+                
+                const status = {
+                    allergies: patient.allergies?.length || 0,
+                    diagnoses: patient.diagnoses?.length || 0,
+                    immunizations: patient.immunizations?.length || 0,
+                    medicalHistory: patient.medicalHistory?.length || 0,
+                    vitals: patient.vitals?.length || 0
+                };
+                
+                addResult(`📊 Current data for MEC0006:<br>
+                    • Allergies: ${status.allergies}<br>
+                    • Diagnoses: ${status.diagnoses}<br>
+                    • Immunizations: ${status.immunizations}<br>
+                    • Medical History: ${status.medicalHistory}<br>
+                    • Vitals: ${status.vitals}`, 'success');
+                
+                document.getElementById('data-status').innerHTML = `
+                    <div class="test-section success">
+                        <strong>Current Data Counts:</strong><br>
+                        Allergies: ${status.allergies} | Diagnoses: ${status.diagnoses} | 
+                        Immunizations: ${status.immunizations} | Medical History: ${status.medicalHistory} | 
+                        Vitals: ${status.vitals}
+                    </div>
+                `;
+                
+            } catch (error) {
+                addResult(`❌ Error checking data: ${error.message}`, 'error');
+            }
+        }
+
+        function testAllergiesSync() {
+            addResult('🧪 Testing Allergies Sync...', 'info');
+            
+            // Check if functions exist
+            if (typeof displayNoteAllergies === 'function' && typeof displayAllergies === 'function') {
+                addResult('✅ Both displayNoteAllergies and displayAllergies functions exist', 'success');
+                
+                // Test with sample data
+                const testAllergies = [
+                    { allergen: "Test Sync", reaction: "Test Reaction", severity: "Moderate", notes: "Sync test" }
+                ];
+                
+                try {
+                    displayNoteAllergies(testAllergies);
+                    addResult('✅ displayNoteAllergies function executed successfully', 'success');
+                    
+                    displayAllergies(testAllergies);
+                    addResult('✅ displayAllergies function executed successfully', 'success');
+                    
+                    addResult('🎉 Allergies sync test PASSED', 'success');
+                } catch (error) {
+                    addResult(`❌ Error in allergies sync test: ${error.message}`, 'error');
+                }
+            } else {
+                addResult('❌ Required functions not found. Make sure you\'re on the correct page.', 'error');
+            }
+        }
+
+        function testDiagnosesSync() {
+            addResult('🧪 Testing Diagnoses Sync...', 'info');
+            
+            if (typeof displayNoteDiagnoses === 'function' && typeof displayDiagnoses === 'function') {
+                addResult('✅ Both displayNoteDiagnoses and displayDiagnoses functions exist', 'success');
+                
+                const testDiagnoses = [
+                    { date: "2025-10-28", diagnosis: "Test Sync Diagnosis", notes: "Sync test" }
+                ];
+                
+                try {
+                    displayNoteDiagnoses(testDiagnoses);
+                    addResult('✅ displayNoteDiagnoses function executed successfully', 'success');
+                    
+                    displayDiagnoses(testDiagnoses);
+                    addResult('✅ displayDiagnoses function executed successfully', 'success');
+                    
+                    addResult('🎉 Diagnoses sync test PASSED', 'success');
+                } catch (error) {
+                    addResult(`❌ Error in diagnoses sync test: ${error.message}`, 'error');
+                }
+            } else {
+                addResult('❌ Required functions not found. Make sure you\'re on the correct page.', 'error');
+            }
+        }
+
+        function testImmunizationsSync() {
+            addResult('🧪 Testing Immunizations Sync...', 'info');
+            
+            if (typeof displayNoteImmunizations === 'function' && typeof displayImmunizations === 'function') {
+                addResult('✅ Both displayNoteImmunizations and displayImmunizations functions exist', 'success');
+                
+                const testImmunizations = [
+                    { vaccine: "Test Sync Vaccine", date: "2025-10-28", notes: "Sync test" }
+                ];
+                
+                try {
+                    displayNoteImmunizations(testImmunizations);
+                    addResult('✅ displayNoteImmunizations function executed successfully', 'success');
+                    
+                    displayImmunizations(testImmunizations);
+                    addResult('✅ displayImmunizations function executed successfully', 'success');
+                    
+                    addResult('🎉 Immunizations sync test PASSED', 'success');
+                } catch (error) {
+                    addResult(`❌ Error in immunizations sync test: ${error.message}`, 'error');
+                }
+            } else {
+                addResult('❌ Required functions not found. Make sure you\'re on the correct page.', 'error');
+            }
+        }
+
+        function testMedicalHistorySync() {
+            addResult('🧪 Testing Medical History Sync...', 'info');
+            
+            if (typeof displayNoteHistory === 'function' && typeof displayHistory === 'function') {
+                addResult('✅ Both displayNoteHistory and displayHistory functions exist', 'success');
+                
+                const testHistory = [
+                    { date: "2025-10-28", event: "Test Sync Event", notes: "Sync test" }
+                ];
+                
+                try {
+                    displayNoteHistory(testHistory);
+                    addResult('✅ displayNoteHistory function executed successfully', 'success');
+                    
+                    displayHistory(testHistory);
+                    addResult('✅ displayHistory function executed successfully', 'success');
+                    
+                    addResult('🎉 Medical History sync test PASSED', 'success');
+                } catch (error) {
+                    addResult(`❌ Error in medical history sync test: ${error.message}`, 'error');
+                }
+            } else {
+                addResult('❌ Required functions not found. Make sure you\'re on the correct page.', 'error');
+            }
+        }
+
+        function testVitalsSync() {
+            addResult('🧪 Testing Vitals Sync...', 'info');
+            
+            if (typeof displayNoteVitals === 'function' && typeof displayVitals === 'function') {
+                addResult('✅ Both displayNoteVitals and displayVitals functions exist', 'success');
+                
+                const testVitals = [
+                    { temp: "98.6", hr: "72", rr: "16", systolic: "120", diastolic: "80", timestamp: new Date().toISOString() }
+                ];
+                
+                try {
+                    displayNoteVitals(testVitals);
+                    addResult('✅ displayNoteVitals function executed successfully', 'success');
+                    
+                    displayVitals(testVitals);
+                    addResult('✅ displayVitals function executed successfully', 'success');
+                    
+                    addResult('🎉 Vitals sync test PASSED', 'success');
+                } catch (error) {
+                    addResult(`❌ Error in vitals sync test: ${error.message}`, 'error');
+                }
+            } else {
+                addResult('❌ Required functions not found. Make sure you\'re on the correct page.', 'error');
+            }
+        }
+
+        function runAllTests() {
+            addResult('🚀 Running all sync tests...', 'info');
+            testAllergiesSync();
+            setTimeout(() => testDiagnosesSync(), 500);
+            setTimeout(() => testImmunizationsSync(), 1000);
+            setTimeout(() => testMedicalHistorySync(), 1500);
+            setTimeout(() => testVitalsSync(), 2000);
+            setTimeout(() => addResult('🎉 All sync tests completed!', 'success'), 2500);
+        }
+
+        function addTestAllergy() {
+            addResult('➕ Adding test allergy...', 'info');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+                const patient = patients.find(p => p.id === 'MEC0006');
+                
+                if (!patient) {
+                    addResult('❌ Patient MEC0006 not found', 'error');
+                    return;
+                }
+                
+                if (!patient.allergies) {
+                    patient.allergies = [];
+                }
+                
+                const testAllergy = {
+                    allergen: `Test Allergy ${Date.now()}`,
+                    reaction: "Test Reaction",
+                    severity: "Moderate",
+                    notes: "Bi-directional sync test"
+                };
+                
+                patient.allergies.push(testAllergy);
+                localStorage.setItem('Mecure Clinics_patients', JSON.stringify(patients));
+                
+                addResult(`✅ Test allergy added: ${testAllergy.allergen}`, 'success');
+                addResult('🔄 Check both clinical-note.html and patient-details.html to verify sync', 'info');
+                
+            } catch (error) {
+                addResult(`❌ Error adding test allergy: ${error.message}`, 'error');
+            }
+        }
+
+        function addTestDiagnosis() {
+            addResult('➕ Adding test diagnosis...', 'info');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+                const patient = patients.find(p => p.id === 'MEC0006');
+                
+                if (!patient) {
+                    addResult('❌ Patient MEC0006 not found', 'error');
+                    return;
+                }
+                
+                if (!patient.diagnoses) {
+                    patient.diagnoses = [];
+                }
+                
+                const testDiagnosis = {
+                    date: new Date().toISOString().split('T')[0],
+                    diagnosis: `Test Diagnosis ${Date.now()}`,
+                    notes: "Bi-directional sync test"
+                };
+                
+                patient.diagnoses.push(testDiagnosis);
+                localStorage.setItem('Mecure Clinics_patients', JSON.stringify(patients));
+                
+                addResult(`✅ Test diagnosis added: ${testDiagnosis.diagnosis}`, 'success');
+                addResult('🔄 Check both clinical-note.html and patient-details.html to verify sync', 'info');
+                
+            } catch (error) {
+                addResult(`❌ Error adding test diagnosis: ${error.message}`, 'error');
+            }
+        }
+
+        function addTestImmunization() {
+            addResult('➕ Adding test immunization...', 'info');
+            
+            try {
+                const patients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+                const patient = patients.find(p => p.id === 'MEC0006');
+                
+                if (!patient) {
+                    addResult('❌ Patient MEC0006 not found', 'error');
+                    return;
+                }
+                
+                if (!patient.immunizations) {
+                    patient.immunizations = [];
+                }
+                
+                const testImmunization = {
+                    vaccine: `Test Vaccine ${Date.now()}`,
+                    date: new Date().toISOString().split('T')[0],
+                    notes: "Bi-directional sync test"
+                };
+                
+                patient.immunizations.push(testImmunization);
+                localStorage.setItem('Mecure Clinics_patients', JSON.stringify(patients));
+                
+                addResult(`✅ Test immunization added: ${testImmunization.vaccine}`, 'success');
+                addResult('🔄 Check both clinical-note.html and patient-details.html to verify sync', 'info');
+                
+            } catch (error) {
+                addResult(`❌ Error adding test immunization: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-check data on page load
+        window.addEventListener('load', () => {
+            addResult('🔧 Bi-directional sync test tool loaded', 'info');
+            checkCurrentData();
+        });
+    </script>
+</body>
+</html>

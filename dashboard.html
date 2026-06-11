@@ -1,0 +1,2734 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="description" content="MediForge Dashboard - Manage patients, appointments, and clinical data">
+  <meta name="theme-color" content="#4CAF50">
+  <link rel="manifest" href="/manifest.json">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Dashboard - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=220">
+  <link rel="stylesheet" href="css/mobile.css?v=1">
+  <link rel="stylesheet" href="css/logout-button.css">
+  
+  <!-- Smart Mobile Cache Buster - Non-Aggressive -->
+  <!-- DISABLED: Smart mobile cache buster removed to prevent mobile refresh loops -->
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      /* Primary Nigerian Colors */
+      --primary-green: #008753;        /* Nigerian flag green */
+      --dark-green: #006b42;           /* Deep forest green */
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      
+      /* Nigerian Flag Colors */
+      --nigerian-white: #FFFFFF;       /* White stripe */
+      --nigerian-green: #008753;       /* Green stripe */
+      
+      /* Traditional Nigerian Colors */
+      --gold: #FFD700;                 /* Nigerian gold/amber */
+      --dark-gold: #B8860B;            /* Dark gold */
+      --bronze: #CD7F32;               /* Bronze accent */
+      --earth-brown: #8B4513;          /* Earthy brown */
+      --warm-orange: #FF8C00;          /* Warm orange */
+      --deep-red: #8B0000;             /* Deep red accent */
+      
+      /* Cultural Accent Colors */
+      --kente-gold: #DAA520;           /* Kente cloth gold */
+      --adire-blue: #4169E1;           /* Adire indigo blue */
+      --coral: #FF7F50;                /* Coral accent */
+      --ivory: #FFFFF0;                /* Ivory/cream */
+      
+      /* Neutral Palette */
+      --warm-gray: #F5F5DC;            /* Warm beige */
+      --charcoal: #36454F;             /* Charcoal text */
+      --soft-white: #FAFAFA;           /* Soft white background */
+    }
+    
+    body {
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0, 135, 83, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(218, 165, 32, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(65, 105, 225, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    body > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--adire-blue), var(--coral), var(--primary-green), var(--dark-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 40px;
+      font-size: 3em;
+      text-shadow: 2px 2px 4px rgba(0, 135, 83, 0.1);
+      letter-spacing: -1px;
+      position: relative;
+    }
+    
+    h1::after {
+      content: '';
+      position: absolute;
+      bottom: -10px;
+      left: 50%;
+      transform: translateX(-50%);
+      width: 200px;
+      height: 4px;
+      background: linear-gradient(90deg, var(--primary-green), var(--dark-green), var(--adire-blue), var(--primary-green));
+      border-radius: 2px;
+    }
+    
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .dashboard-grid button {
+      color: var(--nigerian-white);
+      border: 2px solid transparent;
+      padding: 20px 28px;
+      border-radius: 14px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 700;
+      transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+      box-shadow: 0 6px 20px rgba(0, 0, 0, 0.15);
+      position: relative;
+      overflow: hidden;
+      text-align: center;
+    }
+    
+    .dashboard-grid button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s;
+    }
+    
+    .dashboard-grid button:hover::before {
+      left: 100%;
+    }
+    
+    .dashboard-grid button::after {
+      content: '';
+      position: absolute;
+      inset: 0;
+      border-radius: 14px;
+      padding: 2px;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--adire-blue));
+      -webkit-mask: linear-gradient(#fff 0 0) content-box, linear-gradient(#fff 0 0);
+      -webkit-mask-composite: xor;
+      mask-composite: exclude;
+      opacity: 0;
+      transition: opacity 0.4s;
+    }
+    
+    .dashboard-grid button:hover::after {
+      opacity: 1;
+    }
+    
+    .dashboard-grid button:hover {
+      transform: translateY(-5px) scale(1.03);
+      box-shadow: 0 10px 30px rgba(0, 0, 0, 0.25);
+    }
+    
+    .dashboard-grid button:active {
+      transform: translateY(-2px) scale(1.01);
+    }
+    
+    /* Default button - use green tones */
+    .dashboard-grid button:not([onclick*="billing"]):not([onclick*="subscription"]):not([onclick*="patient-portal"]):not([onclick*="medical-specialty"]):not([onclick*="security"]):not([onclick*="encryption"]):not([onclick*="recover"]):not([onclick*="Organization Code"]):not([onclick*="pharmacy"]):not([onclick*="Logout"]):not([onclick*="Edit Profile"]) {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 50%, var(--primary-green) 100%);
+    }
+    
+    .dashboard-grid button:not([onclick*="billing"]):not([onclick*="subscription"]):not([onclick*="patient-portal"]):not([onclick*="medical-specialty"]):not([onclick*="security"]):not([onclick*="encryption"]):not([onclick*="recover"]):not([onclick*="Organization Code"]):not([onclick*="pharmacy"]):not([onclick*="Logout"]):not([onclick*="Edit Profile"]):hover {
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 50%, var(--dark-green) 100%);
+    }
+    
+    /* Special button colors using balanced Nigerian heritage palette */
+    .dashboard-grid button[onclick*="billing"] {
+      background: linear-gradient(135deg, var(--kente-gold), var(--warm-orange));
+    }
+    
+    .dashboard-grid button[onclick*="billing"]:hover {
+      background: linear-gradient(135deg, var(--warm-orange), var(--kente-gold));
+    }
+    
+    .dashboard-grid button[onclick*="subscription"] {
+      background: linear-gradient(135deg, var(--adire-blue), var(--primary-green));
+    }
+    
+    .dashboard-grid button[onclick*="subscription"]:hover {
+      background: linear-gradient(135deg, var(--primary-green), var(--adire-blue));
+    }
+    
+    .dashboard-grid button[onclick*="patient-portal"] {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+    }
+    
+    .dashboard-grid button[onclick*="patient-portal"]:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+    }
+    
+    .dashboard-grid button[onclick*="medical-specialty"] {
+      background: linear-gradient(135deg, var(--adire-blue), var(--dark-green));
+    }
+    
+    .dashboard-grid button[onclick*="medical-specialty"]:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--adire-blue));
+    }
+    
+    .dashboard-grid button[onclick*="security"] {
+      background: linear-gradient(135deg, var(--bronze), var(--dark-green));
+    }
+    
+    .dashboard-grid button[onclick*="security"]:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--bronze));
+    }
+    
+    .dashboard-grid button[onclick*="encryption"] {
+      background: linear-gradient(135deg, var(--coral), var(--warm-orange));
+    }
+    
+    .dashboard-grid button[onclick*="encryption"]:hover {
+      background: linear-gradient(135deg, var(--warm-orange), var(--coral));
+    }
+    
+    .dashboard-grid button[onclick*="recover"] {
+      background: linear-gradient(135deg, var(--warm-orange), var(--coral));
+    }
+    
+    .dashboard-grid button[onclick*="recover"]:hover {
+      background: linear-gradient(135deg, var(--coral), var(--warm-orange));
+    }
+    
+    .dashboard-grid button[onclick*="Organization Code"] {
+      background: linear-gradient(135deg, var(--warm-orange), var(--kente-gold));
+    }
+    
+    .dashboard-grid button[onclick*="Organization Code"]:hover {
+      background: linear-gradient(135deg, var(--kente-gold), var(--warm-orange));
+    }
+    
+    .dashboard-grid button[onclick*="pharmacy"] {
+      background: linear-gradient(135deg, var(--adire-blue), var(--primary-green));
+    }
+    
+    .dashboard-grid button[onclick*="pharmacy"]:hover {
+      background: linear-gradient(135deg, var(--primary-green), var(--adire-blue));
+    }
+    
+    .dashboard-grid button[onclick*="Logout"] {
+      background: linear-gradient(135deg, var(--deep-red), var(--coral));
+    }
+    
+    .dashboard-grid button[onclick*="Logout"]:hover {
+      background: linear-gradient(135deg, var(--coral), var(--deep-red));
+    }
+    
+    .dashboard-grid button[onclick*="Edit Profile"] {
+      background: linear-gradient(135deg, var(--bronze), var(--dark-green));
+    }
+    
+    .dashboard-grid button[onclick*="Edit Profile"]:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--bronze));
+    }
+    
+    #platform-view-banner {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--adire-blue), var(--primary-green));
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.4), 0 0 40px rgba(0, 107, 66, 0.3);
+      border: 2px solid var(--dark-green);
+    }
+    
+    #platform-view-banner button {
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      color: var(--primary-green);
+      box-shadow: 0 4px 12px rgba(255, 255, 255, 0.4);
+      border: 1px solid var(--dark-green);
+      font-weight: 800;
+    }
+    
+    #platform-view-banner button:hover {
+      background: linear-gradient(135deg, var(--ivory), var(--warm-gray));
+      transform: translateY(-3px) scale(1.05);
+      box-shadow: 0 6px 16px rgba(255, 255, 255, 0.5);
+      border-color: var(--primary-green);
+    }
+    
+    #backup-section {
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory), var(--warm-gray));
+      border: 3px solid;
+      border-image: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--bronze)) 1;
+      border-radius: 16px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12), inset 0 1px 0 rgba(255, 255, 255, 0.5);
+      padding: 25px;
+    }
+    
+    #backup-section h3 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--bronze));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+      font-size: 22px;
+      margin-bottom: 15px;
+    }
+    
+    #backup-section button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: var(--nigerian-white);
+      box-shadow: 0 4px 16px rgba(0, 135, 83, 0.4);
+      border: 1px solid rgba(255, 255, 255, 0.3);
+      font-weight: 700;
+    }
+    
+    #backup-section button:hover {
+      transform: translateY(-4px) scale(1.03);
+      box-shadow: 0 8px 24px rgba(0, 107, 66, 0.5);
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+    }
+    
+    #backup-section button:active {
+      transform: translateY(-2px) scale(1.01);
+    }
+    
+    #pharmacy-dashboard-btn button {
+      background: linear-gradient(135deg, var(--adire-blue), var(--primary-green), var(--dark-green));
+      box-shadow: 0 6px 20px rgba(65, 105, 225, 0.4);
+      border: 2px solid rgba(255, 255, 255, 0.3);
+    }
+    
+    #pharmacy-dashboard-btn button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green), var(--adire-blue));
+      box-shadow: 0 8px 28px rgba(0, 107, 66, 0.5);
+      transform: translateY(-4px) scale(1.03);
+    }
+    
+    /* Category Section Styles */
+    .category-section {
+      margin-bottom: 30px;
+      background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 240, 0.95));
+      border-radius: 16px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 16px rgba(0, 135, 83, 0.15);
+      overflow: hidden;
+      position: relative;
+      will-change: auto;
+    }
+    
+    .category-header {
+      color: var(--nigerian-white);
+      padding: 18px 25px;
+      cursor: pointer;
+      font-size: 20px;
+      font-weight: 800;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      user-select: none;
+      transition: all 0.3s ease;
+      position: relative;
+      z-index: 1;
+    }
+    
+    /* Alternating category header colors using Nigerian Heritage theme - EXPLICIT HEX COLORS */
+    /* Using #categories-container to scope nth-child selectors correctly */
+    #categories-container .category-section:nth-child(1) .category-header {
+      background: linear-gradient(135deg, #008753, #006b42) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(1) .category-header:hover {
+      background: linear-gradient(135deg, #006b42, #008753) !important;
+    }
+    
+    #categories-container .category-section:nth-child(2) .category-header {
+      background: linear-gradient(135deg, #4169E1, #008753) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(2) .category-header:hover {
+      background: linear-gradient(135deg, #008753, #4169E1) !important;
+    }
+    
+    #categories-container .category-section:nth-child(3) .category-header {
+      background: linear-gradient(135deg, #DAA520, #FF8C00) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(3) .category-header:hover {
+      background: linear-gradient(135deg, #FF8C00, #DAA520) !important;
+    }
+    
+    #categories-container .category-section:nth-child(4) .category-header {
+      background: linear-gradient(135deg, #CD7F32, #006b42) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(4) .category-header:hover {
+      background: linear-gradient(135deg, #006b42, #CD7F32) !important;
+    }
+    
+    #categories-container .category-section:nth-child(5) .category-header {
+      background: linear-gradient(135deg, #FF7F50, #FF8C00) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(5) .category-header:hover {
+      background: linear-gradient(135deg, #FF8C00, #FF7F50) !important;
+    }
+    
+    #categories-container .category-section:nth-child(6) .category-header {
+      background: linear-gradient(135deg, #008753, #4169E1) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(6) .category-header:hover {
+      background: linear-gradient(135deg, #4169E1, #008753) !important;
+    }
+    
+    #categories-container .category-section:nth-child(7) .category-header {
+      background: linear-gradient(135deg, #006b42, #CD7F32) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(7) .category-header:hover {
+      background: linear-gradient(135deg, #CD7F32, #006b42) !important;
+    }
+    
+    #categories-container .category-section:nth-child(8) .category-header {
+      background: linear-gradient(135deg, #4169E1, #DAA520) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(8) .category-header:hover {
+      background: linear-gradient(135deg, #DAA520, #4169E1) !important;
+    }
+    
+    #categories-container .category-section:nth-child(9) .category-header {
+      background: linear-gradient(135deg, #FF8C00, #FF7F50) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(9) .category-header:hover {
+      background: linear-gradient(135deg, #FF7F50, #FF8C00) !important;
+    }
+    
+    #categories-container .category-section:nth-child(10) .category-header {
+      background: linear-gradient(135deg, #008753, #DAA520) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    #categories-container .category-section:nth-child(10) .category-header:hover {
+      background: linear-gradient(135deg, #DAA520, #008753) !important;
+    }
+    
+    .category-header::after {
+      content: '▼';
+      font-size: 14px;
+      transition: transform 0.3s ease;
+    }
+    
+    .category-section.collapsed .category-header::after {
+      transform: rotate(-90deg);
+    }
+    
+    .category-content {
+      padding: 20px;
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+      gap: 24px;
+      max-height: 5000px;
+      overflow: visible;
+      transition: max-height 0.3s ease, opacity 0.2s ease, padding 0.3s ease;
+      opacity: 1;
+      visibility: visible;
+      position: relative;
+      z-index: 2;
+      align-items: start;
+    }
+    
+    .category-section.collapsed .category-content {
+      max-height: 0;
+      padding-top: 0;
+      padding-bottom: 0;
+      opacity: 0;
+      visibility: hidden;
+      pointer-events: none;
+      margin: 0;
+    }
+    
+    .category-content button {
+      color: #FFFFFF !important;
+      border: 2px solid transparent !important;
+      padding: 18px 24px !important;
+      border-radius: 12px !important;
+      cursor: pointer !important;
+      font-size: 15px !important;
+      font-weight: 700 !important;
+      transition: all 0.3s cubic-bezier(0.175, 0.885, 0.32, 1.275) !important;
+      box-shadow: 0 4px 16px rgba(0, 0, 0, 0.12) !important;
+      position: relative !important;
+      overflow: hidden !important;
+      text-align: center !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 1 !important;
+      pointer-events: auto !important;
+      isolation: isolate !important;
+      margin: 0 !important;
+      width: 100% !important;
+      min-height: 60px !important;
+      display: flex !important;
+      align-items: center !important;
+      justify-content: center !important;
+      /* Default background - will be overridden by nth-child selectors */
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%) !important;
+    }
+    
+    /* Hovered button gets higher z-index to appear on top - override all other styles */
+    .category-content button:hover,
+    #categories-container .category-content button:hover,
+    .category-content > div button:hover {
+      z-index: 100 !important;
+      transform: translateY(-2px) scale(1.01) !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+      pointer-events: auto !important;
+    }
+    
+    .category-content button:active,
+    #categories-container .category-content button:active {
+      transform: translateY(0px) scale(0.99) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Ensure wrapper divs don't interfere with button clicks */
+    .category-content > div {
+      position: relative;
+      z-index: 10;
+    }
+    
+    .category-content > div button {
+      position: relative;
+      z-index: 11;
+    }
+    
+    /* Multi-color cycling pattern using Nigerian Heritage palette */
+    /* Pattern 1: Primary Green (1st, 7th, 13th, etc.) */
+    .category-content button:nth-child(6n+1) {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button:nth-child(6n+1):hover {
+      background: linear-gradient(135deg, #006b42 0%, #008753 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Pattern 2: Adire Blue (2nd, 8th, 14th, etc.) */
+    .category-content button:nth-child(6n+2) {
+      background: linear-gradient(135deg, #4169E1 0%, #008753 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button:nth-child(6n+2):hover {
+      background: linear-gradient(135deg, #008753 0%, #4169E1 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Pattern 3: Kente Gold (3rd, 9th, 15th, etc.) */
+    .category-content button:nth-child(6n+3) {
+      background: linear-gradient(135deg, #DAA520 0%, #FF8C00 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button:nth-child(6n+3):hover {
+      background: linear-gradient(135deg, #FF8C00 0%, #DAA520 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Pattern 4: Bronze (4th, 10th, 16th, etc.) */
+    .category-content button:nth-child(6n+4) {
+      background: linear-gradient(135deg, #CD7F32 0%, #006b42 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button:nth-child(6n+4):hover {
+      background: linear-gradient(135deg, #006b42 0%, #CD7F32 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Pattern 5: Coral (5th, 11th, 17th, etc.) */
+    .category-content button:nth-child(6n+5) {
+      background: linear-gradient(135deg, #FF7F50 0%, #FF8C00 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button:nth-child(6n+5):hover {
+      background: linear-gradient(135deg, #FF8C00 0%, #FF7F50 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Pattern 6: Dark Green-Blue (6th, 12th, 18th, etc.) */
+    .category-content button:nth-child(6n+6) {
+      background: linear-gradient(135deg, #006b42 0%, #4169E1 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button:nth-child(6n+6):hover {
+      background: linear-gradient(135deg, #4169E1 0%, #006b42 100%) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Special button colors for specific buttons (override alternating pattern with !important) */
+    .category-content button[onclick*="billing"] {
+      background: linear-gradient(135deg, #DAA520, #FF8C00) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button[onclick*="billing"]:hover {
+      background: linear-gradient(135deg, #FF8C00, #DAA520) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    .category-content button[onclick*="subscription"] {
+      background: linear-gradient(135deg, #DAA520, #4169E1) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button[onclick*="subscription"]:hover {
+      background: linear-gradient(135deg, #4169E1, #DAA520) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    .category-content button[onclick*="security"] {
+      background: linear-gradient(135deg, #CD7F32, #006b42) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button[onclick*="security"]:hover {
+      background: linear-gradient(135deg, #006b42, #CD7F32) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    .category-content button[onclick*="encryption"] {
+      background: linear-gradient(135deg, #FF7F50, #FF8C00) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button[onclick*="encryption"]:hover {
+      background: linear-gradient(135deg, #FF8C00, #FF7F50) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    .category-content button[onclick*="recover"] {
+      background: linear-gradient(135deg, #FF8C00, #FF7F50) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button[onclick*="recover"]:hover {
+      background: linear-gradient(135deg, #FF7F50, #FF8C00) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    .category-content button[onclick*="Organization Code"] {
+      background: linear-gradient(135deg, #DAA520, #FF8C00) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+    }
+    
+    .category-content button[onclick*="Organization Code"]:hover {
+      background: linear-gradient(135deg, #FF8C00, #DAA520) !important;
+      color: #FFFFFF !important;
+      text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5) !important;
+      z-index: 100 !important;
+    }
+    
+    /* Departmental dashboard buttons styling */
+    #departmental-dashboards-section .category-content > div {
+      display: contents;
+    }
+    
+    #departmental-dashboards-section .category-content button {
+      width: 100%;
+    }
+    
+    .category-content button::before {
+      content: '';
+      position: absolute;
+      top: 0;
+      left: -100%;
+      width: 100%;
+      height: 100%;
+      background: linear-gradient(90deg, transparent, rgba(255, 255, 255, 0.3), transparent);
+      transition: left 0.6s;
+    }
+    
+    .category-content button:hover::before {
+      left: 100%;
+      z-index: 101;
+    }
+    
+    /* Prevent any external CSS from overriding button hover states */
+    .category-content button:hover,
+    .category-content > div button:hover {
+      z-index: 100 !important;
+      transform: translateY(-2px) scale(1.01) !important;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.3) !important;
+      pointer-events: auto !important;
+    }
+    
+    /* Ensure buttons don't overlap during hover */
+    .category-content {
+      contain: layout style paint;
+    }
+    
+    .category-content button {
+      contain: layout style paint;
+    }
+    
+  </style>
+</head>
+<body>
+  <script>
+    (function platformAdminDashboardDeepLink() {
+      try {
+        var params = new URLSearchParams(window.location.search);
+        if (params.get('platformView') !== '1') return;
+        var org = params.get('org');
+        if (!org) return;
+        var paRaw = localStorage.getItem('platformAdmin');
+        if (!paRaw) return;
+        var platformAdmin = JSON.parse(paRaw);
+        var originalPlatformAdmin = JSON.parse(paRaw);
+        var orgId = params.get('orgId');
+        var payload = {
+          username: platformAdmin.username,
+          role: 'PlatformOwner',
+          org: org,
+          _isPlatformView: true,
+          _platformAdmin: platformAdmin,
+          _originalPlatformAdmin: originalPlatformAdmin,
+          _platformViewStartTime: Date.now()
+        };
+        if (orgId) {
+          payload.organization_id = orgId;
+          payload.organizationId = orgId;
+        }
+        localStorage.setItem('user', JSON.stringify(payload));
+      } catch (e) {
+        console.error('[dashboard] platformView deep link failed', e);
+      }
+    })();
+  </script>
+  <!-- Platform Admin Banner (Only visible when platform owner is viewing a clinic) -->
+  <div id="platform-view-banner" style="display: none; color: white; padding: 20px 25px; border-radius: 12px; margin-bottom: 25px;">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <strong style="font-size: 18px; text-shadow: 1px 1px 2px rgba(0,0,0,0.2);">🏢 Platform Admin View</strong><br>
+        <span style="font-size: 15px; opacity: 0.95;">Currently viewing: <strong id="viewing-org-name"></strong></span>
+      </div>
+      <button onclick="exitOrganizationView()" style="border: none; padding: 12px 24px; border-radius: 8px; cursor: pointer; font-weight: 800; font-size: 15px;">
+        ← Exit to Platform Dashboard
+      </button>
+    </div>
+  </div>
+  
+  <div style="position: fixed; top: 10px; right: 10px; font-size: 14px; color: var(--charcoal); font-weight: 600; background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 240, 0.9)); padding: 8px 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 107, 66, 0.3);" id="org-info"></div>  <!-- Top right org display -->
+  
+  <h1 id="dashboard-title">EHR Dashboard</h1>
+  <div id="physician-verification-banner" style="display:none;" role="status"></div>
+  <p style="text-align: center; color: var(--charcoal); font-size: 18px; font-weight: 600; margin-bottom: 35px;">Welcome! Choose an option:</p>
+  
+  <div id="categories-container">
+  <!-- 1. Patient Management -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      👥 Patient Management
+    </div>
+    <div class="category-content">
+      <button onclick="window.location.href='patients'">Manage Patients</button>
+      <button onclick="window.location.href='appointments'">Manage Appointments</button>
+      <button onclick="window.location.href='patient-intake-approvals'">Review Patient Intake</button>
+      <button onclick="window.location.href='add-unstructured-records'">📝 Add Unstructured Medical Records</button>
+      <button onclick="window.location.href='/setup-patient-portal'">👤 Setup Patient Portal</button>
+      <button onclick="toggleManualPatientNumbering()" id="manual-patient-numbering-btn">🔢 Manual Patient Numbering: Loading...</button>
+      <button onclick="toggleEmergencyContactRequired()" id="emergency-contact-required-btn">📞 Emergency Contact: Loading...</button>
+      <button onclick="toggleWeightUnit()" id="weight-unit-btn">⚖️ Toggle Weight Measurement On: Kg (Off: lbs)</button>
+      <button onclick="window.location.href='specialist-register'">Manage Specialists</button>
+      <button onclick="window.location.href='schedule'">View Schedule Calendar</button>
+    </div>
+  </div>
+  
+  <!-- 2. Departmental Dashboards (Role-Specific) -->
+  <div class="category-section collapsed" id="departmental-dashboards-section" style="display: none;">
+    <div class="category-header">
+      🏢 Departmental Dashboards
+    </div>
+    <div class="category-content">
+      <!-- Pharmacy Dashboard Button (Pharmacists only) -->
+      <div id="pharmacy-dashboard-btn" style="display: none;">
+        <button onclick="window.location.href='/pharmacy-dashboard'">💊 Pharmacy Dashboard</button>
+      </div>
+      
+      <!-- Lab Scientist Dashboard Button (Lab Scientists only) -->
+      <div id="lab-scientist-dashboard-btn" style="display: none;">
+        <button onclick="window.location.href='/lab-scientist-dashboard'">🔬 Lab Scientist Dashboard</button>
+      </div>
+      
+      <!-- Biller/Accountant Dashboard Button (Biller/Accountant / Admins – pharmacy invoicing) -->
+      <div id="accountant-dashboard-btn" style="display: none;">
+        <button onclick="window.location.href='/accountant-dashboard'">💰 Biller/Accountant Dashboard</button>
+      </div>
+      
+      <!-- Doctor Lab Results Button (Doctors only) -->
+      <div id="doctor-lab-results-btn" style="display: none;">
+        <button onclick="window.location.href='/doctor-lab-results'">🔬 Lab Results Dashboard</button>
+      </div>
+      
+      <!-- Blood Pressure Alerts (Doctors & Nurses - clinic-level) -->
+      <div id="blood-pressure-alerts-btn" style="display: none;">
+        <button onclick="window.location.href='blood-pressure-alerts-dashboard'">🩺 Blood Pressure Alerts</button>
+      </div>
+      
+      <!-- Admissions Dashboard (Doctors/Nurses/Admins only) -->
+      <div id="admissions-dashboard-btn" style="display: none;">
+        <button onclick="window.location.href='admissions-dashboard'">🏥 Admissions Dashboard</button>
+      </div>
+      
+      <!-- External Lab Orders Dashboard (Nurses/Admins/Lab Scientists) -->
+      <div id="external-lab-orders-btn" style="display: none;">
+        <button onclick="window.location.href='/external-lab-orders'">🧪 External Lab Orders Dashboard</button>
+      </div>
+      
+      <!-- Upcoming Appointments (Doctors only) - button opens dedicated page -->
+      <div id="upcoming-appointments-btn" style="display: none;">
+        <button onclick="window.location.href='upcoming-appointments'">📅 Upcoming Appointments</button>
+      </div>
+      <div id="physician-verification-dash-btn" style="display: none;">
+        <button onclick="window.location.href='physician-verification'">Physician credential verification (regulator + diploma)</button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- 3. Billing & Financial -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      💰 Billing & Financial
+    </div>
+    <div class="category-content">
+      <button onclick="window.location.href='billing-dashboard'">💰 Billing & Payments</button>
+      <button onclick="window.location.href='manage-subscription'" id="manage-subscription-btn">💳 Manage Subscription</button>
+    </div>
+  </div>
+  
+  <!-- 4. Facility Configuration -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      🏥 Facility Configuration
+    </div>
+    <div class="category-content">
+      <button onclick="toggleInHouseLaboratory()" id="in-house-lab-btn">🧪 In-House Laboratory: Loading...</button>
+      <button onclick="toggleInHousePharmacy()" id="in-house-pharmacy-btn">💊 In-House Pharmacy: Loading...</button>
+      <button onclick="toggleInPatientServices()" id="in-patient-services-btn">🏥 In-Patient Services: Loading...</button>
+      <button onclick="window.location.href='configure-inpatient-facilities'" id="configure-inpatient-btn" style="display: none;">🏨 Configure In-Patient Facilities</button>
+      <button onclick="window.location.href='set-clinic-schedule'">Configure Clinic Schedule</button>
+      <button onclick="window.location.href='appointment-reminder-settings'">📅 Appointment Reminder Settings</button>
+    </div>
+  </div>
+  
+  <!-- 5. Communication & Tasks -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      💬 Communication & Tasks
+    </div>
+    <div class="category-content">
+      <button onclick="window.location.href='messages'" id="messages-btn" style="position: relative;">
+        💬 Messages & Tasks
+        <span id="unread-messages-badge" style="display: none; position: absolute; top: -5px; right: -5px; background: #f44336; color: white; border-radius: 50%; width: 20px; height: 20px; font-size: 11px; font-weight: bold; line-height: 20px; text-align: center;">0</span>
+      </button>
+      <button onclick="window.location.href='appointment-sms-reminders'">📱 Upcoming Appointments – Copy SMS</button>
+    </div>
+  </div>
+  
+  <!-- 6. Reports & Analytics -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      📊 Reports & Analytics
+    </div>
+    <div class="category-content">
+      <button onclick="window.location.href='reports'">View Reports</button>
+      <button onclick="window.location.href='deleted-patients'">View Deleted Patients</button>
+      <button onclick="window.location.href='gaps-summary'">Preventive Gaps Summary</button>
+      <button onclick="window.location.href='conditions-breakdown'">Conditions Breakdown</button>
+      <button onclick="window.location.href='condition-stats'">Condition Stats</button>
+      <button onclick="window.location.href='blood-group-summary'">🩸 Blood Group Summary</button>
+    </div>
+  </div>
+  
+  <!-- 7. Security & Audit -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      🔒 Security & Audit
+    </div>
+    <div class="category-content">
+      <button onclick="window.location.href='audit-log'">🔍 View Audit Log</button>
+      <button onclick="window.location.href='clinic-security-dashboard'">🔒 Security Dashboard</button>
+      <button onclick="window.location.href='/setup-encryption'" id="encryption-setup-btn">🔐 Setup Encryption</button>
+      <button onclick="window.location.href='/recover-encryption'" id="encryption-recovery-btn">🔑 Recover Encryption</button>
+    </div>
+  </div>
+  
+  <!-- 8. User & Organization Management -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      👤 User & Organization Management
+    </div>
+    <div class="category-content">
+      <button onclick="window.location.href='org-user-management'">👥 User Management</button>
+      <button onclick="window.location.href='edit-profile'">Edit Profile</button>
+      <button onclick="showOrgCode()">📋 Organization Code</button>
+      <button onclick="window.location.href='/select-medical-specialty'">🏥 Change Medical Specialty</button>
+    </div>
+  </div>
+  
+  <!-- 9. Data Management & Backup -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      💾 Data Management & Backup
+    </div>
+    <div class="category-content">
+      <button onclick="checkUserRoleAndDownload()">💾 Download Backup (Direct)</button>
+      <button onclick="requestDataDownload('backup')">📋 Request Backup Download</button>
+      <button onclick="window.location.href='/my-download-requests'">📥 My Download Requests</button>
+      <button onclick="selectBackupFile()">📥 Restore from Backup</button>
+      <button onclick="exportPatientsCSV()">📊 Export Patients CSV</button>
+      <button onclick="window.location.href='data-import-export'">🔄 Import/Export Data</button>
+      <button onclick="window.location.href='storage-usage'">💽 Storage Usage</button>
+    </div>
+  </div>
+  
+  <!-- 10. Legal & Compliance -->
+  <div class="category-section collapsed">
+    <div class="category-header">
+      📋 Legal & Compliance
+    </div>
+    <div class="category-content">
+      <button onclick="viewMyLegalAgreements()">📋 My Legal Agreements</button>
+    </div>
+  </div>
+  </div>
+  <!-- End categories container -->
+  
+  <!-- Organization Code Modal -->
+  <div id="org-code-modal" style="display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.6); backdrop-filter: blur(4px); z-index: 9999; justify-content: center; align-items: center;">
+    <div style="background: linear-gradient(135deg, var(--nigerian-white), var(--ivory)); border-radius: 16px; padding: 45px; max-width: 650px; width: 90%; box-shadow: 0 15px 50px rgba(0,0,0,0.4), 0 0 60px rgba(218, 165, 32, 0.2); position: relative; border: 3px solid; border-image: linear-gradient(135deg, var(--primary-green), var(--kente-gold), var(--warm-orange)) 1;">
+      <button onclick="closeOrgCodeModal()" style="position: absolute; top: 20px; right: 20px; background: linear-gradient(135deg, var(--deep-red), var(--coral)); color: white; border: none; width: 40px; height: 40px; border-radius: 50%; cursor: pointer; font-size: 24px; font-weight: bold; box-shadow: 0 4px 12px rgba(139, 0, 0, 0.3); transition: all 0.3s;">×</button>
+      
+      <div style="text-align: center;">
+        <h2 style="margin: 0 0 15px 0; background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--bronze)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 32px; font-weight: 900;">📋 Organization Code</h2>
+        <p id="org-modal-org-name" style="color: var(--charcoal); font-size: 17px; margin: 0 0 35px 0; font-weight: 600;"></p>
+        
+        <div style="background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.08), var(--ivory)); border: 3px solid; border-image: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--adire-blue)) 1; border-radius: 14px; padding: 35px; margin: 25px 0;">
+          <div style="font-size: 15px; color: var(--charcoal); margin-bottom: 15px; font-weight: 700; text-transform: uppercase; letter-spacing: 1px;">Your Organization Code:</div>
+          <input type="text" id="org-code-input" readonly style="font-size: 40px; font-weight: 900; font-family: monospace; letter-spacing: 6px; text-align: center; background: linear-gradient(135deg, var(--nigerian-white), var(--ivory)); border: 3px solid var(--dark-green); padding: 25px; border-radius: 10px; width: 100%; box-sizing: border-box; margin-bottom: 25px; color: var(--primary-green); box-shadow: 0 4px 16px rgba(0, 107, 66, 0.2);">
+          
+          <button onclick="copyOrgCodeFromModal()" style="background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); color: white; border: 2px solid var(--adire-blue); padding: 16px 45px; border-radius: 10px; cursor: pointer; font-size: 18px; font-weight: 800; box-shadow: 0 6px 20px rgba(0, 135, 83, 0.4); transition: all 0.3s;">
+            📋 Copy to Clipboard
+          </button>
+        </div>
+        
+        <div style="background: linear-gradient(135deg, rgba(65, 105, 225, 0.1), rgba(255, 127, 80, 0.05), var(--ivory)); border-left: 5px solid; border-image: linear-gradient(180deg, var(--adire-blue), var(--coral)) 1; padding: 25px; border-radius: 10px; text-align: left; margin-top: 30px;">
+          <strong style="background: linear-gradient(135deg, var(--adire-blue), var(--coral)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 17px;">ℹ️ How to use this code:</strong>
+          <ol style="margin: 12px 0 0 0; padding-left: 25px; color: var(--charcoal); line-height: 1.8;">
+            <li style="margin: 10px 0;">Share this code with new staff members</li>
+            <li style="margin: 10px 0;">They'll need it when registering on the platform</li>
+            <li style="margin: 10px 0;">The code links them to your organization automatically</li>
+            <li style="margin: 10px 0;">Keep this code confidential - only share with authorized personnel</li>
+          </ol>
+        </div>
+        
+        <button onclick="closeOrgCodeModal()" style="background: linear-gradient(135deg, var(--charcoal), var(--earth-brown)); color: white; border: none; padding: 14px 35px; border-radius: 8px; cursor: pointer; font-size: 16px; font-weight: 700; margin-top: 25px; box-shadow: 0 4px 12px rgba(0, 0, 0, 0.2);">
+          Close
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Legal Agreements Section -->
+  <div id="legal-agreements-section" style="margin-top: 40px; margin-bottom: 30px; display: none;">
+    <h2 style="background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--bronze)); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; font-size: 28px; font-weight: 800; margin-bottom: 20px; text-align: center; border-bottom: 3px solid var(--primary-green); padding-bottom: 10px;">
+      📋 My Legal Agreements
+    </h2>
+    <div id="my-legal-agreements-list" style="background: linear-gradient(135deg, var(--nigerian-white), var(--ivory)); border-radius: 12px; padding: 25px; border: 3px solid var(--primary-green); box-shadow: 0 4px 16px rgba(0, 135, 83, 0.2);">
+      <p style="text-align: center; color: var(--charcoal); padding: 40px;">Loading your signed agreements...</p>
+    </div>
+    <div style="text-align: center; margin-top: 20px;">
+      <button onclick="document.getElementById('legal-agreements-section').style.display='none'" style="background: linear-gradient(135deg, var(--charcoal), var(--earth-brown)); color: white; padding: 12px 30px; border: none; border-radius: 8px; cursor: pointer; font-weight: 700;">
+        Close Legal Section
+      </button>
+    </div>
+  </div>
+  
+  <!-- Backup Status Display (moved from backup section) -->
+  <div id="backup-status" style="margin-top: 30px; padding: 15px; background: linear-gradient(135deg, var(--nigerian-white), var(--ivory)); border-radius: 10px; font-size: 14px; color: var(--charcoal); border: 2px solid var(--dark-green); box-shadow: 0 2px 8px rgba(0, 0, 0, 0.08); text-align: center;">
+    <strong style="color: var(--dark-green);">Last backup:</strong> <span id="last-backup-date" style="font-weight: 600;">Checking...</span>
+  </div>
+  
+  <!-- Download Request Scripts -->
+  <script src="js/data-download-manager.js"></script>
+  <script src="js/download-request-modal.js"></script>
+  <script src="js/legal-agreements.js?v=20250118000000"></script>
+  
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <script>
+    const DASHBOARD_VERBOSE = localStorage.getItem('enableVerboseLogs') === 'true';
+    const dashLog = (...args) => { if (DASHBOARD_VERBOSE) console.log(...args); };
+    
+    // Check user role and show appropriate download option
+    window.checkUserRoleAndDownload = async function() {
+      try {
+        console.log('🔍 Checking user role for backup download...');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const userRole = (user.role || '').toLowerCase();
+        
+        console.log('👤 User role:', userRole, '| User object:', user);
+        
+        if (userRole === 'doctor') {
+          // Doctors can download directly with password confirmation
+          console.log('✅ Doctor role confirmed, checking for downloadBackupDirect function...');
+          
+          // Wait for backup.js to load if needed
+          let retries = 0;
+          while (typeof window.downloadBackupDirect === 'undefined' && retries < 10) {
+            console.log('⏳ Waiting for backup.js to load...', retries);
+            await new Promise(resolve => setTimeout(resolve, 100));
+            retries++;
+          }
+          
+          if (typeof window.downloadBackupDirect === 'function') {
+            console.log('✅ downloadBackupDirect function found, calling...');
+            await window.downloadBackupDirect();
+          } else {
+            console.error('❌ downloadBackupDirect function not available');
+            alert('Backup download function not available. Please refresh the page.\n\nIf the problem persists, check that js/backup.js is loaded correctly.');
+          }
+        } else {
+          // Other roles must use approval workflow
+          console.log('ℹ️ Non-doctor role, redirecting to approval workflow');
+          alert('Direct backup download is only available for Doctors.\n\nPlease use "Request Backup Download" to submit a request for approval.');
+        }
+      } catch (error) {
+        console.error('❌ Error in checkUserRoleAndDownload:', error);
+        alert('Error: ' + error.message + '\n\nPlease check the console for details.');
+      }
+    };
+    
+    // Request data download (shows modal, creates request)
+    window.requestDataDownload = async function(requestType) {
+      try {
+        console.log('🔍 requestDataDownload called with requestType:', requestType);
+        
+        // Check if showDownloadRequestModal is available
+        if (typeof window.showDownloadRequestModal === 'undefined') {
+          console.error('❌ showDownloadRequestModal is not defined');
+          alert('Download request modal is not available. Please refresh the page.\n\nIf the problem persists, check that js/download-request-modal.js is loaded correctly.');
+          return;
+        }
+        
+        console.log('✅ showDownloadRequestModal found, calling...');
+        await window.showDownloadRequestModal(requestType, 'Full organizational backup');
+        console.log('✅ Modal closed successfully');
+      } catch (error) {
+        console.error('❌ Error in requestDataDownload:', error);
+        if (error.message !== 'Request cancelled') {
+          alert('Error requesting download: ' + error.message + '\n\nPlease check the console for details.');
+        }
+      }
+    };
+
+    // LOCAL TESTING FIX: Add .html extension to navigation URLs for local Python server
+    (function fixLocalNavigation() {
+      // REMOVED: Local development helper that added .html extensions
+      // Production uses clean URLs via netlify.toml redirects (force = true)
+      // All URLs should be clean (without .html) for production
+      // This code was only for localhost:5500 development
+      
+      document.addEventListener('click', function(e) {
+        const target = e.target;
+        if (!target) return;
+        const onclickStr = target.getAttribute && target.getAttribute('onclick');
+        if (!onclickStr || !onclickStr.includes('window.location.href')) return;
+
+        // REMOVED: Code that was adding .html extensions
+        // Production uses clean URLs via netlify.toml redirects
+        const fixed = onclickStr; // Keep original onclick without modification
+        target.setAttribute('onclick', fixed);
+      });
+    })();
+    
+    // Show organization code in modal
+    async function showOrgCode() {
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      
+      dashLog('User session loaded in organization modal helper');
+      if (!user) {
+        dashLog('🔧 DASHBOARD: No user found, continuing with local defaults');
+      }
+      
+      // Try different possible organization field names
+      const orgName = user.organization || user.org || getCurrentOrganization();
+      dashLog(`Organization resolved for modal: ${orgName || 'none'}`);
+      
+      if (!orgName) {
+        alert('No organization found in your user profile.\n\nPlease contact your administrator or re-login.');
+        return;
+      }
+      
+      // Supabase-first: Try getAllOrganizations() first, fallback to localStorage
+      let organizations = {};
+      try {
+        if (typeof getAllOrganizations === 'function') {
+          organizations = await getAllOrganizations();
+        } else {
+          organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        }
+      } catch (error) {
+        organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      }
+      const orgData = organizations[orgName];
+      dashLog(`Org metadata present for modal: ${orgData ? 'yes' : 'no'}`);
+      
+      if (!orgData) {
+        alert('Organization "' + orgName + '" not found in database.\n\nPlease contact your administrator.');
+        return;
+      }
+      
+      // Check if org code exists, if not, generate it now
+      if (!orgData.orgCode) {
+        const prefix = orgName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
+        const year = new Date().getFullYear();
+        const random = Math.random().toString(36).substring(2, 6).toUpperCase();
+        orgData.orgCode = `${prefix}-${year}-${random}`;
+        
+        // Supabase-first: Write org code to Supabase first, then cache in localStorage
+        if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+          try {
+            const { error } = await window.supabaseClient
+              .from('organizations')
+              .update({ org_code: orgData.orgCode })
+              .eq('id', orgData.id);
+            
+            if (error) {
+              console.warn('⚠️ Could not update org code in Supabase:', error);
+              // Fallback: Cache to localStorage even if Supabase write failed
+              organizations[orgName] = orgData;
+              localStorage.setItem('organizations', JSON.stringify(organizations));
+            } else {
+              console.log('✅ Updated org code in Supabase');
+              // Cache to localStorage immediately after successful Supabase write
+              // Supabase write: supabaseClient.update() completed above
+              organizations[orgName] = orgData;
+              localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+            }
+          } catch (error) {
+            console.warn('⚠️ Exception updating org code in Supabase:', error);
+            // Fallback: Cache to localStorage if Supabase exception
+            organizations[orgName] = orgData;
+            localStorage.setItem('organizations', JSON.stringify(organizations));
+          }
+        } else {
+          // Supabase not available - fallback to localStorage only
+          organizations[orgName] = orgData;
+          localStorage.setItem('organizations', JSON.stringify(organizations));
+        }
+        dashLog('Generated org code:', orgData.orgCode);
+      }
+      
+      // Show modal with org code
+      document.getElementById('org-modal-org-name').textContent = orgName;
+      document.getElementById('org-code-input').value = orgData.orgCode;
+      document.getElementById('org-code-modal').style.display = 'flex';
+      
+      // Auto-select the code for easy copying
+      setTimeout(() => {
+        document.getElementById('org-code-input').select();
+      }, 100);
+    }
+    
+    // Close organization code modal
+    function closeOrgCodeModal() {
+      document.getElementById('org-code-modal').style.display = 'none';
+    }
+    
+    // Copy org code from modal
+    function copyOrgCodeFromModal() {
+      const codeInput = document.getElementById('org-code-input');
+      const code = codeInput.value;
+      
+      // Select the text
+      codeInput.select();
+      codeInput.setSelectionRange(0, 99999); // For mobile devices
+      
+      // Copy to clipboard
+      if (navigator.clipboard) {
+        navigator.clipboard.writeText(code).then(() => {
+          // Change button text temporarily
+          const btn = event.target;
+          const originalText = btn.innerHTML;
+          btn.innerHTML = '✅ Copied!';
+          btn.style.background = 'linear-gradient(135deg, #66BB6A, #4CAF50)';
+          
+          setTimeout(() => {
+            btn.innerHTML = originalText;
+            btn.style.background = 'linear-gradient(135deg, #4CAF50, #45a049)';
+          }, 2000);
+        }).catch(() => {
+          alert('✅ Code copied: ' + code);
+        });
+      } else {
+        // Fallback for older browsers
+        document.execCommand('copy');
+        alert('✅ Code copied: ' + code);
+      }
+    }
+    
+    // Close modal when clicking outside
+    document.addEventListener('click', function(event) {
+      const modal = document.getElementById('org-code-modal');
+      if (event.target === modal) {
+        closeOrgCodeModal();
+      }
+    });
+    
+    // Purpose: Quick logout function
+    function logout() {
+      // Clear encryption key from memory (security)
+      if (typeof window.encryptionService !== 'undefined' && window.encryptionService) {
+        window.encryptionService.clearKey();
+      }
+      localStorage.removeItem("user");  // Clears login info
+      window.location.href = "login";  // Back to login
+    }
+    
+    // Toggle In-House Laboratory setting
+    async function toggleInHouseLaboratory() {
+      try {
+        // Resolve organization ID
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        
+        if (!organizationId) {
+          alert('Could not determine organization. Please try again.');
+          return;
+        }
+        
+        // Load current setting from Supabase first
+        let currentValue = false;
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', organizationId)
+            .maybeSingle();
+          
+          if (!error && data && data.settings) {
+            currentValue = data.settings.in_house_laboratory === true;
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!currentValue) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+          if (orgData && orgData.settings && orgData.settings.in_house_laboratory) {
+            currentValue = orgData.settings.in_house_laboratory === true;
+          }
+        }
+        
+        // Toggle value
+        const newValue = !currentValue;
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          try {
+            // Get current settings
+            const { data: orgData, error: fetchError } = await window.supabaseClient
+              .from('organizations')
+              .select('settings')
+              .eq('id', organizationId)
+              .maybeSingle();
+            
+            if (fetchError && fetchError.code !== 'PGRST116') {
+              throw fetchError;
+            }
+            
+            // Merge settings
+            const currentSettings = orgData?.settings || {};
+            const updatedSettings = {
+              ...currentSettings,
+              in_house_laboratory: newValue
+            };
+            
+            // Update in Supabase
+            const { error: updateError } = await window.supabaseClient
+              .from('organizations')
+              .update({ settings: updatedSettings })
+              .eq('id', organizationId);
+            
+            if (updateError) {
+              throw updateError;
+            }
+            
+            console.log('✅ In-house laboratory setting saved to Supabase');
+          } catch (error) {
+            console.error('❌ Error saving to Supabase:', error);
+            // Fallback to localStorage
+          }
+        }
+        
+        // Fallback: Save to localStorage
+        const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+        const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+        if (orgData) {
+          if (!orgData.settings) orgData.settings = {};
+          orgData.settings.in_house_laboratory = newValue;
+          organizations[organizationId || Object.keys(organizations)[0]] = orgData;
+          localStorage.setItem("organizations", JSON.stringify(organizations));
+          console.log('✅ In-house laboratory setting saved to localStorage');
+        }
+        
+        // Update button text
+        const btn = document.getElementById('in-house-lab-btn');
+        if (btn) {
+          btn.textContent = `🧪 In-House Laboratory: ${newValue ? 'True' : 'False'}`;
+        }
+        
+        alert(`In-House Laboratory setting has been ${newValue ? 'enabled' : 'disabled'}.`);
+      } catch (error) {
+        console.error('Error toggling in-house laboratory:', error);
+        alert('Error updating setting. Please try again.');
+      }
+    }
+    
+    // Toggle In-Patient Services setting
+    async function toggleInPatientServices() {
+      try {
+        // Resolve organization ID
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        
+        if (!organizationId) {
+          alert('Could not determine organization. Please try again.');
+          return;
+        }
+        
+        // Load current setting (Supabase + localStorage, same as configure-inpatient-facilities)
+        let currentValue =
+          typeof window.isInPatientServicesEnabled === 'function'
+            ? await window.isInPatientServicesEnabled(organizationId)
+            : false;
+        
+        // Toggle value
+        const newValue = !currentValue;
+        
+        const saveResult =
+          typeof window.saveOrganizationSetting === 'function'
+            ? await window.saveOrganizationSetting(organizationId, 'in_patient_services', newValue)
+            : { local: false, remote: false };
+        
+        if (!saveResult.local) {
+          // Fallback if utils helper unavailable
+          if (window.supabaseClient) {
+            try {
+              const { data: orgData, error: fetchError } = await window.supabaseClient
+                .from('organizations')
+                .select('settings')
+                .eq('id', organizationId)
+                .maybeSingle();
+              if (fetchError && fetchError.code !== 'PGRST116') throw fetchError;
+              const updatedSettings = { ...(orgData?.settings || {}), in_patient_services: newValue };
+              const { error: updateError } = await window.supabaseClient
+                .from('organizations')
+                .update({ settings: updatedSettings })
+                .eq('id', organizationId);
+              if (updateError) throw updateError;
+            } catch (error) {
+              console.error('❌ Error saving to Supabase:', error);
+            }
+          }
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const cacheKeys = [...new Set([user.org, organizationId].filter(Boolean))];
+          let orgData = organizations[cacheKeys[0]] || organizations[Object.keys(organizations)[0]] || {
+            id: organizationId,
+            name: user.org || organizationId
+          };
+          if (!orgData.settings) orgData.settings = {};
+          orgData.settings.in_patient_services = newValue;
+          cacheKeys.forEach(function (key) {
+            organizations[key] = { ...(organizations[key] || {}), ...orgData, settings: orgData.settings };
+          });
+          localStorage.setItem("organizations", JSON.stringify(organizations));
+        }
+        
+        console.log(
+          saveResult.remote
+            ? '✅ In-patient services saved to Supabase and local cache'
+            : '✅ In-patient services saved locally (Supabase sync pending or unavailable)'
+        );
+        
+        // Update button text
+        const btn = document.getElementById('in-patient-services-btn');
+        if (btn) {
+          btn.textContent = `🏥 In-Patient Services: ${newValue ? 'True' : 'False'}`;
+        }
+        
+        // Show/hide configure button
+        const configureBtn = document.getElementById('configure-inpatient-btn');
+        if (configureBtn) {
+          configureBtn.style.display = newValue ? 'block' : 'none';
+        }
+        
+        alert(
+          `In-Patient Services setting has been ${newValue ? 'enabled' : 'disabled'}.` +
+            (saveResult.remote ? '' : ' Saved on this device; cloud sync may require admin permissions.')
+        );
+      } catch (error) {
+        console.error('Error toggling in-patient services:', error);
+        alert('Error updating setting. Please try again.');
+      }
+    }
+    
+    // Load In-Patient Services setting on page load
+    async function loadInPatientServicesSetting() {
+      try {
+        // Resolve organization ID
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        
+        if (!organizationId) {
+          const btn = document.getElementById('in-patient-services-btn');
+          if (btn) btn.textContent = '🏥 In-Patient Services: False';
+          const configureBtn = document.getElementById('configure-inpatient-btn');
+          if (configureBtn) configureBtn.style.display = 'none';
+          return;
+        }
+        
+        // Load from Supabase + localStorage (shared helper)
+        let currentValue =
+          typeof window.isInPatientServicesEnabled === 'function'
+            ? await window.isInPatientServicesEnabled(organizationId)
+            : false;
+        
+        // Update button text
+        const btn = document.getElementById('in-patient-services-btn');
+        if (btn) {
+          btn.textContent = `🏥 In-Patient Services: ${currentValue ? 'True' : 'False'}`;
+        }
+        
+        // Show/hide configure button
+        const configureBtn = document.getElementById('configure-inpatient-btn');
+        if (configureBtn) {
+          configureBtn.style.display = currentValue ? 'block' : 'none';
+        }
+      } catch (error) {
+        console.error('Error loading in-patient services setting:', error);
+        const btn = document.getElementById('in-patient-services-btn');
+        if (btn) btn.textContent = '🏥 In-Patient Services: False';
+        const configureBtn = document.getElementById('configure-inpatient-btn');
+        if (configureBtn) configureBtn.style.display = 'none';
+      }
+    }
+    
+    // Toggle In-House Pharmacy setting
+    async function toggleInHousePharmacy() {
+      try {
+        // Resolve organization ID
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        
+        if (!organizationId) {
+          alert('Could not determine organization. Please try again.');
+          return;
+        }
+        
+        // Load current setting from Supabase first
+        let currentValue = false;
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', organizationId)
+            .maybeSingle();
+          
+          if (!error && data && data.settings) {
+            currentValue = data.settings.in_house_pharmacy === true;
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!currentValue) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+          if (orgData && orgData.settings && orgData.settings.in_house_pharmacy) {
+            currentValue = orgData.settings.in_house_pharmacy === true;
+          }
+        }
+        
+        // Toggle value
+        const newValue = !currentValue;
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          try {
+            // Get current settings
+            const { data: orgData, error: fetchError } = await window.supabaseClient
+              .from('organizations')
+              .select('settings')
+              .eq('id', organizationId)
+              .maybeSingle();
+            
+            if (fetchError && fetchError.code !== 'PGRST116') {
+              throw fetchError;
+            }
+            
+            // Merge settings
+            const currentSettings = orgData?.settings || {};
+            const updatedSettings = {
+              ...currentSettings,
+              in_house_pharmacy: newValue
+            };
+            
+            // Update in Supabase
+            const { error: updateError } = await window.supabaseClient
+              .from('organizations')
+              .update({ settings: updatedSettings })
+              .eq('id', organizationId);
+            
+            if (updateError) {
+              throw updateError;
+            }
+            
+            console.log('✅ In-house pharmacy setting saved to Supabase');
+          } catch (error) {
+            console.error('❌ Error saving to Supabase:', error);
+            // Fallback to localStorage
+          }
+        }
+        
+        // Fallback: Save to localStorage
+        const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+        const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+        if (orgData) {
+          if (!orgData.settings) orgData.settings = {};
+          orgData.settings.in_house_pharmacy = newValue;
+          organizations[organizationId || Object.keys(organizations)[0]] = orgData;
+          localStorage.setItem("organizations", JSON.stringify(organizations));
+          console.log('✅ In-house pharmacy setting saved to localStorage');
+        }
+        
+        // Update button text
+        const btn = document.getElementById('in-house-pharmacy-btn');
+        if (btn) {
+          btn.textContent = `💊 In-House Pharmacy: ${newValue ? 'True' : 'False'}`;
+        }
+        
+        alert(`In-House Pharmacy setting has been ${newValue ? 'enabled' : 'disabled'}.`);
+      } catch (error) {
+        console.error('Error toggling in-house pharmacy:', error);
+        alert('Error updating setting. Please try again.');
+      }
+    }
+    
+    // Load In-House Pharmacy setting on page load
+    async function loadInHousePharmacySetting() {
+      try {
+        // Resolve organization ID
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        
+        if (!organizationId) {
+          const btn = document.getElementById('in-house-pharmacy-btn');
+          if (btn) btn.textContent = '💊 In-House Pharmacy: False';
+          return;
+        }
+        
+        // Load from Supabase first
+        let currentValue = false;
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', organizationId)
+            .maybeSingle();
+          
+          if (!error && data && data.settings) {
+            currentValue = data.settings.in_house_pharmacy === true;
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!currentValue) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+          if (orgData && orgData.settings && orgData.settings.in_house_pharmacy) {
+            currentValue = orgData.settings.in_house_pharmacy === true;
+          }
+        }
+        
+        // Update button text
+        const btn = document.getElementById('in-house-pharmacy-btn');
+        if (btn) {
+          btn.textContent = `💊 In-House Pharmacy: ${currentValue ? 'True' : 'False'}`;
+        }
+      } catch (error) {
+        console.error('Error loading in-house pharmacy setting:', error);
+        const btn = document.getElementById('in-house-pharmacy-btn');
+        if (btn) btn.textContent = '💊 In-House Pharmacy: False';
+      }
+    }
+    
+    // Load setting on page load
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', loadInHousePharmacySetting);
+    } else {
+      loadInHousePharmacySetting();
+    }
+    
+    // Load and display in-house laboratory setting on page load
+    async function loadInHouseLaboratorySetting() {
+      try {
+        // Resolve organization ID
+        let organizationId = null;
+        if (typeof window.resolveOrganizationId === 'function') {
+          organizationId = await window.resolveOrganizationId();
+        } else {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          organizationId = user.organizationId || user.organization_id || user.org;
+        }
+        
+        if (!organizationId) {
+          const btn = document.getElementById('in-house-lab-btn');
+          if (btn) btn.textContent = '🧪 In-House Laboratory: Error';
+          return;
+        }
+        
+        // Load from Supabase first
+        let currentValue = false;
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', organizationId)
+            .maybeSingle();
+          
+          if (!error && data && data.settings) {
+            currentValue = data.settings.in_house_laboratory === true;
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!currentValue) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+          if (orgData && orgData.settings && orgData.settings.in_house_laboratory) {
+            currentValue = orgData.settings.in_house_laboratory === true;
+          }
+        }
+        
+        // Update button text
+        const btn = document.getElementById('in-house-lab-btn');
+        if (btn) {
+          btn.textContent = `🧪 In-House Laboratory: ${currentValue ? 'True' : 'False'}`;
+        }
+      } catch (error) {
+        console.error('Error loading in-house laboratory setting:', error);
+        const btn = document.getElementById('in-house-lab-btn');
+        if (btn) btn.textContent = '🧪 In-House Laboratory: Error';
+      }
+    }
+    
+    // Load setting on page load
+    window.addEventListener('load', () => {
+      loadInHouseLaboratorySetting();
+      loadInPatientServicesSetting();
+    });
+    
+    // View My Legal Agreements
+    async function viewMyLegalAgreements() {
+      const section = document.getElementById('legal-agreements-section');
+      section.style.display = 'block';
+      section.scrollIntoView({ behavior: 'smooth' });
+      
+      const listDiv = document.getElementById('my-legal-agreements-list');
+      listDiv.innerHTML = '<p style="text-align: center; color: var(--charcoal); padding: 40px;">Loading your signed agreements...</p>';
+      
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        // Prefer users table ID (not authUserId)
+        let userId = user.id;
+        
+        // If we don't have users table ID, fetch it from Supabase using authUserId
+        if (!userId && (user.authUserId || user.auth_user_id) && typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+          try {
+            const authUserId = user.authUserId || user.auth_user_id;
+            // Get the user's ID from the users table
+            const { data: userData, error: userError } = await window.supabaseClient
+              .from('users')
+              .select('id')
+              .eq('auth_user_id', authUserId)
+              .maybeSingle();
+            
+            if (!userError && userData && userData.id) {
+              userId = userData.id;
+            }
+          } catch (fetchError) {
+            console.error('Error fetching user ID:', fetchError);
+          }
+        }
+        
+        if (!userId) {
+          throw new Error('User ID not found. Please login again.');
+        }
+        
+        if (typeof window.getUserLegalAgreements === 'undefined') {
+          throw new Error('Legal agreements module not loaded');
+        }
+        
+        const { success, agreements, error } = await window.getUserLegalAgreements(userId);
+        
+        if (!success) {
+          throw new Error(error || 'Failed to load legal agreements');
+        }
+        
+        if (!agreements || agreements.length === 0) {
+          // Check if it's a table not found error
+          if (error && error.includes('Table not found')) {
+            listDiv.innerHTML = `
+              <div style="text-align: center; padding: 40px; color: var(--deep-red);">
+                <p style="font-size: 18px; margin-bottom: 10px; font-weight: 700;">⚠️ Database Migration Required</p>
+                <p style="font-size: 14px; margin-bottom: 15px;">The legal agreements table has not been created yet.</p>
+                <p style="font-size: 13px; color: #666;">Please contact your platform administrator to run the migration: <code>20250118000004_create_legal_agreements_table.sql</code></p>
+              </div>
+            `;
+          } else {
+            listDiv.innerHTML = `
+              <div style="text-align: center; padding: 40px; color: var(--charcoal);">
+                <p style="font-size: 18px; margin-bottom: 10px;">No signed legal agreements found.</p>
+                <p style="font-size: 14px;">If you haven't signed the agreements yet, you will be prompted to do so on your next login.</p>
+              </div>
+            `;
+          }
+          return;
+        }
+        
+        let html = `
+          <div style="margin-bottom: 20px; padding: 15px; background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05)); border-radius: 8px; border: 2px solid var(--primary-green);">
+            <strong style="color: var(--primary-green); font-size: 16px;">Total Signed Agreements: ${agreements.length}</strong>
+          </div>
+          <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(300px, 1fr)); gap: 20px;">
+        `;
+        
+        agreements.forEach(agreement => {
+          const agreementTypeLabel = agreement.agreement_type === 'service_agreement' 
+            ? 'Service Subscription Agreement' 
+            : agreement.agreement_type === 'baa' 
+            ? 'Business Associate Agreement (BAA)' 
+            : agreement.agreement_type;
+          
+          const signedDate = agreement.signed_at 
+            ? new Date(agreement.signed_at).toLocaleString() 
+            : 'Unknown';
+          
+          html += `
+            <div style="background: linear-gradient(135deg, rgba(0, 135, 83, 0.05), rgba(0, 107, 66, 0.03)); border: 2px solid var(--primary-green); border-radius: 10px; padding: 20px; transition: all 0.3s ease;" onmouseover="this.style.transform='translateY(-4px)'; this.style.boxShadow='0 8px 24px rgba(0, 135, 83, 0.3)';" onmouseout="this.style.transform=''; this.style.boxShadow='';">
+              <div style="font-weight: 700; color: var(--primary-green); margin-bottom: 15px; font-size: 18px; border-bottom: 2px solid var(--primary-green); padding-bottom: 10px;">
+                📄 ${agreementTypeLabel}
+              </div>
+              <div style="font-size: 14px; color: var(--charcoal); line-height: 1.8;">
+                <div style="margin-bottom: 8px;"><strong>Version:</strong> ${agreement.agreement_version || 'N/A'}</div>
+                <div style="margin-bottom: 8px;"><strong>Signed By:</strong> ${agreement.user_name || 'N/A'}</div>
+                <div style="margin-bottom: 8px;"><strong>Role:</strong> ${agreement.user_role || 'N/A'}</div>
+                <div style="margin-bottom: 8px;"><strong>Signed Date:</strong> ${signedDate}</div>
+                <div style="margin-bottom: 8px;"><strong>IP Address:</strong> ${agreement.ip_address || 'N/A'}</div>
+              </div>
+              <div style="margin-top: 15px; padding-top: 15px; border-top: 1px solid var(--primary-green, #008753); display: flex; flex-direction: column; gap: 10px;">
+                <button onclick="viewAgreementDetails('${agreement.id}')" style="background: linear-gradient(135deg, #4169E1, #008753); color: white; border: none; padding: 12px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(65, 105, 225, 0.3); margin-bottom: 5px;" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(65, 105, 225, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(65, 105, 225, 0.3)';">
+                  📖 Read Full Agreement
+                </button>
+                <button onclick="downloadAgreementPDF('${agreement.id}', '${agreementTypeLabel.replace(/'/g, "\\'")}', '${agreement.user_name || 'User'}', '${signedDate}', '${agreement.agreement_version || 'N/A'}')" style="background: linear-gradient(135deg, #008753, #006b42); color: white; border: none; padding: 10px 20px; border-radius: 8px; cursor: pointer; font-weight: 600; width: 100%; transition: all 0.3s ease; box-shadow: 0 2px 8px rgba(0, 135, 83, 0.3);" onmouseover="this.style.transform='translateY(-2px)'; this.style.boxShadow='0 4px 12px rgba(0, 135, 83, 0.4)';" onmouseout="this.style.transform=''; this.style.boxShadow='0 2px 8px rgba(0, 135, 83, 0.3)';">
+                  📥 Download PDF Copy
+                </button>
+              </div>
+              <div style="margin-top: 10px; font-size: 12px; color: #666; font-style: italic;">
+                A copy of this signed agreement is stored securely and accessible to platform administrators for compliance purposes.
+              </div>
+            </div>
+          `;
+        });
+        
+        html += `</div>`;
+        listDiv.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading legal agreements:', error);
+        listDiv.innerHTML = `
+          <div style="text-align: center; padding: 40px; color: var(--deep-red);">
+            <p style="font-size: 18px; margin-bottom: 10px;">Error loading legal agreements</p>
+            <p style="font-size: 14px;">${error.message}</p>
+            <button onclick="viewMyLegalAgreements()" style="margin-top: 20px; padding: 10px 20px; background: var(--primary-green); color: white; border: none; border-radius: 5px; cursor: pointer; font-weight: 600;">
+              Try Again
+            </button>
+          </div>
+        `;
+      }
+    }
+    
+    // Navigate to agreement detail page
+    function viewAgreementDetails(agreementId) {
+      window.location.href = `/legal-agreement-view?id=${agreementId}`;
+    }
+    
+    // Download agreement as PDF
+    async function downloadAgreementPDF(agreementId, agreementType, userName, signedDate, version) {
+      try {
+        // Wait for jsPDF to be available (check multiple ways it might be exposed)
+        let jsPDFLib = null;
+        let attempts = 0;
+        const maxAttempts = 100; // 10 seconds max wait
+        
+        while (!jsPDFLib && attempts < maxAttempts) {
+          // Method 1: UMD format (window.jspdf.jsPDF) - jsPDF 4.x UMD build
+          if (typeof window.jspdf !== 'undefined' && window.jspdf && window.jspdf.jsPDF && typeof window.jspdf.jsPDF === 'function') {
+            jsPDFLib = window.jspdf.jsPDF;
+            console.log('✅ Found jsPDF via window.jspdf.jsPDF (UMD format)');
+            break;
+          }
+          // Method 2: Try destructuring from window.jspdf
+          if (typeof window.jspdf !== 'undefined' && window.jspdf && window.jspdf.jsPDF) {
+            try {
+              const { jsPDF } = window.jspdf;
+              if (typeof jsPDF === 'function') {
+                jsPDFLib = jsPDF;
+                console.log('✅ Found jsPDF via destructuring window.jspdf');
+            break;
+          }
+            } catch (e) {
+              // Continue to next method
+            }
+          }
+          // Method 3: UMD format (window.jsPDF.jsPDF) - alternative
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.jsPDF;
+            console.log('✅ Found jsPDF via window.jsPDF.jsPDF');
+            break;
+          }
+          // Method 4: UMD format with default (window.jsPDF.default.jsPDF)
+          if (typeof window.jsPDF !== 'undefined' && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF.default.jsPDF;
+            console.log('✅ Found jsPDF via UMD default format');
+            break;
+          }
+          // Method 5: Direct global function (jsPDF)
+          if (typeof window.jsPDF === 'function') {
+            jsPDFLib = window.jsPDF;
+            console.log('✅ Found jsPDF via direct global function');
+            break;
+          }
+          // Method 6: Direct global function (jspdf lowercase)
+          if (typeof window.jspdf === 'function') {
+            jsPDFLib = window.jspdf;
+            console.log('✅ Found jsPDF via window.jspdf (direct function)');
+            break;
+          }
+          
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+        
+        // If still not found, try loading dynamically
+        if (!jsPDFLib) {
+          console.log('⚠️ jsPDF not found after waiting, attempting to load dynamically...');
+          
+          // Check if script already exists
+          let existingScript = document.querySelector('script[src*="jspdf.umd.min.js"]');
+          if (existingScript) {
+            console.log('⚠️ jsPDF script already exists, waiting for it to load...');
+            // Wait longer for existing script
+            for (let i = 0; i < 50; i++) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              
+              // Try all detection methods
+              if (window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+          jsPDFLib = window.jsPDF.jsPDF;
+                console.log('✅ Found jsPDF after waiting for existing script (UMD format)');
+                break;
+              }
+              if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+                jsPDFLib = window.jspdf.jsPDF;
+                console.log('✅ Found jsPDF via window.jspdf (lowercase)');
+                break;
+              }
+              if (window.jsPDF && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+                jsPDFLib = window.jsPDF.default.jsPDF;
+                console.log('✅ Found jsPDF after waiting (UMD default)');
+                break;
+              }
+              if (typeof window.jsPDF === 'function') {
+          jsPDFLib = window.jsPDF;
+                console.log('✅ Found jsPDF after waiting (direct function)');
+                break;
+        }
+              // Check for jspdf namespace (lowercase)
+              if (window.jspdf && typeof window.jspdf.jsPDF === 'function') {
+                jsPDFLib = window.jspdf.jsPDF;
+                console.log('✅ Found jsPDF via jspdf namespace');
+                break;
+              }
+            }
+          } else {
+          const script = document.createElement('script');
+          script.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js';
+          script.async = false;
+          
+          await new Promise((resolve, reject) => {
+              const timeout = setTimeout(() => {
+                reject(new Error('Timeout waiting for jsPDF to load'));
+              }, 10000);
+              
+            script.onload = () => {
+                // Wait longer for library to fully initialize
+              setTimeout(() => {
+                  clearTimeout(timeout);
+                  
+                  // Debug: Log what's actually available
+                  console.log('🔍 Debug - window.jsPDF:', typeof window.jsPDF, window.jsPDF);
+                  console.log('🔍 Debug - window.jspdf:', typeof window.jspdf, window.jspdf);
+                  console.log('🔍 Debug - window keys:', Object.keys(window).filter(k => k.toLowerCase().includes('pdf')));
+                  
+                  // Try all possible detection methods - PRIORITIZE window.jspdf.jsPDF
+                  if (window.jspdf && window.jspdf.jsPDF && typeof window.jspdf.jsPDF === 'function') {
+                    jsPDFLib = window.jspdf.jsPDF;
+                    console.log('✅ Found jsPDF after dynamic load (window.jspdf.jsPDF)');
+                    resolve();
+                  } else if (window.jspdf && window.jspdf.jsPDF) {
+                    // Try destructuring
+                    try {
+                      const { jsPDF } = window.jspdf;
+                      if (typeof jsPDF === 'function') {
+                        jsPDFLib = jsPDF;
+                        console.log('✅ Found jsPDF after dynamic load (destructured from window.jspdf)');
+                        resolve();
+                      } else {
+                        throw new Error('jsPDF is not a function');
+                      }
+                    } catch (e) {
+                      console.warn('Destructuring failed:', e);
+                    }
+                  } else if (window.jsPDF && typeof window.jsPDF.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF.jsPDF;
+                    console.log('✅ Found jsPDF after dynamic load (window.jsPDF.jsPDF)');
+                    resolve();
+                  } else if (window.jsPDF && window.jsPDF.default && typeof window.jsPDF.default.jsPDF === 'function') {
+                    jsPDFLib = window.jsPDF.default.jsPDF;
+                    console.log('✅ Found jsPDF after dynamic load (UMD default)');
+                  resolve();
+                } else if (typeof window.jsPDF === 'function') {
+                  jsPDFLib = window.jsPDF;
+                    console.log('✅ Found jsPDF after dynamic load (direct function)');
+                    resolve();
+                  } else if (window.jspdf && typeof window.jspdf === 'function') {
+                    jsPDFLib = window.jspdf;
+                    console.log('✅ Found jsPDF via window.jspdf (direct function)');
+                  resolve();
+                } else {
+                    console.error('❌ Library loaded but constructor not found');
+                    console.error('window.jsPDF:', typeof window.jsPDF, window.jsPDF);
+                    console.error('window.jspdf:', typeof window.jspdf, window.jspdf);
+                    if (window.jspdf) {
+                      console.error('window.jspdf keys:', Object.keys(window.jspdf));
+                    }
+                    reject(new Error('Library loaded but constructor not accessible. Check console for details.'));
+                }
+                }, 500); // Increased wait time
+            };
+              script.onerror = () => {
+                clearTimeout(timeout);
+                reject(new Error('Failed to load jsPDF from CDN'));
+              };
+            document.head.appendChild(script);
+          });
+          }
+        }
+        
+        if (!jsPDFLib) {
+          alert('PDF library failed to load. Please refresh the page and try again.');
+          console.error('❌ jsPDF library not available after all attempts');
+          console.error('window.jsPDF type:', typeof window.jsPDF);
+          console.error('window.jsPDF value:', window.jsPDF);
+          return;
+        }
+        
+        console.log('✅ jsPDF library ready, creating PDF...');
+        
+        // Fetch the full agreement text from legal-agreement.html
+        let agreementText = '';
+        try {
+          const response = await fetch('legal-agreement.html');
+          if (response.ok) {
+            const html = await response.text();
+            const parser = new DOMParser();
+            const doc = parser.parseFromString(html, 'text/html');
+            const content = doc.querySelector('.legal-content') || doc.body;
+            agreementText = content.innerText || content.textContent || '';
+          }
+        } catch (fetchError) {
+          console.warn('Could not fetch agreement text:', fetchError);
+          agreementText = `${agreementType}\n\nVersion: ${version}\nSigned By: ${userName}\nSigned Date: ${signedDate}\n\nThis is a copy of your signed legal agreement.`;
+        }
+        
+        const doc = new jsPDFLib({
+          orientation: 'portrait',
+          unit: 'mm',
+          format: 'a4'
+        });
+        
+        // Set font
+        doc.setFontSize(16);
+        doc.setFont(undefined, 'bold');
+        doc.text(agreementType, 20, 20);
+        
+        doc.setFontSize(10);
+        doc.setFont(undefined, 'normal');
+        doc.text(`Version: ${version}`, 20, 30);
+        doc.text(`Signed By: ${userName}`, 20, 35);
+        doc.text(`Signed Date: ${signedDate}`, 20, 40);
+        
+        // Add agreement text
+        doc.setFontSize(9);
+        const pageWidth = doc.internal.pageSize.getWidth();
+        const pageHeight = doc.internal.pageSize.getHeight();
+        const margin = 20;
+        const maxWidth = pageWidth - (margin * 2);
+        
+        let yPos = 50;
+        const lines = doc.splitTextToSize(agreementText || 'Agreement text not available', maxWidth);
+        
+        lines.forEach((line) => {
+          if (yPos > pageHeight - margin) {
+            doc.addPage();
+            yPos = margin;
+          }
+          doc.text(line, margin, yPos);
+          yPos += 5;
+        });
+        
+        // Add footer
+        const pageCount = doc.internal.getNumberOfPages();
+        for (let i = 1; i <= pageCount; i++) {
+          doc.setPage(i);
+          doc.setFontSize(8);
+          doc.text(`Page ${i} of ${pageCount}`, pageWidth / 2, pageHeight - 10, { align: 'center' });
+          doc.text('MediForge Legal Agreement Copy', pageWidth / 2, pageHeight - 5, { align: 'center' });
+        }
+        
+        // Generate filename
+        const filename = `${agreementType.replace(/[^a-z0-9]/gi, '_')}_${userName.replace(/[^a-z0-9]/gi, '_')}_${new Date().toISOString().split('T')[0]}.pdf`;
+        
+        // Save PDF
+        doc.save(filename);
+        
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF: ' + error.message);
+      }
+    }
+  </script>
+  <script>
+    // Dynamic dashboard title and top right org with fallback
+    const user = JSON.parse(localStorage.getItem("user") || "{}");
+    const org = user.org || 'Unknown Organization';  // Fallback if undefined
+    document.getElementById("dashboard-title").innerHTML = `EHR Dashboard for ${org}`;
+    document.getElementById("org-info").innerHTML = `${org}`;
+  </script>
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+  <script>
+    // Display logged-in user info with fallback
+    const userFooter = JSON.parse(localStorage.getItem("user") || "{}");
+    const footerOrg = userFooter.org || 'Unknown Organization';  // Fallback if undefined
+    if (userFooter.username && userFooter.role) {
+      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${footerOrg} is logged in`;
+    } else {
+      document.getElementById("logged-in-info").innerHTML = 'Guest is logged in';
+    }
+  </script>
+  <!-- Load Supabase SDK for cloud sync -->
+  <!-- Critical scripts loaded immediately -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251019043800"></script>
+  <script src="js/data/medical-regulatory-bodies-africa.js?v=20251022120000"></script>
+  <script src="js/physician-verification-core.js?v=9"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/manual-patient-numbering.js?v=1"></script>
+  <script src="js/emergency-contact-settings.js?v=1"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/messages.js?v=2"></script>
+  <script src="js/organization-address-sync.js"></script>  <!-- Auto-sync organization addresses from Supabase -->
+  <script src="js/universal-data-loader.js?v=20260416183000-merge-min-mfa-alias"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/medical-specialties.js"></script>  <!-- Medical specialties management -->
+  <script src="js/encryption.js"></script>  <!-- Encryption service -->
+  <script src="js/encryption-init.js?v=2025110402"></script>  <!-- Auto-initialize encryption after login -->
+  <script src="js/universal-sync-status.js?v=20260204050700"></script>  <!-- Universal sync status indicator -->
+  <script src="js/main.js?v=20251019043800"></script>  <!-- General helpers -->
+  
+  <!-- Non-critical scripts loaded asynchronously -->
+  <script src="js/security.js?v=1" defer></script>  <!-- Security system -->
+  <script src="js/platform-admin.js?v=1" defer></script>  <!-- Platform admin functions -->
+  <script src="js/subscription-manager.js?v=1"></script>  <!-- Subscription management -->
+  
+  <!-- Ensure exitOrganizationView function is available immediately -->
+  <script>
+    // Fallback function definition for platform admin view exit
+    if (typeof window.exitOrganizationView === 'undefined') {
+      dashLog('⚠️ exitOrganizationView not found, defining fallback...');
+      window.exitOrganizationView = function() {
+        dashLog('🔄 exitOrganizationView fallback called');
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        // Check if we have platform admin context for return navigation
+        const platformAdminContext = JSON.parse(localStorage.getItem('platformAdminContext') || '{}');
+        
+        if (user.platformAdminView || user._isPlatformView || platformAdminContext.returnUrl) {
+          dashLog('🔄 Exiting platform view, checking return navigation');
+          
+          // Clear the temporary user context
+          localStorage.removeItem("user");
+          localStorage.removeItem("currentUser");
+          
+          // Restore platform admin session if it was preserved
+          if (user.originalPlatformAdmin || user._originalPlatformAdmin) {
+            localStorage.setItem("platformAdmin", JSON.stringify(user.originalPlatformAdmin || user._originalPlatformAdmin));
+          }
+          
+          // Return to clinic details page if we have the context
+          if (platformAdminContext.returnUrl) {
+            dashLog('🔄 Returning to clinic details:', platformAdminContext.returnUrl);
+            window.location.href = platformAdminContext.returnUrl;
+          } else {
+            dashLog('🔄 No return URL found, going to platform dashboard');
+            window.location.href = "/platform-dashboard";
+          }
+        } else {
+          dashLog('❌ Not in platform view mode');
+        }
+      };
+    }
+  </script>
+  <script src="js/org-migration.js?v=1" defer></script>  <!-- Organization migration -->
+  <script src="js/phone-migration.js?v=1" defer></script>  <!-- Phone number migration -->
+  <script src="js/subscription-migration.js?v=1" defer></script>  <!-- Subscription migration -->
+  <script src="js/platform-readonly.js?v=1" defer></script>  <!-- Read-only mode -->
+  <script src="js/performance.js?v=1" defer></script>  <!-- Performance optimizations -->
+  <script src="js/accessibility.js?v=1" defer></script>  <!-- Accessibility features -->
+  <script src="js/session-cookies.js?v=20250117"></script>  <!-- Secure session cookies with localStorage fallback -->
+  <script src="js/backup.js?v=3"></script>  <!-- Backup system with encryption - removed defer to ensure it loads before button clicks -->
+  <script>
+    // Check if platform admin is viewing a clinic
+    window.addEventListener('load', async function() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      // Check organization access (skip check for platform admins)
+      if (user.org && user.role !== 'PlatformOwner' && typeof window.checkOrganizationAccess === 'function') {
+        const accessCheck = await window.checkOrganizationAccess(user.org);
+        if (!accessCheck.hasAccess) {
+          // Block access - show suspension message
+          document.body.innerHTML = `
+            <div style="display: flex; justify-content: center; align-items: center; min-height: 100vh; background: #f5f7fa; padding: 20px;">
+              <div style="background: white; padding: 40px; border-radius: 12px; box-shadow: 0 4px 20px rgba(0,0,0,0.1); max-width: 600px; text-align: center;">
+                <div style="font-size: 64px; margin-bottom: 20px;">🚫</div>
+                <h1 style="color: #dc3545; margin-bottom: 20px;">Access Suspended</h1>
+                <p style="color: #666; font-size: 18px; margin-bottom: 30px; line-height: 1.6;">
+                  Your organization's access to MediForge has been suspended.
+                </p>
+                <div style="background: #fff3cd; padding: 20px; border-radius: 8px; margin-bottom: 30px; text-align: left;">
+                  <p style="margin: 0; color: #856404;"><strong>Reason:</strong></p>
+                  <p style="margin: 10px 0 0 0; color: #856404;">${accessCheck.reason || 'Organization access has been suspended by platform administrator'}</p>
+                  ${accessCheck.suspendedDate ? `<p style="margin: 10px 0 0 0; color: #856404; font-size: 14px;"><strong>Suspended on:</strong> ${new Date(accessCheck.suspendedDate).toLocaleString()}</p>` : ''}
+                </div>
+                <p style="color: #666; margin-bottom: 30px;">
+                  Please contact your platform administrator or support team for assistance.
+                </p>
+                <button onclick="logout()" style="background: #667eea; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600;">
+                  Logout
+                </button>
+              </div>
+            </div>
+          `;
+          return; // Stop execution
+        }
+      }
+      
+      dashLog('🔒 Dashboard - Platform view flags checked');
+      dashLog('🔒 Dashboard - _isPlatformView:', user._isPlatformView);
+      dashLog('🔒 Dashboard - platformAdminView:', !!user.platformAdminView);
+      dashLog('🔒 Dashboard - originalPlatformAdmin:', !!user.originalPlatformAdmin);
+      
+      // Show platform view banner if platform admin is viewing a clinic
+      const isPlatformAdminView = (user._isPlatformView && user.role === "PlatformOwner") ||
+                                  (user._isPlatformView && user.platformAdminView) ||
+                                  (user._isPlatformView && user.originalPlatformAdmin);
+      
+      dashLog('🔒 Dashboard - isPlatformAdminView:', isPlatformAdminView);
+      
+      if (isPlatformAdminView) {
+        dashLog('🔒 Dashboard - Showing platform admin banner');
+        document.getElementById('platform-view-banner').style.display = 'block';
+        document.getElementById('viewing-org-name').textContent = user.org || user.organization || 'Unknown Clinic';
+      }
+    });
+    
+    // Update backup status display
+    window.addEventListener('load', function() {
+      const status = getBackupStatus();
+      const lastBackupElem = document.getElementById('last-backup-date');
+      
+      if (lastBackupElem) {
+        lastBackupElem.textContent = status.lastBackup;
+        
+        // Warn if never backed up or > 7 days
+        if (status.daysSinceBackup === null) {
+          lastBackupElem.style.color = 'red';
+          lastBackupElem.textContent += ' ⚠️ NEVER - Please create a backup!';
+        } else if (status.daysSinceBackup > 7) {
+          lastBackupElem.style.color = 'orange';
+          lastBackupElem.textContent += ` ⚠️ (${status.daysSinceBackup} days ago - Backup recommended!)`;
+        } else {
+          lastBackupElem.style.color = 'green';
+          lastBackupElem.textContent += ` ✓ (${status.daysSinceBackup} days ago)`;
+        }
+      }
+    });
+
+    // Check if specialty needs to be set (first login)
+    // This is non-blocking - if it fails, dashboard continues to load normally
+    // DISABLED FOR SAFETY: Only enable first-login redirect for truly new organizations
+    // For now, we'll let users manually change specialty via the button
+    /*
+    window.addEventListener('load', async function() {
+      try {
+        // Wait a bit for medical-specialties.js to load
+        if (typeof window.hasOrganizationSpecialtySet === 'undefined') {
+          // If function not available, continue normally (don't block)
+          console.warn('Medical specialties utility not loaded, skipping first-login check');
+          return;
+        }
+
+        // Only check if this is a brand new organization (not migrated)
+        // For existing organizations, let them use the button to change specialty
+        const specialtySet = await window.hasOrganizationSpecialtySet();
+        
+        if (!specialtySet) {
+          // First login - redirect to specialty selection
+          console.log('First login detected - redirecting to specialty selection');
+          window.location.href = '/select-medical-specialty?firstLogin=true';
+          return;
+        }
+      } catch (error) {
+        // If check fails, continue normally (don't block dashboard)
+        console.warn('Could not check specialty status, continuing normally:', error);
+        // Dashboard continues to load - this is intentional for safety
+      }
+    });
+    */
+  </script>
+  <script>
+    // Force reload if this is a cached version
+    if (window.location.href.includes('dashboard') && !window.location.href.includes('t=')) {
+      window.location.href = window.location.href + '?t=' + Date.now();
+    }
+    
+    // Toggle category collapse/expand
+    function toggleCategory(header, event) {
+      // Stop event propagation to prevent triggering button clicks
+      if (event) {
+        event.stopPropagation();
+        event.preventDefault();
+      }
+      const section = header.parentElement;
+      if (section) {
+        section.classList.toggle('collapsed');
+      }
+    }
+    
+    // Prevent event bubbling on category content clicks
+    function setupCategoryEventHandlers() {
+      // Only prevent clicks on category headers from bubbling to parent elements
+      // Buttons don't need event listeners - their onclick handlers work fine on their own
+      const categoryHeaders = document.querySelectorAll('.category-header');
+      categoryHeaders.forEach(header => {
+        // Check if we've already added a listener
+        if (!header.dataset.toggleHandlerAdded) {
+          header.dataset.toggleHandlerAdded = 'true';
+          // Add event listener - use bubble phase so it doesn't interfere
+          header.addEventListener('click', function(e) {
+            e.stopPropagation();
+            toggleCategory(header, e);
+          }, false); // Bubble phase - won't interfere with button clicks
+        }
+      });
+      
+      // Don't add any listeners to buttons - let their onclick handlers work naturally
+      // The CSS fixes (z-index, isolation) are sufficient to prevent overlap issues
+    }
+    
+    // Setup handlers when DOM is ready
+    if (document.readyState === 'loading') {
+      document.addEventListener('DOMContentLoaded', setupCategoryEventHandlers);
+    } else {
+      setupCategoryEventHandlers();
+    }
+    
+    // Also setup handlers after a short delay to catch dynamically added buttons
+    setTimeout(setupCategoryEventHandlers, 100);
+    
+    // Show pharmacy dashboard button for pharmacists only
+    function checkAndShowPharmacyButton() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const pharmacyBtn = document.getElementById('pharmacy-dashboard-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+      
+      if (pharmacyBtn) {
+        // Check if user is a pharmacist (case-insensitive)
+        // Show pharmacy dashboard for pharmacists
+        const isPharmacist = user.role && (
+          user.role.toLowerCase() === 'pharmacist' || 
+          user.role === 'Pharmacist'
+        );
+        
+        if (isPharmacist) {
+          pharmacyBtn.style.display = 'block';
+          if (departmentalSection) departmentalSection.style.display = 'block';
+          console.log('✅ Pharmacy dashboard button shown for:', user.role);
+        } else {
+          pharmacyBtn.style.display = 'none';
+          console.log('ℹ️ Pharmacy dashboard button hidden. User role:', user.role);
+        }
+      }
+    }
+    
+    // Show lab scientist dashboard for lab scientists
+    function checkAndShowLabScientistButton() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const labBtn = document.getElementById('lab-scientist-dashboard-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+      
+      if (labBtn) {
+        const labScientistRoles = ['Medical Lab Scientist', 'Lab Scientist', 'Medical Laboratory Scientist', 'Laboratory Scientist', 'Lab Tech', 'Laboratory Technician'];
+        const isLabScientist = labScientistRoles.some(role => 
+          user.role === role || user.role?.toLowerCase() === role.toLowerCase()
+        );
+        
+        if (isLabScientist) {
+          labBtn.style.display = 'block';
+          if (departmentalSection) departmentalSection.style.display = 'block';
+          console.log('✅ Lab scientist dashboard button shown for:', user.role);
+        } else {
+          labBtn.style.display = 'none';
+        }
+      }
+    }
+    
+    // Show biller/accountant dashboard for Biller/Accountant role and admins
+    function checkAndShowAccountantButton() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const accBtn = document.getElementById('accountant-dashboard-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+      if (accBtn) {
+        const r = (user.role || '').toLowerCase();
+        const isAccountant = r === 'biller/accountant' || r === 'administrator' || r === 'admin';
+        if (isAccountant) {
+          accBtn.style.display = 'block';
+          if (departmentalSection) departmentalSection.style.display = 'block';
+        } else {
+          accBtn.style.display = 'none';
+        }
+      }
+    }
+    
+    // Show lab results dashboard for doctors
+    function checkAndShowDoctorLabResultsButton() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const doctorLabBtn = document.getElementById('doctor-lab-results-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+
+      if (doctorLabBtn) {
+        const doctorRoles = ['Doctor', 'doctor', 'Physician', 'physician'];
+        const isDoctor = doctorRoles.some(role =>
+          user.role === role || user.role?.toLowerCase() === role.toLowerCase()
+        );
+
+        if (isDoctor) {
+          doctorLabBtn.style.display = 'block';
+          if (departmentalSection) departmentalSection.style.display = 'block';
+          console.log('✅ Doctor lab results button shown for:', user.role);
+        } else {
+          doctorLabBtn.style.display = 'none';
+        }
+      }
+    }
+
+    // Blood Pressure Alerts Dashboard (Doctors & Nurses - clinic-level)
+    function checkAndShowBloodPressureAlertsButton() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const bpAlertsBtn = document.getElementById('blood-pressure-alerts-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+
+      if (bpAlertsBtn) {
+        const doctorRoles = ['Doctor', 'doctor', 'Physician', 'physician', 'Medical Doctor', 'MD', 'Dr', 'Dr.'];
+        const nurseRoles = ['Nurse', 'nurse', 'Nursing', 'Staff Nurse', 'Registered Nurse', 'RN'];
+        const isDoctor = doctorRoles.some(role =>
+          (user.role || '').toLowerCase().includes(role.toLowerCase())
+        );
+        const isNurse = nurseRoles.some(role =>
+          (user.role || '').toLowerCase().includes(role.toLowerCase())
+        );
+
+        if (isDoctor || isNurse) {
+          bpAlertsBtn.style.display = 'block';
+          if (departmentalSection) departmentalSection.style.display = 'block';
+          console.log('✅ Blood Pressure Alerts button shown for:', user.role);
+        } else {
+          bpAlertsBtn.style.display = 'none';
+        }
+      }
+    }
+    
+    // Upcoming Appointments (Doctors only - in Departmental Dashboards)
+    function canSeeUpcomingAppointments(user) {
+      const r = (user.role || '').toLowerCase();
+      const doctorRoles = ['doctor', 'physician', 'medical doctor', 'md', 'dr'];
+      const nurseRoles = ['nurse', 'nursing', 'staff nurse', 'registered nurse', 'rn'];
+      const labRoles = ['lab scientist', 'lab', 'laboratory', 'lab tech'];
+      const adminRoles = ['admin', 'administrator', 'manager', 'supervisor'];
+      return doctorRoles.some(x => r.includes(x)) ||
+        nurseRoles.some(x => r.includes(x)) ||
+        labRoles.some(x => r.includes(x)) ||
+        adminRoles.some(x => r.includes(x));
+    }
+    
+    
+    function checkAndShowUpcomingAppointmentsSection() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const btn = document.getElementById('upcoming-appointments-btn');
+      if (btn && canSeeUpcomingAppointments(user)) {
+        btn.style.display = 'block';
+      } else if (btn) {
+        btn.style.display = 'none';
+      }
+    }
+
+    function checkAndShowPhysicianVerificationDash() {
+      const wrap = document.getElementById('physician-verification-dash-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+      if (!wrap) return;
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const isDoc = typeof window.isDoctorRoleForVerification === 'function' && window.isDoctorRoleForVerification(user.role);
+      if (isDoc) {
+        wrap.style.display = 'block';
+        if (departmentalSection) departmentalSection.style.display = 'block';
+      } else {
+        wrap.style.display = 'none';
+      }
+    }
+    
+    // Load unread message count
+    async function loadUnreadMessageCount() {
+      try {
+        if (typeof navigator !== 'undefined' && navigator.onLine === false) {
+          return;
+        }
+        if (typeof window.getUnreadMessageCount === 'function') {
+          const count = await window.getUnreadMessageCount();
+          const badge = document.getElementById('unread-messages-badge');
+          if (badge) {
+            if (count > 0) {
+              badge.textContent = count > 99 ? '99+' : count;
+              badge.style.display = 'block';
+            } else {
+              badge.style.display = 'none';
+            }
+          }
+        }
+      } catch (error) {
+        console.error('Error loading unread message count:', error);
+      }
+    }
+
+    // Poll for new messages every 30 seconds
+    setInterval(function() {
+      loadUnreadMessageCount();
+    }, 30000);
+    
+    // Show external lab orders dashboard for nurses, admins, and lab scientists
+    function checkAndShowExternalLabOrdersButton() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const externalLabBtn = document.getElementById('external-lab-orders-btn');
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+      
+      if (externalLabBtn) {
+        const allowedRoles = ['Nurse', 'nurse', 'Admin', 'admin', 'Administrator', 'administrator', 'Medical Lab Scientist', 'Lab Scientist', 'Medical Laboratory Scientist', 'Laboratory Scientist', 'Lab Tech', 'Laboratory Technician'];
+        const isAllowed = allowedRoles.some(role => 
+          user.role === role || user.role?.toLowerCase() === role.toLowerCase()
+        );
+        
+        if (isAllowed) {
+          externalLabBtn.style.display = 'block';
+          if (departmentalSection) departmentalSection.style.display = 'block';
+          console.log('✅ External lab orders dashboard button shown for:', user.role);
+        } else {
+          externalLabBtn.style.display = 'none';
+        }
+      }
+    }
+    
+    // Show admissions dashboard for nurses and admins
+    // HYBRID ARCHITECTURE: Supabase-first, localStorage fallback
+    async function checkAndShowAdmissionsDashboard() {
+      const admissionsBtn = document.getElementById('admissions-dashboard-btn');
+      if (!admissionsBtn) return;
+      
+      let user = null;
+      const isOnline = typeof navigator !== 'undefined' ? navigator.onLine !== false : true;
+      
+      // STEP 1: Try Supabase first (hybrid architecture principle)
+      if (isOnline && typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          // Get current auth user
+          const { data: { user: authUser }, error: authError } = await window.supabaseClient.auth.getUser();
+          
+          if (!authError && authUser) {
+            // Fetch user profile from Supabase
+            const { data: profileData, error: profileError } = await window.supabaseClient
+              .from('users')
+              .select('role')
+              .eq('auth_user_id', authUser.id)
+              .single();
+            
+            if (!profileError && profileData) {
+              // Cache to localStorage (replace with fresh data)
+              const localUser = JSON.parse(localStorage.getItem('user') || '{}');
+              localUser.role = profileData.role;
+              localStorage.setItem('user', JSON.stringify(localUser));
+              user = localUser;
+            }
+          }
+        } catch (error) {
+          console.warn('⚠️ Could not load user role from Supabase, using localStorage fallback:', error);
+        }
+      }
+      
+      // STEP 2: Fallback to localStorage if Supabase failed or unavailable
+      if (!user) {
+        user = JSON.parse(localStorage.getItem('user') || '{}');
+      }
+      
+      // Determine if user should see admissions dashboard (Doctor, Nurse, or Admin)
+      const role = (user.role || '').toLowerCase().trim();
+      const doctorRoles = ['doctor', 'physician', 'medical doctor', 'md', 'dr', 'dr.'];
+      const nurseRoles = ['nurse', 'nursing', 'staff nurse', 'registered nurse'];
+      const adminRoles = ['admin', 'administrator', 'manager', 'supervisor'];
+      const departmentalSection = document.getElementById('departmental-dashboards-section');
+      
+      console.log('🔍 [Admissions Button] Checking role:', user.role, '| Lowercase:', role);
+      
+      const isDoctor = doctorRoles.some(r => role.includes(r));
+      const isNurse = nurseRoles.some(r => role.includes(r));
+      const isAdmin = adminRoles.some(r => role.includes(r));
+      
+      console.log('🔍 [Admissions Button] isDoctor:', isDoctor, '| isNurse:', isNurse, '| isAdmin:', isAdmin);
+      
+      if (isDoctor || isNurse || isAdmin) {
+        admissionsBtn.style.display = 'block';
+        if (departmentalSection) departmentalSection.style.display = 'block';
+        console.log('✅ Admissions dashboard button shown for:', user.role);
+      } else {
+        admissionsBtn.style.display = 'none';
+        console.log('❌ Admissions dashboard button hidden - role not recognized:', user.role);
+      }
+    }
+    
+    // Check on page load
+    document.addEventListener('DOMContentLoaded', function() {
+      checkAndShowUpcomingAppointmentsSection();
+      checkAndShowPharmacyButton();
+      checkAndShowLabScientistButton();
+      checkAndShowAccountantButton();
+      checkAndShowDoctorLabResultsButton();
+      checkAndShowBloodPressureAlertsButton();
+      checkAndShowExternalLabOrdersButton();
+      checkAndShowAdmissionsDashboard();
+      checkAndShowPhysicianVerificationDash();
+      if (typeof window.refreshPhysicianVerificationBanner === 'function') {
+        window.refreshPhysicianVerificationBanner('physician-verification-banner');
+      }
+      loadUnreadMessageCount();
+    });
+
+    // Also check after a short delay (in case localStorage is updated)
+    setTimeout(function() {
+      checkAndShowUpcomingAppointmentsSection();
+      checkAndShowPharmacyButton();
+      checkAndShowLabScientistButton();
+      checkAndShowAccountantButton();
+      checkAndShowDoctorLabResultsButton();
+      checkAndShowBloodPressureAlertsButton();
+      checkAndShowExternalLabOrdersButton();
+      checkAndShowAdmissionsDashboard();
+      checkAndShowPhysicianVerificationDash();
+      if (typeof window.refreshPhysicianVerificationBanner === 'function') {
+        window.refreshPhysicianVerificationBanner('physician-verification-banner');
+      }
+      loadUnreadMessageCount();
+    }, 500);
+    
+    // Listen for storage changes (if role is updated in another tab)
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'user') {
+        checkAndShowPharmacyButton();
+        checkAndShowLabScientistButton();
+        checkAndShowAccountantButton();
+        checkAndShowDoctorLabResultsButton();
+        checkAndShowBloodPressureAlertsButton();
+        checkAndShowExternalLabOrdersButton();
+      checkAndShowAdmissionsDashboard();
+        checkAndShowPhysicianVerificationDash();
+      }
+    });
+
+    // Also listen for custom events (if role is updated in same tab)
+    window.addEventListener('userRoleUpdated', function() {
+      checkAndShowPharmacyButton();
+      checkAndShowLabScientistButton();
+      checkAndShowAccountantButton();
+      checkAndShowDoctorLabResultsButton();
+      checkAndShowBloodPressureAlertsButton();
+      checkAndShowExternalLabOrdersButton();
+      checkAndShowAdmissionsDashboard();
+      checkAndShowPhysicianVerificationDash();
+    });
+    
+    // Original storage listener
+    window.addEventListener('storage', function(e) {
+      if (e.key === 'user') {
+        checkAndShowPharmacyButton();
+        checkAndShowAccountantButton();
+      }
+    });
+  </script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

@@ -1,0 +1,451 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Migrate Appointment Types</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 900px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #008753;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .status.info {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status.warning {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+    button {
+      background: linear-gradient(135deg, #008753, #006b42);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #006b42, #008753);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    #results {
+      margin-top: 20px;
+      max-height: 400px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .result-item {
+      padding: 8px;
+      margin: 5px 0;
+      border-left: 3px solid #008753;
+      background: white;
+    }
+    .result-item.warning {
+      border-left-color: #ffc107;
+    }
+    .result-item.error {
+      border-left-color: #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Migrate Appointment Types</h1>
+    <p>This script will analyze existing appointments and backfill the <code>appointment_type</code> field based on available data.</p>
+    
+    <div class="status info" id="status">
+      Ready to start migration. Click "Start Migration" to begin.
+    </div>
+    
+    <button id="startBtn" onclick="startMigration()">Start Migration</button>
+    <button onclick="window.location.href='dashboard'">Back to Dashboard</button>
+    
+    <div id="results"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/appointment-types.js"></script>
+  <script src="js/pricing.js"></script>
+  
+  <script>
+    let migrationStats = {
+      total: 0,
+      updated: 0,
+      skipped: 0,
+      errors: 0,
+      labIntervention: 0,
+      generalConsultation: 0,
+      followUp: 0,
+      other: 0
+    };
+
+    async function startMigration() {
+      const startBtn = document.getElementById('startBtn');
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+      
+      startBtn.disabled = true;
+      status.className = 'status info';
+      status.textContent = '🔄 Starting migration...';
+      results.innerHTML = '';
+      
+      try {
+        // Get current user and organization
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        
+        if (!user || !user.username) {
+          throw new Error('No user found in localStorage. Please log in first.');
+        }
+        
+        // Use centralized organization ID resolution if available
+        let orgId;
+        if (typeof window.resolveOrganizationId === 'function') {
+          orgId = await window.resolveOrganizationId();
+        }
+        
+        // Fallback: try direct user properties
+        if (!orgId) {
+          orgId = user.organizationId || user.organization_id;
+        }
+        
+        // Fallback: check if user.org is already a UUID
+        if (!orgId && user.org && typeof user.org === 'string' && user.org.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          orgId = user.org;
+        }
+        
+        // Fallback: resolve from organizations localStorage object
+        if (!orgId && user.org) {
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          orgId = organizations[user.org]?.id;
+        }
+        
+        // Fallback: query Supabase by organization name
+        if (!orgId && user.org && window.supabaseClient) {
+          try {
+            const { data: orgData, error: orgError } = await window.supabaseClient
+              .from('organizations')
+              .select('id')
+              .ilike('name', user.org)
+              .limit(1)
+              .maybeSingle();
+            
+            if (!orgError && orgData && orgData.id) {
+              orgId = orgData.id;
+              // Cache it for future use
+              user.organizationId = orgId;
+              user.organization_id = orgId;
+              localStorage.setItem('user', JSON.stringify(user));
+            }
+          } catch (err) {
+            console.warn('Could not resolve org ID from Supabase:', err);
+          }
+        }
+        
+        if (!orgId) {
+          console.error('User object:', user);
+          throw new Error(`Cannot determine organization ID. User org: ${user.org || 'none'}, organizationId: ${user.organizationId || 'none'}, organization_id: ${user.organization_id || 'none'}. Please ensure you are logged in with a valid account.`);
+        }
+        
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not available');
+        }
+        
+        // Load all appointments for this organization
+        status.textContent = '📥 Loading appointments from Supabase...';
+        // Fetch all appointments and filter deleted ones in JavaScript to avoid query syntax issues
+        const { data: allAppointments, error: loadError } = await window.supabaseClient
+          .from('appointments')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        if (loadError) {
+          throw new Error('Failed to load appointments: ' + loadError.message);
+        }
+        
+        // Filter out deleted appointments in JavaScript
+        const appointments = (allAppointments || []).filter(apt => !apt.deleted || apt.deleted === false);
+        
+        if (loadError) {
+          throw new Error('Failed to load appointments: ' + loadError.message);
+        }
+        
+        if (!appointments || appointments.length === 0) {
+          status.className = 'status warning';
+          status.textContent = '⚠️ No appointments found to migrate.';
+          startBtn.disabled = false;
+          return;
+        }
+        
+        migrationStats.total = appointments.length;
+        status.textContent = `📊 Found ${appointments.length} appointments. Analyzing...`;
+        
+        // Load appointment types and billing services for matching
+        const appointmentTypes = await window.getAppointmentTypes();
+        const billingServices = typeof window.getPricingCatalog === 'function' ? window.getPricingCatalog() : [];
+        
+        // Load patients to determine if appointment is follow-up
+        const { data: patients } = await window.supabaseClient
+          .from('patients')
+          .select('id, patient_id, first_name, last_name')
+          .eq('organization_id', orgId);
+        
+        // Track patient visit counts
+        const patientVisitCounts = {};
+        appointments.forEach(apt => {
+          const patientId = apt.patient_id;
+          if (!patientVisitCounts[patientId]) {
+            patientVisitCounts[patientId] = [];
+          }
+          patientVisitCounts[patientId].push(apt);
+        });
+        
+        // Sort appointments by date for each patient
+        Object.keys(patientVisitCounts).forEach(patientId => {
+          patientVisitCounts[patientId].sort((a, b) => 
+            new Date(a.appointment_date) - new Date(b.appointment_date)
+          );
+        });
+        
+        // Process each appointment
+        for (let i = 0; i < appointments.length; i++) {
+          const appointment = appointments[i];
+          
+          // Skip if already has appointment_type
+          if (appointment.appointment_type && appointment.appointment_type.trim() !== '') {
+            addResult(`⏭️ Skipped: Appointment ${appointment.appointment_id} already has type: ${appointment.appointment_type}`, 'warning');
+            migrationStats.skipped++;
+            continue;
+          }
+          
+          // Determine appointment type using heuristics
+          const determinedType = await determineAppointmentType(appointment, appointmentTypes, billingServices, patientVisitCounts);
+          
+          if (!determinedType) {
+            addResult(`⚠️ Could not determine type for appointment ${appointment.appointment_id}`, 'warning');
+            migrationStats.errors++;
+            continue;
+          }
+          
+          // Update appointment in Supabase
+          try {
+            const { error: updateError } = await window.supabaseClient
+              .from('appointments')
+              .update({ 
+                appointment_type: determinedType.name,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', appointment.id)
+              .eq('organization_id', orgId);
+            
+            if (updateError) {
+              throw updateError;
+            }
+            
+            // Track statistics
+            migrationStats.updated++;
+            if (determinedType.id === 'lab-intervention') {
+              migrationStats.labIntervention++;
+            } else if (determinedType.id === 'general-consultation') {
+              migrationStats.generalConsultation++;
+            } else if (determinedType.id === 'follow-up-visit') {
+              migrationStats.followUp++;
+            } else {
+              migrationStats.other++;
+            }
+            
+            addResult(`✅ Updated: ${appointment.appointment_id} → ${determinedType.name}`, 'success');
+            
+            // Update progress
+            status.textContent = `🔄 Processing... ${i + 1}/${appointments.length} (${migrationStats.updated} updated)`;
+            
+          } catch (error) {
+            addResult(`❌ Error updating ${appointment.appointment_id}: ${error.message}`, 'error');
+            migrationStats.errors++;
+          }
+        }
+        
+        // Update localStorage appointments cache
+        await refreshLocalStorageAppointments(orgId);
+        
+        // Show final results
+        status.className = 'status success';
+        status.innerHTML = `
+          ✅ Migration Complete!<br>
+          Total: ${migrationStats.total} | Updated: ${migrationStats.updated} | Skipped: ${migrationStats.skipped} | Errors: ${migrationStats.errors}<br>
+          <strong>Breakdown:</strong><br>
+          • Lab Intervention: ${migrationStats.labIntervention}<br>
+          • General Consultation: ${migrationStats.generalConsultation}<br>
+          • Follow Up Visit: ${migrationStats.followUp}<br>
+          • Other Services: ${migrationStats.other}
+        `;
+        
+        startBtn.disabled = false;
+        
+      } catch (error) {
+        status.className = 'status error';
+        status.textContent = '❌ Migration failed: ' + error.message;
+        addResult('❌ Migration error: ' + error.message, 'error');
+        startBtn.disabled = false;
+      }
+    }
+    
+    async function determineAppointmentType(appointment, appointmentTypes, billingServices, patientVisitCounts) {
+      const doctorName = (appointment.doctor_name || '').toLowerCase();
+      const notes = (appointment.notes || '').toLowerCase();
+      const reason = (appointment.reason || '').toLowerCase();
+      const visitType = (appointment.visit_type || '').toLowerCase();
+      
+      // Check 1: Lab Intervention indicators
+      const labIndicators = [
+        doctorName.includes('lab'),
+        doctorName.includes('scientist'),
+        doctorName.includes('technician'),
+        notes.includes('lab'),
+        notes.includes('laboratory'),
+        reason.includes('lab'),
+        visitType.includes('lab')
+      ];
+      
+      if (labIndicators.some(indicator => indicator === true)) {
+        const labType = appointmentTypes.find(t => t.id === 'lab-intervention');
+        if (labType) return labType;
+      }
+      
+      // Check 2: Follow-up visit (not first appointment for this patient)
+      const patientId = appointment.patient_id;
+      const patientAppointments = patientVisitCounts[patientId] || [];
+      if (patientAppointments.length > 1) {
+        const sortedAppointments = [...patientAppointments].sort((a, b) => 
+          new Date(a.appointment_date) - new Date(b.appointment_date)
+        );
+        const isFirstAppointment = sortedAppointments[0].id === appointment.id;
+        
+        if (!isFirstAppointment) {
+          const followUpType = appointmentTypes.find(t => t.id === 'follow-up-visit');
+          if (followUpType) return followUpType;
+        }
+      }
+      
+      // Check 3: Match against billing services
+      if (billingServices && billingServices.length > 0) {
+        for (const service of billingServices) {
+          if (service.active === false) continue;
+          
+          // Check if notes or reason mention this service
+          const serviceNameLower = (service.name || '').toLowerCase();
+          if (notes.includes(serviceNameLower) || reason.includes(serviceNameLower)) {
+            // Find matching appointment type or create one
+            let matchingType = appointmentTypes.find(t => 
+              t.serviceId === service.id || t.name === service.name
+            );
+            
+            if (!matchingType) {
+              // Create a temporary type for this service
+              matchingType = {
+                id: `service-${service.id}`,
+                name: service.name,
+                category: service.category || 'Other',
+                isStandard: false
+              };
+            }
+            
+            return matchingType;
+          }
+        }
+      }
+      
+      // Default: General Consultation (first visit or no indicators)
+      const generalType = appointmentTypes.find(t => t.id === 'general-consultation');
+      return generalType || { id: 'general-consultation', name: 'General Consultation' };
+    }
+    
+    function addResult(message, type = 'info') {
+      const results = document.getElementById('results');
+      const item = document.createElement('div');
+      item.className = `result-item ${type}`;
+      item.textContent = message;
+      results.appendChild(item);
+      results.scrollTop = results.scrollHeight;
+    }
+    
+    async function refreshLocalStorageAppointments(orgId) {
+      try {
+        const { data: allAppointments } = await window.supabaseClient
+          .from('appointments')
+          .select('*')
+          .eq('organization_id', orgId);
+        
+        // Filter out deleted appointments in JavaScript
+        const appointments = (allAppointments || []).filter(apt => !apt.deleted || apt.deleted === false);
+        
+        if (appointments) {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const appointmentsKey = user.org ? `${user.org}_appointments` : 'appointments';
+          
+          const converted = appointments.map(sa => ({
+            id: sa.appointment_id || `${sa.appointment_date}_${sa.appointment_time?.replace(':', '')}`,
+            patientId: sa.patient_id,
+            patientName: sa.patient_name || 'Unknown Patient',
+            date: sa.appointment_date,
+            time: sa.appointment_time,
+            duration: sa.duration || 30,
+            visitType: sa.visit_type || 'General',
+            doctor: sa.doctor_name || 'Dr. Smith',
+            appointment_type: sa.appointment_type || 'General Consultation',
+            appointment_type_id: sa.appointment_type_id || '',
+            status: sa.status || 'scheduled',
+            notes: sa.notes || '',
+            organizationId: sa.organization_id
+          }));
+          
+          localStorage.setItem(appointmentsKey, JSON.stringify(converted));
+          addResult('✅ Refreshed localStorage appointments cache', 'success');
+        }
+      } catch (error) {
+        addResult('⚠️ Could not refresh localStorage: ' + error.message, 'warning');
+      }
+    }
+  </script>
+</body>
+</html>
+

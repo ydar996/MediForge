@@ -1,0 +1,1313 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Admissions Dashboard - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+    }
+    
+    .admission-item {
+      background: var(--soft-white);
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      flex-wrap: wrap;
+    }
+    
+    .admission-item.pending {
+      border-left-color: var(--warm-orange);
+      background: linear-gradient(135deg, #fff3cd, var(--soft-white));
+    }
+    
+    .admission-item.assigned {
+      border-left-color: var(--primary-green);
+    }
+    
+    .admission-item.discharged {
+      border-left-color: #6c757d;
+      opacity: 0.7;
+    }
+    
+    .admission-info {
+      flex: 1;
+      min-width: 300px;
+    }
+    
+    .admission-info h3 {
+      margin: 0 0 10px 0;
+      color: var(--primary-green);
+    }
+    
+    .admission-info p {
+      margin: 5px 0;
+      color: var(--charcoal);
+      font-size: 14px;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      margin-left: 10px;
+    }
+    
+    .status-admitted {
+      background: var(--warm-orange);
+      color: var(--charcoal);
+    }
+    
+    .status-assigned {
+      background: var(--primary-green);
+      color: white;
+    }
+    
+    .status-discharged {
+      background: #6c757d;
+      color: white;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 5px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .btn-danger {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+    }
+    
+    .modal {
+      display: none;
+      position: fixed;
+      z-index: 1000;
+      left: 0;
+      top: 0;
+      width: 100%;
+      height: 100%;
+      background-color: rgba(0,0,0,0.5);
+    }
+    
+    .modal-content {
+      background-color: var(--nigerian-white);
+      margin: 5% auto;
+      padding: 30px;
+      border: 2px solid var(--primary-green);
+      border-radius: 12px;
+      width: 90%;
+      max-width: 600px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.3);
+    }
+    
+    .modal-content h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    
+    .close {
+      color: #aaa;
+      float: right;
+      font-size: 28px;
+      font-weight: bold;
+      cursor: pointer;
+    }
+    
+    .close:hover {
+      color: var(--primary-green);
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <!-- Patients.js for resolvePatientByIdentifier -->
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="window.location.href='dashboard'">← Back to Dashboard</button>
+    
+    <h1>🏥 Admissions Dashboard</h1>
+    
+    <!-- Instructions -->
+    <div class="section" style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); border-left: 4px solid #2196F3;">
+      <h2 style="color: #1976D2; margin-top: 0;">📋 How to Assign Patients to Beds</h2>
+      <ol style="line-height: 1.8; color: var(--charcoal);">
+        <li><strong>Create an Admission:</strong> First, a patient must be admitted (use the "Admit Patient" button on clinical notes, or create a new admission below).</li>
+        <li><strong>Assign Room/Bed:</strong> Once admitted, the patient appears in "Pending Admissions" section below. Click the <strong>"Assign Room/Bed"</strong> button to assign them to a specific room and bed.</li>
+        <li><strong>View Assigned:</strong> After assignment, the patient moves to the "Assigned Admissions" section with their room/bed information.</li>
+      </ol>
+      <div style="margin-top: 15px; display: flex; gap: 10px; flex-wrap: wrap;">
+        <button onclick="startNewAdmission()" style="background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+          ➕ Create New Admission
+        </button>
+        <button onclick="window.location.href='archived-admissions'" style="background: linear-gradient(135deg, #6c757d, #5a6268); color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+          🗄️ View Archived/Deleted Admissions
+        </button>
+      </div>
+    </div>
+    
+    <!-- Room Availability Summary -->
+    <div class="section">
+      <h2>Room Availability Summary</h2>
+      <div id="room-availability-summary">
+        <p>Loading room availability...</p>
+      </div>
+    </div>
+    
+    <!-- Pending Admissions (Not yet assigned) -->
+    <div class="section">
+      <h2>⏳ Pending Admissions (Need Room/Bed Assignment)</h2>
+      <p style="color: #666; margin-bottom: 15px; font-style: italic;">Patients who have been admitted but not yet assigned to a room/bed. Click <strong>"Assign Room/Bed"</strong> to assign them.</p>
+      <div id="pending-admissions-list">
+        <p>Loading pending admissions...</p>
+      </div>
+    </div>
+    
+    <!-- Assigned Admissions -->
+    <div class="section">
+      <h2>Assigned Admissions</h2>
+      <div id="assigned-admissions-list">
+        <p>Loading assigned admissions...</p>
+      </div>
+    </div>
+    
+    <!-- Discharged Admissions (Recent) -->
+    <div class="section">
+      <h2>Recently Discharged (Last 30 Days)</h2>
+      <div id="discharged-admissions-list">
+        <p>Loading discharged admissions...</p>
+      </div>
+    </div>
+    
+  </div>
+  
+  <!-- Assignment Modal -->
+  <div id="assignment-modal" class="modal">
+    <div class="modal-content">
+      <span class="close" onclick="closeAssignmentModal()">&times;</span>
+      <h2>Assign Room and Bed</h2>
+      <form id="assignment-form">
+        <input type="hidden" id="assignment-admission-id">
+        <div class="form-group">
+          <label>Patient:</label>
+          <input type="text" id="assignment-patient-name" readonly>
+        </div>
+        <div class="form-group">
+          <label>Admission Date:</label>
+          <input type="text" id="assignment-admission-date" readonly>
+        </div>
+        <div class="form-group">
+          <label>Room *</label>
+          <select id="assignment-room" required onchange="loadAvailableBeds()">
+            <option value="">Select a room...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Bed *</label>
+          <select id="assignment-bed" required>
+            <option value="">Select a bed...</option>
+          </select>
+        </div>
+        <div class="form-group">
+          <label>Estimated Duration of Stay (Days) *</label>
+          <input type="number" id="assignment-estimated-duration" min="1" required placeholder="e.g., 3">
+          <small style="color: #666; font-size: 12px;">Estimated number of days the patient will stay</small>
+        </div>
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit">💾 Assign Room/Bed</button>
+          <button type="button" class="btn-secondary" onclick="closeAssignmentModal()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    let organizationId = null;
+    let admissions = [];
+    let rooms = [];
+    let beds = [];
+    let patients = [];
+
+    function startNewAdmission() {
+      alert('To admit a patient:\n\n1. Open the patient from the Patients list\n2. Open a clinical note for today\'s visit\n3. Click "Admit Patient" on that note');
+      window.location.href = '/patients';
+    }
+
+    function resolveLegacyPatientIdFromRecord(patient, admissionPatientId) {
+      if (patient && typeof window.getPatientIdentifier === 'function') {
+        const id = window.getPatientIdentifier(patient);
+        if (id) return id;
+      }
+      if (patient) {
+        if (patient.patient_id) return patient.patient_id;
+        if (patient.patientNumber) return patient.patientNumber;
+        if (patient.id && typeof window.isUuidLike === 'function' && !window.isUuidLike(patient.id)) return patient.id;
+        if (patient.id && typeof window.isUuidLike !== 'function' && !String(patient.id).includes('-')) return patient.id;
+      }
+      return admissionPatientId || '';
+    }
+
+    function goToInpatientDashboard(admissionUuid, admissionCode, patientIdForUrl) {
+      const aid = getAdmissionIdForUrl(admissionUuid, admissionCode || '');
+      const pid = (patientIdForUrl || '').trim();
+      if (!pid || pid === 'null' || pid === 'undefined') {
+        alert('Could not determine patient ID for this admission.');
+        return;
+      }
+      window.location.href =
+        'inpatient-dashboard?admissionId=' +
+        encodeURIComponent(aid) +
+        '&patientId=' +
+        encodeURIComponent(pid);
+    }
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      // Check user role (Nurse or Admin only)
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const role = user.role || '';
+      
+      const roleLower = role.toLowerCase();
+      const doctorRoles = ['doctor', 'physician', 'medical doctor', 'md'];
+      const nurseRoles = ['nurse', 'nursing', 'staff nurse', 'registered nurse'];
+      const adminRoles = ['admin', 'administrator', 'manager', 'supervisor'];
+      
+      const isDoctor = doctorRoles.some(r => roleLower.includes(r));
+      const isNurse = nurseRoles.some(r => roleLower.includes(r));
+      const isAdmin = adminRoles.some(r => roleLower.includes(r));
+      
+      if (!isDoctor && !isNurse && !isAdmin) {
+        alert('Access denied. This page is only available to Doctors, Nurses, and Administrators.');
+        window.location.href = 'dashboard';
+        return;
+      }
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        window.location.href = 'dashboard';
+        return;
+      }
+      
+      // Load all data
+      await Promise.all([
+        loadAdmissions(),
+        loadRooms(),
+        loadBeds(),
+        loadPatients()
+      ]);
+      
+      // Setup form handler
+      document.getElementById('assignment-form').addEventListener('submit', handleAssignment);
+      
+      // Auto-refresh every 30 seconds
+      setInterval(async () => {
+        await loadAdmissions();
+      }, 30000);
+    });
+    
+    async function loadAdmissions() {
+      try {
+        if (window.supabaseClient) {
+          // Load all admissions (including deleted for archive section)
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .order('admission_date', { ascending: false });
+          
+          if (error) throw error;
+          
+          admissions = data || [];
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`admissions_${organizationId}`);
+          admissions = stored ? JSON.parse(stored) : [];
+        }
+        
+        displayAdmissions();
+      } catch (error) {
+        console.error('Error loading admissions:', error);
+        document.getElementById('pending-admissions-list').innerHTML = '<p style="color: red;">Error loading admissions. Please try again.</p>';
+      }
+    }
+    
+    async function loadRooms() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('rooms')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('is_active', true)
+            .order('room_name', { ascending: true });
+          
+          if (error) throw error;
+          
+          rooms = data || [];
+        } else {
+          const stored = localStorage.getItem(`rooms_${organizationId}`);
+          rooms = stored ? JSON.parse(stored).filter(r => r.is_active) : [];
+        }
+      } catch (error) {
+        console.error('Error loading rooms:', error);
+      }
+    }
+    
+    async function loadBeds() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('beds')
+            .select('*')
+            .eq('organization_id', organizationId)
+            .eq('is_active', true)
+            .order('bed_number', { ascending: true });
+          
+          if (error) throw error;
+          
+          beds = data || [];
+        } else {
+          const stored = localStorage.getItem(`beds_${organizationId}`);
+          beds = stored ? JSON.parse(stored).filter(b => b.is_active) : [];
+        }
+      } catch (error) {
+        console.error('Error loading beds:', error);
+      }
+    }
+    
+    async function loadPatients() {
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          const stored = localStorage.getItem(getDataKey("patients"));
+          patients = stored ? JSON.parse(stored) : [];
+        }
+      } catch (error) {
+        console.error('Error loading patients:', error);
+        patients = [];
+      }
+    }
+    
+    async     function displayAdmissions() {
+      // Filter out soft-deleted admissions for normal views
+      const activeAdmissions = admissions.filter(a => !a.deleted_at);
+      
+      const pending = activeAdmissions.filter(a => a.status === 'admitted' && !a.room_id);
+      const assigned = activeAdmissions.filter(a => a.status === 'assigned' || (a.room_id && a.bed_id));
+      const discharged = activeAdmissions.filter(a => a.status === 'discharged');
+      
+      // Get deleted admissions for archive section
+      const deleted = admissions.filter(a => a.deleted_at);
+      
+      // Filter discharged to last 30 days
+      const thirtyDaysAgo = new Date();
+      thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+      const recentDischarged = discharged.filter(a => {
+        const dischargeDate = a.discharge_date ? new Date(a.discharge_date) : null;
+        return dischargeDate && dischargeDate >= thirtyDaysAgo;
+      });
+      
+        await displayPendingAdmissions(pending);
+        await displayAssignedAdmissions(assigned);
+        displayDischargedAdmissions(recentDischarged);
+        await displayRoomAvailabilitySummary();
+    }
+    
+    async function displayRoomAvailabilitySummary() {
+      const summaryDiv = document.getElementById('room-availability-summary');
+      if (!summaryDiv) return;
+      
+      // Calculate statistics
+      const totalRooms = rooms.length;
+      const totalBeds = beds.length;
+      
+      // CRITICAL FIX: Count occupied beds based on actual admissions, not just bed.is_occupied flag
+      const activeAdmissions = admissions.filter(a => !a.deleted_at && a.status !== 'discharged');
+      const assignedAdmissions = activeAdmissions.filter(a => a.bed_id);
+      // Deduplicate by bed: keep only the most recent admission per bed (avoids duplicate bed entries)
+      const admissionByBed = new Map();
+      assignedAdmissions.forEach(a => {
+        const existing = admissionByBed.get(a.bed_id);
+        if (!existing || new Date(a.admission_date) > new Date(existing.admission_date)) {
+          admissionByBed.set(a.bed_id, a);
+        }
+      });
+      const uniqueAssignedAdmissions = Array.from(admissionByBed.values());
+      const occupiedBedIds = new Set(uniqueAssignedAdmissions.map(a => a.bed_id).filter(Boolean));
+      const occupiedBeds = occupiedBedIds.size;
+      
+      // Sync bed.is_occupied flags to match actual admissions
+      beds.forEach(bed => {
+        const isActuallyOccupied = occupiedBedIds.has(bed.id);
+        if (bed.is_occupied !== isActuallyOccupied) {
+          bed.is_occupied = isActuallyOccupied;
+          const orgId = localStorage.getItem('currentOrganizationId');
+          if (orgId) {
+            localStorage.setItem(`beds_${orgId}`, JSON.stringify(beds));
+          }
+        }
+      });
+      
+      const availableBeds = totalBeds - occupiedBeds;
+      
+      // Group rooms by type
+      const roomsByType = {};
+      rooms.forEach(room => {
+        if (!roomsByType[room.room_type]) {
+          roomsByType[room.room_type] = { total: 0, occupied: 0, beds: [] };
+        }
+        roomsByType[room.room_type].total++;
+        const roomBeds = beds.filter(b => b.room_id === room.id);
+        roomsByType[room.room_type].beds.push(...roomBeds);
+        roomsByType[room.room_type].occupied += roomBeds.filter(b => b.is_occupied).length;
+      });
+      
+      // Build HTML
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+          <div style="background: linear-gradient(135deg, #e3f2fd, #bbdefb); padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
+            <h3 style="margin: 0 0 10px 0; color: #1976D2;">Total Rooms</h3>
+            <div style="font-size: 32px; font-weight: bold; color: #1976D2;">${totalRooms}</div>
+          </div>
+          <div style="background: linear-gradient(135deg, #f1f8e9, #dcedc8); padding: 15px; border-radius: 8px; border-left: 4px solid #4CAF50;">
+            <h3 style="margin: 0 0 10px 0; color: #388E3C;">Available Beds</h3>
+            <div style="font-size: 32px; font-weight: bold; color: #388E3C;">${availableBeds}</div>
+          </div>
+          <div style="background: linear-gradient(135deg, #fff3e0, #ffe0b2); padding: 15px; border-radius: 8px; border-left: 4px solid #FF9800;">
+            <h3 style="margin: 0 0 10px 0; color: #F57C00;">Occupied Beds</h3>
+            <div style="font-size: 32px; font-weight: bold; color: #F57C00;">${occupiedBeds}</div>
+          </div>
+          <div style="background: linear-gradient(135deg, #fce4ec, #f8bbd0); padding: 15px; border-radius: 8px; border-left: 4px solid #E91E63;">
+            <h3 style="margin: 0 0 10px 0; color: #C2185B;">Total Beds</h3>
+            <div style="font-size: 32px; font-weight: bold; color: #C2185B;">${totalBeds}</div>
+          </div>
+        </div>
+      `;
+      
+      html += '<div style="margin-top: 20px;"><h3 style="cursor: pointer; color: var(--primary-green);" onclick="toggleOccupiedRooms()">📋 Occupied Rooms <span id="occupied-rooms-toggle">▼</span></h3></div>';
+      html += '<div id="occupied-rooms-detail" style="display: none; margin-top: 15px;">';
+      
+      // Group occupied beds by room - use deduplicated admissions
+      const isUuid = (s) => s && typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.trim());
+      const occupiedByRoom = {};
+      for (const admission of uniqueAssignedAdmissions) {
+        if (!admission.bed_id) continue;
+        const bed = beds.find(b => b.id === admission.bed_id);
+        if (!bed) continue;
+        const room = rooms.find(r => r.id === bed.room_id || r.id === admission.room_id);
+        if (!room) continue;
+        if (!occupiedByRoom[room.id]) {
+          occupiedByRoom[room.id] = { room, beds: [] };
+        }
+        // Resolve patient using resolvePatientByIdentifier (handles UUID and legacy IDs)
+        let patientName = 'Unknown';
+        let legacyPatientId = admission.patient_id || 'N/A';
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          try {
+            const patient = await window.resolvePatientByIdentifier(admission.patient_id);
+            if (patient) {
+              patientName = (patient.firstName && patient.lastName) ? `${patient.firstName} ${patient.lastName}` :
+                (patient.first_name && patient.last_name) ? `${patient.first_name} ${patient.last_name}` :
+                patient.name || patient.username || 'Unknown';
+              legacyPatientId = patient.patient_id || patient.patientNumber ||
+                (patient.id && !isUuid(patient.id) ? patient.id : null) || legacyPatientId;
+            } else if (isUuid(admission.patient_id)) {
+              legacyPatientId = admission.patient_id.substring(0, 8) + '...';
+            }
+          } catch (e) { console.warn('Error resolving patient for occupied room:', e); }
+        } else {
+          const patient = patients.find(p => p.id === admission.patient_id || p.patient_id === admission.patient_id || p._supabaseUuid === admission.patient_id);
+          if (patient) {
+            patientName = (patient.name || (patient.firstName && patient.lastName ? `${patient.firstName} ${patient.lastName}` : null) || (patient.first_name && patient.last_name ? `${patient.first_name} ${patient.last_name}` : null)) || 'Unknown';
+            legacyPatientId = patient.patient_id || patient.patientNumber || (patient.id && !patient.id.includes('-') ? patient.id : null) || legacyPatientId;
+          } else if (isUuid(admission.patient_id)) {
+            legacyPatientId = admission.patient_id.substring(0, 8) + '...';
+          }
+        }
+        occupiedByRoom[room.id].beds.push({ bed, admission, patientName, legacyPatientId });
+      }
+      
+      if (Object.keys(occupiedByRoom).length === 0) {
+        html += '<p>No occupied rooms.</p>';
+      } else {
+        for (const { room, beds: roomBeds } of Object.values(occupiedByRoom)) {
+          html += `
+            <div style="background: var(--soft-white); padding: 15px; margin-bottom: 10px; border-radius: 6px; border-left: 4px solid #FF9800;">
+              <h4 style="margin: 0 0 10px 0; color: var(--primary-green);">${room.room_name} (${room.room_type})</h4>
+          `;
+          for (const { bed, admission, patientName: pName, legacyPatientId: legId } of roomBeds) {
+            const admissionDate = admission ? new Date(admission.admission_date) : null;
+            const estimatedDischarge = admission?.estimated_discharge_date ? new Date(admission.estimated_discharge_date) : null;
+            let durationText = 'N/A';
+            if (admissionDate && estimatedDischarge) {
+              const daysRemaining = Math.ceil((estimatedDischarge - new Date()) / (1000 * 60 * 60 * 24));
+              durationText = daysRemaining > 0 ? `${daysRemaining} days remaining` : 'Overdue';
+            } else if (admissionDate) {
+              const daysSince = Math.floor((new Date() - admissionDate) / (1000 * 60 * 60 * 24));
+              durationText = `${daysSince} day${daysSince !== 1 ? 's' : ''} since admission`;
+            }
+            html += `
+              <div style="margin-left: 15px; margin-top: 10px; padding: 10px; background: white; border-radius: 4px;">
+                <strong>Bed ${bed.bed_name || bed.bed_number}</strong> - ${pName}
+                <br><small style="color: #666;">Patient ID: ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(String(legId || ''), String(legId || '')) : legId} | ${durationText}</small>
+              </div>
+            `;
+          }
+          html += '</div>';
+        }
+      }
+      
+      html += '</div>';
+      summaryDiv.innerHTML = html;
+    }
+    
+    function toggleOccupiedRooms() {
+      const detail = document.getElementById('occupied-rooms-detail');
+      const toggle = document.getElementById('occupied-rooms-toggle');
+      if (detail.style.display === 'none') {
+        detail.style.display = 'block';
+        toggle.textContent = '▲';
+      } else {
+        detail.style.display = 'none';
+        toggle.textContent = '▼';
+      }
+    }
+    
+    async function displayPendingAdmissions(pendingAdmissions) {
+      const list = document.getElementById('pending-admissions-list');
+      if (pendingAdmissions.length === 0) {
+        list.innerHTML = '<p>No pending admissions.</p>';
+        return;
+      }
+      
+      // Resolve all patient information
+      const admissionsWithPatients = await Promise.all(pendingAdmissions.map(async (admission) => {
+        let patient = null;
+        let patientName = admission.patient_id; // Fallback to UUID
+        let legacyPatientId = admission.patient_id; // Fallback to UUID
+        
+        // Try to resolve patient using resolvePatientByIdentifier
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          try {
+            patient = await window.resolvePatientByIdentifier(admission.patient_id);
+            if (patient) {
+              patientName = (patient.firstName && patient.lastName) ? `${patient.firstName} ${patient.lastName}` : 
+                           (patient.first_name && patient.last_name) ? `${patient.first_name} ${patient.last_name}` : 
+                           patient.name || patient.username || admission.patient_id;
+              legacyPatientId = resolveLegacyPatientIdFromRecord(patient, admission.patient_id);
+            }
+          } catch (error) {
+            console.warn('Error resolving patient:', error);
+          }
+        } else {
+          // Fallback to direct lookup
+          patient = patients.find(p => 
+            p.id === admission.patient_id || 
+            p._supabaseUuid === admission.patient_id ||
+            p.patient_id === admission.patient_id
+          );
+          if (patient) {
+            patientName = (patient.firstName && patient.lastName) ? `${patient.firstName} ${patient.lastName}` : 
+                         (patient.first_name && patient.last_name) ? `${patient.first_name} ${patient.last_name}` : 
+                         patient.name || admission.patient_id;
+            legacyPatientId = resolveLegacyPatientIdFromRecord(patient, admission.patient_id);
+          }
+        }
+        
+        return { admission, patient, patientName, legacyPatientId };
+      }));
+      
+      list.innerHTML = admissionsWithPatients.map(({ admission, patient, patientName, legacyPatientId }) => {
+        const admissionDate = new Date(admission.admission_date).toLocaleDateString();
+        const admissionCode = formatAdmissionCodeLocal(admission);
+        const pidUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, legacyPatientId || admission.patient_id) : legacyPatientId;
+        
+        return `
+          <div class="admission-item pending">
+            <div class="admission-info">
+              <h3>${patientName} <span class="status-badge status-admitted">Pending Assignment</span></h3>
+              <p><strong>Patient ID:</strong> ${pidUi} | <strong>Admission ID:</strong> ${admissionCode} | <strong>Admitted:</strong> ${admissionDate}</p>
+              <p><strong>Reason:</strong> ${admission.admission_reason || 'N/A'}</p>
+              <p><strong>Admitting Doctor:</strong> ${admission.admitting_doctor || 'N/A'}</p>
+            </div>
+            <div style="display: flex; flex-direction: column; gap: 10px; min-width: 200px;">
+              <button onclick="openAssignmentModal('${admission.id}')" style="background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600; white-space: nowrap;">
+                🏨 Assign Room/Bed
+              </button>
+              <button onclick="goToInpatientDashboard('${admission.id}', '${admission.admission_id || ''}', ${JSON.stringify(legacyPatientId || '')})" style="background: linear-gradient(135deg, var(--adire-blue), var(--primary-green)); color: white; padding: 12px 20px; border: none; border-radius: 6px; cursor: pointer; font-size: 14px; font-weight: 600;">
+                📊 View Dashboard
+              </button>
+              <button onclick="deleteAdmission('${admission.id}')" class="btn-danger" style="background: linear-gradient(135deg, #dc3545, #c82333);">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function displayAssignedAdmissions(assignedAdmissions) {
+      const list = document.getElementById('assigned-admissions-list');
+      if (assignedAdmissions.length === 0) {
+        list.innerHTML = '<p>No assigned admissions.</p>';
+        return;
+      }
+      
+      // Resolve all patient information
+      const admissionsWithPatients = await Promise.all(assignedAdmissions.map(async (admission) => {
+        let patient = null;
+        let patientName = admission.patient_id; // Fallback to UUID
+        let legacyPatientId = admission.patient_id; // Fallback to UUID
+        
+        // Try to resolve patient using resolvePatientByIdentifier
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          try {
+            patient = await window.resolvePatientByIdentifier(admission.patient_id);
+            if (patient) {
+              patientName = (patient.firstName && patient.lastName) ? `${patient.firstName} ${patient.lastName}` : 
+                           (patient.first_name && patient.last_name) ? `${patient.first_name} ${patient.last_name}` : 
+                           patient.name || patient.username || admission.patient_id;
+              legacyPatientId = resolveLegacyPatientIdFromRecord(patient, admission.patient_id);
+            }
+          } catch (error) {
+            console.warn('Error resolving patient:', error);
+          }
+        } else {
+          // Fallback to direct lookup
+          patient = patients.find(p => 
+            p.id === admission.patient_id || 
+            p._supabaseUuid === admission.patient_id ||
+            p.patient_id === admission.patient_id
+          );
+          if (patient) {
+            patientName = (patient.firstName && patient.lastName) ? `${patient.firstName} ${patient.lastName}` : 
+                         (patient.first_name && patient.last_name) ? `${patient.first_name} ${patient.last_name}` : 
+                         patient.name || admission.patient_id;
+            legacyPatientId = resolveLegacyPatientIdFromRecord(patient, admission.patient_id);
+          }
+        }
+        
+        return { admission, patient, patientName, legacyPatientId };
+      }));
+      
+      list.innerHTML = admissionsWithPatients.map(({ admission, patient, patientName, legacyPatientId }) => {
+        const admissionDate = new Date(admission.admission_date).toLocaleDateString();
+        const room = rooms.find(r => r.id === admission.room_id);
+        const bed = beds.find(b => b.id === admission.bed_id);
+        const admissionCode = formatAdmissionCodeLocal(admission);
+        const pidUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, legacyPatientId || admission.patient_id) : legacyPatientId;
+        
+        return `
+          <div class="admission-item assigned">
+            <div class="admission-info">
+              <h3>${patientName} <span class="status-badge status-assigned">Assigned</span></h3>
+              <p><strong>Patient ID:</strong> ${pidUi} | <strong>Admission ID:</strong> ${admissionCode} | <strong>Admitted:</strong> ${admissionDate}</p>
+              <p><strong>Room:</strong> ${room ? room.room_name : 'N/A'} | <strong>Bed:</strong> ${bed ? (bed.bed_name || bed.bed_number) : 'N/A'}</p>
+              <p><strong>Reason:</strong> ${admission.admission_reason || 'N/A'}</p>
+              ${admission.estimated_discharge_date ? `<p><strong>Estimated Discharge:</strong> ${new Date(admission.estimated_discharge_date).toLocaleDateString()} (${calculateDaysRemaining(admission.estimated_discharge_date)} days remaining)</p>` : ''}
+            </div>
+            <div>
+              <button onclick="goToInpatientDashboard('${admission.id}', '${admission.admission_id || ''}', ${JSON.stringify(legacyPatientId || '')})" style="background: linear-gradient(135deg, var(--adire-blue), var(--primary-green));">View Dashboard</button>
+              <button onclick="dischargePatient('${admission.id}')" class="btn-danger">Discharge</button>
+              <button onclick="deleteAdmission('${admission.id}')" class="btn-danger" style="background: linear-gradient(135deg, #dc3545, #c82333);">🗑️ Delete</button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    function displayDischargedAdmissions(dischargedAdmissions) {
+      const list = document.getElementById('discharged-admissions-list');
+      if (dischargedAdmissions.length === 0) {
+        list.innerHTML = '<p>No recent discharges.</p>';
+        return;
+      }
+      
+      list.innerHTML = dischargedAdmissions.map(admission => {
+        const patient = patients.find(p => p.id === admission.patient_id);
+        const patientName = patient ? (patient.name || patient.firstName + ' ' + patient.lastName) : admission.patient_id;
+        const pidUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, admission.patient_id) : admission.patient_id;
+        const admissionDate = new Date(admission.admission_date).toLocaleDateString();
+        const dischargeDate = admission.discharge_date ? new Date(admission.discharge_date).toLocaleDateString() : 'N/A';
+        const room = rooms.find(r => r.id === admission.room_id);
+        const bed = beds.find(b => b.id === admission.bed_id);
+        const admissionCode = formatAdmissionCodeLocal(admission);
+        
+        return `
+          <div class="admission-item discharged">
+            <div class="admission-info">
+              <h3>${patientName} <span class="status-badge status-discharged">Discharged</span></h3>
+              <p><strong>Patient ID:</strong> ${pidUi} | <strong>Admission ID:</strong> ${admissionCode} | <strong>Admitted:</strong> ${admissionDate} | <strong>Discharged:</strong> ${dischargeDate}</p>
+              <p><strong>Room:</strong> ${room ? room.room_name : 'N/A'} | <strong>Bed:</strong> ${bed ? (bed.bed_name || bed.bed_number) : 'N/A'}</p>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function openAssignmentModal(admissionId) {
+      const admission = admissions.find(a => a.id === admissionId);
+      if (!admission) return;
+      
+      let patientName = admission.patient_id;
+      if (typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const patient = await window.resolvePatientByIdentifier(admission.patient_id);
+          if (patient) {
+            patientName = (patient.firstName && patient.lastName) ? `${patient.firstName} ${patient.lastName}` :
+              (patient.first_name && patient.last_name) ? `${patient.first_name} ${patient.last_name}` :
+              patient.name || patient.username || admission.patient_id;
+          }
+        } catch (e) { console.warn('Error resolving patient for modal:', e); }
+      } else {
+        const patient = patients.find(p => p.id === admission.patient_id || p.patient_id === admission.patient_id || p._supabaseUuid === admission.patient_id);
+        if (patient) {
+          patientName = (patient.name || patient.firstName + ' ' + patient.lastName) || (patient.first_name && patient.last_name ? `${patient.first_name} ${patient.last_name}` : null) || admission.patient_id;
+        }
+      }
+      const admissionDate = new Date(admission.admission_date).toLocaleDateString();
+      
+      document.getElementById('assignment-admission-id').value = admissionId;
+      document.getElementById('assignment-patient-name').value = patientName;
+      document.getElementById('assignment-admission-date').value = admissionDate;
+      
+      // Populate rooms dropdown
+      const roomSelect = document.getElementById('assignment-room');
+      roomSelect.innerHTML = '<option value="">Select a room...</option>';
+      rooms.forEach(room => {
+        const option = document.createElement('option');
+        option.value = room.id;
+        option.textContent = `${room.room_name} (${room.room_type})`;
+        roomSelect.appendChild(option);
+      });
+      
+      // Clear bed dropdown
+      document.getElementById('assignment-bed').innerHTML = '<option value="">Select a bed...</option>';
+      
+      document.getElementById('assignment-modal').style.display = 'block';
+    }
+    
+    function closeAssignmentModal() {
+      document.getElementById('assignment-modal').style.display = 'none';
+      document.getElementById('assignment-form').reset();
+    }
+    
+    async function loadAvailableBeds() {
+      const roomId = document.getElementById('assignment-room').value;
+      if (!roomId) {
+        document.getElementById('assignment-bed').innerHTML = '<option value="">Select a bed...</option>';
+        return;
+      }
+      
+      const availableBeds = beds.filter(b => 
+        b.room_id === roomId && 
+        !b.is_occupied && 
+        b.is_active
+      );
+      
+      const bedSelect = document.getElementById('assignment-bed');
+      bedSelect.innerHTML = '<option value="">Select a bed...</option>';
+      availableBeds.forEach(bed => {
+        const option = document.createElement('option');
+        option.value = bed.id;
+        option.textContent = `${bed.bed_name || bed.bed_number} (${bed.bed_type})`;
+        bedSelect.appendChild(option);
+      });
+      
+      if (availableBeds.length === 0) {
+        bedSelect.innerHTML = '<option value="">No available beds in this room</option>';
+      }
+    }
+    
+    async function handleAssignment(e) {
+      e.preventDefault();
+      
+      const admissionId = document.getElementById('assignment-admission-id').value;
+      const roomId = document.getElementById('assignment-room').value;
+      const bedId = document.getElementById('assignment-bed').value;
+      const estimatedDuration = parseInt(document.getElementById('assignment-estimated-duration').value);
+      
+      if (!admissionId || !roomId || !bedId) {
+        alert('Please select both a room and a bed.');
+        return;
+      }
+      
+      if (!estimatedDuration || estimatedDuration < 1) {
+        alert('Please enter a valid estimated duration of stay (at least 1 day).');
+        return;
+      }
+      
+      // Calculate estimated discharge date
+      const admission = admissions.find(a => a.id === admissionId);
+      const admissionDate = admission ? new Date(admission.admission_date) : new Date();
+      const estimatedDischargeDate = new Date(admissionDate);
+      estimatedDischargeDate.setDate(estimatedDischargeDate.getDate() + estimatedDuration);
+      
+      try {
+        // Update admission
+        if (window.supabaseClient) {
+          const { error: admissionError } = await window.supabaseClient
+            .from('admissions')
+            .update({
+              room_id: roomId,
+              bed_id: bedId,
+              status: 'assigned',
+              estimated_discharge_date: estimatedDischargeDate.toISOString().split('T')[0]
+            })
+            .eq('id', admissionId);
+          
+          if (admissionError) throw admissionError;
+          
+          // Update bed to occupied
+          const { error: bedError } = await window.supabaseClient
+            .from('beds')
+            .update({
+              is_occupied: true,
+              current_patient_id: admissions.find(a => a.id === admissionId)?.patient_id,
+              current_admission_id: admissionId
+            })
+            .eq('id', bedId);
+          
+          if (bedError) throw bedError;
+          
+          console.log('✅ Assignment saved to Supabase');
+        } else {
+          // Fallback to localStorage
+          const index = admissions.findIndex(a => a.id === admissionId);
+          if (index !== -1) {
+            admissions[index].room_id = roomId;
+            admissions[index].bed_id = bedId;
+            admissions[index].status = 'assigned';
+            admissions[index].estimated_discharge_date = estimatedDischargeDate.toISOString().split('T')[0];
+            localStorage.setItem(`admissions_${organizationId}`, JSON.stringify(admissions));
+          }
+          
+          const bedIndex = beds.findIndex(b => b.id === bedId);
+          if (bedIndex !== -1) {
+            beds[bedIndex].is_occupied = true;
+            beds[bedIndex].current_patient_id = admissions.find(a => a.id === admissionId)?.patient_id;
+            beds[bedIndex].current_admission_id = admissionId;
+            localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+          }
+        }
+        
+        await loadAdmissions();
+        await loadBeds();
+        closeAssignmentModal();
+        alert('Room and bed assigned successfully!');
+      } catch (error) {
+        console.error('Error assigning room/bed:', error);
+        alert('Error assigning room/bed: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function dischargePatient(admissionId) {
+      if (!confirm('Are you sure you want to discharge this patient?')) {
+        return;
+      }
+      
+      const dischargeReason = prompt('Enter discharge reason (optional):') || '';
+      
+      try {
+        const admission = admissions.find(a => a.id === admissionId);
+        if (!admission) return;
+        
+        if (window.supabaseClient) {
+          // Update admission
+          const { error: admissionError } = await window.supabaseClient
+            .from('admissions')
+            .update({
+              status: 'discharged',
+              discharge_date: new Date().toISOString(),
+              discharge_reason: dischargeReason
+            })
+            .eq('id', admissionId);
+          
+          if (admissionError) throw admissionError;
+          
+          // Free up the bed
+          if (admission.bed_id) {
+            const { error: bedError } = await window.supabaseClient
+              .from('beds')
+              .update({
+                is_occupied: false,
+                current_patient_id: null,
+                current_admission_id: null
+              })
+              .eq('id', admission.bed_id);
+            
+            if (bedError) throw bedError;
+          }
+          
+          console.log('✅ Discharge saved to Supabase');
+        } else {
+          // Fallback to localStorage
+          const index = admissions.findIndex(a => a.id === admissionId);
+          if (index !== -1) {
+            admissions[index].status = 'discharged';
+            admissions[index].discharge_date = new Date().toISOString();
+            admissions[index].discharge_reason = dischargeReason;
+            localStorage.setItem(`admissions_${organizationId}`, JSON.stringify(admissions));
+          }
+          
+          if (admission.bed_id) {
+            const bedIndex = beds.findIndex(b => b.id === admission.bed_id);
+            if (bedIndex !== -1) {
+              beds[bedIndex].is_occupied = false;
+              beds[bedIndex].current_patient_id = null;
+              beds[bedIndex].current_admission_id = null;
+              localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+            }
+          }
+        }
+        
+        await loadAdmissions();
+        await loadBeds();
+        alert('Patient discharged successfully!');
+      } catch (error) {
+        console.error('Error discharging patient:', error);
+        alert('Error discharging patient: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function deleteAdmission(admissionId) {
+      if (!confirm('⚠️ WARNING: Are you sure you want to DELETE this admission?\n\nThis will archive the admission and free up the bed/room if assigned. You can restore it later from the "Deleted/Archived Admissions" section.')) {
+        return;
+      }
+      
+      try {
+        const admission = admissions.find(a => a.id === admissionId);
+        if (!admission) {
+          alert('Admission not found!');
+          return;
+        }
+        
+        // Get current user ID for deleted_by tracking
+        let currentUserId = null;
+        if (window.supabaseClient) {
+          try {
+            const { data: { user: authUser }, error: authError } = await window.supabaseClient.auth.getUser();
+            if (!authError && authUser) {
+              const { data: userRecord, error: userError } = await window.supabaseClient
+                .from('users')
+                .select('id')
+                .eq('auth_user_id', authUser.id)
+                .single();
+              
+              if (!userError && userRecord) {
+                currentUserId = userRecord.id;
+              }
+            }
+          } catch (error) {
+            console.warn('Could not get current user ID:', error);
+          }
+        }
+        
+        if (window.supabaseClient) {
+          // Free up the bed if assigned
+          if (admission.bed_id) {
+            const { error: bedError } = await window.supabaseClient
+              .from('beds')
+              .update({
+                is_occupied: false,
+                current_patient_id: null,
+                current_admission_id: null
+              })
+              .eq('id', admission.bed_id);
+            
+            if (bedError) {
+              console.warn('Warning: Could not free bed:', bedError);
+            }
+          }
+          
+          // Soft delete: Mark as deleted instead of actually deleting
+          const { error: deleteError } = await window.supabaseClient
+            .from('admissions')
+            .update({
+              deleted_at: new Date().toISOString(),
+              deleted_by: currentUserId,
+              status: 'deleted'
+            })
+            .eq('id', admissionId);
+          
+          if (deleteError) throw deleteError;
+          
+          console.log('✅ Admission soft-deleted in Supabase');
+        } else {
+          // Fallback to localStorage
+          if (admission.bed_id) {
+            const bedIndex = beds.findIndex(b => b.id === admission.bed_id);
+            if (bedIndex !== -1) {
+              beds[bedIndex].is_occupied = false;
+              beds[bedIndex].current_patient_id = null;
+              beds[bedIndex].current_admission_id = null;
+              localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+            }
+          }
+          
+          const index = admissions.findIndex(a => a.id === admissionId);
+          if (index !== -1) {
+            admissions[index].deleted_at = new Date().toISOString();
+            admissions[index].deleted_by = currentUserId;
+            admissions[index].status = 'deleted';
+            localStorage.setItem(`admissions_${organizationId}`, JSON.stringify(admissions));
+          }
+        }
+        
+        await loadAdmissions();
+        await loadBeds();
+        alert('Admission deleted (archived) successfully! You can restore it from the "Deleted/Archived Admissions" section.');
+      } catch (error) {
+        console.error('Error deleting admission:', error);
+        alert('Error deleting admission: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    async function restoreAdmission(admissionId) {
+      if (!confirm('Are you sure you want to restore this admission?')) {
+        return;
+      }
+      
+      try {
+        const admission = admissions.find(a => a.id === admissionId);
+        if (!admission) {
+          alert('Admission not found!');
+          return;
+        }
+        
+        if (window.supabaseClient) {
+          // Restore: Clear deleted_at and deleted_by, restore original status if not discharged
+          const originalStatus = admission.status === 'deleted' ? 
+            (admission.room_id ? 'assigned' : 'admitted') : 
+            admission.status;
+          
+          const { error: restoreError } = await window.supabaseClient
+            .from('admissions')
+            .update({
+              deleted_at: null,
+              deleted_by: null,
+              status: originalStatus === 'deleted' ? (admission.room_id ? 'assigned' : 'admitted') : originalStatus
+            })
+            .eq('id', admissionId);
+          
+          if (restoreError) throw restoreError;
+          
+          // If it was assigned to a bed, mark the bed as occupied again
+          if (admission.bed_id && originalStatus !== 'discharged') {
+            const { error: bedError } = await window.supabaseClient
+              .from('beds')
+              .update({
+                is_occupied: true,
+                current_patient_id: admission.patient_id,
+                current_admission_id: admissionId
+              })
+              .eq('id', admission.bed_id);
+            
+            if (bedError) {
+              console.warn('Warning: Could not re-occupy bed:', bedError);
+            }
+          }
+          
+          console.log('✅ Admission restored in Supabase');
+        } else {
+          // Fallback to localStorage
+          const index = admissions.findIndex(a => a.id === admissionId);
+          if (index !== -1) {
+            const originalStatus = admission.status === 'deleted' ? 
+              (admission.room_id ? 'assigned' : 'admitted') : 
+              admission.status;
+            
+            admissions[index].deleted_at = null;
+            admissions[index].deleted_by = null;
+            admissions[index].status = originalStatus === 'deleted' ? (admission.room_id ? 'assigned' : 'admitted') : originalStatus;
+            localStorage.setItem(`admissions_${organizationId}`, JSON.stringify(admissions));
+            
+            // Re-occupy bed if needed
+            if (admission.bed_id && originalStatus !== 'discharged') {
+              const bedIndex = beds.findIndex(b => b.id === admission.bed_id);
+              if (bedIndex !== -1) {
+                beds[bedIndex].is_occupied = true;
+                beds[bedIndex].current_patient_id = admission.patient_id;
+                beds[bedIndex].current_admission_id = admissionId;
+                localStorage.setItem(`beds_${organizationId}`, JSON.stringify(beds));
+              }
+            }
+          }
+        }
+        
+        await loadAdmissions();
+        await loadBeds();
+        alert('Admission restored successfully!');
+      } catch (error) {
+        console.error('Error restoring admission:', error);
+        alert('Error restoring admission: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    // Close modal when clicking outside
+    window.onclick = function(event) {
+      const modal = document.getElementById('assignment-modal');
+      if (event.target === modal) {
+        closeAssignmentModal();
+      }
+    }
+    
+    // Helper function
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+    
+    // Helper function to calculate days remaining
+    function calculateDaysRemaining(estimatedDischargeDate) {
+      const dischargeDate = new Date(estimatedDischargeDate);
+      const today = new Date();
+      const diffTime = dischargeDate - today;
+      const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+      return diffDays > 0 ? diffDays : 0;
+    }
+
+    const formatAdmissionCodeLocal = (admission) => {
+      if (typeof window.formatAdmissionCode === 'function') {
+        return window.formatAdmissionCode(admission);
+      }
+      return admission?.admission_id || admission?.id || 'N/A';
+    };
+
+    function getAdmissionIdForUrl(admissionId, admissionCode) {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+  </script>
+</body>
+</html>
+

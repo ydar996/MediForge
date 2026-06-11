@@ -1,0 +1,455 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Create User for Organization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 5px;
+            font-weight: 600;
+            color: #333;
+        }
+        input, select {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        #result {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            border-radius: 6px;
+            margin-top: 20px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            display: none;
+        }
+        .result-success {
+            border-left: 4px solid #28a745;
+            background: #d4edda;
+        }
+        .result-error {
+            border-left: 4px solid #dc3545;
+            background: #f8d7da;
+        }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+        .password-display {
+            background: #fff3cd;
+            border: 2px solid #ffc107;
+            padding: 15px;
+            border-radius: 6px;
+            margin: 15px 0;
+            font-family: 'Courier New', monospace;
+            font-size: 18px;
+            font-weight: bold;
+            text-align: center;
+            color: #856404;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>👤 Create User for Organization</h1>
+        
+        <div class="info-box">
+            <strong>Purpose:</strong> Create a new user account for "Ministry of Foreign Affairs Mobile Clinic" with a temporary password that they can change on first login.
+        </div>
+
+        <form id="createUserForm" onsubmit="createUser(event)">
+            <div class="form-group">
+                <label for="orgId">Organization ID:</label>
+                <input type="text" id="orgId" value="75b55411-f595-4ac4-9c5a-746702fd2792" required>
+            </div>
+
+            <div class="form-group">
+                <label for="username">Username *:</label>
+                <input type="text" id="username" placeholder="e.g., admin, misturam, musem" required>
+            </div>
+
+            <div class="form-group">
+                <label for="firstName">First Name *:</label>
+                <input type="text" id="firstName" placeholder="e.g., Mistura" required>
+            </div>
+
+            <div class="form-group">
+                <label for="lastName">Last Name *:</label>
+                <input type="text" id="lastName" placeholder="e.g., Muse" required>
+            </div>
+
+            <div class="form-group">
+                <label for="email">Email (optional - will auto-generate if left empty):</label>
+                <input type="email" id="email" placeholder="Leave empty to auto-generate (username-{orgId}@mediforge.app)">
+                <small style="color: #666; font-size: 12px;">If left empty, email will be auto-generated using the pattern: username-{shortOrgId}@mediforge.app</small>
+            </div>
+
+            <div class="form-group">
+                <label for="role">Role *:</label>
+                <select id="role" required>
+                    <option value="Admin">Admin</option>
+                    <option value="Doctor">Doctor</option>
+                    <option value="Nurse">Nurse</option>
+                    <option value="Medical Lab Scientist">Medical Lab Scientist</option>
+                    <option value="Receptionist">Receptionist</option>
+                    <option value="Pharmacist">Pharmacist</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="gender">Gender *:</label>
+                <select id="gender" required>
+                    <option value="Male">Male</option>
+                    <option value="Female">Female</option>
+                    <option value="Other">Other</option>
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label for="licenseNumber">Medical License Number (optional):</label>
+                <input type="text" id="licenseNumber" placeholder="Leave empty if not applicable">
+            </div>
+
+            <div>
+                <button type="submit">✅ Create User</button>
+                <button type="button" onclick="clearForm()" style="background: #6c757d;">🗑️ Clear</button>
+            </div>
+        </form>
+
+        <div id="result"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+            }
+            return supabase;
+        }
+
+        function clearForm() {
+            document.getElementById('createUserForm').reset();
+            document.getElementById('orgId').value = '75b55411-f595-4ac4-9c5a-746702fd2792';
+            document.getElementById('result').style.display = 'none';
+        }
+
+        async function createUser(event) {
+            event.preventDefault();
+            initSupabase();
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.style.display = 'block';
+            resultDiv.className = '';
+            resultDiv.innerHTML = 'Creating user...\n';
+            
+            const orgId = document.getElementById('orgId').value.trim();
+            const username = document.getElementById('username').value.trim();
+            const firstName = document.getElementById('firstName').value.trim();
+            const lastName = document.getElementById('lastName').value.trim();
+            let email = document.getElementById('email').value.trim();
+            const role = document.getElementById('role').value;
+            const gender = document.getElementById('gender').value;
+            const licenseNumber = document.getElementById('licenseNumber').value.trim();
+            
+            // Auto-generate email if not provided (using system pattern)
+            if (!email) {
+                const shortOrgId = orgId.replace(/-/g, '').substring(0, 8);
+                email = `${username}-${shortOrgId}@mediforge.app`;
+                resultDiv.innerHTML += `📋 Auto-generating email using system pattern...\n`;
+                resultDiv.innerHTML += `   Pattern: username-{shortOrgId}@mediforge.app\n`;
+                resultDiv.innerHTML += `   Generated: ${email}\n\n`;
+            }
+            
+            try {
+                // Step 1: Verify organization exists
+                resultDiv.innerHTML += '📋 Step 1: Verifying organization...\n';
+                const { data: org, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('id, name')
+                    .eq('id', orgId)
+                    .maybeSingle();
+                
+                if (orgError || !org) {
+                    resultDiv.className = 'result-error';
+                    resultDiv.innerHTML += `❌ Error: Organization not found!\n${orgError?.message || 'Unknown error'}\n`;
+                    return;
+                }
+                
+                resultDiv.innerHTML += `✅ Organization found: ${org.name}\n\n`;
+                
+                // Step 2: Check if username already exists
+                resultDiv.innerHTML += '📋 Step 2: Checking if username already exists...\n';
+                const { data: existingUser, error: checkError } = await supabase
+                    .from('users')
+                    .select('id, username, organization_id')
+                    .eq('username', username)
+                    .maybeSingle();
+                
+                if (checkError && !checkError.message.includes('No rows')) {
+                    resultDiv.className = 'result-error';
+                    resultDiv.innerHTML += `❌ Error checking username: ${checkError.message}\n`;
+                    return;
+                }
+                
+                if (existingUser) {
+                    resultDiv.className = 'result-error';
+                    resultDiv.innerHTML += `❌ Username "${username}" already exists!\n`;
+                    resultDiv.innerHTML += `   Current organization: ${existingUser.organization_id || 'None'}\n`;
+                    resultDiv.innerHTML += `   Please choose a different username.\n`;
+                    return;
+                }
+                
+                resultDiv.innerHTML += `✅ Username "${username}" is available\n\n`;
+                
+                // Step 3: Generate temporary password
+                const tempPassword = generateTempPassword();
+                resultDiv.innerHTML += '📋 Step 3: Generating temporary password...\n';
+                resultDiv.innerHTML += `✅ Temporary password generated\n\n`;
+                
+                // Step 4: Create Supabase Auth user
+                resultDiv.innerHTML += '📋 Step 4: Creating Supabase Auth user...\n';
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: email,
+                    password: tempPassword,
+                    options: {
+                        data: {
+                            first_name: firstName,
+                            last_name: lastName,
+                            username: username
+                        },
+                        emailRedirectTo: undefined
+                    }
+                });
+                
+                if (authError) {
+                    // Check if user already exists
+                    if (authError.message.includes('already registered') || authError.message.includes('already exists')) {
+                        resultDiv.innerHTML += `⚠️ Auth user with email ${email} already exists. Attempting to sign in...\n`;
+                        
+                        // Try to sign in to get the auth user ID
+                        const { data: signInData, error: signInError } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: tempPassword
+                        });
+                        
+                        if (signInError) {
+                            resultDiv.className = 'result-error';
+                            resultDiv.innerHTML += `❌ Error: Auth user exists but password doesn't match.\n`;
+                            resultDiv.innerHTML += `   Please use a different email or reset the password in Supabase Dashboard.\n`;
+                            return;
+                        }
+                        
+                        authData = { user: signInData.user };
+                        resultDiv.innerHTML += `✅ Using existing Auth user\n\n`;
+                    } else {
+                        resultDiv.className = 'result-error';
+                        resultDiv.innerHTML += `❌ Error creating Auth user: ${authError.message}\n`;
+                        return;
+                    }
+                } else {
+                    resultDiv.innerHTML += `✅ Auth user created successfully\n\n`;
+                }
+                
+                const authUserId = authData.user.id;
+                
+                // Step 5: Create user profile in public.users table
+                resultDiv.innerHTML += '📋 Step 5: Creating user profile...\n';
+                const { data: userProfile, error: profileError } = await supabase
+                    .from('users')
+                    .insert({
+                        auth_user_id: authUserId,
+                        username: username,
+                        email: email,
+                        first_name: firstName,
+                        last_name: lastName,
+                        role: role,
+                        gender: gender,
+                        organization_id: orgId,
+                        license_number: licenseNumber || null,
+                        is_active: true
+                    })
+                    .select()
+                    .single();
+                
+                if (profileError) {
+                    resultDiv.className = 'result-error';
+                    resultDiv.innerHTML += `❌ Error creating user profile: ${profileError.message}\n`;
+                    
+                    // Try to clean up auth user if profile creation failed
+                    if (authData.user && !authError) {
+                        resultDiv.innerHTML += `⚠️ Attempting to clean up Auth user...\n`;
+                        // Note: We can't delete auth users via client, but we can note it
+                        resultDiv.innerHTML += `   Note: Auth user may need to be deleted manually from Supabase Dashboard\n`;
+                    }
+                    return;
+                }
+                
+                resultDiv.innerHTML += `✅ User profile created successfully\n\n`;
+                
+                // Step 6: Display success with credentials
+                resultDiv.className = 'result-success';
+                resultDiv.innerHTML += '✅ USER CREATED SUCCESSFULLY!\n\n';
+                // Create credentials text for easy copying
+                const credentialsText = `━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+YOUR MEDIFORGE ACCOUNT CREDENTIALS
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+Organization: ${org.name}
+Your Name: ${firstName} ${lastName}
+Your Role: ${role}
+
+LOGIN INFORMATION:
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+Username: ${username}
+Email: ${email}
+Temporary Password: ${tempPassword}
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━
+
+⚠️ IMPORTANT:
+• You MUST change this password on your first login
+• Keep your credentials secure
+• Do not share your password with anyone
+
+HOW TO LOGIN:
+1. Go to the MediForge login page
+2. Enter your Username or Email
+3. Enter the Temporary Password above
+4. You will be prompted to create a new password
+
+━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━`;
+
+                resultDiv.innerHTML += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+                resultDiv.innerHTML += '✅ USER CREATED SUCCESSFULLY!\n';
+                resultDiv.innerHTML += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n\n';
+                
+                // Create a copyable credentials box
+                const credentialsBox = document.createElement('div');
+                credentialsBox.style.cssText = 'background: #f8f9fa; border: 2px solid #007bff; padding: 20px; border-radius: 6px; margin: 15px 0; font-family: monospace; white-space: pre-wrap; position: relative;';
+                credentialsBox.textContent = credentialsText;
+                
+                // Add copy button
+                const copyButton = document.createElement('button');
+                copyButton.textContent = '📋 Copy Credentials';
+                copyButton.style.cssText = 'position: absolute; top: 10px; right: 10px; background: #007bff; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 12px;';
+                copyButton.onclick = () => {
+                    navigator.clipboard.writeText(credentialsText).then(() => {
+                        copyButton.textContent = '✅ Copied!';
+                        copyButton.style.background = '#28a745';
+                        setTimeout(() => {
+                            copyButton.textContent = '📋 Copy Credentials';
+                            copyButton.style.background = '#007bff';
+                        }, 2000);
+                    }).catch(() => {
+                        // Fallback: select text
+                        const range = document.createRange();
+                        range.selectNode(credentialsBox);
+                        window.getSelection().removeAllRanges();
+                        window.getSelection().addRange(range);
+                        document.execCommand('copy');
+                        copyButton.textContent = '✅ Copied!';
+                        copyButton.style.background = '#28a745';
+                        setTimeout(() => {
+                            copyButton.textContent = '📋 Copy Credentials';
+                            copyButton.style.background = '#007bff';
+                        }, 2000);
+                    });
+                };
+                
+                credentialsBox.appendChild(copyButton);
+                resultDiv.appendChild(credentialsBox);
+                
+                resultDiv.innerHTML += '\n\n';
+                resultDiv.innerHTML += '📋 NEXT STEPS:\n';
+                resultDiv.innerHTML += '1. Click "📋 Copy Credentials" button above\n';
+                resultDiv.innerHTML += '2. Paste and send the credentials to the user via messaging\n';
+                resultDiv.innerHTML += '3. User will log in and change password on first login\n';
+                resultDiv.innerHTML += '━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━━\n';
+                
+            } catch (error) {
+                resultDiv.className = 'result-error';
+                resultDiv.innerHTML += `❌ Unexpected error: ${error.message}\n`;
+                resultDiv.innerHTML += `Stack: ${error.stack}\n`;
+            }
+        }
+        
+        function generateTempPassword() {
+            // Generate a secure temporary password
+            const length = 12;
+            const charset = 'abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789!@#$%^&*';
+            let password = '';
+            
+            // Ensure at least one of each required type
+            password += 'ABCDEFGHIJKLMNOPQRSTUVWXYZ'[Math.floor(Math.random() * 26)]; // Uppercase
+            password += 'abcdefghijklmnopqrstuvwxyz'[Math.floor(Math.random() * 26)]; // Lowercase
+            password += '0123456789'[Math.floor(Math.random() * 10)]; // Number
+            password += '!@#$%^&*'[Math.floor(Math.random() * 8)]; // Special
+            
+            // Fill the rest randomly
+            for (let i = password.length; i < length; i++) {
+                password += charset[Math.floor(Math.random() * charset.length)];
+            }
+            
+            // Shuffle the password
+            return password.split('').sort(() => Math.random() - 0.5).join('');
+        }
+    </script>
+</body>
+</html>
+

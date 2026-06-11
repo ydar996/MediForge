@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Delete Unknown Patient Appointments</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    button { padding: 10px 15px; margin: 5px; cursor: pointer; background-color: #dc3545; color: white; border: none; border-radius: 4px; }
+    .info { background-color: #d1ecf1; padding: 15px; border-radius: 5px; margin: 10px 0; }
+    .success { background-color: #d4edda; padding: 15px; border-radius: 5px; margin: 10px 0; }
+  </style>
+</head>
+<body>
+  <h1>??? Delete Unknown Patient Appointments</h1>
+  
+  <!-- Load Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>
+  
+  <div class="info">
+    <h2>?? Current Status</h2>
+    <p>This tool will delete all appointments with "Unknown Patient" from Supabase.</p>
+    <button onclick="checkUnknownPatients()">?? Check Unknown Patient Appointments</button>
+    <div id="check-results"></div>
+  </div>
+  
+  <div class="info">
+    <h2>??? Delete Action</h2>
+    <p><strong>?? Warning:</strong> This will permanently delete all "Unknown Patient" appointments from Supabase.</p>
+    <button onclick="deleteUnknownPatients()">??? Delete All Unknown Patient Appointments</button>
+    <div id="delete-results"></div>
+  </div>
+
+  <script>
+    let currentOrgId = null;
+
+    async function initialize() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      currentOrgId = user.organizationId || (user.org ? JSON.parse(localStorage.getItem("organizations") || "{}")[user.org]?.id : null);
+      
+      if (!currentOrgId) {
+        alert('No organization ID found. Please login first.');
+        return;
+      }
+      
+      console.log('?? Organization ID:', currentOrgId);
+    }
+
+    async function checkUnknownPatients() {
+      if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+        alert('Online data client not available');
+        return;
+      }
+      
+      try {
+        const { data: appointments, error } = await window.supabaseClient
+          .from('appointments')
+          .select('*')
+          .eq('organization_id', currentOrgId)
+          .or('patient_name.is.null,patient_name.eq.Unknown Patient,patient_name.eq.unknown patient,patient_name.eq.');
+        
+        if (error) {
+          console.error('Error checking appointments:', error);
+          document.getElementById('check-results').innerHTML = `<p style="color: red;">? Error: ${error.message}</p>`;
+          return;
+        }
+        
+        const unknownAppointments = appointments || [];
+        
+        document.getElementById('check-results').innerHTML = `
+          <div class="info">
+            <h3>?? Found ${unknownAppointments.length} "Unknown Patient" appointments</h3>
+            ${unknownAppointments.length > 0 ? `
+              <p><strong>Sample appointments:</strong></p>
+              <ul>
+                ${unknownAppointments.slice(0, 5).map(apt => 
+                  `<li>Date: ${apt.appointment_date}, Time: ${apt.appointment_time}, Doctor: ${apt.doctor || 'Unknown'}</li>`
+                ).join('')}
+                ${unknownAppointments.length > 5 ? `<li>... and ${unknownAppointments.length - 5} more</li>` : ''}
+              </ul>
+            ` : '<p>? No unknown patient appointments found!</p>'}
+          </div>
+        `;
+        
+        console.log('?? Unknown patient appointments:', unknownAppointments.length);
+      } catch (err) {
+        console.error('Exception checking appointments:', err);
+        document.getElementById('check-results').innerHTML = `<p style="color: red;">? Exception: ${err.message}</p>`;
+      }
+    }
+
+    async function deleteUnknownPatients() {
+      if (!confirm('?? This will permanently delete ALL "Unknown Patient" appointments from Supabase. Are you sure?')) {
+        return;
+      }
+      
+      if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+        alert('Online data client not available');
+        return;
+      }
+      
+      try {
+        // First, get all unknown patient appointments to count them
+        const { data: appointments, error: checkError } = await window.supabaseClient
+          .from('appointments')
+          .select('id')
+          .eq('organization_id', currentOrgId)
+          .or('patient_name.is.null,patient_name.eq.Unknown Patient,patient_name.eq.unknown patient,patient_name.eq.');
+        
+        if (checkError) {
+          console.error('Error checking appointments:', checkError);
+          document.getElementById('delete-results').innerHTML = `<p style="color: red;">? Error checking appointments: ${checkError.message}</p>`;
+          return;
+        }
+        
+        const appointmentIds = (appointments || []).map(apt => apt.id);
+        console.log('??? Deleting appointments with IDs:', appointmentIds);
+        
+        if (appointmentIds.length === 0) {
+          document.getElementById('delete-results').innerHTML = `<p style="color: green;">? No unknown patient appointments found to delete.</p>`;
+          return;
+        }
+        
+        // Delete all unknown patient appointments
+        const { data: deletedData, error: deleteError } = await window.supabaseClient
+          .from('appointments')
+          .delete()
+          .eq('organization_id', currentOrgId)
+          .or('patient_name.is.null,patient_name.eq.Unknown Patient,patient_name.eq.unknown patient,patient_name.eq.');
+        
+        if (deleteError) {
+          console.error('Error deleting appointments:', deleteError);
+          document.getElementById('delete-results').innerHTML = `<p style="color: red;">? Error deleting appointments: ${deleteError.message}</p>`;
+          return;
+        }
+        
+        document.getElementById('delete-results').innerHTML = `
+          <div class="success">
+            <h3>? Success!</h3>
+            <p>Deleted ${appointmentIds.length} "Unknown Patient" appointments from Supabase.</p>
+            <p><strong>Next steps:</strong></p>
+            <ul>
+              <li>Go back to the appointments page</li>
+              <li>Refresh the page</li>
+              <li>All console errors should be gone!</li>
+            </ul>
+          </div>
+        `;
+        
+        console.log(`? Successfully deleted ${appointmentIds.length} unknown patient appointments`);
+        
+      } catch (err) {
+        console.error('Exception deleting appointments:', err);
+        document.getElementById('delete-results').innerHTML = `<p style="color: red;">? Exception: ${err.message}</p>`;
+      }
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', initialize);
+  </script>  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+

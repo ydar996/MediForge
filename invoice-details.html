@@ -1,0 +1,667 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Invoice Details - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=232">
+  
+  <!-- Supabase (self-hosted to avoid Tracking Prevention blocking CDN) -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113110113111311"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113110113111311"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113110113111311"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=288"></script>
+  
+  <!-- Patient utilities (for getPatientIdentifier) -->
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113110113111311"></script>
+  <style>
+    .invoice-container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border: 1px solid #ddd; }
+    .invoice-header { border-bottom: 2px solid #4CAF50; padding-bottom: 20px; margin-bottom: 20px; }
+    .invoice-info { display: grid; grid-template-columns: 1fr 1fr; gap: 20px; margin-bottom: 20px; }
+    .services-table { width: 100%; margin: 20px 0; }
+    .services-table th { background: #4CAF50; color: white; padding: 10px; text-align: left; }
+    .services-table td { padding: 10px; border-bottom: 1px solid #ddd; }
+    .totals { text-align: right; margin-top: 20px; }
+    .totals .row { display: flex; justify-content: flex-end; gap: 50px; margin: 5px 0; }
+    .totals .grand-total { font-size: 20px; font-weight: bold; border-top: 2px solid #333; padding-top: 10px; margin-top: 10px; }
+    .payments-section { margin-top: 30px; padding-top: 20px; border-top: 2px solid #ddd; }
+    
+    /* Override global button styles for invoice action buttons */
+    .invoice-action-buttons {
+      display: flex !important;
+      flex-direction: row !important;
+      align-items: center !important;
+      gap: 10px !important;
+      margin-bottom: 20px !important;
+      flex-wrap: nowrap !important;
+    }
+    
+    .invoice-action-buttons .invoice-action-btn {
+      display: inline-block !important;
+      margin: 0 !important;
+      margin-right: 10px !important;
+      flex-shrink: 0 !important;
+      white-space: nowrap !important;
+      background: #666 !important;
+      color: white !important;
+      padding: 10px 15px !important;
+      border: none !important;
+      border-radius: 4px !important;
+      cursor: pointer !important;
+      font-size: 14px !important;
+      font-weight: 500 !important;
+      width: auto !important;
+      max-width: none !important;
+    }
+    
+    .invoice-action-buttons .invoice-action-btn:hover {
+      opacity: 0.9 !important;
+      transform: translateY(-1px) !important;
+    }
+    
+    .invoice-action-buttons #pay-btn {
+      background: #4CAF50 !important;
+    }
+    
+    .invoice-action-buttons #delete-btn {
+      background: #f44336 !important;
+    }
+    
+    .invoice-action-buttons #edit-btn,
+    .invoice-action-buttons button[onclick="printInvoice()"] {
+      background: #2196F3 !important;
+    }
+  </style>
+</head>
+<body>
+  <div style="max-width: 900px; margin: 0 auto;">
+    <div class="invoice-action-buttons">
+      <button onclick="window.location.href='invoices'" class="invoice-action-btn">&#8592; Back to Invoices</button>
+      <button onclick="if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) { window.history.back(); } else { window.location.href='/lab-scientist-dashboard'; }" class="invoice-action-btn" title="Return to the page you came from, or Lab Scientist Dashboard">&#8592; Back to previous page</button>
+      <button onclick="printInvoice()" class="invoice-action-btn">&#128424; Print</button>
+      <button onclick="recordPaymentFor()" id="pay-btn" class="invoice-action-btn">&#128176; Record Payment</button>
+      <button onclick="deleteInvoiceConfirm()" id="delete-btn" class="invoice-action-btn">&#128465; Delete Invoice</button>
+      <button onclick="editInvoice()" id="edit-btn" class="invoice-action-btn">&#128394; Edit Invoice</button>
+    </div>
+
+    <div class="invoice-container" id="invoice-container">
+      <div class="invoice-header">
+        <h1 style="margin: 0; color: #4CAF50;">INVOICE</h1>
+        <p style="margin: 5px 0;"><strong id="invoice-number"></strong></p>
+        <p style="margin: 5px 0;" id="invoice-date"></p>
+      </div>
+
+      <div class="invoice-info">
+        <div>
+          <h3>Bill To:</h3>
+          <p id="patient-name"></p>
+          <p id="patient-id"></p>
+        </div>
+        <div>
+          <h3>Invoice Details:</h3>
+          <p><strong>Status:</strong> <span id="invoice-status"></span></p>
+          <p><strong>Due Date:</strong> <span id="due-date"></span></p>
+        </div>
+      </div>
+
+      <table class="services-table">
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Qty</th>
+            <th>Unit Price</th>
+            <th>Total</th>
+          </tr>
+        </thead>
+        <tbody id="services-body"></tbody>
+      </table>
+
+      <div id="invoice-notes-section" style="display: none; margin: 20px 0; padding: 12px 15px; background: #f9f9f9; border-left: 4px solid #4CAF50; font-size: 14px;">
+        <strong>Reference:</strong> <span id="invoice-notes"></span>
+      </div>
+
+      <div class="totals">
+        <div class="row"><span>Subtotal:</span><span id="subtotal"></span></div>
+        <div class="row"><span>Tax:</span><span id="tax"></span></div>
+        <div class="row"><span>Discount:</span><span id="discount"></span></div>
+        <div class="row grand-total"><span>TOTAL:</span><span id="total"></span></div>
+        <div class="row" style="color: #4CAF50;"><span>Amount Paid:</span><span id="amount-paid"></span></div>
+        <div class="row" style="color: #f44336; font-weight: bold;"><span>Balance Due:</span><span id="balance-due"></span></div>
+      </div>
+
+      <div class="payments-section" id="payments-section" style="display: none;">
+        <h3>Payment History</h3>
+        <table style="width: 100%;">
+          <thead>
+            <tr>
+              <th>Date</th>
+              <th>Reference</th>
+              <th>Method</th>
+              <th>Amount</th>
+              <th>Actions</th>
+            </tr>
+          </thead>
+          <tbody id="payments-body"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    let currentInvoice = null;
+
+    window.addEventListener('load', async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const invoiceId = urlParams.get('id');
+      const orderId = urlParams.get('orderId');
+      
+      if (!invoiceId) {
+        alert('Invoice ID not provided');
+        window.location.href = 'invoices';
+        return;
+      }
+      
+      try {
+        if (typeof window.getInvoiceById !== 'function') {
+          alert('Billing system is not loaded. Please refresh the page and try again.');
+          window.location.href = 'invoices';
+          return;
+        }
+        
+        currentInvoice = await window.getInvoiceById(invoiceId);
+        if (!currentInvoice && orderId && window.supabaseClient) {
+          // Opened from lab dashboard (Print receipt): try loading invoice by order context
+          try {
+            const { data: order } = await window.supabaseClient
+              .from('orders')
+              .select('invoice_id')
+              .eq('id', orderId)
+              .eq('type', 'lab')
+              .maybeSingle();
+            if (order && String(order.invoice_id) === String(invoiceId)) {
+              currentInvoice = await window.getInvoiceById(invoiceId);
+            }
+          } catch (e) {
+            console.warn('Fallback load by orderId failed:', e);
+          }
+        }
+        if (!currentInvoice) {
+          alert(orderId
+            ? 'Invoice not found for this lab order. It may still be syncing—try again in a moment or go back to the Lab Scientist Dashboard.'
+            : 'Invoice not found');
+          if (orderId) {
+            window.location.href = '/lab-scientist-dashboard';
+          } else {
+            window.location.href = 'invoices';
+          }
+          return;
+        }
+
+        await hydrateServicesForInvoice();
+        await displayInvoice();
+        checkPermissions();
+      } catch (error) {
+        console.error('Error loading invoice:', error);
+        alert('Error loading invoice. Please try again.');
+        window.location.href = orderId ? '/lab-scientist-dashboard' : 'invoices';
+      }
+    });
+
+    function checkPermissions() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const permissions = JSON.parse(localStorage.getItem(getDataKey('billing_permissions')) || '{}');
+      
+      // Check edit permission
+      if (permissions.editInvoice && permissions.editInvoice.length > 0) {
+        if (permissions.editInvoice.includes(user.role)) {
+          document.getElementById('edit-btn').style.display = 'inline-block';
+        }
+      } else {
+        // Default: ALL USERS can edit
+        document.getElementById('edit-btn').style.display = 'inline-block';
+      }
+      
+      // Check delete permission
+      if (permissions.deleteInvoice && permissions.deleteInvoice.length > 0) {
+        if (permissions.deleteInvoice.includes(user.role)) {
+          document.getElementById('delete-btn').style.display = 'inline-block';
+        }
+      } else {
+        // Default: ALL USERS can delete
+        document.getElementById('delete-btn').style.display = 'inline-block';
+      }
+    }
+
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      return `${org}_${key}`;
+    }
+
+    async function hydrateServicesForInvoice() {
+      if (!currentInvoice) {
+        return;
+      }
+
+      const hasServices = Array.isArray(currentInvoice.services) && currentInvoice.services.length > 0;
+      if (hasServices) {
+        return;
+      }
+
+      if (!window.supabaseClient) {
+        return;
+      }
+
+      // Try to load services from billing_invoice_services via Supabase
+      try {
+        const { data: invoiceRow } = await window.supabaseClient
+          .from('billing_invoices')
+          .select('id')
+          .eq('invoice_id', String(currentInvoice.id))
+          .maybeSingle();
+
+        if (invoiceRow && invoiceRow.id) {
+          const { data: invoiceServices, error: servicesError } = await window.supabaseClient
+            .from('billing_invoice_services')
+            .select('*')
+            .eq('invoice_id', invoiceRow.id);
+
+          if (!servicesError && Array.isArray(invoiceServices) && invoiceServices.length > 0) {
+            currentInvoice.services = invoiceServices.map(service => ({
+              id: service.service_id,
+              code: service.service_code,
+              name: service.service_name,
+              quantity: service.quantity || 1,
+              price: parseFloat(service.price || 0),
+              total: parseFloat(service.total || 0)
+            }));
+            return;
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load invoice services from Supabase:', error);
+      }
+
+      // Fallback: if this is a lab order invoice, show selected tests
+      try {
+        if (currentInvoice.labOrderId) {
+          const { data: order } = await window.supabaseClient
+            .from('orders')
+            .select('selected_items')
+            .eq('id', currentInvoice.labOrderId)
+            .eq('type', 'lab')
+            .maybeSingle();
+
+          let selectedItems = [];
+          if (order && order.selected_items != null) {
+            var raw = order.selected_items;
+            if (Array.isArray(raw)) selectedItems = raw;
+            else if (typeof raw === 'string') {
+              try { selectedItems = JSON.parse(raw); } catch (e) { selectedItems = []; }
+            } else if (typeof raw === 'object') selectedItems = Object.values(raw);
+          }
+
+          if (selectedItems.length > 0) {
+            currentInvoice.services = selectedItems.map(item => {
+              const name = item.name || item;
+              const code = item.cpt || item.code || null;
+              return {
+                name: code ? `${name} (${code})` : name,
+                code: code || null,
+                quantity: 1,
+                price: null,
+                total: null
+              };
+            });
+          }
+        }
+      } catch (error) {
+        console.warn('Could not load lab order items for invoice:', error);
+      }
+    }
+
+    async function displayInvoice() {
+      if (!currentInvoice) {
+        console.error('No invoice data to display');
+        return;
+      }
+      
+      // Currency formatting function
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+        if (typeof amount !== 'number') {
+          amount = parseFloat(amount) || 0;
+        }
+        const formatted = amount.toFixed(2);
+        const currencySymbol = curr === 'NGN' ? '₦' : curr === 'USD' ? '$' : curr === 'KES' ? 'KSh' : curr === 'ZAR' ? 'R' : curr;
+        return `${currencySymbol} ${formatted}`;
+      };
+      
+      // Recalculate totals if they're missing or incorrect
+      let subtotal = currentInvoice.subtotal || 0;
+      let taxAmount = currentInvoice.taxAmount || currentInvoice.tax || 0;
+      let discountAmount = currentInvoice.discountAmount || currentInvoice.discount || 0;
+      let total = currentInvoice.total || 0;
+      
+      // If services exist, recalculate from services
+      if (currentInvoice.services && Array.isArray(currentInvoice.services) && currentInvoice.services.length > 0) {
+        // Recalculate subtotal from services
+        subtotal = currentInvoice.services.reduce((sum, service) => {
+          const quantity = parseFloat(service.quantity) || 1;
+          const price = parseFloat(service.price) || 0;
+          return sum + (quantity * price);
+        }, 0);
+        
+        // Recalculate tax if taxRate exists
+        if (currentInvoice.taxRate !== undefined && currentInvoice.taxRate !== null) {
+          taxAmount = subtotal * (parseFloat(currentInvoice.taxRate) / 100);
+        }
+        
+        // Recalculate total
+        total = subtotal + taxAmount - discountAmount;
+      }
+      
+      // Ensure amountPaid and amountDue are numbers
+      const amountPaid = parseFloat(currentInvoice.amountPaid) || 0;
+      const amountDue = parseFloat(currentInvoice.amountDue) || (total - amountPaid);
+      
+      const currency = currentInvoice.currency || 'CAD';
+      
+      // Invoice header
+      const invoiceNumberEl = document.getElementById('invoice-number');
+      if (invoiceNumberEl) {
+        invoiceNumberEl.textContent = currentInvoice.invoiceNumber || currentInvoice.id || 'N/A';
+      }
+      
+      const invoiceDateEl = document.getElementById('invoice-date');
+      if (invoiceDateEl) {
+        invoiceDateEl.textContent = `Date: ${currentInvoice.date || 'N/A'}`;
+      }
+      
+      // Patient info
+      const patientNameEl = document.getElementById('patient-name');
+      if (patientNameEl) {
+        patientNameEl.textContent = currentInvoice.patientName || 'Unknown Patient';
+      }
+      
+      const patientIdEl = document.getElementById('patient-id');
+      if (patientIdEl) {
+        let displayPatientId = 'N/A';
+        if (currentInvoice.patientId) {
+          if (
+            typeof window.resolvePatientByIdentifier === 'function' &&
+            currentInvoice.patientId.includes('-') &&
+            currentInvoice.patientId.length === 36
+          ) {
+            try {
+              const patient = await window.resolvePatientByIdentifier(currentInvoice.patientId);
+              if (patient) {
+                displayPatientId =
+                  typeof window.patientMrnDisplay === 'function'
+                    ? window.patientMrnDisplay(patient)
+                    : typeof window.getPatientIdentifier === 'function'
+                      ? window.getPatientIdentifier(patient) || 'N/A'
+                      : patient.patient_id ||
+                        patient.patientNumber ||
+                        (patient.id &&
+                        !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id)
+                          ? patient.id
+                          : 'N/A');
+              }
+            } catch (error) {
+              console.warn('Could not resolve patient for invoice display:', error);
+            }
+          } else {
+            displayPatientId =
+              typeof window.patientMrnDisplay === 'function'
+                ? window.patientMrnDisplay(currentInvoice.patientId || '')
+                : currentInvoice.patientId;
+          }
+        }
+        patientIdEl.textContent = `Patient ID: ${displayPatientId}`;
+      }
+      
+      // Invoice status and due date
+      const invoiceStatusEl = document.getElementById('invoice-status');
+      if (invoiceStatusEl) {
+        const status = (currentInvoice.status || 'draft').toUpperCase();
+        invoiceStatusEl.textContent = status;
+        invoiceStatusEl.style.color = 
+          status === 'PAID' ? 'green' :
+          status === 'OVERDUE' ? 'red' : 'orange';
+      }
+      
+      const dueDateEl = document.getElementById('due-date');
+      if (dueDateEl) {
+        dueDateEl.textContent = currentInvoice.dueDate || currentInvoice.due_date || 'N/A';
+      }
+      
+      // Services
+      const tbody = document.getElementById('services-body');
+      if (tbody) {
+        tbody.innerHTML = '';
+        if (currentInvoice.services && Array.isArray(currentInvoice.services) && currentInvoice.services.length > 0) {
+          currentInvoice.services.forEach(service => {
+            const row = tbody.insertRow();
+            const serviceQuantity = parseFloat(service.quantity) || 1;
+            const servicePrice = parseFloat(service.price);
+            const serviceTotal = parseFloat(service.total);
+            const hasPrice = Number.isFinite(servicePrice);
+            const hasTotal = Number.isFinite(serviceTotal);
+            row.innerHTML = `
+              <td>${service.name || 'Unknown Service'}</td>
+              <td>${serviceQuantity}</td>
+              <td>${hasPrice ? formatCurrencyFn(servicePrice, currency) : 'N/A'}</td>
+              <td>${hasTotal ? formatCurrencyFn(serviceTotal, currency) : 'N/A'}</td>
+            `;
+          });
+        } else {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px;">No services found</td></tr>';
+        }
+      }
+      
+      // Invoice notes / narrative (e.g. Pharmacy prescription #MEC-RX-0001)
+      const notesSection = document.getElementById('invoice-notes-section');
+      const notesEl = document.getElementById('invoice-notes');
+      if (notesSection && notesEl && currentInvoice.notes) {
+        notesEl.textContent = currentInvoice.notes;
+        notesSection.style.display = 'block';
+      } else if (notesSection) {
+        notesSection.style.display = 'none';
+      }
+      
+      // Totals - with null checks
+      const subtotalEl = document.getElementById('subtotal');
+      if (subtotalEl) {
+        subtotalEl.textContent = formatCurrencyFn(subtotal, currency);
+      }
+      
+      const taxEl = document.getElementById('tax');
+      if (taxEl) {
+        taxEl.textContent = formatCurrencyFn(taxAmount, currency);
+      }
+      
+      const discountEl = document.getElementById('discount');
+      if (discountEl) {
+        discountEl.textContent = formatCurrencyFn(discountAmount, currency);
+      }
+      
+      const totalEl = document.getElementById('total');
+      if (totalEl) {
+        totalEl.textContent = formatCurrencyFn(total, currency);
+      }
+      
+      const amountPaidEl = document.getElementById('amount-paid');
+      if (amountPaidEl) {
+        amountPaidEl.textContent = formatCurrencyFn(amountPaid, currency);
+      }
+      
+      const balanceDueEl = document.getElementById('balance-due');
+      if (balanceDueEl) {
+        balanceDueEl.textContent = formatCurrencyFn(amountDue, currency);
+      }
+      
+      // Hide pay button if fully paid
+      if (currentInvoice.status === 'paid' || amountDue <= 0) {
+        const payBtn = document.getElementById('pay-btn');
+        if (payBtn) {
+          payBtn.style.display = 'none';
+        }
+      }
+      
+      // Load payments
+      if (currentInvoice.payments && Array.isArray(currentInvoice.payments) && currentInvoice.payments.length > 0) {
+        const paymentsSection = document.getElementById('payments-section');
+        if (paymentsSection) {
+          paymentsSection.style.display = 'block';
+          const paymentsTbody = document.getElementById('payments-body');
+          if (paymentsTbody) {
+            paymentsTbody.innerHTML = '';
+            
+            const getAllPaymentsFn = window.getAllPayments || function() { return []; };
+            const payments = getAllPaymentsFn();
+            
+            currentInvoice.payments.forEach(paymentId => {
+              const payment = payments.find(p => p.id === paymentId || p.id === String(paymentId));
+              if (payment) {
+                const row = paymentsTbody.insertRow();
+                const paymentAmount = parseFloat(payment.amount) || 0;
+                const paymentCurrency = payment.currency || currency;
+                row.innerHTML = `
+                  <td>${payment.date || 'N/A'}</td>
+                  <td>${payment.reference || payment.id || 'N/A'}</td>
+                  <td>${(payment.method || 'Unknown').replace('_', ' ').toUpperCase()}</td>
+                  <td>${formatCurrencyFn(paymentAmount, paymentCurrency)}</td>
+                  <td>
+                    <button onclick="editPayment('${payment.id}')" style="background: #FF9800; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer; margin-right: 5px;">
+                      &#128394; Edit
+                    </button>
+                    <button onclick="deletePaymentConfirm('${payment.id}')" style="background: #f44336; color: white; padding: 5px 10px; border: none; border-radius: 4px; cursor: pointer;">
+                      &#128465; Delete
+                    </button>
+                  </td>
+                `;
+              }
+            });
+          }
+        }
+      }
+    }
+
+    function printInvoice() {
+      window.print();
+    }
+
+    function editInvoice() {
+      window.location.href = `/edit-invoice?id=${currentInvoice.id}`;
+    }
+
+    function deleteInvoiceConfirm() {
+      if (currentInvoice.amountPaid > 0) {
+        alert('Cannot delete invoice with payments. Please delete all payments first.');
+        return;
+      }
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+      };
+      
+      if (confirm(`⚠️ DELETE INVOICE PERMANENTLY?\n\nInvoice: ${currentInvoice.invoiceNumber}\nPatient: ${currentInvoice.patientName}\nAmount: ${formatCurrencyFn(currentInvoice.total || 0, currentInvoice.currency || 'CAD')}\n\nThis action CANNOT be undone!\n\nAre you absolutely sure?`)) {
+        if (confirm('Final confirmation: This will PERMANENTLY DELETE the invoice from the database. Continue?')) {
+          // Actually delete the invoice using the global function
+          if (typeof window.deleteInvoice !== 'function') {
+            alert('Delete function is not available. Please refresh the page and try again.');
+            return;
+          }
+          
+          const deleted = window.deleteInvoice(currentInvoice.id);
+          
+          if (deleted) {
+            alert('Invoice permanently deleted');
+            window.location.href = 'invoices';
+          } else {
+            alert('Failed to delete invoice. Check console for details.');
+          }
+        }
+      }
+    }
+
+    function getCurrentUser() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      return user.username || 'Unknown';
+    }
+
+    function editPayment(paymentId) {
+      window.location.href = `/edit-payment?id=${paymentId}`;
+    }
+
+    function deletePaymentConfirm(paymentId) {
+      const payments = getAllPayments();
+      const payment = payments.find(p => p.id === paymentId);
+      
+      if (!payment) {
+        alert('Payment not found');
+        return;
+      }
+      
+      const formatCurrencyFn = window.formatCurrency || function(amount, curr) { 
+        return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`; 
+      };
+      
+      if (confirm(`⚠️ DELETE PAYMENT PERMANENTLY?\n\nPayment: ${payment.reference || payment.id}\nAmount: ${formatCurrencyFn(payment.amount || 0, payment.currency || 'CAD')}\nMethod: ${(payment.method || 'Unknown').replace('_', ' ').toUpperCase()}\n\nThis will:\n- Remove the payment record\n- Reverse the payment on the invoice\n- Update the balance due\n\nThis action CANNOT be undone!\n\nAre you sure?`)) {
+        if (confirm('Final confirmation: Permanently delete this payment?')) {
+          if (typeof window.deletePayment !== 'function') {
+            alert('Delete payment function is not available. Please refresh the page and try again.');
+            return;
+          }
+          
+          const deleted = window.deletePayment(paymentId);
+          
+          if (deleted) {
+            alert('Payment permanently deleted');
+            // Reload page to show updated invoice
+            window.location.reload();
+          } else {
+            alert('Failed to delete payment. Check console for details.');
+          }
+        }
+      }
+    }
+
+    function recordPaymentFor() {
+      if (!currentInvoice || !currentInvoice.id) {
+        alert('Invoice data not loaded. Please refresh the page and try again.');
+        return;
+      }
+      window.location.href = `/collect-payment?invoiceId=${currentInvoice.id}`;
+    }
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

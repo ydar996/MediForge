@@ -1,0 +1,934 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Imaging Orders - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      --nigerian-white: #FFFFFF;
+      --nigerian-green: #008753;
+      --gold: #FFD700;
+      --dark-gold: #B8860B;
+      --bronze: #CD7F32;
+      --earth-brown: #8B4513;
+      --warm-orange: #FF8C00;
+      --deep-red: #8B0000;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0, 135, 83, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(218, 165, 32, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(65, 105, 225, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    body > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold), var(--primary-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+    
+    .patient-info {
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 6px solid var(--primary-green);
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.1);
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .back-button:hover {
+      background: linear-gradient(135deg, #5a6268, var(--charcoal));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .imaging-tests-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background: var(--nigerian-white);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .imaging-tests-table th {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+      color: var(--nigerian-white);
+      padding: 12px;
+      text-align: left;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .imaging-tests-table td {
+      padding: 12px;
+      border-bottom: 1px solid rgba(0, 135, 83, 0.1);
+    }
+    
+    .imaging-tests-table tr:hover {
+      background: var(--light-green);
+    }
+    
+    /* Ensure Actions column has enough width */
+    .imaging-tests-table th:last-child,
+    .imaging-tests-table td:last-child {
+      min-width: 200px;
+      width: auto;
+    }
+    
+    .test-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      flex-wrap: wrap;
+      align-items: center;
+      min-width: 150px;
+    }
+    
+    .btn-send-out {
+      background: linear-gradient(135deg, var(--adire-blue) 0%, #1E90FF 100%);
+      color: var(--nigerian-white);
+      border: 2px solid var(--adire-blue);
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 700;
+      white-space: nowrap;
+      min-width: 120px;
+      box-shadow: 0 3px 10px rgba(65, 105, 225, 0.3);
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      transition: all 0.3s ease;
+      overflow: visible;
+    }
+    
+    .btn-send-out:hover {
+      background: linear-gradient(135deg, #1E90FF, var(--adire-blue));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+    }
+    
+    .btn-send-out:disabled {
+      background: #6c757d;
+      border-color: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      opacity: 0.6;
+    }
+    
+    .bulk-actions {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 8px;
+      border: 3px solid;
+      border-image: linear-gradient(135deg, var(--primary-green), var(--kente-gold), var(--warm-orange)) 1;
+      box-shadow: 0 4px 16px rgba(0, 135, 83, 0.15);
+    }
+    
+    .bulk-actions h3 {
+      margin-top: 0;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+    }
+    
+    .bulk-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .btn-bulk {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 50%, var(--kente-gold) 100%);
+      color: var(--nigerian-white);
+      border: 2px solid var(--dark-green);
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+      min-width: 250px;
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+      transition: all 0.3s ease;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .btn-bulk:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 135, 83, 0.4);
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 50%, var(--kente-gold) 100%);
+    }
+    
+    .btn-bulk:disabled {
+      background: #6c757d;
+      border-color: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-sent-to-external {
+      background: linear-gradient(135deg, var(--adire-blue), #1E90FF);
+      color: white;
+      box-shadow: 0 2px 6px rgba(65, 105, 225, 0.3);
+    }
+    
+    .status-pending {
+      background: linear-gradient(135deg, var(--warm-orange), var(--coral));
+      color: var(--charcoal);
+      box-shadow: 0 2px 6px rgba(255, 140, 0, 0.3);
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Clinical Note</button>
+    
+    <h1>📷 Select Imaging Orders</h1>
+    
+    <div class="patient-info" id="patient-info">
+      <strong>Loading patient information...</strong>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label>
+        <input type="checkbox" id="select-all-tests" onchange="toggleAllTests()" style="width: 20px; height: 20px; margin-right: 8px; cursor: pointer;">
+        <strong>Select All Tests</strong>
+      </label>
+    </div>
+    
+    <table class="imaging-tests-table">
+      <thead>
+        <tr>
+          <th style="width: 40px;">Select</th>
+          <th>Imaging Type</th>
+          <th>CPT Code</th>
+          <th>Modality</th>
+          <th>Preparation</th>
+          <th>Status</th>
+          <th>Actions</th>
+        </tr>
+      </thead>
+      <tbody id="imaging-tests-tbody">
+        <!-- Imaging tests will be populated here -->
+      </tbody>
+    </table>
+    
+    <div class="bulk-actions">
+      <h3>Bulk Actions</h3>
+      <div class="bulk-buttons">
+        <button class="btn-bulk" id="bulk-send-external-btn" onclick="sendAllToExternalLab()" disabled>
+          📤 Send Selected to Outside Lab
+        </button>
+      </div>
+    </div>
+    
+    <div style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 2px solid var(--primary-green);">
+      <button class="back-button" onclick="goBack()" style="width: 100%; max-width: 300px; padding: 15px; font-size: 16px; font-weight: 700;">
+        ← Back to Clinical Note
+      </button>
+    </div>
+  </div>
+  
+  <script>
+    let patientId = null;
+    let visitDate = null;
+    let organizationId = null;
+    let admissionId = null;
+    let returnUrl = null;
+    let selectedTests = new Set();
+    let imagingTests = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      patientId = urlParams.get('patientId');
+      visitDate = urlParams.get('visitDate');
+      const admissionIdParam = urlParams.get('admissionId');
+      returnUrl = urlParams.get('returnUrl');
+      
+      if (admissionIdParam) {
+        const looksLikeUuid = admissionIdParam.includes('-') && admissionIdParam.length === 36;
+        if (looksLikeUuid) {
+          admissionId = admissionIdParam;
+        } else {
+          try {
+            if (!organizationId && typeof window.resolveOrganizationId === 'function') {
+              organizationId = await window.resolveOrganizationId();
+            }
+            if (typeof window.resolveAdmissionIdParam === 'function') {
+              admissionId = await window.resolveAdmissionIdParam(admissionIdParam, organizationId);
+            } else {
+              admissionId = admissionIdParam;
+            }
+          } catch (error) {
+            console.warn('Could not resolve admission ID param:', error);
+            admissionId = admissionIdParam;
+          }
+        }
+      }
+      
+      if (!patientId || !visitDate) {
+        alert('Missing patient ID or visit date. Redirecting back...');
+        goBack();
+        return;
+      }
+      
+      // Load patient info (non-blocking for faster first paint)
+      loadPatientInfo();
+      
+      // Load imaging tests
+      // Ensure IMAGING_TESTS is available before loading
+      if (typeof window.IMAGING_TESTS === 'undefined' || !window.IMAGING_TESTS || window.IMAGING_TESTS.length === 0) {
+        console.error('❌ IMAGING_TESTS not available! Waiting for patients.js to load...');
+        // Wait a bit and try again
+        setTimeout(() => {
+          if (typeof window.IMAGING_TESTS !== 'undefined' && window.IMAGING_TESTS && window.IMAGING_TESTS.length > 0) {
+            console.log('✅ IMAGING_TESTS now available, loading tests...');
+            loadImagingTests();
+          } else {
+            console.error('❌ IMAGING_TESTS still not available after wait!');
+            alert('Imaging tests data not loaded. Please refresh the page.');
+          }
+        }, 500);
+      } else {
+        console.log('✅ IMAGING_TESTS available, loading tests...', window.IMAGING_TESTS.length, 'tests');
+        loadImagingTests();
+      }
+      
+      // Load existing orders for this visit in background
+      setTimeout(() => {
+        loadExistingOrders();
+      }, 0);
+    });
+    
+    async function loadPatientInfo() {
+      try {
+        let patient = null;
+        if (!organizationId) {
+          if (typeof window.resolveOrganizationId === 'function') {
+            organizationId = await window.resolveOrganizationId();
+          } else {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            organizationId = user.organizationId || user.organization_id || user.org;
+          }
+        }
+        
+        if (window.supabaseClient) {
+          const isUuid = patientId && patientId.includes('-') && patientId.length === 36;
+          const orFilter = isUuid ? `id.eq.${patientId},patient_id.eq.${patientId}` : `patient_id.eq.${patientId}`;
+          const { data, error } = await window.supabaseClient
+            .from('patients')
+            .select('id, patient_id, firstName, middleName, lastName, first_name, middle_name, last_name, dob')
+            .eq('organization_id', organizationId)
+            .or(orFilter)
+            .maybeSingle();
+          if (!error && data) {
+            patient = data;
+          }
+        }
+        
+        if (!patient) {
+          // Use resolvePatientByIdentifier to handle both UUIDs and legacy IDs
+          if (typeof window.resolvePatientByIdentifier === 'function') {
+            patient = await window.resolvePatientByIdentifier(patientId);
+          } else {
+            // Fallback: try direct lookup
+            let patients = [];
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            
+            // Try multiple ID fields to find patient
+            patient = patients.find(p => 
+              p.id === patientId || 
+              p.patient_id === patientId || 
+              p.patientNumber === patientId ||
+              p._supabaseUuid === patientId
+            );
+          }
+        }
+        
+        if (patient) {
+          const legacyId = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient) : (patient.id || patient.patient_id || patient.patientNumber || 'N/A');
+          const firstName = patient.firstName || '';
+          const middleName = patient.middleName || '';
+          const lastName = patient.lastName || '';
+          const fullName = `${firstName} ${middleName} ${lastName}`.trim() || 'Unknown';
+          
+          // Format date of birth
+          let dobDisplay = 'N/A';
+          if (patient.dob) {
+            try {
+              const dobDate = new Date(patient.dob);
+              dobDisplay = dobDate.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+            } catch (e) {
+              dobDisplay = patient.dob;
+            }
+          }
+          
+          document.getElementById('patient-info').innerHTML = `
+            <strong>Patient:</strong> ${fullName}<br>
+            <strong>Patient ID:</strong> ${legacyId}<br>
+            <strong>Date of Birth:</strong> ${dobDisplay}<br>
+            <strong>Visit Date:</strong> ${visitDate}
+          `;
+        } else {
+          document.getElementById('patient-info').innerHTML = `
+            <strong>Patient:</strong> Not found<br>
+            <strong>Visit Date:</strong> ${visitDate}
+          `;
+        }
+      } catch (error) {
+        console.error('Error loading patient info:', error);
+        document.getElementById('patient-info').innerHTML = `
+          <strong>Patient:</strong> Error loading patient information<br>
+          <strong>Visit Date:</strong> ${visitDate}
+        `;
+      }
+    }
+    
+    function loadImagingTests() {
+      // Get IMAGING_TESTS from patients.js (already loaded)
+      imagingTests = window.IMAGING_TESTS || [];
+      
+      const tbody = document.getElementById('imaging-tests-tbody');
+      tbody.innerHTML = '';
+      
+      imagingTests.forEach((test, index) => {
+        const row = document.createElement('tr');
+        const testId = `test_${index}`;
+        
+        row.innerHTML = `
+          <td>
+            <input type="checkbox" class="test-checkbox" id="${testId}" 
+                   data-test-index="${index}" 
+                   onchange="toggleTestSelection(${index})">
+          </td>
+          <td><strong>${test.name}</strong></td>
+          <td>${test.cpt || 'N/A'}</td>
+          <td>${test.modality || 'N/A'}</td>
+          <td>${test.preparation || 'N/A'}</td>
+          <td><span class="status-badge status-pending" id="status_${index}">Pending</span></td>
+          <td class="action-buttons" id="actions_${index}">
+            <button class="btn-send-out" onclick="sendTestToExternalLab(${index})">Send Out</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+    }
+    
+    function toggleAllTests() {
+      const selectAll = document.getElementById('select-all-tests').checked;
+      const checkboxes = document.querySelectorAll('.test-checkbox');
+      
+      checkboxes.forEach(cb => {
+        cb.checked = selectAll;
+        const index = parseInt(cb.getAttribute('data-test-index'));
+        if (selectAll) {
+          selectedTests.add(index);
+        } else {
+          selectedTests.delete(index);
+        }
+      });
+      
+      updateBulkButtons();
+    }
+    
+    function toggleTestSelection(index) {
+      const checkbox = document.getElementById(`test_${index}`);
+      if (checkbox.checked) {
+        selectedTests.add(index);
+      } else {
+        selectedTests.delete(index);
+      }
+      
+      // Update select all checkbox
+      const allChecked = document.querySelectorAll('.test-checkbox:checked').length === imagingTests.length;
+      document.getElementById('select-all-tests').checked = allChecked;
+      
+      updateBulkButtons();
+    }
+    
+    function updateBulkButtons() {
+      const hasSelection = selectedTests.size > 0;
+      document.getElementById('bulk-send-external-btn').disabled = !hasSelection;
+    }
+    
+    async function sendTestToExternalLab(index) {
+      await sendTestToDestination(index, 'sent_to_external', true);
+    }
+    
+    async function sendTestToDestination(index, status, showAlert = true) {
+      const test = imagingTests[index];
+      if (!test) return;
+      
+      try {
+        // Resolve organization ID if not already set
+        if (!organizationId) {
+          if (typeof window.resolveOrganizationId === 'function') {
+            organizationId = await window.resolveOrganizationId();
+          } else {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            organizationId = user.organizationId || user.organization_id || user.org;
+          }
+        }
+        
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const createdBy = user.username || user.email || user.id || 'system';
+        
+        // CRITICAL: Resolve patient UUID for orders table
+        // Orders table stores patient_id as UUID, so we need to get the UUID if patientId is a legacy ID
+        let orderPatientId = patientId; // Default to patientId from URL
+        
+        // If patientId looks like a UUID, use it directly
+        // Otherwise, resolve to get the UUID
+        if (patientId && !patientId.includes('-') && patientId.length < 36) {
+          // It's a legacy ID, need to resolve to UUID
+          try {
+            // Load patients to find the UUID
+            let patients = [];
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            
+            let patientForOrder = null;
+            if (typeof window.resolvePatientByIdentifier === 'function') {
+              patientForOrder = await window.resolvePatientByIdentifier(patientId);
+            } else {
+              patientForOrder = patients.find(p => 
+                p.id === patientId || 
+                p.patient_id === patientId || 
+                p.patientNumber === patientId
+              );
+            }
+            
+            // Use UUID if available, otherwise use legacy ID
+            if (patientForOrder) {
+              orderPatientId = patientForOrder._supabaseUuid || patientForOrder.id || patientId;
+              console.log('🔍 [select-imaging-orders] Resolved patient ID for order:', {
+                legacyId: patientId,
+                uuid: orderPatientId
+              });
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not resolve patient UUID, using patientId as-is:', error);
+          }
+        }
+        
+        // Generate serial number for the order using organization-wide sequential format
+        // Format: IMG-001, IMG-002, etc. (simple and readable)
+        let serialNumber;
+        if (typeof window.generateOrderSerialNumber === 'function') {
+          try {
+            serialNumber = await window.generateOrderSerialNumber('imaging');
+            console.log('✅ [select-imaging-orders] Generated serial number:', serialNumber);
+          } catch (error) {
+            console.error('❌ [select-imaging-orders] Error generating serial number:', error);
+            // Fallback to timestamp-based format if generation fails
+            const timestamp = Date.now();
+            const randomSuffix = Math.random().toString(36).substring(2, 9);
+            serialNumber = `IMG-${patientId}-${timestamp}-${randomSuffix}`;
+          }
+        } else {
+          console.warn('⚠️ [select-imaging-orders] generateOrderSerialNumber not available, using fallback');
+          // Fallback if function not available
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(2, 9);
+          serialNumber = `IMG-${patientId}-${timestamp}-${randomSuffix}`;
+        }
+        
+        // Create order data
+        
+        const orderData = {
+          serial_number: serialNumber,
+          type: 'imaging',
+          patient_id: orderPatientId, // Use resolved UUID for orders table
+          visit_date: visitDate,
+          admission_id: admissionId || null,
+          selected_items: [test],
+          status: status,
+          created_by: createdBy,
+          organization_id: organizationId,
+          timestamp: new Date().toISOString(),
+          no_items_checked: false
+        };
+        
+        console.log('🔍 [select-imaging-orders] Saving order with patient_id:', orderPatientId, 'serial_number:', serialNumber);
+        
+        // SUPABASE-FIRST: Save to Supabase
+        let savedToSupabase = false;
+        if (window.supabaseClient && organizationId) {
+          try {
+            const { data, error } = await window.supabaseClient
+              .from('orders')
+              .insert(orderData)
+              .select()
+              .single();
+            
+            if (error) {
+              throw error;
+            }
+            
+            savedToSupabase = true;
+            console.log('✅ Imaging order saved to Supabase:', data);
+          } catch (error) {
+            console.error('❌ Error saving to Supabase:', error);
+          }
+        }
+        
+        // Fallback to localStorage if Supabase fails
+        if (!savedToSupabase) {
+          const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          const patient = patients.find(p => p.id === patientId);
+          
+          if (patient) {
+            let visit = patient.visits?.find(v => v.date === visitDate);
+            if (!visit) {
+              visit = { date: visitDate, orders: [] };
+              if (!patient.visits) patient.visits = [];
+              patient.visits.push(visit);
+            }
+            
+            if (!visit.orders) visit.orders = [];
+            visit.orders.push(orderData);
+            
+            localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            console.log('✅ Imaging order saved to localStorage');
+          }
+        }
+        
+        // Update UI
+        updateTestStatus(index, status);
+        
+        // Only show alert if showAlert is true (individual test send)
+        if (showAlert) {
+          alert(`Imaging test "${test.name}" has been sent to external lab.`);
+        }
+      } catch (error) {
+        console.error('Error sending test:', error);
+        // Only show error alert if showAlert is true
+        if (showAlert) {
+          alert('Error sending test. Please try again.');
+        } else {
+          // For bulk operations, we'll show a summary error at the end
+          throw error;
+        }
+      }
+    }
+    
+    async function sendAllToExternalLab() {
+      if (selectedTests.size === 0) {
+        alert('Please select at least one test.');
+        return;
+      }
+      
+      if (!confirm(`Send ${selectedTests.size} selected test(s) to external lab?`)) {
+        return;
+      }
+      
+      const testCount = selectedTests.size;
+      let successCount = 0;
+      let errorCount = 0;
+      
+      for (const index of selectedTests) {
+        try {
+          // Pass false to suppress individual alerts
+          await sendTestToDestination(index, 'sent_to_external', false);
+          successCount++;
+          // Small delay to avoid overwhelming the system
+          await new Promise(resolve => setTimeout(resolve, 100));
+        } catch (error) {
+          errorCount++;
+          console.error(`Error sending test ${index}:`, error);
+        }
+      }
+      
+      // Show single summary alert
+      if (errorCount === 0) {
+        alert(`All ${successCount} selected test(s) have been sent to external lab successfully.`);
+      } else {
+        alert(`${successCount} test(s) sent successfully. ${errorCount} test(s) failed. Please try again.`);
+      }
+      selectedTests.clear();
+      document.getElementById('select-all-tests').checked = false;
+      document.querySelectorAll('.test-checkbox').forEach(cb => cb.checked = false);
+      updateBulkButtons();
+    }
+    
+    function updateTestStatus(index, status) {
+      const statusBadge = document.getElementById(`status_${index}`);
+      if (statusBadge) {
+        statusBadge.className = `status-badge status-${status.replace('_', '-')}`;
+        statusBadge.textContent = status === 'sent_to_external' ? 'Sent to External' : 'Pending';
+      }
+      
+      // Disable action buttons for this test
+      const actionsDiv = document.getElementById(`actions_${index}`);
+      if (actionsDiv) {
+        actionsDiv.querySelectorAll('button').forEach(btn => {
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+        });
+      }
+    }
+    
+    async function loadExistingOrders() {
+      try {
+        // Resolve organization ID if not already set
+        if (!organizationId) {
+          if (typeof window.resolveOrganizationId === 'function') {
+            organizationId = await window.resolveOrganizationId();
+          } else {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            organizationId = user.organizationId || user.organization_id || user.org;
+          }
+        }
+        
+        // Load from Supabase first
+        // CRITICAL: Resolve patient UUID first - orders table stores UUIDs
+        if (window.supabaseClient && organizationId) {
+          let queryPatientId = patientId;
+          
+          // If patientId is a legacy ID, resolve to UUID
+          if (patientId && !patientId.includes('-') && patientId.length < 36) {
+            try {
+              let patients = [];
+              if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                patients = await window.loadPatientsWithSupabasePriority();
+              } else {
+                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+              }
+              
+              let patientForOrder = null;
+              if (typeof window.resolvePatientByIdentifier === 'function') {
+                patientForOrder = await window.resolvePatientByIdentifier(patientId);
+              } else {
+                patientForOrder = patients.find(p => 
+                  p.id === patientId || 
+                  p.patient_id === patientId || 
+                  p.patientNumber === patientId
+                );
+              }
+              
+              if (patientForOrder) {
+                queryPatientId = patientForOrder._supabaseUuid || patientForOrder.id || patientId;
+              }
+            } catch (error) {
+              console.warn('Could not resolve patient UUID for loadExistingOrders:', error);
+            }
+          }
+          
+          let query = window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('patient_id', queryPatientId)
+            .eq('visit_date', visitDate)
+            .eq('type', 'imaging')
+            .eq('organization_id', organizationId);
+          if (admissionId) {
+            query = query.eq('admission_id', admissionId);
+          }
+          const { data, error } = await query;
+          
+          if (!error && data) {
+            // Update UI with existing orders
+            data.forEach(order => {
+              if (order.selected_items && Array.isArray(order.selected_items)) {
+                order.selected_items.forEach((item, idx) => {
+                  const testIndex = imagingTests.findIndex(t => t.name === item.name);
+                  if (testIndex !== -1) {
+                    updateTestStatus(testIndex, order.status);
+                  }
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing orders:', error);
+      }
+    }
+    
+    async function goBack() {
+      const referrer = document.referrer;
+      console.log('🔍 [goBack] Referrer:', referrer);
+      
+      if (returnUrl) {
+        try {
+          window.location.href = decodeURIComponent(returnUrl);
+          return;
+        } catch (error) {
+          console.warn('Could not decode returnUrl, using raw value:', error);
+          window.location.href = returnUrl;
+          return;
+        }
+      }
+      
+      if (referrer) {
+        if (referrer.includes('lab-intervention-note')) {
+          console.log('✅ [goBack] Redirecting to lab-intervention-note (from referrer)');
+          window.location.href = `lab-intervention-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+          return;
+        }
+        if (referrer.includes('clinical-note')) {
+          console.log('✅ [goBack] Redirecting to clinical-note (from referrer)');
+          window.location.href = `clinical-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+          return;
+        }
+      }
+      
+      try {
+        let patient = null;
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+        }
+        
+        if (patient && visitDate) {
+          const visit = patient.visits?.find(v => v.date === visitDate);
+          if (visit && visit.labIntervention) {
+            console.log('✅ [goBack] Visit has labIntervention data, redirecting to lab-intervention-note');
+            window.location.href = `lab-intervention-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+            return;
+          }
+          
+          const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+          const appointment = appointments.find(a => {
+            const apptDate = a.date || a.appointmentDate;
+            const apptPatientId = a.patientId || a.patient_id;
+            return apptDate === visitDate && (apptPatientId === patientId || apptPatientId === patient.id || apptPatientId === patient.patient_id);
+          });
+          
+          if (appointment && appointment.type) {
+            const appointmentType = (appointment.type || '').toString().toLowerCase().trim();
+            console.log('🔍 [goBack] Found appointment type:', appointmentType);
+            
+            if (appointmentType.includes('lab') && appointmentType.includes('intervention')) {
+              console.log('✅ [goBack] Appointment type is lab intervention, redirecting to lab-intervention-note');
+              window.location.href = `lab-intervention-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [goBack] Error checking visit type:', error);
+      }
+      
+      console.log('ℹ️ [goBack] No specific note type found, defaulting to clinical-note');
+      window.location.href = `clinical-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+    }
+    
+    // Helper function to get data key (from patients.js)
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+  </script>
+</body>
+</html>
+

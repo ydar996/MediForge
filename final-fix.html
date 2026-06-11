@@ -1,0 +1,143 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Final Fix</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; text-align: center; }
+        .container { max-width: 600px; margin: 50px auto; background: white; padding: 40px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #28a745; color: white; padding: 20px 40px; border: none; border-radius: 5px; cursor: pointer; font-size: 18px; margin: 10px; }
+        .btn:hover { background: #218838; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; padding: 20px; border-radius: 5px; margin: 20px 0; color: #155724; display: none; }
+        .instructions { background: #e8f4f8; border: 1px solid #bee5eb; padding: 20px; border-radius: 5px; margin: 20px 0; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🎯 Final Fix</h1>
+        
+        <div class="instructions">
+            <h3>📋 Instructions:</h3>
+            <p>1. <strong>Copy the code below</strong></p>
+            <p>2. <strong>Go to your EHR app</strong> (https://mediforge.netlify.app/patients)</p>
+            <p>3. <strong>Open Developer Console</strong> (F12 → Console tab)</p>
+            <p>4. <strong>Paste the code</strong> and press Enter</p>
+            <p>5. <strong>Wait for the fix to run automatically</strong></p>
+        </div>
+        
+        <button class="btn" onclick="copyCode()">📋 Copy Final Fix Code</button>
+        
+        <div class="success" id="success">
+            <h2>✅ Code Copied!</h2>
+            <p>Now follow the instructions above to run the final fix.</p>
+        </div>
+    </div>
+
+    <script>
+        function copyCode() {
+            const fixCode = `
+// FINAL DOB FIX - Paste this code in the EHR app console
+console.log('🔧 Starting final DOB fix...');
+
+// Wait for the page to fully load, then run the fix
+setTimeout(() => {
+    console.log('🚀 Running final DOB fix...');
+    
+    // Get fresh data from Supabase
+    if (window.supabaseClient) {
+        window.supabaseClient
+            .from('patients')
+            .select('*')
+            .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970')
+            .then(({ data: supabasePatients, error }) => {
+                if (error) {
+                    console.error('❌ Error:', error);
+                    return;
+                }
+                
+                console.log('✅ Retrieved', supabasePatients.length, 'patients from Supabase');
+                
+                // Convert to correct format
+                const correctPatients = supabasePatients.map(patient => ({
+                    id: patient.patient_id,
+                    firstName: patient.first_name || '',
+                    middleName: patient.middle_name || '',
+                    lastName: patient.last_name || '',
+                    dob: patient.date_of_birth, // This is the key field!
+                    gender: patient.gender || '',
+                    maritalStatus: patient.marital_status || '',
+                    phone: patient.phone || '',
+                    email: patient.email || '',
+                    addressLine1: patient.address || '',
+                    city: patient.city || '',
+                    state: patient.state || '',
+                    country: patient.country || '',
+                    bloodGroup: patient.blood_group || '',
+                    allergies: [],
+                    conditions: [],
+                    emergencyFirstName: '',
+                    emergencyLastName: '',
+                    emergencyPhone: '',
+                    emergencyRelationship: '',
+                    createdDate: patient.created_at,
+                    updatedDate: patient.updated_at,
+                    visits: [],
+                    immunizations: [],
+                    prescriptions: [],
+                    hasDiabetes: false
+                }));
+                
+                // Clear localStorage and set correct data
+                localStorage.removeItem('mecure_patients');
+                localStorage.removeItem('patients');
+                localStorage.setItem('mecure_patients', JSON.stringify(correctPatients));
+                
+                console.log('💾 Updated localStorage with correct DOB data');
+                console.log('📋 Patients with DOB:', correctPatients.filter(p => p.dob).length);
+                
+                // Now reload the patients
+                if (typeof window.loadPatients === 'function') {
+                    console.log('🔄 Reloading patients with correct data...');
+                    window.loadPatients(1);
+                } else {
+                    console.log('⚠️ loadPatients function not found, refreshing page...');
+                    window.location.reload();
+                }
+            });
+    } else {
+        console.log('❌ Supabase client not available');
+    }
+}, 2000); // Wait 2 seconds for page to load
+
+console.log('✅ Final fix code injected - will run in 2 seconds');
+`;
+
+            navigator.clipboard.writeText(fixCode).then(() => {
+                document.getElementById('success').style.display = 'block';
+            }).catch(() => {
+                // Fallback for browsers that don't support clipboard API
+                const textArea = document.createElement('textarea');
+                textArea.value = fixCode;
+                document.body.appendChild(textArea);
+                textArea.select();
+                document.execCommand('copy');
+                document.body.removeChild(textArea);
+                document.getElementById('success').style.display = 'block';
+            });
+        }
+    </script>  <script src="js/universal-data-loader.js?v=202510220113100113101310"></script>
+
+</html>
+
+
+
+
+
+

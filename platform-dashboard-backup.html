@@ -1,0 +1,923 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta http-equiv="Content-Type" content="text/html; charset=UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/x-icon" href="/favicon.ico">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="shortcut icon" href="/favicon.ico">
+  <link rel="apple-touch-icon" href="/icons/icon-144x144.png">
+  <link rel="icon" sizes="144x144" href="/icons/icon-144x144.png">
+  <link rel="manifest" href="/manifest.json">
+  <title>Platform Dashboard - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113120113121312"></script>
+  
+  <!-- Platform Admin functionality -->
+  <script src="js/platform-admin.js?v=4"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .platform-header {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(102, 126, 234, 0.3);
+    }
+    
+    .platform-header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+    
+    .platform-header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .stat-card {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      border-left: 5px solid #667eea;
+      transition: all 0.3s;
+    }
+    
+    .stat-card:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0,0,0,0.12);
+    }
+    
+    .stat-card[onclick] {
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .stat-card[onclick]:hover {
+      transform: translateY(-5px);
+      box-shadow: 0 8px 25px rgba(102, 126, 234, 0.2);
+    }
+    
+    .stat-card[onclick]:active {
+      transform: translateY(-2px);
+    }
+    
+    .stat-card h3 {
+      margin: 0 0 10px 0;
+      color: #666;
+      font-size: 13px;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
+    
+    .stat-card .value {
+      font-size: 36px;
+      font-weight: bold;
+      color: #333;
+      margin: 10px 0;
+    }
+    
+    .stat-card .label {
+      color: #999;
+      font-size: 12px;
+    }
+    
+    .section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    
+    .section h2 {
+      margin: 0 0 20px 0;
+      color: #333;
+      font-size: 22px;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    .action-buttons {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    
+    .action-buttons button {
+      padding: 15px 20px;
+      border: none;
+      border-radius: 8px;
+      color: white;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.15);
+    }
+    
+    .action-buttons button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    
+    .clinic-row {
+      padding: 15px;
+      border-bottom: 1px solid #eee;
+      transition: all 0.2s;
+    }
+    
+    .clinic-row:hover {
+      background: #f8f9fa;
+    }
+    
+    .clinic-row:last-child {
+      border-bottom: none;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 20px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-trial {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-suspended {
+      background: #f8d7da;
+      color: #721c24;
+    }
+  </style>
+</head>
+<body>
+  <div class="platform-header">
+    <h1>?? Platform Dashboard</h1>
+    <p>Multi-Tenant Management & Monitoring ? MediForge</p>
+    <div style="margin-top: 15px; font-size: 14px; opacity: 0.9;">
+      <span id="platform-user-info"></span> |  ? 
+      <a href="#" onclick="platformLogout(); return false;" style="color: white; text-decoration: underline;">Logout</a>
+    </div>
+  </div>
+  
+  <!-- Global Statistics -->
+  <div class="stats-grid">
+    <div class="stat-card" style="border-left-color: #667eea; cursor: pointer;" onclick="window.location.href='manage-clinics'" title="Click to view all clinics">
+      <h3>Total Clinics</h3>
+      <div class="value" id="stat-total-clinics">0</div>
+      <div class="label">Registered Organizations</div>
+      <button onclick="event.stopPropagation(); refreshOrganizations();" style="margin-top: 10px; padding: 5px 10px; background: #667eea; color: white; border: none; border-radius: 4px; cursor: pointer; font-size: 12px;">?? Refresh</button>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #4CAF50; cursor: pointer;" onclick="window.location.href='manage-clinics'" title="Click to view active clinics">
+      <h3>Active Clinics</h3>
+      <div class="value" id="stat-active-clinics">0</div>
+      <div class="label">Last 30 days</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #2196F3; cursor: pointer;" onclick="viewAllPatients()" title="Click to view patient breakdown by clinic">
+      <h3>Total Patients</h3>
+      <div class="value" id="stat-total-patients">0</div>
+      <div class="label">Across all clinics</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #FF9800; cursor: pointer;" onclick="window.location.href='revenue-analytics'" title="Click to view revenue breakdown by country">
+      <h3>Total Client Revenue Facilitated</h3>
+      <div class="value" id="stat-total-revenue">$0</div>
+      <div class="label">All-time (USD equivalent)</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #9C27B0; cursor: pointer;" onclick="viewAllUsers()" title="Click to view all users">
+      <h3>Active Users</h3>
+      <div class="value" id="stat-total-users">0</div>
+      <div class="label">All staff across clinics</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #F44336; cursor: pointer;" onclick="window.location.href='platform-audit-log'" title="Click to view global audit log">
+      <h3>Total Events</h3>
+      <div class="value" id="stat-total-events">0</div>
+      <div class="label">Audit log entries</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #00BCD4; cursor: pointer;" onclick="window.location.href='healthcare-staff'" title="Click to view all healthcare staff">
+      <h3>????? Doctors</h3>
+      <div class="value" id="stat-total-doctors">0</div>
+      <div class="label">Registered doctors</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #E91E63; cursor: pointer;" onclick="window.location.href='healthcare-staff'" title="Click to view all healthcare staff">
+      <h3>????? Nurses</h3>
+      <div class="value" id="stat-total-nurses">0</div>
+      <div class="label">Registered nurses</div>
+    </div>
+    
+    <div class="stat-card" style="border-left-color: #4CAF50; cursor: pointer;" onclick="window.location.href='healthcare-staff'" title="Click to view detailed ratios">
+      <h3>?? Patient:Staff Ratio</h3>
+      <div class="value" id="stat-patient-staff-ratio">0:1</div>
+      <div class="label">Patients per healthcare professional</div>
+    </div>
+  </div>
+  
+  <!-- Quick Actions -->
+  <div class="action-buttons">
+    <button onclick="window.location.href='manage-clinics'" style="background: linear-gradient(135deg, #4CAF50, #45a049);">
+      ?? Manage Clinics
+    </button>
+    <button onclick="window.location.href='platform-analytics'" style="background: linear-gradient(135deg, #2196F3, #1976D2);">
+      ?? Analytics & Charts
+    </button>
+    <button onclick="window.location.href='disease-analytics'" style="background: linear-gradient(135deg, #E91E63, #C2185B);">
+      ?? Disease Analytics
+    </button>
+    <button onclick="window.location.href='platform-audit-log'" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2);">
+      ?? Global Audit Log
+    </button>
+    <button onclick="window.location.href='register-clinic'" style="background: linear-gradient(135deg, #FF9800, #F57C00);">
+      ? Register New Clinic
+    </button>
+    <button onclick="window.location.href='platform-settings'" style="background: linear-gradient(135deg, #607D8B, #455A64);">
+      ?? Platform Settings
+    </button>
+    <button onclick="window.location.href='platform-subscriptions'" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2);">
+      ?? Subscription Management
+    </button>
+    <button onclick="window.location.href='payment-receipts'" style="background: linear-gradient(135deg, #FF9800, #F57C00);">
+      ?? Payment Receipts Review
+    </button>
+    <button onclick="window.location.href='healthcare-staff'" style="background: linear-gradient(135deg, #00BCD4, #0097A7);">
+      ?? Healthcare Staff Directory
+    </button>
+    <button onclick="window.location.href='platform-security-dashboard'" style="background: linear-gradient(135deg, #B8860B, #9A7209);">
+      ?? Platform Security Dashboard
+    </button>
+  </div>
+  
+  <!-- Registered Clinics -->
+  <div class="section">
+    <h2>Registered Clinics</h2>
+    <div id="clinics-list">
+      <!-- Populated by JavaScript -->
+    </div>
+    <div id="no-clinics" style="text-align: center; padding: 40px; color: #999; display: none;">
+      <p style="font-size: 18px;">No clinics registered yet</p>
+      <button onclick="window.location.href='register-clinic'" style="background: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; margin-top: 15px;">
+        ? Register First Clinic
+      </button>
+    </div>
+  </div>
+  
+  <!-- Staff & Patient Analytics by Country -->
+  <div class="section">
+    <h2>?? Staff & Patient Analytics by Country</h2>
+    <div id="country-analytics">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Gender Distribution Analytics -->
+  <div class="section">
+    <h2>? Gender Distribution Analytics</h2>
+    <div id="gender-analytics">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Recent Platform Activity -->
+  <div class="section">
+    <h2>Recent Platform Activity</h2>
+    <div id="recent-activity" style="max-height: 400px; overflow-y: auto;">
+      <!-- Populated by JavaScript -->
+    </div>
+  </div>
+  
+  <!-- Critical scripts loaded immediately -->
+  
+  </script>
+  
+  <script>
+    console.log('?? TRACE: Fixed platform-dashboard.html - Added complete Supabase integration');
+    console.log('?? TRACE: Added connection status notifier for real-time sync');
+    console.log('?? TRACE: Added required platform-admin and data loader scripts');
+    console.log('?? TRACE: Fixed duplicate script tags and syntax errors');
+    console.log('?? TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('?? TRACE: CSS version updated to v239 for cache busting');
+    
+    // Ensure switchToOrganization function is available
+    if (typeof window.switchToOrganization === 'undefined') {
+      console.log('?? switchToOrganization not found, defining fallback...');
+      window.switchToOrganization = function(orgName) {
+        console.log('?? switchToOrganization fallback called with:', orgName);
+        const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin"));
+        if (!platformAdmin) {
+          alert("Not logged in as platform admin");
+          return;
+        }
+        
+        // Preserve the original platform admin session
+        const originalPlatformAdmin = JSON.parse(localStorage.getItem("platformAdmin"));
+        
+        // Create temporary user context for the organization
+        localStorage.setItem("user", JSON.stringify({
+          username: platformAdmin.username,
+          role: "PlatformOwner",
+          org: orgName,
+          _isPlatformView: true,
+          _platformAdmin: platformAdmin,
+          _originalPlatformAdmin: originalPlatformAdmin,
+          _platformViewStartTime: Date.now() // Track when platform view started
+        }));
+        
+        console.log('? Redirecting to dashboard for organization:', orgName);
+        window.location.href = "/dashboard";
+      };
+    }
+    
+    // Check platform admin authentication
+    window.addEventListener('load', async function() {
+      const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+      
+      if (!platformAdmin) {
+        console.log('?? PLATFORM-DASHBOARD: No platform admin found, but continuing for local testing');
+        // alert('Please login as platform admin');
+        // window.location.href = 'platform-login';
+        // return;
+      }
+      
+      // Display platform admin info
+      document.getElementById('platform-user-info').textContent = `Logged in as: ${platformAdmin.username}`;
+      
+      // Load platform statistics
+      await loadPlatformStats();
+      
+      // Load clinics list (now properly awaited)
+      await loadClinicsList();
+      
+      // Load country and gender analytics (now properly awaited)
+      await loadCountryAnalytics();
+      await loadGenderAnalytics();
+      
+      // Load recent activity
+      loadRecentActivity();
+    });
+    
+    async function loadPlatformStats() {
+      const stats = await getGlobalPlatformStats(true); // Force refresh
+      console.log('?? Platform stats received:', stats);
+      
+      document.getElementById('stat-total-clinics').textContent = stats.totalClinics;
+      document.getElementById('stat-active-clinics').textContent = stats.activeClinics;
+      document.getElementById('stat-total-patients').textContent = stats.totalPatients.toLocaleString();
+      
+      // Convert revenue to USD for uniform display
+      const revenueUSD = stats.totalRevenueUSD || 0;
+      document.getElementById('stat-total-revenue').textContent = '$' + revenueUSD.toLocaleString(undefined, {minimumFractionDigits: 2, maximumFractionDigits: 2});
+      
+      document.getElementById('stat-total-users').textContent = stats.totalUsers;
+      document.getElementById('stat-total-events').textContent = stats.totalAuditEvents.toLocaleString();
+      
+      // Calculate staff by role
+      // Get doctor and nurse counts from Supabase
+      let doctors = 0;
+      let nurses = 0;
+      let healthcareStaff = 0;
+      
+      try {
+        // Get all users from Supabase
+        const { data: allUsers, error: usersError } = await supabaseClient
+          .from('users')
+          .select('role');
+        
+        if (!usersError && allUsers) {
+          doctors = allUsers.filter(u => u.role === 'Doctor').length;
+          nurses = allUsers.filter(u => u.role === 'Nurse').length;
+          healthcareStaff = allUsers.filter(u => ['Doctor', 'Nurse', 'Physician Assistant', 'Medical Assistant'].includes(u.role)).length;
+          
+          console.log('????? Healthcare staff counts:', { doctors, nurses, healthcareStaff });
+        }
+      } catch (error) {
+        console.error('Error fetching healthcare staff counts:', error);
+      }
+      
+      document.getElementById('stat-total-doctors').textContent = doctors;
+      document.getElementById('stat-total-nurses').textContent = nurses;
+      
+      // Calculate patient-to-staff ratio
+      const patientToStaffRatio = healthcareStaff > 0 ? (stats.totalPatients / healthcareStaff).toFixed(1) : 0;
+      document.getElementById('stat-patient-staff-ratio').textContent = patientToStaffRatio + ':1';
+    }
+    
+    // Refresh organizations and reload dashboard
+    async function refreshOrganizations() {
+      console.log('?? Refreshing organizations...');
+      if (typeof clearOrganizationsCache === 'function') {
+        clearOrganizationsCache();
+      }
+      // Reload all dashboard components
+      await loadPlatformStats();
+      await loadClinicsList();
+      await loadCountryAnalytics();
+      await loadGenderAnalytics();
+      loadRecentActivity();
+      console.log('? Organizations refreshed');
+    }
+
+    async function loadClinicsList() {
+      const orgs = await getAllOrganizations(true); // Force refresh
+      const orgNames = Object.keys(orgs);
+      const container = document.getElementById('clinics-list');
+      const noClinicMsg = document.getElementById('no-clinics');
+      
+      if (orgNames.length === 0) {
+        container.style.display = 'none';
+        noClinicMsg.style.display = 'block';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      for (const orgName of orgNames) {
+        const org = orgs[orgName];
+        const stats = await getOrganizationStats(orgName);
+        const status = org.status || 'active';
+        
+        const row = document.createElement('div');
+        row.className = 'clinic-row';
+        row.innerHTML = `
+          <div style="display: grid; grid-template-columns: 2fr 1fr 1fr 1fr 1fr auto; gap: 15px; align-items: center;">
+            <div>
+              <strong style="font-size: 18px; color: #333;">${orgName}</strong><br>
+              <span style="color: #666; font-size: 13px;">${org.country || 'Not specified'} ? Created ${new Date(org.createdAt || Date.now()).toLocaleDateString()}</span>
+            </div>
+            <div>
+              <span class="status-badge status-${status}">${status.toUpperCase()}</span>
+            </div>
+            <div style="text-align: center;">
+              <strong style="color: #2196F3; font-size: 20px;">${stats.patientCount}</strong><br>
+              <span style="color: #999; font-size: 12px;">Patients</span>
+            </div>
+            <div style="text-align: center;">
+              <strong style="color: #4CAF50; font-size: 20px;">${stats.userCount}</strong><br>
+              <span style="color: #999; font-size: 12px;">Users</span>
+            </div>
+            <div style="text-align: center;">
+              <strong style="color: #FF9800; font-size: 18px;">${formatCurrency(stats.totalRevenue, 'NGN')}</strong><br>
+              <span style="color: #999; font-size: 12px;">Revenue</span>
+            </div>
+            <div style="text-align: right;">
+              <button onclick="switchToOrganization('${orgName}')" style="background: #667eea; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600; margin-right: 5px;">
+                ??? View
+              </button>
+              <button onclick="viewClinicDetails('${orgName}')" style="background: #2196F3; color: white; border: none; padding: 8px 16px; border-radius: 6px; cursor: pointer; font-weight: 600;">
+                ?? Details
+              </button>
+            </div>
+          </div>
+        `;
+        container.appendChild(row);
+      }
+    }
+    
+    function loadRecentActivity() {
+      const globalLog = getGlobalAuditLog();
+      const recent = globalLog.slice(0, 20);  // Last 20 events
+      const container = document.getElementById('recent-activity');
+      
+      if (recent.length === 0) {
+        container.innerHTML = '<p style="text-align: center; color: #999; padding: 20px;">No recent activity</p>';
+        return;
+      }
+      
+      container.innerHTML = '';
+      
+      recent.forEach(event => {
+        const eventDiv = document.createElement('div');
+        eventDiv.style.cssText = 'padding: 12px; border-bottom: 1px solid #eee; display: flex; justify-content: space-between; align-items: center;';
+        
+        const actionColor = getActionColor(event.action);
+        
+        eventDiv.innerHTML = `
+          <div>
+            <strong style="color: ${actionColor};">${event.action.replace(/_/g, ' ').toUpperCase()}</strong>
+            <span style="color: #666; margin: 0 8px;">?</span>
+            <span style="color: #333;">${event.organization}</span>
+            <span style="color: #666; margin: 0 8px;">?</span>
+            <span style="color: #666; font-size: 13px;">${event.user}</span>
+          </div>
+          <div style="color: #999; font-size: 12px;">
+            ${new Date(event.timestamp).toLocaleString()}
+          </div>
+        `;
+        
+        container.appendChild(eventDiv);
+      });
+    }
+    
+    function getActionColor(action) {
+      if (action.includes('created') || action.includes('registered')) return '#4CAF50';
+      if (action.includes('deleted') || action.includes('canceled')) return '#F44336';
+      if (action.includes('edited') || action.includes('updated')) return '#FF9800';
+      if (action.includes('login')) return '#2196F3';
+      if (action.includes('payment')) return '#9C27B0';
+      return '#666';
+    }
+    
+    function viewClinicDetails(orgName) {
+      window.location.href = `/clinic-details?clinic=${encodeURIComponent(orgName)}`;
+    }
+    
+    function formatCurrency(amount, currency = 'NGN') {
+      const symbols = {
+        'NGN': '?',
+        'KES': 'KSh',
+        'ZAR': 'R',
+        'GHS': 'GH?',
+        'USD': '$'
+      };
+      
+      const symbol = symbols[currency] || currency;
+      return `${symbol}${amount.toLocaleString()}`;
+    }
+    
+    // Show patient breakdown by clinic in modal
+    async function viewAllPatients() {
+      const orgs = await getAllOrganizations();
+      const orgNames = Object.keys(orgs);
+      
+      let html = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 800px; width: 90%; max-height: 80%; overflow-y: auto;" onclick="event.stopPropagation()">
+            <h2 style="margin-top: 0;">?? Patient Breakdown by Clinic</h2>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 50%;">Clinic Name</th>
+                  <th class="center" style="width: 20%;">Patients</th>
+                  <th class="center" style="width: 30%;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      const globalStats = await getGlobalPlatformStats();
+      const totalPatients = globalStats.totalPatients;
+      
+      for (const orgName of orgNames) {
+        const stats = await getOrganizationStats(orgName);
+        const percentage = totalPatients > 0 ? ((stats.patientCount / totalPatients) * 100).toFixed(1) : 0;
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${orgName}</strong></td>
+            <td class="center"><strong style="color: #2196F3; font-size: 18px;">${stats.patientCount}</strong></td>
+            <td class="center">${percentage}%</td>
+          </tr>
+        `;
+      }
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="text-align: right; margin-top: 20px;">
+              <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', html);
+    }
+    
+    // Show all users breakdown by clinic in modal
+    async function viewAllUsers() {
+      const orgs = await getAllOrganizations();
+      const orgNames = Object.keys(orgs);
+      
+      let html = `
+        <div style="position: fixed; top: 0; left: 0; width: 100%; height: 100%; background: rgba(0,0,0,0.5); z-index: 10000; display: flex; align-items: center; justify-content: center;" onclick="this.remove()">
+          <div style="background: white; padding: 30px; border-radius: 12px; max-width: 1000px; width: 90%; max-height: 80%; overflow-y: auto;" onclick="event.stopPropagation()">
+            <h2 style="margin-top: 0;">????? All Users Across Clinics</h2>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 25%;">Name</th>
+                  <th class="left" style="width: 15%;">Username</th>
+                  <th class="center" style="width: 15%;">Role</th>
+                  <th class="left" style="width: 30%;">Organization</th>
+                  <th class="left" style="width: 15%;">License</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      // Get users from Supabase
+      const { data: allUsers, error: usersError } = await supabaseClient
+        .from('users')
+        .select('username, role, organization_id, gender');
+      
+      const usersToDisplay = allUsers || [];
+      
+      console.log('All users:', usersToDisplay);
+      console.log('All organizations:', orgNames);
+      
+      if (usersToDisplay.length === 0) {
+        html += `
+          <tr>
+            <td colspan="5" style="text-align: center; padding: 40px; color: #999;">
+              No users found
+            </td>
+          </tr>
+        `;
+      } else {
+        usersToDisplay.forEach(user => {
+          // Find organization name from ID
+          const userOrg = orgNames.find(name => orgs[name].id === user.organization_id);
+          
+          html += `
+            <tr>
+              <td class="left">${user.username}</td>
+              <td class="left">${user.username}</td>
+              <td class="center"><strong>${user.role}</strong></td>
+              <td class="left">${userOrg || 'N/A'}</td>
+              <td class="left">N/A</td>
+            </tr>
+          `;
+        });
+      }
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="text-align: right; margin-top: 20px;">
+              <button onclick="this.closest('div[style*=\\'position: fixed\\']').remove()" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600;">Close</button>
+            </div>
+          </div>
+        </div>
+      `;
+      
+      document.body.insertAdjacentHTML('beforeend', html);
+    }
+    // Load Country Analytics
+    async function loadCountryAnalytics() {
+      const orgs = await getAllOrganizations();
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const countryData = {};
+      
+      // Aggregate data by country
+      Object.keys(orgs).forEach(orgName => {
+        const org = orgs[orgName];
+        const country = org.country || 'Unknown';
+        
+        if (!countryData[country]) {
+          countryData[country] = {
+            organizations: 0,
+            patients: 0,
+            doctors: 0,
+            nurses: 0,
+            otherStaff: 0,
+            totalStaff: 0
+          };
+        }
+        
+        countryData[country].organizations++;
+        
+        // Count patients for this organization
+        const stats = getOrganizationStats(orgName);
+        countryData[country].patients += stats.patientCount;
+        
+        // Count staff by role for this organization
+        const orgUsers = users.filter(u => u.organization === orgName || u.org === orgName);
+        orgUsers.forEach(user => {
+          countryData[country].totalStaff++;
+          if (user.role === 'Doctor') {
+            countryData[country].doctors++;
+          } else if (user.role === 'Nurse') {
+            countryData[country].nurses++;
+          } else if (['Physician Assistant', 'Medical Assistant'].includes(user.role)) {
+            countryData[country].otherStaff++;
+          } else {
+            countryData[country].otherStaff++;
+          }
+        });
+      });
+      
+      const container = document.getElementById('country-analytics');
+      
+      if (Object.keys(countryData).length === 0) {
+        container.innerHTML = '<p style="color: #999; text-align: center; padding: 20px;">No data available</p>';
+        return;
+      }
+      
+      let html = `
+        <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+          <thead>
+            <tr>
+              <th class="left" style="width: 20%;">Country</th>
+              <th class="center" style="width: 12%;">Organizations</th>
+              <th class="center" style="width: 12%;">Total Patients</th>
+              <th class="center" style="width: 12%;">????? Doctors</th>
+              <th class="center" style="width: 12%;">????? Nurses</th>
+              <th class="center" style="width: 12%;">Other Staff</th>
+              <th class="center" style="width: 12%;">Total Staff</th>
+            </tr>
+          </thead>
+          <tbody>
+      `;
+      
+      // Sort by total patients descending
+      const sortedCountries = Object.entries(countryData).sort((a, b) => b[1].patients - a[1].patients);
+      
+      sortedCountries.forEach(([country, data]) => {
+        html += `
+          <tr>
+            <td class="left"><strong>${country}</strong></td>
+            <td class="center">${data.organizations}</td>
+            <td class="center"><strong style="color: #2196F3; font-size: 16px;">${data.patients.toLocaleString()}</strong></td>
+            <td class="center"><strong style="color: #00BCD4;">${data.doctors}</strong></td>
+            <td class="center"><strong style="color: #E91E63;">${data.nurses}</strong></td>
+            <td class="center">${data.otherStaff}</td>
+            <td class="center"><strong style="color: #9C27B0;">${data.totalStaff}</strong></td>
+          </tr>
+        `;
+      });
+      
+      html += '</tbody></table>';
+      container.innerHTML = html;
+    }
+    
+    // Load Gender Distribution Analytics
+    async function loadGenderAnalytics() {
+      const users = JSON.parse(localStorage.getItem('users') || '[]');
+      const orgs = await getAllOrganizations();
+      
+      console.log('All users:', users);
+      console.log('All organizations:', Object.keys(orgs));
+      
+      // Calculate staff gender distribution - ONLY for users in registered organizations
+      const staffGender = {
+        Male: 0,
+        Female: 0
+      };
+      
+      users.forEach(user => {
+        const orgName = user.organization || user.org;
+        
+        // Only count users that belong to registered organizations
+        if (orgName && orgs[orgName]) {
+          const gender = (user.gender === 'Male' || user.gender === 'Female') ? user.gender : 'Male';
+          staffGender[gender] = (staffGender[gender] || 0) + 1;
+          console.log(`Counting user ${user.username} (${gender}) from org ${orgName}`);
+        } else {
+          console.log(`Skipping user ${user.username} - not in registered org (org: ${orgName})`);
+        }
+      });
+      
+      // Calculate patient gender distribution across all organizations
+      const patientGender = {
+        Male: 0,
+        Female: 0
+      };
+      
+      Object.keys(orgs).forEach(orgName => {
+        const patientsKey = `${orgName}_patients`;
+        const patients = JSON.parse(localStorage.getItem(patientsKey) || '[]');
+        
+        patients.forEach(patient => {
+          const gender = (patient.gender === 'Male' || patient.gender === 'Female') ? patient.gender : 'Male';
+          patientGender[gender] = (patientGender[gender] || 0) + 1;
+        });
+      });
+      
+      const container = document.getElementById('gender-analytics');
+      
+      const totalStaff = Object.values(staffGender).reduce((a, b) => a + b, 0);
+      const totalPatients = Object.values(patientGender).reduce((a, b) => a + b, 0);
+      
+      let html = `
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(400px, 1fr)); gap: 30px;">
+          <!-- Staff Gender Distribution -->
+          <div>
+            <h3 style="margin-top: 0; color: #667eea;">?? Staff Gender Distribution</h3>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 40%;">Gender</th>
+                  <th class="center" style="width: 30%;">Count</th>
+                  <th class="center" style="width: 30%;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      Object.entries(staffGender).forEach(([gender, count]) => {
+        const percentage = totalStaff > 0 ? ((count / totalStaff) * 100).toFixed(1) : 0;
+        const color = gender === 'Male' ? '#00BCD4' : gender === 'Female' ? '#E91E63' : '#9C27B0';
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${gender}</strong></td>
+            <td class="center"><strong style="color: ${color}; font-size: 16px;">${count}</strong></td>
+            <td class="center">${percentage}%</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="margin-top: 10px; color: #666; font-size: 13px;">Total Staff: ${totalStaff.toLocaleString()}</div>
+          </div>
+          
+          <!-- Patient Gender Distribution -->
+          <div>
+            <h3 style="margin-top: 0; color: #667eea;">??????????? Patient Gender Distribution</h3>
+            <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+              <thead>
+                <tr>
+                  <th class="left" style="width: 40%;">Gender</th>
+                  <th class="center" style="width: 30%;">Count</th>
+                  <th class="center" style="width: 30%;">Percentage</th>
+                </tr>
+              </thead>
+              <tbody>
+      `;
+      
+      Object.entries(patientGender).forEach(([gender, count]) => {
+        const percentage = totalPatients > 0 ? ((count / totalPatients) * 100).toFixed(1) : 0;
+        const color = gender === 'Male' ? '#2196F3' : gender === 'Female' ? '#E91E63' : '#FF9800';
+        
+        html += `
+          <tr>
+            <td class="left"><strong>${gender}</strong></td>
+            <td class="center"><strong style="color: ${color}; font-size: 16px;">${count}</strong></td>
+            <td class="center">${percentage}%</td>
+          </tr>
+        `;
+      });
+      
+      html += `
+              </tbody>
+            </table>
+            <div style="margin-top: 10px; color: #666; font-size: 13px;">Total Patients: ${totalPatients.toLocaleString()}</div>
+          </div>
+        </div>
+      `;
+      
+      container.innerHTML = html;
+    }
+  </script>  
+
+</html>
+
+
+
+
+
+

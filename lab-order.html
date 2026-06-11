@@ -1,0 +1,1194 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Lab Order</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    @media print {
+      button { display: none !important; } /* Hide buttons on print */
+      body { margin: 0; font-size: 12pt; }
+      table { page-break-inside: auto; }
+      h1 { color: #000 !important; }
+      #patient-info { border: 1px solid #000; padding: 10px; margin-bottom: 20px; }
+      .lab-orders-table { border: 1px solid #000; }
+      .lab-orders-table th, .lab-orders-table td { border: 1px solid #000; padding: 8px; }
+    }
+    
+    /* Style for attachment buttons */
+    button[onclick*="attach"], button[onclick*="view"] {
+      margin: 5px;
+      padding: 8px 16px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 14px;
+      transition: all 0.2s ease;
+    }
+    
+    button[onclick*="attach"] {
+      background: #28a745;
+      color: white;
+      border: none;
+    }
+    
+    button[onclick*="attach"]:hover {
+      background: #218838;
+      transform: translateY(-1px);
+    }
+    
+    button[onclick*="view"] {
+      background: #007bff;
+      color: white;
+      border: none;
+    }
+    
+    button[onclick*="view"]:hover {
+      background: #0056b3;
+      transform: translateY(-1px);
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+</head>
+<body>
+  <h1>Lab Order</h1>
+  <div id="patient-info"></div>
+  <table id="lab-table" class="lab-orders-table">
+    <thead>
+      <tr>
+        <th>Test Name</th>
+        <th>CPT Code(s)</th>
+        <th>Specimen Type/Volume</th>
+        <th>Container</th>
+        <th>Transport/Stability</th>
+        <th>Notes/Reflex</th>
+      </tr>
+    </thead>
+    <tbody></tbody>
+  </table>
+  <button onclick="downloadLabOrderAsImage()" style="background: #FF9800; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px; margin-right: 10px;">&#128229; Download as Image</button>
+  <button onclick="window.print()">Print Lab Order</button>
+  <button onclick="saveOrderToChart('lab')">Save to Patient Chart</button>
+  <button onclick="attachLabResults()">&#128206; Attach Lab Results</button>
+  <button onclick="viewLabResults()">&#128065; View Lab Results</button>
+  <button onclick="backToNote()">Back to Clinical Note</button>
+  
+  <script src="js/main.js"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <script>
+    // Helper function to get user title based on role
+    function getUserTitleFromRole(role) {
+      if (!role) return 'Dr.';
+      const roleLower = role.toLowerCase();
+      if (roleLower.includes('lab') || roleLower.includes('scientist') || roleLower === 'medical lab scientist') {
+        return 'Medical Lab Scientist';
+      } else if (roleLower.includes('doctor') || roleLower.includes('physician') || roleLower === 'dr') {
+        return 'Dr.';
+      } else if (roleLower.includes('nurse')) {
+        return 'Nurse';
+      } else if (roleLower.includes('admin')) {
+        return 'Admin';
+      } else if (roleLower.includes('staff')) {
+        return 'Staff';
+      } else {
+        // Default to Dr. for backward compatibility
+        return 'Dr.';
+      }
+    }
+    
+    // Use LAB_TESTS from patients.js (already loaded via window.LAB_TESTS)
+    
+    // Back to clinical note
+    function backToNote() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      window.location.href = `/clinical-note?patientId=${patientId}&visitDate=${visitDate}`;
+    }
+
+    // Ensure order is synced to Supabase
+    async function ensureOrderSyncedToSupabase(patient, visitDate, selectedLabs) {
+      console.log('?? [LAB-ORDER] ensureOrderSyncedToSupabase called', {
+        patientId: patient.id,
+        visitDate,
+        selectedLabsCount: selectedLabs.length,
+        hasVisits: !!patient.visits,
+        visitsCount: patient.visits?.length || 0
+      });
+      
+      try {
+        // Find the most recent order for this visit
+        const visit = patient.visits?.find(v => v.date === visitDate);
+        console.log('?? [LAB-ORDER] Visit found:', {
+          hasVisit: !!visit,
+          visitDate: visit?.date,
+          hasOrders: !!visit?.orders,
+          ordersCount: visit?.orders?.length || 0
+        });
+        
+        if (!visit || !visit.orders || visit.orders.length === 0) {
+          console.log('?? [LAB-ORDER] No orders found in visit, creating new order...');
+          // Create order using saveGeneratedOrderToChart if available
+          if (typeof saveGeneratedOrderToChart === 'function') {
+            console.log('? [LAB-ORDER] Calling saveGeneratedOrderToChart...');
+            await saveGeneratedOrderToChart('lab', selectedLabs, false, patient.id, visitDate);
+            console.log('? [LAB-ORDER] saveGeneratedOrderToChart completed');
+          } else {
+            console.warn('?? [LAB-ORDER] saveGeneratedOrderToChart function not available');
+          }
+          return;
+        }
+        
+        // Find lab orders
+        const labOrders = visit.orders.filter(o => o.type === 'lab');
+        console.log('?? [LAB-ORDER] Lab orders found:', {
+          labOrdersCount: labOrders.length,
+          allOrdersCount: visit.orders.length
+        });
+        
+        if (labOrders.length === 0) {
+          console.log('?? [LAB-ORDER] No lab orders found, creating new order...');
+          if (typeof saveGeneratedOrderToChart === 'function') {
+            console.log('? [LAB-ORDER] Calling saveGeneratedOrderToChart...');
+            await saveGeneratedOrderToChart('lab', selectedLabs, false, patient.id, visitDate);
+            console.log('? [LAB-ORDER] saveGeneratedOrderToChart completed');
+          } else {
+            console.warn('?? [LAB-ORDER] saveGeneratedOrderToChart function not available');
+          }
+          return;
+        }
+        
+        // Get the most recent lab order
+        const latestOrder = labOrders[labOrders.length - 1];
+        console.log('?? [LAB-ORDER] Found existing order:', {
+          serialNumber: latestOrder.serialNumber,
+          type: latestOrder.type,
+          timestamp: latestOrder.timestamp
+        });
+        
+        // Check if it's already synced to Supabase
+        if (typeof syncOrderToSupabase === 'function') {
+          console.log('? [LAB-ORDER] Syncing order to Supabase...');
+          await syncOrderToSupabase(latestOrder, patient, visit);
+          console.log('? [LAB-ORDER] syncOrderToSupabase call completed');
+        } else {
+          console.warn('?? [LAB-ORDER] syncOrderToSupabase function not available');
+        }
+      } catch (error) {
+        console.error('? [LAB-ORDER] Error ensuring order sync:', error);
+        console.error('? [LAB-ORDER] Error stack:', error.stack);
+      }
+    }
+
+    // Save order to patient chart as PDF backup
+    async function saveOrderToChart(orderType) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      
+      if (!patientId || !visitDate) {
+        if (typeof window.showErrorNotification === 'function') {
+          window.showErrorNotification('Missing patient information');
+        } else {
+          alert("Missing patient information");
+        }
+        return;
+      }
+
+      console.log('?? [LAB-ORDER] Saving order to chart...');
+
+      // Capture the current page content as HTML
+      const orderContent = document.documentElement.outerHTML;
+      
+      // Extract selected items from the form
+      const selectedItems = [];
+      const checkboxes = document.querySelectorAll('input[type="checkbox"][name^="test_"], input[type="checkbox"][name^="imaging_"]');
+      checkboxes.forEach(cb => {
+        if (cb.checked) {
+          selectedItems.push({
+            name: cb.value || cb.getAttribute('data-test-name') || cb.name,
+            type: orderType
+          });
+        }
+      });
+      
+      // Create order data
+      const orderData = {
+        type: orderType,
+        content: orderContent,
+        selected_items: selectedItems,
+        timestamp: new Date().toISOString(),
+        patientId: patientId,
+        visitDate: visitDate,
+        status: 'pending',
+        results: {}
+      };
+
+      // HYBRID ARCHITECTURE: Try Supabase FIRST
+      const supabaseClient = window.supabaseClient;
+      let savedToSupabase = false;
+      let orgId = null;
+      
+      // Resolve organization ID using standardized utility
+      if (typeof window.resolveOrganizationId === 'function') {
+        orgId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        orgId = user.organizationId || user.organization_id;
+      }
+      
+      // Get current user
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const createdBy = user.username || user.email || user.id || 'system';
+      
+      if (supabaseClient && orgId) {
+        try {
+          // Generate serial number using organization-wide sequential format
+          // Format: LAB-001, IMG-002, etc. (simple and readable)
+          let serialNumber;
+          if (typeof window.generateOrderSerialNumber === 'function') {
+            try {
+              serialNumber = await window.generateOrderSerialNumber(orderType);
+              console.log('? [lab-order] Generated serial number:', serialNumber);
+            } catch (error) {
+              console.error('? [lab-order] Error generating serial number:', error);
+              // Fallback to timestamp-based format if generation fails
+              serialNumber = `${orderType.toUpperCase()}-${patientId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            }
+          } else {
+            console.warn('?? [lab-order] generateOrderSerialNumber not available, using fallback');
+            // Fallback if function not available
+            serialNumber = `${orderType.toUpperCase()}-${patientId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+          }
+          
+          // Check if order already exists
+          const { data: existingOrder, error: checkError } = await supabaseClient
+            .from('orders')
+            .select('id, serial_number')
+            .eq('serial_number', serialNumber)
+            .eq('organization_id', orgId)
+            .maybeSingle();
+          
+          if (checkError && checkError.code !== 'PGRST116') {
+            console.warn('?? [LAB-ORDER] Error checking existing order:', checkError);
+          }
+          
+          if (existingOrder) {
+            console.log('? [LAB-ORDER] Order already exists, updating...');
+            // Update existing order
+            const { data: updatedData, error: updateError } = await supabaseClient
+              .from('orders')
+              .update({
+                selected_items: selectedItems, // JSONB - send as object/array
+                html_content: orderContent,
+                status: 'pending',
+                results: {}, // JSONB - send as object
+                timestamp: new Date().toISOString()
+              })
+              .eq('id', existingOrder.id)
+              .select()
+              .single();
+            
+            if (updateError) {
+              throw updateError;
+            }
+            
+            savedToSupabase = true;
+          } else {
+            // Insert new order with correct field names matching schema
+            const supabaseOrder = {
+              serial_number: serialNumber, // Required unique field
+              type: orderType, // Not order_type
+              patient_id: patientId,
+              visit_date: visitDate,
+              selected_items: selectedItems, // JSONB - send as object/array, not stringified
+              html_content: orderContent, // Not order_content
+              status: 'pending',
+              results: {}, // JSONB - send as object, not stringified
+              created_by: createdBy,
+              organization_id: orgId,
+              timestamp: new Date().toISOString(),
+              no_items_checked: selectedItems.length === 0
+            };
+            
+            const { data, error } = await supabaseClient
+              .from('orders')
+              .insert(supabaseOrder)
+              .select()
+              .single();
+            
+            if (error) {
+              console.error('? [LAB-ORDER] Supabase insert error details:', {
+                message: error.message,
+                code: error.code,
+                details: error.details,
+                hint: error.hint,
+                orderData: supabaseOrder
+              });
+              throw error;
+            }
+            
+            savedToSupabase = true;
+          }
+          
+          // Success - cache to localStorage
+          savedToSupabase = true;
+          // Supabase-first: Load patients from Supabase, fallback to localStorage
+          let patients = [];
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+          } catch (error) {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+          const patient = patients.find(p => p.id === patientId);
+          
+          if (patient) {
+            const visit = patient.visits.find(v => v.date === visitDate);
+            if (visit) {
+              if (!visit.orders) {
+                visit.orders = [];
+              }
+              visit.orders.push(orderData);
+              localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            }
+          }
+          
+          if (typeof window.showSuccessNotification === 'function') {
+            window.showSuccessNotification(`${orderType === 'lab' ? 'Lab' : 'Imaging'} order saved successfully`);
+          } else {
+            alert(`${orderType === 'lab' ? 'Lab' : 'Imaging'} order saved to patient chart successfully!`);
+          }
+        } catch (err) {
+          console.error('? Supabase order save failed:', err);
+          
+          // Fallback: Save to localStorage and queue for sync
+          // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
+          let patients = [];
+          try {
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+          } catch (error) {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+          const patient = patients.find(p => p.id === patientId);
+          
+          if (patient) {
+            const visit = patient.visits.find(v => v.date === visitDate);
+            if (visit) {
+              if (!visit.orders) {
+                visit.orders = [];
+              }
+              visit.orders.push(orderData);
+              localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            } else {
+              if (typeof window.showErrorNotification === 'function') {
+                window.showErrorNotification('Visit not found');
+              } else {
+                alert("Visit not found");
+              }
+              return;
+            }
+          } else {
+            if (typeof window.showErrorNotification === 'function') {
+              window.showErrorNotification('Patient not found');
+            } else {
+              alert("Patient not found");
+            }
+            return;
+          }
+          
+          // Queue for sync with correct field names
+          if (typeof window.queueForSync === 'function' && orgId) {
+            const serialNumber = `${orderType.toUpperCase()}-${patientId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+            const supabaseOrder = {
+              serial_number: serialNumber,
+              type: orderType,
+              patient_id: patientId,
+              visit_date: visitDate,
+              selected_items: selectedItems, // JSONB - send as object/array
+              html_content: orderContent,
+              status: 'pending',
+              results: {}, // JSONB - send as object
+              created_by: createdBy,
+              organization_id: orgId,
+              timestamp: new Date().toISOString(),
+              no_items_checked: selectedItems.length === 0
+            };
+            window.queueForSync('orders', supabaseOrder);
+          }
+          
+          if (typeof window.showWarningNotification === 'function') {
+            window.showWarningNotification('Order saved locally. Will sync when online.');
+          } else {
+            alert(`${orderType === 'lab' ? 'Lab' : 'Imaging'} order saved locally. Will sync when online.`);
+          }
+        }
+      } else {
+        // Supabase not available - save locally
+        // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
+        let patients = [];
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+        } catch (error) {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+        const patient = patients.find(p => p.id === patientId);
+        
+        if (patient) {
+          const visit = patient.visits.find(v => v.date === visitDate);
+          if (visit) {
+            if (!visit.orders) {
+              visit.orders = [];
+            }
+            visit.orders.push(orderData);
+            localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            
+            if (typeof window.showWarningNotification === 'function') {
+              window.showWarningNotification('Database not available. Order saved locally and will sync automatically.');
+            } else {
+              alert(`${orderType === 'lab' ? 'Lab' : 'Imaging'} order saved locally. Will sync when online.`);
+            }
+          } else {
+            if (typeof window.showErrorNotification === 'function') {
+              window.showErrorNotification('Visit not found');
+            } else {
+              alert("Visit not found");
+            }
+          }
+        } else {
+          if (typeof window.showErrorNotification === 'function') {
+            window.showErrorNotification('Patient not found');
+          } else {
+            alert("Patient not found");
+          }
+        }
+      }
+    }
+
+    // Function to attach lab results
+    function attachLabResults() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      
+      if (!patientId || !visitDate) {
+        alert("Missing patient information");
+        return;
+      }
+
+      const input = document.createElement('input');
+      input.type = 'file';
+      input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
+      input.multiple = true;
+      
+      input.onchange = async function(e) {
+        const files = Array.from(e.target.files);
+        if (files.length === 0) return;
+        
+        // Supabase-first: Load patients from Supabase, fallback to localStorage
+        let patients = [];
+        try {
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+        } catch (error) {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+        
+        const patient = patients.find(p => p.id === patientId);
+        
+        if (!patient) {
+          alert("Patient not found");
+          return;
+        }
+        
+        // Initialize labResults array if it doesn't exist
+        if (!patient.labResults) {
+          patient.labResults = [];
+        }
+        
+        // Process each file
+        files.forEach(file => {
+          const reader = new FileReader();
+          reader.onload = function(e) {
+            const labResult = {
+              id: Date.now() + Math.random(),
+              testName: file.name.replace(/\.[^/.]+$/, ""), // Remove file extension
+              attachment: e.target.result,
+              attachmentType: file.type,
+              uploadedAt: new Date().toISOString(),
+              visitDate: visitDate,
+              fileName: file.name,
+              fileSize: file.size
+            };
+            
+            patient.labResults.push(labResult);
+            
+            // Save back to localStorage
+            localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            
+            alert(`Lab result "${file.name}" attached successfully!`);
+          };
+          reader.readAsDataURL(file);
+        });
+      };
+      
+      input.click();
+    }
+
+    // Function to view lab results
+    async function viewLabResults() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      if (!patientId) {
+        alert("Missing patient information");
+        return;
+      }
+
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (error) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient || !patient.labResults || patient.labResults.length === 0) {
+        alert("No lab results found for this patient.");
+        return;
+      }
+
+      // Create modal to display lab results
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100%; height: 100%; 
+        background: rgba(0,0,0,0.8); z-index: 10000; display: flex; 
+        align-items: center; justify-content: center;
+      `;
+      
+      const content = document.createElement('div');
+      content.style.cssText = `
+        background: white; padding: 20px; border-radius: 8px; 
+        max-width: 80%; max-height: 80%; overflow-y: auto;
+      `;
+      
+      content.innerHTML = `
+        <h3>Lab Results for ${patient.firstName} ${patient.lastName}</h3>
+        <div id="lab-results-list"></div>
+        <button onclick="this.closest('.modal').remove()" style="margin-top: 10px;">Close</button>
+      `;
+      
+      const resultsList = content.querySelector('#lab-results-list');
+      
+      patient.labResults.forEach(result => {
+        const resultDiv = document.createElement('div');
+        resultDiv.style.cssText = 'border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 4px;';
+        
+        resultDiv.innerHTML = `
+          <strong>${result.testName}</strong> (${(result.fileSize / 1024).toFixed(1)} KB)
+          <br><small>Uploaded: ${new Date(result.uploadedAt).toLocaleDateString()}</small>
+          <br><small>Visit Date: ${result.visitDate}</small>
+          <br>
+          <button onclick="downloadLabResult('${result.id}', '${result.fileName}')">Download</button>
+          <button onclick="deleteLabResult('${patientId}', '${result.id}')" style="background: #dc3545; color: white;">Delete</button>
+        `;
+        
+        resultsList.appendChild(resultDiv);
+      });
+      
+      modal.className = 'modal';
+      modal.appendChild(content);
+      document.body.appendChild(modal);
+      
+      // Close modal when clicking outside
+      modal.onclick = function(e) {
+        if (e.target === modal) modal.remove();
+      };
+    }
+
+    // Function to download lab result
+    async function downloadLabResult(resultId, fileName) {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (error) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      
+      const patient = patients.find(p => p.id === patientId);
+      
+      if (!patient || !patient.labResults) return;
+      
+      const result = patient.labResults.find(r => r.id == resultId);
+      if (!result) return;
+      
+      const link = document.createElement('a');
+      link.href = result.attachment;
+      link.download = fileName;
+      link.click();
+    }
+
+    // Function to delete lab result
+    async function deleteLabResult(patientId, resultId) {
+      if (!confirm('Are you sure you want to delete this lab result?')) return;
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+      } catch (error) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      
+      const patient = patients.find(p => p.id === patientId);
+      if (!patient || !patient.labResults) return;
+      
+      patient.labResults = patient.labResults.filter(r => r.id != resultId);
+      localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+      
+      alert('Lab result deleted successfully!');
+    }
+
+    // Load data on page load
+    window.onload = async function() {
+      console.log('?? [LAB-ORDER] Page loaded, initializing...');
+      
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get("patientId");
+      const visitDate = urlParams.get("visitDate");
+      const selectedLabs = JSON.parse(sessionStorage.getItem("selectedLabs") || "[]");
+      
+      // Supabase-first: Load patients from Supabase, fallback to localStorage
+      let patients = [];
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const orgId = user.organization_id || user.organizationId;
+          
+          if (orgId) {
+            const { data: supabasePatients, error } = await window.supabaseClient
+              .from('patients')
+              .select('*')
+              .eq('organization_id', orgId);
+            
+            if (!error && supabasePatients) {
+              // Convert snake_case to camelCase for compatibility
+              patients = supabasePatients.map(p => ({
+                id: p.id || p.patient_id,
+                patient_id: p.patient_id,
+                firstName: p.first_name,
+                lastName: p.last_name,
+                first_name: p.first_name,
+                last_name: p.last_name,
+                ...p
+              }));
+              
+              // Cache to localStorage
+              localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('?? Supabase load failed, falling back to localStorage:', error);
+      }
+      
+      // Fallback to localStorage if Supabase didn't provide data
+      if (patients.length === 0) {
+        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+      }
+      
+      const patient = patients.find(p => p.id === patientId);
+      const user = JSON.parse(localStorage.getItem("user"));
+      
+      console.log('?? [LAB-ORDER] Order data:', {
+        patientId,
+        visitDate,
+        selectedLabsCount: selectedLabs.length,
+        selectedLabs,
+        hasPatient: !!patient,
+        hasUser: !!user
+      });
+      
+      // Ensure order is synced to Supabase when page loads
+      if (patient && visitDate && selectedLabs.length > 0) {
+        console.log('?? [LAB-ORDER] Conditions met - Ensuring order is synced to Supabase...');
+        try {
+          await ensureOrderSyncedToSupabase(patient, visitDate, selectedLabs);
+          console.log('? [LAB-ORDER] Order sync check completed');
+        } catch (error) {
+          console.error('? [LAB-ORDER] Error in ensureOrderSyncedToSupabase:', error);
+        }
+      } else {
+        console.warn('?? [LAB-ORDER] Order sync skipped - conditions not met:', {
+          hasPatient: !!patient,
+          hasVisitDate: !!visitDate,
+          selectedLabsCount: selectedLabs.length
+        });
+      }
+      
+      console.log('?? [LAB-ORDER] Rendering order display...');
+      
+      if (patient && user) {
+        // Display patient and order info
+        document.getElementById("patient-info").innerHTML = `
+          <p><strong>Patient:</strong> ${patient.firstName} ${patient.middleName ? patient.middleName : ''} ${patient.lastName}</p>
+          <p><strong>DOB:</strong> ${patient.dob} | <strong>Gender:</strong> ${patient.gender} | <strong>Phone:</strong> ${patient.phone} | <strong>Email:</strong> ${patient.email || 'N/A'}</p>
+          <p><strong>Address:</strong> ${(patient.addressLine1 || patient.address_line1 || '')} ${(patient.addressLine2 || patient.address_line2 || '') ? (patient.addressLine2 || patient.address_line2) + ', ' : ''}${patient.city || ''}, ${patient.state || ''}, ${patient.country || ''}</p>
+          <p><strong>Visit Date:</strong> ${visitDate}</p>
+          <p><strong>Ordered By:</strong> ${getUserTitleFromRole(user.role)} ${user.firstName} ${user.lastName} (${user.role}), Medical License: ${user.medicalLicenseNumber || 'N/A'}</p>
+          <p><strong>Organization:</strong> ${user.org}, Address: ${user.orgAddressLine1} ${user.orgAddressLine2 ? user.orgAddressLine2 : ''}, ${user.orgCity}, ${user.orgState}, ${user.orgCountry}</p>
+        `;
+
+        // Populate lab table
+        const tbody = document.getElementById("lab-table").querySelector("tbody");
+        if (!tbody) {
+          console.error("Lab order table tbody not found");
+          return;
+        }
+        const labTests = window.LAB_TESTS || [];
+        selectedLabs.forEach(name => {
+          const test = labTests.find(t => t.name === name);
+          if (test) {
+            const row = document.createElement("tr");
+            row.innerHTML = `
+              <td>${test.name}</td>
+              <td>${test.cpt}</td>
+              <td>${test.specimen}</td>
+              <td>${test.container}</td>
+              <td>${test.transport}</td>
+              <td>${test.notes}</td>
+            `;
+            tbody.appendChild(row);
+          }
+        });
+        console.log('? [LAB-ORDER] Order display rendered successfully');
+      } else {
+        console.error('? [LAB-ORDER] Patient or user data not found:', {
+          hasPatient: !!patient,
+          hasUser: !!user
+        });
+        alert("Patient or user data not found.");
+      }
+
+      // Clean up sessionStorage
+      sessionStorage.removeItem("selectedLabs");
+      console.log('? [LAB-ORDER] Page initialization complete');
+    };
+
+    // Function to download lab order as image with multi-page support
+    function downloadLabOrderAsImage() {
+      console.log('?? Starting lab order image download...');
+      
+      try {
+        const labTable = document.getElementById('lab-table');
+        const patientInfo = document.getElementById('patient-info');
+        
+        if (!labTable) {
+          alert('No lab order found to download.');
+          return;
+        }
+        
+        // Get all table rows to determine if we need multiple pages
+        const tableRows = labTable.querySelectorAll('tbody tr');
+        console.log(`?? Found ${tableRows.length} table rows`);
+        
+        if (tableRows.length === 0) {
+          alert('No lab tests selected to download.');
+          return;
+        }
+        
+        // Calculate rows per page (approximately 20-25 rows per A4 page)
+        const rowsPerPage = 20;
+        const totalPages = Math.ceil(tableRows.length / rowsPerPage);
+        console.log(`?? Will generate ${totalPages} page(s) of lab orders`);
+        
+        // Generate each page
+        generateLabOrderPages(labTable, patientInfo, tableRows, rowsPerPage, totalPages, 0);
+        
+      } catch (error) {
+        console.error('? Error in lab order image download:', error);
+        alert('Error downloading image. Please try again.');
+      }
+    }
+    
+    // Function to generate multiple pages of lab orders
+    function generateLabOrderPages(labTable, patientInfo, allRows, rowsPerPage, totalPages, currentPage) {
+      console.log(`?? Generating page ${currentPage + 1} of ${totalPages}`);
+      
+      // Create a visible container for this page
+      const tempContainer = document.createElement('div');
+      tempContainer.style.cssText = `
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 210mm;
+        min-height: 297mm;
+        background: white;
+        padding: 20px;
+        font-family: Arial, sans-serif;
+        font-size: 12px;
+        line-height: 1.4;
+        color: #333;
+        z-index: 9999;
+        box-sizing: border-box;
+      `;
+      
+      // Create header
+      const header = document.createElement('div');
+      header.style.cssText = `
+        text-align: center;
+        margin-bottom: 20px;
+        padding-bottom: 15px;
+        border-bottom: 2px solid #333;
+      `;
+      header.innerHTML = `
+        <h1 style="margin: 0; color: #333; font-size: 24px;">Lab Order</h1>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">Page ${currentPage + 1} of ${totalPages}</p>
+        <p style="margin: 5px 0; color: #666; font-size: 14px;">Generated on ${new Date().toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        })}</p>
+      `;
+      
+      tempContainer.appendChild(header);
+      
+      // Add patient info if available (only on first page)
+      if (currentPage === 0 && patientInfo && patientInfo.innerHTML.trim()) {
+        const patientSection = document.createElement('div');
+        patientSection.style.cssText = `
+          margin-bottom: 20px;
+          padding: 15px;
+          background: #f8f9fa;
+          border-radius: 8px;
+          border: 1px solid #e0e0e0;
+        `;
+        patientSection.innerHTML = patientInfo.innerHTML;
+        tempContainer.appendChild(patientSection);
+      }
+      
+      // Create table for this page
+      const pageTable = document.createElement('table');
+      pageTable.style.cssText = `
+        width: 100%;
+        border-collapse: collapse;
+        border: 1px solid #333;
+        margin-bottom: 20px;
+        table-layout: fixed;
+      `;
+      
+      // Create optimized column widths (6 columns total)
+      const columnWidths = ['25%', '10%', '20%', '15%', '15%', '15%'];
+      
+      // Create table header with proper styling
+      const thead = document.createElement('thead');
+      const headerRow = document.createElement('tr');
+      headerRow.style.cssText = `
+        background: linear-gradient(135deg, #4CAF50, #45a049);
+        color: white;
+        font-weight: bold;
+      `;
+      
+      const headerCells = [
+        'Test Name',
+        'CPT Code',
+        'Specimen Type/Volume', 
+        'Container',
+        'Transport/Stability',
+        'Notes/Reflex'
+      ];
+      
+      headerCells.forEach((text, index) => {
+        const th = document.createElement('th');
+        th.textContent = text;
+        th.style.cssText = `
+          padding: 12px 8px;
+          border: 1px solid #333;
+          text-align: center;
+          vertical-align: middle;
+          font-size: 13px;
+          font-weight: bold;
+          width: ${columnWidths[index]};
+          word-wrap: break-word;
+        `;
+        headerRow.appendChild(th);
+      });
+      
+      thead.appendChild(headerRow);
+      pageTable.appendChild(thead);
+      
+      // Create tbody for this page's rows
+      const tbody = document.createElement('tbody');
+      
+      // Calculate which rows to include on this page
+      const startRow = currentPage * rowsPerPage;
+      const endRow = Math.min(startRow + rowsPerPage, allRows.length);
+      
+      console.log(`?? Adding rows ${startRow} to ${endRow - 1} to page ${currentPage + 1}`);
+      
+      // Add rows for this page
+      for (let i = startRow; i < endRow; i++) {
+        const originalRow = allRows[i];
+        const clonedRow = document.createElement('tr');
+        clonedRow.style.cssText = `
+          border-bottom: 1px solid #ddd;
+          background: ${i % 2 === 0 ? 'white' : '#f8f9fa'};
+        `;
+        
+        // Get the cells from the original row
+        const originalCells = originalRow.querySelectorAll('td, th');
+        
+        // Process each cell with proper formatting
+        originalCells.forEach((cell, cellIndex) => {
+          const newCell = document.createElement('td');
+          newCell.innerHTML = cell.innerHTML;
+          
+          // Apply different styling based on column
+          let cellStyle = `
+            padding: 10px 8px;
+            border: 1px solid #ddd;
+            vertical-align: top;
+            font-size: 12px;
+            width: ${columnWidths[cellIndex]};
+            word-wrap: break-word;
+            line-height: 1.4;
+          `;
+          
+          switch(cellIndex) {
+            case 0: // Test Name
+              cellStyle += `
+                text-align: left;
+                font-weight: 500;
+                color: #333;
+              `;
+              break;
+            case 1: // CPT Code
+              cellStyle += `
+                text-align: center;
+                font-weight: bold;
+                color: #4CAF50;
+                background: #f0f8f0;
+              `;
+              break;
+            case 2: // Specimen Type/Volume
+              cellStyle += `
+                text-align: left;
+                color: #555;
+              `;
+              break;
+            case 3: // Container
+              cellStyle += `
+                text-align: left;
+                color: #555;
+                font-style: italic;
+              `;
+              break;
+            case 4: // Transport/Stability
+              cellStyle += `
+                text-align: left;
+                color: #666;
+                font-size: 11px;
+              `;
+              break;
+            case 5: // Notes/Reflex
+              cellStyle += `
+                text-align: left;
+                color: #666;
+                font-size: 11px;
+                background: #fff9e6;
+              `;
+              break;
+          }
+          
+          newCell.style.cssText = cellStyle;
+          clonedRow.appendChild(newCell);
+        });
+        
+        tbody.appendChild(clonedRow);
+      }
+      
+      pageTable.appendChild(tbody);
+      tempContainer.appendChild(pageTable);
+      
+      // Add footer with page info
+      const footer = document.createElement('div');
+      footer.style.cssText = `
+        text-align: center;
+        margin-top: 20px;
+        padding-top: 15px;
+        border-top: 1px solid #ddd;
+        color: #666;
+        font-size: 11px;
+      `;
+      footer.textContent = `Page ${currentPage + 1} of ${totalPages} - ${allRows.length} total lab tests`;
+      tempContainer.appendChild(footer);
+      
+      document.body.appendChild(tempContainer);
+      
+      // Wait a moment for the container to render
+      setTimeout(() => {
+        html2canvas(tempContainer, {
+          scale: 2,
+          useCORS: true,
+          backgroundColor: '#ffffff',
+          width: tempContainer.offsetWidth,
+          height: tempContainer.offsetHeight,
+          allowTaint: true,
+          logging: true
+        }).then(canvas => {
+          // Remove the temporary container
+          document.body.removeChild(tempContainer);
+          
+          // Create download link
+          const link = document.createElement('a');
+          const date = new Date().toISOString().split('T')[0];
+          link.download = `LabOrder_Page${currentPage + 1}_${date}.png`;
+          link.href = canvas.toDataURL('image/png');
+          
+          document.body.appendChild(link);
+          link.click();
+          document.body.removeChild(link);
+          
+          console.log(`? Lab order page ${currentPage + 1} downloaded as image:`, link.download);
+          
+          // Show success message
+          showPageSuccessMessage(currentPage + 1, totalPages);
+          
+          // Generate next page if there are more
+          if (currentPage + 1 < totalPages) {
+            setTimeout(() => {
+              generateLabOrderPages(labTable, patientInfo, allRows, rowsPerPage, totalPages, currentPage + 1);
+            }, 1000); // Small delay between pages
+          } else {
+            // All pages generated, show final message
+            setTimeout(() => {
+              showFinalSuccessMessage(totalPages);
+            }, 1000);
+          }
+          
+        }).catch(error => {
+          console.error(`? Error generating lab order page ${currentPage + 1}:`, error);
+          alert(`Error generating page ${currentPage + 1}. Please try again.`);
+          if (document.body.contains(tempContainer)) {
+            document.body.removeChild(tempContainer);
+          }
+        });
+      }, 500); // Wait for rendering
+    }
+    
+    // Helper function to show page success message
+    function showPageSuccessMessage(currentPage, totalPages) {
+      const message = document.createElement('div');
+      message.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #4CAF50;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-weight: bold;
+      `;
+      message.innerHTML = `&#10004; Page ${currentPage}/${totalPages} downloaded!`;
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        if (document.body.contains(message)) {
+          document.body.removeChild(message);
+        }
+      }, 2000);
+    }
+    
+    // Helper function to show final success message
+    function showFinalSuccessMessage(totalPages) {
+      const message = document.createElement('div');
+      message.style.cssText = `
+        position: fixed;
+        top: 20px;
+        right: 20px;
+        background: #2196F3;
+        color: white;
+        padding: 15px 20px;
+        border-radius: 8px;
+        box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+        z-index: 10000;
+        font-weight: bold;
+      `;
+      message.innerHTML = `&#10004; All ${totalPages} page(s) downloaded successfully!`;
+      document.body.appendChild(message);
+      
+      setTimeout(() => {
+        if (document.body.contains(message)) {
+          document.body.removeChild(message);
+        }
+      }, 4000);
+    }
+  </script>  
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+

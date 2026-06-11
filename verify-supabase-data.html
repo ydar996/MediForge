@@ -1,0 +1,357 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Supabase Data</title>
+  <style>
+    body {
+      font-family: 'Courier New', monospace;
+      padding: 20px;
+      background: #1a202c;
+      color: #e2e8f0;
+    }
+    
+    .section {
+      background: #2d3748;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid #4a5568;
+    }
+    
+    h2 {
+      color: #63b3ed;
+      margin-bottom: 15px;
+    }
+    
+    button {
+      background: #4299e1;
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: #3182ce;
+    }
+    
+    .result {
+      background: #1a202c;
+      padding: 15px;
+      margin-top: 15px;
+      border-radius: 4px;
+      white-space: pre-wrap;
+      font-size: 13px;
+    }
+    
+    .success { color: #68d391; }
+    .error { color: #fc8181; }
+    .info { color: #63b3ed; }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <h1>?? Verify Supabase Data</h1>
+  
+  <div class="section">
+    <h2>?? Organizations</h2>
+    <button onclick="checkOrganizations()">Check Organizations</button>
+    <div id="orgs-result" class="result"></div>
+  </div>
+  
+  <div class="section">
+    <h2>?? Patients</h2>
+    <button onclick="checkPatients()">Check All Patients</button>
+    <button onclick="checkPatientsByOrg()">Check Patients by Org</button>
+    <div id="patients-result" class="result"></div>
+  </div>
+  
+  <div class="section">
+    <h2>?? Appointments</h2>
+    <button onclick="checkAppointments()">Check All Appointments</button>
+    <button onclick="checkAppointmentsByOrg()">Check Appointments by Org</button>
+    <div id="appointments-result" class="result"></div>
+  </div>
+  
+  <div class="section">
+    <h2>?? Users</h2>
+    <button onclick="checkUsers()">Check All Users</button>
+    <div id="users-result" class="result"></div>
+  </div>
+  
+  <!-- Supabase SDK -->
+  
+  </script>
+  
+  
+  
+    function log(id, message, type = 'info') {
+      const el = document.getElementById(id);
+      const entry = document.createElement('div');
+      entry.className = type;
+      entry.textContent = message;
+      el.appendChild(entry);
+    }
+    
+    function clear(id) {
+      document.getElementById(id).innerHTML = '';
+    }
+    
+    async function checkOrganizations() {
+      clear('orgs-result');
+      log('orgs-result', '?? Fetching organizations...', 'info');
+      
+      try {
+        const { data, error, count } = await supabaseClient
+          .from('organizations')
+          .select('*', { count: 'exact' });
+        
+        if (error) {
+          log('orgs-result', `? Error: ${error.message}`, 'error');
+        } else {
+          log('orgs-result', `? Found ${count} organizations:`, 'success');
+          data.forEach(org => {
+            log('orgs-result', `  - ${org.name} (ID: ${org.id})`, 'info');
+          });
+          log('orgs-result', '\nFull data:', 'info');
+          log('orgs-result', JSON.stringify(data, null, 2), 'info');
+        }
+      } catch (error) {
+        log('orgs-result', `? Exception: ${error.message}`, 'error');
+      }
+    }
+    
+    async function checkPatients() {
+      clear('patients-result');
+      log('patients-result', '?? Fetching all patients...', 'info');
+      
+      try {
+        // First check total count without RLS
+        const { data, error, count } = await supabaseClient
+          .from('patients')
+          .select('organization_id, patient_id, first_name, last_name', { count: 'exact' });
+        
+        if (error) {
+          log('patients-result', `? Error: ${error.message}`, 'error');
+        } else {
+          log('patients-result', `? Found ${count} patients total`, 'success');
+          
+          // Group by organization
+          const byOrg = {};
+          data.forEach(p => {
+            if (!byOrg[p.organization_id]) byOrg[p.organization_id] = [];
+            byOrg[p.organization_id].push(p);
+          });
+          
+          log('patients-result', '\nGrouped by Organization:', 'info');
+          for (const [orgId, patients] of Object.entries(byOrg)) {
+            log('patients-result', `\nOrg ID: ${orgId} - ${patients.length} patients`, 'info');
+            patients.slice(0, 5).forEach(p => {
+              log('patients-result', `  - ${p.patient_id}: ${p.first_name} ${p.last_name}`, 'info');
+            });
+            if (patients.length > 5) {
+              log('patients-result', `  ... and ${patients.length - 5} more`, 'info');
+            }
+          }
+        }
+      } catch (error) {
+        log('patients-result', `? Exception: ${error.message}`, 'error');
+      }
+    }
+    
+    async function checkPatientsByOrg() {
+      clear('patients-result');
+      log('patients-result', '?? Fetching patients by organization...', 'info');
+      
+      try {
+        // First get organizations
+        const { data: orgs } = await supabaseClient
+          .from('organizations')
+          .select('id, name');
+        
+        log('patients-result', `Found ${orgs.length} organizations:\n`, 'info');
+        
+        for (const org of orgs) {
+          log('patients-result', `\n?? Querying patients for: ${org.name}`, 'info');
+          log('patients-result', `   Org ID: ${org.id}`, 'info');
+          log('patients-result', `   Org ID type: ${typeof org.id}`, 'info');
+          
+          // Try count query
+          const { count, error: countError, data: countData } = await supabaseClient
+            .from('patients')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', org.id);
+          
+          log('patients-result', `  ?? Count query raw response:`, 'info');
+          log('patients-result', `     count: ${count}`, 'info');
+          log('patients-result', `     error: ${countError ? countError.message : 'none'}`, 'info');
+          
+          if (countError) {
+            log('patients-result', `  ? Count query error: ${countError.message}`, 'error');
+          } else {
+            log('patients-result', `  ?? Count query result: ${count || 0} patients`, count > 0 ? 'success' : 'info');
+          }
+          
+          // Also try a data query to see actual records
+          const { data: pData, error: dataError } = await supabaseClient
+            .from('patients')
+            .select('patient_id, first_name, last_name, organization_id')
+            .eq('organization_id', org.id);
+          
+          log('patients-result', `  ?? Data query raw response:`, 'info');
+          log('patients-result', `     records: ${pData ? pData.length : 'null'}`, 'info');
+          log('patients-result', `     error: ${dataError ? dataError.message : 'none'}`, 'info');
+          
+          if (dataError) {
+            log('patients-result', `  ? Data query error: ${dataError.message}`, 'error');
+          } else {
+            log('patients-result', `  ?? Data query result: ${pData.length} patients`, pData.length > 0 ? 'success' : 'info');
+            if (pData.length > 0) {
+              log('patients-result', `  First 3 patients:`, 'info');
+              pData.slice(0, 3).forEach(p => {
+                log('patients-result', `    - ${p.patient_id}: ${p.first_name} ${p.last_name} (org_id: ${p.organization_id})`, 'info');
+              });
+            }
+          }
+        }
+      } catch (error) {
+        log('patients-result', `? Exception: ${error.message}`, 'error');
+        console.error('Full error:', error);
+      }
+    }
+    
+    async function checkAppointments() {
+      clear('appointments-result');
+      log('appointments-result', '?? Fetching all appointments...', 'info');
+      
+      try {
+        const { data, error, count } = await supabaseClient
+          .from('appointments')
+          .select('organization_id, appointment_id, patient_name, appointment_date', { count: 'exact' });
+        
+        if (error) {
+          log('appointments-result', `? Error: ${error.message}`, 'error');
+        } else {
+          log('appointments-result', `? Found ${count} appointments total`, 'success');
+          
+          // Group by organization
+          const byOrg = {};
+          data.forEach(a => {
+            if (!byOrg[a.organization_id]) byOrg[a.organization_id] = [];
+            byOrg[a.organization_id].push(a);
+          });
+          
+          log('appointments-result', '\nGrouped by Organization:', 'info');
+          for (const [orgId, appts] of Object.entries(byOrg)) {
+            log('appointments-result', `\nOrg ID: ${orgId} - ${appts.length} appointments`, 'info');
+            appts.slice(0, 5).forEach(a => {
+              log('appointments-result', `  - ${a.appointment_id}: ${a.patient_name} on ${a.appointment_date}`, 'info');
+            });
+            if (appts.length > 5) {
+              log('appointments-result', `  ... and ${appts.length - 5} more`, 'info');
+            }
+          }
+        }
+      } catch (error) {
+        log('appointments-result', `? Exception: ${error.message}`, 'error');
+      }
+    }
+    
+    async function checkAppointmentsByOrg() {
+      clear('appointments-result');
+      log('appointments-result', '?? Fetching appointments by organization...', 'info');
+      
+      try {
+        // First get organizations
+        const { data: orgs } = await supabaseClient
+          .from('organizations')
+          .select('id, name');
+        
+        log('appointments-result', `Found ${orgs.length} organizations:\n`, 'info');
+        
+        for (const org of orgs) {
+          const { count, error } = await supabaseClient
+            .from('appointments')
+            .select('*', { count: 'exact', head: true })
+            .eq('organization_id', org.id);
+          
+          if (error) {
+            log('appointments-result', `  ? ${org.name}: Error - ${error.message}`, 'error');
+          } else {
+            log('appointments-result', `  ${org.name} (${org.id}): ${count || 0} appointments`, count > 0 ? 'success' : 'info');
+          }
+        }
+      } catch (error) {
+        log('appointments-result', `? Exception: ${error.message}`, 'error');
+      }
+    }
+    
+    async function checkUsers() {
+      clear('users-result');
+      log('users-result', '?? Fetching all users...', 'info');
+      
+      try {
+        const { data, error, count } = await supabaseClient
+          .from('users')
+          .select('organization_id, username, role', { count: 'exact' });
+        
+        if (error) {
+          log('users-result', `? Error: ${error.message}`, 'error');
+        } else {
+          log('users-result', `? Found ${count} users total`, 'success');
+          
+          // Group by organization
+          const byOrg = {};
+          data.forEach(u => {
+            if (!byOrg[u.organization_id]) byOrg[u.organization_id] = [];
+            byOrg[u.organization_id].push(u);
+          });
+          
+          log('users-result', '\nGrouped by Organization:', 'info');
+          for (const [orgId, users] of Object.entries(byOrg)) {
+            log('users-result', `\nOrg ID: ${orgId || 'NULL'} - ${users.length} users`, 'info');
+            users.forEach(u => {
+              log('users-result', `  - ${u.username} (${u.role})`, 'info');
+            });
+          }
+        }
+      } catch (error) {
+        log('users-result', `? Exception: ${error.message}`, 'error');
+      }
+    }
+  </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+

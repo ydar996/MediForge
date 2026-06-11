@@ -1,0 +1,581 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Sync Mobile Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .sync-item { border: 1px solid #ddd; padding: 10px; margin: 10px 0; border-radius: 5px; }
+        .sync-success { background: #d4edda; border-color: #c3e6cb; }
+        .sync-error { background: #f8d7da; border-color: #f5c6cb; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <h1>Sync Mobile Registration Data</h1>
+    <p>This tool will sync mobile registration data from localStorage to Supabase.</p>
+    
+    <button onclick="checkLocalStorageData()" class="btn-primary">?? Check localStorage Data</button>
+    <button onclick="showSelectiveSync()" class="btn-success">?? Selective Sync</button>
+    <button onclick="clearLocalStorage()" class="btn-warning">??? Clear localStorage</button>
+    
+    <div id="results"></div>
+    
+    <!-- Load Supabase SDK directly for mobile compatibility -->
+    <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+    <script>
+        // Mobile-specific Supabase client initialization (same as working test page)
+        async function initializeMobileSupabase() {
+            console.log('?? Initializing mobile Supabase client...');
+            
+            // Wait for Supabase library to load
+            let attempts = 0;
+            const maxAttempts = 20; // 10 seconds total
+            
+            while (attempts < maxAttempts) {
+                if (typeof window.supabase !== 'undefined' && window.supabase.createClient) {
+                    console.log('? Supabase library loaded');
+                    break;
+                }
+                console.log(`?? Waiting for Supabase library... (attempt ${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.error('? Supabase library failed to load');
+                return false;
+            }
+            
+            // Initialize Supabase client manually for mobile
+            try {
+                const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+                const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+                
+                const supabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY, {
+                    auth: {
+                        autoRefreshToken: true,
+                        persistSession: true,
+                        detectSessionInUrl: true
+                    },
+                    global: {
+                        headers: {
+                            'apikey': SUPABASE_ANON_KEY,
+                            'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
+                            'Content-Type': 'application/json'
+                        }
+                    }
+                });
+                
+                window.supabaseClient = supabaseClient;
+                console.log('? Mobile Supabase client initialized successfully');
+                return true;
+                
+            } catch (error) {
+                console.error('? Mobile Supabase client initialization failed:', error);
+                return false;
+            }
+        }
+        
+        // Wait for Supabase client to initialize (mobile-optimized)
+        async function waitForSupabaseClient() {
+            // Try the mobile-specific initialization first
+            const mobileInit = await initializeMobileSupabase();
+            if (mobileInit) {
+                return true;
+            }
+            
+            // Fallback to original method
+            let attempts = 0;
+            const maxAttempts = 30; // Increased from 10 to 30 (15 seconds total)
+            
+            while (attempts < maxAttempts) {
+                if (window.supabaseClient) {
+                    console.log('? Supabase client is ready');
+                    return true;
+                }
+                
+                console.log(`?? Waiting for Supabase client... (attempt ${attempts + 1}/${maxAttempts})`);
+                await new Promise(resolve => setTimeout(resolve, 500));
+                attempts++;
+            }
+            
+            console.error('? Supabase client failed to load after', maxAttempts, 'attempts');
+            return false;
+        }
+        
+        // Initialize Supabase client when page loads
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('?? Initializing Supabase client...');
+            const isReady = await waitForSupabaseClient();
+            
+            if (!isReady) {
+                document.getElementById('results').innerHTML = `
+                    <div style="color: red; padding: 20px; border: 2px solid red; border-radius: 8px; margin: 20px 0;">
+                        <h3>? Supabase Connection Failed</h3>
+                        <p>The sync tool cannot connect to Supabase. This could be due to:</p>
+                        <ul>
+                            <li>Network connectivity issues</li>
+                            <li>Supabase service being down</li>
+                            <li>Browser blocking the connection</li>
+                        </ul>
+                        <p><strong>Try refreshing the page or check your internet connection.</strong></p>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; margin-right: 10px;">
+                            ?? Refresh Page
+                        </button>
+                        <button onclick="retrySupabaseConnection()" style="padding: 10px 20px; background: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            ?? Retry Connection
+                        </button>
+                    </div>
+                `;
+            } else {
+                console.log('? Supabase client ready, auto-checking localStorage data...');
+                checkLocalStorageData();
+            }
+        });
+        
+        // Manual retry function for Supabase connection
+        async function retrySupabaseConnection() {
+            console.log('?? Manual retry of Supabase connection...');
+            const isReady = await waitForSupabaseClient();
+            
+            if (isReady) {
+                console.log('? Supabase client ready after retry');
+                checkLocalStorageData();
+            } else {
+                console.log('? Supabase client still not available after retry');
+                document.getElementById('results').innerHTML = `
+                    <div style="color: red; padding: 20px; border: 2px solid red; border-radius: 8px; margin: 20px 0;">
+                        <h3>? Supabase Connection Still Failed</h3>
+                        <p>Even after retry, the connection failed. This might be a persistent issue.</p>
+                        <p><strong>Try:</strong></p>
+                        <ul>
+                            <li>Refresh the page completely</li>
+                            <li>Check your internet connection</li>
+                            <li>Try again in a few minutes</li>
+                        </ul>
+                        <button onclick="location.reload()" style="padding: 10px 20px; background: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer;">
+                            ?? Refresh Page
+                        </button>
+                    </div>
+                `;
+            }
+        }
+        
+        async function checkLocalStorageData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Checking localStorage data...</p>';
+            
+            try {
+                // Check organizations in localStorage
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let html = '<h3>?? localStorage Data Found:</h3>';
+                
+                // Check if Supabase client is available
+                const supabaseAvailable = window.supabaseClient ? '? Available' : '? Not Available';
+                html += `<p><strong>Supabase Client Status:</strong> ${supabaseAvailable}</p>`;
+                
+                if (Object.keys(localOrgs).length === 0) {
+                    html += '<p>? No organizations in localStorage</p>';
+                } else {
+                    html += '<h4>Organizations:</h4>';
+                    Object.entries(localOrgs).forEach(([name, org]) => {
+                        const syncStatus = org.id ? '? Synced to Supabase' : '? Not synced to Supabase';
+                        html += `
+                            <div class="sync-item">
+                                <strong>${name}</strong> - ${syncStatus}<br>
+                                Country: ${org.country || 'N/A'}<br>
+                                State: ${org.state || 'N/A'}<br>
+                                City: ${org.city || 'N/A'}<br>
+                                ID: ${org.id || 'Not synced to Supabase'}<br>
+                                Created: ${org.createdAt || 'N/A'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (localUsers.length === 0) {
+                    html += '<p>? No users in localStorage</p>';
+                } else {
+                    html += '<h4>Users:</h4>';
+                    localUsers.forEach(user => {
+                        const syncStatus = user.organizationId ? '? Synced to Supabase' : '? Not synced to Supabase';
+                        html += `
+                            <div class="sync-item">
+                                <strong>${user.firstName} ${user.lastName}</strong> - ${syncStatus}<br>
+                                Username: ${user.username}<br>
+                                Organization: ${user.org || 'N/A'}<br>
+                                Organization ID: ${user.organizationId || 'Not synced to Supabase'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                // Add manual sync instructions if Supabase is not available
+                if (!window.supabaseClient) {
+                    html += `
+                        <div style="background: #fff3cd; border: 1px solid #ffeaa7; padding: 15px; border-radius: 8px; margin-top: 20px;">
+                            <h4>?? Supabase Not Available</h4>
+                            <p>Since Supabase client is not available, you can:</p>
+                            <ol>
+                                <li><strong>Copy the data manually:</strong> Use the "Copy to Clipboard" buttons below to copy organization and user data</li>
+                                <li><strong>Use the platform dashboard:</strong> Go to the platform dashboard and use the "Force Refresh" button</li>
+                                <li><strong>Try again later:</strong> The Supabase connection might be temporary</li>
+                            </ol>
+                        </div>
+                    `;
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">? Error checking localStorage: ${error.message}</p>`;
+            }
+        }
+        
+        async function showSelectiveSync() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Loading data for selective sync...</p>';
+            
+            try {
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let html = '<h3>?? Selective Sync - Choose what to sync:</h3>';
+                
+                // Organizations section
+                if (Object.keys(localOrgs).length > 0) {
+                    html += '<h4>?? Organizations (check the ones you want to sync):</h4>';
+                    html += '<div style="margin: 10px 0;">';
+                    html += '<label><input type="checkbox" id="select-all-orgs" onchange="toggleAllOrgs()"> <strong>Select All Organizations</strong></label>';
+                    html += '</div>';
+                    
+                    Object.entries(localOrgs).forEach(([name, org]) => {
+                        const isAlreadySynced = org.id ? '? Already synced' : '? Not synced';
+                        html += `
+                            <div class="sync-item">
+                                <label>
+                                    <input type="checkbox" class="org-checkbox" value="${name}" ${org.id ? 'disabled' : ''}>
+                                    <strong>${name}</strong> - ${isAlreadySynced}
+                                </label>
+                                <div style="margin-left: 25px; font-size: 14px; color: #666;">
+                                    Country: ${org.country || 'N/A'} | State: ${org.state || 'N/A'} | City: ${org.city || 'N/A'}<br>
+                                    Created: ${org.createdAt || 'N/A'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p>? No organizations found in localStorage</p>';
+                }
+                
+                // Users section
+                if (localUsers.length > 0) {
+                    html += '<h4>?? Users (check the ones you want to sync):</h4>';
+                    html += '<div style="margin: 10px 0;">';
+                    html += '<label><input type="checkbox" id="select-all-users" onchange="toggleAllUsers()"> <strong>Select All Users</strong></label>';
+                    html += '</div>';
+                    
+                    localUsers.forEach((user, index) => {
+                        const isAlreadySynced = user.organizationId ? '? Already synced' : '? Not synced';
+                        html += `
+                            <div class="sync-item">
+                                <label>
+                                    <input type="checkbox" class="user-checkbox" value="${index}" ${user.organizationId ? 'disabled' : ''}>
+                                    <strong>${user.firstName} ${user.lastName}</strong> (${user.username}) - ${isAlreadySynced}
+                                </label>
+                                <div style="margin-left: 25px; font-size: 14px; color: #666;">
+                                    Organization: ${user.org || 'N/A'} | Role: ${user.role || 'N/A'}
+                                </div>
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<p>? No users found in localStorage</p>';
+                }
+                
+                html += `
+                    <div style="margin-top: 20px;">
+                        <button onclick="syncSelectedItems()" class="btn-success">?? Sync Selected Items</button>
+                        <button onclick="checkLocalStorageData()" class="btn-primary">?? Back to Data View</button>
+                    </div>
+                `;
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">? Error loading data: ${error.message}</p>`;
+            }
+        }
+        
+        function toggleAllOrgs() {
+            const selectAll = document.getElementById('select-all-orgs').checked;
+            const checkboxes = document.querySelectorAll('.org-checkbox:not([disabled])');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+        }
+        
+        function toggleAllUsers() {
+            const selectAll = document.getElementById('select-all-users').checked;
+            const checkboxes = document.querySelectorAll('.user-checkbox:not([disabled])');
+            checkboxes.forEach(cb => cb.checked = selectAll);
+        }
+        
+        async function syncSelectedItems() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Syncing selected items...</p>';
+            
+            try {
+                if (!window.supabaseClient) {
+                    resultsDiv.innerHTML = '<p style="color: red;">? Supabase client not available</p>';
+                    return;
+                }
+                
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let syncResults = [];
+                
+                // Get selected organizations
+                const selectedOrgs = Array.from(document.querySelectorAll('.org-checkbox:checked')).map(cb => cb.value);
+                console.log('Selected organizations:', selectedOrgs);
+                
+                // Debug: Show what we found
+                resultsDiv.innerHTML += `<p>?? Debug: Found ${selectedOrgs.length} selected organizations: ${selectedOrgs.join(', ')}</p>`;
+                
+                if (selectedOrgs.length === 0) {
+                    resultsDiv.innerHTML += '<p style="color: orange;">?? No organizations selected for sync. Please check the boxes and try again.</p>';
+                    return;
+                }
+                
+                // Sync selected organizations
+                for (const orgName of selectedOrgs) {
+                    const org = localOrgs[orgName];
+                    if (org && !org.id) {
+                        try {
+                            const { data: orgResult, error: orgError } = await window.supabaseClient
+                                .from('organizations')
+                                .insert([{
+                                    name: org.name,
+                                    country: org.country,
+                                    state: org.state,
+                                    city: org.city,
+                                    address_line1: org.addressLine1,
+                                    address_line2: org.addressLine2,
+                                    phone: org.phone,
+                                    after_hours_phone: org.afterHoursPhone,
+                                    org_code: org.orgCode,
+                                    created_at: org.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (orgError) {
+                                syncResults.push(`? Failed to sync ${orgName}: ${orgError.message}`);
+                            } else {
+                                const orgId = orgResult[0].id;
+                                org.id = orgId;
+                                localStorage.setItem('organizations', JSON.stringify(localOrgs));
+                                syncResults.push(`? Synced ${orgName} to Supabase (ID: ${orgId})`);
+                            }
+                        } catch (error) {
+                            syncResults.push(`? Error syncing ${orgName}: ${error.message}`);
+                        }
+                    }
+                }
+                
+                // Get selected users
+                const selectedUserIndices = Array.from(document.querySelectorAll('.user-checkbox:checked')).map(cb => parseInt(cb.value));
+                console.log('Selected user indices:', selectedUserIndices);
+                
+                // Sync selected users
+                for (const userIndex of selectedUserIndices) {
+                    const user = localUsers[userIndex];
+                    if (user && !user.organizationId) {
+                        // Find organization ID for this user
+                        const userOrg = Object.values(localOrgs).find(org => org.name === user.org);
+                        if (userOrg && userOrg.id) {
+                            try {
+                                const { data: userResult, error: userError } = await window.supabaseClient
+                                    .from('users')
+                                    .insert([{
+                                        first_name: user.firstName,
+                                        last_name: user.lastName,
+                                        username: user.username,
+                                        gender: user.gender,
+                                        role: user.role,
+                                        organization_id: userOrg.id,
+                                        created_at: user.createdAt
+                                    }]);
+                                
+                                if (userError) {
+                                    syncResults.push(`? Failed to sync user ${user.username}: ${userError.message}`);
+                                } else {
+                                    user.organizationId = userOrg.id;
+                                    localStorage.setItem('users', JSON.stringify(localUsers));
+                                    syncResults.push(`? Synced user ${user.username} to Supabase`);
+                                }
+                            } catch (error) {
+                                syncResults.push(`? Error syncing user ${user.username}: ${error.message}`);
+                            }
+                        } else {
+                            syncResults.push(`?? User ${user.username} has no valid organization to sync to`);
+                        }
+                    }
+                }
+                
+                let html = '<h3>?? Sync Results:</h3>';
+                if (syncResults.length === 0) {
+                    html += '<p>?? No items were selected for sync</p>';
+                } else {
+                    syncResults.forEach(result => {
+                        const className = result.startsWith('?') ? 'sync-success' : 
+                                       result.startsWith('?') ? 'sync-error' : 'sync-item';
+                        html += `<div class="${className}">${result}</div>`;
+                    });
+                }
+                
+                html += '<div style="margin-top: 20px;"><button onclick="showSelectiveSync()" class="btn-primary">?? Sync More Items</button></div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">? Sync error: ${error.message}</p>`;
+            }
+        }
+        
+        async function syncToSupabase() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Syncing to Supabase...</p>';
+            
+            try {
+                if (!window.supabaseClient) {
+                    resultsDiv.innerHTML = '<p style="color: red;">? Supabase client not available</p>';
+                    return;
+                }
+                
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let syncResults = [];
+                
+                // Sync organizations
+                for (const [name, org] of Object.entries(localOrgs)) {
+                    if (!org.id) { // Only sync if not already synced
+                        try {
+                            const { data: orgResult, error: orgError } = await window.supabaseClient
+                                .from('organizations')
+                                .insert([{
+                                    name: org.name,
+                                    country: org.country,
+                                    state: org.state,
+                                    city: org.city,
+                                    address_line1: org.addressLine1,
+                                    address_line2: org.addressLine2,
+                                    phone: org.phone,
+                                    after_hours_phone: org.afterHoursPhone,
+                                    org_code: org.orgCode,
+                                    created_at: org.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (orgError) {
+                                syncResults.push(`? Failed to sync ${name}: ${orgError.message}`);
+                            } else {
+                                const orgId = orgResult[0].id;
+                                // Update localStorage with ID
+                                org.id = orgId;
+                                localStorage.setItem('organizations', JSON.stringify(localOrgs));
+                                syncResults.push(`? Synced ${name} to Supabase (ID: ${orgId})`);
+                            }
+                        } catch (error) {
+                            syncResults.push(`? Error syncing ${name}: ${error.message}`);
+                        }
+                    } else {
+                        syncResults.push(`?? ${name} already synced (ID: ${org.id})`);
+                    }
+                }
+                
+                // Sync users
+                for (const user of localUsers) {
+                    if (!user.organizationId) {
+                        // Find organization ID for this user
+                        const userOrg = Object.values(localOrgs).find(org => org.name === user.org);
+                        if (userOrg && userOrg.id) {
+                            try {
+                                const { data: userResult, error: userError } = await window.supabaseClient
+                                    .from('users')
+                                    .insert([{
+                                        first_name: user.firstName,
+                                        last_name: user.lastName,
+                                        username: user.username,
+                                        gender: user.gender,
+                                        role: user.role,
+                                        organization_id: userOrg.id,
+                                        created_at: user.createdAt
+                                    }]);
+                                
+                                if (userError) {
+                                    syncResults.push(`? Failed to sync user ${user.username}: ${userError.message}`);
+                                } else {
+                                    user.organizationId = userOrg.id;
+                                    localStorage.setItem('users', JSON.stringify(localUsers));
+                                    syncResults.push(`? Synced user ${user.username} to Supabase`);
+                                }
+                            } catch (error) {
+                                syncResults.push(`? Error syncing user ${user.username}: ${error.message}`);
+                            }
+                        }
+                    }
+                }
+                
+                let html = '<h3>?? Sync Results:</h3>';
+                syncResults.forEach(result => {
+                    const className = result.startsWith('?') ? 'sync-success' : 
+                                   result.startsWith('?') ? 'sync-error' : 'sync-item';
+                    html += `<div class="${className}">${result}</div>`;
+                });
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<p style="color: red;">? Sync error: ${error.message}</p>`;
+            }
+        }
+        
+        function clearLocalStorage() {
+            if (confirm('Are you sure you want to clear all localStorage data? This cannot be undone.')) {
+                localStorage.removeItem('organizations');
+                localStorage.removeItem('users');
+                localStorage.removeItem('patients');
+                localStorage.removeItem('appointments');
+                document.getElementById('results').innerHTML = '<p style="color: green;">? localStorage cleared</p>';
+            }
+        }
+        
+        // Auto-check on page load
+        document.addEventListener('DOMContentLoaded', checkLocalStorageData);
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</body>
+</html>

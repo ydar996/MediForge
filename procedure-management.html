@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Procedure Management - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .checkbox-group {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .checkbox-item {
+      display: flex;
+      align-items: center;
+      gap: 5px;
+    }
+    
+    .checkbox-item input[type="checkbox"] {
+      width: auto;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .procedure-list {
+      margin-top: 20px;
+    }
+    
+    .procedure-card {
+      background: var(--soft-white);
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+    }
+    
+    .procedure-card h3 {
+      margin-top: 0;
+      color: var(--primary-green);
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 4px 8px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: 600;
+      margin-left: 10px;
+    }
+    
+    .status-pending {
+      background: #ffc107;
+      color: var(--charcoal);
+    }
+    
+    .status-scheduled {
+      background: var(--adire-blue);
+      color: white;
+    }
+    
+    .status-completed {
+      background: var(--primary-green);
+      color: white;
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Inpatient Dashboard</button>
+    
+    <h1>🏥 Procedure Management</h1>
+    
+    <!-- Existing Procedures -->
+    <div class="form-section">
+      <h2>Existing Procedures</h2>
+      <div id="procedures-list" class="procedure-list">
+        <p>Loading procedures...</p>
+      </div>
+    </div>
+    
+    <!-- Add New Procedure -->
+    <div class="form-section">
+      <h2>Schedule New Procedure</h2>
+      <form id="procedure-form" onsubmit="handleProcedureSubmit(event)">
+        <div class="form-row">
+          <div class="form-group">
+            <label>Procedure Type *</label>
+            <select id="procedure-type" required>
+              <option value="surgery">Surgery</option>
+              <option value="procedure">Procedure</option>
+              <option value="diagnostic">Diagnostic</option>
+              <option value="therapeutic">Therapeutic</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>Procedure Name *</label>
+            <input type="text" id="procedure-name" required placeholder="e.g., Appendectomy, Colonoscopy">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Scheduled Date/Time</label>
+            <input type="datetime-local" id="procedure-scheduled">
+          </div>
+          <div class="form-group">
+            <label>Surgeon</label>
+            <input type="text" id="procedure-surgeon" placeholder="Surgeon name">
+          </div>
+        </div>
+        
+        <div class="form-row">
+          <div class="form-group">
+            <label>Anesthesiologist</label>
+            <input type="text" id="procedure-anesthesiologist" placeholder="Anesthesiologist name">
+          </div>
+          <div class="form-group">
+            <label>Estimated Duration (minutes)</label>
+            <input type="number" id="procedure-duration" min="1" placeholder="e.g., 60, 120">
+          </div>
+        </div>
+        
+        <!-- Pre-Op Checklist -->
+        <div class="form-section" style="margin-top: 20px; background: var(--soft-white);">
+          <h3>Pre-Operative Checklist</h3>
+          <div class="checkbox-group">
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-consent" value="consent">
+              <label for="preop-consent">Informed Consent Signed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-anesthesia" value="anesthesia">
+              <label for="preop-anesthesia">Anesthesia Consent Signed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-npo" value="npo">
+              <label for="preop-npo">NPO Status Confirmed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-labs" value="labs">
+              <label for="preop-labs">Pre-Op Labs Completed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-ecg" value="ecg">
+              <label for="preop-ecg">ECG Completed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-chest-xray" value="chest-xray">
+              <label for="preop-chest-xray">Chest X-Ray Completed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-blood" value="blood">
+              <label for="preop-blood">Blood Type & Crossmatch</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-allergies" value="allergies">
+              <label for="preop-allergies">Allergies Reviewed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-medications" value="medications">
+              <label for="preop-medications">Medications Reviewed</label>
+            </div>
+            <div class="checkbox-item">
+              <input type="checkbox" id="preop-site-marked" value="site-marked">
+              <label for="preop-site-marked">Surgical Site Marked</label>
+            </div>
+          </div>
+        </div>
+        
+        <!-- Pre-Op Orders -->
+        <div class="form-group" style="margin-top: 20px;">
+          <label>Pre-Operative Orders</label>
+          <textarea id="preop-orders" rows="4" placeholder="e.g., NPO after midnight, Pre-op antibiotics, etc."></textarea>
+        </div>
+        
+        <!-- Post-Op Orders -->
+        <div class="form-group">
+          <label>Post-Operative Orders</label>
+          <textarea id="postop-orders" rows="4" placeholder="e.g., Vital signs Q4H, Pain management, Activity restrictions, etc."></textarea>
+        </div>
+        
+        <!-- Intra-Op Notes -->
+        <div class="form-group">
+          <label>Intra-Operative Notes</label>
+          <textarea id="intraop-notes" rows="4" placeholder="To be filled during/after procedure"></textarea>
+        </div>
+        
+        <!-- Complications -->
+        <div class="form-group">
+          <label>Complications</label>
+          <textarea id="procedure-complications" rows="3" placeholder="Any complications during or after procedure"></textarea>
+        </div>
+        
+        <!-- Additional Notes -->
+        <div class="form-group">
+          <label>Additional Notes</label>
+          <textarea id="procedure-notes" rows="3"></textarea>
+        </div>
+        
+        <div style="display: flex; gap: 10px; margin-top: 20px;">
+          <button type="submit">💾 Save Procedure</button>
+          <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+        </div>
+      </form>
+    </div>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let legacyPatientId = null;
+    let organizationId = null;
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId = urlParams.get('patientId');
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+
+      await resolveLegacyPatientId();
+      
+      // Load existing procedures
+      await loadProcedures();
+    });
+
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && data?.patient_id) {
+            resolvedId = data.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+    
+    async function loadProcedures() {
+      try {
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('procedure_records')
+            .select('*')
+            .eq('admission_id', admissionId)
+            .eq('organization_id', organizationId)
+            .order('scheduled_date', { ascending: false });
+          
+          if (error) throw error;
+          displayProcedures(data || []);
+        } else {
+          const stored = localStorage.getItem(`procedure_records_${organizationId}`);
+          const procedures = stored ? JSON.parse(stored).filter(p => p.admission_id === admissionId) : [];
+          displayProcedures(procedures);
+        }
+      } catch (error) {
+        console.error('Error loading procedures:', error);
+        document.getElementById('procedures-list').innerHTML = 
+          '<p>Error loading procedures. Please try again.</p>';
+      }
+    }
+    
+    function displayProcedures(procedures) {
+      const container = document.getElementById('procedures-list');
+      if (procedures.length === 0) {
+        container.innerHTML = '<p>No procedures scheduled yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = procedures.map(proc => {
+        const scheduledDate = proc.scheduled_date ? new Date(proc.scheduled_date).toLocaleString() : 'Not scheduled';
+        const actualDate = proc.actual_date ? new Date(proc.actual_date).toLocaleString() : 'Not performed';
+        const statusClass = proc.recovery_status === 'completed' ? 'status-completed' : 
+                           proc.scheduled_date ? 'status-scheduled' : 'status-pending';
+        
+        return `
+          <div class="procedure-card">
+            <h3>${proc.procedure_name} <span class="status-badge ${statusClass}">${proc.recovery_status || 'pending'}</span></h3>
+            <p><strong>Type:</strong> ${proc.procedure_type}</p>
+            <p><strong>Scheduled:</strong> ${scheduledDate}</p>
+            ${proc.actual_date ? `<p><strong>Performed:</strong> ${actualDate}</p>` : ''}
+            ${proc.surgeon ? `<p><strong>Surgeon:</strong> ${proc.surgeon}</p>` : ''}
+            ${proc.anesthesiologist ? `<p><strong>Anesthesiologist:</strong> ${proc.anesthesiologist}</p>` : ''}
+            ${proc.procedure_duration_minutes ? `<p><strong>Duration:</strong> ${proc.procedure_duration_minutes} minutes</p>` : ''}
+            ${proc.intra_op_notes ? `<p><strong>Intra-Op Notes:</strong> ${proc.intra_op_notes}</p>` : ''}
+            ${proc.complications ? `<p><strong style="color: var(--coral);">Complications:</strong> ${proc.complications}</p>` : ''}
+            <button onclick="editProcedure('${proc.id}')" class="btn-secondary" style="margin-top: 10px;">Edit</button>
+          </div>
+        `;
+      }).join('');
+    }
+    
+    async function handleProcedureSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        // Collect pre-op checklist
+        const preOpChecklist = [];
+        if (document.getElementById('preop-consent').checked) preOpChecklist.push('consent');
+        if (document.getElementById('preop-anesthesia').checked) preOpChecklist.push('anesthesia');
+        if (document.getElementById('preop-npo').checked) preOpChecklist.push('npo');
+        if (document.getElementById('preop-labs').checked) preOpChecklist.push('labs');
+        if (document.getElementById('preop-ecg').checked) preOpChecklist.push('ecg');
+        if (document.getElementById('preop-chest-xray').checked) preOpChecklist.push('chest-xray');
+        if (document.getElementById('preop-blood').checked) preOpChecklist.push('blood');
+        if (document.getElementById('preop-allergies').checked) preOpChecklist.push('allergies');
+        if (document.getElementById('preop-medications').checked) preOpChecklist.push('medications');
+        if (document.getElementById('preop-site-marked').checked) preOpChecklist.push('site-marked');
+        
+        const procedureData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          procedure_type: document.getElementById('procedure-type').value,
+          procedure_name: document.getElementById('procedure-name').value.trim(),
+          scheduled_date: document.getElementById('procedure-scheduled').value ? 
+            new Date(document.getElementById('procedure-scheduled').value).toISOString() : null,
+          pre_op_checklist: preOpChecklist,
+          consents: [], // Can be expanded later
+          pre_op_orders: document.getElementById('preop-orders').value.trim() || null,
+          post_op_orders: document.getElementById('postop-orders').value.trim() || null,
+          intra_op_notes: document.getElementById('intraop-notes').value.trim() || null,
+          recovery_status: 'pending',
+          surgeon: document.getElementById('procedure-surgeon').value.trim() || null,
+          surgeon_id: user.id || null,
+          anesthesiologist: document.getElementById('procedure-anesthesiologist').value.trim() || null,
+          procedure_duration_minutes: document.getElementById('procedure-duration').value ? 
+            parseInt(document.getElementById('procedure-duration').value) : null,
+          complications: document.getElementById('procedure-complications').value.trim() || null,
+          notes: document.getElementById('procedure-notes').value.trim() || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('procedure_records')
+            .insert(procedureData)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          console.log('✅ Procedure saved to Supabase:', data);
+          alert('Procedure scheduled successfully!');
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`procedure_records_${organizationId}`) || "[]";
+          const procedures = JSON.parse(stored);
+          procedures.push({ ...procedureData, id: `proc_${Date.now()}`, created_at: new Date().toISOString() });
+          localStorage.setItem(`procedure_records_${organizationId}`, JSON.stringify(procedures));
+          console.log('✅ Procedure saved to localStorage');
+          alert('Procedure scheduled successfully!');
+        }
+        
+        // Reset form
+        document.getElementById('procedure-form').reset();
+        
+        // Reload procedures
+        await loadProcedures();
+      } catch (error) {
+        console.error('Error saving procedure:', error);
+        alert('Error saving procedure: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function editProcedure(procedureId) {
+      alert('Edit procedure functionality coming soon! For now, you can view procedures in the list above.');
+    }
+    
+    function goBack() {
+      if (admissionId) {
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } else {
+        window.location.href = 'admissions-dashboard';
+      }
+    }
+
+    function getAdmissionIdForUrl() {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+  </script>
+</body>
+</html>
+

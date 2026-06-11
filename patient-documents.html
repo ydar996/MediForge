@@ -1,0 +1,2161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+    <meta http-equiv="Pragma" content="no-cache">
+    <meta http-equiv="Expires" content="0">
+    <title>Patient Documents - MediForge</title>
+    <link rel="stylesheet" href="css/styles.css?v=193">
+    <link rel="stylesheet" href="css/logout-button.css">
+    <style>
+        .container { max-width: 1200px; margin: 0 auto; padding: 20px; }
+        .header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px; }
+        .stats { display: flex; gap: 20px; margin-bottom: 30px; }
+        .stat-card { background: #f8f9fa; padding: 15px; border-radius: 8px; text-align: center; min-width: 120px; }
+        .stat-number { font-size: 24px; font-weight: bold; color: #007bff; }
+        .stat-label { font-size: 12px; color: #666; margin-top: 5px; }
+        .folders-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(200px, 1fr)); gap: 20px; margin-bottom: 30px; }
+        .folder-card { background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); color: white; padding: 20px; border-radius: 12px; cursor: pointer; text-align: center; transition: transform 0.2s; }
+        .folder-card:hover { transform: translateY(-5px); }
+        .folder-icon { font-size: 48px; margin-bottom: 10px; }
+        .folder-name { font-size: 16px; font-weight: bold; margin-bottom: 5px; }
+        .folder-count { font-size: 12px; opacity: 0.8; }
+        .btn { background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; text-decoration: none; display: inline-block; }
+        .btn:hover { background: #0056b3; }
+        .btn-secondary { background: #6c757d; }
+        .btn-secondary:hover { background: #545b62; }
+        .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0,0,0,0.5); }
+        .modal-content { background-color: #fefefe; margin: 5% auto; padding: 20px; border-radius: 8px; width: 90%; max-width: 800px; max-height: 80vh; overflow-y: auto; }
+        .close { color: #aaa; float: right; font-size: 28px; font-weight: bold; cursor: pointer; }
+        .close:hover { color: black; }
+        .documents-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(150px, 1fr)); gap: 15px; margin-top: 20px; }
+        .document-card { background: white; border: 1px solid #ddd; border-radius: 8px; padding: 15px; text-align: center; }
+        .document-icon { font-size: 32px; margin-bottom: 10px; }
+        .document-name { font-size: 12px; margin-bottom: 5px; word-break: break-word; }
+        .document-date { font-size: 10px; color: #666; margin-bottom: 5px; }
+        .document-size { font-size: 10px; color: #666; margin-bottom: 10px; }
+        .document-actions { display: flex; gap: 5px; justify-content: center; flex-wrap: wrap; }
+        .btn-small { padding: 5px 10px; font-size: 12px; border: none; border-radius: 4px; cursor: pointer; transition: all 0.2s; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-success:hover { background: #1e7e34; transform: translateY(-1px); }
+        .btn-info { background: #17a2b8; color: white; }
+        .btn-info:hover { background: #138496; transform: translateY(-1px); }
+        .btn-danger { background: #dc3545; color: white; }
+        .btn-danger:hover { background: #c82333; transform: translateY(-1px); }
+    </style>
+
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📁 Patient Documents</h1>
+            <div>
+                <a href="#" onclick="backToPatientDetails()" class="btn btn-secondary">← Back to Patient</a>
+                <a href="dashboard" class="btn">← Dashboard</a>
+            </div>
+        </div>
+
+        <div id="patient-info" style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #dee2e6;">
+            <p style="margin: 5px 0; font-weight: bold; color: #495057;">Loading patient information...</p>
+        </div>
+
+        <div class="stats">
+            <div class="stat-card">
+                <div class="stat-number" id="total-documents">0</div>
+                <div class="stat-label">Total Documents</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-folders">0</div>
+                <div class="stat-label">Folders</div>
+            </div>
+            <div class="stat-card">
+                <div class="stat-number" id="total-size">0 MB</div>
+                <div class="stat-label">Total Size</div>
+            </div>
+        </div>
+
+        <h3>📂 Document Folders</h3>
+        <div class="folders-grid" id="folders-container">
+            <!-- Folders will be populated here -->
+        </div>
+
+        <button onclick="showAddFolderModal()" class="btn">➕ Add New Folder</button>
+    </div>
+
+    <!-- Documents Modal -->
+    <div id="documents-modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeDocumentsModal()">&times;</span>
+            <h2 id="documents-modal-title">Documents</h2>
+            <div id="documents-modal-body">
+                <!-- Documents will be populated here -->
+            </div>
+        </div>
+    </div>
+
+    <!-- Add Folder Modal -->
+    <div id="modal" class="modal">
+        <div class="modal-content">
+            <span class="close" onclick="closeModal()">&times;</span>
+            <h2>Add New Folder</h2>
+            <form id="add-folder-form">
+                <div style="margin-bottom: 15px;">
+                    <label for="folder-name">Folder Name:</label>
+                    <input type="text" id="folder-name" required style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px;">
+                </div>
+                <div style="margin-bottom: 15px;">
+                    <label for="folder-description">Description:</label>
+                    <textarea id="folder-description" style="width: 100%; padding: 8px; margin-top: 5px; border: 1px solid #ddd; border-radius: 4px; height: 60px;"></textarea>
+                </div>
+                <button type="submit" class="btn">Create Folder</button>
+            </form>
+        </div>
+    </div>
+
+    <script>
+        var currentPatient = null;
+        var currentPatientId = null;
+
+        async function getPatientsData() {
+            // Supabase-first: Try Supabase first, fallback to localStorage
+            let patients = [];
+            
+            try {
+                if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                    patients = await window.loadPatientsWithSupabasePriority();
+                } else if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+                    const user = JSON.parse(localStorage.getItem('user') || '{}');
+                    const orgId = user.organization_id || user.organizationId;
+                    
+                    if (orgId) {
+                        const { data: supabasePatients, error } = await window.supabaseClient
+                            .from('patients')
+                            .select('*')
+                            .eq('organization_id', orgId);
+                        
+                        if (!error && supabasePatients) {
+                            // Convert snake_case to camelCase for compatibility
+                            // IMPORTANT: Map unstructured_records to unstructuredRecords
+                            patients = supabasePatients.map(p => {
+                                let unstructuredRecords = [];
+                                try {
+                                    if (p.unstructured_records) {
+                                        if (typeof p.unstructured_records === 'string') {
+                                            unstructuredRecords = JSON.parse(p.unstructured_records);
+                                        } else if (Array.isArray(p.unstructured_records)) {
+                                            unstructuredRecords = p.unstructured_records;
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn('⚠️ Error parsing unstructured_records for patient', p.patient_id, ':', e);
+                                    unstructuredRecords = [];
+                                }
+                                
+                                return {
+                                    id: p.patient_id || p.id, // Use legacy ID as primary
+                                    patient_id: p.patient_id,
+                                    firstName: p.first_name,
+                                    lastName: p.last_name,
+                                    first_name: p.first_name,
+                                    last_name: p.last_name,
+                                    unstructuredRecords: unstructuredRecords, // Map to camelCase
+                                    ...p // Spread remaining fields
+                                };
+                            });
+                            
+                            // Cache to localStorage
+                            const dataKey = typeof getDataKey !== 'undefined' ? getDataKey("patients") : "patients";
+                            localStorage.setItem(dataKey, JSON.stringify(patients));
+                        }
+                    }
+                }
+            } catch (error) {
+                console.warn('⚠️ Supabase load failed, falling back to localStorage:', error);
+            }
+            
+            // Fallback to localStorage if Supabase didn't provide data
+            // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
+            if (patients.length === 0) {
+                try {
+                    if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                        patients = await window.loadPatientsWithSupabasePriority();
+                    } else {
+                        if (typeof getDataKey === 'undefined') {
+                            patients = JSON.parse(localStorage.getItem("patients") || "[]");
+                        } else {
+                            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                        }
+                    }
+                } catch (error) {
+                    if (typeof getDataKey === 'undefined') {
+                        patients = JSON.parse(localStorage.getItem("patients") || "[]");
+                    } else {
+                        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                    }
+                }
+            }
+            
+            return patients;
+        }
+
+        function savePatientsData(patients) {
+            if (typeof getDataKey === 'undefined') {
+                localStorage.setItem("patients", JSON.stringify(patients));
+            } else {
+                localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            }
+        }
+
+        async function loadPatientDocuments() {
+            var urlParams = new URLSearchParams(window.location.search);
+            currentPatientId = urlParams.get("patientId");
+            
+            if (!currentPatientId) {
+                alert("Patient ID not found in URL");
+                return;
+            }
+
+            // Use resolvePatientByIdentifier for proper patient ID resolution (handles both UUID and legacy ID)
+            if (typeof window.resolvePatientByIdentifier === 'function') {
+                try {
+                    currentPatient = await window.resolvePatientByIdentifier(currentPatientId);
+                } catch (error) {
+                    console.error('Error resolving patient by identifier:', error);
+                    currentPatient = null;
+                }
+            } else {
+                // Fallback: Load patients and find by ID
+                try {
+                    var patients = await getPatientsData();
+                    // Ensure patients is an array
+                    if (!Array.isArray(patients)) {
+                        console.error('getPatientsData() did not return an array:', typeof patients);
+                        patients = [];
+                    }
+                    currentPatient = patients.find(function(p) { 
+                        return p.id === currentPatientId || 
+                               p.patient_id === currentPatientId || 
+                               p.patientNumber === currentPatientId ||
+                               p._supabaseUuid === currentPatientId;
+                    });
+                } catch (error) {
+                    console.error('Error loading patients data:', error);
+                    currentPatient = null;
+                }
+            }
+            
+            if (!currentPatient) {
+                alert("Patient not found");
+                return;
+            }
+
+            // Log patient data for debugging
+            console.log('📋 [Patient Documents] Loaded patient:', currentPatient);
+            console.log('📋 [Patient Documents] Patient ID:', currentPatient.id);
+            console.log('📋 [Patient Documents] Patient unstructuredRecords:', currentPatient.unstructuredRecords);
+            console.log('📋 [Patient Documents] Patient unstructuredRecords type:', typeof currentPatient.unstructuredRecords);
+            console.log('📋 [Patient Documents] Patient unstructuredRecords is array:', Array.isArray(currentPatient.unstructuredRecords));
+
+            // Check localStorage for records that might not be in Supabase yet
+            try {
+                const allPatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                const localPatient = allPatients.find(p => 
+                    p.id === currentPatientId || 
+                    p.patient_id === currentPatientId || 
+                    p.patientNumber === currentPatientId ||
+                    p._supabaseUuid === currentPatientId
+                );
+                if (localPatient && localPatient.unstructuredRecords && Array.isArray(localPatient.unstructuredRecords) && localPatient.unstructuredRecords.length > 0) {
+                    console.warn('⚠️ [SYNC NEEDED] Found', localPatient.unstructuredRecords.length, 'unstructured record(s) in localStorage that are NOT in Supabase!');
+                    console.warn('⚠️ [SYNC NEEDED] Please go to: https://mediforge.netlify.app/sync-unstructured-records.html to sync these records');
+                    console.warn('⚠️ [SYNC NEEDED] Or add a new record via add-unstructured-records page to test');
+                    
+                    // Show user-friendly alert
+                    const syncAlert = document.createElement('div');
+                    syncAlert.style.cssText = `
+                        position: fixed; top: 20px; right: 20px; background: #ffc107; color: #333;
+                        padding: 15px 20px; border-radius: 8px; box-shadow: 0 4px 12px rgba(0,0,0,0.3);
+                        z-index: 10000; max-width: 400px; font-family: Arial, sans-serif; font-size: 14px;
+                    `;
+                    syncAlert.innerHTML = `
+                        <strong>⚠️ Sync Required</strong><br>
+                        Found ${localPatient.unstructuredRecords.length} record(s) in localStorage that need to be synced to Supabase.<br>
+                        <a href="sync-unstructured-records.html" style="color: #0066cc; font-weight: bold;">Click here to sync →</a>
+                        <button onclick="this.parentElement.remove()" style="float: right; background: #333; color: white; border: none; padding: 5px 10px; border-radius: 4px; cursor: pointer;">✕</button>
+                    `;
+                    document.body.appendChild(syncAlert);
+                }
+            } catch (e) {
+                console.warn('Could not check localStorage for records:', e);
+            }
+
+            // Display patient information
+            displayPatientInfo();
+
+            await displayFolders();
+            await updateStats();
+        }
+
+        function displayPatientInfo() {
+            var patientInfoDiv = document.getElementById("patient-info");
+            if (patientInfoDiv && currentPatient) {
+                patientInfoDiv.innerHTML = `
+                    <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(currentPatient, currentPatientId) : (currentPatient.patient_id || currentPatient.patientNumber || currentPatient.id)}</p>
+                    <p><strong>Full Name:</strong> ${currentPatient.firstName} ${currentPatient.middleName ? currentPatient.middleName : ''} ${currentPatient.lastName}</p>
+                    <p><strong>Date of Birth:</strong> ${currentPatient.dob} | <strong>Gender:</strong> ${currentPatient.gender}</p>
+                    <p><strong>Phone:</strong> ${currentPatient.phone || 'N/A'} | <strong>Email:</strong> ${currentPatient.email || 'N/A'}</p>
+                `;
+            }
+        }
+
+        async function createSystemFolders() {
+            // Ensure we're using the latest patient data - Supabase-first
+            let patients = [];
+            try {
+                if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                    patients = await window.loadPatientsWithSupabasePriority();
+                } else {
+                    patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                }
+            } catch (error) {
+                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            var freshPatient = patients.find(p => p.id === currentPatientId);
+            if (freshPatient) {
+                currentPatient = freshPatient;
+            }
+            
+            var folders = [];
+            var supabaseOrdersForPatient = [];
+            try {
+                if (typeof window.getPatientResultsForStaff === 'function') {
+                    var pid = currentPatient._supabaseUuid || currentPatient.id || currentPatient.patient_id;
+                    if (pid) supabaseOrdersForPatient = await window.getPatientResultsForStaff(pid) || [];
+                }
+            } catch (e) { console.warn('Could not load Supabase orders:', e); }
+            
+            // Insurance folder - ALWAYS CREATE
+            var insuranceDocs = [];
+            if (currentPatient.insuranceCardFront) {
+                insuranceDocs.push({
+                    name: "Insurance Card Front",
+                    data: currentPatient.insuranceCardFront,
+                    type: "image",
+                    date: formatDate(currentPatient.insuranceCardFrontDate || new Date().toISOString()),
+                    size: Math.ceil(currentPatient.insuranceCardFront.length * 0.75)
+                });
+            }
+            if (currentPatient.insuranceCardBack) {
+                insuranceDocs.push({
+                    name: "Insurance Card Back", 
+                    data: currentPatient.insuranceCardBack,
+                    type: "image",
+                    date: formatDate(currentPatient.insuranceCardBackDate || new Date().toISOString()),
+                    size: Math.ceil(currentPatient.insuranceCardBack.length * 0.75)
+                });
+            }
+            
+            folders.push({
+                id: "insurance",
+                name: "Insurance",
+                icon: "🏥",
+                color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                documents: insuranceDocs,
+                count: insuranceDocs.length,
+                isSystem: true
+            });
+
+            // Lab Results folder - ALWAYS CREATE (includes Supabase order attachments)
+            var labDocs = [];
+            if (currentPatient.labResults && currentPatient.labResults.length > 0) {
+                for (var i = 0; i < currentPatient.labResults.length; i++) {
+                    var result = currentPatient.labResults[i];
+                    if (result.attachment) {
+                        labDocs.push({
+                            name: result.testName + " Results",
+                            data: result.attachment,
+                            type: result.attachmentType || "image",
+                            date: formatDate(result.uploadedAt || result.date || new Date().toISOString()),
+                            size: Math.ceil(result.attachment.length * 0.75)
+                        });
+                    }
+                }
+            }
+            // Add attachments and structured lab results from Supabase lab orders
+            var meta = ['status','entered_at','entered_by','auditTrail','completed_at','completed_by','_attachments'];
+            function collectLabRows(obj, rows, prefix) {
+                if (!obj || typeof obj !== 'object') return;
+                for (var k in obj) {
+                    if (!k || k.charAt(0) === '_' || meta.indexOf(k) >= 0) continue;
+                    var r = obj[k];
+                    if (!r) continue;
+                    if (typeof r === 'object' && r !== null) {
+                        if (r.value !== undefined && r.value !== null && r.value !== '') {
+                            rows.push({ name: prefix || k, value: r.value, unit: r.unit || '', ref: r.referenceRange || r.reference || r.normalRange || '' });
+                        } else if (r.results && typeof r.results === 'object') {
+                            collectLabRows(r.results, rows, k);
+                        } else {
+                            collectLabRows(r, rows, k);
+                        }
+                    }
+                }
+            }
+            var getSupabase = async function() {
+                if (typeof window.getLabSupabaseClient === 'function') return await window.getLabSupabaseClient();
+                return window.supabaseClient || null;
+            };
+            for (var oi = 0; oi < supabaseOrdersForPatient.length; oi++) {
+                var order = supabaseOrdersForPatient[oi];
+                if (order.type !== 'lab') continue;
+                var results = order.results;
+                if (!results) continue;
+                var orderLabel = order.serial_number ? " (#" + (typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serial_number, order.id, order) : order.serial_number) + ")" : "";
+                var orderDate = formatDate(order.visit_date || order.created_at || new Date().toISOString());
+                var orderDateLong = order.created_at ? new Date(order.created_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' }) : orderDate;
+                // File attachments (array or _attachments)
+                var atts = Array.isArray(results) ? results : (results._attachments) || [];
+                for (var ai = 0; ai < atts.length; ai++) {
+                    var att = atts[ai];
+                    if (att && (att.data || att.attachment)) {
+                        labDocs.push({
+                            name: (att.name || "Lab Result") + orderLabel,
+                            data: att.data || att.attachment,
+                            type: att.type || "application/pdf",
+                            date: formatDate(att.uploadedAt || order.created_at || new Date().toISOString()),
+                            size: att.size || 0
+                        });
+                    }
+                }
+                // Structured lab results - EXACT match to doctor-lab-result-details (same logic, structure, CSS)
+                if (typeof results === 'object' && !Array.isArray(results) && results !== null && !results._attachments) {
+                    function getResultDisplayValueLab(val) {
+                        if (val === null || val === undefined || val === '') return '';
+                        if (typeof val === 'object' && !Array.isArray(val)) {
+                            if (val.value !== undefined && val.value !== null && val.value !== '') {
+                                if (typeof val.value === 'object' && val.value !== null) return '';
+                                var s = String(val.value);
+                                if (val.unit && val.unit !== '') s += ' ' + val.unit;
+                                if (val.normalRange && val.normalRange !== '') s += ' (Range: ' + val.normalRange + ')';
+                                if (val.reactionStrength && val.reactionStrength !== '') s += ' [' + val.reactionStrength + ']';
+                                return s;
+                            }
+                            if (val.comments !== undefined) return String(val.comments);
+                            return '';
+                        }
+                        return String(val);
+                    }
+                    var metadataFieldsLab = ['status','entered_at','entered_by','auditTrail','AuditTrail','completed_at','completed_by','started_at','started_by','file_name','file_data','file_type','file_size','notes','doctor_note','doctor_note_by','doctor_note_updated_at','reviewed_at','reviewed_by'];
+                    var displayableTests = [];
+                    for (var tk in results) {
+                        if (!tk || tk.charAt(0) === '_' || meta.indexOf(tk) >= 0) continue;
+                        var tr = results[tk];
+                        if (!tr || typeof tr !== 'object') continue;
+                        if (tr.status === 'completed' || (tr.value !== undefined && tr.value !== null && tr.value !== '')) displayableTests.push(tk);
+                        else {
+                            var rfCheck = Object.entries(tr).filter(function(entry) {
+                                if (metadataFieldsLab.indexOf(entry[0]) >= 0) return false;
+                                return getResultDisplayValueLab(entry[1]) !== '';
+                            });
+                            if (rfCheck.length > 0) displayableTests.push(tk);
+                        }
+                    }
+                    if (displayableTests.length > 0) {
+                        // Sort tests by category (per Excel), then by name
+                        var labCategoryOrder = ['Haematology', 'Medical Microbiology / Serology', 'Clinical Chemistry'];
+                        function getLabCat(n) {
+                            var lab = window.LAB_TESTS || [];
+                            var t = lab.find(function(x) { return x.name === n; });
+                            return t ? t.category : null;
+                        }
+                        function getCatIdx(n) {
+                            var cat = getLabCat(n);
+                            var idx = labCategoryOrder.indexOf(cat);
+                            return idx >= 0 ? idx : 999;
+                        }
+                        displayableTests.sort(function(a, b) {
+                            var ca = getCatIdx(a), cb = getCatIdx(b);
+                            if (ca !== cb) return ca - cb;
+                            return (a || '').localeCompare(b || '');
+                        });
+                        var patientName = (currentPatient.firstName || currentPatient.first_name || '') + ' ' + (currentPatient.lastName || currentPatient.last_name || '');
+                        patientName = patientName.trim() || 'Unknown';
+                        var displayPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(currentPatient)) || currentPatient.patient_id || currentPatient.patientNumber || (currentPatient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentPatient.id) ? currentPatient.id : null) || 'N/A';
+                        var displayPatientIdUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(currentPatient, currentPatientId) : displayPatientId;
+                        var patientDob = currentPatient.date_of_birth || currentPatient.dateOfBirth || currentPatient.dob || 'N/A';
+                        var patientGender = currentPatient.gender || 'N/A';
+                        var orderedByName = 'Unknown';
+                        var orgName = 'Medical Clinic';
+                        var orgAddress = '';
+                        var orgPhone = '';
+                        var completedDateLab = 'N/A';
+                        for (var ck in results) {
+                            if (results[ck] && results[ck].completed_at) {
+                                completedDateLab = new Date(results[ck].completed_at).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric', hour: '2-digit', minute: '2-digit' });
+                                break;
+                            }
+                        }
+                        try {
+                            var supabase = await getSupabase();
+                            if (supabase && order.created_by) {
+                                var ud = await supabase.from('users').select('first_name, last_name, username, role').eq('username', order.created_by).maybeSingle();
+                                if (ud && ud.data) {
+                                    var fn = ud.data.first_name || '', ln = ud.data.last_name || '';
+                                    var fullName = (fn && ln) ? fn + ' ' + ln : (fn || ln || ud.data.username || '');
+                                    var role = (ud.data.role || '').toLowerCase();
+                                    var title = role.includes('lab') || role.includes('scientist') ? 'Medical Lab Scientist' : (role.includes('doctor') || role.includes('physician') ? 'Dr.' : (role.includes('nurse') ? 'Nurse' : 'Dr.'));
+                                    orderedByName = (title ? title + ' ' : '') + fullName;
+                                } else { orderedByName = 'Dr. ' + (order.created_by || ''); }
+                            }
+                            if (supabase && order.organization_id) {
+                                var orgData = await supabase.from('organizations').select('name, address_line1, address_line2, city, state, country, phone').eq('id', order.organization_id).maybeSingle();
+                                if (orgData && orgData.data) {
+                                    orgName = orgData.data.name || orgName;
+                                    orgAddress = [orgData.data.address_line1, orgData.data.address_line2, orgData.data.city, orgData.data.state, orgData.data.country].filter(Boolean).join(', ');
+                                    orgPhone = orgData.data.phone || '';
+                                }
+                            }
+                        } catch (e) { console.warn('Could not fetch provider/org for lab doc:', e); }
+                        var labStyle = 'body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;padding:20px;max-width:900px;margin:0 auto;background:#f5f7fa;}';
+                        labStyle += '.patient-info{background:linear-gradient(135deg,#008753 0%,#006b42 100%);color:white;padding:20px;border-radius:8px;margin-bottom:30px;}';
+                        labStyle += '.patient-info h2{margin:0 0 10px 0;font-size:24px;} .patient-info p{margin:5px 0;opacity:.9;}';
+                        labStyle += '.order-info{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:30px;border-left:4px solid #008753;}';
+                        labStyle += '.order-info h3{margin:0 0 15px 0;color:#008753;font-size:20px;} .order-info-grid{display:grid;grid-template-columns:repeat(auto-fit,minmax(200px,1fr));gap:15px;}';
+                        labStyle += '.order-info-item{display:flex;flex-direction:column;} .order-info-label{font-size:12px;color:#666;text-transform:uppercase;letter-spacing:.5px;margin-bottom:5px;} .order-info-value{font-size:16px;color:#333;font-weight:600;}';
+                        labStyle += '.results-container{background:white;border-radius:12px;padding:0;box-shadow:0 4px 12px rgba(0,0,0,0.1);margin-bottom:20px;}';
+                        labStyle += '.test-header{background:linear-gradient(135deg,#008753 0%,#006b42 100%);color:white;padding:20px;border-radius:8px 8px 0 0;margin-bottom:0;} .test-header h3{margin:0;font-size:22px;}';
+                        labStyle += '.test-content{background:white;border:2px solid #008753;border-top:none;border-radius:0 0 8px 8px;padding:30px;}';
+                        labStyle += '.result-item{padding:15px;margin:10px 0;background:#f8f9fa;border-left:4px solid #008753;border-radius:4px;display:grid;grid-template-columns:200px 1fr;gap:20px;align-items:center;}';
+                        labStyle += '.result-label{font-weight:600;color:#333;font-size:14px;text-transform:capitalize;} .result-value{font-size:18px;color:#008753;font-weight:500;}';
+                        labStyle += '.notes-section{margin-top:30px;padding:20px;background:#f8f9fa;border-radius:8px;border-left:4px solid #008753;} .notes-section h4{margin:0 0 10px 0;color:#008753;}';
+                        labStyle += '.file-section{margin-top:20px;padding:20px;background:#f8f9fa;border-radius:8px;border-left:4px solid #008753;} .file-section h4{margin:0 0 10px 0;color:#008753;}';
+                        labStyle += '.status-badge{display:inline-block;padding:6px 14px;border-radius:20px;font-size:12px;font-weight:600;margin-left:10px;}';
+                        labStyle += '.status-completed{background:#28a745;color:white;} .status-reviewed{background:#17a2b8;color:white;} .status-unreviewed{background:#ffc107;color:#333;}';
+                        var html = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lab Results</title><style>' + labStyle + '</style></head><body>';
+                        html += '<div class="patient-info"><h2>' + (patientName || '').replace(/</g,'&lt;') + '</h2>';
+                        html += '<p>Patient ID: ' + (displayPatientIdUi || '').replace(/</g,'&lt;') + ' | DOB: ' + (patientDob || '').replace(/</g,'&lt;') + ' | Gender: ' + (patientGender || '').replace(/</g,'&lt;') + '</p></div>';
+                        html += '<div class="order-info"><h3>Order Information</h3><div class="order-info-grid">';
+                        html += '<div class="order-info-item"><div class="order-info-label">Order Number</div><div class="order-info-value">' + (typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serial_number || order.id.substring(0, 8), order.id, order) : (order.serial_number || order.id.substring(0, 8))).replace(/</g,'&lt;') + '</div></div>';
+                        html += '<div class="order-info-item"><div class="order-info-label">Ordered By</div><div class="order-info-value">' + (orderedByName || '').replace(/</g,'&lt;') + '</div></div>';
+                        html += '<div class="order-info-item"><div class="order-info-label">Order Date</div><div class="order-info-value">' + (orderDateLong || '').replace(/</g,'&lt;') + '</div></div>';
+                        html += '<div class="order-info-item"><div class="order-info-label">Completed Date</div><div class="order-info-value">' + (completedDateLab || '').replace(/</g,'&lt;') + '</div></div>';
+                        html += '</div></div>';
+                        var lastCat = null;
+                        for (var ti = 0; ti < displayableTests.length; ti++) {
+                            var testNameLab = displayableTests[ti];
+                            var testCat = getLabCat(testNameLab);
+                            if (displayableTests.length > 1 && testCat && testCat !== lastCat) {
+                                lastCat = testCat;
+                                html += '<div class="results-container" style="margin-top:20px;"><div class="test-header" style="background:linear-gradient(135deg,#004d2e 0%,#003320 100%);"><h3 style="margin:0;font-size:16px;text-transform:uppercase;letter-spacing:0.5px;">' + (testCat || '').replace(/</g,'&lt;') + '</h3></div></div>';
+                            }
+                            var testResultsLab = results[testNameLab];
+                            var resultFieldsLab = Object.entries(testResultsLab).filter(function(entry) {
+                                if (metadataFieldsLab.indexOf(entry[0]) >= 0) return false;
+                                var dv = getResultDisplayValueLab(entry[1]);
+                                return dv !== '' && dv !== 'Not Tested';
+                            });
+                            if (resultFieldsLab.length > 0) {
+                                var isReviewedLab = testResultsLab.reviewed_at && testResultsLab.reviewed_by;
+                                var reviewedBadge = isReviewedLab ? '<span class="status-badge status-reviewed">&#10003; Reviewed</span>' : '<span class="status-badge status-unreviewed">&#9888; Not Reviewed</span>';
+                                html += '<div class="results-container"><div class="test-header"><h3>' + (testNameLab || '').replace(/</g,'&lt;') + ' <span class="status-badge status-completed">&#10003; Completed</span> ' + reviewedBadge + '</h3></div><div class="test-content">';
+                                for (var fi = 0; fi < resultFieldsLab.length; fi++) {
+                                    var kv = resultFieldsLab[fi];
+                                    var keyLab = kv[0];
+                                    var valObj = kv[1];
+                                    var displayVal = getResultDisplayValueLab(valObj);
+                                    if (!displayVal) continue;
+                                    var label = (valObj && typeof valObj === 'object' && valObj.label) ? valObj.label : (keyLab || '').replace(/_/g, ' ').replace(/\b\w/g, function(l) { return l.toUpperCase(); });
+                                    html += '<div class="result-item"><div class="result-label">' + (label || '').replace(/</g,'&lt;') + '</div><div class="result-value">' + (displayVal || '').replace(/</g,'&lt;') + '</div></div>';
+                                }
+                                if (testResultsLab.notes) {
+                                    html += '<div class="notes-section"><h4>Additional Notes</h4><p>' + (testResultsLab.notes || '').replace(/</g,'&lt;') + '</p></div>';
+                                }
+                                if (testResultsLab.file_name) {
+                                    var fileUrl = testResultsLab.file_data ? 'data:' + (testResultsLab.file_type || 'application/pdf') + ';base64,' + testResultsLab.file_data : '';
+                                    html += '<div class="file-section"><h4>Result File</h4><p>' + (testResultsLab.file_name || '').replace(/</g,'&lt;') + '</p>' + (fileUrl ? '<a href="' + fileUrl + '" target="_blank" style="display:inline-block;padding:10px 20px;background:#008753;color:white;text-decoration:none;border-radius:6px;margin-top:10px;">📄 View File</a>' : '') + '</div>';
+                                }
+                                html += '</div></div>';
+                            }
+                        }
+                        html += '<div class="results-container" style="background:#f8f9fa;padding:20px;"><div style="text-align:center;color:#666;"><p style="margin:5px 0;font-weight:600;">' + (orgName || '').replace(/</g,'&lt;') + '</p>';
+                        if (orgAddress) html += '<p style="margin:5px 0;">' + (orgAddress || '').replace(/</g,'&lt;') + '</p>';
+                        if (orgPhone) html += '<p style="margin:5px 0;">Phone: ' + (orgPhone || '').replace(/</g,'&lt;') + '</p>';
+                        html += '</div></div></body></html>';
+                        labDocs.push({
+                            name: "Lab Results" + orderLabel,
+                            data: "data:text/html;base64," + btoa(unescape(encodeURIComponent(html))),
+                            type: "text/html",
+                            date: orderDate,
+                            size: "N/A"
+                        });
+                    }
+                }
+            }
+            
+            folders.push({
+                id: "lab-results",
+                name: "Lab Results",
+                icon: "🧪",
+                color: "linear-gradient(135deg, #f093fb 0%, #f5576c 100%)",
+                documents: labDocs,
+                count: labDocs.length,
+                isSystem: true
+            });
+
+            // Imaging Results folder - ALWAYS CREATE (includes Supabase order attachments)
+            var imagingDocs = [];
+            if (currentPatient.imagingResults && currentPatient.imagingResults.length > 0) {
+                for (var i = 0; i < currentPatient.imagingResults.length; i++) {
+                    var result = currentPatient.imagingResults[i];
+                    if (result.attachment) {
+                        imagingDocs.push({
+                            name: result.studyType + " Results",
+                            data: result.attachment,
+                            type: result.attachmentType || "image",
+                            date: formatDate(result.uploadedAt || result.date || new Date().toISOString()),
+                            size: Math.ceil(result.attachment.length * 0.75)
+                        });
+                    }
+                }
+            }
+            // Add attachments from Supabase imaging orders
+            supabaseOrdersForPatient.forEach(function(order) {
+                if (order.type !== 'imaging') return;
+                var attsImg = Array.isArray(order.results) ? order.results : (order.results && order.results._attachments) || [];
+                attsImg.forEach(function(att) {
+                    if (att && (att.data || att.attachment)) {
+                        imagingDocs.push({
+                            name: (att.name || "Imaging Result") + (order.serial_number ? " (#" + (typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serial_number, order.id, order) : order.serial_number) + ")" : ""),
+                            data: att.data || att.attachment,
+                            type: att.type || "application/pdf",
+                            date: formatDate(att.uploadedAt || order.created_at || new Date().toISOString()),
+                            size: att.size || 0
+                        });
+                    }
+                });
+            });
+            
+            folders.push({
+                id: "imaging-results",
+                name: "Imaging Results",
+                icon: "📷",
+                color: "linear-gradient(135deg, #4facfe 0%, #00f2fe 100%)",
+                documents: imagingDocs,
+                count: imagingDocs.length,
+                isSystem: true
+            });
+
+            // Immunization Records folder - ALWAYS CREATE
+            var immunizationDocs = [];
+            if (currentPatient.immunizations && currentPatient.immunizations.length > 0) {
+                for (var i = 0; i < currentPatient.immunizations.length; i++) {
+                    var immunization = currentPatient.immunizations[i];
+                    if (immunization.proofAttachment) {
+                        immunizationDocs.push({
+                            name: immunization.vaccine + " Proof",
+                            data: immunization.proofAttachment,
+                            type: immunization.proofAttachmentType || "image",
+                            date: formatDate(immunization.proofUploadedAt || immunization.date || new Date().toISOString()),
+                            size: Math.ceil(immunization.proofAttachment.length * 0.75)
+                        });
+                    }
+                }
+            }
+            
+            folders.push({
+                id: "immunizations",
+                name: "Immunization Records",
+                icon: "💉",
+                color: "linear-gradient(135deg, #43e97b 0%, #38f9d7 100%)",
+                documents: immunizationDocs,
+                count: immunizationDocs.length,
+                isSystem: true
+            });
+
+            // Preventive Care Proof folder - ALWAYS CREATE
+            var preventiveDocs = [];
+            if (currentPatient.preventiveGaps && currentPatient.preventiveGaps.length > 0) {
+                for (var i = 0; i < currentPatient.preventiveGaps.length; i++) {
+                    var gap = currentPatient.preventiveGaps[i];
+                    if (gap.proofAttachments && gap.proofAttachments.length > 0) {
+                        for (var j = 0; j < gap.proofAttachments.length; j++) {
+                            var attachment = gap.proofAttachments[j];
+                            preventiveDocs.push({
+                                name: gap.intervention + " Proof",
+                                data: attachment.data,
+                                type: attachment.fileType || "image",
+                                date: formatDate(attachment.uploadedDate || gap.markedDate || new Date().toISOString()),
+                                size: Math.ceil(attachment.data.length * 0.75)
+                            });
+                        }
+                    }
+                }
+            }
+            
+            folders.push({
+                id: "preventive-care",
+                name: "Preventive Care Proof",
+                icon: "🛡️",
+                color: "linear-gradient(135deg, #fa709a 0%, #fee140 100%)",
+                documents: preventiveDocs,
+                count: preventiveDocs.length,
+                isSystem: true
+            });
+
+            // Prescriptions folder - ALWAYS CREATE
+            var prescriptionDocs = [];
+            if (currentPatient.prescriptions && currentPatient.prescriptions.length > 0) {
+                for (var i = 0; i < currentPatient.prescriptions.length; i++) {
+                    var prescription = currentPatient.prescriptions[i];
+                    var rxLabel =
+                      (typeof window.getPrescriptionDisplayLabel === 'function')
+                        ? window.getPrescriptionDisplayLabel(prescription)
+                        : ((prescription.prescription_number || prescription.prescriptionNumber || prescription.id) + '');
+                    prescriptionDocs.push({
+                        name: "Prescription " + rxLabel,
+                        data: "data:text/plain;base64," + btoa("Prescription: " + rxLabel + "\nDate: " + (prescription.date || "Unknown") + "\nPatient: " + (prescription.patient ? prescription.patient.name : "Unknown") + "\nDiagnosis: " + (prescription.diagnosis || "Not specified")),
+                        type: "text",
+                        date: formatDate(prescription.date || new Date().toISOString()),
+                        size: "N/A"
+                    });
+                }
+            }
+            
+            folders.push({
+                id: "prescriptions",
+                name: "Prescriptions",
+                icon: "💊",
+                color: "linear-gradient(135deg, #a8edea 0%, #fed6e3 100%)",
+                documents: prescriptionDocs,
+                count: prescriptionDocs.length,
+                isSystem: true
+            });
+
+            // Generated Orders folder - ALWAYS CREATE
+            var orderDocs = [];
+            if (currentPatient.visits && currentPatient.visits.length > 0) {
+                for (var i = 0; i < currentPatient.visits.length; i++) {
+                    var visit = currentPatient.visits[i];
+                    if (visit.orders && visit.orders.length > 0) {
+                        for (var j = 0; j < visit.orders.length; j++) {
+                            var order = visit.orders[j];
+                            // Filter out invalid orders (no items selected and no "no items" checkbox) and deleted orders
+                            if ((order.selectedItems && order.selectedItems.length > 0 || order.noItemsChecked) && !order.deleted) {
+                                var orderContent = order.htmlContent || order.content;
+                                if (orderContent) {
+                                    var contentSize = Math.ceil(btoa(orderContent).length * 0.75);
+                                    orderDocs.push({
+                                        name: order.type + " Order " + (typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serialNumber || order.serial_number || order.id, order.id, order) : (order.serialNumber || order.serial_number || order.id || "Unknown")) + " (" + visit.date + ")",
+                                        data: "data:text/html;base64," + btoa(orderContent),
+                                        type: "pdf",
+                                        date: formatDate(order.timestamp || visit.date || new Date().toISOString()),
+                                        size: contentSize
+                                    });
+                                } else {
+                                    var user = JSON.parse(localStorage.getItem("user") || "{}");
+                                    var simpleContent = "LABORATORY ORDER\n";
+                                    if (order.type === 'imaging') {
+                                        simpleContent = "IMAGING ORDER\n";
+                                    }
+                                    simpleContent += "Organization: " + (user.org || 'Medical Clinic') + "\n";
+                                    simpleContent += "Patient: " + currentPatient.firstName + " " + currentPatient.lastName + "\n";
+                                    simpleContent += "Date: " + visit.date + "\n";
+                                    simpleContent += "Ordered by: Dr. " + (user.firstName || '') + " " + (user.lastName || '') + "\n\n";
+                                    
+                                    if (order.selectedItems && order.selectedItems.length > 0) {
+                                        simpleContent += "Items:\n";
+                                        for (var k = 0; k < order.selectedItems.length; k++) {
+                                            simpleContent += "- " + order.selectedItems[k] + "\n";
+                                        }
+                                    } else if (order.noItemsChecked) {
+                                        simpleContent += "Status: No items required\n";
+                                    }
+                                    
+                                    var contentSize = Math.ceil(btoa(simpleContent).length * 0.75);
+                                    orderDocs.push({
+                                        name: order.type + " Order " + (typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(order.serialNumber || order.serial_number || order.id, order.id, order) : (order.serialNumber || order.serial_number || order.id || "Unknown")) + " (" + visit.date + ")",
+                                        data: "data:text/plain;base64," + btoa(simpleContent),
+                                        type: "pdf",
+                                        date: formatDate(order.timestamp || visit.date || new Date().toISOString()),
+                                        size: contentSize
+                                    });
+                                }
+                            }
+                            
+                            // ALWAYS add attached results, even if the order is deleted
+                            if (order.results && order.results.length > 0) {
+                                for (var k = 0; k < order.results.length; k++) {
+                                    var result = order.results[k];
+                                    orderDocs.push({
+                                        name: result.name || ("Result " + (k + 1)),
+                                        data: result.data,
+                                        type: result.type || "application/pdf",
+                                        date: formatDate(result.uploadedAt || order.timestamp || visit.date || new Date().toISOString()),
+                                        size: result.size || 0
+                                    });
+                                }
+                            }
+                            if (order.results && order.results._attachments) {
+                                for (var ka = 0; ka < order.results._attachments.length; ka++) {
+                                    var resAtt = order.results._attachments[ka];
+                                    if (resAtt && (resAtt.data || resAtt.attachment)) {
+                                        orderDocs.push({
+                                            name: resAtt.name || ("Result " + (ka + 1)),
+                                            data: resAtt.data || resAtt.attachment,
+                                            type: resAtt.type || "application/pdf",
+                                            date: formatDate(resAtt.uploadedAt || order.timestamp || visit.date || new Date().toISOString()),
+                                            size: resAtt.size || 0
+                                        });
+                                    }
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            // Add attachments and structured lab results from Supabase orders (same format as Lab Results folder)
+            for (var goi = 0; goi < supabaseOrdersForPatient.length; goi++) {
+                var orderGen = supabaseOrdersForPatient[goi];
+                var resultsGen = orderGen.results;
+                if (!resultsGen) continue;
+                var orderLabelGen = orderGen.serial_number ? " (Order #" + (typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(orderGen.serial_number, orderGen.id, orderGen) : orderGen.serial_number) + ")" : "";
+                var orderDateGen = formatDate(orderGen.visit_date || orderGen.created_at || new Date().toISOString());
+                var attsGen = Array.isArray(resultsGen) ? resultsGen : (resultsGen._attachments) || [];
+                for (var agi = 0; agi < attsGen.length; agi++) {
+                    var att = attsGen[agi];
+                    if (att && (att.data || att.attachment)) {
+                        orderDocs.push({
+                            name: (att.name || "Result") + orderLabelGen,
+                            data: att.data || att.attachment,
+                            type: att.type || "application/pdf",
+                            date: formatDate(att.uploadedAt || orderGen.created_at || new Date().toISOString()),
+                            size: att.size || 0
+                        });
+                    }
+                }
+                if (typeof resultsGen === 'object' && !Array.isArray(resultsGen) && resultsGen !== null && !resultsGen._attachments) {
+                    var rowsGen = [];
+                    for (var gk in resultsGen) {
+                        if (!gk || gk.charAt(0) === '_' || meta.indexOf(gk) >= 0) continue;
+                        var rg = resultsGen[gk];
+                        if (rg && typeof rg === 'object') {
+                            if (rg.value !== undefined && rg.value !== null && rg.value !== '') {
+                                rowsGen.push({ name: gk, value: rg.value, unit: rg.unit || '', ref: rg.referenceRange || rg.reference || rg.normalRange || '' });
+                            } else { collectLabRows(rg, rowsGen, gk); }
+                        }
+                    }
+                    if (rowsGen.length > 0) {
+                        var pName = (currentPatient.firstName || currentPatient.first_name || '') + ' ' + (currentPatient.lastName || currentPatient.last_name || '');
+                        pName = pName.trim() || 'Unknown';
+                        var dispId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(currentPatient)) || (currentPatient.patient_id || currentPatient.id || 'N/A');
+                        var dispIdUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(currentPatient, currentPatientId) : dispId;
+                        var pDob = currentPatient.date_of_birth || currentPatient.dateOfBirth || currentPatient.dob || 'N/A';
+                        var pGender = currentPatient.gender || 'N/A';
+                        var ordByName = 'Unknown';
+                        var oName = 'Medical Clinic';
+                        var oAddr = '';
+                        var oPhone = '';
+                        try {
+                            var supGen = await getSupabase();
+                            if (supGen && orderGen.created_by) {
+                                var uGen = await supGen.from('users').select('first_name, last_name, username, role').eq('username', orderGen.created_by).maybeSingle();
+                                if (uGen && uGen.data) {
+                                    var f = uGen.data.first_name || '', l = uGen.data.last_name || '';
+                                    ordByName = ((uGen.data.role || '').toLowerCase().includes('lab') ? 'Medical Lab Scientist ' : 'Dr. ') + ((f && l) ? f + ' ' + l : (f || l || uGen.data.username || ''));
+                                } else { ordByName = 'Dr. ' + (orderGen.created_by || ''); }
+                            }
+                            if (supGen && orderGen.organization_id) {
+                                var oGen = await supGen.from('organizations').select('name, address_line1, address_line2, city, state, country, phone').eq('id', orderGen.organization_id).maybeSingle();
+                                if (oGen && oGen.data) {
+                                    oName = oGen.data.name || oName;
+                                    oAddr = [oGen.data.address_line1, oGen.data.address_line2, oGen.data.city, oGen.data.state, oGen.data.country].filter(Boolean).join(', ');
+                                    oPhone = oGen.data.phone || '';
+                                }
+                            }
+                        } catch (e) {}
+                        var genStyle = 'body{font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,sans-serif;padding:20px;max-width:900px;margin:0 auto;}';
+                        genStyle += '.patient-info{background:linear-gradient(135deg,#008753 0%,#006b42 100%);color:white;padding:20px;border-radius:8px;margin-bottom:20px;}';
+                        genStyle += '.patient-info h2{margin:0 0 10px 0;} .order-info{background:#f8f9fa;padding:20px;border-radius:8px;margin-bottom:20px;border-left:4px solid #008753;}';
+                        genStyle += 'table{border-collapse:collapse;width:100%;} th,td{border:1px solid #ddd;padding:10px;} th{background:#008753;color:white;}';
+                        genStyle += '.org-footer{background:#f8f9fa;padding:20px;margin-top:20px;text-align:center;color:#666;}';
+                        var htmlGen = '<!DOCTYPE html><html><head><meta charset="UTF-8"><title>Lab Results</title><style>' + genStyle + '</style></head><body>';
+                        htmlGen += '<div class="patient-info"><h2>' + (pName || '').replace(/</g,'&lt;') + '</h2><p>Patient ID: ' + (dispIdUi || '').replace(/</g,'&lt;') + ' | DOB: ' + (pDob || '').replace(/</g,'&lt;') + ' | Gender: ' + (pGender || '').replace(/</g,'&lt;') + '</p></div>';
+                        htmlGen += '<div class="order-info"><p><strong>Order:</strong> ' + (orderLabelGen || '').replace(/</g,'&lt;') + ' | <strong>Ordered By:</strong> ' + (ordByName || '').replace(/</g,'&lt;') + ' | <strong>Date:</strong> ' + (orderDateGen || '').replace(/</g,'&lt;') + '</p></div>';
+                        htmlGen += '<table><tr><th>Test</th><th>Result</th><th>Unit</th><th>Reference Range</th></tr>';
+                        rowsGen.forEach(function(r) {
+                            htmlGen += '<tr><td>' + (r.name || '').replace(/</g,'&lt;') + '</td><td>' + (r.value != null ? String(r.value) : '-').replace(/</g,'&lt;') + '</td><td>' + (r.unit || '').replace(/</g,'&lt;') + '</td><td>' + (r.ref || '').replace(/</g,'&lt;') + '</td></tr>';
+                        });
+                        htmlGen += '</table><div class="org-footer"><p style="font-weight:600;">' + (oName || '').replace(/</g,'&lt;') + '</p>';
+                        if (oAddr) htmlGen += '<p>' + (oAddr || '').replace(/</g,'&lt;') + '</p>';
+                        if (oPhone) htmlGen += '<p>Phone: ' + (oPhone || '').replace(/</g,'&lt;') + '</p>';
+                        htmlGen += '</div></body></html>';
+                        orderDocs.push({ name: "Lab Results" + orderLabelGen, data: "data:text/html;base64," + btoa(unescape(encodeURIComponent(htmlGen))), type: "text/html", date: orderDateGen, size: "N/A" });
+                    }
+                }
+            }
+            
+            folders.push({
+                id: "generated-orders",
+                name: "Generated Orders",
+                icon: "📋",
+                color: "linear-gradient(135deg, #ff9a9e 0%, #fecfef 100%)",
+                documents: orderDocs,
+                count: orderDocs.length,
+                isSystem: true
+            });
+
+            // Referrals folder (Referral Notes) - ALWAYS CREATE; includes referral letters and attached external records (e.g. specialist notes)
+            var referralDocs = [];
+            if (currentPatient.visits && currentPatient.visits.length > 0) {
+                for (var i = 0; i < currentPatient.visits.length; i++) {
+                    var visit = currentPatient.visits[i];
+                    if (visit.referrals && visit.referrals.length > 0) {
+                        for (var j = 0; j < visit.referrals.length; j++) {
+                            var referral = visit.referrals[j];
+                            if (referral.htmlContent) {
+                                referralDocs.push({
+                                    name: "Referral to " + (referral.specialistName || referral.specialist || "Specialist") + " (" + visit.date + ")",
+                                    data: "data:text/html;base64," + btoa(referral.htmlContent),
+                                    type: "html",
+                                    date: formatDate(referral.timestamp || visit.date || new Date().toISOString()),
+                                    size: "N/A"
+                                });
+                            }
+                            if (referral.attachments && referral.attachments.length > 0) {
+                                for (var k = 0; k < referral.attachments.length; k++) {
+                                    var att = referral.attachments[k];
+                                    var attName = (att.fileName || "Attachment " + (k + 1)) + " – " + (referral.specialistName || "Referral") + " (" + visit.date + ")";
+                                    referralDocs.push({
+                                        name: attName,
+                                        data: att.data || "",
+                                        type: att.fileType || "application/octet-stream",
+                                        date: formatDate(att.uploadDate || referral.timestamp || visit.date || new Date().toISOString()),
+                                        size: att.data ? Math.ceil(att.data.length * 0.75 / 1024) + " KB" : "N/A"
+                                    });
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+            
+            folders.push({
+                id: "referrals",
+                name: "Referral Notes",
+                icon: "🏥",
+                color: "linear-gradient(135deg, #a8c0ff 0%, #3f2b96 100%)",
+                documents: referralDocs,
+                count: referralDocs.length,
+                isSystem: true
+            });
+
+            // Discharge Summaries folder - ALWAYS CREATE
+            var dischargeDocs = [];
+            if (currentPatient.dischargeSummaries && currentPatient.dischargeSummaries.length > 0) {
+                for (var i = 0; i < currentPatient.dischargeSummaries.length; i++) {
+                    var summary = currentPatient.dischargeSummaries[i];
+                    if (summary.htmlContent) {
+                        dischargeDocs.push({
+                            name: "Discharge Summary " + (summary.visitDate || "Unknown Date"),
+                            data: "data:text/html;base64," + btoa(summary.htmlContent),
+                            type: "html",
+                            date: formatDate(summary.timestamp || new Date().toISOString()),
+                            size: "N/A"
+                        });
+                    }
+                }
+            }
+            
+            folders.push({
+                id: "discharge-summaries",
+                name: "Discharge Summaries",
+                icon: "📄",
+                color: "linear-gradient(135deg, #ffecd2 0%, #fcb69f 100%)",
+                documents: dischargeDocs,
+                count: dischargeDocs.length,
+                isSystem: true
+            });
+
+            // Clinical Notes folder - ALWAYS CREATE
+            var clinicalNoteDocs = [];
+            if (currentPatient.clinicalNotes && currentPatient.clinicalNotes.length > 0) {
+                for (var i = 0; i < currentPatient.clinicalNotes.length; i++) {
+                    var note = currentPatient.clinicalNotes[i];
+                    clinicalNoteDocs.push({
+                        name: "Clinical Note " + (note.visitDate || "Unknown Date"),
+                        data: "data:text/plain;base64," + btoa("Clinical Note\nDate: " + (note.visitDate || "Unknown") + "\nChief Complaint: " + (note.chiefComplaint || "Not specified") + "\nHPI: " + (note.hpi || "Not specified")),
+                        type: "text",
+                        date: formatDate(note.visitDate || new Date().toISOString()),
+                        size: "N/A"
+                    });
+                }
+            }
+            
+            folders.push({
+                id: "clinical-notes",
+                name: "Clinical Notes",
+                icon: "📝",
+                color: "linear-gradient(135deg, #d299c2 0%, #fef9d7 100%)",
+                documents: clinicalNoteDocs,
+                count: clinicalNoteDocs.length,
+                isSystem: true
+            });
+
+            // Vital Signs folder - ALWAYS CREATE
+            var vitalSignsDocs = [];
+            if (currentPatient.vitalSigns && currentPatient.vitalSigns.length > 0) {
+                for (var i = 0; i < currentPatient.vitalSigns.length; i++) {
+                    var vital = currentPatient.vitalSigns[i];
+                    vitalSignsDocs.push({
+                        name: "Vital Signs " + (vital.date || "Unknown Date"),
+                        data: "data:text/plain;base64," + btoa("Vital Signs\nDate: " + (vital.date || "Unknown") + "\nBP: " + (vital.bp || "N/A") + "\nHR: " + (vital.hr || "N/A") + "\nTemp: " + (vital.temp || "N/A") + "\nWeight: " + (vital.weight || "N/A")),
+                        type: "text",
+                        date: formatDate(vital.date || new Date().toISOString()),
+                        size: "N/A"
+                    });
+                }
+            }
+            
+            folders.push({
+                id: "vital-signs",
+                name: "Vital Signs",
+                icon: "❤️",
+                color: "linear-gradient(135deg, #ff6b6b 0%, #ee5a24 100%)",
+                documents: vitalSignsDocs,
+                count: vitalSignsDocs.length,
+                isSystem: true
+            });
+
+            // Pre-EMR Medical Records folder - ALWAYS CREATE
+            var preEmrDocs = [];
+            console.log('📜 [Pre-EMR Records] Checking for unstructured records...');
+            console.log('📜 [Pre-EMR Records] currentPatient:', currentPatient);
+            console.log('📜 [Pre-EMR Records] currentPatient.unstructuredRecords:', currentPatient?.unstructuredRecords);
+            console.log('📜 [Pre-EMR Records] Array check:', Array.isArray(currentPatient?.unstructuredRecords));
+            console.log('📜 [Pre-EMR Records] Length:', currentPatient?.unstructuredRecords?.length);
+            
+            if (currentPatient.unstructuredRecords && Array.isArray(currentPatient.unstructuredRecords) && currentPatient.unstructuredRecords.length > 0) {
+                console.log(`📜 [Pre-EMR Records] Found ${currentPatient.unstructuredRecords.length} record(s)`);
+                for (var i = 0; i < currentPatient.unstructuredRecords.length; i++) {
+                    var record = currentPatient.unstructuredRecords[i];
+                    console.log(`📜 [Pre-EMR Records] Processing record ${i + 1}:`, record);
+                    var recordDate = record.createdAt ? new Date(record.createdAt).toLocaleDateString() : 'Unknown Date';
+                    var recordAuthor = record.createdBy || 'Unknown';
+                    if (record.kind === 'file' || record.storagePath) {
+                        var displayName = record.fileName || ('Pre-EMR file (' + recordDate + ')');
+                        preEmrDocs.push({
+                            name: displayName,
+                            data: null,
+                            type: record.mimeType || 'application/octet-stream',
+                            date: formatDate(record.createdAt || new Date().toISOString()),
+                            size: record.sizeBytes != null ? formatBytes(record.sizeBytes) : 'N/A',
+                            metadata: {
+                                createdBy: recordAuthor,
+                                createdAt: record.createdAt,
+                                recordId: record.id,
+                                storagePath: record.storagePath,
+                                mimeType: record.mimeType,
+                                isFile: true
+                            }
+                        });
+                    } else {
+                        preEmrDocs.push({
+                            name: `Pre-EMR Record (${recordDate})`,
+                            data: "data:text/plain;base64," + btoa(unescape(encodeURIComponent(record.text || ''))),
+                            type: "text",
+                            date: formatDate(record.createdAt || new Date().toISOString()),
+                            size: formatBytes(new Blob([record.text || '']).size),
+                            metadata: {
+                                createdBy: recordAuthor,
+                                createdAt: record.createdAt,
+                                recordId: record.id
+                            }
+                        });
+                    }
+                }
+                console.log(`📜 [Pre-EMR Records] Created ${preEmrDocs.length} document(s) for display`);
+            } else {
+                console.log('📜 [Pre-EMR Records] No unstructured records found or array is empty');
+            }
+            
+            folders.push({
+                id: "pre-emr-records",
+                name: "Pre-EMR Medical Records",
+                icon: "📜",
+                color: "linear-gradient(135deg, #8B4513 0%, #CD853F 100%)",
+                documents: preEmrDocs,
+                count: preEmrDocs.length,
+                isSystem: true
+            });
+
+            return folders;
+        }
+
+        function formatDate(dateString) {
+            if (!dateString || dateString === 'N/A') return 'N/A';
+            try {
+                var date = new Date(dateString);
+                if (isNaN(date.getTime())) {
+                    return 'N/A';
+                }
+                return date.toLocaleDateString();
+            } catch (error) {
+                return 'N/A';
+            }
+        }
+
+        function formatBytes(n) {
+            if (n == null || isNaN(n)) return 'N/A';
+            if (n < 1024) return n + ' B';
+            if (n < 1048576) return (n / 1024).toFixed(1) + ' KB';
+            return (n / 1048576).toFixed(2) + ' MB';
+        }
+
+        async function displayFolders() {
+            var container = document.getElementById("folders-container");
+            var systemFolders = await createSystemFolders();
+            // Ensure systemFolders is an array
+            if (!Array.isArray(systemFolders)) {
+                console.error('createSystemFolders() did not return an array:', typeof systemFolders);
+                systemFolders = [];
+            }
+            var customFolders = currentPatient ? (currentPatient.customFolders || []) : [];
+            var allFolders = systemFolders.concat(customFolders);
+            
+            container.innerHTML = '';
+            
+            if (allFolders.length === 0) {
+                var p = document.createElement('p');
+                p.style.textAlign = 'center';
+                p.style.color = '#666';
+                p.style.fontStyle = 'italic';
+                p.textContent = 'No documents found. Documents will appear here when uploaded.';
+                container.appendChild(p);
+                return;
+            }
+            
+            for (var i = 0; i < allFolders.length; i++) {
+                var folder = allFolders[i];
+                var folderCard = document.createElement('div');
+                folderCard.className = 'folder-card';
+                folderCard.style.background = folder.color;
+                
+                // Pre-EMR Medical Records opens a dedicated page instead of modal
+                if (folder.id === 'pre-emr-records') {
+                    folderCard.onclick = function() {
+                        window.location.href = `pre-emr-records.html?patientId=${currentPatientId}`;
+                    };
+                } else {
+                    folderCard.onclick = function(folderId) {
+                        return function() {
+                            openFolder(folderId);
+                        };
+                    }(folder.id);
+                }
+                
+                var iconDiv = document.createElement('div');
+                iconDiv.className = 'folder-icon';
+                iconDiv.textContent = folder.icon;
+                
+                var nameDiv = document.createElement('div');
+                nameDiv.className = 'folder-name';
+                nameDiv.textContent = folder.name;
+                
+                var countDiv = document.createElement('div');
+                countDiv.className = 'folder-count';
+                countDiv.textContent = folder.count + ' documents';
+                
+                folderCard.appendChild(iconDiv);
+                folderCard.appendChild(nameDiv);
+                folderCard.appendChild(countDiv);
+                container.appendChild(folderCard);
+            }
+        }
+
+        async function openFolder(folderId) {
+            // Refresh patient data - Supabase-first
+            let patients = [];
+            try {
+                if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                    patients = await window.loadPatientsWithSupabasePriority();
+                } else {
+                    patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                }
+            } catch (error) {
+                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            var freshPatient = patients.find(p => p.id === currentPatientId);
+            if (freshPatient) {
+                currentPatient = freshPatient;
+            }
+            
+            var systemFolders = await createSystemFolders();
+            // Ensure systemFolders is an array
+            if (!Array.isArray(systemFolders)) {
+                console.error('createSystemFolders() did not return an array in openFolder:', typeof systemFolders);
+                systemFolders = [];
+            }
+            var customFolders = currentPatient ? (currentPatient.customFolders || []) : [];
+            var allFolders = systemFolders.concat(customFolders);
+            var folder = null;
+            
+            for (var i = 0; i < allFolders.length; i++) {
+                if (allFolders[i].id === folderId) {
+                    folder = allFolders[i];
+                    break;
+                }
+            }
+            
+            if (!folder) {
+                alert("Folder not found");
+                return;
+            }
+            
+            document.getElementById("documents-modal-title").textContent = folder.name + " Documents";
+            var modalBody = document.getElementById("documents-modal-body");
+            
+            modalBody.innerHTML = '';
+            
+            if (folder.documents.length === 0) {
+                var p = document.createElement('p');
+                p.style.textAlign = 'center';
+                p.style.color = '#666';
+                p.style.fontStyle = 'italic';
+                p.textContent = 'No documents in this folder.';
+                modalBody.appendChild(p);
+            } else {
+                var documentsGrid = document.createElement('div');
+                documentsGrid.className = 'documents-grid';
+                
+                for (var i = 0; i < folder.documents.length; i++) {
+                    var doc = folder.documents[i];
+                    var documentCard = document.createElement('div');
+                    documentCard.className = 'document-card';
+                    
+                    var iconDiv = document.createElement('div');
+                    iconDiv.className = 'document-icon';
+                    iconDiv.textContent = getDocumentIcon(doc.type);
+                    
+                    var nameDiv = document.createElement('div');
+                    nameDiv.className = 'document-name';
+                    nameDiv.textContent = doc.name;
+                    
+                    var dateDiv = document.createElement('div');
+                    dateDiv.className = 'document-date';
+                    dateDiv.textContent = doc.date || 'N/A';
+                    
+                    var sizeDiv = document.createElement('div');
+                    sizeDiv.className = 'document-size';
+                    sizeDiv.textContent = doc.size || 'N/A';
+                    
+                    var actionsDiv = document.createElement('div');
+                    actionsDiv.className = 'document-actions';
+                    
+                    // Add Edit button for Pre-EMR text records only (not file uploads)
+                    if (folder.id === 'pre-emr-records' && doc.metadata && doc.metadata.recordId && !doc.metadata.storagePath) {
+                        var editBtn = document.createElement('button');
+                        editBtn.className = 'btn btn-small btn-info';
+                        editBtn.textContent = '✏️ Edit';
+                        editBtn.onclick = function(recordId, recordDate, recordAuthor) {
+                            return function() {
+                                // Extract text from base64 data URL
+                                var text = '';
+                                try {
+                                    if (doc.data && doc.data.startsWith('data:text/plain;base64,')) {
+                                        var base64Content = doc.data.replace('data:text/plain;base64,', '');
+                                        text = decodeURIComponent(escape(atob(base64Content)));
+                                    } else {
+                                        // Fallback: load from patient data directly
+                                        if (currentPatient && currentPatient.unstructuredRecords) {
+                                            var record = currentPatient.unstructuredRecords.find(r => r.id === recordId);
+                                            if (record) {
+                                                text = record.text || '';
+                                            }
+                                        }
+                                    }
+                                } catch (e) {
+                                    console.warn('Error decoding record text:', e);
+                                    // Fallback: load from patient data directly
+                                    if (currentPatient && currentPatient.unstructuredRecords) {
+                                        var record = currentPatient.unstructuredRecords.find(r => r.id === recordId);
+                                        if (record) {
+                                            text = record.text || '';
+                                        }
+                                    }
+                                }
+                                editUnstructuredRecord(recordId, text, recordDate, recordAuthor);
+                            };
+                        }(doc.metadata.recordId, doc.date, doc.metadata.createdBy);
+                        actionsDiv.appendChild(editBtn);
+                    }
+                    
+                    var viewBtn = document.createElement('button');
+                    viewBtn.className = 'btn btn-small btn-info';
+                    viewBtn.textContent = '👁️ View';
+                    viewBtn.onclick = (function (d) {
+                        return async function () {
+                            try {
+                                var url = d.data;
+                                var mime = d.type;
+                                if (d.metadata && d.metadata.storagePath && window.preEmrStorage) {
+                                    url = await window.preEmrStorage.getSignedUrl(d.metadata.storagePath);
+                                    mime = d.metadata.mimeType || mime;
+                                }
+                                if (!url) {
+                                    alert('Could not open this document.');
+                                    return;
+                                }
+                                viewDocument(d.name, url, mime);
+                            } catch (err) {
+                                console.error(err);
+                                alert(err.message || 'Could not open document');
+                            }
+                        };
+                    })(doc);
+                    
+                    var downloadBtn = document.createElement('button');
+                    downloadBtn.className = 'btn btn-small btn-success';
+                    downloadBtn.textContent = '⬇️ Download';
+                    downloadBtn.onclick = (function (d) {
+                        return async function () {
+                            try {
+                                var url = d.data;
+                                if (d.metadata && d.metadata.storagePath && window.preEmrStorage) {
+                                    url = await window.preEmrStorage.getSignedUrl(d.metadata.storagePath);
+                                }
+                                if (!url) {
+                                    alert('Could not download.');
+                                    return;
+                                }
+                                downloadDocument(d.name, url);
+                            } catch (err) {
+                                console.error(err);
+                                alert(err.message || 'Could not download');
+                            }
+                        };
+                    })(doc);
+                    
+                    // Add Delete button (also allow deletion of Pre-EMR records)
+                    var deleteBtn = document.createElement('button');
+                    deleteBtn.className = 'btn btn-small btn-danger';
+                    deleteBtn.textContent = '🗑️ Delete';
+                    deleteBtn.onclick = (function (fid, d, idx) {
+                        return function () {
+                            if (fid === 'pre-emr-records') {
+                                deleteDocument(fid, d);
+                            } else {
+                                deleteDocument(fid, d.name, d.data, idx);
+                            }
+                        };
+                    })(folder.id, doc, i);
+                    
+                    actionsDiv.appendChild(viewBtn);
+                    actionsDiv.appendChild(downloadBtn);
+                    actionsDiv.appendChild(deleteBtn);
+                    
+                    // Store recordId as data attribute for easier deletion/editing
+                    if (doc.metadata && doc.metadata.recordId) {
+                        documentCard.setAttribute('data-record-id', doc.metadata.recordId);
+                    }
+                    
+                    documentCard.appendChild(iconDiv);
+                    documentCard.appendChild(nameDiv);
+                    documentCard.appendChild(dateDiv);
+                    documentCard.appendChild(sizeDiv);
+                    documentCard.appendChild(actionsDiv);
+                    
+                    documentsGrid.appendChild(documentCard);
+                }
+                
+                modalBody.appendChild(documentsGrid);
+            }
+            
+            document.getElementById("documents-modal").style.display = "block";
+        }
+
+        function getDocumentIcon(type) {
+            if (type && type.indexOf('image') !== -1) return '🖼️';
+            if (type && type.indexOf('pdf') !== -1) return '📄';
+            if (type === 'html') return '🌐';
+            if (type === 'pdf') return '📄';
+            if (type === 'text') return '📝';
+            if (type === 'prescription') return '💊';
+            return '📄';
+        }
+
+        function downloadDocument(name, data) {
+            var link = document.createElement('a');
+            link.href = data;
+            link.download = name;
+            link.click();
+        }
+
+        async function editUnstructuredRecord(recordId, recordText, recordDate, recordAuthor) {
+            // Create modal for editing unstructured record
+            var existingEditor = document.getElementById("edit-unstructured-record-modal");
+            if (existingEditor) {
+                existingEditor.remove();
+            }
+            
+            var modal = document.createElement("div");
+            modal.id = "edit-unstructured-record-modal";
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background-color: rgba(0,0,0,0.7); z-index: 10001; display: flex;
+                justify-content: center; align-items: center;
+            `;
+            
+            var modalContent = document.createElement("div");
+            modalContent.style.cssText = `
+                background: white; border-radius: 12px; width: 90%; max-width: 900px;
+                max-height: 90vh; display: flex; flex-direction: column;
+                box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+            `;
+            
+            var header = document.createElement("div");
+            header.style.cssText = `
+                background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+                color: white; padding: 20px; border-radius: 12px 12px 0 0;
+                display: flex; justify-content: space-between; align-items: center;
+            `;
+            header.innerHTML = `
+                <h2 style="margin: 0; font-size: 24px;">✏️ Edit Pre-EMR Medical Record</h2>
+                <button id="close-edit-modal" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%;">×</button>
+            `;
+            
+            var body = document.createElement("div");
+            body.style.cssText = `
+                padding: 25px; flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+            `;
+            
+            var infoDiv = document.createElement("div");
+            infoDiv.style.cssText = `
+                background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+                border-left: 4px solid #8B4513;
+            `;
+            infoDiv.innerHTML = `
+                <p style="margin: 5px 0;"><strong>Created:</strong> ${recordDate || 'Unknown'}</p>
+                <p style="margin: 5px 0;"><strong>Created By:</strong> ${recordAuthor || 'Unknown'}</p>
+                <p style="margin: 5px 0;"><strong>Record ID:</strong> ${recordId}</p>
+            `;
+            
+            var label = document.createElement("label");
+            label.textContent = "Medical Record Text:";
+            label.style.cssText = "display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 16px;";
+            
+            var textarea = document.createElement("textarea");
+            textarea.id = "edit-record-text";
+            textarea.value = recordText || '';
+            textarea.style.cssText = `
+                width: 100%; min-height: 400px; padding: 15px; border: 2px solid #ddd;
+                border-radius: 8px; font-size: 16px; font-family: 'Courier New', monospace;
+                line-height: 1.6; resize: vertical; box-sizing: border-box;
+            `;
+            
+            var buttonsDiv = document.createElement("div");
+            buttonsDiv.style.cssText = `
+                display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;
+            `;
+            
+            var cancelBtn = document.createElement("button");
+            cancelBtn.textContent = "Cancel";
+            cancelBtn.style.cssText = `
+                background: #6c757d; color: white; border: none; padding: 12px 24px;
+                border-radius: 8px; cursor: pointer; font-weight: 600;
+            `;
+            cancelBtn.onclick = function() {
+                modal.remove();
+            };
+            
+            var saveBtn = document.createElement("button");
+            saveBtn.textContent = "💾 Save Changes";
+            saveBtn.style.cssText = `
+                background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+                color: white; border: none; padding: 12px 24px;
+                border-radius: 8px; cursor: pointer; font-weight: 600;
+            `;
+            saveBtn.onclick = async function() {
+                await saveEditedUnstructuredRecord(recordId, textarea.value.trim());
+                modal.remove();
+            };
+            
+            buttonsDiv.appendChild(cancelBtn);
+            buttonsDiv.appendChild(saveBtn);
+            
+            body.appendChild(infoDiv);
+            body.appendChild(label);
+            body.appendChild(textarea);
+            body.appendChild(buttonsDiv);
+            
+            modalContent.appendChild(header);
+            modalContent.appendChild(body);
+            modal.appendChild(modalContent);
+            
+            document.body.appendChild(modal);
+            
+            // Close on X click
+            document.getElementById("close-edit-modal").onclick = function() {
+                modal.remove();
+            };
+            
+            // Close on outside click
+            modal.onclick = function(e) {
+                if (e.target === modal) {
+                    modal.remove();
+                }
+            };
+            
+            // Focus textarea
+            textarea.focus();
+        }
+
+        async function saveEditedUnstructuredRecord(recordId, newText) {
+            if (!newText || !newText.trim()) {
+                alert('Record text cannot be empty.');
+                return;
+            }
+            
+            if (!recordId) {
+                alert('Record ID not found. Cannot save changes.');
+                return;
+            }
+            
+            try {
+                // Load patients with Supabase-first priority
+                let patients = [];
+                if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                    patients = await window.loadPatientsWithSupabasePriority();
+                } else {
+                    patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                }
+                
+                // Ensure patients is an array
+                if (!Array.isArray(patients)) {
+                    console.error('saveEditedUnstructuredRecord: patients is not an array:', typeof patients);
+                    patients = [];
+                }
+                
+                // Find patient
+                const patientIndex = patients.findIndex(p => 
+                    p.id === currentPatientId || 
+                    p.patient_id === currentPatientId || 
+                    p.patientNumber === currentPatientId
+                );
+                
+                if (patientIndex === -1) {
+                    alert('Patient not found.');
+                    return;
+                }
+                
+                const patient = patients[patientIndex];
+                
+                // Initialize unstructuredRecords array if it doesn't exist
+                if (!patient.unstructuredRecords) {
+                    patient.unstructuredRecords = [];
+                }
+                
+                // Find and update the record
+                const recordIndex = patient.unstructuredRecords.findIndex(r => r.id === recordId);
+                
+                if (recordIndex === -1) {
+                    alert('Record not found. It may have been deleted.');
+                    return;
+                }
+                
+                // Update the record text and add updated timestamp
+                const user = JSON.parse(localStorage.getItem("user") || "{}");
+                patient.unstructuredRecords[recordIndex].text = newText;
+                patient.unstructuredRecords[recordIndex].updatedAt = new Date().toISOString();
+                patient.unstructuredRecords[recordIndex].updatedBy = user.username || 'Unknown';
+                
+                // Save to localStorage
+                localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+                
+                // Save to Supabase if available (Supabase-first architecture)
+                if (typeof window.savePatientToSupabase === 'function') {
+                    try {
+                        await window.savePatientToSupabase(patient);
+                        console.log('✅ Edited unstructured record saved to Supabase');
+                    } catch (error) {
+                        console.warn('⚠️ Error saving edited record to Supabase, but saved to localStorage:', error);
+                    }
+                }
+                
+                // Update currentPatient reference
+                currentPatient = patient;
+                
+                // Refresh the folder display
+                await displayFolders();
+                
+                // Show success message
+                alert('✅ Record updated successfully!');
+                
+                // Close documents modal if open and reopen folder to show updated content
+                var documentsModal = document.getElementById("documents-modal");
+                if (documentsModal && documentsModal.style.display === 'block') {
+                    documentsModal.style.display = 'none';
+                    // Reopen the folder to show updated content
+                    setTimeout(function() {
+                        openFolder('pre-emr-records');
+                    }, 100);
+                }
+                
+                console.log('✅ Unstructured record updated successfully');
+                
+            } catch (error) {
+                console.error('❌ Error saving edited record:', error);
+                alert('Error saving changes: ' + error.message);
+            }
+        }
+
+        function viewDocument(name, data, type) {
+            // Create modal for viewing documents
+            var existingViewer = document.getElementById("document-viewer-modal");
+            if (existingViewer) {
+                existingViewer.remove();
+            }
+            
+            var modal = document.createElement("div");
+            modal.id = "document-viewer-modal";
+            modal.style.cssText = `
+                position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+                background-color: rgba(0,0,0,0.95); z-index: 10001; display: flex;
+                flex-direction: column;
+            `;
+            
+            var header = document.createElement("div");
+            header.style.cssText = `
+                background: #2c3e50; color: white; padding: 15px 20px; 
+                display: flex; justify-content: space-between; align-items: center;
+                box-shadow: 0 2px 10px rgba(0,0,0,0.3);
+            `;
+            
+            var contentArea = document.createElement("div");
+            contentArea.style.cssText = `
+                flex: 1; display: flex; justify-content: center; align-items: center;
+                padding: 0; overflow: hidden; background: #f8f9fa;
+            `;
+            
+            var modalContent = document.createElement("div");
+            modalContent.style.cssText = `
+                background: white; border-radius: 8px; width: 100%; height: 100%;
+                overflow: hidden; box-shadow: 0 4px 20px rgba(0,0,0,0.3);
+                display: flex; flex-direction: column;
+            `;
+            
+            var viewerHTML = '';
+            if (type && type.startsWith('image/')) {
+                viewerHTML = `
+                    <div style="display: flex; justify-content: center; align-items: center; padding: 20px; min-height: 70vh;">
+                        <img src="${data}" style="max-width: 100%; max-height: 85vh; object-fit: contain; border-radius: 4px;" alt="${name}">
+                    </div>
+                `;
+            } else if (type === 'application/pdf' || (data && data.includes('application/pdf'))) {
+                var pdfUrl = `${data}#zoom=150&toolbar=1&navpanes=1&scrollbar=1`;
+                viewerHTML = `
+                    <div style="flex: 1; width: 100%; overflow: hidden;">
+                        <iframe src="${pdfUrl}" style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                `;
+            } else if (type === 'html' || (data && data.includes('text/html'))) {
+                // Decode base64 HTML content for iframe
+                var htmlContent = '';
+                if (data.includes('data:text/html;base64,')) {
+                    try {
+                        var base64Content = data.replace('data:text/html;base64,', '');
+                        htmlContent = atob(base64Content);
+                    } catch (e) {
+                        htmlContent = '<p>Error decoding HTML content</p>';
+                    }
+                } else {
+                    htmlContent = data;
+                }
+                // Escape quotes and other special characters for srcdoc
+                htmlContent = htmlContent.replace(/"/g, '&quot;').replace(/'/g, '&#39;');
+                viewerHTML = `
+                    <div style="flex: 1; width: 100%; overflow: auto; padding: 20px;">
+                        <iframe srcdoc="${htmlContent}" style="width: 100%; height: 100%; border: none;"></iframe>
+                    </div>
+                `;
+            } else {
+                viewerHTML = `
+                    <div style="text-align: center; padding: 80px 40px; min-height: 60vh; display: flex; flex-direction: column; justify-content: center;">
+                        <div style="font-size: 48px; color: #6c757d; margin-bottom: 20px;">📄</div>
+                        <h3 style="color: #495057; margin-bottom: 15px;">Preview not available for this file type</h3>
+                        <p style="color: #6c757d; margin-bottom: 30px; font-size: 16px;">File: <strong>${name}</strong></p>
+                        <button onclick="downloadDocument('${name}', '${data}')" 
+                                style="background-color: #007bff; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 16px; transition: background-color 0.2s;">
+                            📥 Download File
+                        </button>
+                    </div>
+                `;
+            }
+            
+            header.innerHTML = `
+                <div>
+                    <h3 style="margin: 0; font-size: 18px; font-weight: 600;">${name}</h3>
+                    <p style="margin: 5px 0 0 0; font-size: 14px; opacity: 0.8;">File Type: ${type || 'Unknown'}</p>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <button onclick="downloadDocument('${name}', '${data}')" 
+                            style="background-color: #28a745; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        📥 Download
+                    </button>
+                    <button onclick="closeDocumentViewer()" 
+                            style="background-color: #dc3545; color: white; border: none; padding: 8px 16px; border-radius: 4px; cursor: pointer; font-size: 14px;">
+                        ✕ Close
+                    </button>
+                </div>
+            `;
+            
+            modalContent.innerHTML = viewerHTML;
+            
+            modal.appendChild(header);
+            contentArea.appendChild(modalContent);
+            modal.appendChild(contentArea);
+            document.body.appendChild(modal);
+            
+            modal.addEventListener('click', function(e) {
+                if (e.target === modal) {
+                    closeDocumentViewer();
+                }
+            });
+            
+            var handleKeyPress = function(e) {
+                if (e.key === 'Escape') {
+                    closeDocumentViewer();
+                    document.removeEventListener('keydown', handleKeyPress);
+                }
+            };
+            document.addEventListener('keydown', handleKeyPress);
+        }
+
+        function closeDocumentViewer() {
+            var modal = document.getElementById("document-viewer-modal");
+            if (modal) {
+                modal.remove();
+            }
+        }
+
+        async function deleteDocument(folderId, docOrName, docData, docIndex) {
+            var docName, docDataVal;
+            var preEmrDoc = null;
+            if (folderId === 'pre-emr-records' && docOrName && typeof docOrName === 'object' && docOrName.name) {
+                preEmrDoc = docOrName;
+                docName = docOrName.name;
+                docDataVal = docOrName.data;
+            } else {
+                docName = docOrName;
+                docDataVal = docData;
+            }
+            if (!confirm('Are you sure you want to delete "' + docName + '"? This action cannot be undone.')) {
+                return;
+            }
+            
+            var documentCards = document.querySelectorAll('.document-card');
+            for (var i = 0; i < documentCards.length; i++) {
+                var card = documentCards[i];
+                var nameElement = card.querySelector('.document-name');
+                if (nameElement && nameElement.textContent === docName) {
+                    card.remove();
+                    break;
+                }
+            }
+            
+            // Supabase-first: Load patients from Supabase, fallback to localStorage
+            let patients = [];
+            try {
+                if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                    patients = await window.loadPatientsWithSupabasePriority();
+                } else {
+                    patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+                }
+            } catch (error) {
+                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            var patientIndex = patients.findIndex(p => p.id === currentPatientId);
+            var patient = patients[patientIndex];
+            
+            if (patientIndex === -1 || !patient) {
+                alert("Patient not found");
+                return;
+            }
+            
+            var deleted = false;
+            
+            switch(folderId) {
+                case 'generated-orders':
+                    if (patient.visits && patient.visits.length > 0) {
+                        for (var i = 0; i < patient.visits.length; i++) {
+                            var visit = patient.visits[i];
+                            if (visit.orders && visit.orders.length > 0) {
+                                for (var j = 0; j < visit.orders.length; j++) {
+                                    var order = visit.orders[j];
+                                    
+                                    if (order.results && order.results.length > 0) {
+                                        for (var k = 0; k < order.results.length; k++) {
+                                            var result = order.results[k];
+                                            if (result.data === docDataVal) {
+                                                order.results.splice(k, 1);
+                                                deleted = true;
+                                                break;
+                                            }
+                                        }
+                                    }
+                                    
+                                    var orderContent = order.htmlContent || order.content;
+                                    if (orderContent) {
+                                        var orderData = "data:text/html;base64," + btoa(orderContent);
+                                        if (orderData === docDataVal) {
+                                            order.deleted = true;
+                                            deleted = true;
+                                        }
+                                    } else {
+                                        var user = JSON.parse(localStorage.getItem("user") || "{}");
+                                        var simpleContent = "LABORATORY ORDER\n";
+                                        if (order.type === 'imaging') {
+                                            simpleContent = "IMAGING ORDER\n";
+                                        }
+                                        simpleContent += "Organization: " + (user.org || 'Medical Clinic') + "\n";
+                                        simpleContent += "Patient: " + patient.firstName + " " + patient.lastName + "\n";
+                                        simpleContent += "Date: " + visit.date + "\n";
+                                        simpleContent += "Ordered by: Dr. " + (user.firstName || '') + " " + (user.lastName || '') + "\n\n";
+                                        
+                                        if (order.selectedItems && order.selectedItems.length > 0) {
+                                            simpleContent += "Items:\n";
+                                            for (var l = 0; l < order.selectedItems.length; l++) {
+                                                simpleContent += "- " + order.selectedItems[l] + "\n";
+                                            }
+                                        } else if (order.noItemsChecked) {
+                                            simpleContent += "Status: No items required\n";
+                                        }
+                                        
+                                        var simpleData = "data:text/plain;base64," + btoa(simpleContent);
+                                        if (simpleData === docDataVal) {
+                                            order.deleted = true;
+                                            deleted = true;
+                                        }
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'lab-results':
+                    if (patient.labResults && patient.labResults.length > 0) {
+                        var labIndex = patient.labResults.findIndex(lr => lr.attachment === docDataVal);
+                        if (labIndex !== -1) {
+                            patient.labResults.splice(labIndex, 1);
+                            deleted = true;
+                        }
+                    }
+                    break;
+                    
+                case 'imaging-results':
+                    if (patient.imagingResults && patient.imagingResults.length > 0) {
+                        var imgIndex = patient.imagingResults.findIndex(ir => ir.attachment === docDataVal);
+                        if (imgIndex !== -1) {
+                            patient.imagingResults.splice(imgIndex, 1);
+                            deleted = true;
+                        }
+                    }
+                    break;
+                    
+                case 'immunizations':
+                    if (patient.immunizations && patient.immunizations.length > 0) {
+                        for (var i = 0; i < patient.immunizations.length; i++) {
+                            if (patient.immunizations[i].proofAttachment === docDataVal) {
+                                delete patient.immunizations[i].proofAttachment;
+                                delete patient.immunizations[i].proofAttachmentType;
+                                delete patient.immunizations[i].proofUploadedAt;
+                                deleted = true;
+                                break;
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'preventive-care':
+                    if (patient.preventiveGaps && patient.preventiveGaps.length > 0) {
+                        for (var i = 0; i < patient.preventiveGaps.length; i++) {
+                            var gap = patient.preventiveGaps[i];
+                            if (gap.proofAttachments && gap.proofAttachments.length > 0) {
+                                var proofIndex = gap.proofAttachments.findIndex(pa => pa.data === docDataVal);
+                                if (proofIndex !== -1) {
+                                    gap.proofAttachments.splice(proofIndex, 1);
+                                    deleted = true;
+                                    break;
+                                }
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'pre-emr-records':
+                    // Handle deletion of unstructured medical records
+                    if (patient.unstructuredRecords && patient.unstructuredRecords.length > 0) {
+                        var recordIdToDelete = null;
+                        if (preEmrDoc && preEmrDoc.metadata && preEmrDoc.metadata.recordId) {
+                            recordIdToDelete = preEmrDoc.metadata.recordId;
+                        } else {
+                            var documentCardsPre = document.querySelectorAll('.document-card');
+                            for (var cardIdx = 0; cardIdx < documentCardsPre.length; cardIdx++) {
+                                var card = documentCardsPre[cardIdx];
+                                var nameElement = card.querySelector('.document-name');
+                                if (nameElement && nameElement.textContent === docName) {
+                                    var recordIdAttr = card.getAttribute('data-record-id');
+                                    if (recordIdAttr) {
+                                        recordIdToDelete = recordIdAttr;
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                        
+                        for (var pi = 0; pi < patient.unstructuredRecords.length; pi++) {
+                            var record = patient.unstructuredRecords[pi];
+                            var shouldDelete = false;
+                            
+                            if (recordIdToDelete && record.id === recordIdToDelete) {
+                                shouldDelete = true;
+                            } else if (docDataVal) {
+                                try {
+                                    var decodedData = decodeURIComponent(escape(atob(String(docDataVal).replace('data:text/plain;base64,', ''))));
+                                    if (record.text && record.text === decodedData) {
+                                        shouldDelete = true;
+                                    }
+                                } catch (e) {
+                                    if (docName && record.createdAt && docName.indexOf(new Date(record.createdAt).toLocaleDateString()) !== -1) {
+                                        shouldDelete = true;
+                                    }
+                                }
+                            }
+                            
+                            if (shouldDelete) {
+                                if (record.storagePath && window.preEmrStorage && window.preEmrStorage.removeStorageObject) {
+                                    await window.preEmrStorage.removeStorageObject(record.storagePath);
+                                }
+                                patient.unstructuredRecords.splice(pi, 1);
+                                deleted = true;
+                                break;
+                            }
+                        }
+                        
+                        // Save to Supabase if available
+                        if (deleted && typeof window.savePatientToSupabase === 'function') {
+                            try {
+                                await window.savePatientToSupabase(patient);
+                                console.log('✅ Deleted unstructured record saved to Supabase');
+                            } catch (error) {
+                                console.warn('⚠️ Error saving deletion to Supabase, but saved to localStorage:', error);
+                            }
+                        }
+                    }
+                    break;
+                    
+                case 'prescriptions':
+                case 'clinical-notes':
+                case 'discharge-summaries':
+                case 'vital-signs':
+                    alert("This document type cannot be deleted from the documents page.");
+                    return;
+                    
+                default:
+                    alert("Cannot delete from this folder type.");
+                    return;
+            }
+            
+            if (deleted) {
+                localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+                
+                // Save to Supabase if available (Supabase-first architecture)
+                if (typeof window.savePatientToSupabase === 'function') {
+                    try {
+                        await window.savePatientToSupabase(patient);
+                        console.log('✅ Document deletion saved to Supabase');
+                    } catch (error) {
+                        console.warn('⚠️ Error saving deletion to Supabase, but saved to localStorage:', error);
+                    }
+                }
+                
+                setTimeout(async function() {
+                    await openFolder(folderId);
+                    await updateStats();
+                }, 100);
+                
+                alert("Document deleted successfully!");
+            } else {
+                alert("Document not found or could not be deleted.");
+            }
+        }
+
+        function closeModal() {
+            document.getElementById("modal").style.display = "none";
+        }
+
+        function closeDocumentsModal() {
+            document.getElementById("documents-modal").style.display = "none";
+        }
+
+        async function updateStats() {
+            var totalDocuments = 0;
+            var totalSize = 0;
+            var systemFolders = await createSystemFolders();
+            // Ensure systemFolders is an array
+            if (!Array.isArray(systemFolders)) {
+                console.error('createSystemFolders() did not return an array in updateStats:', typeof systemFolders);
+                systemFolders = [];
+            }
+            var customFolders = currentPatient ? (currentPatient.customFolders || []) : [];
+            
+            for (var i = 0; i < systemFolders.length; i++) {
+                var folder = systemFolders[i];
+                totalDocuments += folder.count;
+                for (var j = 0; j < folder.documents.length; j++) {
+                    var doc = folder.documents[j];
+                    if (doc.size && doc.size !== 'N/A') {
+                        var size = parseInt(doc.size);
+                        if (!isNaN(size)) totalSize += size;
+                    } else if (doc.data) {
+                        var estimatedSize = Math.ceil(doc.data.length * 0.75);
+                        totalSize += estimatedSize;
+                    }
+                }
+            }
+            
+            for (var i = 0; i < customFolders.length; i++) {
+                var folder = customFolders[i];
+                totalDocuments += folder.count;
+                for (var j = 0; j < folder.documents.length; j++) {
+                    var doc = folder.documents[j];
+                    if (doc.size && doc.size !== 'N/A') {
+                        var size = parseInt(doc.size);
+                        if (!isNaN(size)) totalSize += size;
+                    } else if (doc.data) {
+                        var estimatedSize = Math.ceil(doc.data.length * 0.75);
+                        totalSize += estimatedSize;
+                    }
+                }
+            }
+            
+            document.getElementById("total-documents").textContent = totalDocuments;
+            document.getElementById("total-folders").textContent = systemFolders.length + customFolders.length;
+            document.getElementById("total-size").textContent = formatFileSize(totalSize);
+        }
+
+        function formatFileSize(bytes) {
+            if (bytes === 0) return '0 MB';
+            var k = 1024;
+            var sizes = ['Bytes', 'KB', 'MB', 'GB'];
+            var i = Math.floor(Math.log(bytes) / Math.log(k));
+            return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + ' ' + sizes[i];
+        }
+
+        function showAddFolderModal() {
+            document.getElementById("modal").style.display = "block";
+        }
+
+        function backToPatientDetails() {
+            if (currentPatientId) {
+                window.location.href = '/patient-details?id=' + currentPatientId;
+            } else {
+                window.location.href = 'patients';
+            }
+        }
+
+        document.getElementById("add-folder-form").addEventListener("submit", async function(e) {
+            e.preventDefault();
+            var name = document.getElementById("folder-name").value;
+            var description = document.getElementById("folder-description").value;
+            var newFolder = {
+                id: Date.now().toString(),
+                name: name,
+                description: description,
+                icon: "📁",
+                color: "linear-gradient(135deg, #667eea 0%, #764ba2 100%)",
+                documents: [],
+                count: 0,
+                isSystem: false,
+                createdAt: new Date().toISOString()
+            };
+            
+            if (!currentPatient.customFolders) {
+                currentPatient.customFolders = [];
+            }
+            currentPatient.customFolders.push(newFolder);
+            
+            var patients = await getPatientsData();
+            // Ensure patients is an array
+            if (!Array.isArray(patients)) {
+                console.error('getPatientsData() did not return an array in add-folder-form:', typeof patients);
+                patients = [];
+            }
+            var patientIndex = -1;
+            for (var i = 0; i < patients.length; i++) {
+                if (patients[i].id === currentPatientId || patients[i].patient_id === currentPatientId || patients[i].patientNumber === currentPatientId) {
+                    patientIndex = i;
+                    break;
+                }
+            }
+            if (patientIndex >= 0) {
+            patients[patientIndex] = currentPatient;
+            savePatientsData(patients);
+            }
+            
+            closeModal();
+            document.getElementById("add-folder-form").reset();
+            await displayFolders();
+            await updateStats();
+        });
+
+        window.onclick = function(event) {
+            var modal = document.getElementById("modal");
+            var documentsModal = document.getElementById("documents-modal");
+            if (event.target === modal) {
+                modal.style.display = "none";
+            }
+            if (event.target === documentsModal) {
+                documentsModal.style.display = "none";
+            }
+        };
+
+        document.addEventListener('DOMContentLoaded', async function() {
+            // Wait for Supabase client to be ready before loading patient documents
+            let attempts = 0;
+            while (!window.supabaseClient && attempts < 10) {
+                await new Promise(resolve => setTimeout(resolve, 100));
+                attempts++;
+            }
+            
+            if (window.supabaseClient) {
+                console.log('✅ Supabase client ready, loading patient documents...');
+            } else {
+                console.warn('⚠️ Supabase client not ready after 1 second, proceeding with localStorage fallback...');
+            }
+            
+            await loadPatientDocuments();
+        });
+    </script>
+
+  <!-- Critical scripts loaded at end of body (matches dashboard.html pattern for proper Supabase initialization) -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/pre-emr-storage.js?v=202603271"></script>
+  <script src="js/format-lab-order-serial.js"></script>
+  <script src="js/lab-results-manager.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/patient-data-loader.js"></script>
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <script src="js/main.js?v=202510220113080113081308"></script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

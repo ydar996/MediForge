@@ -1,0 +1,349 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Abstraction Layer</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      max-width: 1000px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .test-container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .header h1 {
+      color: #667eea;
+      margin: 0 0 10px 0;
+    }
+    
+    .test-section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+    }
+    
+    .test-section h3 {
+      margin-top: 0;
+      color: #333;
+    }
+    
+    button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      margin: 5px;
+    }
+    
+    button:hover {
+      opacity: 0.9;
+    }
+    
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    .result {
+      margin-top: 15px;
+      padding: 15px;
+      border-radius: 6px;
+      font-family: 'Courier New', monospace;
+      font-size: 13px;
+      white-space: pre-wrap;
+    }
+    
+    .result.success {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+    }
+    
+    .result.error {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+      color: #721c24;
+    }
+    
+    .console-output {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 400px;
+      overflow-y: auto;
+      margin-top: 20px;
+    }
+  </style>
+</head>
+<body>
+  <div class="test-container">
+    <div class="header">
+      <h1>🧪 Abstraction Layer Test Suite</h1>
+      <p style="color: #666;">Testing if all pieces work together</p>
+    </div>
+    
+    <div class="test-section">
+      <h3>Test 1: Modules Loaded</h3>
+      <button onclick="testModulesLoaded()">Run Test</button>
+      <div id="result-modules" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>Test 2: Database Interface Ready</h3>
+      <button onclick="testDatabaseInterface()">Run Test</button>
+      <div id="result-interface" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>Test 3: Health Check</h3>
+      <button onclick="testHealthCheck()">Run Test</button>
+      <div id="result-health" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>Test 4: Create Test Organization (to IndexedDB)</h3>
+      <button onclick="testCreateOrganization()">Run Test</button>
+      <div id="result-org" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>Test 5: Retrieve Test Organization</h3>
+      <button onclick="testGetOrganization()">Run Test</button>
+      <div id="result-get-org" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="test-section">
+      <h3>Test 6: Sync Queue</h3>
+      <button onclick="testSyncQueue()">Run Test</button>
+      <div id="result-sync" class="result" style="display:none;"></div>
+    </div>
+    
+    <div class="console-output" id="console"></div>
+  </div>
+  
+  <!-- Load Supabase library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Load our modules in order -->
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  <script src="js/adapters/adapter-interface.js"></script>
+  <script src="js/adapters/supabase-adapter.js"></script>
+  <script src="js/adapters/indexeddb-adapter.js"></script>
+  <script src="js/db-interface.js"></script>
+  <script src="js/sync/sync-manager.js"></script>
+  
+  <script>
+    // Capture console for UI
+    const consoleEl = document.getElementById('console');
+    const originalLog = console.log;
+    
+    console.log = function(...args) {
+      originalLog.apply(console, args);
+      const div = document.createElement('div');
+      div.textContent = `[${new Date().toLocaleTimeString()}] ${args.join(' ')}`;
+      consoleEl.appendChild(div);
+      consoleEl.scrollTop = consoleEl.scrollHeight;
+    };
+    
+    // TEST 1: Check all modules loaded
+    function testModulesLoaded() {
+      const result = document.getElementById('result-modules');
+      result.style.display = 'block';
+      
+      const checks = [
+        { name: 'DatabaseAdapter', exists: typeof window.DatabaseAdapter !== 'undefined' },
+        { name: 'SupabaseAdapter', exists: typeof window.SupabaseAdapter !== 'undefined' },
+        { name: 'IndexedDBAdapter', exists: typeof window.IndexedDBAdapter !== 'undefined' },
+        { name: 'supabaseClient', exists: typeof window.supabaseClient !== 'undefined' },
+        { name: 'db (DatabaseInterface)', exists: typeof window.db !== 'undefined' },
+        { name: 'syncManager', exists: typeof window.syncManager !== 'undefined' }
+      ];
+      
+      const allLoaded = checks.every(c => c.exists);
+      
+      result.className = `result ${allLoaded ? 'success' : 'error'}`;
+      result.textContent = checks.map(c => `${c.exists ? '✅' : '❌'} ${c.name}`).join('\n');
+      
+      if (allLoaded) {
+        result.textContent += '\n\n✅ All modules loaded successfully!';
+      }
+    }
+    
+    // TEST 2: Database interface ready
+    async function testDatabaseInterface() {
+      const result = document.getElementById('result-interface');
+      result.style.display = 'block';
+      
+      if (!window.db) {
+        result.className = 'result error';
+        result.textContent = '❌ Database interface not initialized';
+        return;
+      }
+      
+      result.className = 'result success';
+      result.textContent = `✅ Database interface ready!
+
+Primary adapter: ${window.db.primary.name}
+Fallback adapter: ${window.db.fallback.name}
+Online status: ${window.db.isOnline ? 'ONLINE 🟢' : 'OFFLINE 🔴'}
+
+Available APIs:
+- db.organizations.getAll()
+- db.patients.getAll(orgId)
+- db.appointments.getAll(orgId)
+- db.patients.create(patient)
+- db.appointments.create(appointment)
+... and many more!`;
+    }
+    
+    // TEST 3: Health check
+    async function testHealthCheck() {
+      const result = document.getElementById('result-health');
+      result.style.display = 'block';
+      result.className = 'result';
+      result.textContent = '⏳ Running health check...';
+      
+      try {
+        const health = await window.db.healthCheck();
+        
+        result.className = 'result success';
+        result.textContent = `Health Check Results:
+
+PRIMARY (Supabase):
+  Healthy: ${health.primary.healthy ? '✅' : '❌'}
+  Online: ${health.primary.online ? 'YES' : 'NO'}
+  ${health.primary.error ? 'Note: ' + health.primary.error : ''}
+
+FALLBACK (IndexedDB):
+  Healthy: ${health.fallback.healthy ? '✅' : '❌'}
+  Storage: ${health.fallback.storage || 'Browser'}
+
+Overall Status: ${health.online ? 'ONLINE 🟢' : 'OFFLINE 🔴'}`;
+        
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Health check failed: ${error.message}`;
+      }
+    }
+    
+    // TEST 4: Create test organization
+    async function testCreateOrganization() {
+      const result = document.getElementById('result-org');
+      result.style.display = 'block';
+      result.className = 'result';
+      result.textContent = '⏳ Creating test organization...';
+      
+      try {
+        const testOrg = {
+          name: 'Test Clinic ' + Date.now(),
+          org_code: 'TEST-' + Date.now(),
+          country: 'Nigeria',
+          currency: 'NGN',
+          status: 'active'
+        };
+        
+        const created = await window.db.organizations.create(testOrg);
+        
+        result.className = 'result success';
+        result.textContent = `✅ Organization created!
+
+ID: ${created.id}
+Name: ${created.name}
+Org Code: ${created.org_code}
+Synced to cloud: ${created.synced ? 'YES ✅' : 'NO (queued for sync) ⏳'}
+
+This proves:
+- db.organizations.create() works
+- Data saved to IndexedDB
+${created.synced ? '- Data synced to Supabase' : '- Queued for cloud sync when online'}`;
+        
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Create failed: ${error.message}`;
+      }
+    }
+    
+    // TEST 5: Retrieve organizations
+    async function testGetOrganization() {
+      const result = document.getElementById('result-get-org');
+      result.style.display = 'block';
+      result.className = 'result';
+      result.textContent = '⏳ Retrieving organizations...';
+      
+      try {
+        const orgs = await window.db.organizations.getAll();
+        
+        result.className = 'result success';
+        result.textContent = `✅ Retrieved ${orgs.length} organization(s)
+
+${orgs.map(o => `- ${o.name} (${o.country})`).join('\n') || 'No organizations yet'}
+
+This proves:
+- db.organizations.getAll() works
+- Data can be read from storage`;
+        
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Retrieval failed: ${error.message}`;
+      }
+    }
+    
+    // TEST 6: Check sync queue
+    async function testSyncQueue() {
+      const result = document.getElementById('result-sync');
+      result.style.display = 'block';
+      result.className = 'result';
+      result.textContent = '⏳ Checking sync queue...';
+      
+      try {
+        const status = await window.syncManager.getSyncStatus();
+        
+        result.className = 'result success';
+        result.textContent = `✅ Sync Status:
+
+Pending items: ${status.pendingCount}
+Last sync: ${status.lastSync ? status.lastSync.toLocaleString() : 'Never'}
+Currently syncing: ${status.isSyncing ? 'YES' : 'NO'}
+Online: ${status.online ? 'YES 🟢' : 'NO 🔴'}
+
+${status.pendingCount > 0 ? 
+  `\n⏳ ${status.pendingCount} change(s) waiting to sync to cloud` :
+  '\n✅ No pending changes - everything synced!'
+}`;
+        
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = `❌ Sync check failed: ${error.message}`;
+      }
+    }
+  </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+
+
+
+
+
+

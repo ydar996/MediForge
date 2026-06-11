@@ -1,0 +1,597 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Platform: Migrate Appointment Types</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      max-width: 1200px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #667eea;
+      margin-bottom: 20px;
+    }
+    .status {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 6px;
+      font-weight: 600;
+    }
+    .status.info {
+      background: #e3f2fd;
+      color: #1976d2;
+    }
+    .status.success {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    .status.warning {
+      background: #fff3e0;
+      color: #f57c00;
+    }
+    .status.error {
+      background: #ffebee;
+      color: #c62828;
+    }
+    button {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      font-size: 16px;
+      font-weight: 600;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: linear-gradient(135deg, #764ba2, #667eea);
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .org-selector {
+      margin: 20px 0;
+      padding: 20px;
+      background: #f9f9f9;
+      border-radius: 6px;
+      border: 1px solid #ddd;
+    }
+    .org-checkbox {
+      margin: 10px 0;
+      padding: 10px;
+      background: white;
+      border-radius: 4px;
+      border: 1px solid #ddd;
+    }
+    .org-checkbox label {
+      display: flex;
+      align-items: center;
+      cursor: pointer;
+    }
+    .org-checkbox input[type="checkbox"] {
+      margin-right: 10px;
+      width: 18px;
+      height: 18px;
+      cursor: pointer;
+    }
+    #results {
+      margin-top: 20px;
+      max-height: 500px;
+      overflow-y: auto;
+      border: 1px solid #ddd;
+      padding: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .result-item {
+      padding: 8px;
+      margin: 5px 0;
+      border-left: 3px solid #667eea;
+      background: white;
+      font-size: 13px;
+    }
+    .result-item.warning {
+      border-left-color: #ffc107;
+    }
+    .result-item.error {
+      border-left-color: #dc3545;
+    }
+    .result-item.org-header {
+      border-left-color: #667eea;
+      font-weight: 600;
+      background: #e3f2fd;
+      margin-top: 15px;
+    }
+    .stats-summary {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin: 20px 0;
+    }
+    .stat-box {
+      background: #f9f9f9;
+      padding: 15px;
+      border-radius: 6px;
+      text-align: center;
+    }
+    .stat-box .value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #667eea;
+    }
+    .stat-box .label {
+      font-size: 12px;
+      color: #666;
+      margin-top: 5px;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Platform: Migrate Appointment Types</h1>
+    <p>This tool will analyze existing appointments across <strong>all organizations</strong> and backfill the <code>appointment_type</code> field based on available data.</p>
+    
+    <div class="status info" id="status">
+      Loading organizations... Please wait.
+    </div>
+    
+    <div id="org-selector-container" class="org-selector" style="display: none;">
+      <h3>Select Organizations to Migrate:</h3>
+      <div style="margin: 10px 0;">
+        <button onclick="selectAllOrgs()" style="padding: 8px 16px; font-size: 14px; margin-right: 10px;">Select All</button>
+        <button onclick="deselectAllOrgs()" style="padding: 8px 16px; font-size: 14px;">Deselect All</button>
+      </div>
+      <div id="org-list"></div>
+    </div>
+    
+    <div id="stats-summary" class="stats-summary" style="display: none;"></div>
+    
+    <button id="startBtn" onclick="startMigration()" style="display: none;">Start Migration for Selected Organizations</button>
+    <button onclick="window.location.href='platform-dashboard'">Back to Platform Dashboard</button>
+    
+    <div id="results"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/appointment-types.js"></script>
+  <script src="js/pricing.js"></script>
+  <script src="js/platform-admin.js"></script>
+  
+  <script>
+    let allOrganizations = [];
+    let globalMigrationStats = {
+      organizationsProcessed: 0,
+      organizationsSkipped: 0,
+      organizationsErrors: 0,
+      totalAppointments: 0,
+      totalUpdated: 0,
+      totalSkipped: 0,
+      totalErrors: 0,
+      labIntervention: 0,
+      generalConsultation: 0,
+      followUp: 0,
+      other: 0
+    };
+
+    // Check if user is platform admin
+    window.addEventListener('load', async function() {
+      const platformAdmin = JSON.parse(localStorage.getItem('platformAdmin') || 'null');
+      if (!platformAdmin) {
+        document.getElementById('status').className = 'status error';
+        document.getElementById('status').textContent = '❌ Access Denied: Platform admin access required. Please login as platform admin.';
+        return;
+      }
+      
+      await loadOrganizations();
+    });
+
+    async function loadOrganizations() {
+      const status = document.getElementById('status');
+      status.textContent = '📥 Loading organizations from Supabase...';
+      
+      try {
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not available');
+        }
+        
+        // Load all organizations from Supabase
+        const { data: orgs, error } = await window.supabaseClient
+          .from('organizations')
+          .select('id, name, country, status')
+          .order('name');
+        
+        if (error) {
+          throw new Error('Failed to load organizations: ' + error.message);
+        }
+        
+        if (!orgs || orgs.length === 0) {
+          status.className = 'status warning';
+          status.textContent = '⚠️ No organizations found.';
+          return;
+        }
+        
+        allOrganizations = orgs;
+        status.className = 'status info';
+        status.textContent = `✅ Loaded ${orgs.length} organization(s). Select which ones to migrate.`;
+        
+        // Display organization selector
+        displayOrgSelector();
+        
+      } catch (error) {
+        status.className = 'status error';
+        status.textContent = '❌ Error loading organizations: ' + error.message;
+        console.error('Error loading organizations:', error);
+      }
+    }
+
+    function displayOrgSelector() {
+      const container = document.getElementById('org-selector-container');
+      const list = document.getElementById('org-list');
+      const startBtn = document.getElementById('startBtn');
+      
+      list.innerHTML = '';
+      
+      allOrganizations.forEach(org => {
+        const div = document.createElement('div');
+        div.className = 'org-checkbox';
+        div.innerHTML = `
+          <label>
+            <input type="checkbox" value="${org.id}" data-org-name="${org.name}" checked>
+            <span><strong>${org.name}</strong> (${org.country || 'N/A'}) - Status: ${org.status || 'active'}</span>
+          </label>
+        `;
+        list.appendChild(div);
+      });
+      
+      container.style.display = 'block';
+      startBtn.style.display = 'inline-block';
+    }
+
+    function selectAllOrgs() {
+      document.querySelectorAll('#org-list input[type="checkbox"]').forEach(cb => cb.checked = true);
+    }
+
+    function deselectAllOrgs() {
+      document.querySelectorAll('#org-list input[type="checkbox"]').forEach(cb => cb.checked = false);
+    }
+
+    function getSelectedOrganizations() {
+      const selected = [];
+      document.querySelectorAll('#org-list input[type="checkbox"]:checked').forEach(cb => {
+        selected.push({
+          id: cb.value,
+          name: cb.dataset.orgName
+        });
+      });
+      return selected;
+    }
+
+    async function startMigration() {
+      const startBtn = document.getElementById('startBtn');
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+      const statsSummary = document.getElementById('stats-summary');
+      
+      const selectedOrgs = getSelectedOrganizations();
+      
+      if (selectedOrgs.length === 0) {
+        status.className = 'status warning';
+        status.textContent = '⚠️ Please select at least one organization to migrate.';
+        return;
+      }
+      
+      startBtn.disabled = true;
+      status.className = 'status info';
+      status.textContent = `🔄 Starting migration for ${selectedOrgs.length} organization(s)...`;
+      results.innerHTML = '';
+      statsSummary.style.display = 'none';
+      
+      // Reset global stats
+      globalMigrationStats = {
+        organizationsProcessed: 0,
+        organizationsSkipped: 0,
+        organizationsErrors: 0,
+        totalAppointments: 0,
+        totalUpdated: 0,
+        totalSkipped: 0,
+        totalErrors: 0,
+        labIntervention: 0,
+        generalConsultation: 0,
+        followUp: 0,
+        other: 0
+      };
+      
+      // Process each selected organization
+      for (let i = 0; i < selectedOrgs.length; i++) {
+        const org = selectedOrgs[i];
+        await migrateOrganization(org, i + 1, selectedOrgs.length);
+      }
+      
+      // Show final summary
+      displayFinalSummary();
+      
+      startBtn.disabled = false;
+    }
+
+    async function migrateOrganization(org, currentIndex, totalOrgs) {
+      const status = document.getElementById('status');
+      const results = document.getElementById('results');
+      
+      addResult(`\n🏥 [${currentIndex}/${totalOrgs}] Processing: ${org.name}`, 'org-header');
+      
+      try {
+        status.textContent = `🔄 [${currentIndex}/${totalOrgs}] Migrating ${org.name}...`;
+        
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not available');
+        }
+        
+        // Load all appointments for this organization
+        const { data: allAppointments, error: loadError } = await window.supabaseClient
+          .from('appointments')
+          .select('*')
+          .eq('organization_id', org.id);
+        
+        if (loadError) {
+          throw new Error('Failed to load appointments: ' + loadError.message);
+        }
+        
+        // Filter out deleted appointments
+        const appointments = (allAppointments || []).filter(apt => !apt.deleted || apt.deleted === false);
+        
+        if (!appointments || appointments.length === 0) {
+          addResult(`  ⚠️ No appointments found for ${org.name}`, 'warning');
+          globalMigrationStats.organizationsSkipped++;
+          return;
+        }
+        
+        globalMigrationStats.totalAppointments += appointments.length;
+        addResult(`  📊 Found ${appointments.length} appointment(s)`, 'info');
+        
+        // Load appointment types and billing services
+        const appointmentTypes = await window.getAppointmentTypes();
+        const billingServices = typeof window.getPricingCatalog === 'function' ? await window.getPricingCatalog() : [];
+        
+        // Load patients for this organization
+        const { data: patients } = await window.supabaseClient
+          .from('patients')
+          .select('id, patient_id, first_name, last_name')
+          .eq('organization_id', org.id);
+        
+        // Track patient visit counts
+        const patientVisitCounts = {};
+        appointments.forEach(apt => {
+          const patientId = apt.patient_id;
+          if (!patientVisitCounts[patientId]) {
+            patientVisitCounts[patientId] = [];
+          }
+          patientVisitCounts[patientId].push(apt);
+        });
+        
+        // Sort appointments by date for each patient
+        Object.keys(patientVisitCounts).forEach(patientId => {
+          patientVisitCounts[patientId].sort((a, b) => 
+            new Date(a.appointment_date) - new Date(b.appointment_date)
+          );
+        });
+        
+        let orgUpdated = 0;
+        let orgSkipped = 0;
+        let orgErrors = 0;
+        
+        // Process each appointment
+        for (let i = 0; i < appointments.length; i++) {
+          const appointment = appointments[i];
+          
+          // Skip if already has appointment_type
+          if (appointment.appointment_type && appointment.appointment_type.trim() !== '') {
+            orgSkipped++;
+            globalMigrationStats.totalSkipped++;
+            continue;
+          }
+          
+          // Determine appointment type
+          const determinedType = await determineAppointmentType(appointment, appointmentTypes, billingServices, patientVisitCounts);
+          
+          if (!determinedType) {
+            orgErrors++;
+            globalMigrationStats.totalErrors++;
+            continue;
+          }
+          
+          // Update appointment in Supabase
+          try {
+            const { error: updateError } = await window.supabaseClient
+              .from('appointments')
+              .update({ 
+                appointment_type: determinedType.name,
+                updated_at: new Date().toISOString()
+              })
+              .eq('id', appointment.id)
+              .eq('organization_id', org.id);
+            
+            if (updateError) {
+              throw updateError;
+            }
+            
+            orgUpdated++;
+            globalMigrationStats.totalUpdated++;
+            
+            // Track statistics by type
+            if (determinedType.id === 'lab-intervention') {
+              globalMigrationStats.labIntervention++;
+            } else if (determinedType.id === 'general-consultation') {
+              globalMigrationStats.generalConsultation++;
+            } else if (determinedType.id === 'follow-up-visit') {
+              globalMigrationStats.followUp++;
+            } else {
+              globalMigrationStats.other++;
+            }
+            
+          } catch (error) {
+            orgErrors++;
+            globalMigrationStats.totalErrors++;
+            addResult(`  ❌ Error updating ${appointment.appointment_id}: ${error.message}`, 'error');
+          }
+        }
+        
+        addResult(`  ✅ ${org.name}: Updated ${orgUpdated}, Skipped ${orgSkipped}, Errors ${orgErrors}`, 'success');
+        globalMigrationStats.organizationsProcessed++;
+        
+      } catch (error) {
+        addResult(`  ❌ Error processing ${org.name}: ${error.message}`, 'error');
+        globalMigrationStats.organizationsErrors++;
+        console.error(`Error migrating ${org.name}:`, error);
+      }
+    }
+
+    async function determineAppointmentType(appointment, appointmentTypes, billingServices, patientVisitCounts) {
+      const doctorName = (appointment.doctor_name || '').toLowerCase();
+      const notes = (appointment.notes || '').toLowerCase();
+      const reason = (appointment.reason || '').toLowerCase();
+      const visitType = (appointment.visit_type || '').toLowerCase();
+      
+      // Check 1: Lab Intervention indicators
+      const labIndicators = [
+        doctorName.includes('lab'),
+        doctorName.includes('scientist'),
+        doctorName.includes('technician'),
+        notes.includes('lab'),
+        notes.includes('laboratory'),
+        reason.includes('lab'),
+        visitType.includes('lab')
+      ];
+      
+      if (labIndicators.some(indicator => indicator === true)) {
+        const labType = appointmentTypes.find(t => t.id === 'lab-intervention');
+        if (labType) return labType;
+      }
+      
+      // Check 2: Follow-up visit (not first appointment for this patient)
+      const patientId = appointment.patient_id;
+      const patientAppointments = patientVisitCounts[patientId] || [];
+      if (patientAppointments.length > 1) {
+        const sortedAppointments = [...patientAppointments].sort((a, b) => 
+          new Date(a.appointment_date) - new Date(b.appointment_date)
+        );
+        const isFirstAppointment = sortedAppointments[0].id === appointment.id;
+        
+        if (!isFirstAppointment) {
+          const followUpType = appointmentTypes.find(t => t.id === 'follow-up-visit');
+          if (followUpType) return followUpType;
+        }
+      }
+      
+      // Check 3: Match against billing services
+      if (billingServices && billingServices.length > 0) {
+        for (const service of billingServices) {
+          if (service.active === false) continue;
+          
+          const serviceNameLower = (service.name || '').toLowerCase();
+          if (notes.includes(serviceNameLower) || reason.includes(serviceNameLower)) {
+            let matchingType = appointmentTypes.find(t => 
+              t.serviceId === service.id || t.name === service.name
+            );
+            
+            if (!matchingType) {
+              matchingType = {
+                id: `service-${service.id}`,
+                name: service.name,
+                category: service.category || 'Other',
+                isStandard: false
+              };
+            }
+            
+            return matchingType;
+          }
+        }
+      }
+      
+      // Default: General Consultation
+      const generalType = appointmentTypes.find(t => t.id === 'general-consultation');
+      return generalType || { id: 'general-consultation', name: 'General Consultation' };
+    }
+
+    function addResult(message, type = 'info') {
+      const results = document.getElementById('results');
+      const item = document.createElement('div');
+      item.className = `result-item ${type}`;
+      item.textContent = message;
+      results.appendChild(item);
+      results.scrollTop = results.scrollHeight;
+    }
+
+    function displayFinalSummary() {
+      const status = document.getElementById('status');
+      const statsSummary = document.getElementById('stats-summary');
+      
+      status.className = 'status success';
+      status.innerHTML = `
+        ✅ Platform Migration Complete!<br>
+        Organizations Processed: ${globalMigrationStats.organizationsProcessed} | 
+        Skipped: ${globalMigrationStats.organizationsSkipped} | 
+        Errors: ${globalMigrationStats.organizationsErrors}
+      `;
+      
+      statsSummary.innerHTML = `
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.totalAppointments}</div>
+          <div class="label">Total Appointments</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.totalUpdated}</div>
+          <div class="label">Updated</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.totalSkipped}</div>
+          <div class="label">Skipped</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.totalErrors}</div>
+          <div class="label">Errors</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.labIntervention}</div>
+          <div class="label">Lab Intervention</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.generalConsultation}</div>
+          <div class="label">General Consultation</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.followUp}</div>
+          <div class="label">Follow Up Visit</div>
+        </div>
+        <div class="stat-box">
+          <div class="value">${globalMigrationStats.other}</div>
+          <div class="label">Other Services</div>
+        </div>
+      `;
+      statsSummary.style.display = 'grid';
+    }
+  </script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>
+
+
+

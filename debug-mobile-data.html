@@ -1,0 +1,96 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Debug Mobile Data</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .debug-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        pre { background: #f8f9fa; padding: 10px; border-radius: 4px; overflow-x: auto; }
+        button { padding: 10px 15px; margin: 5px; border: none; border-radius: 4px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+    </style>
+</head>
+<body>
+    <h1>🔍 Debug Mobile Data</h1>
+    <p>This tool will show you exactly what's in localStorage and help diagnose sync issues.</p>
+    
+    <button onclick="debugLocalStorage()" class="btn-primary">🔍 Check localStorage</button>
+    <button onclick="clearAllData()" class="btn-warning">🗑️ Clear All Data</button>
+    
+    <div id="results"></div>
+    
+    <script>
+        function debugLocalStorage() {
+            const resultsDiv = document.getElementById('results');
+            let html = '<h2>📊 localStorage Debug Results</h2>';
+            
+            try {
+                // Check all localStorage keys
+                const allKeys = Object.keys(localStorage);
+                html += `<div class="debug-section info"><h3>All localStorage Keys (${allKeys.length}):</h3><pre>${JSON.stringify(allKeys, null, 2)}</pre></div>`;
+                
+                // Check organizations
+                const orgsData = localStorage.getItem('organizations');
+                if (orgsData) {
+                    const orgs = JSON.parse(orgsData);
+                    html += `<div class="debug-section success"><h3>Organizations (${Object.keys(orgs).length}):</h3><pre>${JSON.stringify(orgs, null, 2)}</pre></div>`;
+                } else {
+                    html += '<div class="debug-section error"><h3>❌ No organizations found in localStorage</h3></div>';
+                }
+                
+                // Check users
+                const usersData = localStorage.getItem('users');
+                if (usersData) {
+                    const users = JSON.parse(usersData);
+                    html += `<div class="debug-section success"><h3>Users (${users.length}):</h3><pre>${JSON.stringify(users, null, 2)}</pre></div>`;
+                } else {
+                    html += '<div class="debug-section error"><h3>❌ No users found in localStorage</h3></div>';
+                }
+                
+                // Check for OOO Health specifically
+                if (orgsData) {
+                    const orgs = JSON.parse(orgsData);
+                    if (orgs['OOO Health']) {
+                        html += `<div class="debug-section success"><h3>✅ OOO Health Found:</h3><pre>${JSON.stringify(orgs['OOO Health'], null, 2)}</pre></div>`;
+                    } else {
+                        html += '<div class="debug-section error"><h3>❌ OOO Health not found in organizations</h3></div>';
+                    }
+                }
+                
+                // Check all other keys that might contain data
+                const otherKeys = allKeys.filter(key => !['organizations', 'users'].includes(key));
+                if (otherKeys.length > 0) {
+                    html += `<div class="debug-section info"><h3>Other localStorage Keys:</h3>`;
+                    otherKeys.forEach(key => {
+                        const value = localStorage.getItem(key);
+                        html += `<h4>${key}:</h4><pre>${value}</pre>`;
+                    });
+                    html += '</div>';
+                }
+                
+            } catch (error) {
+                html += `<div class="debug-section error"><h3>❌ Error reading localStorage:</h3><p>${error.message}</p></div>`;
+            }
+            
+            resultsDiv.innerHTML = html;
+        }
+        
+        function clearAllData() {
+            if (confirm('Are you sure you want to clear ALL localStorage data? This cannot be undone!')) {
+                localStorage.clear();
+                document.getElementById('results').innerHTML = '<div class="debug-section success"><h3>✅ All localStorage data cleared</h3></div>';
+            }
+        }
+        
+        // Auto-run on page load
+        document.addEventListener('DOMContentLoaded', debugLocalStorage);
+    </script>
+</body>
+</html>

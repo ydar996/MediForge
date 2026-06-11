@@ -1,0 +1,315 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Mobile Data Retrieval</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .data-item { border: 1px solid #ddd; padding: 15px; margin: 15px 0; border-radius: 8px; }
+        .success { background: #d4edda; border-color: #c3e6cb; }
+        .warning { background: #fff3cd; border-color: #ffeaa7; }
+        .error { background: #f8d7da; border-color: #f5c6cb; }
+        .info { background: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; border: none; border-radius: 5px; cursor: pointer; }
+        .btn-primary { background: #007bff; color: white; }
+        .btn-success { background: #28a745; color: white; }
+        .btn-warning { background: #ffc107; color: black; }
+        .btn-info { background: #17a2b8; color: white; }
+        .code-block { background: #f8f9fa; border: 1px solid #e9ecef; padding: 10px; border-radius: 5px; font-family: monospace; white-space: pre-wrap; }
+    </style>
+</head>
+<body>
+    <h1>?? Mobile Data Retrieval Tool</h1>
+    <p>This tool helps retrieve and sync mobile registration data to Supabase.</p>
+    
+    <button onclick="checkSupabaseData()" class="btn-primary">?? Check Supabase Data</button>
+    <button onclick="checkLocalStorageData()" class="btn-info">?? Check localStorage Data</button>
+    <button onclick="syncToSupabase()" class="btn-success">?? Sync to Supabase</button>
+    <button onclick="copyAllData()" class="btn-warning">?? Copy All Data</button>
+    
+    <div id="results"></div>
+    
+    <!-- Load Supabase SDK -->
+    <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+    <script>
+        async function checkSupabaseData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Checking Supabase for organizations...</p>';
+            
+            try {
+                if (!window.supabaseClient) {
+                    resultsDiv.innerHTML = '<div class="data-item error">? Supabase client not available</div>';
+                    return;
+                }
+                
+                const { data: orgs, error } = await window.supabaseClient
+                    .from('organizations')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+                
+                if (error) {
+                    resultsDiv.innerHTML = `<div class="data-item error">? Supabase query failed: ${error.message}</div>`;
+                    return;
+                }
+                
+                let html = '<h3>?? Organizations in Supabase:</h3>';
+                
+                if (orgs && orgs.length > 0) {
+                    html += `<div class="data-item success">? Found ${orgs.length} organizations in Supabase</div>`;
+                    
+                    orgs.forEach(org => {
+                        const createdDate = new Date(org.created_at).toLocaleString();
+                        html += `
+                            <div class="data-item info">
+                                <strong>${org.name}</strong><br>
+                                ID: ${org.id}<br>
+                                Country: ${org.country || 'N/A'}<br>
+                                State: ${org.state || 'N/A'}<br>
+                                City: ${org.city || 'N/A'}<br>
+                                Created: ${createdDate}<br>
+                                Status: ${org.status || 'active'}
+                            </div>
+                        `;
+                    });
+                } else {
+                    html += '<div class="data-item warning">?? No organizations found in Supabase</div>';
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="data-item error">? Error checking Supabase: ${error.message}</div>`;
+            }
+        }
+        
+        function checkLocalStorageData() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Checking localStorage data...</p>';
+            
+            try {
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let html = '<h3>?? localStorage Data Found:</h3>';
+                
+                if (Object.keys(localOrgs).length === 0) {
+                    html += '<div class="data-item warning">?? No organizations in localStorage</div>';
+                } else {
+                    html += `<div class="data-item success">? Found ${Object.keys(localOrgs).length} organizations in localStorage</div>`;
+                    
+                    Object.entries(localOrgs).forEach(([name, org]) => {
+                        const syncStatus = org.id ? '? Synced to Supabase' : '? Not synced to Supabase';
+                        html += `
+                            <div class="data-item ${org.id ? 'success' : 'warning'}">
+                                <strong>${name}</strong> - ${syncStatus}<br>
+                                Country: ${org.country || 'N/A'} | State: ${org.state || 'N/A'} | City: ${org.city || 'N/A'}<br>
+                                Created: ${org.createdAt || 'N/A'}<br>
+                                ID: ${org.id || 'Not synced to Supabase'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                if (localUsers.length === 0) {
+                    html += '<div class="data-item warning">?? No users in localStorage</div>';
+                } else {
+                    html += `<div class="data-item success">? Found ${localUsers.length} users in localStorage</div>`;
+                    
+                    localUsers.forEach(user => {
+                        const syncStatus = user.organizationId ? '? Synced to Supabase' : '? Not synced to Supabase';
+                        html += `
+                            <div class="data-item ${user.organizationId ? 'success' : 'warning'}">
+                                <strong>${user.firstName} ${user.lastName}</strong> (${user.username}) - ${syncStatus}<br>
+                                Organization: ${user.org || 'N/A'} | Role: ${user.role || 'N/A'}<br>
+                                Organization ID: ${user.organizationId || 'Not synced to Supabase'}
+                            </div>
+                        `;
+                    });
+                }
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="data-item error">? Error checking localStorage: ${error.message}</div>`;
+            }
+        }
+        
+        async function syncToSupabase() {
+            const resultsDiv = document.getElementById('results');
+            resultsDiv.innerHTML = '<p>?? Syncing localStorage data to Supabase...</p>';
+            
+            try {
+                if (!window.supabaseClient) {
+                    resultsDiv.innerHTML = '<div class="data-item error">? Supabase client not available</div>';
+                    return;
+                }
+                
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let syncResults = [];
+                
+                // Sync organizations that aren't already synced
+                for (const [name, org] of Object.entries(localOrgs)) {
+                    if (!org.id) {
+                        try {
+                            const { data: orgResult, error: orgError } = await window.supabaseClient
+                                .from('organizations')
+                                .insert([{
+                                    name: org.name,
+                                    country: org.country,
+                                    state: org.state,
+                                    city: org.city,
+                                    address_line1: org.addressLine1,
+                                    address_line2: org.addressLine2,
+                                    phone: org.phone,
+                                    after_hours_phone: org.afterHoursPhone,
+                                    org_code: org.orgCode,
+                                    created_at: org.createdAt
+                                }])
+                                .select('id');
+                            
+                            if (orgError) {
+                                syncResults.push(`? Failed to sync ${name}: ${orgError.message}`);
+                            } else {
+                                const orgId = orgResult[0].id;
+                                org.id = orgId;
+                                localStorage.setItem('organizations', JSON.stringify(localOrgs));
+                                syncResults.push(`? Synced ${name} to Supabase (ID: ${orgId})`);
+                            }
+                        } catch (error) {
+                            syncResults.push(`? Error syncing ${name}: ${error.message}`);
+                        }
+                    } else {
+                        syncResults.push(`?? ${name} already synced (ID: ${org.id})`);
+                    }
+                }
+                
+                // Sync users that aren't already synced
+                for (const user of localUsers) {
+                    if (!user.organizationId) {
+                        const userOrg = Object.values(localOrgs).find(org => org.name === user.org);
+                        if (userOrg && userOrg.id) {
+                            try {
+                                const { data: userResult, error: userError } = await window.supabaseClient
+                                    .from('users')
+                                    .insert([{
+                                        first_name: user.firstName,
+                                        last_name: user.lastName,
+                                        username: user.username,
+                                        gender: user.gender,
+                                        role: user.role,
+                                        organization_id: userOrg.id,
+                                        created_at: user.createdAt
+                                    }]);
+                                
+                                if (userError) {
+                                    syncResults.push(`? Failed to sync user ${user.username}: ${userError.message}`);
+                                } else {
+                                    user.organizationId = userOrg.id;
+                                    localStorage.setItem('users', JSON.stringify(localUsers));
+                                    syncResults.push(`? Synced user ${user.username} to Supabase`);
+                                }
+                            } catch (error) {
+                                syncResults.push(`? Error syncing user ${user.username}: ${error.message}`);
+                            }
+                        } else {
+                            syncResults.push(`?? User ${user.username} has no valid organization to sync to`);
+                        }
+                    } else {
+                        syncResults.push(`?? User ${user.username} already synced`);
+                    }
+                }
+                
+                let html = '<h3>?? Sync Results:</h3>';
+                syncResults.forEach(result => {
+                    const className = result.startsWith('?') ? 'success' : 
+                                   result.startsWith('?') ? 'error' : 'info';
+                    html += `<div class="data-item ${className}">${result}</div>`;
+                });
+                
+                html += '<div class="data-item info"><strong>Next Step:</strong> Go to the platform dashboard and click "Force Refresh All Data" to see the synced organizations.</div>';
+                
+                resultsDiv.innerHTML = html;
+                
+            } catch (error) {
+                resultsDiv.innerHTML = `<div class="data-item error">? Sync error: ${error.message}</div>`;
+            }
+        }
+        
+        function copyAllData() {
+            try {
+                const localOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                const localUsers = JSON.parse(localStorage.getItem('users') || '[]');
+                
+                let dataText = 'MOBILE REGISTRATION DATA\n';
+                dataText += '========================\n\n';
+                
+                dataText += 'ORGANIZATIONS:\n';
+                Object.entries(localOrgs).forEach(([name, org]) => {
+                    dataText += `- ${name}\n`;
+                    dataText += `  Country: ${org.country || 'N/A'}\n`;
+                    dataText += `  State: ${org.state || 'N/A'}\n`;
+                    dataText += `  City: ${org.city || 'N/A'}\n`;
+                    dataText += `  Created: ${org.createdAt || 'N/A'}\n`;
+                    dataText += `  ID: ${org.id || 'Not synced'}\n\n`;
+                });
+                
+                dataText += 'USERS:\n';
+                localUsers.forEach(user => {
+                    dataText += `- ${user.firstName} ${user.lastName} (${user.username})\n`;
+                    dataText += `  Organization: ${user.org || 'N/A'}\n`;
+                    dataText += `  Role: ${user.role || 'N/A'}\n`;
+                    dataText += `  Organization ID: ${user.organizationId || 'Not synced'}\n\n`;
+                });
+                
+                navigator.clipboard.writeText(dataText).then(() => {
+                    document.getElementById('results').innerHTML = '<div class="data-item success">? All data copied to clipboard! You can now paste it elsewhere.</div>';
+                }).catch(() => {
+                    // Fallback for older browsers
+                    const textArea = document.createElement('textarea');
+                    textArea.value = dataText;
+                    document.body.appendChild(textArea);
+                    textArea.select();
+                    document.execCommand('copy');
+                    document.body.removeChild(textArea);
+                    document.getElementById('results').innerHTML = '<div class="data-item success">? All data copied to clipboard! You can now paste it elsewhere.</div>';
+                });
+                
+            } catch (error) {
+                document.getElementById('results').innerHTML = `<div class="data-item error">? Error copying data: ${error.message}</div>`;
+            }
+        }
+        
+        // Auto-check on page load
+        document.addEventListener('DOMContentLoaded', function() {
+            console.log('?? Auto-checking data...');
+            setTimeout(() => {
+                checkSupabaseData();
+                setTimeout(checkLocalStorageData, 2000);
+            }, 1000);
+        });
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

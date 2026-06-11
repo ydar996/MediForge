@@ -1,0 +1,255 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Today's Revenue - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=234">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113130113131313"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113130113131313"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=288"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>
+  <style>
+    .summary-box {
+      background: linear-gradient(135deg, #4CAF50, #45a049);
+      color: white;
+      padding: 30px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    .summary-box h1 {
+      margin: 0;
+      font-size: 48px;
+    }
+    .breakdown {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 30px;
+    }
+    .breakdown-card {
+      background: white;
+      padding: 20px;
+      border-radius: 6px;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .breakdown-card h3 {
+      margin: 0 0 10px 0;
+      font-size: 14px;
+      color: #666;
+    }
+    .breakdown-card .value {
+      font-size: 24px;
+      font-weight: bold;
+      color: #4CAF50;
+    }
+
+    /* Additional specific column widths for this page */
+    #revenue-payments-table th:nth-child(1),
+    #revenue-payments-table td:nth-child(1) { width: 8%; }
+    #revenue-payments-table th:nth-child(2),
+    #revenue-payments-table td:nth-child(2) { width: 14%; }
+    #revenue-payments-table th:nth-child(3),
+    #revenue-payments-table td:nth-child(3) { width: 22%; }
+    #revenue-payments-table th:nth-child(4),
+    #revenue-payments-table td:nth-child(4) { width: 13%; }
+    #revenue-payments-table th:nth-child(5),
+    #revenue-payments-table td:nth-child(5) { width: 13%; }
+    #revenue-payments-table th:nth-child(6),
+    #revenue-payments-table td:nth-child(6) { width: 10%; }
+    #revenue-payments-table th:nth-child(7),
+    #revenue-payments-table td:nth-child(7) { width: 20%; }
+  </style>
+</head>
+<body>
+  <h1>Today's Revenue</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666; margin-bottom: 20px;">← Back to Billing Dashboard</button>
+
+  <div style="max-width: 1200px; margin: 0 auto;">
+    <div class="summary-box">
+      <p style="margin: 0; font-size: 16px; opacity: 0.9;">Total Revenue for <span id="today-date"></span></p>
+      <h1 id="total-revenue">0.00</h1>
+      <p style="margin: 10px 0 0 0; font-size: 14px; opacity: 0.8;"><span id="payment-count">0</span> payments received</p>
+    </div>
+
+    <div class="breakdown">
+      <div class="breakdown-card">
+        <h3>Cash Payments</h3>
+        <p class="value" id="cash-amount">0.00</p>
+        <p style="font-size: 13px; color: #666; margin-top: 5px;"><span id="cash-count">0</span> transactions</p>
+      </div>
+      <div class="breakdown-card">
+        <h3>Mobile Money</h3>
+        <p class="value" id="mobile-amount">0.00</p>
+        <p style="font-size: 13px; color: #666; margin-top: 5px;"><span id="mobile-count">0</span> transactions</p>
+      </div>
+      <div class="breakdown-card">
+        <h3>Card Payments</h3>
+        <p class="value" id="card-amount">0.00</p>
+        <p style="font-size: 13px; color: #666; margin-top: 5px;"><span id="card-count">0</span> transactions</p>
+      </div>
+      <div class="breakdown-card">
+        <h3>Other Methods</h3>
+        <p class="value" id="other-amount">0.00</p>
+        <p style="font-size: 13px; color: #666; margin-top: 5px;"><span id="other-count">0</span> transactions</p>
+      </div>
+    </div>
+
+    <div style="background: white; padding: 20px; border-radius: 8px;">
+      <h2>Payment Details</h2>
+      <table id="revenue-payments-table" class="billing-table">
+        <thead>
+          <tr>
+            <th class="center">Time</th>
+            <th class="left">Reference</th>
+            <th class="left">Patient</th>
+            <th class="right">Amount</th>
+            <th class="center">Method</th>
+            <th class="center">Invoice</th>
+            <th class="center">Actions</th>
+          </tr>
+        </thead>
+        <tbody id="payments-list"></tbody>
+      </table>
+      <button onclick="exportToday()" style="margin-top: 20px; background: #4CAF50;">Export to CSV</button>
+    </div>
+  </div>
+
+  
+  </script>
+  
+  <script>
+    console.log('?? TRACE: Fixed todays-revenue.html - Added complete Supabase integration');
+    console.log('?? TRACE: Added connection status notifier for real-time sync');
+    console.log('?? TRACE: Added required billing and data loader scripts');
+    console.log('?? TRACE: Deployment timestamp: ' + new Date().toISOString());
+    console.log('?? TRACE: CSS version updated to v234 for cache busting');
+    
+    const today = new Date().toISOString().split('T')[0];
+    const currency = getDefaultCurrency();
+
+    window.addEventListener('load', function() {
+      document.getElementById('today-date').textContent = today;
+      loadTodaysPayments();
+    });
+
+    function loadTodaysPayments() {
+      const payments = getAllPayments().filter(p => p.date === today && p.status === 'completed');
+      
+      // Calculate totals
+      let total = 0;
+      let cashAmount = 0, cashCount = 0;
+      let mobileAmount = 0, mobileCount = 0;
+      let cardAmount = 0, cardCount = 0;
+      let otherAmount = 0, otherCount = 0;
+      
+      payments.forEach(payment => {
+        total += payment.amount;
+        
+        if (payment.method === 'cash') {
+          cashAmount += payment.amount;
+          cashCount++;
+        } else if (payment.method === 'mobile_money') {
+          mobileAmount += payment.amount;
+          mobileCount++;
+        } else if (payment.method === 'card') {
+          cardAmount += payment.amount;
+          cardCount++;
+        } else {
+          otherAmount += payment.amount;
+          otherCount++;
+        }
+      });
+      
+      // Update displays
+      document.getElementById('total-revenue').textContent = formatCurrency(total, currency);
+      document.getElementById('payment-count').textContent = payments.length;
+      
+      document.getElementById('cash-amount').textContent = formatCurrency(cashAmount, currency);
+      document.getElementById('cash-count').textContent = cashCount;
+      
+      document.getElementById('mobile-amount').textContent = formatCurrency(mobileAmount, currency);
+      document.getElementById('mobile-count').textContent = mobileCount;
+      
+      document.getElementById('card-amount').textContent = formatCurrency(cardAmount, currency);
+      document.getElementById('card-count').textContent = cardCount;
+      
+      document.getElementById('other-amount').textContent = formatCurrency(otherAmount, currency);
+      document.getElementById('other-count').textContent = otherCount;
+      
+      // Display payments table
+      const tbody = document.getElementById('payments-list');
+      tbody.innerHTML = '';
+      
+      if (payments.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="7" style="text-align: center;">No payments recorded today</td></tr>';
+        return;
+      }
+      
+      payments.forEach(payment => {
+        const time = payment.createdAt ? new Date(payment.createdAt).toLocaleTimeString() : '-';
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td class="center">${time}</td>
+          <td class="left">${payment.reference}</td>
+          <td class="left">${payment.patientName}</td>
+          <td class="amount">${formatCurrency(payment.amount, currency)}</td>
+          <td class="center">${payment.method.replace('_', ' ').toUpperCase()}</td>
+          <td class="center">${payment.invoiceId ? '<a href="invoice-details?id=' + payment.invoiceId + '">View</a>' : 'N/A'}</td>
+          <td class="actions">
+            <button onclick="printReceipt('${payment.id}')" style="background: #4CAF50; color: white;">Receipt</button>
+          </td>
+        `;
+      });
+    }
+
+    function exportToday() {
+      const payments = getAllPayments().filter(p => p.date === today && p.status === 'completed');
+      const data = payments.map(p => ({
+        Time: p.createdAt ? new Date(p.createdAt).toLocaleTimeString() : '-',
+        Reference: p.reference,
+        Patient: p.patientName,
+        Amount: p.amount,
+        Currency: currency,
+        Method: p.method,
+        Notes: p.notes || ''
+      }));
+      
+      exportReportToCSV(data, `todays-revenue-${today}.csv`);
+    }
+  </script>  
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+

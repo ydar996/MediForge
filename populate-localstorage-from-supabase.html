@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Populate localStorage from Supabase</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        .btn:hover { background: #0056b3; }
+        .btn.success { background: #28a745; }
+        .btn.warning { background: #ffc107; color: #000; }
+        .log { background: #000; color: #0f0; padding: 15px; font-family: monospace; height: 400px; overflow-y: auto; margin: 20px 0; border-radius: 5px; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0; }
+        .info { background: #d1ecf1; border: 1px solid #bee5eb; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Populate localStorage from Supabase</h1>
+        
+        <div class="warning">
+            <strong>?? Problem Identified:</strong><br>
+            Your localStorage is empty (0 patients found). Your EHR app needs patient data in localStorage to display anything.
+        </div>
+        
+        <div class="info">
+            <strong>?? Solution:</strong><br>
+            This tool will populate your localStorage with all patient data from Supabase, including the correct DOB information.
+        </div>
+        
+        <p>This tool will:</p>
+        <ul>
+            <li>? Fetch all patient data from Supabase</li>
+            <li>? Convert it to the format your EHR app expects</li>
+            <li>? Populate localStorage with complete patient data</li>
+            <li>? Include all the correct DOB information</li>
+        </ul>
+        
+        <button class="btn" onclick="populateLocalStorage()">?? Populate localStorage</button>
+        <button class="btn success" onclick="testEHRApp()">?? Test EHR App</button>
+        <button class="btn warning" onclick="clearLocalStorage()">??? Clear localStorage</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    
+  </script>
+    
+  
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Get data key for localStorage (same as EHR app uses)
+        function getDataKey(key) {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            return user.org ? `${user.org}_${key}` : key;
+        }
+        
+        async function populateLocalStorage() {
+            log('?? Starting localStorage population...');
+            
+            try {
+                // Step 1: Get all patient data from Supabase
+                log('?? Fetching all patient data from Supabase...');
+                const { data: supabasePatients, error } = await supabase
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', ORG_ID);
+                
+                if (error) throw error;
+                
+                log(`? Retrieved ${supabasePatients.length} patients from Supabase`);
+                
+                // Step 2: Convert to localStorage format (simplified to avoid JSON issues)
+                log('?? Converting data format...');
+                const localStoragePatients = supabasePatients.map(patient => {
+                    // Safely handle JSON fields
+                    let allergies = [];
+                    let conditions = [];
+                    
+                    try {
+                        if (patient.allergies && patient.allergies.trim() && patient.allergies !== 'null') {
+                            allergies = JSON.parse(patient.allergies);
+                        }
+                    } catch (e) {
+                        log(`?? Warning: Could not parse allergies for ${patient.patient_id}`);
+                        allergies = [];
+                    }
+                    
+                    try {
+                        if (patient.chronic_conditions && patient.chronic_conditions.trim() && patient.chronic_conditions !== 'null') {
+                            conditions = JSON.parse(patient.chronic_conditions);
+                        }
+                    } catch (e) {
+                        log(`?? Warning: Could not parse conditions for ${patient.patient_id}`);
+                        conditions = [];
+                    }
+                    
+                    return {
+                        id: patient.patient_id,
+                        firstName: patient.first_name || '',
+                        middleName: patient.middle_name || '',
+                        lastName: patient.last_name || '',
+                        dob: patient.date_of_birth, // This is the key field!
+                        gender: patient.gender || '',
+                        maritalStatus: patient.marital_status || '',
+                        phone: patient.phone || '',
+                        email: patient.email || '',
+                        addressLine1: patient.address || '',
+                        city: patient.city || '',
+                        state: patient.state || '',
+                        country: patient.country || '',
+                        bloodGroup: patient.blood_group || '',
+                        allergies: allergies,
+                        conditions: conditions,
+                        emergencyFirstName: patient.emergency_contact_name ? patient.emergency_contact_name.split(' ')[0] : '',
+                        emergencyLastName: patient.emergency_contact_name ? patient.emergency_contact_name.split(' ').slice(1).join(' ') : '',
+                        emergencyPhone: patient.emergency_contact_phone || '',
+                        emergencyRelationship: patient.emergency_contact_relationship || '',
+                        createdDate: patient.created_at,
+                        updatedDate: patient.updated_at,
+                        // Add default fields that might be expected
+                        visits: [],
+                        immunizations: [],
+                        prescriptions: []
+                    };
+                });
+                
+                log(`? Converted ${localStoragePatients.length} patients to localStorage format`);
+                
+                // Step 3: Save to localStorage
+                log('?? Saving to localStorage...');
+                const dataKey = getDataKey("patients");
+                localStorage.setItem(dataKey, JSON.stringify(localStoragePatients));
+                
+                log(`? Saved ${localStoragePatients.length} patients to localStorage with key: ${dataKey}`);
+                
+                // Step 4: Verify the save
+                const savedPatients = JSON.parse(localStorage.getItem(dataKey) || "[]");
+                const patientsWithDOB = savedPatients.filter(p => p.dob);
+                
+                log(`?? Verification: ${savedPatients.length} patients saved, ${patientsWithDOB.length} with DOB`);
+                
+                // Show sample of patients with DOB
+                if (patientsWithDOB.length > 0) {
+                    log('?? Sample patients with DOB:');
+                    patientsWithDOB.slice(0, 5).forEach(patient => {
+                        log(`   ? ${patient.firstName} ${patient.lastName} (${patient.id}): ${patient.dob}`);
+                    });
+                }
+                
+                log('?? localStorage population complete!');
+                log('?? Your EHR app should now display all patients with correct DOB data');
+                
+            } catch (error) {
+                log(`? Error populating localStorage: ${error.message}`);
+            }
+        }
+        
+        function testEHRApp() {
+            log('?? Testing EHR app data...');
+            
+            const dataKey = getDataKey("patients");
+            const patients = JSON.parse(localStorage.getItem(dataKey) || "[]");
+            
+            log(`?? Current localStorage data:`);
+            log(`   Total patients: ${patients.length}`);
+            
+            const patientsWithDOB = patients.filter(p => p.dob);
+            log(`   Patients with DOB: ${patientsWithDOB.length}`);
+            
+            if (patients.length > 0) {
+                log('? Patient data is available in localStorage');
+                if (patientsWithDOB.length > 0) {
+                    log('? DOB data is available');
+                    log('?? Your EHR app should now display patients with correct dates of birth');
+                } else {
+                    log('?? No DOB data found');
+                }
+                log('?? Please refresh your EHR app to see the changes');
+            } else {
+                log('? No patient data found in localStorage');
+                log('?? Please run the populate tool first');
+            }
+        }
+        
+        function clearLocalStorage() {
+            log('??? Clearing localStorage...');
+            
+            const dataKey = getDataKey("patients");
+            localStorage.removeItem(dataKey);
+            
+            log('? localStorage cleared');
+            log('?? You can now run the populate tool to add fresh data');
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            log('?? localStorage Population Tool ready');
+            log('?? Click "Populate localStorage" to start');
+        });
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+

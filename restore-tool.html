@@ -1,0 +1,430 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>MediForge Restore Tool</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .restore-container {
+      background: white;
+      padding: 40px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      text-align: center;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      color: #dc3545;
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+    
+    .danger-box {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .danger-box h3 {
+      margin: 0 0 10px 0;
+      color: #721c24;
+    }
+    
+    .info-box {
+      background: #d1ecf1;
+      border: 2px solid #0dcaf0;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+    }
+    
+    .upload-area {
+      border: 3px dashed #667eea;
+      border-radius: 12px;
+      padding: 40px;
+      text-align: center;
+      margin: 20px 0;
+      background: #f8f9fa;
+      cursor: pointer;
+      transition: all 0.3s;
+    }
+    
+    .upload-area:hover {
+      background: #e9ecef;
+      border-color: #764ba2;
+    }
+    
+    .upload-area.dragover {
+      background: #667eea;
+      color: white;
+    }
+    
+    .restore-btn {
+      background: linear-gradient(135deg, #dc3545, #c82333);
+      color: white;
+      border: none;
+      padding: 20px 40px;
+      font-size: 20px;
+      font-weight: 600;
+      border-radius: 8px;
+      cursor: pointer;
+      width: 100%;
+      margin: 20px 0;
+      transition: all 0.3s;
+      box-shadow: 0 4px 15px rgba(220, 53, 69, 0.3);
+      display: none;
+    }
+    
+    .restore-btn.visible {
+      display: block;
+    }
+    
+    .restore-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(220, 53, 69, 0.4);
+    }
+    
+    .restore-btn:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    
+    #restore-status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 8px;
+      display: none;
+    }
+    
+    #restore-status.success {
+      background: #d4edda;
+      border: 2px solid #28a745;
+      color: #155724;
+      display: block;
+    }
+    
+    #restore-status.error {
+      background: #f8d7da;
+      border: 2px solid #dc3545;
+      color: #721c24;
+      display: block;
+    }
+    
+    #backup-preview {
+      background: #1e1e1e;
+      color: #d4d4d4;
+      padding: 20px;
+      border-radius: 8px;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+      max-height: 300px;
+      overflow-y: auto;
+      margin: 20px 0;
+      display: none;
+    }
+    
+    #backup-preview.visible {
+      display: block;
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <div class="restore-container">
+    <div class="header">
+      <h1>?? MediForge Restore Tool</h1>
+      <p style="color: #666; font-size: 16px;">Restore from backup if needed</p>
+    </div>
+    
+    <div class="danger-box">
+      <h3>?? WARNING - USE WITH CAUTION!</h3>
+      <p><strong>This will REPLACE all current data with backup data!</strong></p>
+      <p>Only use this if:</p>
+      <ul style="margin: 10px 0;">
+        <li>? Something went wrong during migration</li>
+        <li>? Data was corrupted or lost</li>
+        <li>? You need to roll back to a previous state</li>
+      </ul>
+      <p style="margin-bottom: 0; color: #721c24;"><strong>This cannot be undone! Make sure you have a current backup first!</strong></p>
+    </div>
+    
+    <div class="info-box">
+      <h3>?? How This Works:</h3>
+      <ol style="margin: 10px 0;">
+        <li>Upload your backup JSON file (from Downloads or Google Drive)</li>
+        <li>Preview the backup to verify it's correct</li>
+        <li>Click "RESTORE ALL DATA" button</li>
+        <li>All data will be restored to localStorage</li>
+        <li>Refresh the app to see restored data</li>
+      </ol>
+    </div>
+    
+    <div class="upload-area" id="upload-area" onclick="document.getElementById('file-input').click()">
+      <div style="font-size: 48px; margin-bottom: 10px;">??</div>
+      <div style="font-size: 18px; font-weight: 600; margin-bottom: 10px;">
+        Click to select backup file or drag & drop here
+      </div>
+      <div style="color: #666; font-size: 14px;">
+        Select the mediforge-backup-YYYY-MM-DD.json file
+      </div>
+      <input type="file" id="file-input" accept=".json" style="display: none;">
+    </div>
+    
+    <div id="backup-preview"></div>
+    
+    <button class="restore-btn" id="restore-btn" onclick="restoreData()">
+      ?? RESTORE ALL DATA
+    </button>
+    
+    <div id="restore-status"></div>
+  </div>
+  
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
+  
+    let backupData = null;
+    const fileInput = document.getElementById('file-input');
+    const uploadArea = document.getElementById('upload-area');
+    const preview = document.getElementById('backup-preview');
+    const restoreBtn = document.getElementById('restore-btn');
+    const restoreStatus = document.getElementById('restore-status');
+    
+    // File input handler
+    fileInput.addEventListener('change', handleFileSelect);
+    
+    // Drag and drop handlers
+    uploadArea.addEventListener('dragover', (e) => {
+      e.preventDefault();
+      uploadArea.classList.add('dragover');
+    });
+    
+    uploadArea.addEventListener('dragleave', () => {
+      uploadArea.classList.remove('dragover');
+    });
+    
+    uploadArea.addEventListener('drop', (e) => {
+      e.preventDefault();
+      uploadArea.classList.remove('dragover');
+      const file = e.dataTransfer.files[0];
+      if (file && file.name.endsWith('.json')) {
+        handleFile(file);
+      } else {
+        alert('Please drop a JSON file');
+      }
+    });
+    
+    function handleFileSelect(e) {
+      const file = e.target.files[0];
+      if (file) {
+        handleFile(file);
+      }
+    }
+    
+    function handleFile(file) {
+      const reader = new FileReader();
+      
+      reader.onload = function(e) {
+        try {
+          backupData = JSON.parse(e.target.result);
+          displayPreview();
+          restoreBtn.classList.add('visible');
+          restoreStatus.style.display = 'none';
+        } catch (error) {
+          alert('Error reading backup file: ' + error.message + '\n\nMake sure you selected a valid backup JSON file.');
+          backupData = null;
+        }
+      };
+      
+      reader.readAsText(file);
+    }
+    
+    function displayPreview() {
+      if (!backupData || !backupData.backupInfo) {
+        alert('Invalid backup file format');
+        return;
+      }
+      
+      const info = backupData.backupInfo;
+      
+      preview.classList.add('visible');
+      preview.innerHTML = `
+<strong>?? BACKUP FILE PREVIEW:</strong>
+
+Backup Date: ${new Date(info.timestamp).toLocaleString()}
+App Version: ${info.appVersion}
+
+CONTENTS:
+---------
+Organizations: ${info.organizationCount}
+Users: ${info.userCount}
+Total Patients: ${info.totalPatients}
+Total Appointments: ${info.totalAppointments}
+Audit Log Entries: ${backupData.auditLogs?.length || 0}
+
+Organizations Found:
+${Object.keys(backupData.organizations || {}).map(name => '  ? ' + name).join('\n')}
+
+? This backup looks valid and ready to restore.
+      `;
+      
+      uploadArea.innerHTML = `
+        <div style="font-size: 48px; margin-bottom: 10px;">?</div>
+        <div style="font-size: 18px; font-weight: 600; color: #28a745;">
+          Backup File Loaded Successfully
+        </div>
+        <div style="color: #666; font-size: 14px; margin-top: 10px;">
+          ${info.organizationCount} organization(s), ${info.userCount} user(s), ${info.totalPatients} patient(s)
+        </div>
+      `;
+    }
+    
+    function restoreData() {
+      if (!backupData) {
+        alert('No backup data loaded');
+        return;
+      }
+      
+      const confirm1 = confirm(
+        '?? WARNING!\n\n' +
+        'This will REPLACE ALL current data with the backup data.\n\n' +
+        'Are you absolutely sure you want to continue?'
+      );
+      
+      if (!confirm1) return;
+      
+      const confirm2 = confirm(
+        '?? FINAL WARNING!\n\n' +
+        'This cannot be undone!\n\n' +
+        'Click OK to proceed with restore, or Cancel to abort.'
+      );
+      
+      if (!confirm2) return;
+      
+      restoreBtn.disabled = true;
+      restoreBtn.textContent = '? Restoring data...';
+      
+      try {
+        // Clear current localStorage (except platformAdmin)
+        const platformAdmin = localStorage.getItem('platformAdmin');
+        
+        // Restore all data
+        localStorage.setItem('organizations', JSON.stringify(backupData.organizations || {}));
+        localStorage.setItem('users', JSON.stringify(backupData.users || []));
+        localStorage.setItem('audit_log', JSON.stringify(backupData.auditLogs || []));
+        
+        // Restore platform settings
+        if (backupData.platformSettings) {
+          if (backupData.platformSettings.platform_subscription_plans) {
+            localStorage.setItem('platform_subscription_plans', JSON.stringify(backupData.platformSettings.platform_subscription_plans));
+          }
+          if (backupData.platformSettings.platform_settings) {
+            localStorage.setItem('platform_settings', JSON.stringify(backupData.platformSettings.platform_settings));
+          }
+          // Restore platformAdmin if it was in backup
+          if (backupData.platformSettings.platformAdmin && !platformAdmin) {
+            localStorage.setItem('platformAdmin', JSON.stringify(backupData.platformSettings.platformAdmin));
+          }
+        }
+        
+        // Restore organization-specific data
+        if (backupData.organizationData) {
+          Object.keys(backupData.organizationData).forEach(orgName => {
+            const orgData = backupData.organizationData[orgName];
+            
+            localStorage.setItem(`${orgName}_patients`, JSON.stringify(orgData.patients || []));
+            localStorage.setItem(`${orgName}_appointments`, JSON.stringify(orgData.appointments || []));
+            localStorage.setItem(`${orgName}_billing_invoices`, JSON.stringify(orgData.billing_invoices || []));
+            localStorage.setItem(`${orgName}_billing_payments`, JSON.stringify(orgData.billing_payments || []));
+            
+            if (orgData.billing_settings) {
+              localStorage.setItem(`${orgName}_billing_settings`, JSON.stringify(orgData.billing_settings));
+            }
+            if (orgData.services) {
+              localStorage.setItem(`${orgName}_services`, JSON.stringify(orgData.services));
+            }
+            if (orgData.specialists) {
+              localStorage.setItem(`${orgName}_specialists`, JSON.stringify(orgData.specialists));
+            }
+            if (orgData.subscription) {
+              localStorage.setItem(`${orgName}_subscription`, JSON.stringify(orgData.subscription));
+            }
+            if (orgData.schedule) {
+              localStorage.setItem(`${orgName}_schedule`, JSON.stringify(orgData.schedule));
+            }
+          });
+        }
+        
+        restoreStatus.className = 'success';
+        restoreStatus.innerHTML = `
+          <h3>? Restore Successful!</h3>
+          <p><strong>All data has been restored from backup.</strong></p>
+          <p>Restored:</p>
+          <ul style="margin: 10px 0; padding-left: 20px;">
+            <li>${backupData.backupInfo.organizationCount} organization(s)</li>
+            <li>${backupData.backupInfo.userCount} user(s)</li>
+            <li>${backupData.backupInfo.totalPatients} patient(s)</li>
+            <li>${backupData.backupInfo.totalAppointments} appointment(s)</li>
+          </ul>
+          <p style="margin-top: 20px;"><strong>Next step: Refresh your browser (F5) to see the restored data.</strong></p>
+        `;
+        
+        restoreBtn.textContent = '? Restore Complete - Refresh Browser Now';
+        restoreBtn.style.background = '#28a745';
+        
+        console.log('? Data restored successfully');
+        
+      } catch (error) {
+        console.error('Restore error:', error);
+        restoreStatus.className = 'error';
+        restoreStatus.innerHTML = `
+          <h3>? Restore Failed</h3>
+          <p><strong>Error:</strong> ${error.message}</p>
+          <p>The restore did not complete. Your current data is unchanged.</p>
+          <p>Please contact support or try again with a different backup file.</p>
+        `;
+        restoreBtn.disabled = false;
+        restoreBtn.textContent = '?? RESTORE ALL DATA';
+      }
+    }
+  </script>  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,660 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Rounds Documentation - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 20px;
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+    
+    .form-section {
+      background: var(--nigerian-white);
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.1);
+    }
+    
+    .form-section h2 {
+      color: var(--primary-green);
+      margin-top: 0;
+      margin-bottom: 15px;
+      border-bottom: 2px solid var(--primary-green);
+      padding-bottom: 10px;
+    }
+    
+    .form-group {
+      margin-bottom: 15px;
+    }
+    
+    .form-group label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: 600;
+      color: var(--charcoal);
+    }
+    
+    .form-group input,
+    .form-group select,
+    .form-group textarea {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+      box-sizing: border-box;
+    }
+    
+    .form-row {
+      display: grid;
+      grid-template-columns: 1fr 1fr;
+      gap: 15px;
+    }
+    
+    .action-item {
+      background: var(--soft-white);
+      padding: 15px;
+      margin-bottom: 10px;
+      border-radius: 6px;
+      border-left: 4px solid var(--primary-green);
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+    }
+    
+    button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 5px;
+    }
+    
+    button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: linear-gradient(135deg, #6c757d, #5a6268);
+    }
+    
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
+    }
+    
+    .add-item-form {
+      background: var(--soft-white);
+      padding: 15px;
+      border-radius: 6px;
+      margin-top: 10px;
+      border: 2px dashed var(--primary-green);
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Inpatient Dashboard</button>
+    
+    <h1>📝 Rounds Documentation</h1>
+    
+    <form id="rounds-form" onsubmit="handleRoundsSubmit(event)">
+      <!-- Rounds Information -->
+      <div class="form-section">
+        <h2>Rounds Information</h2>
+        <div class="form-row">
+          <div class="form-group">
+            <label>Rounds Date *</label>
+            <input type="date" id="rounds-date" required>
+          </div>
+          <div class="form-group">
+            <label>Rounds Type *</label>
+            <select id="rounds-type" required>
+              <option value="daily">Daily Rounds</option>
+              <option value="multidisciplinary">Multidisciplinary Rounds</option>
+              <option value="specialty">Specialty Rounds</option>
+            </select>
+          </div>
+        </div>
+      </div>
+      
+      <!-- SOAP Format -->
+      <div class="form-section">
+        <h2>SOAP Note</h2>
+        <div class="form-group">
+          <label>Subjective</label>
+          <textarea id="soap-subjective" rows="4" placeholder="Patient's reported symptoms, concerns, history"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Objective</label>
+          <textarea id="soap-objective" rows="4" placeholder="Vital signs, physical exam findings, lab results, imaging"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Assessment</label>
+          <textarea id="soap-assessment" rows="4" placeholder="Clinical assessment, diagnosis, progress evaluation"></textarea>
+        </div>
+        <div class="form-group">
+          <label>Plan</label>
+          <textarea id="soap-plan" rows="4" placeholder="Treatment plan, medications, tests, follow-up"></textarea>
+        </div>
+      </div>
+      
+      <!-- Team Members -->
+      <div class="form-section">
+        <h2>Team Members Present</h2>
+        <div id="team-members-list" style="margin-top: 15px;">
+          <p>No team members added yet.</p>
+        </div>
+        <button type="button" onclick="showAddTeamMemberForm()">➕ Add Team Member</button>
+        <div id="add-team-member-form" class="add-item-form" style="display: none;">
+          <div class="form-row">
+            <div class="form-group">
+              <label>Role *</label>
+              <select id="new-team-role" required>
+                <option value="physician">Physician</option>
+                <option value="nurse">Nurse</option>
+                <option value="pharmacist">Pharmacist</option>
+                <option value="therapist">Therapist</option>
+                <option value="case-manager">Case Manager</option>
+                <option value="social-worker">Social Worker</option>
+                <option value="dietitian">Dietitian</option>
+                <option value="other">Other</option>
+              </select>
+            </div>
+            <div class="form-group">
+              <label>Team Member *</label>
+              <select id="new-team-user" required>
+                <option value="" disabled selected>Select team member</option>
+              </select>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Input/Notes</label>
+            <textarea id="new-team-input" rows="2" placeholder="Team member's input or notes"></textarea>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addTeamMember()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddTeamMemberForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Action Items -->
+      <div class="form-section">
+        <h2>Action Items</h2>
+        <div id="action-items-list" style="margin-top: 15px;">
+          <p>No action items added yet.</p>
+        </div>
+        <button type="button" onclick="showAddActionItemForm()">➕ Add Action Item</button>
+        <div id="add-action-item-form" class="add-item-form" style="display: none;">
+          <div class="form-group">
+            <label>Task *</label>
+            <input type="text" id="new-action-task" placeholder="Task description" required>
+          </div>
+          <div class="form-row">
+            <div class="form-group">
+              <label>Assigned To</label>
+              <input type="text" id="new-action-assigned" placeholder="Role or person name">
+            </div>
+            <div class="form-group">
+              <label>Due Date</label>
+              <input type="date" id="new-action-due-date">
+            </div>
+          </div>
+          <div class="form-group">
+            <label>Status</label>
+            <select id="new-action-status">
+              <option value="pending">Pending</option>
+              <option value="in-progress">In Progress</option>
+              <option value="completed">Completed</option>
+            </select>
+          </div>
+          <div style="display: flex; gap: 10px;">
+            <button type="button" onclick="addActionItem()">Add</button>
+            <button type="button" class="btn-secondary" onclick="hideAddActionItemForm()">Cancel</button>
+          </div>
+        </div>
+      </div>
+      
+      <!-- Additional Notes -->
+      <div class="form-section">
+        <h2>Additional Notes</h2>
+        <div class="form-group">
+          <label>Notes</label>
+          <textarea id="rounds-notes" rows="4" placeholder="Any additional notes about the rounds"></textarea>
+        </div>
+      </div>
+      
+      <!-- Submit Buttons -->
+      <div style="display: flex; gap: 10px; margin-top: 20px;">
+        <button type="submit">💾 Save Rounds Documentation</button>
+        <button type="button" class="btn-secondary" onclick="goBack()">Cancel</button>
+      </div>
+    </form>
+  </div>
+  
+  <script>
+    let admissionId = null;
+    let admissionCode = null;
+    let patientId = null;
+    let legacyPatientId = null;
+    let organizationId = null;
+    let teamMembers = [];
+    let actionItems = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      const admissionIdParam = urlParams.get('admissionId');
+      patientId = urlParams.get('patientId');
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      if (!organizationId) {
+        alert('Could not determine organization. Please try again.');
+        goBack();
+        return;
+      }
+
+      const resolvedAdmission = typeof window.resolveAdmissionIdParam === 'function'
+        ? await window.resolveAdmissionIdParam(admissionIdParam, organizationId)
+        : { admissionId: admissionIdParam, admissionCode: null };
+      admissionId = resolvedAdmission.admissionId;
+      admissionCode = resolvedAdmission.admissionCode;
+
+      if (!admissionId) {
+        alert('Missing admission ID. Redirecting...');
+        goBack();
+        return;
+      }
+
+      await resolveLegacyPatientId();
+      
+      // Set default rounds date to today
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('rounds-date').value = today;
+      
+      await loadOrganizationUsers();
+    });
+
+    async function resolveLegacyPatientId() {
+      if (legacyPatientId) return legacyPatientId;
+      let resolvedId = patientId;
+
+      if (!resolvedId && admissionId && window.supabaseClient) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('admissions')
+            .select('patient_id')
+            .eq('id', admissionId)
+            .maybeSingle();
+          if (!error && data?.patient_id) {
+            resolvedId = data.patient_id;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve patient from admission:', error);
+        }
+      }
+
+      if (resolvedId && typeof window.resolvePatientByIdentifier === 'function') {
+        try {
+          const resolvedPatient = await window.resolvePatientByIdentifier(resolvedId);
+          if (resolvedPatient) {
+            legacyPatientId = (typeof window.getPatientIdentifier === 'function' && window.getPatientIdentifier(resolvedPatient))
+              || resolvedPatient.patient_id
+              || resolvedPatient.patientNumber
+              || resolvedId;
+            return legacyPatientId;
+          }
+        } catch (error) {
+          console.warn('Unable to resolve legacy patient ID:', error);
+        }
+      }
+
+      legacyPatientId = resolvedId;
+      return legacyPatientId;
+    }
+    
+    function showAddTeamMemberForm() {
+      document.getElementById('add-team-member-form').style.display = 'block';
+      if (typeof loadOrganizationUsers === 'function') {
+        loadOrganizationUsers();
+      }
+    }
+    
+    function hideAddTeamMemberForm() {
+      document.getElementById('add-team-member-form').style.display = 'none';
+      document.getElementById('new-team-role').value = 'physician';
+      document.getElementById('new-team-user').value = '';
+      document.getElementById('new-team-input').value = '';
+    }
+    
+    function addTeamMember() {
+      const role = document.getElementById('new-team-role').value;
+      if (!role) {
+        alert('Please select a role.');
+        return;
+      }
+      
+      const userSelect = document.getElementById('new-team-user');
+      const selectedOption = userSelect.options[userSelect.selectedIndex];
+      const selectedUserId = userSelect.value;
+      const selectedName = selectedOption ? selectedOption.textContent.trim() : '';
+      
+      if (!selectedUserId || !selectedName) {
+        alert('Please select a team member.');
+        return;
+      }
+      
+      teamMembers.push({
+        id: `team_${Date.now()}`,
+        role: role,
+        user_id: selectedUserId,
+        name: selectedName,
+        input: document.getElementById('new-team-input').value.trim() || null
+      });
+      
+      hideAddTeamMemberForm();
+      displayTeamMembers();
+    }
+    
+    function removeTeamMember(id) {
+      teamMembers = teamMembers.filter(tm => tm.id !== id);
+      displayTeamMembers();
+    }
+    
+    function displayTeamMembers() {
+      const container = document.getElementById('team-members-list');
+      if (teamMembers.length === 0) {
+        container.innerHTML = '<p>No team members added yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = teamMembers.map(member => `
+        <div class="action-item">
+          <div>
+            <strong>${member.role.charAt(0).toUpperCase() + member.role.slice(1)}</strong>
+            ${member.name ? ` - ${member.name}` : ''}
+            ${member.input ? `<br><em>${member.input}</em>` : ''}
+          </div>
+          <div>
+            <button onclick="removeTeamMember('${member.id}')" class="btn-secondary btn-small">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+
+    async function loadOrganizationUsers() {
+      const select = document.getElementById('new-team-user');
+      if (!select) return;
+      
+      select.innerHTML = '<option value="" disabled selected>Loading team members...</option>';
+      
+      let users = [];
+      try {
+        if (window.supabaseClient && organizationId) {
+          const { data, error } = await window.supabaseClient
+            .from('users')
+            .select('id, first_name, last_name, username, role, organization_id')
+            .eq('organization_id', organizationId)
+            .order('first_name', { ascending: true });
+          if (error) throw error;
+          users = data || [];
+        }
+      } catch (error) {
+        console.warn('Unable to load organization users:', error);
+      }
+      
+      if (!users.length) {
+        const currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        if (currentUser?.username) {
+          users = [{
+            id: currentUser.authUserId || currentUser.id || currentUser.userId || currentUser.username,
+            first_name: currentUser.firstName || '',
+            last_name: currentUser.lastName || '',
+            username: currentUser.username,
+            role: currentUser.role || ''
+          }];
+        }
+      }
+      
+      if (!users.length) {
+        select.innerHTML = '<option value="" disabled selected>No users found</option>';
+        return;
+      }
+      
+      select.innerHTML = '<option value="" disabled selected>Select team member</option>';
+      const filteredUsers = users.filter(user => {
+        const roleValue = (user.role || '').toString().toLowerCase();
+        return roleValue !== 'patient' && roleValue !== 'client' && roleValue !== 'client-patient';
+      });
+
+      if (!filteredUsers.length) {
+        select.innerHTML = '<option value="" disabled selected>No staff users found</option>';
+        return;
+      }
+
+      filteredUsers.forEach(user => {
+        const name = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'User';
+        const roleLabel = user.role ? ` (${user.role})` : '';
+        const option = document.createElement('option');
+        option.value = user.id || user.username;
+        option.textContent = `${name}${roleLabel}`;
+        select.appendChild(option);
+      });
+    }
+    
+    function showAddActionItemForm() {
+      document.getElementById('add-action-item-form').style.display = 'block';
+    }
+    
+    function hideAddActionItemForm() {
+      document.getElementById('add-action-item-form').style.display = 'none';
+      document.getElementById('new-action-task').value = '';
+      document.getElementById('new-action-assigned').value = '';
+      document.getElementById('new-action-due-date').value = '';
+      document.getElementById('new-action-status').value = 'pending';
+    }
+    
+    function addActionItem() {
+      const task = document.getElementById('new-action-task').value.trim();
+      if (!task) {
+        alert('Please enter a task.');
+        return;
+      }
+      
+      actionItems.push({
+        id: `action_${Date.now()}`,
+        task: task,
+        assigned_to: document.getElementById('new-action-assigned').value.trim() || null,
+        due_date: document.getElementById('new-action-due-date').value || null,
+        status: document.getElementById('new-action-status').value
+      });
+      
+      hideAddActionItemForm();
+      displayActionItems();
+    }
+    
+    function removeActionItem(id) {
+      actionItems = actionItems.filter(ai => ai.id !== id);
+      displayActionItems();
+    }
+    
+    function displayActionItems() {
+      const container = document.getElementById('action-items-list');
+      if (actionItems.length === 0) {
+        container.innerHTML = '<p>No action items added yet.</p>';
+        return;
+      }
+      
+      container.innerHTML = actionItems.map(item => `
+        <div class="action-item">
+          <div>
+            <strong>${item.task}</strong>
+            ${item.assigned_to ? `<br><small>Assigned to: ${item.assigned_to}</small>` : ''}
+            ${item.due_date ? `<br><small>Due: ${new Date(item.due_date).toLocaleDateString()}</small>` : ''}
+            <br><small>Status: ${item.status}</small>
+          </div>
+          <div>
+            <button onclick="removeActionItem('${item.id}')" class="btn-secondary btn-small">Remove</button>
+          </div>
+        </div>
+      `).join('');
+    }
+    
+    async function handleRoundsSubmit(e) {
+      e.preventDefault();
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        const roundsData = {
+          admission_id: admissionId,
+          organization_id: organizationId,
+          rounds_date: document.getElementById('rounds-date').value,
+          rounds_type: document.getElementById('rounds-type').value,
+          subjective: document.getElementById('soap-subjective').value.trim() || null,
+          objective: document.getElementById('soap-objective').value.trim() || null,
+          assessment: document.getElementById('soap-assessment').value.trim() || null,
+          plan: document.getElementById('soap-plan').value.trim() || null,
+          team_members: teamMembers.map(tm => ({
+            role: tm.role,
+            name: tm.name,
+            input: tm.input
+          })),
+          action_items: actionItems.map(ai => ({
+            task: ai.task,
+            assigned_to: ai.assigned_to,
+            due_date: ai.due_date,
+            status: ai.status
+          })),
+          notes: document.getElementById('rounds-notes').value.trim() || null,
+          documented_by: user.id || null
+        };
+        
+        // SUPABASE-FIRST: Save to Supabase
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('rounds_notes')
+            .insert(roundsData)
+            .select()
+            .single();
+          
+          if (error) throw error;
+          
+          console.log('✅ Rounds documentation saved to Supabase:', data);
+          alert('Rounds documentation saved successfully!');
+        } else {
+          // Fallback to localStorage
+          const stored = localStorage.getItem(`rounds_notes_${organizationId}`) || "[]";
+          const rounds = JSON.parse(stored);
+          rounds.push({ ...roundsData, id: `rounds_${Date.now()}`, created_at: new Date().toISOString() });
+          localStorage.setItem(`rounds_notes_${organizationId}`, JSON.stringify(rounds));
+          console.log('✅ Rounds documentation saved to localStorage');
+          alert('Rounds documentation saved successfully!');
+        }
+        
+        // Redirect back to dashboard
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}&patientId=${legacyPatientId || patientId || ''}`;
+      } catch (error) {
+        console.error('Error saving rounds documentation:', error);
+        alert('Error saving rounds documentation: ' + (error.message || 'Please try again.'));
+      }
+    }
+    
+    function goBack() {
+      if (admissionId) {
+        window.location.href = `inpatient-dashboard?admissionId=${getAdmissionIdForUrl()}${(legacyPatientId || patientId) ? '&patientId=' + (legacyPatientId || patientId) : ''}`;
+      } else {
+        window.location.href = 'admissions-dashboard';
+      }
+    }
+
+    function getAdmissionIdForUrl() {
+      if (admissionCode) return admissionCode;
+      if (window.formatAdmissionCode) {
+        return window.formatAdmissionCode({ id: admissionId });
+      }
+      return admissionId;
+    }
+  </script>
+</body>
+</html>
+

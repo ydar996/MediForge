@@ -1,0 +1,489 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Recover Lost Patient - Recovery Tool</title>
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      border-bottom: 3px solid #28a745;
+      padding-bottom: 10px;
+    }
+    .section {
+      margin: 30px 0;
+      padding: 20px;
+      background: #f8f9fa;
+      border-radius: 8px;
+      border-left: 4px solid #28a745;
+    }
+    .warning {
+      background: #fff3cd;
+      border-left-color: #ffc107;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+    .success {
+      background: #d4edda;
+      border-left-color: #28a745;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+    .error {
+      background: #f8d7da;
+      border-left-color: #dc3545;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+    }
+    button {
+      background: linear-gradient(135deg, #28a745, #20c997);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      margin: 5px;
+      transition: all 0.3s;
+    }
+    button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.3);
+    }
+    button:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+    }
+    .sync-btn {
+      background: linear-gradient(135deg, #667eea, #764ba2);
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 20px 0;
+      background: white;
+    }
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #dee2e6;
+    }
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #495057;
+    }
+    tr:hover {
+      background: #f8f9fa;
+    }
+    .status-badge {
+      padding: 4px 12px;
+      border-radius: 12px;
+      font-size: 12px;
+      font-weight: 600;
+    }
+    .status-local {
+      background: #fff3cd;
+      color: #856404;
+    }
+    .status-supabase {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status-missing {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status-syncing {
+      background: #cfe2ff;
+      color: #084298;
+    }
+    .log {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      max-height: 400px;
+      overflow-y: auto;
+      font-family: 'Courier New', monospace;
+      font-size: 12px;
+    }
+    .log-entry {
+      margin: 5px 0;
+      padding: 5px;
+    }
+    .log-success { color: #28a745; }
+    .log-error { color: #dc3545; }
+    .log-warning { color: #ffc107; }
+    .log-info { color: #17a2b8; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🔄 Recover Lost Patient</h1>
+    
+    <div class="section">
+      <h2>📋 How This Works</h2>
+      <p>This tool scans your browser's localStorage for patients that exist locally but are missing from the Supabase database. It will automatically sync any missing patients to Supabase.</p>
+      <ul>
+        <li><strong>Step 1:</strong> Scan localStorage for all patients</li>
+        <li><strong>Step 2:</strong> Check which patients exist in Supabase</li>
+        <li><strong>Step 3:</strong> Identify missing patients</li>
+        <li><strong>Step 4:</strong> Sync missing patients to Supabase</li>
+      </ul>
+    </div>
+
+    <div class="section">
+      <h2>🔍 Step 1: Scan for Patients</h2>
+      <button onclick="scanPatients()" id="scan-btn">🔍 Scan for Patients</button>
+      <div id="scan-result"></div>
+    </div>
+
+    <div class="section">
+      <h2>📊 Step 2: Patient Status</h2>
+      <div id="status-result"></div>
+      <table id="patients-table" style="display: none;">
+        <thead>
+          <tr>
+            <th>Patient ID</th>
+            <th>Name</th>
+            <th>DOB</th>
+            <th>Status</th>
+            <th>Action</th>
+          </tr>
+        </thead>
+        <tbody id="patients-tbody">
+        </tbody>
+      </table>
+    </div>
+
+    <div class="section">
+      <h2>🔄 Step 3: Sync Missing Patients</h2>
+      <button onclick="syncAllMissing()" id="sync-all-btn" style="display: none;" class="sync-btn">🔄 Sync All Missing Patients to Supabase</button>
+      <div id="sync-result"></div>
+    </div>
+
+    <div class="section">
+      <h2>📝 Activity Log</h2>
+      <div id="log" class="log"></div>
+      <button onclick="clearLog()" style="background: #6c757d; padding: 8px 16px; font-size: 12px;">Clear Log</button>
+    </div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251112030500"></script>
+  <script src="js/patient-sync-recovery.js?v=20250117"></script>
+
+  <script>
+    let scannedPatients = [];
+    let patientStatusMap = new Map();
+
+    function log(message, type = 'info') {
+      const logDiv = document.getElementById('log');
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `[${new Date().toLocaleTimeString()}] ${message}`;
+      logDiv.appendChild(entry);
+      logDiv.scrollTop = logDiv.scrollHeight;
+      console.log(message);
+    }
+
+    function clearLog() {
+      document.getElementById('log').innerHTML = '';
+    }
+
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || '{}');
+      return user && user.org ? `${user.org}_${key}` : key;
+    }
+
+    async function getOrganizationUUID() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      let orgId = user.organizationId || user.organization_id;
+      
+      if (!orgId || (orgId && !orgId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i))) {
+        if (user.org) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[user.org];
+          if (orgData && orgData.id && orgData.id.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            orgId = orgData.id;
+          } else if (window.supabaseClient && user.org) {
+            try {
+              const { data: orgResult, error: orgError } = await window.supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', user.org)
+                .single();
+              
+              if (!orgError && orgResult && orgResult.id) {
+                orgId = orgResult.id;
+              }
+            } catch (lookupError) {
+              log(`❌ Error looking up organization: ${lookupError.message}`, 'error');
+            }
+          }
+        }
+      }
+      
+      return orgId;
+    }
+
+    async function patientExistsInSupabase(patientId, orgId) {
+      if (!window.supabaseClient || !orgId) return false;
+      
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('patients')
+          .select('id')
+          .eq('patient_id', patientId)
+          .eq('organization_id', orgId)
+          .single();
+        
+        return !error && data;
+      } catch (err) {
+        return false;
+      }
+    }
+
+    async function scanPatients() {
+      log('🔍 Starting patient scan...', 'info');
+      document.getElementById('scan-btn').disabled = true;
+      
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        if (!user.org) {
+          throw new Error('No organization found. Please log in first.');
+        }
+
+        const patientsKey = getDataKey("patients");
+        const localPatients = JSON.parse(localStorage.getItem(patientsKey) || "[]");
+        
+        log(`✅ Found ${localPatients.length} patients in localStorage`, 'success');
+        
+        if (localPatients.length === 0) {
+          document.getElementById('scan-result').innerHTML = '<div class="warning">⚠️ No patients found in localStorage. The lost patient may have been cleared or was never saved locally.</div>';
+          return;
+        }
+
+        scannedPatients = localPatients;
+        
+        // Get organization UUID
+        const orgId = await getOrganizationUUID();
+        if (!orgId) {
+          throw new Error('Could not determine organization UUID. Please log out and log back in.');
+        }
+
+        log(`✅ Organization UUID: ${orgId}`, 'success');
+        log(`🔍 Checking which patients exist in Supabase...`, 'info');
+
+        // Check each patient
+        const statusResults = [];
+        let missingCount = 0;
+        
+        for (const patient of localPatients) {
+          const exists = await patientExistsInSupabase(patient.id, orgId);
+          const status = exists ? 'supabase' : 'missing';
+          
+          if (!exists) missingCount++;
+          
+          patientStatusMap.set(patient.id, { patient, status, exists });
+          statusResults.push({ patient, status, exists });
+          
+          log(`${exists ? '✅' : '❌'} Patient ${patient.id} (${patient.firstName} ${patient.lastName}): ${exists ? 'Exists in Supabase' : 'MISSING from Supabase'}`, exists ? 'success' : 'warning');
+        }
+
+        document.getElementById('scan-result').innerHTML = `
+          <div class="success">
+            ✅ Scan complete! Found ${localPatients.length} patients in localStorage.
+            ${missingCount > 0 ? `<br><strong>⚠️ ${missingCount} patient(s) are missing from Supabase and can be recovered.</strong>` : '<br>✅ All patients exist in Supabase.'}
+          </div>
+        `;
+
+        displayPatientStatus(statusResults, missingCount);
+        
+      } catch (error) {
+        log(`❌ Error during scan: ${error.message}`, 'error');
+        document.getElementById('scan-result').innerHTML = `
+          <div class="error">
+            ❌ Error: ${error.message}
+          </div>
+        `;
+      } finally {
+        document.getElementById('scan-btn').disabled = false;
+      }
+    }
+
+    function displayPatientStatus(statusResults, missingCount) {
+      const table = document.getElementById('patients-table');
+      const tbody = document.getElementById('patients-tbody');
+      
+      if (statusResults.length === 0) {
+        table.style.display = 'none';
+        return;
+      }
+
+      table.style.display = 'table';
+      tbody.innerHTML = '';
+
+      statusResults.forEach(({ patient, status, exists }) => {
+        const row = document.createElement('tr');
+        const statusClass = status === 'supabase' ? 'status-supabase' : 'status-missing';
+        const statusText = status === 'supabase' ? '✅ In Supabase' : '❌ Missing';
+        
+        row.innerHTML = `
+          <td>${patient.id}</td>
+          <td>${patient.firstName} ${patient.lastName}</td>
+          <td>${patient.dob || 'N/A'}</td>
+          <td><span class="status-badge ${statusClass}">${statusText}</span></td>
+          <td>
+            ${!exists ? `<button onclick="syncSinglePatient('${patient.id}')" style="background: #28a745; padding: 6px 12px; font-size: 12px;">🔄 Sync This Patient</button>` : '✅ Synced'}
+          </td>
+        `;
+        tbody.appendChild(row);
+      });
+
+      if (missingCount > 0) {
+        document.getElementById('sync-all-btn').style.display = 'inline-block';
+        document.getElementById('status-result').innerHTML = `
+          <div class="warning">
+            ⚠️ Found ${missingCount} patient(s) that exist in localStorage but are missing from Supabase.
+            Click "Sync All Missing Patients" to recover them automatically.
+          </div>
+        `;
+      } else {
+        document.getElementById('sync-all-btn').style.display = 'none';
+        document.getElementById('status-result').innerHTML = `
+          <div class="success">
+            ✅ All patients are already synced to Supabase. No recovery needed.
+          </div>
+        `;
+      }
+    }
+
+    async function syncSinglePatient(patientId) {
+      const patientData = patientStatusMap.get(patientId);
+      if (!patientData || patientData.exists) {
+        log(`⚠️ Patient ${patientId} is already synced or not found`, 'warning');
+        return;
+      }
+
+      log(`🔄 Syncing patient ${patientId}...`, 'info');
+      
+      // Use the sync recovery service
+      if (typeof window.syncLocalPatientsToSupabase === 'function') {
+        try {
+          const result = await window.syncLocalPatientsToSupabase();
+          log(`✅ Sync complete! Synced ${result.synced || 0} patient(s)`, 'success');
+          
+          // Re-scan to update status
+          setTimeout(() => {
+            scanPatients();
+          }, 1000);
+        } catch (error) {
+          log(`❌ Error syncing: ${error.message}`, 'error');
+        }
+      } else {
+        log(`❌ Sync recovery service not available`, 'error');
+      }
+    }
+
+    async function syncAllMissing() {
+      const missingPatients = Array.from(patientStatusMap.values())
+        .filter(item => !item.exists)
+        .map(item => item.patient);
+
+      if (missingPatients.length === 0) {
+        log('✅ No missing patients to sync', 'success');
+        return;
+      }
+
+      log(`🔄 Starting sync of ${missingPatients.length} missing patient(s)...`, 'info');
+      document.getElementById('sync-all-btn').disabled = true;
+
+      if (typeof window.syncLocalPatientsToSupabase === 'function') {
+        try {
+          const result = await window.syncLocalPatientsToSupabase();
+          
+          if (result.success) {
+            log(`✅ Sync complete!`, 'success');
+            log(`   - Synced: ${result.synced || 0} patient(s)`, 'success');
+            log(`   - Skipped: ${result.skipped || 0} patient(s) (already exist)`, 'info');
+            if (result.errors > 0) {
+              log(`   - Errors: ${result.errors} patient(s)`, 'error');
+            }
+
+            document.getElementById('sync-result').innerHTML = `
+              <div class="success">
+                ✅ Successfully synced ${result.synced || 0} patient(s) to Supabase!
+                ${result.errors > 0 ? `<br>⚠️ ${result.errors} patient(s) had errors. Check the log for details.` : ''}
+                <br><br><strong>Please refresh the patients page to see your recovered patients.</strong>
+              </div>
+            `;
+
+            // Re-scan to update status
+            setTimeout(() => {
+              scanPatients();
+            }, 2000);
+          } else {
+            throw new Error(result.error || 'Sync failed');
+          }
+        } catch (error) {
+          log(`❌ Error during sync: ${error.message}`, 'error');
+          document.getElementById('sync-result').innerHTML = `
+            <div class="error">
+              ❌ Error: ${error.message}
+            </div>
+          `;
+        } finally {
+          document.getElementById('sync-all-btn').disabled = false;
+        }
+      } else {
+        log(`❌ Sync recovery service not available`, 'error');
+        document.getElementById('sync-all-btn').disabled = false;
+      }
+    }
+
+    // Auto-scan on page load if user is logged in
+    window.addEventListener('DOMContentLoaded', function() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.username && user.org) {
+        log('👤 User logged in. Ready to scan for lost patients.', 'info');
+        log('🔍 Click "Scan for Patients" to begin recovery.', 'info');
+      } else {
+        log('⚠️ Please log in first to recover patients.', 'warning');
+        document.getElementById('scan-result').innerHTML = `
+          <div class="warning">
+            ⚠️ Please log in first. Go to <a href="login">login page</a> and then return here.
+          </div>
+        `;
+      }
+    });
+  </script>
+</body>
+</html>
+
+
+
+
+
+

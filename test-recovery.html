@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test E2E Encryption Recovery</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-result {
+      padding: 10px;
+      margin: 10px 0;
+      border-radius: 4px;
+    }
+    .pass {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    .fail {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    button {
+      background: #007bff;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin: 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    pre {
+      background: #f8f9fa;
+      padding: 10px;
+      border-radius: 4px;
+      overflow-x: auto;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔐 E2E Encryption Recovery Test</h1>
+  <p>This page tests the password recovery functionality to ensure it works correctly.</p>
+
+  <div class="test-section">
+    <h2>Test 1: Recovery Key Generation</h2>
+    <button onclick="testRecoveryKeyGeneration()">Test Recovery Key Generation</button>
+    <div id="test1-result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 2: Master Password Encryption & Recovery Key Decryption</h2>
+    <p>This is the critical test: Can recovery key decrypt data encrypted with master password?</p>
+    <button onclick="testMasterPasswordAndRecoveryKey()">Test Master Password → Recovery Key</button>
+    <div id="test2-result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 3: Recovery Key Encryption/Decryption</h2>
+    <button onclick="testRecoveryKeyEncryption()">Test Recovery Key Encryption</button>
+    <div id="test3-result"></div>
+  </div>
+
+  <div class="test-section">
+    <h2>Test 4: Full Recovery Flow</h2>
+    <button onclick="testFullRecoveryFlow()">Test Full Recovery Flow</button>
+    <div id="test4-result"></div>
+  </div>
+
+  <script src="js/encryption.js"></script>
+  <script>
+    let testResults = [];
+
+    function logResult(testName, passed, message, details = null) {
+      const resultDiv = document.getElementById(testName);
+      const className = passed ? 'pass' : 'fail';
+      const icon = passed ? '✅' : '❌';
+      
+      let html = `<div class="test-result ${className}">${icon} ${message}</div>`;
+      if (details) {
+        html += `<pre>${JSON.stringify(details, null, 2)}</pre>`;
+      }
+      resultDiv.innerHTML = html;
+      
+      testResults.push({ test: testName, passed, message, details });
+    }
+
+    async function testRecoveryKeyGeneration() {
+      try {
+        const recoveryKey = await window.encryptionService.generateRecoveryKey();
+        
+        if (!recoveryKey || typeof recoveryKey !== 'string') {
+          logResult('test1-result', false, 'Recovery key generation failed - invalid format');
+          return;
+        }
+
+        // Verify it's base64 and right length (256-bit = 32 bytes = ~44 base64 chars)
+        const decoded = atob(recoveryKey);
+        if (decoded.length !== 32) {
+          logResult('test1-result', false, `Recovery key wrong length: ${decoded.length} bytes (expected 32)`);
+          return;
+        }
+
+        logResult('test1-result', true, 'Recovery key generation works correctly', {
+          keyLength: recoveryKey.length,
+          decodedLength: decoded.length,
+          preview: recoveryKey.substring(0, 20) + '...'
+        });
+      } catch (error) {
+        logResult('test1-result', false, `Recovery key generation failed: ${error.message}`, error);
+      }
+    }
+
+    async function testMasterPasswordAndRecoveryKey() {
+      try {
+        const orgId = 'test-org-' + Date.now();
+        const masterPassword = 'MySecurePassword123!';
+        const testData = { firstName: 'John', lastName: 'Doe', phone: '123-456-7890' };
+
+        // Store salt and wrapped key for the test
+        let testSalt = null;
+        let testWrappedKey = null;
+
+        // Mock Supabase client with proper structure
+        const originalSupabase = window.supabaseClient;
+        window.supabaseClient = {
+          from: () => ({
+            select: () => ({
+              eq: () => ({
+                single: async () => {
+                  // Return stored salt and wrapped key
+                  return {
+                    data: {
+                      settings: {
+                        encryption_salt: testSalt ? btoa(String.fromCharCode(...testSalt)) : null,
+                        encryption_key_wrapped: testWrappedKey
+                      }
+                    },
+                    error: null
+                  };
+                }
+              }),
+              update: () => ({
+                eq: () => ({}) // Mock update - doesn't need to do anything
+              })
+            }),
+            update: () => ({
+              eq: () => Promise.resolve({ data: null, error: null }) // Mock update
+            })
+          })
+        };
+
+        // Step 1: Initialize with master password
+        const initialized1 = await window.encryptionService.initialize(orgId, masterPassword);
+        if (!initialized1) {
+          logResult('test2-result', false, 'Failed to initialize with master password');
+          window.supabaseClient = originalSupabase;
+          return;
+        }
+
+        // Store the salt that was generated
+        testSalt = window.encryptionService.salt;
+
+        // Step 2: Encrypt data with master password
+        const encrypted = await window.encryptionService.encryptFields(testData, ['firstName', 'lastName', 'phone']);
+        
+        if (!encrypted._encrypted) {
+          logResult('test2-result', false, 'Data was not encrypted');
+          window.supabaseClient = originalSupabase;
+          return;
+        }
+
+        // Step 3: Generate recovery key and wrap encryption key
+        const recoveryKey = await window.encryptionService.generateRecoveryKey();
+        const wrappedEncryptionKey = await window.encryptionService.wrapEncryptionKeyWithRecoveryKey(recoveryKey);
+        
+        if (!wrappedEncryptionKey) {
+          logResult('test2-result', false, 'Failed to wrap encryption key with recovery key');
+          window.supabaseClient = originalSupabase;
+          return;
+        }
+
+        // Store wrapped key for recovery
+        testWrappedKey = wrappedEncryptionKey;
+
+        // Step 4: Clear encryption service
+        window.encryptionService.clearKey();
+
+        // Step 5: Initialize with recovery key (should unwrap encryption key)
+        const initialized2 = await window.encryptionService.initializeWithRecoveryKey(orgId, recoveryKey);
+        if (!initialized2) {
+          logResult('test2-result', false, 'Failed to initialize with recovery key');
+          window.supabaseClient = originalSupabase;
+          return;
+        }
+
+        // Step 6: Try to decrypt data with recovery key
+        const decrypted = await window.encryptionService.decryptFields(encrypted, ['firstName', 'lastName', 'phone']);
+
+        // Step 7: Verify decrypted data matches original
+        if (decrypted.firstName === testData.firstName && 
+            decrypted.lastName === testData.lastName && 
+            decrypted.phone === testData.phone) {
+          logResult('test2-result', true, '✅ Recovery key can decrypt data encrypted with master password!', {
+            original: testData,
+            decrypted: {
+              firstName: decrypted.firstName,
+              lastName: decrypted.lastName,
+              phone: decrypted.phone
+            }
+          });
+        } else {
+          logResult('test2-result', false, '❌ Decrypted data does not match original', {
+            original: testData,
+            decrypted: {
+              firstName: decrypted.firstName,
+              lastName: decrypted.lastName,
+              phone: decrypted.phone
+            }
+          });
+        }
+
+        // Restore original Supabase client
+        window.supabaseClient = originalSupabase;
+      } catch (error) {
+        logResult('test2-result', false, `Test failed: ${error.message}`, error);
+        window.supabaseClient = originalSupabase;
+      }
+    }
+
+    async function testRecoveryKeyEncryption() {
+      try {
+        const recoveryKey = await window.encryptionService.generateRecoveryKey();
+        const platformMasterKey = 'PlatformMasterKey123!';
+
+        // Encrypt recovery key
+        const encryptedRecoveryKey = await window.encryptionService.encryptRecoveryKey(recoveryKey, platformMasterKey);
+        
+        if (!encryptedRecoveryKey || typeof encryptedRecoveryKey !== 'string') {
+          logResult('test3-result', false, 'Failed to encrypt recovery key');
+          return;
+        }
+
+        // Decrypt recovery key
+        const decryptedRecoveryKey = await window.encryptionService.decryptRecoveryKey(encryptedRecoveryKey, platformMasterKey);
+
+        // Verify they match
+        if (decryptedRecoveryKey === recoveryKey) {
+          logResult('test3-result', true, 'Recovery key encryption/decryption works correctly', {
+            originalLength: recoveryKey.length,
+            encryptedLength: encryptedRecoveryKey.length,
+            matches: decryptedRecoveryKey === recoveryKey
+          });
+        } else {
+          logResult('test3-result', false, 'Decrypted recovery key does not match original');
+        }
+      } catch (error) {
+        logResult('test3-result', false, `Test failed: ${error.message}`, error);
+      }
+    }
+
+    async function testFullRecoveryFlow() {
+      try {
+        const orgId = 'test-org-full-' + Date.now();
+        const masterPassword = 'TestPassword123!';
+        const testData = { 
+          firstName: 'Jane', 
+          lastName: 'Smith', 
+          email: 'jane@example.com',
+          phone: '555-1234'
+        };
+
+        // Store salt and wrapped key for the test
+        let testSalt = null;
+        let testWrappedKey = null;
+
+        // Mock Supabase client with proper structure
+        const originalSupabase = window.supabaseClient;
+        window.supabaseClient = {
+          from: () => ({
+            select: () => ({
+              eq: () => ({
+                single: async () => {
+                  // Return stored salt and wrapped key
+                  return {
+                    data: {
+                      settings: {
+                        encryption_salt: testSalt ? btoa(String.fromCharCode(...testSalt)) : null,
+                        encryption_key_wrapped: testWrappedKey
+                      }
+                    },
+                    error: null
+                  };
+                }
+              })
+            }),
+            update: () => ({
+              eq: () => Promise.resolve({ data: null, error: null }) // Mock update
+            })
+          })
+        };
+
+        // Step 1: Generate recovery key
+        const recoveryKey = await window.encryptionService.generateRecoveryKey();
+
+        // Step 2: Initialize with master password
+        const initialized1 = await window.encryptionService.initialize(orgId, masterPassword);
+        if (!initialized1) {
+          logResult('test4-result', false, 'Step 1 failed: Could not initialize with master password');
+          window.supabaseClient = originalSupabase;
+          return;
+        }
+
+        // Store the salt that was generated
+        testSalt = window.encryptionService.salt;
+
+        // Step 3: Encrypt data
+        const encrypted = await window.encryptionService.encryptFields(testData, ['firstName', 'lastName', 'email', 'phone']);
+        
+        // Step 4: Wrap encryption key with recovery key
+        const wrappedEncryptionKey = await window.encryptionService.wrapEncryptionKeyWithRecoveryKey(recoveryKey);
+        testWrappedKey = wrappedEncryptionKey;
+        
+        // Step 5: Clear and simulate password loss
+        window.encryptionService.clearKey();
+
+        // Step 6: Use recovery key to restore access
+        const initialized2 = await window.encryptionService.initializeWithRecoveryKey(orgId, recoveryKey);
+        if (!initialized2) {
+          logResult('test4-result', false, 'Step 2 failed: Could not initialize with recovery key');
+          window.supabaseClient = originalSupabase;
+          return;
+        }
+
+        // Step 7: Decrypt data with recovery key
+        const decrypted = await window.encryptionService.decryptFields(encrypted, ['firstName', 'lastName', 'email', 'phone']);
+
+        // Step 8: Verify all fields match
+        const allMatch = 
+          decrypted.firstName === testData.firstName &&
+          decrypted.lastName === testData.lastName &&
+          decrypted.email === testData.email &&
+          decrypted.phone === testData.phone;
+
+        if (allMatch) {
+          logResult('test4-result', true, '✅ Full recovery flow works! User can recover access with recovery key.', {
+            encrypted: Object.keys(encrypted).filter(k => k !== '_encrypted'),
+            decrypted: {
+              firstName: decrypted.firstName,
+              lastName: decrypted.lastName,
+              email: decrypted.email,
+              phone: decrypted.phone
+            },
+            allFieldsMatch: allMatch
+          });
+        } else {
+          logResult('test4-result', false, '❌ Full recovery flow failed - decrypted data does not match', {
+            original: testData,
+            decrypted: {
+              firstName: decrypted.firstName,
+              lastName: decrypted.lastName,
+              email: decrypted.email,
+              phone: decrypted.phone
+            }
+          });
+        }
+
+        // Restore original Supabase client
+        window.supabaseClient = originalSupabase;
+      } catch (error) {
+        logResult('test4-result', false, `Full recovery flow failed: ${error.message}`, error);
+        window.supabaseClient = originalSupabase;
+      }
+    }
+
+    // Auto-run all tests on load
+    window.addEventListener('load', function() {
+      console.log('🧪 Recovery test page loaded. Click buttons to run tests.');
+    });
+  </script>
+</body>
+</html>
+

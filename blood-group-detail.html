@@ -1,0 +1,680 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Blood Group Details - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=219">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --charcoal: #36454F;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      min-height: 100vh;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 16px;
+      padding: 30px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.1);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      text-align: center;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+    
+    .subtitle {
+      text-align: center;
+      color: var(--charcoal);
+      font-size: 16px;
+      margin-bottom: 30px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      padding: 10px 20px;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      font-weight: 600;
+      transition: transform 0.2s;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+    }
+    
+    .patient-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+      background: white;
+      border-radius: 8px;
+      overflow: hidden;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      table-layout: auto;
+    }
+    
+    .patient-table thead {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+    }
+    
+    .patient-table th {
+      padding: 15px;
+      text-align: left;
+      font-weight: 600;
+      font-size: 14px;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .patient-table th:nth-child(1) {
+      width: 25%;
+    }
+    
+    .patient-table th:nth-child(2) {
+      width: 25%;
+    }
+    
+    .patient-table th:nth-child(3) {
+      width: 15%;
+    }
+    
+    .patient-table th:nth-child(4) {
+      width: 10%;
+    }
+    
+    .patient-table th:nth-child(5) {
+      width: 25%;
+      min-width: 140px;
+    }
+    
+    .patient-table td {
+      padding: 15px;
+      border-bottom: 1px solid #e0e0e0;
+      vertical-align: middle;
+    }
+    
+    .patient-table td:nth-child(5) {
+      white-space: nowrap;
+    }
+    
+    .patient-table tbody tr:hover {
+      background: #f8f9fa;
+    }
+    
+    .patient-table tbody tr:last-child td {
+      border-bottom: none;
+    }
+    
+    .contact-info {
+      display: flex;
+      flex-direction: column;
+      gap: 5px;
+    }
+    
+    .contact-phone, .contact-email {
+      font-size: 13px;
+      color: var(--charcoal);
+    }
+    
+    .contact-phone::before {
+      content: '📞 ';
+    }
+    
+    .contact-email::before {
+      content: '✉️ ';
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--charcoal);
+      font-size: 18px;
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 15px;
+      border-radius: 8px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 40px;
+      color: var(--charcoal);
+    }
+    
+    .empty-state-icon {
+      font-size: 64px;
+      margin-bottom: 20px;
+    }
+    
+    .patient-name {
+      font-weight: 600;
+      color: var(--primary-green);
+    }
+    
+    .view-patient-btn {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.2s;
+      white-space: nowrap;
+      min-width: 120px;
+      display: inline-block;
+      text-align: center;
+      box-shadow: 0 2px 4px rgba(0, 135, 83, 0.2);
+    }
+    
+    .view-patient-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4);
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+    }
+    
+    .view-patient-btn:active {
+      transform: translateY(0);
+    }
+    
+    @media (max-width: 768px) {
+      .patient-table {
+        font-size: 12px;
+      }
+      
+      .patient-table th,
+      .patient-table td {
+        padding: 10px 8px;
+      }
+      
+      .view-patient-btn {
+        padding: 8px 12px;
+        font-size: 12px;
+        min-width: 100px;
+      }
+    }
+    
+    .summary-card {
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05));
+      border: 3px solid var(--primary-green);
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 30px;
+      text-align: center;
+    }
+    
+    .summary-count {
+      font-size: 48px;
+      font-weight: 900;
+      color: var(--dark-green);
+      margin: 10px 0;
+    }
+    
+    .summary-label {
+      font-size: 18px;
+      color: var(--charcoal);
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div style="position: fixed; top: 10px; right: 10px; font-size: 14px; color: var(--charcoal); font-weight: 600; background: linear-gradient(135deg, rgba(255, 255, 255, 0.9), rgba(255, 255, 240, 0.9)); padding: 8px 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1); border: 1px solid rgba(0, 107, 66, 0.3);" id="org-info"></div>
+  
+  <div class="container">
+    <a href="blood-group-summary" class="back-button">← Back to Blood Group Summary</a>
+    
+    <h1 id="page-title">🩸 Blood Group Details</h1>
+    <p class="subtitle" id="page-subtitle">Loading...</p>
+    
+    <div id="summary-card" class="summary-card" style="display: none;">
+      <div class="summary-label">Total Patients with this Blood Type</div>
+      <div class="summary-count" id="summary-count">0</div>
+    </div>
+    
+    <div id="loading" class="loading">Loading patient data...</div>
+    <div id="error" class="error" style="display: none;"></div>
+    <div id="patients-container" style="display: none;">
+      <table class="patient-table">
+        <thead>
+          <tr>
+            <th>Patient Name</th>
+            <th>Contact Information</th>
+            <th>Date of Birth</th>
+            <th>Gender</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="patients-tbody">
+        </tbody>
+      </table>
+    </div>
+    <div id="empty-state" class="empty-state" style="display: none;">
+      <div class="empty-state-icon">🩸</div>
+      <h2>No Patients Found</h2>
+      <p>No patients found with this blood type. Patients will appear here once they are added with this blood group information.</p>
+    </div>
+  </div>
+  
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251019043800"></script>
+  <script src="js/universal-data-loader.js?v=20251019043800"></script>
+  <script src="js/main.js?v=20251019043800"></script>
+  
+  <script>
+    // Get URL parameter
+    function getUrlParameter(name) {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get(name);
+    }
+    
+    // Get organization ID
+    async function getCurrentOrgId() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Try to get from user object first
+      if (user.organizationId) return user.organizationId;
+      if (user.organization_id) return user.organization_id;
+      
+      // Try to get from Supabase users table
+      if (window.supabaseClient && user.id) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('users')
+            .select('organization_id')
+            .eq('id', user.id)
+            .maybeSingle();
+          
+          if (!error && data && data.organization_id) {
+            return data.organization_id;
+          }
+        } catch (err) {
+          console.warn('Could not fetch org ID from users table:', err);
+        }
+      }
+      
+      // Try to get from organizations table using org name
+      if (window.supabaseClient && user.org) {
+        try {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('id')
+            .eq('name', user.org)
+            .maybeSingle();
+          
+          if (!error && data && data.id) {
+            return data.id;
+          }
+        } catch (err) {
+          console.warn('Could not fetch org ID from organizations table:', err);
+        }
+      }
+      
+      return null;
+    }
+    
+    // Normalize blood group variations
+    function normalizeBloodGroup(bloodType) {
+      if (!bloodType) return null;
+      const normalized = bloodType.toUpperCase().trim();
+      
+      const variations = {
+        'A POSITIVE': 'A+',
+        'A POS': 'A+',
+        'A+': 'A+',
+        'A NEGATIVE': 'A-',
+        'A NEG': 'A-',
+        'A-': 'A-',
+        'B POSITIVE': 'B+',
+        'B POS': 'B+',
+        'B+': 'B+',
+        'B NEGATIVE': 'B-',
+        'B NEG': 'B-',
+        'B-': 'B-',
+        'AB POSITIVE': 'AB+',
+        'AB POS': 'AB+',
+        'AB+': 'AB+',
+        'AB NEGATIVE': 'AB-',
+        'AB NEG': 'AB-',
+        'AB-': 'AB-',
+        'O POSITIVE': 'O+',
+        'O POS': 'O+',
+        'O+': 'O+',
+        'O NEGATIVE': 'O-',
+        'O NEG': 'O-',
+        'O-': 'O-'
+      };
+      
+      return variations[normalized] || normalized;
+    }
+    
+    // Load patients for specific blood group
+    async function loadBloodGroupPatients() {
+      const bloodType = getUrlParameter('type');
+      
+      if (!bloodType) {
+        document.getElementById('error').textContent = 'Blood type not specified.';
+        document.getElementById('error').style.display = 'block';
+        document.getElementById('loading').style.display = 'none';
+        return;
+      }
+      
+      const loadingEl = document.getElementById('loading');
+      const errorEl = document.getElementById('error');
+      const containerEl = document.getElementById('patients-container');
+      const emptyStateEl = document.getElementById('empty-state');
+      const tbodyEl = document.getElementById('patients-tbody');
+      const summaryCardEl = document.getElementById('summary-card');
+      const summaryCountEl = document.getElementById('summary-count');
+      const pageTitleEl = document.getElementById('page-title');
+      const pageSubtitleEl = document.getElementById('page-subtitle');
+      
+      try {
+        loadingEl.style.display = 'block';
+        errorEl.style.display = 'none';
+        containerEl.style.display = 'none';
+        emptyStateEl.style.display = 'none';
+        summaryCardEl.style.display = 'none';
+        
+        // Update page title
+        pageTitleEl.textContent = `🩸 Blood Group: ${bloodType}`;
+        pageSubtitleEl.textContent = `List of all patients with blood type ${bloodType}`;
+        
+        const orgId = await getCurrentOrgId();
+        if (!orgId) {
+          throw new Error('Organization ID not found. Please ensure you are logged in.');
+        }
+        
+        // Load patients using universal data loader
+        let patients = [];
+        
+        try {
+          // Wait a bit for encryption service to initialize if needed
+          if (typeof window.encryptionService !== 'undefined' && window.encryptionService && !window.encryptionService.isInitialized) {
+            console.log('⏳ Waiting for encryption service to initialize...');
+            let waitCount = 0;
+            while (!window.encryptionService.isInitialized && waitCount < 20) {
+              await new Promise(resolve => setTimeout(resolve, 100));
+              waitCount++;
+            }
+          }
+          
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+            console.log(`✅ Loaded ${patients.length} patients from loadPatientsWithSupabasePriority`);
+            
+            // Debug: Log first 3 patients structure
+            if (patients.length > 0) {
+              console.log('🔍 First patient keys:', Object.keys(patients[0]));
+              console.log('🔍 First 3 patients sample:', patients.slice(0, 3).map(p => ({
+                id: p.id,
+                patient_id: p.patient_id,
+                firstName: p.firstName,
+                first_name: p.first_name,
+                lastName: p.lastName,
+                last_name: p.last_name,
+                middleName: p.middleName,
+                middle_name: p.middle_name,
+                dob: p.dob,
+                date_of_birth: p.date_of_birth,
+                phone: p.phone,
+                email: p.email,
+                gender: p.gender,
+                bloodGroup: p.bloodGroup,
+                blood_type: p.blood_type,
+                blood_group: p.blood_group,
+                _encrypted: p._encrypted
+              })));
+            } else {
+              console.warn('⚠️ No patients loaded!');
+            }
+          } else {
+            console.warn('⚠️ loadPatientsWithSupabasePriority function not available');
+            // Fallback to localStorage if function not available
+            const user = JSON.parse(localStorage.getItem('user') || '{}');
+            const getDataKey = (key) => user && user.org ? `${user.org}_${key}` : key;
+            const patientsRaw = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+            
+            // Try to decrypt if encrypted
+            if (Array.isArray(patientsRaw) && patientsRaw.length > 0 && patientsRaw[0]._encrypted) {
+              console.log('🔓 Attempting to decrypt patient data...');
+              try {
+                if (typeof window.decryptPatientsArray === 'function') {
+                  patients = await window.decryptPatientsArray(patientsRaw);
+                  console.log(`✅ Decrypted ${patients.length} patients`);
+                } else if (typeof window.encryptionService !== 'undefined' && window.encryptionService && window.encryptionService.isInitialized) {
+                  // Manual decryption
+                  const decryptField = async (value) => {
+                    if (!value || typeof value !== 'string') return value;
+                    try {
+                      return await window.encryptionService.decrypt(value);
+                    } catch (e) {
+                      return value;
+                    }
+                  };
+                  
+                  patients = await Promise.all(patientsRaw.map(async (patient) => {
+                    const decrypted = { ...patient };
+                    if (patient.firstName) decrypted.firstName = await decryptField(patient.firstName);
+                    if (patient.lastName) decrypted.lastName = await decryptField(patient.lastName);
+                    if (patient.middleName) decrypted.middleName = await decryptField(patient.middleName);
+                    if (patient.phone) decrypted.phone = await decryptField(patient.phone);
+                    if (patient.email) decrypted.email = await decryptField(patient.email);
+                    if (patient.dob) decrypted.dob = await decryptField(patient.dob);
+                    delete decrypted._encrypted;
+                    return decrypted;
+                  }));
+                  console.log(`✅ Manually decrypted ${patients.length} patients`);
+                } else {
+                  patients = patientsRaw;
+                  console.warn('⚠️ Encryption service not available, using raw data');
+                }
+              } catch (decryptError) {
+                console.error('❌ Decryption error:', decryptError);
+                patients = patientsRaw; // Use raw data as fallback
+              }
+            } else {
+              patients = Array.isArray(patientsRaw) ? patientsRaw : [];
+            }
+            console.log(`📋 Loaded ${patients.length} patients from localStorage fallback`);
+          }
+        } catch (loadError) {
+          console.error('❌ Error loading patients:', loadError);
+          // Fallback to localStorage on error
+          const user = JSON.parse(localStorage.getItem('user') || '{}');
+          const getDataKey = (key) => user && user.org ? `${user.org}_${key}` : key;
+          const patientsRaw = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+          patients = Array.isArray(patientsRaw) ? patientsRaw : [];
+          console.log(`📋 Loaded ${patients.length} patients from localStorage error fallback`);
+        }
+        
+        // Filter patients by blood type
+        const targetBloodType = bloodType === 'Unknown' ? null : normalizeBloodGroup(bloodType);
+        const matchingPatients = patients.filter(patient => {
+          // Check all possible blood group field names (app format: bloodGroup, Supabase format: blood_type, blood_group)
+          const patientBloodTypeRaw = (patient.bloodGroup || patient.blood_type || patient.blood_group || '').toString().trim();
+          
+          if (bloodType === 'Unknown') {
+            // Show patients with no blood type or unrecognized blood type
+            return !patientBloodTypeRaw || !normalizeBloodGroup(patientBloodTypeRaw);
+          } else {
+            // Show patients matching the target blood type
+            const patientBloodType = normalizeBloodGroup(patientBloodTypeRaw);
+            return patientBloodType === targetBloodType;
+          }
+        });
+        
+        // Update summary
+        summaryCountEl.textContent = matchingPatients.length;
+        summaryCardEl.style.display = 'block';
+        
+        // Display patients
+        if (matchingPatients.length === 0) {
+          emptyStateEl.style.display = 'block';
+          containerEl.style.display = 'none';
+        } else {
+          tbodyEl.innerHTML = '';
+          
+          matchingPatients.forEach((patient, index) => {
+            const row = document.createElement('tr');
+            
+            // Debug: Log first 3 patients to see structure
+            if (index < 3) {
+              console.log(`🔍 Patient ${index + 1} data:`, {
+                id: patient.id,
+                patient_id: patient.patient_id,
+                firstName: patient.firstName,
+                first_name: patient.first_name,
+                lastName: patient.lastName,
+                last_name: patient.last_name,
+                middleName: patient.middleName,
+                middle_name: patient.middle_name,
+                dob: patient.dob,
+                date_of_birth: patient.date_of_birth,
+                phone: patient.phone,
+                email: patient.email,
+                gender: patient.gender,
+                bloodGroup: patient.bloodGroup,
+                blood_type: patient.blood_type,
+                blood_group: patient.blood_group,
+                allKeys: Object.keys(patient)
+              });
+            }
+            
+            // Get patient name - loadPatientsWithSupabasePriority returns camelCase format
+            // According to universal-data-loader.js line 605-607, it returns:
+            // firstName, middleName, lastName (camelCase)
+            const firstName = patient.firstName || patient.first_name || '';
+            const middleName = patient.middleName || patient.middle_name || '';
+            const lastName = patient.lastName || patient.last_name || '';
+            
+            // Build full name - filter out empty strings
+            const nameParts = [];
+            if (firstName && firstName.trim()) nameParts.push(firstName.trim());
+            if (middleName && middleName.trim()) nameParts.push(middleName.trim());
+            if (lastName && lastName.trim()) nameParts.push(lastName.trim());
+            
+            const fullName = nameParts.length > 0 ? nameParts.join(' ') : 'Unknown Patient';
+            
+            // Get contact info
+            const phone = patient.phone ? String(patient.phone).trim() : '';
+            const email = patient.email ? String(patient.email).trim() : '';
+            
+            // Get DOB - loadPatientsWithSupabasePriority returns 'dob' (camelCase)
+            // According to universal-data-loader.js line 608, it returns: dob: patient.date_of_birth
+            let dob = patient.dob || patient.date_of_birth || null;
+            let dobFormatted = 'N/A';
+            if (dob) {
+              try {
+                // Handle different date formats
+                const dateObj = new Date(dob);
+                if (!isNaN(dateObj.getTime())) {
+                  dobFormatted = dateObj.toLocaleDateString('en-US', { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                  });
+                } else {
+                  console.warn('Invalid date format:', dob);
+                }
+              } catch (e) {
+                console.warn('Error formatting date:', dob, e);
+              }
+            }
+            
+            // Get gender
+            const gender = patient.gender ? String(patient.gender).trim() : 'N/A';
+            
+            // Get patient ID - loadPatientsWithSupabasePriority returns 'id' (camelCase)
+            // According to universal-data-loader.js line 604, it returns: id: patient.patient_id
+            const patientId = patient.id || patient.patient_id || '';
+            
+            row.innerHTML = `
+              <td>
+                <span class="patient-name">${fullName}</span>
+              </td>
+              <td>
+                <div class="contact-info">
+                  ${phone ? `<div class="contact-phone">${phone}</div>` : ''}
+                  ${email ? `<div class="contact-email">${email}</div>` : ''}
+                  ${!phone && !email ? '<div style="color: #999;">No contact info</div>' : ''}
+                </div>
+              </td>
+              <td>${dobFormatted}</td>
+              <td>${gender}</td>
+              <td>
+                ${patientId ? `<button class="view-patient-btn" onclick="window.location.href='patient-details?id=${patientId}'">View Patient</button>` : '<span style="color: #999;">N/A</span>'}
+              </td>
+            `;
+            
+            tbodyEl.appendChild(row);
+          });
+          
+          containerEl.style.display = 'block';
+          emptyStateEl.style.display = 'none';
+        }
+        
+        loadingEl.style.display = 'none';
+        
+      } catch (error) {
+        console.error('Error loading blood group patients:', error);
+        loadingEl.style.display = 'none';
+        errorEl.textContent = `Error loading patient data: ${error.message}`;
+        errorEl.style.display = 'block';
+      }
+    }
+    
+    // Update org info
+    function updateOrgInfo() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgInfoEl = document.getElementById('org-info');
+      if (orgInfoEl) {
+        orgInfoEl.textContent = user.org || 'Unknown Organization';
+      }
+    }
+    
+    // Initialize on page load
+    window.addEventListener('load', () => {
+      updateOrgInfo();
+      loadBloodGroupPatients();
+    });
+  </script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+</body>
+</html>
+

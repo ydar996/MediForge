@@ -1,0 +1,384 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="theme-color" content="#008751">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>My Appointments - Patient Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  
+  <style>
+    :root {
+      --nigerian-green: #008751;
+      --nigerian-green-dark: #006B3F;
+      --nigerian-white: #FFFFFF;
+      --nigerian-gold: #FFD700;
+      --warm-beige: #F5F5DC;
+    }
+    
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      background: var(--warm-beige);
+      min-height: 100vh;
+      padding-bottom: 20px;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, var(--nigerian-green) 0%, var(--nigerian-green-dark) 100%);
+      color: var(--nigerian-white);
+      padding: 20px;
+      box-shadow: 0 2px 10px rgba(0, 0, 0, 0.1);
+    }
+    
+    .header h1 {
+      font-size: 1.8rem;
+      margin-bottom: 5px;
+    }
+    
+    .nav-bar {
+      background: var(--nigerian-white);
+      padding: 15px 20px;
+      box-shadow: 0 2px 5px rgba(0, 0, 0, 0.05);
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .nav-bar a {
+      color: var(--nigerian-green);
+      text-decoration: none;
+      font-weight: 500;
+      padding: 8px 15px;
+      border-radius: 6px;
+      transition: all 0.3s;
+    }
+    
+    .nav-bar a:hover {
+      background: var(--warm-beige);
+    }
+    
+    .nav-bar a.active {
+      background: var(--nigerian-green);
+      color: var(--nigerian-white);
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 0 20px;
+    }
+    
+    .stats-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-bottom: 20px;
+    }
+    
+    .stat-card {
+      background: var(--nigerian-white);
+      border-radius: 12px;
+      padding: 20px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      border-top: 4px solid var(--nigerian-green);
+    }
+    
+    .stat-card h3 {
+      color: #666;
+      font-size: 0.85rem;
+      margin-bottom: 8px;
+      text-transform: uppercase;
+    }
+    
+    .stat-card .value {
+      color: var(--nigerian-green);
+      font-size: 2rem;
+      font-weight: bold;
+    }
+    
+    .appointments-list {
+      background: var(--nigerian-white);
+      border-radius: 12px;
+      box-shadow: 0 4px 15px rgba(0, 0, 0, 0.1);
+      overflow: hidden;
+    }
+    
+    .appointment-item {
+      padding: 20px;
+      border-bottom: 1px solid #eee;
+      transition: background 0.3s;
+    }
+    
+    .appointment-item:hover {
+      background: var(--warm-beige);
+    }
+    
+    .appointment-item:last-child {
+      border-bottom: none;
+    }
+    
+    .appointment-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+      gap: 10px;
+    }
+    
+    .appointment-date {
+      font-size: 1.1rem;
+      font-weight: bold;
+      color: var(--nigerian-green);
+    }
+    
+    .appointment-status {
+      padding: 6px 12px;
+      border-radius: 20px;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .status-upcoming {
+      background: #e8f5e9;
+      color: #2e7d32;
+    }
+    
+    .status-completed {
+      background: #e3f2fd;
+      color: #1565c0;
+    }
+    
+    .status-cancelled {
+      background: #ffebee;
+      color: #c62828;
+    }
+    
+    .appointment-details {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      margin-top: 10px;
+    }
+    
+    .detail-item {
+      display: flex;
+      align-items: center;
+      gap: 8px;
+    }
+    
+    .detail-item label {
+      color: #666;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    
+    .detail-item .value {
+      color: #333;
+      font-weight: 500;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #999;
+    }
+    
+    .empty-state h3 {
+      color: #666;
+      margin-bottom: 10px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: var(--nigerian-green);
+    }
+    
+    .error {
+      background: #fee;
+      color: #c33;
+      padding: 20px;
+      border-radius: 8px;
+      margin: 20px;
+      border-left: 4px solid #c33;
+    }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>&#128197; My Appointments</h1>
+    <p class="subtitle">View your past and upcoming appointments</p>
+  </div>
+  
+  <div class="nav-bar">
+    <a href="patient-dashboard">&#127968; Dashboard</a>
+    <a href="patient-profile">&#128100; Profile</a>
+    <a href="patient-appointments" class="active">&#128197; Appointments</a>
+    <a href="patient-medications">&#128138; Medications</a>
+    <a href="patient-results">&#128200; Results</a>
+    <a href="patient-summary">&#128196; Summary</a>
+    <a href="#" onclick="logout(); return false;" style="margin-left: auto; color: #c33;">&#128682; Logout</a>
+  </div>
+  
+  <div class="container">
+    <div id="loading" class="loading">
+      <p>Loading appointments...</p>
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="content" style="display: none;">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <h3>Total Appointments</h3>
+          <div class="value" id="totalAppointments">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Upcoming</h3>
+          <div class="value" id="upcomingAppointments">0</div>
+        </div>
+        <div class="stat-card">
+          <h3>Completed</h3>
+          <div class="value" id="completedAppointments">0</div>
+        </div>
+      </div>
+      
+      <div class="appointments-list" id="appointmentsList">
+        <!-- Appointments will be loaded here -->
+      </div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-auth.js"></script>
+  <script src="js/patient-data-loader.js"></script>
+  <script src="js/security.js"></script>
+  
+  <script>
+    window.ensurePatientAccess();
+    
+    async function loadAppointments() {
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const content = document.getElementById('content');
+      
+      try {
+        const appointments = await window.getPatientAppointments();
+        
+        // Calculate stats
+        const total = appointments.length;
+        const upcoming = appointments.filter(a => {
+          const apptDate = new Date(a.appointment_date || a.date);
+          return apptDate >= new Date() && (a.status === 'scheduled' || a.status === 'confirmed' || !a.status);
+        }).length;
+        const completed = appointments.filter(a => a.status === 'completed' || a.status === 'done').length;
+        
+        document.getElementById('totalAppointments').textContent = total;
+        document.getElementById('upcomingAppointments').textContent = upcoming;
+        document.getElementById('completedAppointments').textContent = completed;
+        
+        // Render appointments
+        const listContainer = document.getElementById('appointmentsList');
+        
+        if (appointments.length === 0) {
+          listContainer.innerHTML = `
+            <div class="empty-state">
+              <h3>No appointments found</h3>
+              <p>You don't have any appointments recorded yet.</p>
+            </div>
+          `;
+        } else {
+          listContainer.innerHTML = appointments.map(appointment => {
+            const apptDate = new Date(appointment.appointment_date || appointment.date || Date.now());
+            const isUpcoming = apptDate >= new Date();
+            const status = appointment.status || (isUpcoming ? 'upcoming' : 'completed');
+            
+            let statusClass = 'status-completed';
+            let statusText = 'Completed';
+            
+            if (status === 'scheduled' || status === 'confirmed' || status === 'upcoming') {
+              statusClass = 'status-upcoming';
+              statusText = 'Upcoming';
+            } else if (status === 'cancelled' || status === 'canceled') {
+              statusClass = 'status-cancelled';
+              statusText = 'Cancelled';
+            } else if (status === 'completed' || status === 'done') {
+              statusClass = 'status-completed';
+              statusText = 'Completed';
+            }
+            
+            const time = appointment.appointment_time || appointment.time || '';
+            const doctor = appointment.doctor_name || appointment.doctor || appointment.physician || 'Not specified';
+            const reason = appointment.reason || appointment.chief_complaint || appointment.notes || 'Not specified';
+            
+            return `
+              <div class="appointment-item">
+                <div class="appointment-header">
+                  <div class="appointment-date">
+                    ${apptDate.toLocaleDateString('en-US', {
+                      weekday: 'long',
+                      year: 'numeric',
+                      month: 'long',
+                      day: 'numeric'
+                    })}
+                    ${time ? ` at ${time}` : ''}
+                  </div>
+                  <span class="appointment-status ${statusClass}">${statusText}</span>
+                </div>
+                <div class="appointment-details">
+                  <div class="detail-item">
+                    <label>&#127973; Doctor:</label>
+                    <span class="value">${doctor}</span>
+                  </div>
+                  <div class="detail-item">
+                    <label>&#128203; Reason:</label>
+                    <span class="value">${reason}</span>
+                  </div>
+                  ${appointment.notes ? `
+                    <div class="detail-item">
+                      <label>&#128221; Notes:</label>
+                      <span class="value">${appointment.notes}</span>
+                    </div>
+                  ` : ''}
+                </div>
+              </div>
+            `;
+          }).join('');
+        }
+        
+        loading.style.display = 'none';
+        content.style.display = 'block';
+        
+      } catch (err) {
+        console.error('Error loading appointments:', err);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = `Error loading appointments: ${err.message}`;
+      }
+    }
+    
+    function logout() {
+      if (confirm('Are you sure you want to logout?')) {
+        localStorage.removeItem('user');
+        window.location.href = '/patient-login';
+      }
+    }
+    
+    window.addEventListener('load', loadAppointments);
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+

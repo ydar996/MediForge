@@ -1,0 +1,283 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Physician credential verification - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/data/medical-regulatory-bodies-africa.js?v=20251022120000"></script>
+  <script src="js/physician-verification-core.js?v=9"></script>
+  <style>
+    :root {
+      --primary-green: #008753;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    body {
+      max-width: 720px;
+      margin: 0 auto;
+      padding: 24px 16px 80px;
+      background: var(--soft-white);
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+      color: var(--charcoal);
+    }
+    h1 { font-size: 1.5rem; margin-bottom: 8px; }
+    .sub { color: #666; margin-bottom: 20px; font-size: 0.95rem; }
+    .panel {
+      background: #fff;
+      border-radius: 12px;
+      padding: 20px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 12px rgba(0,0,0,0.08);
+      border: 1px solid #e0e0e0;
+    }
+    .panel.warn { border-color: #c62828; background: #ffebee; }
+    .panel.ok { border-color: #2e7d32; background: #e8f5e9; }
+    .panel.pending { border-color: #1565c0; background: #e3f2fd; }
+    label { display: block; font-weight: 600; margin: 12px 0 6px; }
+    input[type="file"] { width: 100%; }
+    textarea {
+      width: 100%;
+      min-height: 80px;
+      padding: 10px;
+      border-radius: 8px;
+      border: 1px solid #ccc;
+      box-sizing: border-box;
+    }
+    .btn {
+      display: inline-block;
+      padding: 12px 20px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 700;
+      cursor: pointer;
+      margin: 8px 8px 0 0;
+ }
+    .btn-primary { background: var(--primary-green); color: #fff; }
+    .btn-secondary { background: #607d8b; color: #fff; }
+    .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+    .row-actions { margin-top: 16px; }
+    .muted { font-size: 0.85rem; color: #666; }
+    .top-nav { margin-bottom: 20px; }
+    .top-nav a { color: var(--primary-green); font-weight: 600; }
+  </style>
+</head>
+<body>
+  <div class="top-nav">
+    <a href="dashboard">← Dashboard</a>
+    ·
+    <a href="change-password">Change password</a>
+  </div>
+  <h1>Physician credential verification</h1>
+   <p class="sub" id="pv-intro-copy">
+    Upload your registration with your country's medical regulatory body and your university diploma or equivalent proof of completion of medical training.
+    Licensed physicians must submit proof of clearance to practise from your country's medical regulatory body and a medical school diploma within 90 days of first use of this application.
+  </p>
+
+  <div id="status-panel" class="panel" style="display:none;"></div>
+
+  <div class="panel" id="form-panel">
+    <p class="muted" id="deadline-line"></p>
+    <label for="reg-notes">Regulatory body &amp; registration details (plain text)</label>
+    <textarea id="reg-notes" placeholder="e.g. regulatory body name, license or registration number, country, any reference shown on your certificate"></textarea>
+
+    <label for="file-mdcn">Regulatory / council registration document (PDF or image)</label>
+    <input type="file" id="file-mdcn" accept=".pdf,image/jpeg,image/png,image/webp,application/pdf">
+    <p class="muted" id="path-mdcn"></p>
+
+    <label for="file-diploma">Medical degree / diploma (PDF or image)</label>
+    <input type="file" id="file-diploma" accept=".pdf,image/jpeg,image/png,image/webp,application/pdf">
+    <p class="muted" id="path-diploma"></p>
+
+    <div class="row-actions">
+      <button type="button" class="btn btn-secondary" id="btn-save-notes">Save notes</button>
+      <button type="button" class="btn btn-primary" id="btn-submit-review" disabled>Submit for platform review</button>
+    </div>
+    <p class="muted" id="submit-hint">Upload both documents, then submit. You can replace files while status is “not submitted” or “rejected”.</p>
+  </div>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+  <script>
+    (function () {
+      var BUCKET = window.PHYSICIAN_VERIFICATION_BUCKET || 'physician-verification-docs';
+      var state = null;
+
+      function el(id) { return document.getElementById(id); }
+
+      function setStatusPanel(summary) {
+        var p = el('status-panel');
+        if (!summary || !summary.row) {
+          p.style.display = 'none';
+          return;
+        }
+        p.style.display = 'block';
+        var st = summary.reviewStatus;
+        p.className = 'panel';
+        if (summary.approved) {
+          p.classList.add('ok');
+          p.innerHTML = '<strong>Verified.</strong> Thank you — your credentials are approved.';
+          el('form-panel').style.display = 'none';
+          return;
+        }
+        el('form-panel').style.display = 'block';
+        if (summary.blocked) {
+          p.classList.add('warn');
+          p.innerHTML = '<strong>Access period ended.</strong> You can still upload documents here for review. If you need help, contact your organization or support.';
+        } else if (st === 'pending_review') {
+          p.classList.add('pending');
+          p.innerHTML = '<strong>Under review.</strong> The platform team will validate or return your submission.';
+        } else if (st === 'rejected') {
+          p.classList.add('warn');
+          p.innerHTML = '<strong>Previous submission was not approved.</strong> Replace your documents and submit again. Notes from reviewer: ' +
+            (summary.row.review_notes ? escapeHtml(summary.row.review_notes) : '—');
+        } else {
+          p.innerHTML = '<strong>Action required.</strong> Please upload both documents and submit for review before your access deadline.';
+        }
+      }
+
+      function escapeHtml(s) {
+        var d = document.createElement('div');
+        d.textContent = s;
+        return d.innerHTML;
+      }
+
+      function updateDeadline(summary) {
+        var line = el('deadline-line');
+        if (!summary || !summary.row) return;
+        var until = new Date(summary.row.verification_access_until);
+        var ext = summary.row.extension_granted_count || 0;
+        line.textContent = 'Access deadline: ' + until.toLocaleString() +
+          (ext ? ' · Extensions granted: ' + ext : '');
+      }
+
+      function canEditSubmission(summary) {
+        if (!summary || !summary.row) return false;
+        var st = summary.row.review_status;
+        return st === 'not_submitted' || st === 'rejected';
+      }
+
+      function refreshSubmitEnabled() {
+        var summary = state;
+        var btn = el('btn-submit-review');
+        if (!summary || !summary.row) {
+          btn.disabled = true;
+          return;
+        }
+        var hasBoth = !!(summary.row.mdcn_storage_path && summary.row.diploma_storage_path);
+        btn.disabled = !canEditSubmission(summary) || !hasBoth;
+      }
+
+      async function uploadKind(kind, file) {
+        if (!file || !state || !state.profile) return;
+        var orgId = state.profile.organization_id;
+        var userId = state.profile.id;
+        var ext = (file.name.split('.').pop() || 'pdf').toLowerCase().replace(/[^a-z0-9]/g, '');
+        if (!ext) ext = 'pdf';
+        var path = orgId + '/' + userId + '/' + kind + '-' + Date.now() + '.' + ext;
+        var sb = window.supabaseClient;
+        var up = await sb.storage.from(BUCKET).upload(path, file, { upsert: true, contentType: file.type || undefined });
+        if (up.error) throw up.error;
+        var patch = {};
+        if (kind === 'mdcn') patch.mdcn_storage_path = path;
+        else patch.diploma_storage_path = path;
+        var upd = await sb.from('physician_verifications').update(patch).eq('user_id', state.profile.id);
+        if (upd.error) throw upd.error;
+        await loadAll();
+      }
+
+      async function loadAll() {
+        var summary = await window.getPhysicianVerificationSummary();
+        if (!summary) {
+          alert('This page is only available to physician accounts.');
+          window.location.href = 'dashboard';
+          return;
+        }
+        state = summary;
+        var introEl = el('pv-intro-copy');
+        if (introEl && typeof window.formatPhysicianVerificationIntroParagraph === 'function') {
+          introEl.textContent = window.formatPhysicianVerificationIntroParagraph(summary.organizationCountry || '');
+        }
+        setStatusPanel(summary);
+        updateDeadline(summary);
+        el('reg-notes').value = summary.row.regulatory_body_notes || '';
+        el('path-mdcn').textContent = summary.row.mdcn_storage_path ? 'Saved: ' + summary.row.mdcn_storage_path : 'Not uploaded yet';
+        el('path-diploma').textContent = summary.row.diploma_storage_path ? 'Saved: ' + summary.row.diploma_storage_path : 'Not uploaded yet';
+        var editable = canEditSubmission(summary);
+        el('reg-notes').disabled = !editable;
+        el('file-mdcn').disabled = !editable;
+        el('file-diploma').disabled = !editable;
+        el('btn-save-notes').disabled = !editable;
+        el('btn-submit-review').disabled = !editable;
+        refreshSubmitEnabled();
+      }
+
+      el('btn-save-notes').onclick = async function () {
+        if (!state || !state.profile) return;
+        try {
+          var sb = window.supabaseClient;
+          var notes = el('reg-notes').value.trim();
+          var r = await sb.from('physician_verifications')
+            .update({ regulatory_body_notes: notes || null })
+            .eq('user_id', state.profile.id);
+          if (r.error) throw r.error;
+          await loadAll();
+        } catch (e) {
+          console.error(e);
+          alert('Could not save notes: ' + (e.message || e));
+        }
+      };
+
+      el('btn-submit-review').onclick = async function () {
+        if (!state || !state.profile) return;
+        try {
+          var sb = window.supabaseClient;
+          var r = await sb.from('physician_verifications').update({
+            submitted_for_review_at: new Date().toISOString(),
+            review_status: 'pending_review'
+          }).eq('user_id', state.profile.id);
+          if (r.error) throw r.error;
+          await loadAll();
+          alert('Submitted for platform review.');
+        } catch (e) {
+          console.error(e);
+          alert('Submit failed: ' + (e.message || e));
+        }
+      };
+
+      el('file-mdcn').addEventListener('change', async function () {
+        var f = this.files && this.files[0];
+        if (!f) return;
+        try {
+          await uploadKind('mdcn', f);
+          this.value = '';
+        } catch (e) {
+          console.error(e);
+          alert('Upload failed: ' + (e.message || e));
+        }
+      });
+
+      el('file-diploma').addEventListener('change', async function () {
+        var f = this.files && this.files[0];
+        if (!f) return;
+        try {
+          await uploadKind('diploma', f);
+          this.value = '';
+        } catch (e) {
+          console.error(e);
+          alert('Upload failed: ' + (e.message || e));
+        }
+      });
+
+      document.addEventListener('DOMContentLoaded', loadAll);
+    })();
+  </script>
+</body>
+</html>

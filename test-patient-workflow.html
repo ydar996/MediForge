@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Patient Workflow Test - v197</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      margin-bottom: 20px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-section h2 {
+      margin-top: 0;
+      color: #333;
+      border-bottom: 2px solid #4CAF50;
+      padding-bottom: 10px;
+    }
+    .test-button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 4px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+      font-size: 14px;
+    }
+    .test-button:hover {
+      background: #45a049;
+    }
+    .result {
+      margin-top: 10px;
+      padding: 10px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 12px;
+      white-space: pre-wrap;
+    }
+    .success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+    }
+    .error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+    }
+    .info {
+      background: #d1ecf1;
+      border: 1px solid #bee5eb;
+      color: #0c5460;
+    }
+    .warning {
+      background: #fff3cd;
+      border: 1px solid #ffeaa7;
+      color: #856404;
+    }
+  </style>
+</head>
+<body>
+  <h1>🔬 Patient Workflow Test Suite - v197</h1>
+  <p><strong>Purpose:</strong> Test all core patient operations to identify what works and what's broken</p>
+
+  <!-- Test 1: Environment Check -->
+  <div class="test-section">
+    <h2>1. Environment Check</h2>
+    <button class="test-button" onclick="testEnvironment()">Run Environment Test</button>
+    <div id="env-result" class="result"></div>
+  </div>
+
+  <!-- Test 2: Patient Data Check -->
+  <div class="test-section">
+    <h2>2. Patient Data Check</h2>
+    <button class="test-button" onclick="testPatientData()">Check Existing Patients</button>
+    <div id="data-result" class="result"></div>
+  </div>
+
+  <!-- Test 3: Supabase Connection -->
+  <div class="test-section">
+    <h2>3. Supabase Connection</h2>
+    <button class="test-button" onclick="testSupabaseConnection()">Test Supabase</button>
+    <div id="supabase-result" class="result"></div>
+  </div>
+
+  <!-- Test 4: Patient List Loading -->
+  <div class="test-section">
+    <h2>4. Patient List Loading</h2>
+    <button class="test-button" onclick="testPatientListLoading()">Test Patient List</button>
+    <div id="list-result" class="result"></div>
+  </div>
+
+  <!-- Test 5: Critical Functions -->
+  <div class="test-section">
+    <h2>5. Critical JavaScript Functions</h2>
+    <button class="test-button" onclick="testCriticalFunctions()">Test Functions</button>
+    <div id="functions-result" class="result"></div>
+  </div>
+
+  <!-- Test 6: Page Navigation -->
+  <div class="test-section">
+    <h2>6. Page Navigation Test</h2>
+    <a class='test-button' href='/patients' target='_blank'>Open Patient List</a>
+    <a class='test-button' href='/add-patient' target='_blank'>Open Add Patient</a>
+    <a class='test-button' href='/dashboard' target='_blank'>Open Dashboard</a>
+    <div id="nav-result" class="result info">Open pages in new tabs and verify they load correctly</div>
+  </div>
+
+  <!-- Load Required Scripts -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+
+  <script>
+    // Test 1: Environment Check
+    function testEnvironment() {
+      const result = document.getElementById('env-result');
+      let output = '=== ENVIRONMENT CHECK ===\n\n';
+
+      try {
+        // Check localStorage
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        output += `✓ User logged in: ${user.username || 'Unknown'}\n`;
+        output += `✓ Organization: ${user.org || 'Unknown'}\n`;
+        output += `✓ Role: ${user.role || 'Unknown'}\n\n`;
+
+        // Check Supabase library
+        if (typeof window.supabase !== 'undefined') {
+          output += '✓ Supabase library loaded\n';
+        } else {
+          output += '✗ Supabase library NOT loaded\n';
+        }
+
+        // Check supabaseClient
+        if (typeof window.supabaseClient !== 'undefined') {
+          output += '✓ Supabase client initialized\n';
+        } else {
+          output += '✗ Supabase client NOT initialized\n';
+        }
+
+        // Check localStorage keys
+        const keys = Object.keys(localStorage);
+        output += `\n✓ Total localStorage keys: ${keys.length}\n`;
+
+        // Find patient-related keys
+        const patientKeys = keys.filter(k => k.includes('patient'));
+        output += `✓ Patient-related keys: ${patientKeys.length}\n`;
+        patientKeys.forEach(k => output += `  - ${k}\n`);
+
+        result.className = 'result success';
+        result.textContent = output;
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = '✗ ERROR: ' + error.message + '\n\n' + error.stack;
+      }
+    }
+
+    // Test 2: Patient Data Check
+    function testPatientData() {
+      const result = document.getElementById('data-result');
+      let output = '=== PATIENT DATA CHECK ===\n\n';
+
+      try {
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const orgKey = user.org ? `${user.org}_patients` : 'patients';
+
+        // Check localStorage patients
+        const localPatients = JSON.parse(localStorage.getItem(orgKey) || "[]");
+        output += `✓ LocalStorage key: ${orgKey}\n`;
+        output += `✓ Patient count (localStorage): ${localPatients.length}\n\n`;
+
+        if (localPatients.length > 0) {
+          output += 'Sample patient:\n';
+          const sample = localPatients[0];
+          output += `  ID: ${sample.id}\n`;
+          output += `  Name: ${sample.firstName} ${sample.lastName}\n`;
+          output += `  DOB: ${sample.dateOfBirth || 'Not set'}\n`;
+          output += `  Gender: ${sample.gender || 'Not set'}\n`;
+          output += `  Medical History: ${(sample.medicalHistory || []).length} items\n`;
+          output += `  Diagnoses: ${(sample.diagnoses || []).length} items\n`;
+          output += `  Medications: ${(sample.medications || []).length} items\n`;
+        } else {
+          output += '⚠ No patients found in localStorage\n';
+        }
+
+        result.className = 'result info';
+        result.textContent = output;
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = '✗ ERROR: ' + error.message;
+      }
+    }
+
+    // Test 3: Supabase Connection
+    async function testSupabaseConnection() {
+      const result = document.getElementById('supabase-result');
+      let output = '=== SUPABASE CONNECTION TEST ===\n\n';
+
+      try {
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not initialized');
+        }
+
+        output += '✓ Supabase client exists\n\n';
+
+        // Test organizations table
+        output += 'Testing organizations table...\n';
+        const { data: orgs, error: orgError } = await window.supabaseClient
+          .from('organizations')
+          .select('id, name')
+          .limit(5);
+
+        if (orgError) {
+          output += `⚠ Organizations query: ${orgError.message}\n`;
+        } else {
+          output += `✓ Organizations found: ${orgs?.length || 0}\n`;
+          if (orgs && orgs.length > 0) {
+            orgs.forEach(org => output += `  - ${org.name} (${org.id})\n`);
+          }
+        }
+
+        // Test patients table
+        output += '\nTesting patients table...\n';
+        const { data: patients, error: patError, count } = await window.supabaseClient
+          .from('patients')
+          .select('*', { count: 'exact' })
+          .limit(5);
+
+        if (patError) {
+          output += `⚠ Patients query: ${patError.message}\n`;
+        } else {
+          output += `✓ Total patients in Supabase: ${count || 0}\n`;
+          output += `✓ Sample patients retrieved: ${patients?.length || 0}\n`;
+          if (patients && patients.length > 0) {
+            patients.forEach(p => output += `  - ${p.first_name} ${p.last_name} (ID: ${p.patient_id})\n`);
+          }
+        }
+
+        result.className = 'result success';
+        result.textContent = output;
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = '✗ ERROR: ' + error.message + '\n\n' + error.stack;
+      }
+    }
+
+    // Test 4: Patient List Loading
+    async function testPatientListLoading() {
+      const result = document.getElementById('list-result');
+      let output = '=== PATIENT LIST LOADING TEST ===\n\n';
+
+      try {
+        // Check if universal data loader exists
+        if (typeof loadAllData === 'function') {
+          output += '✓ loadAllData function exists\n';
+          output += 'Calling loadAllData()...\n';
+
+          await loadAllData();
+
+          output += '✓ loadAllData completed\n';
+        } else {
+          output += '⚠ loadAllData function not found\n';
+        }
+
+        // Check patients.js functions
+        if (typeof loadPatients === 'function') {
+          output += '✓ loadPatients function exists\n';
+        } else {
+          output += '⚠ loadPatients function not found\n';
+        }
+
+        result.className = 'result info';
+        result.textContent = output;
+      } catch (error) {
+        result.className = 'result error';
+        result.textContent = '✗ ERROR: ' + error.message;
+      }
+    }
+
+    // Test 5: Critical Functions
+    function testCriticalFunctions() {
+      const result = document.getElementById('functions-result');
+      let output = '=== CRITICAL FUNCTIONS CHECK ===\n\n';
+
+      const functionsToCheck = [
+        'loadPatients',
+        'addHistory',
+        'addDiagnosis',
+        'addMedication',
+        'deleteMedication',
+        'editPatient',
+        'deletePatient',
+        'generatePatientId',
+        'loadAllData'
+      ];
+
+      let foundCount = 0;
+      functionsToCheck.forEach(fn => {
+        if (typeof window[fn] === 'function') {
+          output += `✓ ${fn} - FOUND\n`;
+          foundCount++;
+        } else {
+          output += `✗ ${fn} - NOT FOUND\n`;
+        }
+      });
+
+      output += `\n${foundCount}/${functionsToCheck.length} functions found\n`;
+
+      if (foundCount === functionsToCheck.length) {
+        result.className = 'result success';
+      } else if (foundCount > 0) {
+        result.className = 'result warning';
+      } else {
+        result.className = 'result error';
+      }
+
+      result.textContent = output;
+    }
+  </script>
+
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251019050000"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=20251019050000"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=20251019050000"></script>  <!-- Universal sync status indicator -->
+</body>
+</html>

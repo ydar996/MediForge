@@ -1,0 +1,1605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Select Lab Orders - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=59">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    /* Nigerian Heritage Theme - Full Color Palette */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --light-green: rgba(0, 135, 83, 0.1);
+      --accent-green: rgba(0, 135, 83, 0.3);
+      --nigerian-white: #FFFFFF;
+      --nigerian-green: #008753;
+      --gold: #FFD700;
+      --dark-gold: #B8860B;
+      --bronze: #CD7F32;
+      --earth-brown: #8B4513;
+      --warm-orange: #FF8C00;
+      --deep-red: #8B0000;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --coral: #FF7F50;
+      --ivory: #FFFFF0;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+      --soft-white: #FAFAFA;
+    }
+    
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--ivory) 0%, var(--warm-gray) 50%, var(--soft-white) 100%);
+      min-height: 100vh;
+      position: relative;
+    }
+    
+    body::before {
+      content: '';
+      position: fixed;
+      top: 0;
+      left: 0;
+      right: 0;
+      bottom: 0;
+      background: 
+        radial-gradient(circle at 20% 30%, rgba(0, 135, 83, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 80% 70%, rgba(218, 165, 32, 0.05) 0%, transparent 50%),
+        radial-gradient(circle at 50% 50%, rgba(65, 105, 225, 0.03) 0%, transparent 50%);
+      pointer-events: none;
+      z-index: 0;
+    }
+    
+    body > * {
+      position: relative;
+      z-index: 1;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: linear-gradient(135deg, var(--nigerian-white) 0%, var(--ivory) 50%, var(--warm-gray) 100%);
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 8px 24px rgba(0, 135, 83, 0.15);
+      border: 2px solid var(--primary-green);
+    }
+    
+    h1 {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green), var(--kente-gold), var(--primary-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 900;
+      margin-bottom: 10px;
+      font-size: 2.5em;
+    }
+    
+    .patient-info {
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      padding: 15px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border-left: 6px solid var(--primary-green);
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.1);
+    }
+    
+    .back-button {
+      background: linear-gradient(135deg, var(--charcoal), #5a6268);
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .back-button:hover {
+      background: linear-gradient(135deg, #5a6268, var(--charcoal));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0,0,0,0.2);
+    }
+    
+    .lab-tests-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+      background: var(--nigerian-white);
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+      border-radius: 8px;
+      overflow: hidden;
+    }
+    
+    .lab-tests-table th {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%) !important;
+      color: var(--nigerian-white) !important;
+      padding: 12px;
+      text-align: left;
+      font-weight: 700;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+      border: 1px solid var(--dark-green) !important;
+    }
+    
+    .lab-tests-table td {
+      padding: 12px;
+      border: 1px solid rgba(0, 135, 83, 0.2);
+      border-bottom: 1px solid rgba(0, 135, 83, 0.25);
+      background: var(--nigerian-white);
+      color: var(--charcoal);
+    }
+    
+    .lab-tests-table tr:hover {
+      background: var(--light-green);
+    }
+    
+    /* Category headers: Nigerian heritage theme – gold band with charcoal text for high contrast */
+    .lab-tests-table .category-header-row td.category-header {
+      background: linear-gradient(135deg, var(--kente-gold) 0%, var(--dark-gold) 50%, var(--gold) 100%) !important;
+      color: var(--charcoal) !important;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 16px 16px;
+      border-top: 3px solid var(--primary-green) !important;
+      border-bottom: 2px solid var(--dark-gold) !important;
+      border-left: 6px solid var(--primary-green) !important;
+      border-right: none !important;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+      text-shadow: 0 1px 0 rgba(255, 255, 255, 0.5);
+      box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.3);
+    }
+    
+    .lab-tests-table .category-header-row:hover td.category-header {
+      background: linear-gradient(135deg, var(--kente-gold) 0%, var(--dark-gold) 50%, var(--gold) 100%) !important;
+    }
+    
+    /* Ensure Actions column has enough width */
+    .lab-tests-table th:last-child,
+    .lab-tests-table td:last-child {
+      min-width: 250px;
+      width: auto;
+    }
+    
+    .test-checkbox {
+      width: 20px;
+      height: 20px;
+      cursor: pointer;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+      align-items: center;
+      justify-content: flex-start;
+    }
+    
+    .btn-send-lab {
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 160px;
+      box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-send-lab:hover {
+      background: linear-gradient(135deg, #218838, #1e7e34);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(40, 167, 69, 0.4);
+    }
+    
+    .btn-send-lab:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+    }
+    
+    .btn-send-out {
+      background: linear-gradient(135deg, var(--adire-blue), #1E90FF);
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 13px;
+      font-weight: 600;
+      white-space: nowrap;
+      min-width: 120px;
+      box-shadow: 0 2px 6px rgba(65, 105, 225, 0.3);
+      transition: all 0.3s ease;
+    }
+    
+    .btn-send-out:hover {
+      background: linear-gradient(135deg, #1E90FF, var(--adire-blue));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+    }
+    
+    .bulk-actions {
+      margin-top: 20px;
+      padding: 20px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 8px;
+      border: 3px solid;
+      border-image: linear-gradient(135deg, var(--primary-green), var(--kente-gold), var(--warm-orange)) 1;
+      box-shadow: 0 4px 16px rgba(0, 135, 83, 0.15);
+    }
+    
+    .bulk-actions h3 {
+      margin-top: 0;
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      -webkit-background-clip: text;
+      -webkit-text-fill-color: transparent;
+      background-clip: text;
+      font-weight: 800;
+    }
+    
+    .bulk-buttons {
+      display: flex;
+      gap: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .btn-bulk {
+      background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 50%, var(--kente-gold) 100%);
+      color: var(--nigerian-white);
+      border: 2px solid var(--dark-green);
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-size: 15px;
+      font-weight: 700;
+      min-width: 250px;
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+      transition: all 0.3s ease;
+      text-shadow: 0 1px 2px rgba(0,0,0,0.2);
+    }
+    
+    .btn-bulk:hover {
+      transform: translateY(-3px);
+      box-shadow: 0 6px 20px rgba(0, 135, 83, 0.4);
+      background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 50%, var(--kente-gold) 100%);
+    }
+    
+    .btn-bulk:disabled {
+      background: #6c757d;
+      cursor: not-allowed;
+      transform: none;
+      box-shadow: none;
+      border-color: #6c757d;
+    }
+    
+    .status-badge {
+      display: inline-block;
+      padding: 6px 12px;
+      border-radius: 6px;
+      font-size: 12px;
+      font-weight: 700;
+      text-transform: uppercase;
+      letter-spacing: 0.5px;
+    }
+    
+    .status-sent-to-lab {
+      background: linear-gradient(135deg, #28a745, #218838);
+      color: white;
+      box-shadow: 0 2px 6px rgba(40, 167, 69, 0.3);
+    }
+    
+    .status-sent-to-external {
+      background: linear-gradient(135deg, var(--adire-blue), #1E90FF);
+      color: white;
+      box-shadow: 0 2px 6px rgba(65, 105, 225, 0.3);
+    }
+    
+    .status-pending {
+      background: linear-gradient(135deg, var(--warm-orange), var(--coral));
+      color: var(--charcoal);
+      box-shadow: 0 2px 6px rgba(255, 140, 0, 0.3);
+    }
+  </style>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  <!-- Organization name display utility -->
+  <script src="js/org-name-display.js"></script>
+  <!-- Utility functions -->
+  <script src="js/utils.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="goBack()">← Back to Clinical Note</button>
+    
+    <h1>🧪 Select Lab Orders</h1>
+    
+    <div class="patient-info" id="patient-info">
+      <strong>Loading patient information...</strong>
+    </div>
+    
+    <div style="margin-bottom: 20px;">
+      <label>
+        <input type="checkbox" id="select-all-tests" onchange="toggleAllTests()" style="width: 20px; height: 20px; margin-right: 8px; cursor: pointer;">
+        <strong>Select All Tests</strong>
+      </label>
+    </div>
+    
+    <table class="lab-tests-table">
+      <thead>
+        <tr>
+          <th style="width: 50px;">Select</th>
+          <th style="min-width: 200px;">Test Name</th>
+          <th style="width: 100px;">CPT Code</th>
+          <th style="min-width: 150px;">Specimen Type/Volume</th>
+          <th style="min-width: 150px;">Container</th>
+          <th style="width: 120px;">Status</th>
+          <th style="min-width: 280px; width: auto;">Actions</th>
+        </tr>
+      </thead>
+      <tbody id="lab-tests-tbody">
+        <!-- Lab tests will be populated here -->
+      </tbody>
+    </table>
+    
+    <div class="bulk-actions">
+      <h3>Bulk Actions</h3>
+      <p style="margin: 0 0 10px 0; font-size: 13px; color: var(--charcoal);">Select tests above, then use one button below to create <strong>one lab order</strong> with all selected tests. (Using the per-row &quot;Send to Lab Scientist&quot; creates one order per row.)</p>
+      <div class="bulk-buttons">
+        <button class="btn-bulk" id="bulk-send-lab-btn" onclick="sendAllToLabScientist()" disabled title="Creates one order with all selected tests">
+          🧪 Send Selected to Lab Scientist (one order)
+        </button>
+        <button class="btn-bulk" id="bulk-send-external-btn" onclick="sendAllToExternalLab()" disabled title="Creates one order with all selected tests">
+          📤 Send Selected to Outside Lab (one order)
+        </button>
+      </div>
+    </div>
+    
+    <div style="margin-top: 20px; text-align: center;">
+      <button onclick="printLabOrders()" style="background: #28a745; color: white; border: none; padding: 12px 24px; border-radius: 6px; cursor: pointer; font-size: 15px; font-weight: 600; margin-right: 10px;">
+        🖨️ Print Lab Orders
+      </button>
+    </div>
+    
+    <div style="margin-top: 30px; text-align: center; padding-top: 20px; border-top: 2px solid var(--primary-green);">
+      <button class="back-button" onclick="goBack()" style="width: 100%; max-width: 300px; padding: 15px; font-size: 16px; font-weight: 700;">
+        ← Back to Clinical Note
+      </button>
+    </div>
+  </div>
+  
+  <style>
+    @media print {
+      .back-button, .bulk-actions, .action-buttons, button {
+        display: none !important;
+      }
+      .lab-tests-table {
+        page-break-inside: auto;
+      }
+      .test-checkbox {
+        display: none;
+      }
+    }
+  </style>
+  
+  <script>
+    let patientId = null;
+    let visitDate = null;
+    let organizationId = null;
+    let admissionId = null;
+    let returnUrl = null;
+    let inHouseLabEnabled = false;
+    let selectedTests = new Set();
+    let labTests = [];
+    
+    // Initialize page
+    window.addEventListener('load', async () => {
+      const urlParams = new URLSearchParams(window.location.search);
+      patientId = urlParams.get('patientId');
+      visitDate = urlParams.get('visitDate');
+      const admissionIdParam = urlParams.get('admissionId');
+      returnUrl = urlParams.get('returnUrl');
+      
+      if (admissionIdParam) {
+        const looksLikeUuid = admissionIdParam.includes('-') && admissionIdParam.length === 36;
+        if (looksLikeUuid) {
+          admissionId = admissionIdParam;
+        } else {
+          try {
+            if (!organizationId && typeof window.resolveOrganizationId === 'function') {
+              organizationId = await window.resolveOrganizationId();
+            }
+            if (typeof window.resolveAdmissionIdParam === 'function') {
+              admissionId = await window.resolveAdmissionIdParam(admissionIdParam, organizationId);
+            } else {
+              admissionId = admissionIdParam;
+            }
+          } catch (error) {
+            console.warn('Could not resolve admission ID param:', error);
+            admissionId = admissionIdParam;
+          }
+        }
+      }
+      
+      if (!patientId || !visitDate) {
+        alert('Missing patient ID or visit date. Redirecting back...');
+        goBack();
+        return;
+      }
+      
+      // Root cause fix: resolve organization once so Send works on all devices (no race)
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      organizationId = user.organizationId || user.organization_id || (user.org && String(user.org).match(/^[0-9a-f]{8}-/i) ? user.org : null);
+      if (!organizationId && typeof window.resolveOrganizationId === "function") {
+        organizationId = await window.resolveOrganizationId();
+      }
+      if (!organizationId) {
+        const container = document.querySelector(".container");
+        if (container) {
+          const banner = document.createElement("div");
+          banner.id = "org-banner";
+          banner.setAttribute("role", "alert");
+          banner.style.cssText = "background:#fff3cd;border:1px solid #ffc107;padding:12px 20px;margin-bottom:20px;border-radius:6px;";
+          banner.textContent = "Organization could not be loaded. Please log out and log in again to send lab orders.";
+          container.insertBefore(banner, container.firstChild);
+        }
+      }
+      
+      // In-house lab setting must be known before we render the table (so Send to Lab Scientist shows correctly)
+      await checkInHouseLabSetting();
+      
+      // Load patient info and lab tests (organizationId already set)
+      loadPatientInfo();
+      
+      // Load lab tests
+      // Ensure LAB_TESTS is available before loading
+      if (typeof window.LAB_TESTS === 'undefined' || !window.LAB_TESTS || window.LAB_TESTS.length === 0) {
+        console.error('❌ LAB_TESTS not available! Waiting for patients.js to load...');
+        // Wait a bit and try again
+        setTimeout(() => {
+          if (typeof window.LAB_TESTS !== 'undefined' && window.LAB_TESTS && window.LAB_TESTS.length > 0) {
+            console.log('✅ LAB_TESTS now available, loading tests...');
+            loadLabTests();
+          } else {
+            console.error('❌ LAB_TESTS still not available after wait!');
+            alert('Lab tests data not loaded. Please refresh the page.');
+          }
+        }, 500);
+      } else {
+        console.log('✅ LAB_TESTS available, loading tests...', window.LAB_TESTS.length, 'tests');
+        loadLabTests();
+      }
+      
+      // Load existing orders for this visit in background
+      setTimeout(() => {
+        loadExistingOrders();
+      }, 0);
+    });
+    
+    async function loadPatientInfo() {
+      try {
+        let patient = null;
+        // organizationId already resolved once at page load
+        if (window.supabaseClient && organizationId) {
+          const isUuid = patientId && patientId.includes('-') && patientId.length === 36;
+          const orFilter = isUuid ? `id.eq.${patientId},patient_id.eq.${patientId}` : `patient_id.eq.${patientId}`;
+          const { data, error } = await window.supabaseClient
+            .from('patients')
+            .select('id, patient_id, firstName, middleName, lastName, first_name, middle_name, last_name, dob')
+            .eq('organization_id', organizationId)
+            .or(orFilter)
+            .maybeSingle();
+          if (!error && data) {
+            patient = data;
+          }
+        }
+        
+        if (!patient) {
+          // Use resolvePatientByIdentifier to handle both UUIDs and legacy IDs properly
+          if (typeof window.resolvePatientByIdentifier === 'function') {
+            patient = await window.resolvePatientByIdentifier(patientId);
+          } else {
+            // Fallback: Try Supabase-first approach
+            let patients = [];
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            
+            // Try multiple ID fields to find patient
+            patient = patients.find(p => 
+              p.id === patientId || 
+              p.patient_id === patientId || 
+              p.patientNumber === patientId ||
+              p._supabaseUuid === patientId
+            );
+          }
+        }
+        
+        if (patient) {
+          const legacyIdUi = typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, patientId) : (patient.patient_id || patient.patientNumber || patient.id);
+          const patientName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.trim() || 'Unknown';
+          const dob = patient.dob || 'Not specified';
+          
+          document.getElementById('patient-info').innerHTML = `
+            <strong>Patient:</strong> ${patientName}<br>
+            <strong>Patient ID:</strong> ${legacyIdUi}<br>
+            <strong>Date of Birth:</strong> ${dob}<br>
+            <strong>Visit Date:</strong> ${visitDate}
+          `;
+        } else {
+          document.getElementById('patient-info').innerHTML = `
+            <strong>Patient:</strong> Not found<br>
+            <strong>Visit Date:</strong> ${visitDate}
+          `;
+          console.error('Patient not found with ID:', patientId);
+        }
+      } catch (error) {
+        console.error('Error loading patient info:', error);
+        document.getElementById('patient-info').innerHTML = `
+          <strong>Patient:</strong> Error loading patient information<br>
+          <strong>Visit Date:</strong> ${visitDate}
+        `;
+      }
+    }
+    
+    async function checkInHouseLabSetting() {
+      try {
+        // organizationId already resolved once at page load
+        if (!organizationId) {
+          return;
+        }
+        
+        // Load organization settings from Supabase
+        if (window.supabaseClient) {
+          const { data, error } = await window.supabaseClient
+            .from('organizations')
+            .select('settings')
+            .eq('id', organizationId)
+            .maybeSingle();
+          
+          if (!error && data && data.settings) {
+            inHouseLabEnabled = data.settings.in_house_laboratory === true;
+          }
+        }
+        
+        // Fallback to localStorage
+        if (!inHouseLabEnabled) {
+          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+          const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
+          if (orgData && orgData.settings && orgData.settings.in_house_laboratory) {
+            inHouseLabEnabled = orgData.settings.in_house_laboratory === true;
+          }
+        }
+        
+        console.log('In-house lab enabled:', inHouseLabEnabled);
+      } catch (error) {
+        console.error('Error checking in-house lab setting:', error);
+      }
+    }
+    
+    function loadLabTests() {
+      // Get LAB_TESTS from patients.js (already loaded, sorted by category)
+      labTests = window.LAB_TESTS || [];
+      
+      const tbody = document.getElementById('lab-tests-tbody');
+      tbody.innerHTML = '';
+      
+      let lastCategory = null;
+      labTests.forEach((test, index) => {
+        const category = test.category || 'Other';
+        if (category !== lastCategory) {
+          lastCategory = category;
+          const headerRow = document.createElement('tr');
+          headerRow.className = 'category-header-row';
+          headerRow.innerHTML = `<td colspan="7" class="category-header">${category}</td>`;
+          tbody.appendChild(headerRow);
+        }
+        
+        const row = document.createElement('tr');
+        const testId = `test_${index}`;
+        
+        row.innerHTML = `
+          <td>
+            <input type="checkbox" class="test-checkbox" id="${testId}" 
+                   data-test-index="${index}" 
+                   onchange="toggleTestSelection(${index})">
+          </td>
+          <td><strong>${test.name}</strong></td>
+          <td>${test.cpt || 'N/A'}</td>
+          <td>${test.specimen || 'N/A'}</td>
+          <td>${test.container || 'N/A'}</td>
+          <td><span class="status-badge status-pending" id="status_${index}">Pending</span></td>
+          <td class="action-buttons" id="actions_${index}">
+            ${inHouseLabEnabled ? `<button class="btn-send-lab" onclick="sendTestToLabScientist(${index})">Send to Lab Scientist</button>` : ''}
+            <button class="btn-send-out" onclick="sendTestToExternalLab(${index})">Send Out</button>
+          </td>
+        `;
+        
+        tbody.appendChild(row);
+      });
+      updateBulkButtons();
+    }
+    
+    function toggleAllTests() {
+      const selectAll = document.getElementById('select-all-tests').checked;
+      const checkboxes = document.querySelectorAll('.test-checkbox');
+      
+      checkboxes.forEach(cb => {
+        cb.checked = selectAll;
+        const index = parseInt(cb.getAttribute('data-test-index'));
+        if (selectAll) {
+          selectedTests.add(index);
+        } else {
+          selectedTests.delete(index);
+        }
+      });
+      
+      updateBulkButtons();
+    }
+    
+    function toggleTestSelection(index) {
+      const checkbox = document.getElementById(`test_${index}`);
+      if (checkbox.checked) {
+        selectedTests.add(index);
+      } else {
+        selectedTests.delete(index);
+      }
+      
+      // Update select all checkbox
+      const allChecked = document.querySelectorAll('.test-checkbox:checked').length === labTests.length;
+      document.getElementById('select-all-tests').checked = allChecked;
+      
+      updateBulkButtons();
+    }
+    
+    function updateBulkButtons() {
+      const hasSelection = selectedTests.size > 0;
+      const ready = organizationId && window.supabaseClient;
+      document.getElementById('bulk-send-lab-btn').disabled = !hasSelection || !inHouseLabEnabled || !ready;
+      document.getElementById('bulk-send-external-btn').disabled = !hasSelection || !ready;
+    }
+    
+    async function sendTestToLabScientist(index) {
+      if (!inHouseLabEnabled) {
+        alert('In-house laboratory is not enabled for this clinic.');
+        return;
+      }
+      
+      await sendTestToDestination(index, 'sent_to_lab', true);
+    }
+    
+    async function sendTestToExternalLab(index) {
+      await sendTestToDestination(index, 'sent_to_external', true);
+    }
+    
+    function expandLabPanelItems(test) {
+      if (!test) return [];
+      const panelTests = Array.isArray(test.panelTests) ? test.panelTests : [];
+      if (panelTests.length === 0) {
+        return [test];
+      }
+      
+      const sourceTests = window.LAB_TESTS || labTests || [];
+      const expanded = panelTests
+        .map(name => sourceTests.find(t => t.name === name))
+        .filter(Boolean);
+      
+      return expanded.length > 0 ? expanded : [test];
+    }
+    
+    /** Create one lab order with all selected tests (bulk send). Respects legacy patient ID and short serial. */
+    async function sendSelectedTestsAsOneOrder(status) {
+      if (!organizationId || !window.supabaseClient) {
+        const msg = !organizationId ? 'Organization not set. Please log out and log in again.' : 'Connection not ready. Please refresh the page.';
+        alert(msg);
+        throw new Error(msg);
+      }
+      
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const createdBy = user.username || user.email || user.id || 'system';
+      
+      let orderPatientId = patientId;
+      if (patientId && !patientId.includes('-') && patientId.length < 36) {
+        try {
+          let patientForOrder = null;
+          if (typeof window.resolvePatientByIdentifier === 'function') {
+            patientForOrder = await window.resolvePatientByIdentifier(patientId);
+          } else {
+            let patients = [];
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+            }
+            patientForOrder = patients.find(p =>
+              p.id === patientId || p.patient_id === patientId || p.patientNumber === patientId
+            );
+          }
+          if (patientForOrder) {
+            orderPatientId = patientForOrder._supabaseUuid || patientForOrder.id || patientId;
+          }
+        } catch (e) {
+          console.warn('Could not resolve patient UUID, using patientId as-is:', e);
+        }
+      }
+      
+      let serialNumber;
+      if (typeof window.generateOrderSerialNumber === 'function') {
+        try {
+          serialNumber = await window.generateOrderSerialNumber('lab');
+        } catch (err) {
+          serialNumber = `LAB-${patientId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+        }
+      } else {
+        serialNumber = `LAB-${patientId}-${Date.now()}-${Math.random().toString(36).substring(2, 9)}`;
+      }
+      
+      // Store raw selection (panel names or single tests) so order has e.g. [Hepatitis B Profile, Hormonal Profile (Panel)] and billing/invoice show both
+      const selectedItems = [];
+      const indices = Array.from(selectedTests).sort((a, b) => a - b);
+      const seen = new Set();
+      for (const index of indices) {
+        const test = labTests[index];
+        if (!test) continue;
+        const name = (test.name || '').trim();
+        const cpt = (test.cpt || test.code || '').trim();
+        const key = name + '|' + cpt;
+        if (seen.has(key)) continue;
+        seen.add(key);
+        selectedItems.push({ name: test.name, cpt: test.cpt || test.code });
+      }
+      const finalItems = selectedItems;
+      
+      if (finalItems.length === 0) {
+        throw new Error('No tests to send');
+      }
+      
+      const orderData = {
+        serial_number: serialNumber,
+        type: 'lab',
+        patient_id: orderPatientId,
+        visit_date: visitDate,
+        admission_id: admissionId || null,
+        selected_items: finalItems,
+        status: status,
+        created_by: createdBy,
+        organization_id: organizationId,
+        timestamp: new Date().toISOString(),
+        no_items_checked: false
+      };
+      
+      const { data, error } = await window.supabaseClient
+        .from('orders')
+        .insert(orderData)
+        .select()
+        .single();
+      
+      if (error) {
+        const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+        const patient = patients.find(p => p.id === patientId || p.patient_id === patientId || p.patientNumber === patientId);
+        if (patient) {
+          let visit = patient.visits?.find(v => v.date === visitDate);
+          if (!visit) {
+            visit = { date: visitDate, orders: [] };
+            if (!patient.visits) patient.visits = [];
+            patient.visits.push(visit);
+          }
+          if (!visit.orders) visit.orders = [];
+          visit.orders.push(orderData);
+          localStorage.setItem(getDataKey('patients'), JSON.stringify(patients));
+          indices.forEach(i => updateTestStatus(i, status));
+          return;
+        }
+        throw new Error(error.message || 'Could not send order');
+      }
+      
+      indices.forEach(i => updateTestStatus(i, status));
+    }
+    
+    async function sendTestToDestination(index, status, showAlert = false) {
+      const test = labTests[index];
+      if (!test) return;
+      
+      // Single guard: org and client are set at page load; buttons are disabled until then
+      if (!organizationId || !window.supabaseClient) {
+        const msg = !organizationId ? 'Organization not set. Please log out and log in again.' : 'Connection not ready. Please refresh the page.';
+        if (showAlert) alert(msg);
+        throw new Error(msg);
+      }
+      
+      try {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+        const createdBy = user.username || user.email || user.id || 'system';
+        
+        // CRITICAL: Resolve patient UUID for orders table
+        // Orders table stores patient_id as UUID, so we need to get the UUID if patientId is a legacy ID
+        let orderPatientId = patientId; // Default to patientId from URL
+        
+        // If patientId looks like a UUID, use it directly
+        // Otherwise, resolve to get the UUID
+        if (patientId && !patientId.includes('-') && patientId.length < 36) {
+          // It's a legacy ID, need to resolve to UUID
+          try {
+            // Load patients to find the UUID
+            let patients = [];
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+              patients = await window.loadPatientsWithSupabasePriority();
+            } else {
+              patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            }
+            
+            let patientForOrder = null;
+            if (typeof window.resolvePatientByIdentifier === 'function') {
+              patientForOrder = await window.resolvePatientByIdentifier(patientId);
+            } else {
+              patientForOrder = patients.find(p => 
+                p.id === patientId || 
+                p.patient_id === patientId || 
+                p.patientNumber === patientId
+              );
+            }
+            
+            // Use UUID if available, otherwise use legacy ID
+            if (patientForOrder) {
+              orderPatientId = patientForOrder._supabaseUuid || patientForOrder.id || patientId;
+              console.log('🔍 [select-lab-orders] Resolved patient ID for order:', {
+                legacyId: patientId,
+                uuid: orderPatientId
+              });
+            }
+          } catch (error) {
+            console.warn('⚠️ Could not resolve patient UUID, using patientId as-is:', error);
+          }
+        }
+        
+        // Generate serial number for the order using organization-wide sequential format
+        // Format: LAB-001, LAB-002, etc. (simple and readable)
+        let serialNumber;
+        if (typeof window.generateOrderSerialNumber === 'function') {
+          try {
+            serialNumber = await window.generateOrderSerialNumber('lab');
+            console.log('✅ [select-lab-orders] Generated serial number:', serialNumber);
+          } catch (error) {
+            console.error('❌ [select-lab-orders] Error generating serial number:', error);
+            // Fallback to timestamp-based format if generation fails
+            const timestamp = Date.now();
+            const randomSuffix = Math.random().toString(36).substring(2, 9);
+            serialNumber = `LAB-${patientId}-${timestamp}-${randomSuffix}`;
+          }
+        } else {
+          console.warn('⚠️ [select-lab-orders] generateOrderSerialNumber not available, using fallback');
+          // Fallback if function not available
+          const timestamp = Date.now();
+          const randomSuffix = Math.random().toString(36).substring(2, 9);
+          serialNumber = `LAB-${patientId}-${timestamp}-${randomSuffix}`;
+        }
+        
+        // Store test as-is (panel name or single test) so selected_items matches what was ordered
+        const selectedItems = [{ name: test.name, cpt: test.cpt || test.code }];
+        
+        // Create order data
+        const orderData = {
+          serial_number: serialNumber,
+          type: 'lab',
+          patient_id: orderPatientId, // Use resolved UUID for orders table
+          visit_date: visitDate,
+          admission_id: admissionId || null,
+          selected_items: selectedItems,
+          status: status,
+          created_by: createdBy,
+          organization_id: organizationId,
+          timestamp: new Date().toISOString(),
+          no_items_checked: false
+        };
+        
+        console.log('🔍 [select-lab-orders] Saving order with patient_id:', orderPatientId, 'serial_number:', serialNumber);
+        
+        const { data, error } = await window.supabaseClient
+          .from('orders')
+          .insert(orderData)
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('❌ Error saving to Supabase:', error);
+          const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          const patient = patients.find(p => p.id === patientId || p.patient_id === patientId || p.patientNumber === patientId);
+          if (patient) {
+            let visit = patient.visits?.find(v => v.date === visitDate);
+            if (!visit) {
+              visit = { date: visitDate, orders: [] };
+              if (!patient.visits) patient.visits = [];
+              patient.visits.push(visit);
+            }
+            if (!visit.orders) visit.orders = [];
+            visit.orders.push(orderData);
+            localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+            console.log('✅ Lab order saved to localStorage (Supabase failed)');
+            updateTestStatus(index, status);
+            if (showAlert) alert(`Lab test "${test.name}" saved locally. Lab scientist may not see it until synced.`);
+            return;
+          }
+          if (showAlert) alert(`Could not send order: ${error.message || 'Server error'}. Please try again.`);
+          throw new Error(error.message || 'Could not send order');
+        }
+        
+        console.log('✅ Lab order saved to Supabase:', data);
+        updateTestStatus(index, status);
+        if (showAlert) {
+          alert(`Lab test "${test.name}" has been ${status === 'sent_to_lab' ? 'sent to lab scientist' : 'sent to external lab'}.`);
+        }
+      } catch (error) {
+        console.error('Error sending test:', error);
+        if (showAlert) {
+          alert('Error sending test. Please try again.');
+        } else {
+          // For bulk operations, re-throw so caller can handle
+          throw error;
+        }
+      }
+    }
+    
+    async function sendAllToLabScientist() {
+      if (!inHouseLabEnabled) {
+        alert('In-house laboratory is not enabled for this clinic.');
+        return;
+      }
+      
+      if (selectedTests.size === 0) {
+        alert('Please select at least one test.');
+        return;
+      }
+      
+      if (!confirm(`Send ${selectedTests.size} selected test(s) to lab scientist as one lab order?`)) {
+        return;
+      }
+      
+      try {
+        await sendSelectedTestsAsOneOrder('sent_to_lab');
+        alert(`Lab order with ${selectedTests.size} test(s) has been sent to lab scientist successfully.`);
+        updateBulkButtons();
+      } catch (error) {
+        console.error('Error sending lab order:', error);
+        alert('Could not send lab order. Please try again.');
+      }
+    }
+    
+    async function sendAllToExternalLab() {
+      if (selectedTests.size === 0) {
+        alert('Please select at least one test.');
+        return;
+      }
+      
+      if (!confirm(`Send ${selectedTests.size} selected test(s) to external lab as one lab order?`)) {
+        return;
+      }
+      
+      try {
+        await sendSelectedTestsAsOneOrder('sent_to_external');
+        alert(`Lab order with ${selectedTests.size} test(s) has been sent to external lab successfully.`);
+        updateBulkButtons();
+      } catch (error) {
+        console.error('Error sending lab order:', error);
+        alert('Could not send lab order. Please try again.');
+      }
+    }
+    
+    function updateTestStatus(index, status) {
+      const statusBadge = document.getElementById(`status_${index}`);
+      if (statusBadge) {
+        statusBadge.className = `status-badge status-${status.replace('_', '-')}`;
+        statusBadge.textContent = status === 'sent_to_lab' ? 'Sent to Lab' : 
+                                  status === 'sent_to_external' ? 'Sent to External' : 'Pending';
+      }
+      
+      // Disable action buttons for this test
+      const actionsDiv = document.getElementById(`actions_${index}`);
+      if (actionsDiv) {
+        actionsDiv.querySelectorAll('button').forEach(btn => {
+          btn.disabled = true;
+          btn.style.opacity = '0.5';
+        });
+      }
+    }
+    
+    async function loadExistingOrders() {
+      try {
+        // Load from Supabase first
+        // CRITICAL: Resolve patient UUID first - orders table stores UUIDs
+        if (window.supabaseClient && organizationId) {
+          let queryPatientId = patientId;
+          
+          // If patientId is a legacy ID, resolve to UUID
+          if (patientId && !patientId.includes('-') && patientId.length < 36) {
+            try {
+              let patients = [];
+              if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                patients = await window.loadPatientsWithSupabasePriority();
+              } else {
+                patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+              }
+              
+              let patientForOrder = null;
+              if (typeof window.resolvePatientByIdentifier === 'function') {
+                patientForOrder = await window.resolvePatientByIdentifier(patientId);
+              } else {
+                patientForOrder = patients.find(p => 
+                  p.id === patientId || 
+                  p.patient_id === patientId || 
+                  p.patientNumber === patientId
+                );
+              }
+              
+              if (patientForOrder) {
+                queryPatientId = patientForOrder._supabaseUuid || patientForOrder.id || patientId;
+              }
+            } catch (error) {
+              console.warn('Could not resolve patient UUID for loadExistingOrders:', error);
+            }
+          }
+          
+          const { data, error } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('patient_id', queryPatientId)
+            .eq('visit_date', visitDate)
+            .eq('type', 'lab')
+            .eq('organization_id', organizationId);
+          
+          if (!error && data) {
+            // Update UI with existing orders
+            data.forEach(order => {
+              if (order.selected_items && Array.isArray(order.selected_items)) {
+                order.selected_items.forEach((item, idx) => {
+                  const testIndex = labTests.findIndex(t => t.name === item.name);
+                  if (testIndex !== -1) {
+                    updateTestStatus(testIndex, order.status);
+                  }
+                });
+              }
+            });
+          }
+        }
+      } catch (error) {
+        console.error('Error loading existing orders:', error);
+      }
+    }
+    
+    async function goBack() {
+      // Check referrer first - if we came from a specific note page, go back to it
+      const referrer = document.referrer;
+      console.log('🔍 [goBack] Referrer:', referrer);
+      
+      if (returnUrl) {
+        try {
+          window.location.href = decodeURIComponent(returnUrl);
+          return;
+        } catch (error) {
+          console.warn('Could not decode returnUrl, using raw value:', error);
+          window.location.href = returnUrl;
+          return;
+        }
+      }
+      
+      if (referrer) {
+        // Check if we came from lab-intervention-note
+        if (referrer.includes('lab-intervention-note')) {
+          console.log('✅ [goBack] Redirecting to lab-intervention-note (from referrer)');
+          window.location.href = `lab-intervention-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+          return;
+        }
+        // Check if we came from clinical-note
+        if (referrer.includes('clinical-note')) {
+          console.log('✅ [goBack] Redirecting to clinical-note (from referrer)');
+          window.location.href = `clinical-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+          return;
+        }
+      }
+      
+      // If no referrer match, check visit/appointment type to determine correct note page
+      try {
+        // Load patient to check visit type
+        let patient = null;
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          const patients = await window.loadPatientsWithSupabasePriority();
+          patient = patients.find(p => p.id === patientId || p.patient_id === patientId);
+        }
+        
+        if (patient && visitDate) {
+          // Check if visit has labIntervention data (indicates lab intervention note)
+          const visit = patient.visits?.find(v => v.date === visitDate);
+          if (visit && visit.labIntervention) {
+            console.log('✅ [goBack] Visit has labIntervention data, redirecting to lab-intervention-note');
+            window.location.href = `lab-intervention-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+            return;
+          }
+          
+          // Check appointments for visit type
+          const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
+          const appointment = appointments.find(a => {
+            const apptDate = a.date || a.appointmentDate;
+            const apptPatientId = a.patientId || a.patient_id;
+            return apptDate === visitDate && (apptPatientId === patientId || apptPatientId === patient.id || apptPatientId === patient.patient_id);
+          });
+          
+          if (appointment && appointment.type) {
+            const appointmentType = (appointment.type || '').toString().toLowerCase().trim();
+            console.log('🔍 [goBack] Found appointment type:', appointmentType);
+            
+            // Check if it's a lab intervention appointment
+            if (appointmentType.includes('lab') && appointmentType.includes('intervention')) {
+              console.log('✅ [goBack] Appointment type is lab intervention, redirecting to lab-intervention-note');
+              window.location.href = `lab-intervention-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+              return;
+            }
+          }
+        }
+      } catch (error) {
+        console.warn('⚠️ [goBack] Error checking visit type:', error);
+      }
+      
+      // Default fallback: go to clinical-note
+      console.log('ℹ️ [goBack] No specific note type found, defaulting to clinical-note');
+      window.location.href = `clinical-note.html?patientId=${patientId}&visitDate=${visitDate}`;
+    }
+    
+    // Helper function to get data key (from patients.js)
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const orgName = user.org || 'Default';
+      return `${orgName}_${key}`;
+    }
+    
+    // Print lab orders (Supabase-first: saves order before printing)
+    async function printLabOrders() {
+      // Get all selected tests
+      const selectedTestsList = [];
+      labTests.forEach((test, index) => {
+        const checkbox = document.getElementById(`test_${index}`);
+        if (checkbox && checkbox.checked) {
+          selectedTestsList.push(test);
+        }
+      });
+      
+      if (selectedTestsList.length === 0) {
+        alert('Please select at least one test to print.');
+        return;
+      }
+      
+      // Supabase-first: Save order to orders table before printing
+      let orgName = 'Lab Orders'; // Declare outside try block so it's available for print
+      let orgData = null; // Store full org data for facility details
+      let physicianName = 'Dr. Unknown';
+      let physicianLicense = 'N/A';
+      let physicianSpecialty = 'N/A';
+      let patient = null; // Declare outside try block so it's available for print
+      
+      try {
+        // Load patient data (Supabase-first)
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+        
+        // Use resolvePatientByIdentifier to properly find patient by UUID or legacy ID
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          // Fallback: try multiple ID fields
+          patient = patients.find(p => 
+            p.id === patientId || 
+            p.patient_id === patientId || 
+            p.patientNumber === patientId ||
+            p._supabaseUuid === patientId
+          );
+        }
+        
+        if (!patient) {
+          alert('Patient not found. Cannot save order.');
+          return;
+        }
+        
+        // Get user and organization data (Supabase-first)
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        let orgId = organizationId || user.organizationId || user.organization_id || (user.org ? JSON.parse(localStorage.getItem("organizations") || "{}")[user.org]?.id : null);
+        
+        // Get physician information
+        if (user.firstName && user.lastName) {
+          physicianName = `Dr. ${user.firstName} ${user.lastName}`;
+        } else if (user.username) {
+          physicianName = `Dr. ${user.username}`;
+        }
+        
+        physicianLicense = user.medicalLicenseNumber || user.medicalLicense || user.licenseNumber || 'N/A';
+        physicianSpecialty = user.role || user.specialty || 'General Practice';
+        
+        // Try to get user data from Supabase for more complete physician info
+        if (window.supabaseClient && user.username) {
+          try {
+            const { data: userFromSupabase } = await window.supabaseClient
+              .from('users')
+              .select('*, organizations(*)')
+              .eq('username', user.username)
+              .single();
+            
+            if (userFromSupabase) {
+              if (userFromSupabase.first_name && userFromSupabase.last_name) {
+                physicianName = `Dr. ${userFromSupabase.first_name} ${userFromSupabase.last_name}`;
+              }
+              physicianLicense = userFromSupabase.medicalLicenseNumber || userFromSupabase.medical_license || physicianLicense;
+              physicianSpecialty = userFromSupabase.role || physicianSpecialty;
+              orgData = userFromSupabase.organizations;
+            }
+          } catch (error) {
+            console.warn('Could not fetch user data from Supabase:', error);
+          }
+        }
+        
+        // Get organization name and data (Supabase-first)
+        try {
+          // Try getOrganizationName function first (if available)
+          if (orgId && typeof window.getOrganizationName === 'function') {
+            orgName = await window.getOrganizationName(orgId);
+            console.log('✅ Organization name from getOrganizationName:', orgName);
+          }
+          
+          // Get full organization data from Supabase if not already loaded
+          if (!orgData && orgId && orgId.includes('-') && orgId.length > 30) {
+            if (window.supabaseClient) {
+              const { data: org, error } = await window.supabaseClient
+                .from('organizations')
+                .select('*')
+                .eq('id', orgId)
+                .single();
+              
+              if (!error && org) {
+                orgData = org;
+                orgName = org.name || orgName;
+                console.log('✅ Organization data fetched from Supabase:', orgName);
+              } else {
+                console.warn('⚠️ Could not fetch organization data from Supabase:', error);
+              }
+            }
+          }
+          
+          // If still default or looks like an ID, try localStorage organizations
+          if ((orgName === 'Lab Orders' || (orgName && orgName.includes('-'))) && !orgData) {
+            const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+            if (orgId && organizations[orgId]) {
+              orgData = organizations[orgId];
+              orgName = orgData.name || orgName;
+            } else if (user.org && !user.org.includes('-')) {
+              orgName = user.org;
+            }
+          }
+        } catch (error) {
+          console.error('❌ Error getting organization data:', error);
+          // Final fallback
+          if (user.org && !user.org.includes('-')) {
+            orgName = user.org;
+          }
+        }
+        
+        // Generate HTML content for the order (for saving)
+        const htmlContent = `
+          <h1>${orgName}: Lab Orders</h1>
+          <div class="patient-info">
+            <strong>Patient:</strong> ${patient.firstName || ''} ${patient.lastName || ''} (${patientId})<br>
+            <strong>Visit Date:</strong> ${visitDate}
+          </div>
+          <h2>Selected Tests:</h2>
+          <table>
+            <thead>
+              <tr>
+                <th>Test Name</th>
+                <th>CPT Code</th>
+                <th>Specimen Type/Volume</th>
+                <th>Container</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${selectedTestsList.map(test => `
+                <tr>
+                  <td><strong>${test.name}</strong></td>
+                  <td>${test.cpt || 'N/A'}</td>
+                  <td>${test.specimen || 'N/A'}</td>
+                  <td>${test.container || 'N/A'}</td>
+                </tr>
+              `).join('')}
+            </tbody>
+          </table>
+          <p style="margin-top: 30px; font-size: 12px; color: #666;">
+            Generated on: ${new Date().toLocaleString()}
+          </p>
+        `;
+        
+        // Use generateOrder function to save the order (Supabase-first)
+        if (typeof window.generateOrder === 'function') {
+          await window.generateOrder('lab', selectedTestsList, false, patientId, visitDate, htmlContent);
+          console.log('✅ Lab order saved to orders table before printing');
+        } else {
+          console.warn('⚠️ generateOrder function not available, proceeding with print only');
+        }
+      } catch (error) {
+        console.error('❌ Error saving order before printing:', error);
+        // Continue with print even if save fails
+      }
+      
+      // Get user for fallback values (if not already loaded)
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      
+      // Final check: Ensure orgName is not a UUID
+      if (orgName && (orgName.includes('-') && orgName.length > 30)) {
+        console.warn('⚠️ orgName looks like a UUID, trying to resolve again...');
+        let orgId = organizationId || user.organizationId || user.organization_id;
+        if (orgId && window.supabaseClient) {
+          try {
+            const { data: org, error } = await window.supabaseClient
+              .from('organizations')
+              .select('name')
+              .eq('id', orgId)
+              .single();
+            if (!error && org && org.name) {
+              orgName = org.name;
+              console.log('✅ Organization name resolved:', orgName);
+            }
+          } catch (error) {
+            console.error('Error resolving org name:', error);
+          }
+        }
+        // Final fallback to user.org if it's not a UUID
+        if (orgName && orgName.includes('-') && user.org && !user.org.includes('-')) {
+          orgName = user.org;
+          console.log('✅ Using user.org as fallback:', orgName);
+        }
+      }
+      
+      // Build facility address string
+      let facilityAddress = '';
+      if (orgData) {
+        const addressParts = [
+          orgData.address || orgData.address_line1,
+          orgData.address_line2,
+          orgData.city,
+          orgData.state,
+          orgData.country
+        ].filter(Boolean);
+        facilityAddress = addressParts.join(', ');
+      }
+      const facilityPhone = orgData?.phone || user.orgPhone || 'N/A';
+      const facilityEmail = orgData?.email || user.orgEmail || 'N/A';
+      
+      // Ensure patient is loaded (fallback if try block failed)
+      if (!patient) {
+        try {
+          let patients = [];
+          if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+            patients = await window.loadPatientsWithSupabasePriority();
+          } else {
+            patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          }
+          
+          // Use resolvePatientByIdentifier to properly find patient
+          if (typeof window.resolvePatientByIdentifier === 'function') {
+            patient = await window.resolvePatientByIdentifier(patientId);
+          } else {
+            // Fallback: try multiple ID fields
+            patient = patients.find(p => 
+              p.id === patientId || 
+              p.patient_id === patientId || 
+              p.patientNumber === patientId ||
+              p._supabaseUuid === patientId
+            );
+          }
+        } catch (error) {
+          console.error('Error loading patient for print:', error);
+        }
+      }
+      
+      // Final validation: Don't print if orgName is still a UUID
+      if (orgName && orgName.includes('-') && orgName.length > 30) {
+        console.error('❌ Organization name is still a UUID:', orgName);
+        alert('Error: Could not retrieve organization name. Please try again.');
+        return;
+      }
+      
+      // Create complete print content with facility and physician info
+      const printContent = `
+        <!DOCTYPE html>
+        <html>
+          <head>
+            <meta charset="UTF-8">
+            <title>${orgName}: Lab Orders</title>
+            <style>
+              body { 
+                font-family: Arial, sans-serif; 
+                padding: 20px; 
+                max-width: 800px; 
+                margin: 0 auto;
+              }
+              .header {
+                border-bottom: 3px solid #008753;
+                padding-bottom: 15px;
+                margin-bottom: 20px;
+              }
+              .header h1 { 
+                color: #008753; 
+                margin: 0 0 10px 0;
+                font-size: 24px;
+              }
+              .facility-info {
+                font-size: 12px;
+                color: #666;
+                line-height: 1.6;
+              }
+              .patient-info { 
+                background: #f8f9fa; 
+                padding: 15px; 
+                border-radius: 8px; 
+                margin-bottom: 20px;
+                border-left: 4px solid #008753;
+              }
+              .physician-info {
+                background: #e8f5e9;
+                padding: 15px;
+                border-radius: 8px;
+                margin-bottom: 20px;
+                border-left: 4px solid #4caf50;
+              }
+              table { 
+                width: 100%; 
+                border-collapse: collapse; 
+                margin-top: 20px;
+                font-size: 14px;
+              }
+              th { 
+                background: #008753; 
+                color: white; 
+                padding: 12px; 
+                text-align: left;
+                font-weight: 600;
+              }
+              td { 
+                padding: 12px; 
+                border-bottom: 1px solid #dee2e6;
+              }
+              tr:nth-child(even) {
+                background: #f8f9fa;
+              }
+              .footer {
+                margin-top: 30px;
+                padding-top: 15px;
+                border-top: 1px solid #dee2e6;
+                font-size: 12px;
+                color: #666;
+                text-align: center;
+              }
+              @media print {
+                body { padding: 10px; }
+                @page { margin: 1cm; }
+                .no-print { display: none; }
+              }
+            </style>
+          </head>
+          <body>
+            <div class="header">
+              <h1>${orgName && !orgName.includes('-') ? orgName : 'Lab Orders'}</h1>
+              <div class="facility-info">
+                ${facilityAddress ? `<strong>Address:</strong> ${facilityAddress}<br>` : ''}
+                ${facilityPhone !== 'N/A' ? `<strong>Phone:</strong> ${facilityPhone}<br>` : ''}
+                ${facilityEmail !== 'N/A' ? `<strong>Email:</strong> ${facilityEmail}` : ''}
+              </div>
+            </div>
+            
+            <h2 style="color: #008753; margin-top: 30px;">Lab Order</h2>
+            
+            <div class="patient-info">
+              <strong>Patient Information:</strong><br>
+              <strong>Name:</strong> ${patient ? ((patient.firstName || '') + ' ' + (patient.lastName || '')).trim() : 'Unknown Patient'}<br>
+              ${patient ? `<strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient, patientId) : (patient.patient_id || patient.patientNumber)}<br>` : ''}
+              <strong>Visit Date:</strong> ${visitDate}
+            </div>
+            
+            <div class="physician-info">
+              <strong>Ordering Physician:</strong><br>
+              <strong>Name:</strong> ${physicianName}<br>
+              <strong>License:</strong> ${physicianLicense}<br>
+              <strong>Specialty:</strong> ${physicianSpecialty}
+            </div>
+            
+            <h3 style="color: #008753; margin-top: 20px;">Ordered Tests:</h3>
+            <table>
+              <thead>
+                <tr>
+                  <th>Test Name</th>
+                  <th>CPT Code</th>
+                  <th>Specimen Type/Volume</th>
+                  <th>Container</th>
+                </tr>
+              </thead>
+              <tbody>
+                ${selectedTestsList.map(test => `
+                  <tr>
+                    <td><strong>${test.name}</strong></td>
+                    <td>${test.cpt || 'N/A'}</td>
+                    <td>${test.specimen || 'N/A'}</td>
+                    <td>${test.container || 'N/A'}</td>
+                  </tr>
+                `).join('')}
+              </tbody>
+            </table>
+            
+            <div class="footer">
+              Generated on: ${new Date().toLocaleString()}<br>
+              ${orgName} - Lab Order System
+            </div>
+          </body>
+        </html>
+      `;
+      
+      // Open print window using blob URL to avoid about:blank
+      try {
+        const blob = new Blob([printContent], { type: 'text/html' });
+        const url = URL.createObjectURL(blob);
+        const printWindow = window.open(url, '_blank');
+        
+        if (!printWindow) {
+          alert('Please allow popups for this site to print lab orders.');
+          URL.revokeObjectURL(url);
+          return;
+        }
+        
+        // Wait for content to load before printing
+        printWindow.onload = function() {
+          setTimeout(() => {
+            printWindow.print();
+            // Clean up blob URL after printing
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+            }, 1000);
+          }, 250);
+        };
+        
+        // Fallback if onload doesn't fire
+        setTimeout(() => {
+          if (printWindow.document.readyState === 'complete') {
+            printWindow.print();
+            setTimeout(() => {
+              URL.revokeObjectURL(url);
+            }, 1000);
+          }
+        }, 500);
+      } catch (error) {
+        console.error('Error opening print window:', error);
+        alert('Error opening print dialog. Please check your browser settings.');
+      }
+    }
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,183 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Simple DOB Sync</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 30px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 15px 30px; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; margin: 10px 5px; }
+        .btn:hover { background: #0056b3; }
+        .btn.success { background: #28a745; }
+        .log { background: #000; color: #0f0; padding: 15px; font-family: monospace; height: 400px; overflow-y: auto; margin: 20px 0; border-radius: 5px; }
+        .warning { background: #fff3cd; border: 1px solid #ffc107; padding: 15px; border-radius: 5px; margin: 20px 0; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Simple DOB Sync</h1>
+        
+        <div class="warning">
+            <strong>?? Focused Solution:</strong><br>
+            This tool will only update the DOB data in localStorage, avoiding any JSON parsing issues.
+        </div>
+        
+        <p>This tool will:</p>
+        <ul>
+            <li>? Get current patients from localStorage</li>
+            <li>? Get fresh DOB data from Supabase</li>
+            <li>? Update only the DOB fields in localStorage</li>
+            <li>? Keep all other data intact</li>
+        </ul>
+        
+        <button class="btn" onclick="syncDOBOnly()">?? Sync DOB Data Only</button>
+        <button class="btn success" onclick="testEHRApp()">?? Test EHR App</button>
+        
+        <div class="log" id="log"></div>
+    </div>
+
+    
+  </script>
+    
+  
+        const supabase = window.supabase.createClient(
+            ((window.__SUPABASE_CONFIG__||{}).url||''),
+            ((window.__SUPABASE_CONFIG__||{}).anonKey||'')
+        );
+        
+        const ORG_ID = '576522cc-e769-4fb4-9487-3d150857d970';
+        
+        function log(message) {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            logDiv.innerHTML += `[${timestamp}] ${message}<br>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+        }
+        
+        // Get data key for localStorage (same as EHR app uses)
+        function getDataKey(key) {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            return user.org ? `${user.org}_${key}` : key;
+        }
+        
+        async function syncDOBOnly() {
+            log('?? Starting DOB-only sync...');
+            
+            try {
+                // Step 1: Get current localStorage patients
+                const dataKey = getDataKey("patients");
+                const currentPatients = JSON.parse(localStorage.getItem(dataKey) || "[]");
+                log(`?? Found ${currentPatients.length} patients in localStorage`);
+                
+                // Step 2: Get fresh DOB data from Supabase
+                log('?? Fetching DOB data from Supabase...');
+                const { data: supabasePatients, error } = await supabase
+                    .from('patients')
+                    .select('patient_id, date_of_birth')
+                    .eq('organization_id', ORG_ID);
+                
+                if (error) throw error;
+                
+                log(`? Retrieved DOB data for ${supabasePatients.length} patients from Supabase`);
+                
+                // Step 3: Create a map of patient_id to DOB
+                const dobMap = {};
+                supabasePatients.forEach(patient => {
+                    dobMap[patient.patient_id] = patient.date_of_birth;
+                });
+                
+                // Step 4: Update localStorage patients with DOB data
+                log('?? Updating DOB data in localStorage...');
+                let updatedCount = 0;
+                
+                currentPatients.forEach(patient => {
+                    const newDOB = dobMap[patient.id];
+                    if (newDOB && newDOB !== patient.dob) {
+                        const oldDOB = patient.dob;
+                        patient.dob = newDOB;
+                        updatedCount++;
+                        log(`? Updated ${patient.firstName} ${patient.lastName} (${patient.id}): ${oldDOB || 'NULL'} ? ${newDOB}`);
+                    }
+                });
+                
+                // Step 5: Save updated patients back to localStorage
+                localStorage.setItem(dataKey, JSON.stringify(currentPatients));
+                log(`?? Saved updated patients to localStorage`);
+                
+                // Step 6: Verify the update
+                const patientsWithDOB = currentPatients.filter(p => p.dob);
+                log(`?? Final result: ${patientsWithDOB.length}/${currentPatients.length} patients have DOB data`);
+                
+                if (updatedCount > 0) {
+                    log(`?? Successfully updated ${updatedCount} patients with DOB data!`);
+                    log('?? Your EHR app should now show the correct dates of birth');
+                } else {
+                    log('?? No patients needed DOB updates');
+                }
+                
+            } catch (error) {
+                log(`? Error syncing DOB data: ${error.message}`);
+            }
+        }
+        
+        function testEHRApp() {
+            log('?? Testing EHR app data...');
+            
+            const dataKey = getDataKey("patients");
+            const patients = JSON.parse(localStorage.getItem(dataKey) || "[]");
+            
+            log(`?? Current localStorage data:`);
+            log(`   Total patients: ${patients.length}`);
+            
+            const patientsWithDOB = patients.filter(p => p.dob);
+            log(`   Patients with DOB: ${patientsWithDOB.length}`);
+            
+            if (patientsWithDOB.length > 0) {
+                log('? DOB data is available in localStorage');
+                log('?? Patients with DOB:');
+                patientsWithDOB.forEach(patient => {
+                    log(`   ? ${patient.firstName} ${patient.lastName} (${patient.id}): ${patient.dob}`);
+                });
+                log('?? Your EHR app should now display the correct dates of birth');
+                log('?? Please refresh your EHR app to see the changes');
+            } else {
+                log('? No DOB data found in localStorage');
+                log('?? Please run the DOB sync first');
+            }
+        }
+        
+        // Initialize
+        window.addEventListener('load', () => {
+            log('?? Simple DOB Sync Tool ready');
+            log('?? Click "Sync DOB Data Only" to start');
+        });
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+

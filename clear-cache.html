@@ -1,0 +1,347 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Cache - MediForge</title>
+  <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .container {
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            max-width: 500px;
+            width: 100%;
+            padding: 30px;
+            text-align: center;
+        }
+        
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+        
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 16px;
+        }
+        
+        .button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 18px 40px;
+            border-radius: 12px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            width: 100%;
+            margin-bottom: 15px;
+            transition: transform 0.2s, box-shadow 0.2s;
+            box-shadow: 0 4px 15px rgba(102, 126, 234, 0.4);
+        }
+        
+        .button:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 6px 20px rgba(102, 126, 234, 0.6);
+        }
+        
+        .button:active {
+            transform: translateY(0);
+        }
+        
+        .button-secondary {
+            background: #f0f0f0;
+            color: #333;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        
+        .button-secondary:hover {
+            background: #e0e0e0;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.2);
+        }
+        
+        .status {
+            margin-top: 20px;
+            padding: 15px;
+            border-radius: 10px;
+            font-size: 14px;
+            display: none;
+        }
+        
+        .status.success {
+            background: #d4edda;
+            color: #155724;
+            border: 1px solid #c3e6cb;
+            display: block;
+        }
+        
+        .status.error {
+            background: #f8d7da;
+            color: #721c24;
+            border: 1px solid #f5c6cb;
+            display: block;
+        }
+        
+        .status.info {
+            background: #d1ecf1;
+            color: #0c5460;
+            border: 1px solid #bee5eb;
+            display: block;
+        }
+        
+        .info-box {
+            background: #f8f9fa;
+            border-left: 4px solid #667eea;
+            padding: 15px;
+            margin-top: 20px;
+            border-radius: 5px;
+            text-align: left;
+            font-size: 14px;
+            color: #555;
+        }
+        
+        .info-box h3 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 16px;
+        }
+        
+        .info-box ul {
+            margin-left: 20px;
+            margin-top: 10px;
+        }
+        
+        .info-box li {
+            margin-bottom: 5px;
+        }
+        
+        .spinner {
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #667eea;
+            border-radius: 50%;
+            width: 30px;
+            height: 30px;
+            animation: spin 1s linear infinite;
+            margin: 20px auto;
+            display: none;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .spinner.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧹 Clear Cache</h1>
+        <p class="subtitle">MediForge - Clear browser cache and stored data</p>
+        
+        <button class="button" onclick="clearAllCache()" id="clear-btn">
+            🧹 Clear All Cache & Data
+        </button>
+        
+        <button class="button button-secondary" onclick="clearLocalStorageOnly()" id="clear-ls-btn">
+            📱 Clear App Data Only
+        </button>
+        
+        <div class="spinner" id="spinner"></div>
+        
+        <div class="status" id="status"></div>
+        
+        <div class="info-box">
+            <h3>ℹ️ What this does:</h3>
+            <ul>
+                <li><strong>Clear All:</strong> Removes all cached data, localStorage, and forces a fresh reload</li>
+                <li><strong>Clear App Data:</strong> Only removes MediForge app data (keeps other website data)</li>
+                <li>After clearing, you'll be redirected to the login page</li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        function showStatus(message, type = 'info') {
+            const status = document.getElementById('status');
+            status.className = `status ${type}`;
+            status.textContent = message;
+            status.style.display = 'block';
+        }
+
+        function showSpinner(show = true) {
+            const spinner = document.getElementById('spinner');
+            const clearBtn = document.getElementById('clear-btn');
+            const clearLsBtn = document.getElementById('clear-ls-btn');
+            
+            if (show) {
+                spinner.classList.add('active');
+                clearBtn.disabled = true;
+                clearLsBtn.disabled = true;
+            } else {
+                spinner.classList.remove('active');
+                clearBtn.disabled = false;
+                clearLsBtn.disabled = false;
+            }
+        }
+
+        async function clearAllCache() {
+            showSpinner(true);
+            showStatus('Clearing cache...', 'info');
+            
+            try {
+                // 1. Clear localStorage (all data)
+                localStorage.clear();
+                console.log('✅ Cleared localStorage');
+                
+                // 2. Clear sessionStorage
+                sessionStorage.clear();
+                console.log('✅ Cleared sessionStorage');
+                
+                // 3. Clear IndexedDB (if available)
+                if ('indexedDB' in window) {
+                    try {
+                        const databases = await indexedDB.databases();
+                        await Promise.all(
+                            databases.map(db => {
+                                return new Promise((resolve, reject) => {
+                                    const deleteReq = indexedDB.deleteDatabase(db.name);
+                                    deleteReq.onsuccess = () => resolve();
+                                    deleteReq.onerror = () => reject(deleteReq.error);
+                                    deleteReq.onblocked = () => resolve(); // Still resolve if blocked
+                                });
+                            })
+                        );
+                        console.log('✅ Cleared IndexedDB');
+                    } catch (idbError) {
+                        console.warn('⚠️ Could not clear IndexedDB:', idbError);
+                    }
+                }
+                
+                // 4. Clear Service Worker cache (if available)
+                if ('serviceWorker' in navigator && 'caches' in window) {
+                    try {
+                        const cacheNames = await caches.keys();
+                        await Promise.all(
+                            cacheNames.map(cacheName => caches.delete(cacheName))
+                        );
+                        console.log('✅ Cleared Service Worker caches');
+                    } catch (cacheError) {
+                        console.warn('⚠️ Could not clear Service Worker caches:', cacheError);
+                    }
+                }
+                
+                // 5. Unregister service workers
+                if ('serviceWorker' in navigator) {
+                    try {
+                        const registrations = await navigator.serviceWorker.getRegistrations();
+                        await Promise.all(
+                            registrations.map(registration => registration.unregister())
+                        );
+                        console.log('✅ Unregistered Service Workers');
+                    } catch (swError) {
+                        console.warn('⚠️ Could not unregister Service Workers:', swError);
+                    }
+                }
+                
+                showSpinner(false);
+                showStatus('✅ Cache cleared successfully! Redirecting to login...', 'success');
+                
+                // Redirect to login after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                
+            } catch (error) {
+                showSpinner(false);
+                console.error('❌ Error clearing cache:', error);
+                showStatus('⚠️ Some cache items could not be cleared, but localStorage was cleared. Redirecting...', 'error');
+                
+                // Still redirect even if some clearing failed
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 3000);
+            }
+        }
+
+        function clearLocalStorageOnly() {
+            showSpinner(true);
+            showStatus('Clearing app data...', 'info');
+            
+            try {
+                // Clear only MediForge related data
+      const keysToRemove = [];
+                
+                // Get all localStorage keys
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+                    if (key) {
+                        // Remove MediForge related keys
+                        if (key.includes('patient') || 
+                            key.includes('user') || 
+                            key.includes('organization') || 
+                            key.includes('appointment') ||
+                            key.includes('prescription') ||
+                            key.includes('ehr') ||
+                            key.includes('supabase') ||
+                            key.includes('rate_limit') ||
+                            key.includes('audit') ||
+                            key.startsWith('sw-cache') ||
+                            key.includes('EHR') ||
+                            key.includes('Africa')) {
+          keysToRemove.push(key);
+                        }
+        }
+      }
+      
+                // Remove the keys
+      keysToRemove.forEach(key => {
+        localStorage.removeItem(key);
+                });
+                
+                // Also clear sessionStorage
+                sessionStorage.clear();
+                
+                showSpinner(false);
+                showStatus(`✅ Cleared ${keysToRemove.length} app data items! Redirecting to login...`, 'success');
+                
+                // Redirect to login after 2 seconds
+                setTimeout(() => {
+                    window.location.href = '/login';
+                }, 2000);
+                
+            } catch (error) {
+                showSpinner(false);
+                console.error('❌ Error clearing app data:', error);
+                showStatus('⚠️ Error clearing app data. Please try "Clear All" instead.', 'error');
+            }
+        }
+
+        // Show initial status
+        window.addEventListener('load', () => {
+            console.log('✅ Cache clearing tool loaded');
+        });
+    </script>
+</body>
+</html>

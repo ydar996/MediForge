@@ -1,0 +1,514 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <title>Platform Admin - Encryption Recovery - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Helvetica Neue', Arial, sans-serif;
+      background: #f5f5f5;
+      padding: 20px;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+      padding: 30px;
+    }
+    
+    .header {
+      border-bottom: 2px solid #e0e0e0;
+      padding-bottom: 20px;
+      margin-bottom: 30px;
+    }
+    
+    .header h1 {
+      color: #667eea;
+      margin: 0 0 10px 0;
+    }
+    
+    .info-box {
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+      padding: 15px;
+      margin-bottom: 25px;
+      border-radius: 4px;
+    }
+    
+    .form-group {
+      margin-bottom: 20px;
+    }
+    
+    .form-group label {
+      display: block;
+      font-weight: 600;
+      margin-bottom: 8px;
+      color: #333;
+    }
+    
+    .form-group select,
+    .form-group input {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #e1e5e9;
+      border-radius: 8px;
+      font-size: 1rem;
+      box-sizing: border-box;
+    }
+    
+    .form-group input[type="password"] {
+      font-family: monospace;
+    }
+    
+    .button {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 8px;
+      font-size: 1rem;
+      font-weight: 600;
+      cursor: pointer;
+      transition: all 0.3s ease;
+    }
+    
+    .button-primary {
+      background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+      color: white;
+    }
+    
+    .button-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(102, 126, 234, 0.3);
+    }
+    
+    .button-primary:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .recovery-key-display {
+      background: #e3f2fd;
+      border: 2px solid #2196F3;
+      border-radius: 8px;
+      padding: 20px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .recovery-key-display.show {
+      display: block;
+    }
+    
+    .recovery-key-display code {
+      display: block;
+      background: white;
+      padding: 15px;
+      border-radius: 4px;
+      font-family: monospace;
+      font-size: 0.9rem;
+      word-break: break-all;
+      margin: 10px 0;
+    }
+    
+    .status-message {
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      display: none;
+    }
+    
+    .status-message.show {
+      display: block;
+    }
+    
+    .status-message.success {
+      background: #d4edda;
+      color: #155724;
+      border: 1px solid #c3e6cb;
+    }
+    
+    .status-message.error {
+      background: #f8d7da;
+      color: #721c24;
+      border: 1px solid #f5c6cb;
+    }
+    
+    .status-message.warning {
+      background: #fff3cd;
+      color: #856404;
+      border: 1px solid #ffc107;
+    }
+    
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 20px;
+    }
+    
+    th, td {
+      padding: 12px;
+      text-align: left;
+      border-bottom: 1px solid #e0e0e0;
+    }
+    
+    th {
+      background: #f8f9fa;
+      font-weight: 600;
+      color: #495057;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1><i class="fa-solid fa-key" aria-hidden="true"></i> Platform Admin - Encryption Recovery</h1>
+      <p>Help organizations recover access to encrypted data</p>
+      <a href="platform-dashboard" style="color: #667eea; text-decoration: none;"><i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Platform Dashboard</a>
+    </div>
+
+    <div class="info-box">
+      <h3><i class="fa-solid fa-shield-halved" aria-hidden="true"></i> Important Security Notice</h3>
+      <p>This page allows platform administrators to recover encryption keys for organizations. Use this feature responsibly:</p>
+      <ul>
+        <li>Always verify the organization's identity before providing recovery keys</li>
+        <li>Share recovery keys through secure channels only</li>
+        <li>All recovery operations are logged for audit purposes</li>
+        <li>Requires platform admin master key to decrypt recovery keys</li>
+      </ul>
+    </div>
+
+    <form id="recovery-form">
+      <div class="form-group">
+        <label for="organization-select">Select Organization *</label>
+        <select id="organization-select" required>
+          <option value="">-- Select Organization --</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="platform-master-key">Platform Admin Master Key *</label>
+        <input 
+          type="password" 
+          id="platform-master-key" 
+          name="platform-master-key" 
+          required 
+          placeholder="Enter platform admin master key"
+          autocomplete="off"
+        >
+        <small style="color: #666; font-size: 0.85rem; margin-top: 5px; display: block;">
+          This is the master key used to encrypt recovery keys. Required to decrypt organization recovery keys.
+        </small>
+      </div>
+
+      <button type="submit" class="button button-primary" id="recover-button">
+        <i class="fa-solid fa-key" aria-hidden="true"></i> Retrieve Recovery Key
+      </button>
+
+      <div id="status-message" class="status-message"></div>
+
+      <div id="recovery-key-display" class="recovery-key-display">
+        <h3><i class="fa-solid fa-unlock-keyhole" aria-hidden="true"></i> Recovery Key for <span id="org-name-display"></span></h3>
+        <p><strong>Share this recovery key securely with the organization administrator:</strong></p>
+        <code id="recovery-key-text"></code>
+        <button type="button" onclick="copyRecoveryKey()" class="button button-primary" style="margin-top: 10px;">
+          <i class="fa-solid fa-copy" aria-hidden="true"></i> Copy Recovery Key
+        </button>
+        <p style="margin-top: 15px; font-size: 0.9rem; color: #666;">
+          <strong><i class="fa-solid fa-lock" aria-hidden="true"></i> Security Instructions:</strong><br>
+          � Share this key through a secure channel (encrypted email, secure messaging)<br>
+          � Instruct the organization to use it at: recover-encryption.html<br>
+          � This key provides full access to encrypted data - handle with care<br>
+          � All recovery operations are logged for audit
+        </p>
+      </div>
+    </form>
+
+    <div style="margin-top: 40px;">
+      <h2><i class="fa-solid fa-clock-rotate-left" aria-hidden="true"></i> Recent Recovery Operations</h2>
+      <table id="recovery-log">
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Organization</th>
+            <th>Recovered By</th>
+            <th>Status</th>
+          </tr>
+        </thead>
+        <tbody>
+          <tr>
+            <td colspan="4" style="text-align: center; color: #999;">No recovery operations yet</td>
+          </tr>
+        </tbody>
+      </table>
+    </div>
+  </div>
+
+  <!-- Load required scripts -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/platform-admin.js"></script>
+  <script src="js/encryption.js"></script>
+
+  <script>
+    let isRecovering = false;
+    let currentRecoveryKey = null;
+    let currentOrgName = null;
+
+    // Check if user is platform admin
+    function checkPlatformAdminAccess() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const platformAdmin = JSON.parse(localStorage.getItem('platformAdmin') || 'null');
+      
+      const isPlatformAdmin = platformAdmin !== null || 
+                               user.username === 'platform_admin' || 
+                               user.role === 'Platform Admin' ||
+                               user.role === 'PlatformOwner' ||
+                               (user.email && user.email === 'admin@mediforge.com');
+      
+      if (!isPlatformAdmin) {
+        alert('Access denied. This page is only available to platform administrators.');
+        window.location.href = '/dashboard';
+        return false;
+      }
+      
+      return true;
+    }
+
+    // Load organizations with encryption enabled
+    async function loadOrganizations() {
+      try {
+        const organizations = await getAllOrganizations();
+        const select = document.getElementById('organization-select');
+        
+        // Clear existing options (except first)
+        select.innerHTML = '<option value="">-- Select Organization --</option>';
+        
+        // Add organizations with encryption enabled
+        for (const [orgName, orgData] of Object.entries(organizations)) {
+          // Check if encryption is enabled (handle missing settings column)
+          let encryptionEnabled = false;
+          
+          if (orgData.settings && orgData.settings.encryption_enabled) {
+            encryptionEnabled = true;
+          } else if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
+            try {
+              const { data, error } = await window.supabaseClient
+                .from('organizations')
+                .select('settings')
+                .eq('id', orgData.id)
+                .single();
+              
+              if (!error && data && data.settings && data.settings.encryption_enabled) {
+                encryptionEnabled = true;
+              }
+            } catch (err) {
+              // Settings column doesn't exist - skip silently
+            }
+          }
+          
+          if (encryptionEnabled) {
+            const option = document.createElement('option');
+            option.value = orgData.id || orgName;
+            option.textContent = `${orgName} (${orgData.id || 'No ID'})`;
+            option.dataset.orgName = orgName;
+            select.appendChild(option);
+          }
+        }
+        
+        if (select.options.length === 1) {
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = 'No organizations with encryption enabled';
+          option.disabled = true;
+          select.appendChild(option);
+        }
+      } catch (error) {
+        console.error('? Error loading organizations:', error);
+        showStatus('error', 'Failed to load organizations: ' + error.message);
+      }
+    }
+
+    // Show status message
+    function showStatus(type, message) {
+      const statusDiv = document.getElementById('status-message');
+      statusDiv.className = `status-message ${type} show`;
+      statusDiv.textContent = message;
+    }
+
+    // Hide status message
+    function hideStatus() {
+      const statusDiv = document.getElementById('status-message');
+      statusDiv.className = 'status-message';
+    }
+
+    // Recover encryption key
+    async function recoverEncryptionKey() {
+      if (isRecovering) {
+        return;
+      }
+
+      const orgSelect = document.getElementById('organization-select');
+      const orgId = orgSelect.value;
+      const platformMasterKey = document.getElementById('platform-master-key').value.trim();
+      const recoverButton = document.getElementById('recover-button');
+      const recoveryKeyDisplay = document.getElementById('recovery-key-display');
+
+      if (!orgId || !platformMasterKey) {
+        showStatus('error', '? Please select an organization and enter platform master key.');
+        return;
+      }
+
+      // Get organization name
+      const selectedOption = orgSelect.options[orgSelect.selectedIndex];
+      currentOrgName = selectedOption.dataset.orgName || 'Unknown Organization';
+
+      // Disable button during recovery
+      isRecovering = true;
+      recoverButton.disabled = true;
+      recoverButton.textContent = 'Retrieving recovery key...';
+      hideStatus();
+      recoveryKeyDisplay.classList.remove('show');
+
+      try {
+        // Get organization settings from Supabase
+        if (!window.supabaseClient) {
+          throw new Error('Supabase client not available');
+        }
+
+        const { data, error } = await window.supabaseClient
+          .from('organizations')
+          .select('settings')
+          .eq('id', orgId)
+          .single();
+
+        if (error) {
+          throw new Error('Could not retrieve organization settings: ' + error.message);
+        }
+
+        if (!data || !data.settings || !data.settings.recovery_key_encrypted) {
+          throw new Error('No recovery key found for this organization. Recovery key may not have been set up during encryption initialization.');
+        }
+
+        // Decrypt recovery key using platform master key
+        const encryptedRecoveryKey = data.settings.recovery_key_encrypted;
+        const recoveryKey = await window.encryptionService.decryptRecoveryKey(encryptedRecoveryKey, platformMasterKey);
+
+        // Display recovery key
+        currentRecoveryKey = recoveryKey;
+        document.getElementById('recovery-key-text').textContent = recoveryKey;
+        document.getElementById('org-name-display').textContent = currentOrgName;
+        recoveryKeyDisplay.classList.add('show');
+
+        // Log recovery operation (store in localStorage for now, could be sent to audit log)
+        const recoveryLog = JSON.parse(localStorage.getItem('encryption_recovery_log') || '[]');
+        recoveryLog.push({
+          timestamp: new Date().toISOString(),
+          organization: currentOrgName,
+          organizationId: orgId,
+          recoveredBy: JSON.parse(localStorage.getItem('user') || '{}').username || 'platform_admin',
+          status: 'success'
+        });
+        localStorage.setItem('encryption_recovery_log', JSON.stringify(recoveryLog));
+
+        // Update recovery log table
+        updateRecoveryLog();
+
+        showStatus('success', '? Recovery key retrieved successfully! Share it securely with the organization.');
+        recoverButton.textContent = 'Recovery Key Retrieved';
+        recoverButton.style.background = '#4caf50';
+
+      } catch (error) {
+        console.error('? Error recovering encryption key:', error);
+        showStatus('error', '? Recovery failed: ' + error.message + '\n\nPlease verify:\n� Organization has encryption enabled\n� Platform master key is correct\n� Recovery key was set up during encryption initialization');
+        
+        recoverButton.disabled = false;
+        recoverButton.innerHTML = '<i class="fa-solid fa-key" aria-hidden="true"></i> Retrieve Recovery Key';
+        recoverButton.style.background = '';
+      } finally {
+        isRecovering = false;
+      }
+    }
+
+    // Copy recovery key to clipboard
+    function copyRecoveryKey() {
+      if (!currentRecoveryKey) {
+        alert('No recovery key to copy');
+        return;
+      }
+
+      navigator.clipboard.writeText(currentRecoveryKey).then(() => {
+        alert('? Recovery key copied to clipboard!');
+      }).catch(err => {
+        console.error('Failed to copy:', err);
+        // Fallback
+        const textArea = document.createElement('textarea');
+        textArea.value = currentRecoveryKey;
+        textArea.style.position = 'fixed';
+        textArea.style.opacity = '0';
+        document.body.appendChild(textArea);
+        textArea.select();
+        try {
+          document.execCommand('copy');
+          alert('? Recovery key copied to clipboard!');
+        } catch (err) {
+          alert('? Could not copy. Please manually copy the recovery key.');
+        }
+        document.body.removeChild(textArea);
+      });
+    }
+
+    // Update recovery log table
+    function updateRecoveryLog() {
+      const recoveryLog = JSON.parse(localStorage.getItem('encryption_recovery_log') || '[]');
+      const tbody = document.querySelector('#recovery-log tbody');
+      
+      if (recoveryLog.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; color: #999;">No recovery operations yet</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = '';
+      recoveryLog.reverse().slice(0, 20).forEach(entry => {
+        const row = document.createElement('tr');
+        row.innerHTML = `
+          <td>${new Date(entry.timestamp).toLocaleString()}</td>
+          <td>${entry.organization}</td>
+          <td>${entry.recoveredBy}</td>
+          <td><span style="color: #4caf50; font-weight: bold;">${entry.status}</span></td>
+        `;
+        tbody.appendChild(row);
+      });
+    }
+
+    // Event listeners
+    document.getElementById('recovery-form').addEventListener('submit', function(e) {
+      e.preventDefault();
+      recoverEncryptionKey();
+    });
+
+    // Load on page load
+    window.addEventListener('load', async function() {
+      if (!checkPlatformAdminAccess()) {
+        return;
+      }
+
+      await loadOrganizations();
+      updateRecoveryLog();
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

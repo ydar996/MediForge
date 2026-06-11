@@ -1,0 +1,385 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Check & Migrate Patients to Supabase</title>
+  <script src="js/vendor/supabase.min.js"></script>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 20px auto;
+      padding: 20px;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #333;
+      margin-bottom: 30px;
+    }
+    .section {
+      margin: 20px 0;
+      padding: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      background: #fafafa;
+    }
+    .info {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background: #e3f2fd;
+      border-left: 4px solid #2196F3;
+    }
+    .warning {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background: #fff3cd;
+      border-left: 4px solid #ffc107;
+    }
+    .success {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background: #d4edda;
+      border-left: 4px solid #28a745;
+    }
+    .error {
+      padding: 15px;
+      margin: 10px 0;
+      border-radius: 5px;
+      background: #f8d7da;
+      border-left: 4px solid #dc3545;
+    }
+    button {
+      padding: 12px 24px;
+      font-size: 16px;
+      font-weight: bold;
+      color: white;
+      background: #007bff;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin: 10px 5px;
+    }
+    button:hover {
+      background: #0056b3;
+    }
+    button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+    }
+    .danger {
+      background: #dc3545;
+    }
+    .danger:hover {
+      background: #c82333;
+    }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      margin: 15px 0;
+    }
+    th, td {
+      padding: 10px;
+      text-align: left;
+      border-bottom: 1px solid #ddd;
+    }
+    th {
+      background: #f0f0f0;
+      font-weight: bold;
+    }
+    pre {
+      background: #f5f5f5;
+      padding: 15px;
+      border-radius: 5px;
+      overflow-x: auto;
+      max-height: 400px;
+      overflow-y: auto;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Patient Data Migration Tool</h1>
+
+    <div class="section">
+      <h2>Step 1: Check Current Data</h2>
+      <button onclick="checkData()">Check LocalStorage & Supabase Data</button>
+      <div id="data-check-results"></div>
+    </div>
+
+    <div class="section">
+      <h2>Step 2: Preview Migration</h2>
+      <button onclick="previewMigration()">Preview What Will Be Migrated</button>
+      <div id="preview-results"></div>
+    </div>
+
+    <div class="section">
+      <h2>Step 3: Migrate Data</h2>
+      <button onclick="migrateData()" class="danger">Migrate Patients to Supabase</button>
+      <div id="migration-results"></div>
+    </div>
+  </div>
+
+  <script src="js/supabase-client.js"></script>
+  <script>
+    const MECURE_ORG_ID = '180cc1b5-c40d-40db-92b9-6199e08f9047';
+
+    async function checkData() {
+      const resultsDiv = document.getElementById('data-check-results');
+      resultsDiv.innerHTML = '<p>Checking data sources...</p>';
+
+      try {
+        // Check localStorage
+        const localStorageKeys = Object.keys(localStorage).filter(k => k.includes('patients'));
+        const mecurePatients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+        const orgPatients = JSON.parse(localStorage.getItem('organizations') || '{}');
+
+        // Check Supabase
+        const { data: supabasePatients, error } = await window.supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('organization_id', MECURE_ORG_ID);
+
+        if (error) {
+          resultsDiv.innerHTML = `<div class="error">Error checking Supabase: ${error.message}</div>`;
+          return;
+        }
+
+        // Display results
+        let html = '<div class="info">';
+        html += `<h3>LocalStorage Data</h3>`;
+        html += `<p><strong>Keys found:</strong> ${localStorageKeys.length}</p>`;
+        html += `<p><strong>Mecure Clinics patients:</strong> ${mecurePatients.length}</p>`;
+        html += `<p><strong>Organizations data:</strong> ${Object.keys(orgPatients).length} organizations</p>`;
+        html += `</div>`;
+
+        html += '<div class="info">';
+        html += `<h3>Supabase Data</h3>`;
+        html += `<p><strong>Patients in database:</strong> ${supabasePatients.length}</p>`;
+        html += `</div>`;
+
+        if (mecurePatients.length > 0) {
+          html += '<div class="warning">';
+          html += `<h3>LocalStorage Patients (${mecurePatients.length})</h3>`;
+          html += '<table><tr><th>ID</th><th>Name</th><th>DOB</th><th>Gender</th></tr>';
+          mecurePatients.slice(0, 10).forEach(p => {
+            html += `<tr>
+              <td>${p.id || 'N/A'}</td>
+              <td>${p.firstName || ''} ${p.lastName || ''}</td>
+              <td>${p.dateOfBirth || p.dob || 'N/A'}</td>
+              <td>${p.gender || 'N/A'}</td>
+            </tr>`;
+          });
+          if (mecurePatients.length > 10) {
+            html += `<tr><td colspan="4"><em>... and ${mecurePatients.length - 10} more</em></td></tr>`;
+          }
+          html += '</table></div>';
+        }
+
+        if (supabasePatients.length > 0) {
+          html += '<div class="success">';
+          html += `<h3>Supabase Patients (${supabasePatients.length})</h3>`;
+          html += '<table><tr><th>ID</th><th>Name</th><th>DOB</th><th>Gender</th></tr>';
+          supabasePatients.slice(0, 10).forEach(p => {
+            html += `<tr>
+              <td>${p.patient_id || 'N/A'}</td>
+              <td>${p.first_name || ''} ${p.last_name || ''}</td>
+              <td>${p.date_of_birth || 'N/A'}</td>
+              <td>${p.gender || 'N/A'}</td>
+            </tr>`;
+          });
+          if (supabasePatients.length > 10) {
+            html += `<tr><td colspan="4"><em>... and ${supabasePatients.length - 10} more</em></td></tr>`;
+          }
+          html += '</table></div>';
+        }
+
+        resultsDiv.innerHTML = html;
+
+      } catch (error) {
+        resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        console.error('Check data error:', error);
+      }
+    }
+
+    async function previewMigration() {
+      const resultsDiv = document.getElementById('preview-results');
+      resultsDiv.innerHTML = '<p>Analyzing data for migration...</p>';
+
+      try {
+        const mecurePatients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+
+        if (mecurePatients.length === 0) {
+          resultsDiv.innerHTML = '<div class="warning">No patients found in localStorage to migrate.</div>';
+          return;
+        }
+
+        let html = '<div class="info">';
+        html += `<h3>Migration Preview</h3>`;
+        html += `<p><strong>Patients to migrate:</strong> ${mecurePatients.length}</p>`;
+        html += `<p><strong>Target organization:</strong> Mecure Clinics (${MECURE_ORG_ID})</p>`;
+        html += `</div>`;
+
+        html += '<div class="warning">';
+        html += `<h3>Sample Data (First 5 patients)</h3>`;
+        html += '<pre>' + JSON.stringify(mecurePatients.slice(0, 5), null, 2) + '</pre>';
+        html += `</div>`;
+
+        resultsDiv.innerHTML = html;
+
+      } catch (error) {
+        resultsDiv.innerHTML = `<div class="error">Error: ${error.message}</div>`;
+        console.error('Preview error:', error);
+      }
+    }
+
+    async function migrateData() {
+      const resultsDiv = document.getElementById('migration-results');
+
+      if (!confirm('This will migrate all patients from localStorage to Supabase. Continue?')) {
+        return;
+      }
+
+      resultsDiv.innerHTML = '<p>Starting migration...</p>';
+
+      try {
+        const mecurePatients = JSON.parse(localStorage.getItem('Mecure Clinics_patients') || '[]');
+
+        if (mecurePatients.length === 0) {
+          resultsDiv.innerHTML = '<div class="warning">No patients to migrate.</div>';
+          return;
+        }
+
+        let successCount = 0;
+        let errorCount = 0;
+        const errors = [];
+
+        for (const patient of mecurePatients) {
+          try {
+            // Transform localStorage patient to Supabase format
+            const supabasePatient = {
+              patient_id: patient.id || `MEC${Date.now()}`,
+              organization_id: MECURE_ORG_ID,
+              first_name: patient.firstName || '',
+              last_name: patient.lastName || '',
+              middle_name: patient.middleName || null,
+              date_of_birth: patient.dateOfBirth || patient.dob || null,
+              gender: patient.gender || null,
+              blood_type: patient.bloodType || null,
+              email: patient.email || null,
+              phone: patient.phone || null,
+              address: patient.address || null,
+              city: patient.city || null,
+              state: patient.state || null,
+              country: patient.country || null,
+              postal_code: patient.postalCode || null,
+              emergency_contact_name: patient.emergencyContact || null,
+              emergency_contact_phone: patient.emergencyPhone || null,
+              emergency_contact_relationship: patient.emergencyRelationship || null,
+              medical_record_number: patient.medicalRecordNumber || null,
+              insurance_provider: patient.insuranceProvider || null,
+              insurance_policy_number: patient.insurancePolicyNumber || null,
+              primary_doctor: patient.primaryDoctor || null,
+              status: patient.deleted ? 'inactive' : 'active',
+              deleted: patient.deleted || false,
+              notes: patient.notes || null
+            };
+
+            const { data, error } = await window.supabaseClient
+              .from('patients')
+              .insert([supabasePatient])
+              .select();
+
+            if (error) {
+              errorCount++;
+              errors.push({
+                patient: `${patient.firstName} ${patient.lastName}`,
+                error: error.message
+              });
+            } else {
+              successCount++;
+            }
+
+          } catch (err) {
+            errorCount++;
+            errors.push({
+              patient: `${patient.firstName} ${patient.lastName}`,
+              error: err.message
+            });
+          }
+        }
+
+        let html = '';
+
+        if (successCount > 0) {
+          html += `<div class="success">
+            <h3>Migration Complete!</h3>
+            <p><strong>Successfully migrated:</strong> ${successCount} patients</p>
+          </div>`;
+        }
+
+        if (errorCount > 0) {
+          html += `<div class="error">
+            <h3>Errors Encountered</h3>
+            <p><strong>Failed:</strong> ${errorCount} patients</p>
+            <pre>${JSON.stringify(errors, null, 2)}</pre>
+          </div>`;
+        }
+
+        resultsDiv.innerHTML = html;
+
+      } catch (error) {
+        resultsDiv.innerHTML = `<div class="error">Migration failed: ${error.message}</div>`;
+        console.error('Migration error:', error);
+      }
+    }
+
+    // Auto-check data on load
+    window.addEventListener('load', () => {
+      checkData();
+    });
+  </script>
+
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- Service Worker for Automatic Cache Busting -->
+  <script>
+    // Register service worker for automatic cache busting
+    if ('serviceWorker' in navigator) {
+      window.addEventListener('load', function() {
+        navigator.serviceWorker.register('sw-cache-buster.js?v=' + new Date().getTime())
+          .then(function(registration) {
+            console.log('?? Service Worker registered for cache busting');
+          })
+          .catch(function(error) {
+            console.log('Service Worker registration failed:', error);
+          });
+      });
+    }
+  </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</body>
+</html>

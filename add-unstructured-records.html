@@ -1,0 +1,983 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Add Unstructured Medical Records - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=219">
+  <style>
+    /* Nigerian Heritage Theme */
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --nigerian-white: #FFFFFF;
+      --kente-gold: #DAA520;
+      --adire-blue: #4169E1;
+      --warm-gray: #F5F5DC;
+      --charcoal: #36454F;
+    }
+    
+    body {
+      background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15);
+      padding: 30px;
+    }
+    
+    h1 {
+      color: var(--primary-green);
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 2.5em;
+      font-weight: 800;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+      margin-bottom: 30px;
+      flex-wrap: wrap;
+    }
+    
+    .nav-buttons button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .nav-buttons button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .form-section {
+      margin-bottom: 30px;
+    }
+    
+    .form-section label {
+      display: block;
+      margin-bottom: 8px;
+      font-weight: 600;
+      color: var(--charcoal);
+      font-size: 16px;
+    }
+    
+    .patient-search-container {
+      position: relative;
+    }
+    
+    #patient-search {
+      width: 100%;
+      padding: 12px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      box-sizing: border-box;
+    }
+    
+    #patient-search:focus {
+      outline: none;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(0, 135, 83, 0.1);
+    }
+    
+    #patient-dropdown {
+      position: absolute;
+      top: 100%;
+      left: 0;
+      right: 0;
+      background: white;
+      border: 2px solid #ddd;
+      border-top: none;
+      border-radius: 0 0 8px 8px;
+      max-height: 300px;
+      overflow-y: auto;
+      z-index: 1000;
+      display: none;
+      box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1);
+    }
+    
+    .patient-dropdown-item {
+      padding: 12px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      transition: background 0.2s;
+    }
+    
+    .patient-dropdown-item:hover {
+      background: var(--warm-gray);
+    }
+    
+    .patient-dropdown-item:last-child {
+      border-bottom: none;
+    }
+    
+    .selected-patient {
+      margin-top: 15px;
+      padding: 15px;
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.1));
+      border-radius: 8px;
+      border-left: 4px solid var(--primary-green);
+      display: none;
+    }
+    
+    .selected-patient.show {
+      display: block;
+    }
+    
+    .selected-patient strong {
+      color: var(--primary-green);
+    }
+    
+    #record-text {
+      width: 100%;
+      min-height: 400px;
+      padding: 15px;
+      border: 2px solid #ddd;
+      border-radius: 8px;
+      font-size: 16px;
+      font-family: 'Courier New', monospace;
+      line-height: 1.6;
+      box-sizing: border-box;
+      resize: vertical;
+    }
+    
+    #record-text:focus {
+      outline: none;
+      border-color: var(--primary-green);
+      box-shadow: 0 0 0 3px rgba(0, 135, 83, 0.1);
+    }
+    
+    .save-button {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 15px 40px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 700;
+      font-size: 18px;
+      width: 100%;
+      margin-top: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .save-button:hover {
+      background: linear-gradient(135deg, var(--dark-green), var(--primary-green));
+      transform: translateY(-2px);
+      box-shadow: 0 6px 20px rgba(0, 135, 83, 0.4);
+    }
+    
+    .save-button:disabled {
+      background: #ccc;
+      cursor: not-allowed;
+      transform: none;
+    }
+    
+    .success-message {
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.1));
+      color: var(--primary-green);
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 4px solid var(--primary-green);
+      display: none;
+    }
+    
+    .success-message.show {
+      display: block;
+    }
+    
+    .error-message {
+      background: rgba(220, 20, 60, 0.1);
+      color: #DC143C;
+      padding: 15px;
+      border-radius: 8px;
+      margin-top: 20px;
+      border-left: 4px solid #DC143C;
+      display: none;
+    }
+    
+    .error-message.show {
+      display: block;
+    }
+
+    .upload-zone {
+      border: 2px dashed #ccc;
+      border-radius: 10px;
+      padding: 24px;
+      text-align: center;
+      background: #fafafa;
+      margin-bottom: 16px;
+      cursor: pointer;
+      transition: border-color 0.2s, background 0.2s;
+    }
+    .upload-zone:hover, .upload-zone.dragover {
+      border-color: var(--primary-green);
+      background: rgba(0, 135, 83, 0.06);
+    }
+    .upload-zone p { margin: 8px 0; color: var(--charcoal); }
+    .upload-zone .hint { font-size: 14px; color: #666; }
+    #file-input { display: none; }
+    .file-queue {
+      list-style: none;
+      padding: 0;
+      margin: 16px 0 0;
+    }
+    .file-queue li {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 12px;
+      padding: 10px 12px;
+      background: #f5f5f5;
+      border-radius: 8px;
+      margin-bottom: 8px;
+      font-size: 14px;
+    }
+    .file-queue li > div:first-child {
+      flex: 1 1 auto;
+      min-width: 0;
+    }
+    /* Do not use overflow:hidden + text-overflow here: flex (min-width:0) can shrink this to 0px and clip all text */
+    .file-queue-line {
+      display: block;
+      min-width: 0;
+      white-space: nowrap;
+      line-height: 1.4;
+    }
+    .file-queue-line .page-label,
+    .file-queue-line .file-queue-size {
+      display: inline;
+      white-space: nowrap;
+    }
+    .file-queue .file-queue-size {
+      color: #555;
+      font-weight: 500;
+      font-size: 14px;
+    }
+    /* Global styles.css sets button { width:100% } — keep Remove compact on the row */
+    .file-queue .remove-file {
+      width: auto !important;
+      max-width: none;
+      margin: 0 !important;
+      flex-shrink: 0;
+      align-self: center;
+      white-space: nowrap;
+      background: #dc3545;
+      color: white;
+      border: none;
+      padding: 6px 12px;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 12px;
+    }
+
+    .save-progress-overlay {
+      display: none;
+      flex-direction: column;
+      position: fixed;
+      inset: 0;
+      z-index: 10050;
+      background: rgba(0, 0, 0, 0.55);
+      align-items: center;
+      justify-content: center;
+      padding: 20px;
+      box-sizing: border-box;
+    }
+    .save-progress-card {
+      background: white;
+      border-radius: 14px;
+      padding: 28px 32px;
+      max-width: 440px;
+      width: 100%;
+      box-shadow: 0 12px 40px rgba(0, 0, 0, 0.25);
+    }
+    .save-progress-card h3 {
+      margin: 0 0 16px;
+      color: var(--primary-green);
+      font-size: 1.25rem;
+    }
+    .progress-bar-wrap {
+      height: 14px;
+      background: #e9ecef;
+      border-radius: 8px;
+      overflow: hidden;
+      margin-bottom: 12px;
+    }
+    .progress-bar-fill {
+      height: 100%;
+      width: 0%;
+      background: linear-gradient(90deg, var(--primary-green), var(--dark-green));
+      border-radius: 8px;
+      transition: width 0.12s ease-out;
+    }
+    #save-progress-detail, #save-progress-eta {
+      margin: 8px 0 0;
+      font-size: 14px;
+      color: #444;
+      line-height: 1.45;
+    }
+    #save-progress-eta { color: #666; font-size: 13px; }
+    .page-label { font-weight: 700; color: var(--primary-green); }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <!-- Navigation Buttons (Top) -->
+    <div class="nav-buttons">
+      <button onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
+      <button onclick="goToPatientDetails()" id="patient-details-btn" style="display: none;">← Back to Patient Details</button>
+    </div>
+    
+    <h1>📝 Add Unstructured Medical Records</h1>
+    
+    <!-- Patient Search Section -->
+    <div class="form-section">
+      <label for="patient-search">Search Patient:</label>
+      <div class="patient-search-container">
+        <input 
+          type="text" 
+          id="patient-search" 
+          placeholder="Type patient name, ID, or phone number to search..."
+          autocomplete="off"
+        />
+        <div id="patient-dropdown"></div>
+      </div>
+      <div class="selected-patient" id="selected-patient">
+        <strong>Selected Patient:</strong> <span id="selected-patient-name"></span><br>
+        <small>ID: <span id="selected-patient-id"></span></small>
+      </div>
+    </div>
+    
+    <!-- Scans / images / PDFs (Pre-EMR Medical Records folder in Patient Documents) -->
+    <div class="form-section">
+      <label>Scanned documents &amp; images (optional)</label>
+      <p class="hint" style="margin: 0 0 12px; color: #555; font-size: 14px;">
+        Upload photos of old records or scanned PDFs. Files are stored securely and listed under <strong>Patient Documents → Pre-EMR Medical Records</strong> with any text you save below. You can add <strong>multiple files at once</strong> (bulk upload).
+      </p>
+      <div class="upload-zone" id="upload-zone" tabindex="0">
+        <p><strong>Click to choose files</strong> or drag &amp; drop here</p>
+        <p class="hint">Images (JPEG, PNG, WebP, GIF) and PDF — up to 50 MB per file</p>
+        <input type="file" id="file-input" multiple accept="image/*,.pdf,application/pdf" />
+      </div>
+      <ul class="file-queue" id="file-queue" aria-live="polite"></ul>
+    </div>
+
+    <!-- Record Text Section -->
+    <div class="form-section">
+      <label for="record-text">Medical Record (Freeform Text):</label>
+      <textarea 
+        id="record-text" 
+        placeholder="Paste or type any medical records, notes, documents, or information here. This can be of any length and will be attached to the patient's historical records. You can save text only, files only, or both together."
+      ></textarea>
+    </div>
+    
+    <!-- Save Button -->
+    <button class="save-button" id="save-record-btn" onclick="saveRecord()" disabled>
+      💾 Save Record
+    </button>
+    
+    <!-- Success/Error Messages -->
+    <div class="success-message" id="success-message">
+      ✅ Record saved successfully!
+    </div>
+    <div class="error-message" id="error-message">
+      ❌ Error saving record. Please try again.
+    </div>
+  </div>
+  
+  <!-- Navigation Buttons (Bottom) -->
+  <div class="container" style="margin-top: 20px;">
+    <div class="nav-buttons">
+      <button onclick="window.location.href='dashboard.html'">← Back to Dashboard</button>
+      <button onclick="goToPatientDetails()" id="patient-details-btn-bottom" style="display: none;">← Back to Patient Details</button>
+    </div>
+  </div>
+
+  <!-- Progress modal (DOM required — JS referenced these ids but markup was missing) -->
+  <div id="save-progress-overlay" class="save-progress-overlay" aria-hidden="true" role="dialog" aria-modal="true" aria-labelledby="save-progress-title">
+    <div class="save-progress-card">
+      <h3 id="save-progress-title">Saving…</h3>
+      <div class="progress-bar-wrap">
+        <div id="save-progress-bar" class="progress-bar-fill" role="progressbar" aria-valuenow="0" aria-valuemin="0" aria-valuemax="100"></div>
+      </div>
+      <p id="save-progress-detail"></p>
+      <p id="save-progress-eta"></p>
+    </div>
+  </div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js"></script>
+  
+  <!-- Patients.js - Contains savePatientToSupabase function -->
+  <script src="js/patients.js"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/pre-emr-storage.js?v=202603271"></script>
+  
+  <script>
+    // Helper function to get data key (from patients.js pattern)
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.org) {
+        return `${user.org}_${key}`;
+      }
+      return key;
+    }
+    
+    let selectedPatient = null;
+    let allPatients = [];
+    /** @type {File[]} */
+    let pendingFiles = [];
+    const MAX_FILE_BYTES = 50 * 1024 * 1024;
+    
+    // Load patients on page load
+    async function loadPatients() {
+      try {
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          allPatients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          allPatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+        console.log(`Loaded ${allPatients.length} patients`);
+      } catch (error) {
+        console.error('Error loading patients:', error);
+        alert('Error loading patients. Please refresh the page.');
+      }
+    }
+    
+    // Patient search functionality
+    const patientSearch = document.getElementById('patient-search');
+    const patientDropdown = document.getElementById('patient-dropdown');
+    const selectedPatientDiv = document.getElementById('selected-patient');
+    const selectedPatientName = document.getElementById('selected-patient-name');
+    const selectedPatientId = document.getElementById('selected-patient-id');
+    const saveButton = document.getElementById('save-record-btn');
+    const uploadZone = document.getElementById('upload-zone');
+    const fileInput = document.getElementById('file-input');
+    const fileQueueEl = document.getElementById('file-queue');
+    const recordTextEl = document.getElementById('record-text');
+
+    function getPreEmrFileBasePage() {
+      if (!selectedPatient) return 0;
+      if (window.preEmrStorage && typeof window.preEmrStorage.countExistingPreEmrFileRecords === 'function') {
+        return window.preEmrStorage.countExistingPreEmrFileRecords(selectedPatient);
+      }
+      return 0;
+    }
+
+    /** Page numbers continue from existing Pre-EMR file rows (single file = next page, e.g. Page 3). */
+    function pageLabelForFile(index, file) {
+      var pageNum = getPreEmrFileBasePage() + index + 1;
+      if (window.preEmrStorage && typeof window.preEmrStorage.buildPageDisplayName === 'function') {
+        return window.preEmrStorage.buildPageDisplayName(pageNum, file);
+      }
+      return 'Page ' + pageNum;
+    }
+
+    function renderFileQueue() {
+      fileQueueEl.innerHTML = '';
+      pendingFiles.forEach(function (f, idx) {
+        var li = document.createElement('li');
+        var main = document.createElement('div');
+        main.className = 'file-queue-line';
+        var label = pageLabelForFile(idx, f);
+        var mb = (f.size / 1024 / 1024).toFixed(2) + ' MB';
+        var labelEl = document.createElement('span');
+        labelEl.className = 'page-label';
+        labelEl.textContent = label;
+        var sizeSpan = document.createElement('span');
+        sizeSpan.className = 'file-queue-size';
+        /* NBSP + middle dot so label and size stay on one line (no wrap between) */
+        sizeSpan.textContent = '\u00A0\u00B7 ' + mb;
+        main.appendChild(labelEl);
+        main.appendChild(sizeSpan);
+        var btn = document.createElement('button');
+        btn.type = 'button';
+        btn.className = 'remove-file';
+        btn.textContent = 'Remove';
+        btn.onclick = function () {
+          pendingFiles.splice(idx, 1);
+          renderFileQueue();
+          updateSaveEnabled();
+        };
+        li.appendChild(main);
+        li.appendChild(btn);
+        fileQueueEl.appendChild(li);
+      });
+    }
+
+    function showSaveProgressOverlay() {
+      var el = document.getElementById('save-progress-overlay');
+      if (el) {
+        el.style.display = 'flex';
+        el.setAttribute('aria-hidden', 'false');
+      }
+    }
+
+    function hideSaveProgressOverlay() {
+      var el = document.getElementById('save-progress-overlay');
+      if (el) {
+        el.style.display = 'none';
+        el.setAttribute('aria-hidden', 'true');
+      }
+    }
+
+    function updateSaveProgressUI(ev) {
+      ev = ev || {};
+      var bar = document.getElementById('save-progress-bar');
+      var detail = document.getElementById('save-progress-detail');
+      var etaEl = document.getElementById('save-progress-eta');
+      var title = document.getElementById('save-progress-title');
+      if (!bar || !detail || !etaEl) return;
+
+      function setBarWidth(p) {
+        var w = Math.min(100, Math.max(0, p));
+        bar.style.width = w + '%';
+        bar.setAttribute('aria-valuenow', String(Math.round(w)));
+      }
+
+      if (ev.phase === 'save') {
+        var sp = typeof ev.percent === 'number' ? ev.percent : 0;
+        setBarWidth(sp);
+        if (title) title.textContent = 'Saving record…';
+        detail.textContent = ev.detailText || 'Writing patient data to the server…';
+        etaEl.textContent = '';
+        return;
+      }
+
+      var pct = typeof ev.percent === 'number' ? Math.min(100, Math.max(0, ev.percent)) : 0;
+      setBarWidth(pct);
+      var remaining = Math.max(0, 100 - pct);
+      if (title) title.textContent = 'Uploading pages…';
+      var pagePart = '';
+      if (ev.batchIndex != null && ev.batchTotal != null) {
+        pagePart =
+          'File ' +
+          ev.batchIndex +
+          ' of ' +
+          ev.batchTotal +
+          ' in this save';
+        if (ev.label) pagePart += ' — ' + ev.label;
+        else if (ev.pageNumber) pagePart += ' — Page ' + ev.pageNumber;
+      } else if (ev.pageIndex && ev.totalPages) {
+        pagePart = 'Page ' + ev.pageIndex + ' of ' + ev.totalPages;
+        if (ev.label) pagePart += ' (' + ev.label + ')';
+      }
+      var mbUp = ev.bytesTotal ? (ev.bytesUploaded / 1024 / 1024).toFixed(2) : '0';
+      var mbTot = ev.bytesTotal ? (ev.bytesTotal / 1024 / 1024).toFixed(2) : '?';
+      detail.textContent =
+        pct.toFixed(0) +
+        '% complete · ' +
+        remaining.toFixed(0) +
+        '% remaining — ' +
+        mbUp +
+        ' / ' +
+        mbTot +
+        ' MB' +
+        (pagePart ? ' — ' + pagePart : '');
+
+      var eta = ev.etaSeconds;
+      if (eta != null && eta > 0 && pct < 99) {
+        var etaDisp = eta >= 120 ? '~' + Math.round(eta / 60) + ' min' : '~' + Math.ceil(eta) + 's';
+        etaEl.textContent = 'Estimated time left: ' + etaDisp;
+      } else if (pct >= 99) {
+        etaEl.textContent = 'Finishing uploads…';
+      } else if (ev.bytesTotal && ev.bytesUploaded > 0 && pct < 99) {
+        etaEl.textContent = 'Calculating time remaining…';
+      } else if (pct < 99) {
+        etaEl.textContent = 'Starting upload…';
+      } else {
+        etaEl.textContent = '';
+      }
+    }
+
+    function addFilesToQueue(fileList) {
+      var arr = Array.prototype.slice.call(fileList || []);
+      for (var i = 0; i < arr.length; i++) {
+        var f = arr[i];
+        if (f.size > MAX_FILE_BYTES) {
+          alert('File too large (max 50 MB): ' + f.name);
+          continue;
+        }
+        pendingFiles.push(f);
+      }
+      renderFileQueue();
+      updateSaveEnabled();
+    }
+
+    function updateSaveEnabled() {
+      var hasText = recordTextEl.value.trim().length > 0;
+      var hasFiles = pendingFiles.length > 0;
+      saveButton.disabled = !selectedPatient || (!hasText && !hasFiles);
+    }
+
+    uploadZone.addEventListener('click', function () { fileInput.click(); });
+    uploadZone.addEventListener('keydown', function (e) {
+      if (e.key === 'Enter' || e.key === ' ') { e.preventDefault(); fileInput.click(); }
+    });
+    fileInput.addEventListener('change', function () {
+      addFilesToQueue(fileInput.files);
+      fileInput.value = '';
+    });
+    uploadZone.addEventListener('dragover', function (e) { e.preventDefault(); uploadZone.classList.add('dragover'); });
+    uploadZone.addEventListener('dragleave', function () { uploadZone.classList.remove('dragover'); });
+    uploadZone.addEventListener('drop', function (e) {
+      e.preventDefault();
+      uploadZone.classList.remove('dragover');
+      if (e.dataTransfer && e.dataTransfer.files) addFilesToQueue(e.dataTransfer.files);
+    });
+    recordTextEl.addEventListener('input', updateSaveEnabled);
+    
+    patientSearch.addEventListener('input', function() {
+      const query = this.value.trim().toLowerCase();
+      
+      if (query.length < 2) {
+        patientDropdown.style.display = 'none';
+        return;
+      }
+      
+      // Search patients by name, ID, or phone
+      const filtered = allPatients.filter(patient => {
+        const fullName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.toLowerCase();
+        const patientId = (patient.patient_id || patient.patientNumber || patient.id || '').toLowerCase();
+        const phone = (patient.phone || '').toLowerCase();
+        
+        return fullName.includes(query) || 
+               patientId.includes(query) || 
+               phone.includes(query);
+      }).slice(0, 10); // Limit to 10 results
+      
+      if (filtered.length === 0) {
+        patientDropdown.style.display = 'none';
+        return;
+      }
+      
+      // Display dropdown
+      patientDropdown.innerHTML = filtered.map(patient => {
+        const displayName = `${patient.firstName || ''} ${patient.middleName || ''} ${patient.lastName || ''}`.trim();
+        const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(patient) : null) || patient.patient_id || patient.patientNumber || (patient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(patient.id) ? patient.id : 'N/A');
+        return `
+          <div class="patient-dropdown-item" onclick="selectPatient('${patient.id}')">
+            <strong>${displayName}</strong><br>
+            <small>ID: ${displayId} | Phone: ${patient.phone || 'N/A'}</small>
+          </div>
+        `;
+      }).join('');
+      
+      patientDropdown.style.display = 'block';
+    });
+    
+    // Close dropdown when clicking outside
+    document.addEventListener('click', function(e) {
+      if (!patientSearch.contains(e.target) && !patientDropdown.contains(e.target)) {
+        patientDropdown.style.display = 'none';
+      }
+    });
+    
+    // Select patient
+    window.selectPatient = function(patientUuid) {
+      selectedPatient = allPatients.find(p => p.id === patientUuid);
+      
+      if (selectedPatient) {
+        const displayName = `${selectedPatient.firstName || ''} ${selectedPatient.middleName || ''} ${selectedPatient.lastName || ''}`.trim();
+        const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(selectedPatient) : null) || selectedPatient.patient_id || selectedPatient.patientNumber || (selectedPatient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(selectedPatient.id) ? selectedPatient.id : 'N/A');
+        
+        selectedPatientName.textContent = displayName;
+        selectedPatientId.textContent = displayId;
+        selectedPatientDiv.classList.add('show');
+        patientSearch.value = displayName;
+        patientDropdown.style.display = 'none';
+        updateSaveEnabled();
+        if (pendingFiles.length) {
+          renderFileQueue();
+        }
+        
+        // Show patient details button
+        document.getElementById('patient-details-btn').style.display = 'block';
+        document.getElementById('patient-details-btn-bottom').style.display = 'block';
+      }
+    };
+    
+    // Save record
+    async function saveRecord() {
+      console.log('📝 [ADD-RECORD] saveRecord() called');
+      
+      if (!selectedPatient) {
+        console.warn('⚠️ [ADD-RECORD] No patient selected');
+        alert('Please select a patient first.');
+        return;
+      }
+      
+      const recordText = document.getElementById('record-text').value.trim();
+      if (!recordText && pendingFiles.length === 0) {
+        console.warn('⚠️ [ADD-RECORD] No text or files');
+        alert('Enter some text and/or add at least one image or PDF.');
+        return;
+      }
+      
+      console.log('📝 [ADD-RECORD] Starting save process...');
+      console.log('📝 [ADD-RECORD] Selected patient:', selectedPatient);
+      console.log('📝 [ADD-RECORD] Record text length:', recordText.length);
+      
+      const hadFiles = pendingFiles.length > 0;
+      saveButton.disabled = true;
+      saveButton.textContent = '💾 Saving...';
+
+      try {
+        let progressUiShown = false;
+
+        // Load patients with Supabase-first priority
+        console.log('📝 [ADD-RECORD] Loading patients...');
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          console.log('📝 [ADD-RECORD] Using loadPatientsWithSupabasePriority()');
+          patients = await window.loadPatientsWithSupabasePriority();
+          console.log('📝 [ADD-RECORD] Loaded', patients.length, 'patients from Supabase-first loader');
+        } else {
+          console.log('📝 [ADD-RECORD] Using localStorage fallback');
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+          console.log('📝 [ADD-RECORD] Loaded', patients.length, 'patients from localStorage');
+        }
+        
+        // Find patient
+        console.log('📝 [ADD-RECORD] Searching for patient with id:', selectedPatient.id);
+        const patient = patients.find(p => p.id === selectedPatient.id);
+        if (!patient) {
+          console.error('❌ [ADD-RECORD] Patient not found in loaded patients array');
+          console.error('❌ [ADD-RECORD] Searched for id:', selectedPatient.id);
+          console.error('❌ [ADD-RECORD] Available patient IDs:', patients.map(p => p.id).slice(0, 10));
+          throw new Error('Patient not found');
+        }
+        
+        console.log('✅ [ADD-RECORD] Patient found:', {
+          id: patient.id,
+          patient_id: patient.patient_id,
+          name: `${patient.firstName} ${patient.lastName}`,
+          hasUnstructuredRecords: !!patient.unstructuredRecords,
+          existingRecordsCount: patient.unstructuredRecords?.length || 0
+        });
+        
+        // Initialize unstructured records array if it doesn't exist
+        if (!patient.unstructuredRecords) {
+          console.log('📝 [ADD-RECORD] Initializing unstructuredRecords array');
+          patient.unstructuredRecords = [];
+        }
+        
+        const userObj = JSON.parse(localStorage.getItem("user") || "{}");
+        const createdBy = userObj.username || userObj.email || 'Unknown';
+
+        if (hadFiles) {
+          progressUiShown = true;
+          showSaveProgressOverlay();
+          var basePre = 0;
+          if (window.preEmrStorage && window.preEmrStorage.countExistingPreEmrFileRecords) {
+            basePre = window.preEmrStorage.countExistingPreEmrFileRecords(patient);
+          }
+          var bytesTot = pendingFiles.reduce(function (s, f) { return s + (f.size || 0); }, 0);
+          var firstLabel =
+            window.preEmrStorage && window.preEmrStorage.buildPageDisplayName && pendingFiles[0]
+              ? window.preEmrStorage.buildPageDisplayName(basePre + 1, pendingFiles[0])
+              : 'Page ' + (basePre + 1);
+          updateSaveProgressUI({
+            phase: 'upload',
+            percent: 0,
+            bytesUploaded: 0,
+            bytesTotal: bytesTot,
+            batchIndex: 1,
+            batchTotal: pendingFiles.length,
+            pageNumber: basePre + 1,
+            label: firstLabel
+          });
+        } else {
+          progressUiShown = true;
+          showSaveProgressOverlay();
+          updateSaveProgressUI({
+            phase: 'save',
+            percent: 12,
+            detailText: 'Saving your record…'
+          });
+        }
+
+        // Upload files to storage (Pre-EMR Medical Records folder path in patient-documents bucket)
+        if (pendingFiles.length > 0) {
+          if (typeof window.preEmrStorage === 'undefined' || !window.preEmrStorage.uploadPreEmrFiles) {
+            throw new Error('Upload module not loaded. Refresh the page and try again.');
+          }
+          const fileRecords = await window.preEmrStorage.uploadPreEmrFiles(patient, pendingFiles, {
+            concurrency: 3,
+            onProgress: function (ev) {
+              var scaled = Object.assign({}, ev);
+              if (typeof ev.percent === 'number') {
+                scaled.percent = Math.min(88, ev.percent * 0.88);
+              }
+              updateSaveProgressUI(scaled);
+            }
+          });
+          for (var fr = 0; fr < fileRecords.length; fr++) {
+            patient.unstructuredRecords.push(fileRecords[fr]);
+          }
+          console.log('📝 [ADD-RECORD] Uploaded', fileRecords.length, 'file(s)');
+        }
+
+        if (hadFiles) {
+          updateSaveProgressUI({
+            phase: 'save',
+            percent: 90,
+            detailText: 'Saving patient record to the server…'
+          });
+        }
+
+        // Text record (optional when files are present)
+        if (recordText) {
+          const newRecord = {
+            id: `record_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
+            kind: 'text',
+            text: recordText,
+            createdAt: new Date().toISOString(),
+            createdBy: createdBy
+          };
+          console.log('📝 [ADD-RECORD] Created new text record:', newRecord);
+          patient.unstructuredRecords.push(newRecord);
+        }
+        
+        console.log('📝 [ADD-RECORD] Total unstructured records now:', patient.unstructuredRecords.length);
+        console.log('📝 [ADD-RECORD] Patient unstructuredRecords after add:', patient.unstructuredRecords);
+        
+        // Save to localStorage
+        console.log('📝 [ADD-RECORD] Saving to localStorage...');
+        localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+        console.log('✅ [ADD-RECORD] Saved to localStorage');
+
+        if (progressUiShown && !hadFiles) {
+          updateSaveProgressUI({
+            phase: 'save',
+            percent: 55,
+            detailText: 'Saved locally. Syncing to server…'
+          });
+        }
+        
+        // Save to Supabase if available (Supabase-first architecture)
+        if (typeof window.savePatientToSupabase === 'function') {
+          console.log('📝 [ADD-RECORD] savePatientToSupabase function available, calling it...');
+          console.log('📝 [ADD-RECORD] Patient object being passed to savePatientToSupabase:', {
+            id: patient.id,
+            patient_id: patient.patient_id,
+            _supabaseUuid: patient._supabaseUuid,
+            unstructuredRecordsCount: patient.unstructuredRecords.length,
+            unstructuredRecords: patient.unstructuredRecords
+          });
+          
+          try {
+            const saveResult = await window.savePatientToSupabase(patient);
+            console.log('✅ [ADD-RECORD] savePatientToSupabase returned:', saveResult);
+            console.log('✅ [ADD-RECORD] Record saved to Supabase');
+          } catch (error) {
+            console.error('❌ [ADD-RECORD] Error saving to Supabase:', error);
+            console.error('❌ [ADD-RECORD] Error details:', {
+              message: error.message,
+              stack: error.stack,
+              code: error.code,
+              details: error.details
+            });
+            console.warn('⚠️ [ADD-RECORD] Error saving to Supabase, but saved to localStorage:', error);
+          }
+        } else {
+          console.warn('⚠️ [ADD-RECORD] savePatientToSupabase function not available');
+          console.warn('⚠️ [ADD-RECORD] Record saved to localStorage only');
+        }
+
+        if (progressUiShown) {
+          updateSaveProgressUI({ phase: 'save', percent: 100, detailText: 'Done.' });
+          hideSaveProgressOverlay();
+        }
+        
+        // Show success message
+        document.getElementById('success-message').classList.add('show');
+        document.getElementById('error-message').classList.remove('show');
+        
+        // Clear form after 2 seconds
+        setTimeout(() => {
+          document.getElementById('record-text').value = '';
+          pendingFiles = [];
+          renderFileQueue();
+          document.getElementById('success-message').classList.remove('show');
+          updateSaveEnabled();
+          saveButton.textContent = '💾 Save Record';
+        }, 2000);
+        
+        console.log('✅ [ADD-RECORD] Unstructured record saved successfully');
+        
+      } catch (error) {
+        console.error('❌ [ADD-RECORD] Error saving record:', error);
+        console.error('❌ [ADD-RECORD] Error details:', {
+          message: error.message,
+          stack: error.stack,
+          name: error.name
+        });
+        hideSaveProgressOverlay();
+        document.getElementById('error-message').classList.add('show');
+        document.getElementById('success-message').classList.remove('show');
+        saveButton.disabled = false;
+        saveButton.textContent = '💾 Save Record';
+        alert('Error saving record: ' + error.message);
+      }
+    }
+    
+    // Navigate to patient details
+    function goToPatientDetails() {
+      if (selectedPatient) {
+        const patientId = selectedPatient.patient_id || selectedPatient.patientNumber || selectedPatient.id;
+        window.location.href = `patient-details.html?patientId=${patientId}`;
+      }
+    }
+    
+    // Check if patient ID is in URL (from patient details page)
+    window.addEventListener('load', function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientIdParam = urlParams.get('patientId');
+      
+      if (patientIdParam) {
+        loadPatients().then(() => {
+          // Try to find patient by ID
+          const patient = allPatients.find(p => 
+            p.id === patientIdParam || 
+            p.patient_id === patientIdParam || 
+            p.patientNumber === patientIdParam
+          );
+          
+          if (patient) {
+            selectPatient(patient.id);
+          }
+        });
+      } else {
+        loadPatients();
+      }
+    });
+  </script>
+</body>
+</html>
+

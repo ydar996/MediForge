@@ -1,0 +1,456 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🔍 Debug Login Issue</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 400px; overflow-y: auto; }
+        .error { color: #d32f2f; }
+        .success { color: #388e3c; }
+        .warning { color: #f57c00; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔍 Debug Login Issue</h1>
+        <p><strong>Problem:</strong> ydar105@eko.com showing "User not found" error</p>
+        
+        <div class="section">
+            <h3>🧪 Test Login Manually</h3>
+            <input type="text" id="testEmail" placeholder="Email" value="ydar105@eko.com">
+            <input type="password" id="testPassword" placeholder="Password" value="OlowoPoroku108%">
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="testSupabaseDirect()">Test Supabase Direct</button>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Check Auth Users</h3>
+            <button onclick="checkAllAuthUsers()">Check All Auth Users</button>
+            <button onclick="checkYdar105()">Check ydar105 Specifically</button>
+        </div>
+
+        <div class="section">
+            <h3>🔍 Check User Profiles</h3>
+            <button onclick="checkUserProfiles()">Check User Profiles</button>
+            <button onclick="checkYdar105Profile()">Check ydar105 Profile</button>
+        </div>
+
+        <div class="section">
+            <h3>🚀 Fix ydar105</h3>
+            <button onclick="fixYdar105()">Fix ydar105 Login</button>
+            <button onclick="createNewYdar105()">Create New ydar105</button>
+        </div>
+
+        <div class="section">
+            <h3>📊 Debug Log</h3>
+            <button onclick="clearLog()">Clear Log</button>
+            <div id="debugLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('debugLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : type === 'warning' ? 'warning' : '';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('debugLog').innerHTML = '';
+        }
+
+        async function initSupabase() {
+            if (!supabase) {
+                try {
+                    supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                    log('✅ Supabase client initialized', 'success');
+                    return true;
+                } catch (error) {
+                    log('❌ Error initializing Supabase: ' + error.message, 'error');
+                    return false;
+                }
+            }
+            return true;
+        }
+
+        async function testLogin() {
+            if (!await initSupabase()) return;
+
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+
+            log(`🧪 Testing login for: ${email}`);
+            
+            try {
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    log(`❌ Login failed: ${error.message}`, 'error');
+                    log(`❌ Error code: ${error.status}`, 'error');
+                } else {
+                    log(`✅ Login successful!`, 'success');
+                    log(`✅ User ID: ${data.user.id}`);
+                    log(`✅ Email: ${data.user.email}`);
+                    
+                    // Test profile fetch
+                    const { data: profile, error: profileError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('auth_user_id', data.user.id)
+                        .single();
+
+                    if (profileError) {
+                        log(`❌ Profile fetch failed: ${profileError.message}`, 'error');
+                    } else {
+                        log(`✅ Profile found: ${profile.username} (${profile.role})`, 'success');
+                    }
+
+                    // Sign out
+                    await supabase.auth.signOut();
+                    log(`🚪 Signed out`);
+                }
+            } catch (e) {
+                log(`❌ Exception during login: ${e.message}`, 'error');
+            }
+        }
+
+        async function testSupabaseDirect() {
+            if (!await initSupabase()) return;
+
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+
+            log(`🔍 Testing Supabase direct connection...`);
+            
+            try {
+                // Test basic connection
+                const { data: testData, error: testError } = await supabase
+                    .from('users')
+                    .select('count')
+                    .limit(1);
+
+                if (testError) {
+                    log(`❌ Connection test failed: ${testError.message}`, 'error');
+                    return;
+                }
+
+                log(`✅ Supabase connection working`, 'success');
+
+                // Test auth specifically
+                log(`🔐 Testing auth with email: ${email}`);
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    log(`❌ Auth test failed: ${error.message}`, 'error');
+                    log(`❌ Error details: ${JSON.stringify(error)}`, 'error');
+                } else {
+                    log(`✅ Auth test successful!`, 'success');
+                    await supabase.auth.signOut();
+                }
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkAllAuthUsers() {
+            if (!await initSupabase()) return;
+
+            log(`🔍 Checking all auth users...`);
+            
+            try {
+                // We can't directly query auth.users, but we can check our users table
+                const { data: users, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`❌ Error fetching users: ${error.message}`, 'error');
+                    return;
+                }
+
+                log(`📊 Found ${users.length} users in public.users table:`, 'success');
+                users.forEach((user, index) => {
+                    log(`${index + 1}. Username: ${user.username}`);
+                    log(`   - Email: ${user.email}`);
+                    log(`   - Role: ${user.role}`);
+                    log(`   - Auth User ID: ${user.auth_user_id}`);
+                    log(`   - Organization: ${user.organization_id}`);
+                    log(`   - Created: ${user.created_at}`);
+                    log('');
+                });
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkYdar105() {
+            if (!await initSupabase()) return;
+
+            log(`🔍 Checking ydar105 specifically...`);
+            
+            try {
+                // Check in users table
+                const { data: profile, error: profileError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar105')
+                    .single();
+
+                if (profileError) {
+                    log(`❌ Profile not found: ${profileError.message}`, 'error');
+                } else {
+                    log(`✅ Profile found:`, 'success');
+                    log(`   - Username: ${profile.username}`);
+                    log(`   - Email: ${profile.email}`);
+                    log(`   - Auth User ID: ${profile.auth_user_id}`);
+                    log(`   - Role: ${profile.role}`);
+                }
+
+                // Try to test auth with different email variations
+                const emailVariations = [
+                    'ydar105@eko.com',
+                    'ydar105@example.com',
+                    'ydar105@a.com'
+                ];
+
+                for (const email of emailVariations) {
+                    log(`🧪 Testing auth with: ${email}`);
+                    try {
+                        const { data, error } = await supabase.auth.signInWithPassword({
+                            email: email,
+                            password: 'OlowoPoroku108%'
+                        });
+
+                        if (error) {
+                            log(`   ❌ ${email}: ${error.message}`, 'error');
+                        } else {
+                            log(`   ✅ ${email}: SUCCESS!`, 'success');
+                            await supabase.auth.signOut();
+                            break;
+                        }
+                    } catch (e) {
+                        log(`   ❌ ${email}: Exception - ${e.message}`, 'error');
+                    }
+                }
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkUserProfiles() {
+            if (!await initSupabase()) return;
+
+            log(`🔍 Checking all user profiles...`);
+            
+            try {
+                const { data: profiles, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .order('created_at', { ascending: false });
+
+                if (error) {
+                    log(`❌ Error: ${error.message}`, 'error');
+                    return;
+                }
+
+                log(`📊 User Profiles (${profiles.length} total):`, 'success');
+                profiles.forEach((profile, index) => {
+                    log(`${index + 1}. ${profile.username} (${profile.role})`);
+                    log(`   Email: ${profile.email}`);
+                    log(`   Auth ID: ${profile.auth_user_id}`);
+                    log(`   Org: ${profile.organization_id}`);
+                    log('');
+                });
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function checkYdar105Profile() {
+            if (!await initSupabase()) return;
+
+            log(`🔍 Checking ydar105 profile details...`);
+            
+            try {
+                const { data: profile, error } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar105')
+                    .single();
+
+                if (error) {
+                    log(`❌ Profile not found: ${error.message}`, 'error');
+                } else {
+                    log(`✅ ydar105 Profile:`, 'success');
+                    log(`   Username: ${profile.username}`);
+                    log(`   Email: ${profile.email}`);
+                    log(`   Auth User ID: ${profile.auth_user_id}`);
+                    log(`   Role: ${profile.role}`);
+                    log(`   Organization ID: ${profile.organization_id}`);
+                    log(`   First Name: ${profile.first_name}`);
+                    log(`   Last Name: ${profile.last_name}`);
+                    log(`   Created: ${profile.created_at}`);
+                    log(`   Updated: ${profile.updated_at}`);
+                }
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function fixYdar105() {
+            if (!await initSupabase()) return;
+
+            log(`🚀 Attempting to fix ydar105...`);
+            
+            try {
+                // First, let's see what we have
+                const { data: profile, error: profileError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar105')
+                    .single();
+
+                if (profileError) {
+                    log(`❌ No profile found for ydar105`, 'error');
+                    return;
+                }
+
+                log(`✅ Found ydar105 profile with email: ${profile.email}`, 'success');
+
+                // Test login with the current email
+                log(`🧪 Testing login with current email: ${profile.email}`);
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: profile.email,
+                    password: 'OlowoPoroku108%'
+                });
+
+                if (error) {
+                    log(`❌ Login failed with current email: ${error.message}`, 'error');
+                    
+                    // Try to reset password
+                    log(`🔄 Attempting password reset...`);
+                    const { error: resetError } = await supabase.auth.resetPasswordForEmail(profile.email);
+                    
+                    if (resetError) {
+                        log(`❌ Password reset failed: ${resetError.message}`, 'error');
+                    } else {
+                        log(`✅ Password reset email sent`, 'success');
+                    }
+                } else {
+                    log(`✅ Login successful with current email!`, 'success');
+                    await supabase.auth.signOut();
+                }
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        async function createNewYdar105() {
+            if (!await initSupabase()) return;
+
+            log(`🚀 Creating new ydar105 user...`);
+            
+            try {
+                // First check if user exists
+                const { data: existing, error: checkError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('username', 'ydar105')
+                    .single();
+
+                if (existing && !checkError) {
+                    log(`⚠️ ydar105 already exists, skipping creation`, 'warning');
+                    return;
+                }
+
+                // Create new auth user
+                const { data: authData, error: authError } = await supabase.auth.signUp({
+                    email: 'ydar105@eko.com',
+                    password: 'OlowoPoroku108%'
+                });
+
+                if (authError) {
+                    log(`❌ Auth creation failed: ${authError.message}`, 'error');
+                    return;
+                }
+
+                if (authData.user) {
+                    log(`✅ Auth user created: ${authData.user.id}`, 'success');
+
+                    // Create profile
+                    const { error: profileError } = await supabase
+                        .from('users')
+                        .insert([{
+                            auth_user_id: authData.user.id,
+                            username: 'ydar105',
+                            email: 'ydar105@eko.com',
+                            role: 'Doctor',
+                            organization_id: '41b8993a-80f5-412f-8d33-fa3eb22ba260', // Eko Clinics
+                            first_name: 'Ydar',
+                            last_name: '105',
+                            medical_license_number: 'YDAR105',
+                            gender: 'Male'
+                        }]);
+
+                    if (profileError) {
+                        log(`❌ Profile creation failed: ${profileError.message}`, 'error');
+                    } else {
+                        log(`✅ Profile created successfully`, 'success');
+                    }
+                }
+
+            } catch (e) {
+                log(`❌ Exception: ${e.message}`, 'error');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('🚀 Debug tool loaded and ready');
+            log('💡 Click buttons above to debug the login issue');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+
+</html>
+
+
+
+
+
+
+
+

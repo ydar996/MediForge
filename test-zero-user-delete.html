@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Test Zero-User Organization Delete</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 1200px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    .test-section {
+      background: white;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+    }
+    .test-button {
+      background: #4CAF50;
+      color: white;
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      margin: 5px;
+      font-weight: 600;
+    }
+    .test-button:hover {
+      background: #45a049;
+    }
+    .test-button.danger {
+      background: #F44336;
+    }
+    .test-button.danger:hover {
+      background: #d32f2f;
+    .test-results {
+      background: #f8f9fa;
+      border: 1px solid #dee2e6;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 15px;
+      white-space: pre-wrap;
+      font-family: monospace;
+      font-size: 14px;
+    }
+  </style>
+</head>
+<body>
+  <h1>🧪 Test Zero-User Organization Delete Functionality</h1>
+  
+  <div class="test-section">
+    <h2>📋 Test Functions</h2>
+    <p>Test the new zero-user organization deletion functionality:</p>
+    
+    <button class="test-button" onclick="testGetZeroUserOrgs()">
+      🔍 Test: Get Organizations with Zero Users
+    </button>
+    
+    <button class="test-button" onclick="testDeleteSingleOrg()">
+      🗑️ Test: Delete Single Organization (if zero users)
+    </button>
+    
+    <button class="test-button danger" onclick="testBulkDelete()">
+      ⚠️ Test: Bulk Delete All Zero-User Organizations
+    </button>
+    
+    <button class="test-button" onclick="testSafetyChecks()">
+      🛡️ Test: Safety Checks
+    </button>
+    
+    <div id="test-results" class="test-results" style="display: none;">
+      <!-- Test results will appear here -->
+    </div>
+  </div>
+  
+  <div class="test-section">
+    <h2>📊 Current Organizations</h2>
+    <button class="test-button" onclick="loadAllOrganizations()">
+      📋 Load All Organizations
+    </button>
+    <div id="orgs-list" class="test-results" style="display: none;">
+      <!-- Organizations list will appear here -->
+    </div>
+  </div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=1"></script>
+  
+  <!-- Platform Admin functionality -->
+  <script src="js/platform-admin.js?v=4"></script>
+  
+  <script>
+    console.log('🧪 Test page loaded');
+    
+    // Test function to get organizations with zero users
+    async function testGetZeroUserOrgs() {
+      console.log('🧪 Testing getOrganizationsWithZeroUsers...');
+      showResults('Testing getOrganizationsWithZeroUsers...\n');
+      
+      try {
+        if (typeof getOrganizationsWithZeroUsers !== 'function') {
+          showResults('❌ getOrganizationsWithZeroUsers function not found\n');
+          return;
+        }
+        
+        const zeroUserOrgs = await getOrganizationsWithZeroUsers();
+        showResults(`✅ Found ${zeroUserOrgs.length} organizations with zero users:\n`);
+        
+        if (zeroUserOrgs.length > 0) {
+          zeroUserOrgs.forEach(org => {
+            showResults(`  - ${org.name} (${org.org.country || 'No country'})\n`);
+          });
+        } else {
+          showResults('  No organizations with zero users found.\n');
+        }
+        
+      } catch (error) {
+        showResults(`❌ Error: ${error.message}\n`);
+        console.error('Test error:', error);
+      }
+    }
+    
+    // Test function to delete a single organization
+    async function testDeleteSingleOrg() {
+      console.log('🧪 Testing deleteOrganizationWithZeroUsers...');
+      showResults('Testing deleteOrganizationWithZeroUsers...\n');
+      
+      try {
+        // First get organizations with zero users
+        const zeroUserOrgs = await getOrganizationsWithZeroUsers();
+        
+        if (zeroUserOrgs.length === 0) {
+          showResults('❌ No organizations with zero users to test deletion\n');
+          return;
+        }
+        
+        const testOrg = zeroUserOrgs[0];
+        showResults(`Testing deletion of: ${testOrg.name}\n`);
+        
+        if (typeof deleteOrganizationWithZeroUsers !== 'function') {
+          showResults('❌ deleteOrganizationWithZeroUsers function not found\n');
+          return;
+        }
+        
+        // Note: This is a test, so we'll just show what would happen
+        showResults(`⚠️ Would delete organization: ${testOrg.name}\n`);
+        showResults(`⚠️ This is a test - actual deletion not performed\n`);
+        
+      } catch (error) {
+        showResults(`❌ Error: ${error.message}\n`);
+        console.error('Test error:', error);
+      }
+    }
+    
+    // Test bulk delete function
+    async function testBulkDelete() {
+      console.log('🧪 Testing bulkDeleteOrganizationsWithZeroUsers...');
+      showResults('Testing bulkDeleteOrganizationsWithZeroUsers...\n');
+      
+      try {
+        if (typeof bulkDeleteOrganizationsWithZeroUsers !== 'function') {
+          showResults('❌ bulkDeleteOrganizationsWithZeroUsers function not found\n');
+          return;
+        }
+        
+        // First check what would be deleted
+        const zeroUserOrgs = await getOrganizationsWithZeroUsers();
+        showResults(`Found ${zeroUserOrgs.length} organizations with zero users:\n`);
+        
+        if (zeroUserOrgs.length === 0) {
+          showResults('✅ No organizations to delete\n');
+          return;
+        }
+        
+        zeroUserOrgs.forEach(org => {
+          showResults(`  - ${org.name}\n`);
+        });
+        
+        showResults(`\n⚠️ This is a test - actual bulk deletion not performed\n`);
+        showResults(`⚠️ In production, this would delete ${zeroUserOrgs.length} organizations\n`);
+        
+      } catch (error) {
+        showResults(`❌ Error: ${error.message}\n`);
+        console.error('Test error:', error);
+      }
+    }
+    
+    // Test safety checks
+    async function testSafetyChecks() {
+      console.log('🧪 Testing safety checks...');
+      showResults('Testing safety checks...\n');
+      
+      try {
+        // Test 1: Check if functions exist
+        const functions = [
+          'getOrganizationsWithZeroUsers',
+          'deleteOrganizationWithZeroUsers', 
+          'bulkDeleteOrganizationsWithZeroUsers'
+        ];
+        
+        showResults('Function availability check:\n');
+        functions.forEach(funcName => {
+          const exists = typeof window[funcName] === 'function';
+          showResults(`  ${exists ? '✅' : '❌'} ${funcName}\n`);
+        });
+        
+        // Test 2: Check Supabase connection
+        showResults('\nSupabase connection check:\n');
+        if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+          showResults('  ✅ Supabase client available\n');
+        } else {
+          showResults('  ❌ Supabase client not available\n');
+        }
+        
+        // Test 3: Check platform admin functions
+        showResults('\nPlatform admin functions check:\n');
+        const adminFunctions = [
+          'getAllOrganizations',
+          'getOrganizationStats',
+          'clearOrganizationsCache'
+        ];
+        
+        adminFunctions.forEach(funcName => {
+          const exists = typeof window[funcName] === 'function';
+          showResults(`  ${exists ? '✅' : '❌'} ${funcName}\n`);
+        });
+        
+      } catch (error) {
+        showResults(`❌ Error: ${error.message}\n`);
+        console.error('Test error:', error);
+      }
+    }
+    
+    // Load all organizations for inspection
+    async function loadAllOrganizations() {
+      console.log('🧪 Loading all organizations...');
+      showResults('Loading all organizations...\n');
+      
+      try {
+        if (typeof getAllOrganizations !== 'function') {
+          showResults('❌ getAllOrganizations function not found\n');
+          return;
+        }
+        
+        const orgs = await getAllOrganizations();
+        const orgNames = Object.keys(orgs);
+        
+        showResults(`Found ${orgNames.length} total organizations:\n`);
+        
+        for (const orgName of orgNames) {
+          const org = orgs[orgName];
+          const stats = await getOrganizationStats(orgName);
+          
+          showResults(`\n📋 ${orgName}:\n`);
+          showResults(`  - Country: ${org.country || 'N/A'}\n`);
+          showResults(`  - Status: ${org.status || 'active'}\n`);
+          showResults(`  - Users: ${stats.userCount}\n`);
+          showResults(`  - Patients: ${stats.patientCount}\n`);
+          showResults(`  - Revenue: ${stats.totalRevenue}\n`);
+        }
+        
+      } catch (error) {
+        showResults(`❌ Error: ${error.message}\n`);
+        console.error('Test error:', error);
+      }
+    }
+    
+    // Helper function to show results
+    function showResults(text) {
+      const resultsDiv = document.getElementById('test-results');
+      resultsDiv.style.display = 'block';
+      resultsDiv.textContent += text;
+    }
+    
+    // Helper function to show organizations list
+    function showOrgsList(text) {
+      const orgsDiv = document.getElementById('orgs-list');
+      orgsDiv.style.display = 'block';
+      orgsDiv.textContent += text;
+    }
+    
+    console.log('🧪 Test functions loaded');
+  </script>
+</body>
+</html>

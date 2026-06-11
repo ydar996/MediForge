@@ -1,0 +1,474 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Legal Agreements by Organization - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=239">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=20251112063500"></script>
+  <script src="js/legal-agreements.js?v=20250118000000"></script>
+  
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    }
+    
+    .header {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+      padding: 30px;
+      border-radius: 12px;
+      margin-bottom: 30px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.3);
+    }
+    
+    .header h1 {
+      margin: 0 0 10px 0;
+      font-size: 32px;
+    }
+    
+    .header p {
+      margin: 0;
+      opacity: 0.9;
+      font-size: 16px;
+    }
+    
+    .back-button {
+      display: inline-block;
+      margin-bottom: 20px;
+      padding: 12px 24px;
+      background: linear-gradient(135deg, #008753, #006b42);
+      color: white;
+      text-decoration: none;
+      border-radius: 8px;
+      font-weight: 600;
+      transition: all 0.3s;
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.2);
+      border: none;
+      cursor: pointer;
+      font-size: 14px;
+    }
+    
+    .back-button:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .org-header {
+      background: white;
+      border: 3px solid #008753;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 25px;
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.15);
+    }
+    
+    .org-header h2 {
+      color: #008753;
+      margin: 0 0 15px 0;
+      font-size: 28px;
+      font-weight: 800;
+    }
+    
+    .org-info {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+      gap: 15px;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .org-info strong {
+      color: #008753;
+      display: block;
+      margin-bottom: 5px;
+      font-size: 12px;
+      text-transform: uppercase;
+    }
+    
+    .user-card {
+      background: white;
+      border: 2px solid #008753;
+      border-radius: 10px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 2px 8px rgba(0, 135, 83, 0.1);
+    }
+    
+    .user-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 20px;
+      padding-bottom: 15px;
+      border-bottom: 2px solid rgba(0, 135, 83, 0.2);
+    }
+    
+    .user-header h3 {
+      color: #008753;
+      margin: 0;
+      font-size: 22px;
+      font-weight: 700;
+    }
+    
+    .user-info {
+      color: #666;
+      font-size: 14px;
+      margin-top: 8px;
+    }
+    
+    .agreement-badge {
+      background: linear-gradient(135deg, #008753, #006b42);
+      color: white;
+      padding: 8px 16px;
+      border-radius: 8px;
+      font-weight: 700;
+      font-size: 14px;
+    }
+    
+    .agreement-list {
+      display: grid;
+      gap: 15px;
+    }
+    
+    .agreement-item {
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.05), rgba(0, 107, 66, 0.03));
+      border: 2px solid #008753;
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.3s ease;
+      cursor: pointer;
+    }
+    
+    .agreement-item:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.2);
+      background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05));
+    }
+    
+    .agreement-item-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 12px;
+    }
+    
+    .agreement-type {
+      font-size: 18px;
+      font-weight: 700;
+      color: #008753;
+      margin: 0;
+    }
+    
+    .agreement-meta {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+      gap: 10px;
+      font-size: 13px;
+      color: #666;
+      margin-bottom: 15px;
+    }
+    
+    .agreement-meta strong {
+      color: #008753;
+    }
+    
+    .view-agreement-btn {
+      background: linear-gradient(135deg, #4169E1, #008753);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(65, 105, 225, 0.3);
+      width: 100%;
+    }
+    
+    .view-agreement-btn:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(65, 105, 225, 0.4);
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+      font-size: 18px;
+      background: white;
+      border-radius: 12px;
+      border: 3px solid #008753;
+    }
+    
+    .error {
+      text-align: center;
+      padding: 60px 20px;
+      color: #dc3545;
+      font-size: 18px;
+      background: white;
+      border-radius: 12px;
+      border: 3px solid #dc3545;
+    }
+    
+    .error button {
+      margin-top: 20px;
+      padding: 12px 24px;
+      background: #dc3545;
+      color: white;
+      border: none;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+      background: white;
+      border-radius: 12px;
+      border: 3px solid #008753;
+    }
+    
+    .empty-state p {
+      font-size: 18px;
+      margin-bottom: 10px;
+    }
+  </style>
+</head>
+<body>
+  <a href="platform-dashboard" class="back-button">&larr; Back to Platform Dashboard</a>
+  
+  <div class="header">
+    <h1>&#127963; Legal Agreements by Organization</h1>
+    <p>View all signed legal agreements for this organization, grouped by user</p>
+  </div>
+  
+  <div id="loading" class="loading">Loading legal agreements...</div>
+  <div id="content" style="display: none;"></div>
+  
+  <script>
+    // Get organization ID from URL
+    const urlParams = new URLSearchParams(window.location.search);
+    const orgId = urlParams.get('orgId');
+    
+    // Check if user is platform admin
+    async function checkPlatformAdmin() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const platformAdmin = JSON.parse(localStorage.getItem('platformAdmin') || 'null');
+      const platformAdminRoles = ['PlatformAdmin', 'PlatformOwner', 'Platform Admin', 'Platform Owner', 'Platform administrator', 'Platform owner'];
+      
+      if (!user || !user.role) {
+        if (!platformAdmin && !platformAdminRoles.includes(user.role)) {
+          window.location.href = '/dashboard';
+          return false;
+        }
+      }
+      return true;
+    }
+    
+    // Load agreements for the organization
+    async function loadOrganizationAgreements() {
+      const loadingDiv = document.getElementById('loading');
+      const contentDiv = document.getElementById('content');
+      
+      try {
+        if (!await checkPlatformAdmin()) {
+          return;
+        }
+        
+        if (!orgId) {
+          throw new Error('Organization ID not provided in URL');
+        }
+        
+        if (typeof window.getAllLegalAgreements === 'undefined') {
+          throw new Error('Legal agreements module not loaded');
+        }
+        
+        // Fetch all agreements for this organization
+        // Pass orgId as-is (including 'no-org' if applicable)
+        const { success, agreements, error } = await window.getAllLegalAgreements(orgId);
+        
+        if (!success) {
+          throw new Error(error || 'Failed to load legal agreements');
+        }
+        
+        loadingDiv.style.display = 'none';
+        contentDiv.style.display = 'block';
+        
+        if (!agreements || agreements.length === 0) {
+          contentDiv.innerHTML = `
+            <div class="empty-state">
+              <p style="font-size: 18px; margin-bottom: 10px;">No signed legal agreements found for this organization.</p>
+              <p style="font-size: 14px;">Agreements will appear here once users sign them during registration or login.</p>
+            </div>
+          `;
+          return;
+        }
+        
+        // Get organization name from first agreement
+        const orgName = agreements[0]?.organizations?.name || 'Unknown Organization';
+        const orgIdDisplay = orgId === 'no-org' ? 'N/A' : orgId;
+        
+        // Group agreements by user
+        const agreementsByUser = {};
+        
+        agreements.forEach(agreement => {
+          const userId = agreement.user_id;
+          const user = agreement.users || {
+            username: 'Unknown',
+            first_name: '',
+            last_name: '',
+            role: agreement.user_role || 'Unknown'
+          };
+          
+          if (!agreementsByUser[userId]) {
+            agreementsByUser[userId] = {
+              user: user,
+              agreements: []
+            };
+          }
+          
+          agreementsByUser[userId].agreements.push(agreement);
+        });
+        
+        // Build HTML
+        let html = `
+          <div class="org-header">
+            <h2>&#127976; ${orgName}</h2>
+            <div class="org-info">
+              <div>
+                <strong>Organization ID</strong>
+                ${orgIdDisplay.substring(0, 8)}${orgIdDisplay.length > 8 ? '...' : ''}
+              </div>
+              <div>
+                <strong>Total Agreements</strong>
+                ${agreements.length}
+              </div>
+              <div>
+                <strong>Users with Agreements</strong>
+                ${Object.keys(agreementsByUser).length}
+              </div>
+            </div>
+          </div>
+        `;
+        
+        // Display agreements grouped by user
+        Object.values(agreementsByUser).forEach((userGroup) => {
+          const user = userGroup.user;
+          const userName = `${user.first_name || ''} ${user.last_name || ''}`.trim() || user.username || 'Unknown User';
+          
+          html += `
+            <div class="user-card">
+              <div class="user-header">
+                <div>
+                  <h3>&#128100; ${userName}</h3>
+                  <div class="user-info">
+                    <strong>Role:</strong> ${user.role || 'Unknown'} | 
+                    <strong>Username:</strong> ${user.username || 'N/A'} |
+                    <strong>Agreements:</strong> ${userGroup.agreements.length}
+                  </div>
+                </div>
+                <div class="agreement-badge">
+                  ${userGroup.agreements.length} ${userGroup.agreements.length === 1 ? 'Agreement' : 'Agreements'}
+                </div>
+              </div>
+              
+              <div class="agreement-list">
+          `;
+          
+          userGroup.agreements.forEach(agreement => {
+            const agreementTypeLabel = agreement.agreement_type === 'service_agreement' 
+              ? 'Service Subscription Agreement' 
+              : agreement.agreement_type === 'baa' 
+              ? 'Business Associate Agreement (BAA)' 
+              : agreement.agreement_type === 'dpa'
+              ? 'Data Processing Agreement (DPA)'
+              : agreement.agreement_type;
+            
+            const signedDate = agreement.signed_at 
+              ? new Date(agreement.signed_at).toLocaleString('en-US', {
+                  year: 'numeric',
+                  month: 'long',
+                  day: 'numeric',
+                  hour: '2-digit',
+                  minute: '2-digit'
+                })
+              : 'Unknown';
+            
+            html += `
+              <div class="agreement-item" onclick="viewAgreementDetails('${agreement.id}')">
+                <div class="agreement-item-header">
+                  <h4 class="agreement-type">${agreementTypeLabel}</h4>
+                </div>
+                <div class="agreement-meta">
+                  <div>
+                    <strong>Version:</strong> ${agreement.agreement_version || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>Signed Date:</strong> ${signedDate}
+                  </div>
+                  <div>
+                    <strong>User Email:</strong> ${agreement.user_email || 'N/A'}
+                  </div>
+                  <div>
+                    <strong>IP Address:</strong> ${agreement.ip_address || 'N/A'}
+                  </div>
+                </div>
+                <button class="view-agreement-btn" onclick="event.stopPropagation(); viewAgreementDetails('${agreement.id}')">
+                  &#128196; Read Full Agreement
+                </button>
+              </div>
+            `;
+          });
+          
+          html += `
+              </div>
+            </div>
+          `;
+        });
+        
+        contentDiv.innerHTML = html;
+        
+      } catch (error) {
+        console.error('Error loading organization agreements:', error);
+        loadingDiv.style.display = 'none';
+        contentDiv.style.display = 'block';
+        contentDiv.innerHTML = `
+          <div class="error">
+            <h3>Error Loading Legal Agreements</h3>
+            <p>${error.message}</p>
+            <button onclick="loadOrganizationAgreements()">Try Again</button>
+          </div>
+        `;
+      }
+    }
+    
+    // Navigate to agreement detail page
+    function viewAgreementDetails(agreementId) {
+      window.location.href = `/legal-agreement-view?id=${agreementId}`;
+    }
+    
+    // Load on page load
+    document.addEventListener('DOMContentLoaded', () => {
+      loadOrganizationAgreements();
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

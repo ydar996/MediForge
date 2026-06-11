@@ -1,0 +1,740 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <title>Preventive Care Gaps Summary</title>
+    <link rel="stylesheet" href="css/styles.css?v=204">
+    <style>
+        /* Nigerian Heritage Theme - Full Color Palette */
+        :root {
+            /* Primary Nigerian Colors */
+            --primary-green: #008753;        /* Nigerian flag green */
+            --dark-green: #006b42;           /* Deep forest green */
+            --light-green: rgba(0, 135, 83, 0.1);
+            --accent-green: rgba(0, 135, 83, 0.3);
+            
+            /* Nigerian Flag Colors */
+            --nigerian-white: #FFFFFF;       /* White stripe */
+            --nigerian-green: #008753;       /* Green stripe */
+            
+            /* Traditional Nigerian Colors */
+            --gold: #FFD700;                 /* Nigerian gold/amber */
+            --dark-gold: #B8860B;            /* Dark gold */
+            --bronze: #CD7F32;               /* Bronze accent */
+            --warm-orange: #FF8C00;          /* Warm orange */
+            
+            /* Neutral Palette */
+            --charcoal: #36454F;             /* Charcoal text */
+            --soft-white: #FAFAFA;           /* Soft white background */
+        }
+        
+        body { 
+            font-family: Arial, sans-serif; 
+            margin: 20px; 
+            background: var(--soft-white); 
+            line-height: 1.4;
+        }
+        
+        h1 { 
+            color: var(--primary-green); 
+            margin-bottom: 20px; 
+            text-align: center;
+            font-weight: 600;
+        }
+        
+        .btn { 
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%);
+            color: white; 
+            padding: 10px 20px; 
+            text-decoration: none; 
+            border-radius: 5px; 
+            display: inline-block; 
+            margin-bottom: 20px; 
+            border: none;
+            cursor: pointer;
+            font-weight: 500;
+            box-shadow: 0 2px 5px rgba(0, 135, 83, 0.3);
+            transition: all 0.3s ease;
+        }
+        
+        .btn:hover { 
+            background: linear-gradient(135deg, var(--dark-green) 0%, var(--primary-green) 100%);
+            box-shadow: 0 4px 8px rgba(0, 135, 83, 0.4);
+            transform: translateY(-1px);
+        }
+        
+        /* Table Styling - Nigerian Heritage Theme with Fixed Layout - HIGHEST SPECIFICITY */
+        body table.gaps-summary-table,
+        html body table.gaps-summary-table { 
+            width: 100% !important; 
+            border-collapse: collapse !important; 
+            background: white !important; 
+            border-radius: 8px !important; 
+            overflow: hidden !important; 
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1) !important; 
+            table-layout: fixed !important;
+            margin-bottom: 20px !important;
+            display: table !important;
+        }
+        
+        body table.gaps-summary-table thead,
+        html body table.gaps-summary-table thead {
+            display: table-header-group !important;
+        }
+        
+        body table.gaps-summary-table tbody,
+        html body table.gaps-summary-table tbody {
+            display: table-row-group !important;
+        }
+        
+        body table.gaps-summary-table tr,
+        html body table.gaps-summary-table tr {
+            display: table-row !important;
+        }
+        
+        body table.gaps-summary-table th,
+        body table.gaps-summary-table td,
+        html body table.gaps-summary-table th,
+        html body table.gaps-summary-table td {
+            display: table-cell !important;
+            box-sizing: border-box !important;
+            vertical-align: top !important;
+        }
+        
+        /* Nigerian Heritage Theme Headers - OVERRIDE ALL OTHER STYLES */
+        body table.gaps-summary-table th,
+        html body table.gaps-summary-table th { 
+            background: linear-gradient(135deg, var(--primary-green) 0%, var(--dark-green) 100%) !important;
+            color: white !important; 
+            padding: 12px 10px !important; 
+            text-align: left !important; 
+            font-weight: 600 !important; 
+            font-size: 14px !important;
+            border: 1px solid var(--dark-green) !important;
+            position: relative !important;
+        }
+        
+        body table.gaps-summary-table th:nth-child(2),
+        body table.gaps-summary-table th:nth-child(3),
+        body table.gaps-summary-table th:nth-child(4),
+        body table.gaps-summary-table th:nth-child(5),
+        html body table.gaps-summary-table th:nth-child(2),
+        html body table.gaps-summary-table th:nth-child(3),
+        html body table.gaps-summary-table th:nth-child(4),
+        html body table.gaps-summary-table th:nth-child(5) {
+            text-align: center !important;
+        }
+        
+        /* Column Widths - Fixed to prevent misalignment - HIGHEST SPECIFICITY */
+        body table.gaps-summary-table th:nth-child(1),
+        body table.gaps-summary-table td:nth-child(1),
+        html body table.gaps-summary-table th:nth-child(1),
+        html body table.gaps-summary-table td:nth-child(1) { 
+            width: 50% !important;
+            min-width: 300px !important;
+            max-width: 50% !important;
+        }
+        
+        body table.gaps-summary-table th:nth-child(2),
+        body table.gaps-summary-table td:nth-child(2),
+        html body table.gaps-summary-table th:nth-child(2),
+        html body table.gaps-summary-table td:nth-child(2) { 
+            width: 12.5% !important;
+            min-width: 100px !important;
+            max-width: 12.5% !important;
+            text-align: center !important;
+        }
+        
+        body table.gaps-summary-table th:nth-child(3),
+        body table.gaps-summary-table td:nth-child(3),
+        html body table.gaps-summary-table th:nth-child(3),
+        html body table.gaps-summary-table td:nth-child(3) { 
+            width: 12.5% !important;
+            min-width: 100px !important;
+            max-width: 12.5% !important;
+            text-align: center !important;
+        }
+        
+        body table.gaps-summary-table th:nth-child(4),
+        body table.gaps-summary-table td:nth-child(4),
+        html body table.gaps-summary-table th:nth-child(4),
+        html body table.gaps-summary-table td:nth-child(4) { 
+            width: 12.5% !important;
+            min-width: 100px !important;
+            max-width: 12.5% !important;
+            text-align: center !important;
+        }
+        
+        body table.gaps-summary-table th:nth-child(5),
+        body table.gaps-summary-table td:nth-child(5),
+        html body table.gaps-summary-table th:nth-child(5),
+        html body table.gaps-summary-table td:nth-child(5) { 
+            width: 12.5% !important;
+            min-width: 150px !important;
+            max-width: 12.5% !important;
+            text-align: center !important;
+        }
+        
+        body table.gaps-summary-table td,
+        html body table.gaps-summary-table td { 
+            padding: 12px 10px !important; 
+            border: 1px solid #e0e0e0 !important; 
+            text-align: left !important;
+            word-wrap: break-word !important;
+            overflow-wrap: break-word !important;
+            background: white !important;
+        }
+        
+        body table.gaps-summary-table td:nth-child(2),
+        body table.gaps-summary-table td:nth-child(3),
+        body table.gaps-summary-table td:nth-child(4),
+        body table.gaps-summary-table td:nth-child(5),
+        html body table.gaps-summary-table td:nth-child(2),
+        html body table.gaps-summary-table td:nth-child(3),
+        html body table.gaps-summary-table td:nth-child(4),
+        html body table.gaps-summary-table td:nth-child(5) {
+            text-align: center !important;
+        }
+        
+        body table.gaps-summary-table tr:nth-child(even) td,
+        html body table.gaps-summary-table tr:nth-child(even) td { 
+            background: var(--light-green) !important; 
+        }
+        
+        body table.gaps-summary-table tr:hover td,
+        html body table.gaps-summary-table tr:hover td { 
+            background: var(--accent-green) !important; 
+            transition: background 0.2s ease !important;
+        }
+        
+        .link { 
+            color: var(--primary-green) !important; 
+            text-decoration: none;
+            font-weight: 500;
+        }
+        
+        .link:hover { 
+            color: var(--dark-green) !important;
+            text-decoration: underline; 
+        }
+        
+        .footer { 
+            position: fixed; 
+            bottom: 10px; 
+            right: 10px; 
+            font-size: 12px; 
+            color: var(--charcoal); 
+        }
+        
+        .stats {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            margin-bottom: 20px;
+            box-shadow: 0 2px 5px rgba(0,0,0,0.1);
+            border-left: 4px solid var(--primary-green);
+        }
+        
+        .stats strong {
+            color: var(--primary-green);
+        }
+    </style>
+</head>
+<body>
+    <a href="dashboard" class="btn">← Back to Dashboard</a>
+    <h1>Preventive Health Care Gaps Summary</h1>
+    
+    <div class="stats">
+        <strong>Total Interventions:</strong> 68 | 
+        <strong>Total Patients:</strong> <span id="total-patients">Loading...</span> | 
+        <strong>Last Updated:</strong> <span id="last-updated">Loading...</span>
+    </div>
+    
+    <table class="gaps-summary-table">
+        <thead>
+            <tr>
+                <th>Intervention</th>
+                <th>Total Relevant Patients</th>
+                <th>Addressed</th>
+                <th>Unaddressed</th>
+                <th>Drill-Down Unaddressed</th>
+            </tr>
+        </thead>
+        <tbody id="summary-list">
+            <!-- Data will be populated by JavaScript -->
+        </tbody>
+    </table>
+    
+    <a href="dashboard" class="btn" style="margin-top: 20px;">← Back to Dashboard</a>
+    
+    <div class="footer" id="user-info">User info loading...</div>
+    
+    <!-- Supabase CDN Library -->
+    <script src="js/vendor/supabase.min.js"></script>
+    
+    <!-- Supabase Client Initialization -->
+    <script src="js/supabase-client.js?v=202510220113100113101310"></script>
+    
+    <!-- Universal Data Loader for Supabase-first architecture -->
+    <script src="js/universal-data-loader.js?v=202510220113100113101310"></script>
+    
+    <!-- General helpers -->
+    <script src="js/main.js?v=202510220113100113101310"></script>
+    
+    <!-- Preventive care gaps logic -->
+    <script src="js/preventive.js"></script>
+    
+    <!-- Universal Sync Status Indicator -->
+    <script src="js/universal-sync-status.js?v=202510220113100113101310"></script>
+    
+    <script>
+        // Use PREVENTIVE_INTERVENTIONS from preventive.js if available, otherwise use local fallback
+        const LOCAL_PREVENTIVE_INTERVENTIONS = [
+            {ageRange: '3-17', gender: 'Any', intervention: 'Weight Assessment and Counseling for Nutrition and Physical Activity (BMI percentile, nutrition counseling, physical activity counseling)', frequency: 'Annually'},
+            {ageRange: '0-2', gender: 'Any', intervention: 'Lead Screening (capillary or venous blood test)', frequency: 'By 2nd birthday'},
+            {ageRange: '16-24', gender: 'Female', intervention: 'Chlamydia Screening', frequency: 'Annually'},
+            {ageRange: '66+', gender: 'Any', intervention: 'Care for Older Adults (medication review, functional status assessment)', frequency: 'Annually'},
+            {ageRange: '50-74', gender: 'Female', intervention: 'Breast Cancer Screening (mammogram)', frequency: 'Every 1-2 years (annual reporting)'},
+            {ageRange: '21-64', gender: 'Female', intervention: 'Cervical Cancer Screening (cervical cytology)', frequency: 'Every 3 years'},
+            {ageRange: '30-64', gender: 'Female', intervention: 'Cervical Cancer Screening (hrHPV testing)', frequency: 'Every 5 years'},
+            {ageRange: '30-64', gender: 'Female', intervention: 'Cervical Cancer Screening (cytology/hrHPV cotesting)', frequency: 'Every 5 years'},
+            {ageRange: '45-75', gender: 'Any', intervention: 'Colorectal Cancer Screening (FOBT or FIT)', frequency: 'Annually'},
+            {ageRange: '45-75', gender: 'Any', intervention: 'Colorectal Cancer Screening (colonoscopy)', frequency: 'Every 10 years'},
+            {ageRange: '45-75', gender: 'Any', intervention: 'Colorectal Cancer Screening (flexible sigmoidoscopy)', frequency: 'Every 5 years'},
+            {ageRange: '45-75', gender: 'Any', intervention: 'Colorectal Cancer Screening (CT colonography)', frequency: 'Every 5 years'},
+            {ageRange: '45-75', gender: 'Any', intervention: 'Colorectal Cancer Screening (sDNA-FIT)', frequency: 'Every 3 years'},
+            {ageRange: '18-75', gender: 'Any with diabetes', intervention: 'Eye Exam for Patients With Diabetes (retinal exam)', frequency: 'Annually (or every 2 years if no retinopathy)'},
+            {ageRange: '18-85', gender: 'Any with diabetes', intervention: 'Kidney Health Evaluation for Patients With Diabetes (eGFR and uACR)', frequency: 'Annually'},
+            {ageRange: '12+', gender: 'Any', intervention: 'Depression Screening and Follow-Up', frequency: 'Annually, with follow-up within 30 days if positive'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Unhealthy Alcohol Use Screening and Follow-Up', frequency: 'Annually, with counseling if positive'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Unhealthy Drug Use Screening and Follow-Up', frequency: 'Annually, with counseling if positive'},
+            {ageRange: 'During pregnancy', gender: 'Female', intervention: 'Prenatal Depression Screening and Follow-Up', frequency: 'During pregnancy, with follow-up within 30 days if positive'},
+            {ageRange: 'Post-delivery', gender: 'Female', intervention: 'Postpartum Depression Screening and Follow-Up', frequency: 'Within 12 months post-delivery, with follow-up within 30 days if positive'},
+            {ageRange: '0-2', gender: 'Any', intervention: 'Childhood Immunizations (DTaP, IPV, MMR, HiB, HepB, VZV, PCV, HepA, Rotavirus, Influenza)', frequency: 'By 2nd birthday (specific doses)'},
+            {ageRange: '11-13', gender: 'Any', intervention: 'Immunizations for Adolescents (Meningococcal, Tdap, HPV)', frequency: 'By 13th birthday'},
+            {ageRange: '19+', gender: 'Any', intervention: 'Adult Immunizations (Influenza)', frequency: 'Annually'},
+            {ageRange: '19+', gender: 'Any', intervention: 'Adult Immunizations (Td/Tdap)', frequency: 'Every 10 years'},
+            {ageRange: '50+', gender: 'Any', intervention: 'Adult Immunizations (Zoster)', frequency: '2 doses'},
+            {ageRange: '65+', gender: 'Any', intervention: 'Adult Immunizations (Pneumococcal)', frequency: 'Once (for 66+)'},
+            {ageRange: '19+', gender: 'Any at risk', intervention: 'Adult Immunizations (Hepatitis B)', frequency: '2-3 doses'},
+            {ageRange: '3-21', gender: 'Any', intervention: 'Child and Adolescent Well-Care Visits', frequency: 'Annually'},
+            {ageRange: '0-30 months', gender: 'Any', intervention: 'Well-Child Visits', frequency: '6+ in 0-15 months; 2+ in 15-30 months'},
+            {ageRange: 'During pregnancy', gender: 'Female', intervention: 'Timeliness of Prenatal Care', frequency: 'In first trimester or within 42 days of enrollment'},
+            {ageRange: 'Post-delivery', gender: 'Female', intervention: 'Postpartum Care', frequency: 'Between 7-84 days after delivery'},
+            {ageRange: 'During pregnancy', gender: 'Female', intervention: 'Prenatal Immunization (Influenza)', frequency: 'During flu season'},
+            {ageRange: 'During pregnancy', gender: 'Female', intervention: 'Prenatal Immunization (Tdap)', frequency: 'Once per pregnancy'},
+            {ageRange: 'During pregnancy', gender: 'Female', intervention: 'Prenatal Immunization Status (combination: Tdap, Influenza, HepB)', frequency: 'Once per pregnancy (combination rate)'},
+            {ageRange: '67-85', gender: 'Female', intervention: 'Osteoporosis Management in Women Who Had a Fracture (BMD test or medication)', frequency: 'Within 6 months of fracture'},
+            {ageRange: '70+', gender: 'Male', intervention: 'Non-Recommended PSA-Based Screening in Older Men (avoid PSA testing unless indicated)', frequency: 'Annually (measure tracks avoidance of overuse)'},
+            {ageRange: '20+', gender: 'Any', intervention: 'Adults Access to Preventive/Ambulatory Health Services', frequency: 'Annually'},
+            {ageRange: '18-75', gender: 'Any with diabetes', intervention: 'Glycemic Status Assessment (HbA1c or GMI)', frequency: 'Annually'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Hypertension Screening (Blood Pressure Measurement)', frequency: 'Annually'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Obesity Screening and Counseling (BMI Measurement)', frequency: 'Annually'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Tobacco Use Screening and Cessation Counseling', frequency: 'Annually'},
+            {ageRange: '35-70', gender: 'Any', intervention: 'Type 2 Diabetes Screening (for overweight or obese adults)', frequency: 'Every 3 years'},
+            {ageRange: '18-79', gender: 'Any', intervention: 'Hepatitis C Virus (HCV) Infection Screening', frequency: 'Once'},
+            {ageRange: '15-65', gender: 'Any', intervention: 'HIV Infection Screening', frequency: 'Once, more if at risk'},
+            {ageRange: '50-80', gender: 'Any', intervention: 'Lung Cancer Screening (for those with smoking history)', frequency: 'Annually'},
+            {ageRange: '65-75', gender: 'Male', intervention: 'Abdominal Aortic Aneurysm Screening (one-time for ever-smokers)', frequency: 'Once'},
+            {ageRange: '65+', gender: 'Female', intervention: 'Osteoporosis Screening', frequency: 'Every 2 years'},
+            {ageRange: '18-64', gender: 'Any', intervention: 'Anxiety Disorders Screening', frequency: 'As needed'},
+            {ageRange: '40-75', gender: 'Any', intervention: 'Statin Preventive Medication (for those with CVD risk factors)', frequency: 'As recommended'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Healthy Diet and Physical Activity Counseling (for CVD prevention in at-risk adults)', frequency: 'As needed'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Fall Prevention in Older Adults (for community-dwelling adults 65+)', frequency: 'Annually'},
+            {ageRange: '6+', gender: 'Any', intervention: 'Skin Cancer Prevention Counseling (for fair-skinned individuals)', frequency: 'As needed'},
+            {ageRange: '18+', gender: 'Female', intervention: 'Intimate Partner Violence Screening', frequency: 'Annually'},
+            {ageRange: '0-5', gender: 'Any', intervention: 'Vision Screening in Children', frequency: 'At ages 3-5 years'},
+            {ageRange: '12-17', gender: 'Any', intervention: 'Major Depressive Disorder Screening in Adolescents', frequency: 'Annually'},
+            {ageRange: '18+', gender: 'Any', intervention: 'Latent Tuberculosis Infection Screening (for at-risk adults)', frequency: 'Once'},
+            {ageRange: '18-75', gender: 'Any', intervention: 'Prediabetes and Type 2 Diabetes Screening', frequency: 'Every 3 years for at-risk'},
+            {ageRange: '50-75', gender: 'Any', intervention: 'Colorectal Cancer Screening (general)', frequency: 'Every 5-10 years depending on method'},
+            {ageRange: '40-49', gender: 'Female', intervention: 'Breast Cancer Screening Discussion', frequency: 'As needed'}
+        ];
+        
+        // Helper functions
+        function getDataKey(key) {
+            try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                return user ? `${user.org}_${key}` : key;
+            } catch (e) {
+                return key;
+            }
+        }
+        
+        // Helper to ensure hasDiabetes field exists
+        function ensureDiabetesField(patients) {
+            let changed = false;
+            const updatedPatients = patients.map(p => {
+                if (p.hasDiabetes === undefined) {
+                    p.hasDiabetes = false;
+                    changed = true;
+                }
+                return p;
+            });
+            
+            if (changed) {
+                const prefixedKey = getDataKey("patients");
+                localStorage.setItem(prefixedKey, JSON.stringify(updatedPatients));
+            }
+            
+            return updatedPatients;
+        }
+        
+        // Helper function to check if patient has recent intervention
+        function hasRecentIntervention(patient, intervention, years) {
+            if (!patient || !intervention) return false;
+            
+            // Check immunizations
+            if (patient.immunizations && Array.isArray(patient.immunizations)) {
+                const relevantVaccines = getRelevantVaccines(intervention);
+                if (relevantVaccines.length > 0) {
+                    const cutoff = new Date();
+                    cutoff.setFullYear(cutoff.getFullYear() - years);
+                    const recent = patient.immunizations.some(imm => {
+                        if (!imm.dateAdded) return false;
+                        const immDate = new Date(imm.dateAdded);
+                        return relevantVaccines.some(v => 
+                            (imm.vaccine && imm.vaccine.toLowerCase().includes(v.toLowerCase())) &&
+                            immDate >= cutoff
+                        );
+                    });
+                    if (recent) return true;
+                }
+            }
+            
+            // Check visits for documented interventions
+            if (patient.visits && Array.isArray(patient.visits)) {
+                const cutoff = new Date();
+                cutoff.setFullYear(cutoff.getFullYear() - years);
+                return patient.visits.some(visit => {
+                    if (!visit.visitDate) return false;
+                    const visitDate = new Date(visit.visitDate);
+                    if (visitDate < cutoff) return false;
+                    
+                    // Check if intervention is mentioned in visit notes
+                    const notes = (visit.soap?.subjective?.chiefComplaint || '') +
+                                 (visit.soap?.objective?.physicalExam || '') +
+                                 (visit.soap?.assessment?.diagnosis || '') +
+                                 (visit.soap?.plan?.plan || '');
+                    return notes.toLowerCase().includes(intervention.toLowerCase());
+                });
+            }
+            
+            return false;
+        }
+        
+        // Helper to get relevant vaccines for an intervention
+        function getRelevantVaccines(intervention) {
+            const lower = intervention.toLowerCase();
+            const vaccines = [];
+            if (lower.includes('influenza') || lower.includes('flu')) vaccines.push('influenza');
+            if (lower.includes('tdap') || lower.includes('tetanus')) vaccines.push('tdap', 'td', 'tetanus');
+            if (lower.includes('pneumococcal') || lower.includes('pneumonia')) vaccines.push('pneumococcal', 'pneumonia');
+            if (lower.includes('hpv')) vaccines.push('hpv', 'human papillomavirus');
+            if (lower.includes('meningococcal')) vaccines.push('meningococcal');
+            if (lower.includes('zoster') || lower.includes('shingles')) vaccines.push('zoster', 'shingles');
+            if (lower.includes('hepatitis b') || lower.includes('hep b')) vaccines.push('hepatitis b', 'hep b');
+            if (lower.includes('dtap') || lower.includes('mmr') || lower.includes('hib') || 
+                lower.includes('varicella') || lower.includes('rotavirus') || lower.includes('pcv')) {
+                vaccines.push('dtap', 'mmr', 'hib', 'hep b', 'varicella', 'pcv', 'rotavirus');
+            }
+            return vaccines;
+        }
+        
+        // Helper to get frequency years
+        function getFrequencyYears(frequency) {
+            if (!frequency) return 1;
+            const lower = frequency.toLowerCase();
+            if (lower.includes('annually') || lower.includes('annual')) return 1;
+            if (lower.includes('every 2 years') || lower.includes('every 2 year')) return 2;
+            if (lower.includes('every 3 years') || lower.includes('every 3 year')) return 3;
+            if (lower.includes('every 5 years') || lower.includes('every 5 year')) return 5;
+            if (lower.includes('every 10 years') || lower.includes('every 10 year')) return 10;
+            if (lower.includes('month')) {
+                const match = frequency.match(/(\d+)\s*month/);
+                if (match) return parseInt(match[1]) / 12;
+            }
+            return 1; // Default to 1 year
+        }
+        
+        function calculateAge(dob) {
+            let parts = dob.split('-');
+            let year, month, day;
+            try {
+                year = parseInt(parts[0]);
+                month = parseInt(parts[1]) - 1;
+                day = parseInt(parts[2]);
+                let birthDate = new Date(year, month, day);
+                if (isNaN(birthDate.getTime())) {
+                    if (parts[0].length === 2 && parts[2].length === 4 && parseInt(parts[0]) <= 31 && parseInt(parts[1]) <= 12) {
+                        year = parseInt(parts[2]);
+                        month = parseInt(parts[1]) - 1;
+                        day = parseInt(parts[0]);
+                        birthDate = new Date(year, month, day);
+                        if (isNaN(birthDate.getTime())) return NaN;
+                    } else {
+                        return NaN;
+                    }
+                }
+                let age = new Date().getFullYear() - birthDate.getFullYear();
+                const m = new Date().getMonth() - birthDate.getMonth();
+                if (m < 0 || (m === 0 && new Date().getDate() < birthDate.getDate())) {
+                    age--;
+                }
+                return age;
+            } catch (e) {
+                return NaN;
+            }
+        }
+        
+        function matchesAgeRange(age, range) {
+            if (range === 'During pregnancy' || range === 'Post-delivery') {
+                return false;
+            }
+            if (range.endsWith('+')) {
+                return age >= parseInt(range);
+            }
+            const [minStr, maxStr] = range.split('-');
+            let min = parseInt(minStr);
+            let max = maxStr ? parseInt(maxStr.replace(' months', '')) : Infinity;
+            if (maxStr && maxStr.includes(' months')) max /= 12;
+            return age >= min && age <= max;
+        }
+        
+        async function aggregateGaps() {
+            // Use Supabase-first data loading
+            const patients = await window.loadPatientsWithSupabasePriority();
+            
+            if (!patients || !Array.isArray(patients) || patients.length === 0) {
+                console.warn('⚠️ No patients found');
+                return [];
+            }
+            
+            // Ensure hasDiabetes field exists
+            const updatedPatients = ensureDiabetesField(patients);
+            
+            // Use the global PREVENTIVE_INTERVENTIONS if available, otherwise use local
+            const interventions = window.PREVENTIVE_INTERVENTIONS || LOCAL_PREVENTIVE_INTERVENTIONS;
+            
+            const summary = interventions.map(int => {
+                let totalRelevant = 0, addressed = 0, unaddressedPatients = [];
+                
+                updatedPatients.forEach(patient => {
+                    if (!patient.dob) return; // Skip patients without DOB
+                    
+                    const age = calculateAge(patient.dob);
+                    if (isNaN(age) || age < 0) return; // Skip invalid ages
+                    
+                    const matchesAge = matchesAgeRange(age, int.ageRange);
+                    const baseGender = int.gender.split(' ')[0];
+                    const matchesGender = (baseGender === 'Any') || (baseGender.toLowerCase() === (patient.gender || '').toLowerCase());
+                    const hasDiabetes = patient.hasDiabetes ?? false;
+                    const requiresDiabetes = int.gender.includes('with diabetes');
+                    const matchesDiabetes = !requiresDiabetes || hasDiabetes;
+                    
+                    if (matchesAge && matchesGender && matchesDiabetes) {
+                        totalRelevant++;
+                        
+                        // Use actual preventive gaps logic instead of random
+                        const years = getFrequencyYears(int.frequency);
+                        const autoAddressed = hasRecentIntervention(patient, int.intervention, years);
+                        const gapEntry = patient.preventiveGaps?.find(g => g.intervention === int.intervention);
+                        const isAddressed = gapEntry ? gapEntry.addressed : autoAddressed;
+                        
+                        if (isAddressed) {
+                            addressed++;
+                        } else {
+                            const patientName = `${patient.firstName || ''} ${patient.lastName || ''}`.trim() || 
+                                              patient.name || 
+                                              `Patient ${patient.id}`;
+                            unaddressedPatients.push({ id: patient.id, name: patientName });
+                        }
+                    }
+                });
+                
+                return {
+                    intervention: int.intervention,
+                    totalRelevant,
+                    addressed,
+                    unaddressed: totalRelevant - addressed,
+                    unaddressedPatients
+                };
+            });
+            
+            return summary;
+        }
+        
+        async function populateTable() {
+            try {
+                const summary = await aggregateGaps();
+                const tbody = document.getElementById('summary-list');
+                if (!tbody) return;
+                
+                tbody.innerHTML = '';
+                
+                if (summary.length === 0) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #666;">No preventive care gap data available</td></tr>';
+                    document.getElementById('total-patients').textContent = '0';
+                    document.getElementById('last-updated').textContent = new Date().toLocaleString();
+                    return;
+                }
+                
+                summary.forEach((item, index) => {
+                    const row = document.createElement('tr');
+                    const drillDownLink = item.unaddressed > 0 ? 
+                        `<a href="unaddressed-patients?intIndex=${index}" class="link">List of Unaddressed patients</a>` : 
+                        'N/A';
+                    
+                    row.innerHTML = `
+                        <td>${item.intervention}</td>
+                        <td>${item.totalRelevant}</td>
+                        <td>${item.addressed}</td>
+                        <td>${item.unaddressed}</td>
+                        <td>${drillDownLink}</td>
+                    `;
+                    tbody.appendChild(row);
+                });
+                
+                // Update stats - get patient count from Supabase
+                const patients = await window.loadPatientsWithSupabasePriority();
+                document.getElementById('total-patients').textContent = patients ? patients.length : '0';
+                document.getElementById('last-updated').textContent = new Date().toLocaleString();
+            } catch (error) {
+                console.error('❌ Error populating gaps summary table:', error);
+                const tbody = document.getElementById('summary-list');
+                if (tbody) {
+                    tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; padding: 20px; color: #d32f2f;">Error loading data. Please refresh the page.</td></tr>';
+                }
+            }
+        }
+        
+        // Initialize page
+        document.addEventListener('DOMContentLoaded', function() {
+            populateTable();
+            
+            // Force table alignment AND Nigerian Heritage theme after DOM is ready
+            function enforceTableStyles() {
+                const table = document.querySelector('.gaps-summary-table');
+                if (!table) return;
+                
+                // Force table display properties
+                table.style.setProperty('display', 'table', 'important');
+                table.style.setProperty('table-layout', 'fixed', 'important');
+                table.style.setProperty('width', '100%', 'important');
+                table.style.setProperty('border-collapse', 'collapse', 'important');
+                
+                const thead = table.querySelector('thead');
+                const tbody = table.querySelector('tbody');
+                if (thead) {
+                    thead.style.setProperty('display', 'table-header-group', 'important');
+                    
+                    // Force Nigerian Heritage theme on headers
+                    const headerRows = thead.querySelectorAll('tr');
+                    headerRows.forEach(row => {
+                        row.style.setProperty('display', 'table-row', 'important');
+                        const headers = row.querySelectorAll('th');
+                        headers.forEach((th, index) => {
+                            th.style.setProperty('display', 'table-cell', 'important');
+                            th.style.setProperty('background', 'linear-gradient(135deg, #008753 0%, #006b42 100%)', 'important');
+                            th.style.setProperty('color', 'white', 'important');
+                            th.style.setProperty('border', '1px solid #006b42', 'important');
+                            th.style.setProperty('font-weight', '600', 'important');
+                            th.style.setProperty('padding', '12px 10px', 'important');
+                            
+                            // Column widths
+                            if (index === 0) {
+                                th.style.setProperty('width', '50%', 'important');
+                                th.style.setProperty('min-width', '300px', 'important');
+                                th.style.setProperty('text-align', 'left', 'important');
+                            } else {
+                                th.style.setProperty('width', '12.5%', 'important');
+                                th.style.setProperty('min-width', index === 4 ? '150px' : '100px', 'important');
+                                th.style.setProperty('text-align', 'center', 'important');
+                            }
+                        });
+                    });
+                }
+                
+                if (tbody) {
+                    tbody.style.setProperty('display', 'table-row-group', 'important');
+                    
+                    // Force row and cell display properties with Nigerian Heritage theme
+                    const rows = tbody.querySelectorAll('tr');
+                    rows.forEach((row, rowIndex) => {
+                        row.style.setProperty('display', 'table-row', 'important');
+                        const cells = row.querySelectorAll('td');
+                        cells.forEach((cell, cellIndex) => {
+                            cell.style.setProperty('display', 'table-cell', 'important');
+                            cell.style.setProperty('padding', '12px 10px', 'important');
+                            cell.style.setProperty('border', '1px solid #e0e0e0', 'important');
+                            cell.style.setProperty('box-sizing', 'border-box', 'important');
+                            
+                            // Column widths matching headers
+                            if (cellIndex === 0) {
+                                cell.style.setProperty('width', '50%', 'important');
+                                cell.style.setProperty('min-width', '300px', 'important');
+                                cell.style.setProperty('text-align', 'left', 'important');
+                            } else {
+                                cell.style.setProperty('width', '12.5%', 'important');
+                                cell.style.setProperty('min-width', cellIndex === 4 ? '150px' : '100px', 'important');
+                                cell.style.setProperty('text-align', 'center', 'important');
+                            }
+                            
+                            // Nigerian Heritage theme alternating rows
+                            if (rowIndex % 2 === 1) {
+                                cell.style.setProperty('background-color', 'rgba(0, 135, 83, 0.1)', 'important');
+                            } else {
+                                cell.style.setProperty('background-color', 'white', 'important');
+                            }
+                            
+                            // Hover effect
+                            row.addEventListener('mouseenter', function() {
+                                const hoverCells = this.querySelectorAll('td');
+                                hoverCells.forEach(c => {
+                                    c.style.setProperty('background-color', 'rgba(0, 135, 83, 0.3)', 'important');
+                                });
+                            });
+                            row.addEventListener('mouseleave', function() {
+                                const hoverCells = this.querySelectorAll('td');
+                                hoverCells.forEach((c, idx) => {
+                                    if ((rowIndex % 2) === 1) {
+                                        c.style.setProperty('background-color', 'rgba(0, 135, 83, 0.1)', 'important');
+                                    } else {
+                                        c.style.setProperty('background-color', 'white', 'important');
+                                    }
+                                });
+                            });
+                        });
+                    });
+                }
+            }
+            
+            // Run immediately and after delays to catch dynamic content
+            setTimeout(enforceTableStyles, 50);
+            setTimeout(enforceTableStyles, 200);
+            setTimeout(enforceTableStyles, 500);
+            setTimeout(enforceTableStyles, 1000);
+            
+            // User info
+            try {
+                const user = JSON.parse(localStorage.getItem("user"));
+                if (user) {
+                    document.getElementById("user-info").innerHTML = `${user.username} (${user.role}) from ${user.org} is logged in`;
+                }
+            } catch (e) {
+                document.getElementById("user-info").innerHTML = "User info unavailable";
+            }
+        });
+    </script>
+</body>
+</html>
+
+
+
+
+

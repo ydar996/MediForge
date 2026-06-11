@@ -1,0 +1,495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Investigate Missing Patients</title>
+    <style>
+        body { font-family: Arial, sans-serif; padding: 20px; background: #f5f5f5; }
+        .container { max-width: 800px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .btn { background: #007bff; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; margin: 5px; }
+        .btn:hover { background: #0056b3; }
+        .results { background: #f8f9fa; border: 1px solid #dee2e6; padding: 15px; border-radius: 5px; margin: 10px 0; }
+        .error { background: #f8d7da; border: 1px solid #f5c6cb; color: #721c24; }
+        .success { background: #d4edda; border: 1px solid #c3e6cb; color: #155724; }
+        .warning { background: #fff3cd; border: 1px solid #ffeaa7; color: #856404; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>?? Investigate Missing Patients</h1>
+        
+        <div class="results" id="results">
+            <p>Click the buttons below to investigate the patient data discrepancy.</p>
+        </div>
+        
+        <button class="btn" onclick="checkLocalStorage()">?? Check localStorage Patients</button>
+        <button class="btn" onclick="checkSupabase()">??? Check Supabase Patients</button>
+        <button class="btn" onclick="compareData()">?? Compare Data Sources</button>
+        <button class="btn" onclick="createHybridSolution()">?? Create Hybrid Solution</button>
+    </div>
+
+    <script src="js/universal-data-loader.js?v=202510220113110113111311"></script>  <!-- Universal data loader with Supabase priority -->
+  
+        function log(message, type = 'info') {
+            const results = document.getElementById('results');
+            const div = document.createElement('div');
+            div.className = `results ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}</strong> - ${message}`;
+            results.appendChild(div);
+            console.log(message);
+        }
+
+        async function checkLocalStorage() {
+            log('?? Checking localStorage patients...');
+            
+            const patients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+            log(`?? Found ${patients.length} patients in localStorage`);
+            
+            if (patients.length > 0) {
+                const withDob = patients.filter(p => p.dob && p.dob !== 'null' && p.dob !== '');
+                const withoutDob = patients.filter(p => !p.dob || p.dob === 'null' || p.dob === '');
+                
+                log(`? ${withDob.length} patients with DOB data`);
+                log(`? ${withoutDob.length} patients without DOB data`);
+                
+                if (withDob.length > 0) {
+                    log(`?? Sample patients with DOB: ${withDob.slice(0, 3).map(p => `${p.firstName} ${p.lastName} (${p.dob})`).join(', ')}`);
+                }
+                
+                if (withoutDob.length > 0) {
+                    log(`?? Sample patients without DOB: ${withoutDob.slice(0, 3).map(p => `${p.firstName} ${p.lastName}`).join(', ')}`);
+                }
+            }
+        }
+
+        async function checkSupabase() {
+            log('?? Checking Supabase patients...');
+            
+            if (typeof window.supabaseClient === 'undefined') {
+                log('? Supabase client not available', 'error');
+                return;
+            }
+            
+            try {
+                const { data: supabasePatients, error } = await window.supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970');
+                
+                if (error) {
+                    log(`? Error: ${error.message}`, 'error');
+                    return;
+                }
+                
+                log(`??? Found ${supabasePatients.length} patients in Supabase`);
+                
+                const withDob = supabasePatients.filter(p => p.date_of_birth);
+                const withoutDob = supabasePatients.filter(p => !p.date_of_birth);
+                
+                log(`? ${withDob.length} patients with DOB data`);
+                log(`? ${withoutDob.length} patients without DOB data`);
+                
+                if (withDob.length > 0) {
+                    log(`?? Sample patients with DOB: ${withDob.slice(0, 3).map(p => `${p.first_name} ${p.last_name} (${p.date_of_birth})`).join(', ')}`);
+                }
+                
+            } catch (error) {
+                log(`? Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function compareData() {
+            log('?? Comparing data sources...');
+            
+            const localStoragePatients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+            
+            if (typeof window.supabaseClient === 'undefined') {
+                log('? Supabase client not available', 'error');
+                return;
+            }
+            
+            try {
+                const { data: supabasePatients, error } = await window.supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970');
+                
+                if (error) {
+                    log(`? Error: ${error.message}`, 'error');
+                    return;
+                }
+                
+                log(`?? localStorage: ${localStoragePatients.length} patients`);
+                log(`??? Supabase: ${supabasePatients.length} patients`);
+                
+                // Find patients in localStorage but not in Supabase
+                const supabaseIds = new Set(supabasePatients.map(p => p.patient_id));
+                const missingInSupabase = localStoragePatients.filter(p => !supabaseIds.has(p.id));
+                
+                // Find patients in Supabase but not in localStorage
+                const localStorageIds = new Set(localStoragePatients.map(p => p.id));
+                const missingInLocalStorage = supabasePatients.filter(p => !localStorageIds.has(p.patient_id));
+                
+                log(`?? ${missingInSupabase.length} patients in localStorage but not in Supabase`, 'warning');
+                log(`?? ${missingInLocalStorage.length} patients in Supabase but not in localStorage`, 'warning');
+                
+                if (missingInSupabase.length > 0) {
+                    log(`?? Missing in Supabase: ${missingInSupabase.slice(0, 5).map(p => `${p.firstName} ${p.lastName} (${p.id})`).join(', ')}`);
+                }
+                
+                if (missingInLocalStorage.length > 0) {
+                    log(`?? Missing in localStorage: ${missingInLocalStorage.slice(0, 5).map(p => `${p.first_name} ${p.last_name} (${p.patient_id})`).join(', ')}`);
+                }
+                
+            } catch (error) {
+                log(`? Error: ${error.message}`, 'error');
+            }
+        }
+
+        async function createHybridSolution() {
+            log('?? Creating hybrid solution...');
+            
+            const localStoragePatients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+            
+            if (typeof window.supabaseClient === 'undefined') {
+                log('? Supabase client not available', 'error');
+                return;
+            }
+            
+            try {
+                const { data: supabasePatients, error } = await window.supabaseClient
+                    .from('patients')
+                    .select('*')
+                    .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970');
+                
+                if (error) {
+                    log(`? Error: ${error.message}`, 'error');
+                    return;
+                }
+                
+                // Create a map of Supabase patients for quick lookup
+                const supabaseMap = new Map();
+                supabasePatients.forEach(patient => {
+                    supabaseMap.set(patient.patient_id, patient);
+                });
+                
+                // Merge data: prioritize Supabase data but keep localStorage patients
+                const mergedPatients = [];
+                
+                // First, add all localStorage patients
+                localStoragePatients.forEach(localPatient => {
+                    const supabasePatient = supabaseMap.get(localPatient.id);
+                    
+                    if (supabasePatient) {
+                        // Update with Supabase data (especially DOB)
+                        mergedPatients.push({
+                            ...localPatient,
+                            dob: supabasePatient.date_of_birth || localPatient.dob,
+                            firstName: supabasePatient.first_name || localPatient.firstName,
+                            lastName: supabasePatient.last_name || localPatient.lastName,
+                            gender: supabasePatient.gender || localPatient.gender,
+                            phone: supabasePatient.phone || localPatient.phone,
+                            email: supabasePatient.email || localPatient.email,
+                            addressLine1: supabasePatient.address || localPatient.addressLine1,
+                            city: supabasePatient.city || localPatient.city,
+                            state: supabasePatient.state || localPatient.state,
+                            country: supabasePatient.country || localPatient.country,
+                            bloodGroup: supabasePatient.blood_group || localPatient.bloodGroup,
+                            updatedDate: supabasePatient.updated_at || localPatient.updatedDate
+                        });
+                    } else {
+                        // Keep localStorage patient as-is
+                        mergedPatients.push(localPatient);
+                    }
+                });
+                
+                // Add any Supabase patients not in localStorage
+                supabasePatients.forEach(supabasePatient => {
+                    const exists = mergedPatients.some(p => p.id === supabasePatient.patient_id);
+                    if (!exists) {
+                        mergedPatients.push({
+                            id: supabasePatient.patient_id,
+                            firstName: supabasePatient.first_name || '',
+                            middleName: supabasePatient.middle_name || '',
+                            lastName: supabasePatient.last_name || '',
+                            dob: supabasePatient.date_of_birth,
+                            gender: supabasePatient.gender || '',
+                            maritalStatus: supabasePatient.marital_status || '',
+                            phone: supabasePatient.phone || '',
+                            email: supabasePatient.email || '',
+                            addressLine1: supabasePatient.address || '',
+                            city: supabasePatient.city || '',
+                            state: supabasePatient.state || '',
+                            country: supabasePatient.country || '',
+                            bloodGroup: supabasePatient.blood_group || '',
+                            allergies: [],
+                            conditions: [],
+                            emergencyFirstName: '',
+                            emergencyLastName: '',
+                            emergencyPhone: '',
+                            emergencyRelationship: '',
+                            createdDate: supabasePatient.created_at,
+                            updatedDate: supabasePatient.updated_at,
+                            visits: [],
+                            immunizations: [],
+                            prescriptions: [],
+                            hasDiabetes: false
+                        });
+                    }
+                });
+                
+                // Update localStorage with merged data
+                localStorage.setItem('mecure_patients', JSON.stringify(mergedPatients));
+                
+                const withDob = mergedPatients.filter(p => p.dob && p.dob !== 'null' && p.dob !== '');
+                const withoutDob = mergedPatients.filter(p => !p.dob || p.dob === 'null' || p.dob === '');
+                
+                log(`? Hybrid solution created!`, 'success');
+                log(`?? Total patients: ${mergedPatients.length}`);
+                log(`? Patients with DOB: ${withDob.length}`);
+                log(`? Patients without DOB: ${withoutDob.length}`);
+                
+                // Provide code to implement this in the app
+                const hybridCode = `
+// HYBRID SOLUTION - Paste this code in the EHR app console
+console.log('?? Implementing hybrid solution...');
+
+// Override the loadPatients function with hybrid approach
+window.loadPatients = async function(page = 1) {
+    console.log('?? Loading patients with hybrid approach...');
+    
+    const supabaseClient = window.supabaseClient;
+    
+    if (typeof supabaseClient !== 'undefined' && supabaseClient) {
+        try {
+            // Get fresh data from Supabase
+            const { data: supabasePatients, error } = await supabaseClient
+                .from('patients')
+                .select('*')
+                .eq('organization_id', '576522cc-e769-4fb4-9487-3d150857d970');
+            
+            if (error) {
+                console.error('? Error loading from Supabase:', error);
+                // Fallback to localStorage
+                const patients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+                displayPatients(patients, page);
+                return;
+            }
+            
+            // Get existing localStorage patients
+            const localStoragePatients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+            
+            // Create a map of Supabase patients for quick lookup
+            const supabaseMap = new Map();
+            supabasePatients.forEach(patient => {
+                supabaseMap.set(patient.patient_id, patient);
+            });
+            
+            // Merge data: prioritize Supabase data but keep localStorage patients
+            const mergedPatients = [];
+            
+            // First, add all localStorage patients
+            localStoragePatients.forEach(localPatient => {
+                const supabasePatient = supabaseMap.get(localPatient.id);
+                
+                if (supabasePatient) {
+                    // Update with Supabase data (especially DOB)
+                    mergedPatients.push({
+                        ...localPatient,
+                        dob: supabasePatient.date_of_birth || localPatient.dob,
+                        firstName: supabasePatient.first_name || localPatient.firstName,
+                        lastName: supabasePatient.last_name || localPatient.lastName,
+                        gender: supabasePatient.gender || localPatient.gender,
+                        phone: supabasePatient.phone || localPatient.phone,
+                        email: supabasePatient.email || localPatient.email,
+                        addressLine1: supabasePatient.address || localPatient.addressLine1,
+                        city: supabasePatient.city || localPatient.city,
+                        state: supabasePatient.state || localPatient.state,
+                        country: supabasePatient.country || localPatient.country,
+                        bloodGroup: supabasePatient.blood_group || localPatient.bloodGroup,
+                        updatedDate: supabasePatient.updated_at || localPatient.updatedDate
+                    });
+                } else {
+                    // Keep localStorage patient as-is
+                    mergedPatients.push(localPatient);
+                }
+            });
+            
+            // Add any Supabase patients not in localStorage
+            supabasePatients.forEach(supabasePatient => {
+                const exists = mergedPatients.some(p => p.id === supabasePatient.patient_id);
+                if (!exists) {
+                    mergedPatients.push({
+                        id: supabasePatient.patient_id,
+                        firstName: supabasePatient.first_name || '',
+                        middleName: supabasePatient.middle_name || '',
+                        lastName: supabasePatient.last_name || '',
+                        dob: supabasePatient.date_of_birth,
+                        gender: supabasePatient.gender || '',
+                        maritalStatus: supabasePatient.marital_status || '',
+                        phone: supabasePatient.phone || '',
+                        email: supabasePatient.email || '',
+                        addressLine1: supabasePatient.address || '',
+                        city: supabasePatient.city || '',
+                        state: supabasePatient.state || '',
+                        country: supabasePatient.country || '',
+                        bloodGroup: supabasePatient.blood_group || '',
+                        allergies: [],
+                        conditions: [],
+                        emergencyFirstName: '',
+                        emergencyLastName: '',
+                        emergencyPhone: '',
+                        emergencyRelationship: '',
+                        createdDate: supabasePatient.created_at,
+                        updatedDate: supabasePatient.updated_at,
+                        visits: [],
+                        immunizations: [],
+                        prescriptions: [],
+                        hasDiabetes: false
+                    });
+                }
+            });
+            
+            // Update localStorage with merged data
+            localStorage.setItem('mecure_patients', JSON.stringify(mergedPatients));
+            
+            console.log('? Merged data: ' + mergedPatients.length + ' total patients');
+            console.log('? Patients with DOB: ' + mergedPatients.filter(p => p.dob && p.dob !== 'null' && p.dob !== '').length);
+            
+            // Display patients
+            displayPatients(mergedPatients, page);
+            
+        } catch (error) {
+            console.error('? Supabase connection failed:', error);
+            // Fallback to localStorage
+            const patients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+            displayPatients(patients, page);
+        }
+    } else {
+        console.log('?? Supabase client not available, using localStorage');
+        const patients = JSON.parse(localStorage.getItem('mecure_patients') || "[]");
+        displayPatients(patients, page);
+    }
+};
+
+// Helper function to display patients
+function displayPatients(patients, page) {
+    console.log('Final patients count:', patients.length);
+    
+    // Sort patients
+    patients.sort((a, b) => {
+        let valA, valB;
+        if (currentSort && currentSort.field === 'name') {
+            valA = \`\${a.firstName} \${a.lastName}\`.toLowerCase();
+            valB = \`\${b.firstName} \${b.lastName}\`.toLowerCase();
+        } else if (currentSort && currentSort.field === 'dob') {
+            valA = new Date(a.dob);
+            valB = new Date(b.dob);
+        } else {
+            valA = \`\${a.firstName} \${a.lastName}\`.toLowerCase();
+            valB = \`\${b.firstName} \${b.lastName}\`.toLowerCase();
+        }
+        
+        if (currentSort && currentSort.direction === 'desc') {
+            return valA < valB ? 1 : -1;
+        } else {
+            return valA > valB ? 1 : -1;
+        }
+    });
+    
+    // Pagination
+    const patientsPerPage = 10;
+    const startIndex = (page - 1) * patientsPerPage;
+    const endIndex = startIndex + patientsPerPage;
+    const paginatedPatients = patients.slice(startIndex, endIndex);
+    
+    // Display patients
+    const tbody = document.getElementById('patient-list');
+    if (tbody) {
+        tbody.innerHTML = '';
+        
+        if (paginatedPatients.length === 0) {
+            tbody.innerHTML = '<tr><td colspan="4">No patients found. Add a new patient to get started.</td></tr>';
+        } else {
+            paginatedPatients.forEach(patient => {
+                const row = document.createElement("tr");
+                console.log(\`Creating row for patient: \${patient.firstName} \${patient.lastName} with DOB: \${patient.dob}\`);
+                row.innerHTML = \`
+                    <td>\${patient.firstName} \${patient.lastName}</td>
+                    <td>\${patient.dob}</td>
+                    <td>\${patient.gender}</td>
+                    <td>
+                        <button onclick="viewPatient('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">View</button>
+                        <button onclick="editPatient('\${patient.id}')" style="background-color: #007bff; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Edit</button>
+                        <button onclick="deletePatient('\${patient.id}')" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Delete</button>
+                        <button onclick="addEncounter('\${patient.id}')" style="background-color: #fd7e14; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Encounter</button>
+                        <button onclick="addAppointment('\${patient.id}')" style="background-color: #6f42c1; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Appointment</button>
+                        <button onclick="printPatientSummary('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">?? Print Patient Summary</button>
+                    </td>
+                \`;
+                tbody.appendChild(row);
+            });
+        }
+    }
+    
+    // Update pagination controls
+    const totalPages = Math.ceil(patients.length / patientsPerPage);
+    const paginationDiv = document.getElementById('pagination-controls');
+    if (paginationDiv) {
+        paginationDiv.innerHTML = '';
+        if (totalPages > 1) {
+            for (let i = 1; i <= totalPages; i++) {
+                const button = document.createElement('button');
+                button.textContent = i;
+                button.style.margin = '5px';
+                button.style.padding = '5px 10px';
+                button.style.backgroundColor = i === page ? '#007bff' : '#f8f9fa';
+                button.style.color = i === page ? 'white' : 'black';
+                button.style.border = '1px solid #dee2e6';
+                button.style.borderRadius = '3px';
+                button.style.cursor = 'pointer';
+                button.onclick = () => window.loadPatients(i);
+                paginationDiv.appendChild(button);
+            }
+        }
+    }
+}
+
+console.log('?? HYBRID SOLUTION IMPLEMENTED!');
+console.log('?? The app will now show all patients with correct DOB data');
+console.log('?? Refreshing patients with hybrid data...');
+window.loadPatients(1);
+`;
+                
+                log('?? Copy the code above and paste it in your EHR app console to implement the hybrid solution.', 'success');
+                
+            } catch (error) {
+                log(`? Error: ${error.message}`, 'error');
+            }
+        }
+    </script>  <script src="js/universal-sync-status.js?v=202510220113110113111311"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+

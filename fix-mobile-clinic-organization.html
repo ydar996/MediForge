@@ -1,0 +1,575 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Mobile Clinic Organization</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 1200px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #333;
+            border-bottom: 3px solid #007bff;
+            padding-bottom: 10px;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            margin: 10px 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        button.danger {
+            background: #dc3545;
+        }
+        button.danger:hover {
+            background: #c82333;
+        }
+        button.success {
+            background: #28a745;
+        }
+        button.success:hover {
+            background: #218838;
+        }
+        #log {
+            background: #f8f9fa;
+            border: 1px solid #dee2e6;
+            padding: 20px;
+            border-radius: 6px;
+            max-height: 600px;
+            overflow-y: auto;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            margin-top: 20px;
+        }
+        .log-entry {
+            margin: 5px 0;
+            padding: 5px;
+        }
+        .log-info { color: #333; }
+        .log-success { color: #28a745; font-weight: bold; }
+        .log-error { color: #dc3545; font-weight: bold; }
+        .log-warning { color: #ffc107; font-weight: bold; }
+        .info-box {
+            background: #e7f3ff;
+            border-left: 4px solid #007bff;
+            padding: 15px;
+            margin: 20px 0;
+            border-radius: 4px;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Fix Ministry of Foreign Affairs Mobile Clinic Organization</h1>
+        
+        <div class="info-box">
+            <strong>Purpose:</strong> This tool will:
+            <ul>
+                <li>Check the organization "Ministry of Foreign Affairs Mobile Clinic"</li>
+                <li>Find the correct creator user (MuseM/MisturaM or similar)</li>
+                <li>Check if ydar508 is incorrectly linked</li>
+                <li>Unlink ydar508 if wrong</li>
+                <li>Link the correct user</li>
+                <li>Clear cache and verify the fix</li>
+            </ul>
+        </div>
+
+        <div>
+            <button onclick="diagnoseAndFix()">🔍 Diagnose & Fix</button>
+            <button onclick="undoIncorrectLinking()" style="background: #dc3545;">↩️ Undo Last Fix (ydar507)</button>
+            <button onclick="clearLog()" style="background: #6c757d;">🗑️ Clear Log</button>
+        </div>
+
+        <div id="log"></div>
+    </div>
+
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+        
+        let supabase = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('log');
+            const timestamp = new Date().toLocaleTimeString();
+            const className = `log-${type}`;
+            logDiv.innerHTML += `<div class="log-entry ${className}">[${timestamp}] ${message}</div>`;
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${timestamp}] ${message}`);
+        }
+
+        function clearLog() {
+            document.getElementById('log').innerHTML = '';
+        }
+
+        function initSupabase() {
+            if (!supabase) {
+                supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                log('✅ Supabase client initialized', 'success');
+            }
+            return supabase;
+        }
+
+        async function diagnoseAndFix() {
+            clearLog();
+            initSupabase();
+            
+            const orgName = 'Ministry of Foreign Affairs Mobile Clinic';
+            log(`🔍 Starting diagnosis for: "${orgName}"`, 'info');
+            log('─'.repeat(60), 'info');
+            
+            try {
+                // Step 1: Find the organization
+                log('📋 Step 1: Finding organization...', 'info');
+                const { data: orgs, error: orgError } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .ilike('name', `%${orgName}%`)
+                    .limit(5);
+
+                if (orgError) {
+                    log(`❌ Error finding organization: ${orgError.message}`, 'error');
+                    return;
+                }
+
+                if (!orgs || orgs.length === 0) {
+                    log(`❌ Organization "${orgName}" not found`, 'error');
+                    log('   Trying exact match...', 'info');
+                    
+                    // Try exact match
+                    const { data: exactOrg, error: exactError } = await supabase
+                        .from('organizations')
+                        .select('*')
+                        .eq('name', orgName)
+                        .maybeSingle();
+
+                    if (exactError || !exactOrg) {
+                        log(`❌ Organization not found even with exact match`, 'error');
+                        return;
+                    }
+                    orgs.push(exactOrg);
+                }
+
+                const org = orgs[0];
+                log(`✅ Found organization: ${org.name}`, 'success');
+                log(`   ID: ${org.id}`, 'info');
+                log(`   Created: ${org.created_at}`, 'info');
+                log(`   Status: ${org.status || 'active'}`, 'info');
+
+                // Step 2: Check current users linked to this org
+                log('', 'info');
+                log('📋 Step 2: Checking current users linked to organization...', 'info');
+                const { data: currentUsers, error: usersError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('organization_id', org.id);
+
+                if (usersError) {
+                    log(`❌ Error checking users: ${usersError.message}`, 'error');
+                } else {
+                    log(`   Found ${currentUsers.length} user(s) linked to this organization:`, 'info');
+                    currentUsers.forEach(user => {
+                        log(`   - ${user.username} (${user.email || 'no email'}) - Role: ${user.role}`, 
+                            user.username === 'ydar508' ? 'warning' : 'info');
+                        if (user.username === 'ydar508') {
+                            log(`     ⚠️ WARNING: ydar508 is linked but may not be the creator!`, 'warning');
+                        }
+                    });
+                }
+
+                // Step 3: Find orphaned users (candidates for linking)
+                log('', 'info');
+                log('📋 Step 3: Finding orphaned users (users with no organization)...', 'info');
+                
+                // Declare variables in outer scope so they're accessible later
+                let orphanedUsers = [];
+                let potentialCreators = [];
+                let timeMatches = [];
+                const orgCreatedAt = new Date(org.created_at);
+                
+                const { data: orphanedUsersData, error: orphanError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .is('organization_id', null)
+                    .order('created_at', { ascending: false });
+
+                if (orphanError) {
+                    log(`❌ Error finding orphaned users: ${orphanError.message}`, 'error');
+                } else {
+                    orphanedUsers = orphanedUsersData || [];
+                    log(`   Found ${orphanedUsers.length} orphaned user(s)`, 'info');
+                    
+                    // Look for MuseM, MisturaM, or similar
+                    potentialCreators = orphanedUsers.filter(u => 
+                        u.username?.toLowerCase().includes('musem') ||
+                        u.username?.toLowerCase().includes('mistura') ||
+                        (u.first_name && u.first_name.toLowerCase().includes('mistura')) ||
+                        (u.last_name && u.last_name.toLowerCase().includes('muse'))
+                    );
+                    
+                    if (potentialCreators.length > 0) {
+                        log(`   ✅ Found ${potentialCreators.length} potential creator(s):`, 'success');
+                        potentialCreators.forEach(user => {
+                            log(`   - ${user.username} (${user.first_name || ''} ${user.last_name || ''}) - ${user.email || 'no email'}`, 'success');
+                            log(`     Created: ${user.created_at}`, 'info');
+                        });
+                    } else {
+                        log(`   ℹ️ No obvious creator candidates found by name`, 'info');
+                        log(`   Showing first 5 orphaned users:`, 'info');
+                        orphanedUsers.slice(0, 5).forEach(user => {
+                            log(`   - ${user.username} (${user.first_name || ''} ${user.last_name || ''}) - Created: ${user.created_at}`, 'info');
+                        });
+                    }
+                }
+
+                // Step 4: Check organization creation time vs user creation times
+                log('', 'info');
+                log('📋 Step 4: Analyzing creation times...', 'info');
+                log(`   Organization created: ${orgCreatedAt.toISOString()}`, 'info');
+                
+                if (orphanedUsers && orphanedUsers.length > 0) {
+                    log(`   Finding users created around the same time:`, 'info');
+                    const timeWindow = 7 * 24 * 60 * 60 * 1000; // 7 days
+                    
+                    timeMatches = orphanedUsers.filter(user => {
+                        if (!user.created_at) return false;
+                        const userCreatedAt = new Date(user.created_at);
+                        const timeDiff = Math.abs(userCreatedAt - orgCreatedAt);
+                        return timeDiff < timeWindow;
+                    }).map(user => {
+                        const userCreatedAt = new Date(user.created_at);
+                        const timeDiff = Math.abs(userCreatedAt - orgCreatedAt);
+                        return { user, timeDiff };
+                    }).sort((a, b) => a.timeDiff - b.timeDiff);
+
+                    if (timeMatches.length > 0) {
+                        log(`   ✅ Found ${timeMatches.length} user(s) created within 7 days:`, 'success');
+                        timeMatches.forEach(({ user, timeDiff }, idx) => {
+                            const hoursDiff = Math.round(timeDiff / (1000 * 60 * 60));
+                            const isCreator = idx === 0 && hoursDiff < 24; // Most likely creator
+                            log(`   ${idx + 1}. ${user.username} - ${hoursDiff} hours ${user.created_at > org.created_at ? 'after' : 'before'} org creation`, 
+                                isCreator ? 'success' : 'info');
+                        });
+                    }
+                }
+
+                // Step 5: Check organization metadata for creator information
+                log('', 'info');
+                log('📋 Step 5: Checking organization metadata for creator information...', 'info');
+                
+                let creatorInfo = null;
+                
+                // Try to get creator info from RPC function if available
+                try {
+                    // Check if there's owner information stored in the organization
+                    // Some organizations might have owner_user_id or similar fields
+                    log(`   Checking organization settings/metadata...`, 'info');
+                    
+                    // Check if organization has settings JSONB with creator info
+                    const { data: orgDetails } = await supabase
+                        .from('organizations')
+                        .select('settings, subscription_plan, subscription_status')
+                        .eq('id', org.id)
+                        .maybeSingle();
+                    
+                    if (orgDetails?.settings) {
+                        log(`   Found organization settings`, 'info');
+                        // Settings might contain creator info
+                    }
+                } catch (e) {
+                    log(`   ⚠️ Could not read organization metadata: ${e.message}`, 'warning');
+                }
+                
+                log(`   ℹ️ Creator information should be found from database records, not device storage`, 'info');
+                log(`   ℹ️ Searching all users for potential matches...`, 'info');
+
+                // Step 6: Search ALL users (not just orphaned) for the creator
+                log('', 'info');
+                log('📋 Step 6: Searching ALL users for creator...', 'info');
+                
+                let correctUser = null;
+                let reason = '';
+
+                // Priority 1: Search for MuseM/MisturaM pattern in ALL users (most likely creator)
+                if (!correctUser) {
+                    log(`   Searching for MuseM/MisturaM pattern in ALL users...`, 'info');
+                    const { data: allUsers } = await supabase
+                        .from('users')
+                        .select('*')
+                        .or('username.ilike.%musem%,username.ilike.%mistura%,first_name.ilike.%mistura%,last_name.ilike.%muse%')
+                        .limit(20);
+                    
+                    if (allUsers && allUsers.length > 0) {
+                        log(`   Found ${allUsers.length} user(s) matching MuseM/MisturaM pattern:`, 'info');
+                        for (const user of allUsers) {
+                            log(`   - ${user.username} (${user.first_name || ''} ${user.last_name || ''}) - ${user.email || 'no email'}`, 'info');
+                            log(`     Organization ID: ${user.organization_id || 'NULL'}`, 'info');
+                            
+                            if (!user.organization_id) {
+                                if (!correctUser) {
+                                    correctUser = user;
+                                    reason = `Matches creator name pattern (MuseM/MisturaM) and is orphaned`;
+                                    log(`     ✅ Selected as potential creator (orphaned)`, 'success');
+                                }
+                            } else if (user.organization_id === org.id) {
+                                log(`     ✅ This user is already correctly linked to this organization!`, 'success');
+                                correctUser = user;
+                                reason = `Already linked - matches creator name pattern (MuseM/MisturaM)`;
+                                break;
+                            } else {
+                                const { data: otherOrg } = await supabase
+                                    .from('organizations')
+                                    .select('name')
+                                    .eq('id', user.organization_id)
+                                    .maybeSingle();
+                                log(`     ⚠️ Linked to: "${otherOrg?.name || 'Unknown'}"`, 'warning');
+                            }
+                        }
+                    }
+                }
+
+                // DO NOT randomly link orphaned users - only if we found a specific match
+                if (!correctUser) {
+                    log(`   ❌ Could not find the correct creator user`, 'error');
+                    log(`   `, 'info');
+                    log(`   Summary:`, 'info');
+                    log(`   - Organization: ${orgName}`, 'info');
+                    log(`   - Organization created: ${orgCreatedAt.toISOString()}`, 'info');
+                    log(`   - Currently linked users: ${currentUsers?.length || 0}`, 'info');
+                    log(`   - Orphaned users found: ${orphanedUsers.length}`, 'info');
+                    log(`   `, 'info');
+                    log(`   ⚠️ The creator may:`, 'warning');
+                    log(`   1. Already be linked to a different organization`, 'warning');
+                    log(`   2. Not exist in the database yet`, 'warning');
+                    log(`   3. Have a username that doesn't match the patterns searched`, 'warning');
+                    log(`   `, 'info');
+                    log(`   Next steps:`, 'info');
+                    log(`   1. Check the tablet/device in Africa to get the actual creator username`, 'info');
+                    log(`   2. Search for that specific username manually in Supabase users table`, 'info');
+                    log(`   3. Check platform audit logs for organization creation event`, 'info');
+                    log(`   4. Do NOT link a random user - wait for correct creator information`, 'warning');
+                    log(`   `, 'info');
+                    log(`   ℹ️ This tool cannot determine the creator without more information.`, 'info');
+                    log(`   ℹ️ Please provide the creator username or manually link the correct user.`, 'info');
+                    return;
+                }
+
+                log(`   ✅ Selected user: ${correctUser.username}`, 'success');
+                log(`   Reason: ${reason}`, 'info');
+                log(`   User details:`, 'info');
+                log(`     - Email: ${correctUser.email || 'none'}`, 'info');
+                log(`     - Name: ${correctUser.first_name || ''} ${correctUser.last_name || ''}`, 'info');
+                log(`     - Role: ${correctUser.role || 'unknown'}`, 'info');
+                log(`     - Created: ${correctUser.created_at}`, 'info');
+
+                // Step 7: Handle currently linked users
+                log('', 'info');
+                log('📋 Step 7: Checking currently linked users...', 'info');
+                
+                // Check if correct user is already linked
+                const isAlreadyLinked = currentUsers && currentUsers.some(u => u.id === correctUser.id);
+                
+                if (isAlreadyLinked) {
+                    log(`   ✅ User ${correctUser.username} is already correctly linked to this organization`, 'success');
+                    
+                    // Check if there are any incorrectly linked users
+                    const incorrectUsers = currentUsers.filter(u => u.id !== correctUser.id);
+                    if (incorrectUsers.length > 0) {
+                        log(`   ⚠️ Found ${incorrectUsers.length} incorrectly linked user(s), unlinking...`, 'warning');
+                        for (const incorrectUser of incorrectUsers) {
+                            const { error: unlinkError } = await supabase
+                                .from('users')
+                                .update({ organization_id: null })
+                                .eq('id', incorrectUser.id);
+                            
+                            if (!unlinkError) {
+                                log(`   ✅ Unlinked ${incorrectUser.username}`, 'success');
+                            } else {
+                                log(`   ❌ Failed to unlink ${incorrectUser.username}: ${unlinkError.message}`, 'error');
+                            }
+                        }
+                    } else {
+                        log(`   ✅ No incorrect users found - everything is correct!`, 'success');
+                    }
+                } else {
+                    // Correct user is not linked - need to link them
+                    log(`   ℹ️ Correct user ${correctUser.username} is not linked yet`, 'info');
+                    
+                    // First, unlink any currently linked users (they're wrong)
+                    if (currentUsers && currentUsers.length > 0) {
+                        log(`   Unlinking ${currentUsers.length} incorrectly linked user(s)...`, 'warning');
+                        for (const wrongUser of currentUsers) {
+                            const { error: unlinkError } = await supabase
+                                .from('users')
+                                .update({ organization_id: null })
+                                .eq('id', wrongUser.id);
+                            
+                            if (!unlinkError) {
+                                log(`   ✅ Unlinked ${wrongUser.username}`, 'success');
+                            } else {
+                                log(`   ❌ Failed to unlink ${wrongUser.username}: ${unlinkError.message}`, 'error');
+                            }
+                        }
+                    }
+
+                    // Step 8: Link the correct user
+                    log('', 'info');
+                    log('📋 Step 8: Linking correct user to organization...', 'info');
+                    const { error: linkError } = await supabase
+                        .from('users')
+                        .update({ organization_id: org.id })
+                        .eq('id', correctUser.id);
+
+                    if (linkError) {
+                        log(`   ❌ Failed to link user: ${linkError.message}`, 'error');
+                        return;
+                    } else {
+                        log(`   ✅ Successfully linked ${correctUser.username} to organization`, 'success');
+                    }
+                }
+                
+                // Step 8 continuation (if already linked, skip to verification)
+                if (isAlreadyLinked) {
+                    log('', 'info');
+                    log('📋 Step 8: Skipping - user is already correctly linked', 'info');
+                }
+
+                // Step 9: Verify the fix
+                log('', 'info');
+                log('📋 Step 8: Verifying the fix...', 'info');
+                
+                // Wait a moment for Supabase to process
+                await new Promise(resolve => setTimeout(resolve, 500));
+
+                const { data: verifyUsers, error: verifyError } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('organization_id', org.id);
+
+                if (verifyError) {
+                    log(`   ❌ Error verifying: ${verifyError.message}`, 'error');
+                } else {
+                    log(`   ✅ Verification complete:`, 'success');
+                    log(`   Organization now has ${verifyUsers.length} user(s):`, 'success');
+                    verifyUsers.forEach(user => {
+                        log(`   - ${user.username} (${user.email || 'no email'})`, 'success');
+                    });
+                }
+
+                // Step 10: Clear cache instructions
+                log('', 'info');
+                log('📋 Step 9: Cache clearing', 'info');
+                log('   ✅ Database updated successfully', 'success');
+                log('   ℹ️ Cache will be cleared automatically when platform-dashboard.html reloads', 'info');
+                log('   ℹ️ Or clear browser cache manually and refresh the dashboard', 'info');
+
+                log('', 'info');
+                log('─'.repeat(60), 'info');
+                log('✅ Fix completed successfully!', 'success');
+                log('   Please refresh platform-dashboard.html to see the updated user count', 'info');
+
+            } catch (error) {
+                log(`❌ Unexpected error: ${error.message}`, 'error');
+                log(`   Stack: ${error.stack}`, 'error');
+            }
+        }
+
+        // Undo incorrect linking - unlink ydar507 from Mobile Clinic
+        async function undoIncorrectLinking() {
+            clearLog();
+            initSupabase();
+            
+            const orgName = 'Ministry of Foreign Affairs Mobile Clinic';
+            log(`↩️ Undoing incorrect linking for: "${orgName}"`, 'warning');
+            log('─'.repeat(60), 'info');
+            
+            try {
+                // Find organization
+                const { data: orgs } = await supabase
+                    .from('organizations')
+                    .select('*')
+                    .ilike('name', `%${orgName}%`)
+                    .limit(1);
+                
+                if (!orgs || orgs.length === 0) {
+                    log(`❌ Organization not found`, 'error');
+                    return;
+                }
+                
+                const org = orgs[0];
+                log(`✅ Found organization: ${org.name} (ID: ${org.id})`, 'success');
+                
+                // Check current users
+                const { data: currentUsers } = await supabase
+                    .from('users')
+                    .select('*')
+                    .eq('organization_id', org.id);
+                
+                if (currentUsers && currentUsers.length > 0) {
+                    log(`   Found ${currentUsers.length} user(s) linked:`, 'info');
+                    currentUsers.forEach(user => {
+                        log(`   - ${user.username} (${user.email || 'no email'})`, 
+                            user.username === 'ydar507' ? 'warning' : 'info');
+                    });
+                    
+                    // Unlink ydar507 if found
+                    const ydar507User = currentUsers.find(u => u.username === 'ydar507');
+                    if (ydar507User) {
+                        log(`   `, 'info');
+                        log(`   Unlinking ydar507...`, 'warning');
+                        const { error: unlinkError } = await supabase
+                            .from('users')
+                            .update({ organization_id: null })
+                            .eq('id', ydar507User.id);
+                        
+                        if (unlinkError) {
+                            log(`   ❌ Failed to unlink ydar507: ${unlinkError.message}`, 'error');
+                        } else {
+                            log(`   ✅ Successfully unlinked ydar507`, 'success');
+                            log(`   `, 'info');
+                            log(`   ⚠️ Organization now has 0 users - please link the correct creator manually`, 'warning');
+                        }
+                    } else {
+                        log(`   ℹ️ ydar507 is not linked to this organization`, 'info');
+                    }
+                } else {
+                    log(`   ℹ️ Organization has no users linked`, 'info');
+                }
+                
+                log('', 'info');
+                log('─'.repeat(60), 'info');
+                log('✅ Undo completed', 'success');
+                
+            } catch (error) {
+                log(`❌ Error: ${error.message}`, 'error');
+            }
+        }
+
+        // Auto-run on load if in a specific mode
+        // Uncomment the line below if you want it to auto-run
+        // window.addEventListener('load', () => setTimeout(diagnoseAndFix, 1000));
+    </script>
+</body>
+</html>
+

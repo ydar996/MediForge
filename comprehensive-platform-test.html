@@ -1,0 +1,569 @@
+﻿<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Comprehensive Platform Test</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+        }
+        
+        h1 {
+            color: white;
+            text-align: center;
+            margin-bottom: 30px;
+            text-shadow: 2px 2px 4px rgba(0,0,0,0.3);
+        }
+        
+        .summary-card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            margin-bottom: 30px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .summary-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 20px;
+            margin-bottom: 20px;
+        }
+        
+        .stat-box {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            border-radius: 8px;
+            text-align: center;
+        }
+        
+        .stat-box .number {
+            font-size: 36px;
+            font-weight: bold;
+            margin-bottom: 10px;
+        }
+        
+        .stat-box .label {
+            font-size: 14px;
+            opacity: 0.9;
+        }
+        
+        .test-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 20px;
+        }
+        
+        .test-card {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        .test-card h2 {
+            color: #667eea;
+            margin-bottom: 20px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .status-icon {
+            font-size: 24px;
+        }
+        
+        .test-button {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 14px;
+            font-weight: 600;
+            margin-bottom: 15px;
+            transition: transform 0.2s;
+        }
+        
+        .test-button:hover {
+            transform: translateY(-2px);
+        }
+        
+        .test-result {
+            margin-top: 10px;
+            padding: 15px;
+            border-radius: 6px;
+            font-size: 13px;
+            line-height: 1.6;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .test-result.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .test-result.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .test-result.warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .test-result.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        pre {
+            background: #f8f9fa;
+            padding: 10px;
+            border-radius: 4px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+        }
+        
+        .timestamp {
+            text-align: center;
+            color: white;
+            margin-top: 20px;
+            font-size: 14px;
+            opacity: 0.8;
+        }
+    </style>
+</head>
+<body>
+    <!-- Supabase SDK -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1"></script>
+    <script src="js/supabase-client.js?v=20251018191427?v=1"></script>
+
+    <div class="container">
+        <h1>ðŸ” Comprehensive Platform Test Suite</h1>
+
+        <div class="summary-card">
+            <h2 style="color: #667eea; margin-bottom: 20px;">ðŸ“Š Quick Summary</h2>
+            <div class="summary-grid" id="summary-grid">
+                <div class="stat-box">
+                    <div class="number" id="org-count">-</div>
+                    <div class="label">Organizations</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="user-count">-</div>
+                    <div class="label">Users</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="patient-count">-</div>
+                    <div class="label">Patients</div>
+                </div>
+                <div class="stat-box">
+                    <div class="number" id="appointment-count">-</div>
+                    <div class="label">Appointments</div>
+                </div>
+            </div>
+            <div class="action-buttons">
+                <button class="test-button" onclick="runAllTests()">â–¶ï¸ Run All Tests</button>
+                <button class="test-button" onclick="clearResults()">ðŸ—‘ï¸ Clear Results</button>
+            </div>
+        </div>
+
+        <div class="test-grid">
+            <!-- Test 1: Supabase Connection -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ”Œ</span> Supabase Connection</h2>
+                <button class="test-button" onclick="testSupabaseConnection()">Test Connection</button>
+                <div id="test-connection"></div>
+            </div>
+
+            <!-- Test 2: Organizations -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ¢</span> Organizations</h2>
+                <button class="test-button" onclick="testOrganizations()">Test Organizations</button>
+                <div id="test-organizations"></div>
+            </div>
+
+            <!-- Test 3: Users -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ‘¥</span> Users</h2>
+                <button class="test-button" onclick="testUsers()">Test Users</button>
+                <div id="test-users"></div>
+            </div>
+
+            <!-- Test 4: Patients -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ¥</span> Patients</h2>
+                <button class="test-button" onclick="testPatients()">Test Patients</button>
+                <div id="test-patients"></div>
+            </div>
+
+            <!-- Test 5: Appointments -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ“…</span> Appointments</h2>
+                <button class="test-button" onclick="testAppointments()">Test Appointments</button>
+                <div id="test-appointments"></div>
+            </div>
+
+            <!-- Test 6: RLS Policies -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ”’</span> RLS Policies</h2>
+                <button class="test-button" onclick="testRLS()">Test RLS</button>
+                <div id="test-rls"></div>
+            </div>
+
+            <!-- Test 7: Platform Dashboard -->
+            <div class="test-card">
+                <h2><span class="status-icon">ðŸ“Š</span> Platform Dashboard</h2>
+                <button class="test-button" onclick="testDashboardData()">Test Dashboard</button>
+                <div id="test-dashboard"></div>
+            </div>
+
+            <!-- Test 8: Healthcare Staff -->
+            <div class="test-card">
+                <h2><span class="status-icon">âš•ï¸</span> Healthcare Staff</h2>
+                <button class="test-button" onclick="testHealthcareStaff()">Test Staff</button>
+                <div id="test-staff"></div>
+            </div>
+        </div>
+
+        <div class="timestamp" id="timestamp"></div>
+    </div>
+
+    <script>
+        // Update timestamp
+        function updateTimestamp() {
+            const now = new Date();
+            document.getElementById('timestamp').textContent = `Last updated: ${now.toLocaleString()}`;
+        }
+        updateTimestamp();
+
+        // Test 1: Supabase Connection
+        async function testSupabaseConnection() {
+            const resultDiv = document.getElementById('test-connection');
+            resultDiv.innerHTML = '<div class="test-result info">Testing connection...</div>';
+
+            try {
+                if (!supabaseClient) {
+                    throw new Error('Supabase client not initialized');
+                }
+
+                const { data, error } = await supabaseClient
+                    .from('organizations')
+                    .select('count', { count: 'exact', head: true });
+
+                if (error) throw error;
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Connection successful!<br>
+                        URL: ${supabaseClient.supabaseUrl}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 2: Organizations
+        async function testOrganizations() {
+            const resultDiv = document.getElementById('test-organizations');
+            resultDiv.innerHTML = '<div class="test-result info">Fetching organizations...</div>';
+
+            try {
+                const { data: orgs, error } = await supabaseClient
+                    .from('organizations')
+                    .select('*');
+
+                if (error) throw error;
+
+                document.getElementById('org-count').textContent = orgs.length;
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Found ${orgs.length} organizations<br>
+                        ${orgs.map(org => `- ${org.name} (${org.org_code})`).join('<br>')}
+                    </div>
+                    <pre>${JSON.stringify(orgs, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 3: Users
+        async function testUsers() {
+            const resultDiv = document.getElementById('test-users');
+            resultDiv.innerHTML = '<div class="test-result info">Fetching users...</div>';
+
+            try {
+                const { data: users, error } = await supabaseClient
+                    .from('users')
+                    .select('*, organizations(name)');
+
+                if (error) throw error;
+
+                document.getElementById('user-count').textContent = users.length;
+
+                const doctors = users.filter(u => u.role === 'Doctor' || u.role === 'Nurse');
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Found ${users.length} users<br>
+                        ðŸ‘¨â€âš•ï¸ ${doctors.length} doctors/nurses<br>
+                        ${users.map(u => `- ${u.username} (${u.role}) - ${u.organizations?.name || 'Platform Admin'}`).join('<br>')}
+                    </div>
+                    <pre>${JSON.stringify(users, null, 2)}</pre>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 4: Patients
+        async function testPatients() {
+            const resultDiv = document.getElementById('test-patients');
+            resultDiv.innerHTML = '<div class="test-result info">Fetching patients...</div>';
+
+            try {
+                const { data: patients, error, count } = await supabaseClient
+                    .from('patients')
+                    .select('*, organizations(name)', { count: 'exact' });
+
+                if (error) throw error;
+
+                document.getElementById('patient-count').textContent = count;
+
+                // Group by organization
+                const byOrg = {};
+                patients.forEach(p => {
+                    const orgName = p.organizations?.name || 'Unknown';
+                    if (!byOrg[orgName]) byOrg[orgName] = 0;
+                    byOrg[orgName]++;
+                });
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Found ${count} patients<br>
+                        ${Object.entries(byOrg).map(([org, cnt]) => `- ${org}: ${cnt} patients`).join('<br>')}
+                    </div>
+                    <div class="test-result info">
+                        First 3 patients:<br>
+                        ${patients.slice(0, 3).map(p => `- ${p.patient_id}: ${p.first_name} ${p.last_name}`).join('<br>')}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 5: Appointments
+        async function testAppointments() {
+            const resultDiv = document.getElementById('test-appointments');
+            resultDiv.innerHTML = '<div class="test-result info">Fetching appointments...</div>';
+
+            try {
+                const { data: appointments, error, count } = await supabaseClient
+                    .from('appointments')
+                    .select('*, organizations(name)', { count: 'exact' });
+
+                if (error) throw error;
+
+                document.getElementById('appointment-count').textContent = count;
+
+                // Group by organization
+                const byOrg = {};
+                appointments.forEach(a => {
+                    const orgName = a.organizations?.name || 'Unknown';
+                    if (!byOrg[orgName]) byOrg[orgName] = 0;
+                    byOrg[orgName]++;
+                });
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Found ${count} appointments<br>
+                        ${Object.entries(byOrg).map(([org, cnt]) => `- ${org}: ${cnt} appointments`).join('<br>')}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 6: RLS Policies
+        async function testRLS() {
+            const resultDiv = document.getElementById('test-rls');
+            resultDiv.innerHTML = '<div class="test-result info">Checking RLS status...</div>';
+
+            try {
+                // Check if we can read from tables
+                const tables = ['organizations', 'users', 'patients', 'appointments'];
+                const results = [];
+
+                for (const table of tables) {
+                    try {
+                        const { data, error } = await supabaseClient
+                            .from(table)
+                            .select('count', { count: 'exact', head: true });
+
+                        if (error) {
+                            results.push(`âŒ ${table}: ${error.message}`);
+                        } else {
+                            results.push(`âœ… ${table}: Accessible`);
+                        }
+                    } catch (e) {
+                        results.push(`âŒ ${table}: ${e.message}`);
+                    }
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="test-result ${results.some(r => r.includes('âŒ')) ? 'warning' : 'success'}">
+                        ${results.join('<br>')}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 7: Platform Dashboard Data
+        async function testDashboardData() {
+            const resultDiv = document.getElementById('test-dashboard');
+            resultDiv.innerHTML = '<div class="test-result info">Testing dashboard data...</div>';
+
+            try {
+                // Get organizations
+                const { data: orgs } = await supabaseClient
+                    .from('organizations')
+                    .select('*');
+
+                let totalPatients = 0;
+                let totalAppointments = 0;
+                let totalUsers = 0;
+
+                for (const org of orgs) {
+                    // Get counts for each org
+                    const { count: pCount } = await supabaseClient
+                        .from('patients')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('organization_id', org.id);
+
+                    const { count: aCount } = await supabaseClient
+                        .from('appointments')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('organization_id', org.id);
+
+                    const { count: uCount } = await supabaseClient
+                        .from('users')
+                        .select('*', { count: 'exact', head: true })
+                        .eq('organization_id', org.id);
+
+                    totalPatients += pCount || 0;
+                    totalAppointments += aCount || 0;
+                    totalUsers += uCount || 0;
+                }
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Dashboard data ready!<br>
+                        - Organizations: ${orgs.length}<br>
+                        - Total Patients: ${totalPatients}<br>
+                        - Total Appointments: ${totalAppointments}<br>
+                        - Total Users: ${totalUsers}
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Test 8: Healthcare Staff Data
+        async function testHealthcareStaff() {
+            const resultDiv = document.getElementById('test-staff');
+            resultDiv.innerHTML = '<div class="test-result info">Testing healthcare staff data...</div>';
+
+            try {
+                // Get all staff (doctors/nurses)
+                const { data: staff, error: staffError } = await supabaseClient
+                    .from('users')
+                    .select('*, organizations(name)')
+                    .in('role', ['Doctor', 'Nurse']);
+
+                if (staffError) throw staffError;
+
+                // Get all patients (for patient count)
+                const { count: patientCount, error: patientError } = await supabaseClient
+                    .from('patients')
+                    .select('*', { count: 'exact', head: true });
+
+                if (patientError) throw patientError;
+
+                resultDiv.innerHTML = `
+                    <div class="test-result success">
+                        âœ… Healthcare staff page data ready!<br>
+                        - Total Staff: ${staff.length}<br>
+                        - Total Patients: ${patientCount}<br>
+                        - Ratio: ${patientCount}:${staff.length} (${(patientCount / staff.length).toFixed(1)} patients per staff)
+                    </div>
+                `;
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="test-result error">âŒ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Run all tests
+        async function runAllTests() {
+            await testSupabaseConnection();
+            await testOrganizations();
+            await testUsers();
+            await testPatients();
+            await testAppointments();
+            await testRLS();
+            await testDashboardData();
+            await testHealthcareStaff();
+            updateTimestamp();
+        }
+
+        // Clear results
+        function clearResults() {
+            const resultDivs = document.querySelectorAll('[id^="test-"]');
+            resultDivs.forEach(div => div.innerHTML = '');
+            updateTimestamp();
+        }
+
+        // Auto-run on load
+        window.addEventListener('load', function() {
+            setTimeout(runAllTests, 500);
+        });
+    </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+

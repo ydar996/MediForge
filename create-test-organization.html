@@ -1,0 +1,240 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Create Test Organization</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    .container {
+      max-width: 600px;
+      margin: 50px auto;
+      padding: 30px;
+      background: white;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .form-group {
+      margin: 15px 0;
+    }
+    label {
+      display: block;
+      margin-bottom: 5px;
+      font-weight: bold;
+    }
+    input, select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ddd;
+      border-radius: 4px;
+      font-size: 14px;
+    }
+    button {
+      background: #4CAF50;
+      color: white;
+      border: none;
+      padding: 12px 30px;
+      font-size: 16px;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    button:hover {
+      background: #45a049;
+    }
+    .status {
+      margin-top: 20px;
+      padding: 15px;
+      border-radius: 5px;
+      display: none;
+    }
+    .status.success {
+      background: #d4edda;
+      border: 1px solid #c3e6cb;
+      color: #155724;
+      display: block;
+    }
+    .status.error {
+      background: #f8d7da;
+      border: 1px solid #f5c6cb;
+      color: #721c24;
+      display: block;
+    }
+    .info-box {
+      background: #e3f2fd;
+      padding: 15px;
+      border-left: 4px solid #2196F3;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>🏥 Create Test Organization</h1>
+    
+    <div class="info-box">
+      <p><strong>Why do we need this?</strong></p>
+      <p>Before migrating users, we need at least one organization in Supabase. This tool creates your first organization so users can link to it.</p>
+    </div>
+
+    <form id="org-form">
+      <div class="form-group">
+        <label for="org-name">Organization Name:</label>
+        <input type="text" id="org-name" value="Mecure Clinics" required>
+      </div>
+
+      <div class="form-group">
+        <label for="country">Country:</label>
+        <select id="country" required>
+          <option value="Nigeria">Nigeria</option>
+          <option value="Kenya">Kenya</option>
+          <option value="Ghana">Ghana</option>
+          <option value="South Africa">South Africa</option>
+          <option value="Uganda">Uganda</option>
+          <option value="Tanzania">Tanzania</option>
+        </select>
+      </div>
+
+      <div class="form-group">
+        <label for="currency">Currency:</label>
+        <select id="currency" required>
+          <option value="NGN">NGN (Nigerian Naira)</option>
+          <option value="KES">KES (Kenyan Shilling)</option>
+          <option value="GHS">GHS (Ghanaian Cedi)</option>
+          <option value="ZAR">ZAR (South African Rand)</option>
+          <option value="UGX">UGX (Ugandan Shilling)</option>
+          <option value="TZS">TZS (Tanzanian Shilling)</option>
+          <option value="USD">USD (US Dollar)</option>
+        </select>
+      </div>
+
+      <button type="submit">Create Organization in Supabase</button>
+    </form>
+
+    <div id="status" class="status"></div>
+
+    <div style="margin-top: 20px;">
+      <a href="dashboard">← Back to Dashboard</a> |
+      <a href="migrate-users">Migrate Users →</a>
+    </div>
+  </div>
+
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+
+  <script>
+    // Pre-fill from localStorage if exists
+    window.addEventListener('DOMContentLoaded', () => {
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      const orgNames = Object.keys(organizations);
+      
+      if (orgNames.length > 0) {
+        const firstOrg = organizations[orgNames[0]];
+        document.getElementById('org-name').value = orgNames[0];
+        if (firstOrg.country) {
+          document.getElementById('country').value = firstOrg.country;
+        }
+      }
+    });
+
+    document.getElementById('org-form').addEventListener('submit', async (e) => {
+      e.preventDefault();
+      
+      const statusDiv = document.getElementById('status');
+      statusDiv.className = 'status';
+      statusDiv.textContent = 'Creating organization...';
+      statusDiv.style.display = 'block';
+      
+      try {
+        if (!supabaseClient) {
+          throw new Error('Supabase client not initialized!');
+        }
+
+        const orgName = document.getElementById('org-name').value.trim();
+        const country = document.getElementById('country').value;
+        const currency = document.getElementById('currency').value;
+        
+        // Generate org code
+        const orgCode = orgName.substring(0, 3).toUpperCase() + '-' + Date.now().toString().substring(-6);
+        
+        console.log('Creating organization:', { orgName, country, currency, orgCode });
+        
+        // Check if org already exists
+        const { data: existing, error: checkError } = await supabaseClient
+          .from('organizations')
+          .select('id, name')
+          .eq('name', orgName)
+          .maybeSingle();
+        
+        if (existing) {
+          statusDiv.className = 'status error';
+          statusDiv.innerHTML = `
+            <strong>Organization already exists!</strong><br>
+            Name: ${existing.name}<br>
+            ID: ${existing.id}<br><br>
+            You can proceed to <a href="migrate-users">migrate users</a>.
+          `;
+          return;
+        }
+        
+        // Create organization
+        const { data, error } = await supabaseClient
+          .from('organizations')
+          .insert({
+            name: orgName,
+            country: country,
+            currency: currency,
+            org_code: orgCode,
+            status: 'active',
+            subscription_plan: 'free_trial',
+            max_users: 10,
+            max_patients: 100
+          })
+          .select()
+          .single();
+        
+        if (error) {
+          console.error('Supabase error:', error);
+          throw new Error(error.message);
+        }
+        
+        console.log('Organization created:', data);
+        
+        statusDiv.className = 'status success';
+        statusDiv.innerHTML = `
+          <strong>✅ Organization Created Successfully!</strong><br><br>
+          <strong>Name:</strong> ${data.name}<br>
+          <strong>Country:</strong> ${data.country}<br>
+          <strong>Currency:</strong> ${data.currency}<br>
+          <strong>Org Code:</strong> ${data.org_code}<br>
+          <strong>ID:</strong> ${data.id}<br><br>
+          <strong>Next Step:</strong> <a href="migrate-users">Migrate Users →</a>
+        `;
+        
+      } catch (error) {
+        console.error('Error:', error);
+        statusDiv.className = 'status error';
+        statusDiv.innerHTML = `
+          <strong>❌ Error:</strong> ${error.message}<br><br>
+          <strong>Possible reasons:</strong><br>
+          • RLS policies are blocking (need to disable temporarily)<br>
+          • Invalid data format<br>
+          • Supabase connection issue<br><br>
+          <strong>Check the browser console for details.</strong>
+        `;
+      }
+    });
+  </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+
+
+
+

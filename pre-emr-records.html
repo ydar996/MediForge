@@ -1,0 +1,636 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pre-EMR Medical Records - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=219">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%);
+      padding: 20px;
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.15);
+      padding: 30px;
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #e0e0e0;
+    }
+    
+    h1 {
+      color: #8B4513;
+      margin: 0;
+      font-size: 2em;
+    }
+    
+    .nav-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .nav-buttons button, .nav-buttons a {
+      background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+      color: white;
+      border: none;
+      padding: 12px 24px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      display: inline-block;
+    }
+    
+    .nav-buttons button:hover, .nav-buttons a:hover {
+      background: linear-gradient(135deg, #CD853F 0%, #8B4513 100%);
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(139, 69, 19, 0.3);
+    }
+    
+    .patient-info {
+      background: linear-gradient(135deg, rgba(139, 69, 19, 0.1), rgba(205, 133, 63, 0.1));
+      padding: 15px 20px;
+      border-radius: 8px;
+      margin-bottom: 30px;
+      border-left: 4px solid #8B4513;
+    }
+    
+    .patient-info strong {
+      color: #8B4513;
+    }
+    
+    .records-list {
+      display: flex;
+      flex-direction: column;
+      gap: 20px;
+    }
+    
+    .record-card {
+      background: #f9f9f9;
+      border: 2px solid #e0e0e0;
+      border-radius: 8px;
+      padding: 20px;
+      transition: all 0.3s ease;
+    }
+    
+    .record-card:hover {
+      border-color: #8B4513;
+      box-shadow: 0 4px 12px rgba(139, 69, 19, 0.2);
+    }
+    
+    .record-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    
+    .record-meta {
+      flex: 1;
+    }
+    
+    .record-title {
+      font-size: 1.2em;
+      font-weight: 600;
+      color: #333;
+      margin-bottom: 8px;
+    }
+    
+    .record-details {
+      color: #666;
+      font-size: 0.9em;
+      margin: 5px 0;
+    }
+    
+    .record-actions {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 8px 16px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-view {
+      background: #008753;
+      color: white;
+    }
+    
+    .btn-view:hover {
+      background: #006b42;
+      transform: translateY(-2px);
+    }
+    
+    .btn-edit {
+      background: #4169E1;
+      color: white;
+    }
+    
+    .btn-edit:hover {
+      background: #1e3a8a;
+      transform: translateY(-2px);
+    }
+    
+    .btn-delete {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-delete:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+    }
+    
+    .record-preview {
+      background: white;
+      border: 1px solid #ddd;
+      border-radius: 6px;
+      padding: 15px;
+      margin-top: 15px;
+      max-height: 200px;
+      overflow-y: auto;
+      white-space: pre-wrap;
+      font-family: 'Courier New', monospace;
+      font-size: 0.9em;
+      line-height: 1.6;
+      color: #333;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .empty-state-icon {
+      font-size: 4em;
+      margin-bottom: 20px;
+    }
+    
+    .empty-state h2 {
+      color: #8B4513;
+      margin-bottom: 10px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+      font-size: 1.1em;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1>📜 Pre-EMR Medical Records</h1>
+      <div class="nav-buttons">
+        <a href='/patient-documents?patientId=' id='back-link'>← Back to Documents</a>
+      </div>
+    </div>
+    
+    <div id="patient-info" class="patient-info">
+      <strong>Loading patient information...</strong>
+    </div>
+    
+    <div id="records-container">
+      <div class="loading">Loading records...</div>
+    </div>
+  </div>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js"></script>
+  
+  <!-- Patients.js - Contains savePatientToSupabase function -->
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/pre-emr-storage.js?v=202603271"></script>
+  
+  <script>
+    // Helper function to get data key
+    function getDataKey(key) {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (user.org) {
+        return `${user.org}_${key}`;
+      }
+      return key;
+    }
+
+    let currentPatient = null;
+    let currentPatientId = null;
+
+    async function loadRecords() {
+      try {
+        // Get patient ID from URL
+        const urlParams = new URLSearchParams(window.location.search);
+        currentPatientId = urlParams.get("patientId");
+        
+        if (!currentPatientId) {
+          document.getElementById('records-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><h2>No Patient ID</h2><p>Please provide a patient ID in the URL.</p></div>';
+          return;
+        }
+
+        // Update back link
+        document.getElementById('back-link').href = `patient-documents.html?patientId=${currentPatientId}`;
+
+        // Load patients with Supabase-first priority
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+
+        // Use resolvePatientByIdentifier for proper patient ID resolution
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          currentPatient = await window.resolvePatientByIdentifier(currentPatientId);
+        } else {
+          currentPatient = patients.find(p => 
+            p.id === currentPatientId || 
+            p.patient_id === currentPatientId || 
+            p.patientNumber === currentPatientId ||
+            p._supabaseUuid === currentPatientId
+          );
+        }
+
+        if (!currentPatient) {
+          document.getElementById('records-container').innerHTML = '<div class="empty-state"><div class="empty-state-icon">❌</div><h2>Patient Not Found</h2><p>The patient could not be found.</p></div>';
+          return;
+        }
+
+        // Display patient information
+        const patientName = `${currentPatient.firstName || ''} ${currentPatient.middleName || ''} ${currentPatient.lastName || ''}`.trim();
+        document.getElementById('patient-info').innerHTML = `
+          <strong>Patient:</strong> ${patientName}<br>
+          <strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(currentPatient, currentPatientId) : ((typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(currentPatient) : null) || currentPatient.patient_id || currentPatient.patientNumber || (currentPatient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentPatient.id) ? currentPatient.id : 'N/A'))}<br>
+          <strong>Date of Birth:</strong> ${currentPatient.dob || 'N/A'} | <strong>Gender:</strong> ${currentPatient.gender || 'N/A'}
+        `;
+
+        // Load and display records
+        displayRecords();
+
+      } catch (error) {
+        console.error('Error loading records:', error);
+        document.getElementById('records-container').innerHTML = `<div class="empty-state"><div class="empty-state-icon">❌</div><h2>Error</h2><p>Error loading records: ${error.message}</p></div>`;
+      }
+    }
+
+    function displayRecords() {
+      const container = document.getElementById('records-container');
+      
+      if (!currentPatient.unstructuredRecords || !Array.isArray(currentPatient.unstructuredRecords) || currentPatient.unstructuredRecords.length === 0) {
+        container.innerHTML = `
+          <div class="empty-state">
+            <div class="empty-state-icon">📜</div>
+            <h2>No Pre-EMR Records</h2>
+            <p>No unstructured medical records found for this patient.</p>
+            <a href="add-unstructured-records.html?patientId=${currentPatientId}" style="display: inline-block; margin-top: 20px; padding: 12px 24px; background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%); color: white; text-decoration: none; border-radius: 8px; font-weight: 600;">+ Add Record</a>
+          </div>
+        `;
+        return;
+      }
+
+      const records = currentPatient.unstructuredRecords;
+      let html = '<div class="records-list">';
+
+      // Sort records by date (newest first)
+      const sortedRecords = [...records].sort((a, b) => {
+        const dateA = a.createdAt ? new Date(a.createdAt) : new Date(0);
+        const dateB = b.createdAt ? new Date(b.createdAt) : new Date(0);
+        return dateB - dateA;
+      });
+
+      sortedRecords.forEach((record, index) => {
+        const recordDate = record.createdAt ? new Date(record.createdAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : 'Unknown Date';
+        const recordAuthor = record.createdBy || 'Unknown';
+        const updatedDate = record.updatedAt ? new Date(record.updatedAt).toLocaleDateString('en-US', { 
+          year: 'numeric', 
+          month: 'long', 
+          day: 'numeric',
+          hour: '2-digit',
+          minute: '2-digit'
+        }) : null;
+        const updatedBy = record.updatedBy || null;
+        const isFile = record.kind === 'file' || !!record.storagePath;
+        const preview = isFile
+          ? ('File: ' + (record.fileName || 'Uploaded document') + (record.mimeType ? ' (' + record.mimeType + ')' : ''))
+          : (record.text ? (record.text.length > 300 ? record.text.substring(0, 300) + '...' : record.text) : '');
+
+        html += `
+          <div class="record-card">
+            <div class="record-header">
+              <div class="record-meta">
+                <div class="record-title">${isFile ? '📎 ' + escapeHtml(record.fileName || 'Scanned document') : 'Record ' + (index + 1)}</div>
+                <div class="record-details">
+                  <strong>Created:</strong> ${recordDate} by ${recordAuthor}
+                </div>
+                ${updatedDate ? `<div class="record-details"><strong>Updated:</strong> ${updatedDate} by ${updatedBy}</div>` : ''}
+              </div>
+              <div class="record-actions">
+                <button class="btn btn-view" onclick="viewRecord('${record.id}')">👁️ View</button>
+                ${isFile ? '' : `<button class="btn btn-edit" onclick="editRecord('${record.id}')">✏️ Edit</button>`}
+                <button class="btn btn-delete" onclick="deleteRecord('${record.id}')">🗑️ Delete</button>
+              </div>
+            </div>
+            <div class="record-preview">${escapeHtml(preview)}</div>
+          </div>
+        `;
+      });
+
+      html += '</div>';
+      container.innerHTML = html;
+    }
+
+    function escapeHtml(text) {
+      const div = document.createElement('div');
+      div.textContent = text;
+      return div.innerHTML;
+    }
+
+    function viewRecord(recordId) {
+      // Navigate to dedicated view page instead of modal
+      window.location.href = `view-pre-emr-record.html?patientId=${currentPatientId}&recordId=${recordId}`;
+    }
+
+    async function editRecord(recordId) {
+      // Navigate to dedicated edit page instead of modal
+      window.location.href = `edit-pre-emr-record.html?patientId=${currentPatientId}&recordId=${recordId}`;
+    }
+
+    async function deleteRecord(recordId) {
+      if (!confirm('Are you sure you want to delete this record? This action cannot be undone.')) {
+        return;
+      }
+
+      try {
+        // Load patients
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+
+        const patientIndex = patients.findIndex(p => 
+          p.id === currentPatientId || 
+          p.patient_id === currentPatientId || 
+          p.patientNumber === currentPatientId
+        );
+
+        if (patientIndex === -1) {
+          alert('Patient not found');
+          return;
+        }
+
+        const patient = patients[patientIndex];
+        
+        if (!patient.unstructuredRecords || !Array.isArray(patient.unstructuredRecords)) {
+          alert('No records found');
+          return;
+        }
+
+        const toRemove = patient.unstructuredRecords.find(r => r.id === recordId);
+        if (toRemove && toRemove.storagePath && window.preEmrStorage && window.preEmrStorage.removeStorageObject) {
+          await window.preEmrStorage.removeStorageObject(toRemove.storagePath);
+        }
+
+        // Remove the record
+        patient.unstructuredRecords = patient.unstructuredRecords.filter(r => r.id !== recordId);
+
+        // Save to localStorage
+        localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+
+        // Save to Supabase
+        if (typeof window.savePatientToSupabase === 'function') {
+          try {
+            await window.savePatientToSupabase(patient);
+            console.log('✅ Record deleted and saved to Supabase');
+          } catch (error) {
+            console.warn('⚠️ Error saving deletion to Supabase:', error);
+          }
+        }
+
+        // Update current patient
+        currentPatient = patient;
+
+        // Reload display
+        displayRecords();
+
+        alert('✅ Record deleted successfully');
+
+      } catch (error) {
+        console.error('Error deleting record:', error);
+        alert('Error deleting record: ' + error.message);
+      }
+    }
+
+    // Load edit function from patient-documents if available (copy the function here)
+    // For now, we'll implement a simple inline edit
+    window.editUnstructuredRecord = async function(recordId, recordText, recordDate, recordAuthor) {
+      const record = currentPatient.unstructuredRecords.find(r => r.id === recordId);
+      if (!record) {
+        alert('Record not found');
+        return;
+      }
+
+      const modal = document.createElement('div');
+      modal.style.cssText = `
+        position: fixed; top: 0; left: 0; width: 100vw; height: 100vh;
+        background-color: rgba(0,0,0,0.7); z-index: 10001; display: flex;
+        justify-content: center; align-items: center;
+      `;
+
+      const modalContent = document.createElement('div');
+      modalContent.style.cssText = `
+        background: white; border-radius: 12px; width: 90%; max-width: 900px;
+        max-height: 90vh; display: flex; flex-direction: column;
+        box-shadow: 0 10px 40px rgba(0,0,0,0.3);
+      `;
+
+      const header = document.createElement('div');
+      header.style.cssText = `
+        background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+        color: white; padding: 20px; border-radius: 12px 12px 0 0;
+        display: flex; justify-content: space-between; align-items: center;
+      `;
+      header.innerHTML = `
+        <h2 style="margin: 0; font-size: 24px;">✏️ Edit Pre-EMR Medical Record</h2>
+        <button onclick="this.closest('[style*=\"position: fixed\"]').remove()" style="background: rgba(255,255,255,0.2); border: none; color: white; font-size: 24px; cursor: pointer; width: 40px; height: 40px; border-radius: 50%;">×</button>
+      `;
+
+      const body = document.createElement('div');
+      body.style.cssText = `
+        padding: 25px; flex: 1; overflow-y: auto; display: flex; flex-direction: column;
+      `;
+
+      const infoDiv = document.createElement('div');
+      infoDiv.style.cssText = `
+        background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;
+        border-left: 4px solid #8B4513;
+      `;
+      infoDiv.innerHTML = `
+        <p style="margin: 5px 0;"><strong>Created:</strong> ${recordDate || 'Unknown'}</p>
+        <p style="margin: 5px 0;"><strong>Created By:</strong> ${recordAuthor || 'Unknown'}</p>
+      `;
+
+      const label = document.createElement('label');
+      label.textContent = "Medical Record Text:";
+      label.style.cssText = "display: block; margin-bottom: 10px; font-weight: 600; color: #333; font-size: 16px;";
+
+      const textarea = document.createElement('textarea');
+      textarea.value = recordText || '';
+      textarea.style.cssText = `
+        width: 100%; min-height: 400px; padding: 15px; border: 2px solid #ddd;
+        border-radius: 8px; font-size: 16px; font-family: 'Courier New', monospace;
+        line-height: 1.6; resize: vertical; box-sizing: border-box;
+      `;
+
+      const buttonsDiv = document.createElement('div');
+      buttonsDiv.style.cssText = `
+        display: flex; gap: 10px; margin-top: 20px; justify-content: flex-end;
+      `;
+
+      const cancelBtn = document.createElement('button');
+      cancelBtn.textContent = "Cancel";
+      cancelBtn.style.cssText = `
+        background: #6c757d; color: white; border: none; padding: 12px 24px;
+        border-radius: 8px; cursor: pointer; font-weight: 600;
+      `;
+      cancelBtn.onclick = () => modal.remove();
+
+      const saveBtn = document.createElement('button');
+      saveBtn.textContent = "💾 Save Changes";
+      saveBtn.style.cssText = `
+        background: linear-gradient(135deg, #8B4513 0%, #CD853F 100%);
+        color: white; border: none; padding: 12px 24px;
+        border-radius: 8px; cursor: pointer; font-weight: 600;
+      `;
+      saveBtn.onclick = async () => {
+        await saveEditedRecord(recordId, textarea.value.trim());
+        modal.remove();
+      };
+
+      buttonsDiv.appendChild(cancelBtn);
+      buttonsDiv.appendChild(saveBtn);
+
+      body.appendChild(infoDiv);
+      body.appendChild(label);
+      body.appendChild(textarea);
+      body.appendChild(buttonsDiv);
+
+      modalContent.appendChild(header);
+      modalContent.appendChild(body);
+      modal.appendChild(modalContent);
+      document.body.appendChild(modal);
+
+      // Close on outside click
+      modal.onclick = (e) => {
+        if (e.target === modal) modal.remove();
+      };
+
+      textarea.focus();
+    };
+
+    async function saveEditedRecord(recordId, newText) {
+      if (!newText || !newText.trim()) {
+        alert('Record text cannot be empty.');
+        return;
+      }
+
+      try {
+        let patients = [];
+        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+          patients = await window.loadPatientsWithSupabasePriority();
+        } else {
+          patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+        }
+
+        const patientIndex = patients.findIndex(p => 
+          p.id === currentPatientId || 
+          p.patient_id === currentPatientId || 
+          p.patientNumber === currentPatientId
+        );
+
+        if (patientIndex === -1) {
+          alert('Patient not found.');
+          return;
+        }
+
+        const patient = patients[patientIndex];
+
+        if (!patient.unstructuredRecords) {
+          patient.unstructuredRecords = [];
+        }
+
+        const recordIndex = patient.unstructuredRecords.findIndex(r => r.id === recordId);
+
+        if (recordIndex === -1) {
+          alert('Record not found.');
+          return;
+        }
+
+        const user = JSON.parse(localStorage.getItem("user") || "{}");
+        patient.unstructuredRecords[recordIndex].text = newText;
+        patient.unstructuredRecords[recordIndex].updatedAt = new Date().toISOString();
+        patient.unstructuredRecords[recordIndex].updatedBy = user.username || 'Unknown';
+
+        localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+
+        if (typeof window.savePatientToSupabase === 'function') {
+          try {
+            await window.savePatientToSupabase(patient);
+            console.log('✅ Edited record saved to Supabase');
+          } catch (error) {
+            console.warn('⚠️ Error saving edited record to Supabase:', error);
+          }
+        }
+
+        currentPatient = patient;
+        displayRecords();
+        alert('✅ Record updated successfully!');
+
+      } catch (error) {
+        console.error('❌ Error saving edited record:', error);
+        alert('Error saving changes: ' + error.message);
+      }
+    }
+
+    // Load records on page load
+    window.addEventListener('load', loadRecords);
+  </script>
+</body>
+</html>
+

@@ -1,0 +1,904 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Platform Analytics - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=264">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      max-width: 1400px;
+      margin: 0 auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    
+    .section {
+      background: white;
+      padding: 25px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.08);
+      margin-bottom: 30px;
+    }
+    
+    .section h2 {
+      margin: 0 0 20px 0;
+      color: #333;
+      border-bottom: 2px solid #667eea;
+      padding-bottom: 10px;
+    }
+    
+    .chart-placeholder {
+      background: #f8f9fa;
+      border: 2px dashed #ddd;
+      border-radius: 8px;
+      padding: 60px 20px;
+      text-align: center;
+      color: #999;
+      margin: 20px 0;
+    }
+  </style>
+</head>
+<body>
+  <h1>Platform Analytics</h1>
+  <p style="color: #666; margin-bottom: 20px;">Comprehensive insights across all registered clinics</p>
+  
+  <button onclick="window.location.href='platform-dashboard'" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px;">
+    <i class="fa-solid fa-arrow-left" style="margin-right: 6px;"></i> Back to Platform Dashboard
+  </button>
+  
+  <!-- Filters Section -->
+  <div class="section">
+    <h2>Filter & Analysis Options</h2>
+    <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(250px, 1fr)); gap: 20px; margin-bottom: 20px;">
+      <div>
+        <label for="country-filter" style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Country Filter:</label>
+        <select id="country-filter" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+          <option value="">All Countries</option>
+        </select>
+      </div>
+      <div>
+        <label for="currency-filter" style="display: block; margin-bottom: 5px; font-weight: 600; color: #333;">Currency View:</label>
+        <select id="currency-filter" style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 6px; font-size: 14px;">
+          <option value="local">Local Currency</option>
+          <option value="USD" selected>USD (Unified View)</option>
+          <option value="NGN">NGN (Nigerian Naira)</option>
+          <option value="KES">KES (Kenyan Shilling)</option>
+          <option value="ZAR">ZAR (South African Rand)</option>
+          <option value="GHS">GHS (Ghanaian Cedi)</option>
+        </select>
+      </div>
+      <div style="display: flex; align-items: end;">
+        <button onclick="applyFilters()" style="background: #667eea; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-right: 10px;">
+          Apply Filters
+        </button>
+        <button onclick="resetFilters()" style="background: #6c757d; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer;">
+          Reset
+        </button>
+      </div>
+    </div>
+  </div>
+  
+  <!-- Top Clinics by Patients -->
+  <div class="section">
+    <h2>Top Clinics by Patient Count</h2>
+    <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="center" style="width: 10%;">Rank</th>
+          <th class="left" style="width: 35%;">Clinic Name</th>
+          <th class="center" style="width: 15%;">Country</th>
+          <th class="center" style="width: 15%;">Patients</th>
+          <th class="center" style="width: 15%;">Users</th>
+          <th class="center" style="width: 10%;">Status</th>
+        </tr>
+      </thead>
+      <tbody id="top-clinics-patients">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Top Clinics by Revenue -->
+  <div class="section">
+    <h2>Top Clinics by Revenue</h2>
+    <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="center" style="width: 8%;">Rank</th>
+          <th class="left" style="width: 30%;">Clinic Name</th>
+          <th class="center" style="width: 12%;">Country</th>
+          <th class="center" style="width: 15%;">Local Revenue</th>
+          <th class="center" style="width: 15%;">USD Equivalent</th>
+          <th class="center" style="width: 10%;">Invoices</th>
+          <th class="center" style="width: 10%;">Collection Rate</th>
+        </tr>
+      </thead>
+      <tbody id="top-clinics-revenue">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Geographic Distribution -->
+  <div class="section">
+    <h2>Geographic Distribution</h2>
+    <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="left" style="width: 20%;">Country</th>
+          <th class="center" style="width: 12%;">Currency</th>
+          <th class="center" style="width: 12%;">Clinics</th>
+          <th class="center" style="width: 16%;">Total Patients</th>
+          <th class="right" style="width: 20%;">Local Revenue</th>
+          <th class="right" style="width: 20%;">USD Equivalent</th>
+        </tr>
+      </thead>
+      <tbody id="geographic-distribution">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Activity Summary (Last 30 Days) -->
+  <div class="section">
+    <h2>Activity Summary (Last 30 Days)</h2>
+    <table class="billing-table" style="display: table; width: 100%; border-collapse: collapse;">
+      <thead>
+        <tr>
+          <th class="left" style="width: 30%;">Clinic Name</th>
+          <th class="center" style="width: 15%;">Total Events</th>
+          <th class="center" style="width: 15%;">Active Users</th>
+          <th class="center" style="width: 20%;">Last Activity</th>
+          <th class="left" style="width: 20%;">Most Common Action</th>
+        </tr>
+      </thead>
+      <tbody id="activity-summary">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113120113121312">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  
+  <!-- Platform Admin functionality -->
+  <script src="js/platform-admin.js?v=5"></script>
+  
+  <!-- Currency Converter -->
+  <script src="js/currency-converter.js?v=2"></script>
+  
+  <script>
+    // VERSION: 264 - Fixed duplicate collectionRate and applyFilters issues
+    console.log('? Platform Analytics v264 loaded - All fixes applied');
+    
+    // Global variables for filtering
+    let currentFilters = {
+      country: '',
+      currency: 'USD'
+    };
+    
+    // Country to currency mapping
+    const COUNTRY_CURRENCIES = {
+      'Nigeria': 'NGN',
+      'Kenya': 'KES',
+      'South Africa': 'ZAR',
+      'Ghana': 'GHS',
+      'United States': 'USD',
+      'United Kingdom': 'GBP',
+      'Germany': 'EUR',
+      'France': 'EUR',
+      'Canada': 'CAD',
+      'Australia': 'AUD'
+    };
+    
+    window.addEventListener('load', async function() {
+      // Check platform admin auth
+      const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+      if (!platformAdmin) {
+        alert('Please login as platform admin');
+        window.location.href = 'platform-login';
+        return;
+      }
+      
+      // Migrate existing organizations that might be missing country data
+      await migrateOrganizationData();
+      
+      await populateFilters();
+      await loadAnalytics();
+    });
+    
+    async function migrateOrganizationData() {
+      const orgs = await getAllOrganizations();
+      let updated = false;
+      
+      // Supabase-first: Update organizations in Supabase first, then cache
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        for (const [orgName, org] of Object.entries(orgs)) {
+          if (!org.country && org.id) {
+            const defaultCountry = orgName.toLowerCase().includes('mecure') ? 'Nigeria' : 'Nigeria';
+            try {
+              const { error } = await window.supabaseClient
+                .from('organizations')
+                .update({ country: defaultCountry })
+                .eq('id', org.id);
+              
+              if (!error) {
+                org.country = defaultCountry;
+                updated = true;
+                console.log(`? Updated ${orgName} country to ${defaultCountry} in Supabase`);
+                
+                // Cache to localStorage immediately after successful Supabase write
+                // Supabase write completed above: supabaseClient.update() called
+                localStorage.setItem("organizations", JSON.stringify(orgs)); // Cached after supabaseClient.update()
+              }
+            } catch (error) {
+              console.warn(`[PLATFORM-ANALYTICS] Could not update ${orgName} country in Supabase:`, error);
+            }
+          } else if (!org.country) {
+            // Set default country for organizations without ID (localStorage only)
+            org.country = 'Nigeria';
+            updated = true;
+            console.log(`Set default country for ${orgName} to Nigeria`);
+          }
+        }
+        
+        // Final cache after all Supabase updates (if any were made)
+        if (updated) {
+          localStorage.setItem("organizations", JSON.stringify(orgs));
+          console.log('Organization data migrated successfully');
+        }
+      } else {
+        // Fallback: Update localStorage only if Supabase not available
+        Object.keys(orgs).forEach(orgName => {
+          const org = orgs[orgName];
+          if (!org.country) {
+            org.country = 'Nigeria';
+            updated = true;
+            console.log(`Set default country for ${orgName} to Nigeria`);
+          }
+        });
+        
+        if (updated) {
+          localStorage.setItem("organizations", JSON.stringify(orgs));
+          console.log('Organization data migrated successfully');
+        }
+      }
+    }
+    
+    async function populateFilters() {
+      // Populate country filter
+      const orgs = await getAllOrganizations();
+      console.log('All organizations:', orgs);
+      console.log('Organization values:', Object.values(orgs));
+      
+      const countries = [...new Set(Object.values(orgs).map(org => {
+        let country = org.country || 'N/A';
+        if (country === 'N/A' && org.name && org.name.toLowerCase().includes('mecure')) {
+          country = 'Nigeria'; // Default for Mecure Clinics
+        }
+        return country;
+      }).filter(c => c && c !== 'N/A'))];
+      console.log('Countries found:', countries);
+      
+      const countryFilter = document.getElementById('country-filter');
+      countries.sort().forEach(country => {
+        const option = document.createElement('option');
+        option.value = country;
+        option.textContent = country;
+        countryFilter.appendChild(option);
+      });
+    }
+    
+    window.applyFilters = function() {
+      currentFilters.country = document.getElementById('country-filter').value;
+      currentFilters.currency = document.getElementById('currency-filter').value;
+      loadAnalytics();
+    };
+    
+    window.resetFilters = function() {
+      document.getElementById('country-filter').value = '';
+      document.getElementById('currency-filter').value = 'USD';
+      currentFilters.country = '';
+      currentFilters.currency = 'USD';
+      loadAnalytics();
+    };
+    
+    async function loadAnalytics() {
+      await loadTopClinicsByPatients();
+      await loadTopClinicsByRevenue();
+      await loadGeographicDistribution();
+      await loadActivitySummary();
+    }
+    
+    async function loadTopClinicsByPatients() {
+      try {
+        console.log('[PLATFORM-ANALYTICS] loadTopClinicsByPatients: Starting...');
+        const getAllOrgsFn = window.getAllOrganizations || getAllOrganizations;
+        if (typeof getAllOrgsFn !== 'function') {
+          console.error('? getAllOrganizations function not available');
+          document.getElementById('top-clinics-patients').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error: getAllOrganizations function not available</td></tr>';
+          return;
+        }
+        
+        const orgs = await getAllOrgsFn();
+        console.log('? getAllOrganizations returned:', orgs);
+        console.log('[PLATFORM-ANALYTICS] Organization keys:', Object.keys(orgs || {}));
+        console.log('[PLATFORM-ANALYTICS] Organization count:', Object.keys(orgs || {}).length);
+        
+        if (!orgs || Object.keys(orgs).length === 0) {
+          console.warn('[PLATFORM-ANALYTICS] No organizations found');
+          document.getElementById('top-clinics-patients').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No clinics registered yet</td></tr>';
+          return;
+        }
+        
+        let clinicsData = await Promise.all(Object.keys(orgs).map(async orgName => {
+          try {
+            const getOrgStatsFn = window.getOrganizationStats || getOrganizationStats;
+            if (typeof getOrgStatsFn !== 'function') {
+              console.error(`? getOrganizationStats function not available for ${orgName}`);
+              return {
+                name: orgName,
+                country: 'Unknown',
+                patients: 0,
+                users: 0,
+                status: 'active'
+              };
+            }
+            
+            const stats = await getOrgStatsFn(orgName);
+            const orgData = orgs[orgName];
+            console.log(`? Processing ${orgName}:`, { stats, orgData });
+            
+            // Handle missing country data - set default based on organization name or other clues
+            let country = orgData.country || 'N/A';
+            if (country === 'N/A' && orgName.toLowerCase().includes('mecure')) {
+              country = 'Nigeria'; // Default for Mecure Clinics
+            }
+            
+            return {
+              name: orgName,
+              country: country,
+              patients: stats && stats.patientCount ? parseInt(stats.patientCount) || 0 : 0,
+              users: stats && stats.userCount ? parseInt(stats.userCount) || 0 : 0,
+              status: orgData.status || 'active'
+            };
+          } catch (error) {
+            console.error(`? Error processing ${orgName}:`, error);
+            return {
+              name: orgName,
+              country: 'Unknown',
+              patients: 0,
+              users: 0,
+              status: 'active'
+            };
+          }
+        }));
+        
+        console.log('? Processed clinics data:', clinicsData);
+        
+        // Apply country filter
+        if (currentFilters.country) {
+          clinicsData = clinicsData.filter(clinic => clinic.country === currentFilters.country);
+        }
+        
+        // Sort by patient count
+        clinicsData.sort((a, b) => b.patients - a.patients);
+        
+        const tbody = document.getElementById('top-clinics-patients');
+        if (!tbody) {
+          console.error('? top-clinics-patients tbody not found');
+          return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (clinicsData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No clinics match the selected filters</td></tr>';
+          return;
+        }
+        
+        clinicsData.forEach((clinic, index) => {
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td class="center"><strong style="font-size: 18px; color: ${index < 3 ? '#FFD700' : '#666'};">${index + 1}</strong></td>
+            <td class="left">${clinic.name}</td>
+            <td class="center">${clinic.country}</td>
+            <td class="center"><strong style="color: #2196F3; font-size: 16px;">${clinic.patients}</strong></td>
+            <td class="center">${clinic.users}</td>
+            <td class="center">
+              <span class="status-badge status-${clinic.status}" style="display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 11px; font-weight: 600;">
+                ${clinic.status.toUpperCase()}
+              </span>
+            </td>
+          `;
+        });
+        
+        console.log('? loadTopClinicsByPatients: Completed successfully');
+      } catch (error) {
+        console.error('? Error in loadTopClinicsByPatients:', error);
+        const tbody = document.getElementById('top-clinics-patients');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Error loading data: ${error.message}</td></tr>`;
+        }
+      }
+    }
+    
+    async function loadTopClinicsByRevenue() {
+      try {
+        console.log('[PLATFORM-ANALYTICS] loadTopClinicsByRevenue: Starting...');
+        const getAllOrgsFn = window.getAllOrganizations || getAllOrganizations;
+        if (typeof getAllOrgsFn !== 'function') {
+          console.error('? getAllOrganizations function not available');
+          document.getElementById('top-clinics-revenue').innerHTML = '<tr><td colspan="7" style="text-align: center; color: red;">Error: getAllOrganizations function not available</td></tr>';
+          return;
+        }
+        
+        const orgs = await getAllOrgsFn();
+        console.log('? getAllOrganizations returned:', orgs);
+        
+        if (!orgs || Object.keys(orgs).length === 0) {
+          console.warn('[PLATFORM-ANALYTICS] No organizations found');
+          document.getElementById('top-clinics-revenue').innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No clinics registered yet</td></tr>';
+          return;
+        }
+        
+        let clinicsData = await Promise.all(Object.keys(orgs).map(async orgName => {
+          try {
+            const getOrgStatsFn = window.getOrganizationStats || getOrganizationStats;
+            if (typeof getOrgStatsFn !== 'function') {
+              console.error(`? getOrganizationStats function not available for ${orgName}`);
+              return {
+                name: orgName,
+                country: 'Unknown',
+                localCurrency: 'USD',
+                localRevenue: 0,
+                usdRevenue: 0,
+                invoices: 0,
+                collectionRate: '0.0'
+              };
+            }
+            
+            const stats = await getOrgStatsFn(orgName);
+            const orgData = orgs[orgName];
+            
+            // Handle missing country data - set default based on organization name or other clues
+            let country = orgData.country || 'N/A';
+            if (country === 'N/A' && orgName.toLowerCase().includes('mecure')) {
+              country = 'Nigeria'; // Default for Mecure Clinics
+            }
+            
+            const localCurrency = COUNTRY_CURRENCIES[country] || 'USD';
+            
+            // Ensure all values are numbers to avoid NaN
+            const totalRevenue = stats && stats.totalRevenue ? parseFloat(stats.totalRevenue) || 0 : 0;
+            const totalPaid = stats && stats.totalPaid ? parseFloat(stats.totalPaid) || 0 : 0;
+            const invoiceCount = stats && stats.invoiceCount ? parseInt(stats.invoiceCount) || 0 : 0;
+            const collectionRate = totalRevenue > 0 ? ((totalPaid / totalRevenue) * 100).toFixed(1) : '0.0';
+            
+            return {
+              name: orgName,
+              country: country,
+              localCurrency: localCurrency,
+              localRevenue: totalRevenue,
+              usdRevenue: convertToUSD(totalRevenue, localCurrency),
+              invoices: invoiceCount,
+              collectionRate: collectionRate
+            };
+          } catch (error) {
+            console.error(`? Error processing ${orgName}:`, error);
+            return {
+              name: orgName,
+              country: 'Unknown',
+              localCurrency: 'USD',
+              localRevenue: 0,
+              usdRevenue: 0,
+              invoices: 0,
+              collectionRate: '0.0'
+            };
+          }
+        }));
+        
+        console.log('? Processed revenue clinics data:', clinicsData);
+        
+        // Apply country filter
+        if (currentFilters.country) {
+          clinicsData = clinicsData.filter(clinic => clinic.country === currentFilters.country);
+        }
+        
+        // Sort by USD revenue for consistent comparison
+        clinicsData.sort((a, b) => b.usdRevenue - a.usdRevenue);
+        
+        const tbody = document.getElementById('top-clinics-revenue');
+        if (!tbody) {
+          console.error('? top-clinics-revenue tbody not found');
+          return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (clinicsData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="7" style="text-align: center; color: #999;">No clinics match the selected filters</td></tr>';
+          return;
+        }
+        
+        clinicsData.forEach((clinic, index) => {
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td class="center"><strong style="font-size: 18px; color: ${index < 3 ? '#FFD700' : '#666'};">${index + 1}</strong></td>
+            <td class="left">${clinic.name}</td>
+            <td class="center">${clinic.country}</td>
+            <td class="center"><strong style="color: #4CAF50; font-size: 16px;">${formatCurrency(clinic.localRevenue, clinic.localCurrency)}</strong></td>
+            <td class="center"><strong style="color: #2196F3; font-size: 16px;">$${clinic.usdRevenue.toLocaleString()}</strong></td>
+            <td class="center">${clinic.invoices}</td>
+            <td class="center">${clinic.collectionRate}%</td>
+          `;
+        });
+        
+        console.log('? loadTopClinicsByRevenue: Completed successfully');
+      } catch (error) {
+        console.error('? Error in loadTopClinicsByRevenue:', error);
+        const tbody = document.getElementById('top-clinics-revenue');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="7" style="text-align: center; color: red;">Error loading data: ${error.message}</td></tr>`;
+        }
+      }
+    }
+    
+    async function loadGeographicDistribution() {
+      try {
+        console.log('[PLATFORM-ANALYTICS] loadGeographicDistribution: Starting...');
+        const getAllOrgsFn = window.getAllOrganizations || getAllOrganizations;
+        if (typeof getAllOrgsFn !== 'function') {
+          console.error('? getAllOrganizations function not available');
+          document.getElementById('geographic-distribution').innerHTML = '<tr><td colspan="6" style="text-align: center; color: red;">Error: getAllOrganizations function not available</td></tr>';
+          return;
+        }
+        
+        const orgs = await getAllOrgsFn();
+        console.log('? getAllOrganizations returned:', orgs);
+        
+        if (!orgs || Object.keys(orgs).length === 0) {
+          console.warn('[PLATFORM-ANALYTICS] No organizations found');
+          document.getElementById('geographic-distribution').innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No clinics registered yet</td></tr>';
+          return;
+        }
+        
+        const countryData = {};
+        
+        for (const orgName of Object.keys(orgs)) {
+          try {
+            // Handle missing country data - set default based on organization name or other clues
+            let country = orgs[orgName].country || 'Unknown';
+            if (country === 'Unknown' && orgName.toLowerCase().includes('mecure')) {
+              country = 'Nigeria'; // Default for Mecure Clinics
+            }
+            
+            const getOrgStatsFn = window.getOrganizationStats || getOrganizationStats;
+            if (typeof getOrgStatsFn !== 'function') {
+              console.error(`? getOrganizationStats function not available for ${orgName}`);
+              continue;
+            }
+            
+            const stats = await getOrgStatsFn(orgName);
+            const localCurrency = COUNTRY_CURRENCIES[country] || 'USD';
+            
+            if (!countryData[country]) {
+              countryData[country] = {
+                currency: localCurrency,
+                clinics: 0,
+                patients: 0,
+                localRevenue: 0,
+                usdRevenue: 0
+              };
+            }
+            
+            countryData[country].clinics++;
+            // Ensure all values are numbers to avoid NaN
+            const patientCount = stats && stats.patientCount ? parseInt(stats.patientCount) || 0 : 0;
+            const revenue = stats && stats.totalRevenue ? parseFloat(stats.totalRevenue) || 0 : 0;
+            countryData[country].patients += patientCount;
+            countryData[country].localRevenue += revenue;
+            countryData[country].usdRevenue += convertToUSD(revenue, localCurrency);
+          } catch (error) {
+            console.error(`? Error processing ${orgName}:`, error);
+            continue;
+          }
+        }
+        
+        console.log('? Processed geographic data:', countryData);
+        
+        // Apply country filter
+        let filteredCountries = Object.entries(countryData);
+        if (currentFilters.country) {
+          filteredCountries = filteredCountries.filter(([country]) => country === currentFilters.country);
+        }
+        
+        const tbody = document.getElementById('geographic-distribution');
+        if (!tbody) {
+          console.error('? geographic-distribution tbody not found');
+          return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        if (filteredCountries.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; color: #999;">No data available for selected filters</td></tr>';
+          return;
+        }
+        
+        // Sort by USD revenue for consistent comparison
+        const sortedCountries = filteredCountries.sort((a, b) => b[1].usdRevenue - a[1].usdRevenue);
+        
+        sortedCountries.forEach(([country, data]) => {
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td class="left"><strong>${country}</strong></td>
+            <td class="center"><strong style="color: #FF9800;">${data.currency}</strong></td>
+            <td class="center"><strong style="color: #667eea; font-size: 16px;">${data.clinics}</strong></td>
+            <td class="center"><strong style="color: #2196F3; font-size: 16px;">${data.patients.toLocaleString()}</strong></td>
+            <td class="right amount">${formatCurrency(data.localRevenue, data.currency)}</td>
+            <td class="right amount"><strong style="color: #4CAF50;">$${data.usdRevenue.toLocaleString()}</strong></td>
+          `;
+        });
+        
+        console.log('? loadGeographicDistribution: Completed successfully');
+      } catch (error) {
+        console.error('? Error in loadGeographicDistribution:', error);
+        const tbody = document.getElementById('geographic-distribution');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="6" style="text-align: center; color: red;">Error loading data: ${error.message}</td></tr>`;
+        }
+      }
+    }
+    
+    async function loadActivitySummary() {
+      try {
+        console.log('[PLATFORM-ANALYTICS] loadActivitySummary: Starting...');
+        const getAllOrgsFn = window.getAllOrganizations || getAllOrganizations;
+        if (typeof getAllOrgsFn !== 'function') {
+          console.error('? getAllOrganizations function not available');
+          document.getElementById('activity-summary').innerHTML = '<tr><td colspan="5" style="text-align: center; color: red;">Error: getAllOrganizations function not available</td></tr>';
+          return;
+        }
+        
+        const orgs = await getAllOrgsFn();
+        console.log('? getAllOrganizations returned:', orgs);
+        
+        if (!orgs || Object.keys(orgs).length === 0) {
+          console.warn('[PLATFORM-ANALYTICS] No organizations found');
+          document.getElementById('activity-summary').innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No clinics registered yet</td></tr>';
+          return;
+        }
+        
+        const tbody = document.getElementById('activity-summary');
+        if (!tbody) {
+          console.error('? activity-summary tbody not found');
+          return;
+        }
+        
+        tbody.innerHTML = '';
+        
+        let orgsList = Object.keys(orgs);
+        
+        // Apply country filter
+        if (currentFilters.country) {
+          orgsList = orgsList.filter(orgName => orgs[orgName].country === currentFilters.country);
+        }
+        
+        // Get activity summary for each clinic
+        const activityPromises = orgsList.map(async orgName => {
+          try {
+            const getOrgStatsFn = window.getOrganizationStats || getOrganizationStats;
+            if (typeof getOrgStatsFn !== 'function') {
+              console.error(`? getOrganizationStats function not available for ${orgName}`);
+              return {
+                orgName,
+                totalEvents: 0,
+                activeUsers: 0,
+                lastActivity: null,
+                mostCommon: 'None',
+                mostCommonCount: 0
+              };
+            }
+            
+            const stats = await getOrgStatsFn(orgName);
+            const getGlobalAuditLogFn = window.getGlobalAuditLog || getGlobalAuditLog;
+            if (typeof getGlobalAuditLogFn !== 'function') {
+              console.warn(`[PLATFORM-ANALYTICS] getGlobalAuditLog function not available`);
+              return {
+                orgName,
+                totalEvents: 0,
+                activeUsers: 0,
+                lastActivity: null,
+                mostCommon: 'None',
+                mostCommonCount: 0
+              };
+            }
+            
+            const globalLog = getGlobalAuditLogFn();
+          
+          // Filter events for this organization (last 30 days)
+          const thirtyDaysAgo = new Date();
+          thirtyDaysAgo.setDate(thirtyDaysAgo.getDate() - 30);
+          
+          const orgEvents = globalLog.filter(event => 
+            event.organization === orgName && 
+            new Date(event.timestamp) >= thirtyDaysAgo
+          );
+          
+          // Get unique users
+          const activeUsers = new Set(orgEvents.map(e => e.user));
+          
+          // Get event breakdown
+          const eventBreakdown = {};
+          orgEvents.forEach(event => {
+            eventBreakdown[event.action] = (eventBreakdown[event.action] || 0) + 1;
+          });
+          
+          // Find most common action
+          const eventEntries = Object.entries(eventBreakdown);
+          const mostCommon = eventEntries.length > 0 
+            ? eventEntries.sort((a, b) => b[1] - a[1])[0]
+            : ['None', 0];
+          
+          // Get last activity
+          const lastActivity = orgEvents.length > 0 
+            ? orgEvents.sort((a, b) => new Date(b.timestamp) - new Date(a.timestamp))[0].timestamp
+            : null;
+          
+          return {
+            orgName,
+            totalEvents: orgEvents.length,
+            activeUsers: activeUsers.size,
+            lastActivity,
+            mostCommon: mostCommon[0],
+            mostCommonCount: mostCommon[1]
+          };
+        } catch (error) {
+          console.error(`Error getting activity for ${orgName}:`, error);
+          return {
+            orgName,
+            totalEvents: 0,
+            activeUsers: 0,
+            lastActivity: null,
+            mostCommon: 'None',
+            mostCommonCount: 0
+          };
+        }
+      });
+      
+        const activityData = await Promise.all(activityPromises);
+        console.log('? Processed activity data:', activityData);
+        
+        if (activityData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="5" style="text-align: center; color: #999;">No activity data available</td></tr>';
+          return;
+        }
+        
+        activityData.forEach(summary => {
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td class="left">${summary.orgName}</td>
+            <td class="center"><strong style="color: #667eea;">${summary.totalEvents}</strong></td>
+            <td class="center"><strong style="color: #4CAF50;">${summary.activeUsers}</strong></td>
+            <td class="center">${summary.lastActivity ? new Date(summary.lastActivity).toLocaleString() : 'No activity'}</td>
+            <td class="left">
+              <code style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 11px;">
+                ${summary.mostCommon} (${summary.mostCommonCount}x)
+              </code>
+            </td>
+          `;
+        });
+        
+        console.log('? loadActivitySummary: Completed successfully');
+      } catch (error) {
+        console.error('? Error in loadActivitySummary:', error);
+        const tbody = document.getElementById('activity-summary');
+        if (tbody) {
+          tbody.innerHTML = `<tr><td colspan="5" style="text-align: center; color: red;">Error loading data: ${error.message}</td></tr>`;
+        }
+      }
+    }
+    
+    function convertToUSD(amount, fromCurrency) {
+      // Use the currency converter module's function
+      if (typeof window.convertCurrency === 'function') {
+        return window.convertCurrency(amount, fromCurrency, 'USD');
+      }
+      // Fallback if converter not loaded
+      return amount;
+    }
+    
+    function formatCurrency(amount, currency = 'NGN') {
+      const symbols = {
+        'NGN': '₦',
+        'KES': 'KSh',
+        'ZAR': 'R',
+        'GHS': 'GH?',
+        'USD': '$',
+        'EUR': '?',
+        'GBP': '?',
+        'CAD': 'C$',
+        'AUD': 'A$'
+      };
+      
+      const symbol = symbols[currency] || currency;
+      // Ensure amount is a number and handle NaN
+      const numAmount = isNaN(amount) ? 0 : parseFloat(amount) || 0;
+      return `${symbol}${numAmount.toLocaleString()}`;
+    }
+  </script>
+  
+  <style>
+    .status-badge {
+      display: inline-block;
+    }
+    
+    .status-active {
+      background: #d4edda;
+      color: #155724;
+    }
+    
+    .status-trial {
+      background: #fff3cd;
+      color: #856404;
+    }
+    
+    .status-suspended {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    
+    .billing-table {
+      display: table !important;
+      table-layout: fixed !important;
+      width: 100% !important;
+      border-collapse: collapse !important;
+    }
+    
+    .billing-table th, .billing-table td {
+      display: table-cell !important;
+      border: 1px solid #eee !important;
+      padding: 12px 8px !important;
+    }
+    
+    .billing-table th {
+      background: linear-gradient(135deg, #667eea, #764ba2) !important;
+      color: white !important;
+      font-weight: bold !important;
+    }
+  </style>  
+
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+
+

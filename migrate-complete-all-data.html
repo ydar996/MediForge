@@ -1,0 +1,605 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>COMPLETE Data Migration - EVERYTHING</title>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            padding: 20px;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+        }
+        
+        .container {
+            max-width: 1400px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 12px;
+            padding: 40px;
+            box-shadow: 0 10px 30px rgba(0,0,0,0.2);
+        }
+        
+        h1 {
+            color: #667eea;
+            text-align: center;
+            margin-bottom: 10px;
+        }
+        
+        .subtitle {
+            text-align: center;
+            color: #64748b;
+            margin-bottom: 30px;
+            font-size: 18px;
+            font-weight: 600;
+        }
+        
+        .section {
+            background: #f8f9fa;
+            padding: 20px;
+            margin-bottom: 20px;
+            border-radius: 8px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .section h2 {
+            color: #667eea;
+            margin-top: 0;
+        }
+        
+        .btn {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            border: none;
+            padding: 14px 32px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            transition: transform 0.2s;
+            margin-right: 10px;
+        }
+        
+        .btn:hover { transform: translateY(-2px); }
+        .btn:disabled { opacity: 0.5; cursor: not-allowed; }
+        
+        .log {
+            background: #1a202c;
+            color: #e2e8f0;
+            padding: 20px;
+            border-radius: 6px;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            max-height: 600px;
+            overflow-y: auto;
+            margin-top: 20px;
+        }
+        
+        .log-entry { margin: 3px 0; padding: 2px 0; }
+        .log-entry.success { color: #68d391; }
+        .log-entry.error { color: #fc8181; }
+        .log-entry.warning { color: #f6ad55; }
+        .log-entry.info { color: #63b3ed; }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(120px, 1fr));
+            gap: 10px;
+            margin: 20px 0;
+        }
+        
+        .stat-box {
+            background: white;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border: 2px solid #e2e8f0;
+        }
+        
+        .stat-box .number {
+            font-size: 28px;
+            font-weight: bold;
+            color: #667eea;
+        }
+        
+        .stat-box .label {
+            font-size: 11px;
+            color: #64748b;
+            margin-top: 8px;
+        }
+        
+        .progress-bar {
+            width: 100%;
+            height: 30px;
+            background: #e2e8f0;
+            border-radius: 15px;
+            overflow: hidden;
+            margin: 20px 0;
+        }
+        
+        .progress-fill {
+            height: 100%;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            transition: width 0.3s;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-weight: 600;
+            font-size: 14px;
+        }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    
+  </script>
+
+    <div class="container">
+        <h1>?? COMPLETE DATA MIGRATION</h1>
+        <p class="subtitle">Migrating EVERYTHING: Clinical + Billing + Allergies + Immunizations + Orders + Referrals + Specialists</p>
+        
+        <div class="section">
+            <h2>?? Load Backup File</h2>
+            <input type="file" id="backup-file" accept=".json" style="margin-bottom: 15px;">
+            <button class="btn" onclick="loadBackup()">Load Backup</button>
+            
+            <div class="stats-grid" id="backup-stats" style="display: none;">
+                <div class="stat-box"><div class="number" id="stat-patients">0</div><div class="label">Patients</div></div>
+                <div class="stat-box"><div class="number" id="stat-encounters">0</div><div class="label">Encounters</div></div>
+                <div class="stat-box"><div class="number" id="stat-vitals">0</div><div class="label">Vitals</div></div>
+                <div class="stat-box"><div class="number" id="stat-diagnoses">0</div><div class="label">Diagnoses</div></div>
+                <div class="stat-box"><div class="number" id="stat-medications">0</div><div class="label">Medications</div></div>
+                <div class="stat-box"><div class="number" id="stat-allergies">0</div><div class="label">Allergies</div></div>
+                <div class="stat-box"><div class="number" id="stat-immunizations">0</div><div class="label">Immunizations</div></div>
+                <div class="stat-box"><div class="number" id="stat-invoices">0</div><div class="label">Invoices</div></div>
+                <div class="stat-box"><div class="number" id="stat-payments">0</div><div class="label">Payments</div></div>
+                <div class="stat-box"><div class="number" id="stat-referrals">0</div><div class="label">Referrals</div></div>
+                <div class="stat-box"><div class="number" id="stat-specialists">0</div><div class="label">Specialists</div></div>
+            </div>
+        </div>
+        
+        <div class="section">
+            <h2>?? Migrate ALL Data</h2>
+            <button class="btn" id="migrate-btn" onclick="startMigration()" disabled>Start COMPLETE Migration</button>
+            <button class="btn" onclick="clearLogs()">Clear Logs</button>
+            
+            <div class="progress-bar" style="display: none;" id="progress-bar">
+                <div class="progress-fill" id="progress-fill">0%</div>
+            </div>
+        </div>
+        
+        <div class="log" id="migration-log"></div>
+    </div>
+
+    
+  
+        let backupData = null;
+        let orgId = null;
+
+        function log(message, type = 'info') {
+            const logDiv = document.getElementById('migration-log');
+            const entry = document.createElement('div');
+            entry.className = `log-entry ${type}`;
+            const timestamp = new Date().toLocaleTimeString();
+            entry.textContent = `[${timestamp}] ${message}`;
+            logDiv.appendChild(entry);
+            logDiv.scrollTop = logDiv.scrollHeight;
+            console.log(`[${type.toUpperCase()}] ${message}`);
+        }
+
+        function updateProgress(percent, text) {
+            const progressBar = document.getElementById('progress-bar');
+            const progressFill = document.getElementById('progress-fill');
+            progressBar.style.display = 'block';
+            progressFill.style.width = `${percent}%`;
+            progressFill.textContent = text || `${percent}%`;
+        }
+
+        function clearLogs() {
+            document.getElementById('migration-log').innerHTML = '';
+        }
+
+        async function loadBackup() {
+            const fileInput = document.getElementById('backup-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a backup file');
+                return;
+            }
+
+            log('?? Reading backup file...', 'info');
+            
+            try {
+                const text = await file.text();
+                const cleanedText = text.replace(/"followup":\s*"[^"]*",\s*"followUp"/g, '"followUp"');
+                backupData = JSON.parse(cleanedText);
+                
+                log('? Backup file loaded successfully', 'success');
+                
+                const mecure = backupData.organizationData?.['Mecure Clinics'];
+                if (mecure) {
+                    const patients = mecure.patients || [];
+                    
+                    let totalEncounters = 0, totalVitals = 0, totalDiagnoses = 0;
+                    let totalMedications = 0, totalAllergies = 0, totalImmunizations = 0;
+                    let totalReferrals = 0;
+                    
+                    patients.forEach(p => {
+                        if (p.visits) totalEncounters += p.visits.length;
+                        if (p.diagnoses) totalDiagnoses += p.diagnoses.length;
+                        if (p.medications) totalMedications += p.medications.length;
+                        if (p.allergies) totalAllergies += p.allergies.length;
+                        if (p.immunizations) totalImmunizations += p.immunizations.length;
+                        
+                        if (p.visits) {
+                            p.visits.forEach(v => {
+                                if (v.soap?.objective?.vitals) {
+                                    totalVitals += Array.isArray(v.soap.objective.vitals) ? v.soap.objective.vitals.length : 1;
+                                }
+                                if (v.referrals) totalReferrals += v.referrals.length;
+                            });
+                        }
+                    });
+                    
+                    const invoices = mecure.billing_invoices || [];
+                    const payments = mecure.billing_payments || [];
+                    const specialists = mecure.specialists || [];
+                    
+                    document.getElementById('stat-patients').textContent = patients.length;
+                    document.getElementById('stat-encounters').textContent = totalEncounters;
+                    document.getElementById('stat-vitals').textContent = totalVitals;
+                    document.getElementById('stat-diagnoses').textContent = totalDiagnoses;
+                    document.getElementById('stat-medications').textContent = totalMedications;
+                    document.getElementById('stat-allergies').textContent = totalAllergies;
+                    document.getElementById('stat-immunizations').textContent = totalImmunizations;
+                    document.getElementById('stat-invoices').textContent = invoices.length;
+                    document.getElementById('stat-payments').textContent = payments.length;
+                    document.getElementById('stat-referrals').textContent = totalReferrals;
+                    document.getElementById('stat-specialists').textContent = specialists.length;
+                    
+                    document.getElementById('backup-stats').style.display = 'grid';
+                    document.getElementById('migrate-btn').disabled = false;
+                    
+                    log(`?? Found: ${totalAllergies} allergies, ${totalImmunizations} immunizations`, 'info');
+                    log(`?? Found: ${invoices.length} invoices, ${payments.length} payments`, 'info');
+                    log(`?? Found: ${totalReferrals} referrals, ${specialists.length} specialists`, 'info');
+                }
+            } catch (error) {
+                log(`? Error loading backup: ${error.message}`, 'error');
+                console.error(error);
+            }
+        }
+
+        async function startMigration() {
+            if (!backupData) {
+                alert('Please load a backup file first');
+                return;
+            }
+
+            document.getElementById('migrate-btn').disabled = true;
+            log('?? Starting COMPLETE data migration (ALL data types)...', 'info');
+            
+            try {
+                await getOrganizationId();
+                
+                updateProgress(5, 'Migrating allergies...');
+                await migrateAllergies();
+                
+                updateProgress(15, 'Migrating immunizations...');
+                await migrateImmunizations();
+                
+                updateProgress(30, 'Migrating referrals...');
+                await migrateReferrals();
+                
+                updateProgress(50, 'Migrating billing invoices...');
+                await migrateBillingInvoices();
+                
+                updateProgress(70, 'Migrating billing payments...');
+                await migrateBillingPayments();
+                
+                updateProgress(85, 'Migrating specialists...');
+                await migrateSpecialists();
+                
+                log('\n?? COMPLETE MIGRATION FINISHED - ALL DATA MIGRATED!', 'success');
+                updateProgress(100, '? Complete');
+                
+            } catch (error) {
+                log(`? Migration failed: ${error.message}`, 'error');
+                console.error(error);
+            } finally {
+                document.getElementById('migrate-btn').disabled = false;
+            }
+        }
+
+        async function getOrganizationId() {
+            const { data: orgs } = await supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', 'Mecure Clinics')
+                .single();
+            
+            if (!orgs) throw new Error('Mecure Clinics not found');
+            orgId = orgs.id;
+            log(`? Using organization ID: ${orgId}`, 'success');
+        }
+
+        async function migrateAllergies() {
+            const patients = backupData.organizationData?.['Mecure Clinics']?.patients || [];
+            let count = 0;
+            
+            log('?? Migrating allergies...', 'info');
+            
+            for (const patient of patients) {
+                const allergies = patient.allergies || [];
+                for (const allergy of allergies) {
+                    const { data: existing } = await supabaseClient
+                        .from('allergies')
+                        .select('id')
+                        .eq('patient_id', patient.id)
+                        .eq('allergen', allergy.allergen)
+                        .maybeSingle();
+                    
+                    if (existing) continue;
+                    
+                    await supabaseClient.from('allergies').insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        allergen: allergy.allergen,
+                        reaction: allergy.reaction || null,
+                        severity: allergy.severity || null,
+                        notes: allergy.notes || null
+                    }]);
+                    count++;
+                }
+            }
+            
+            log(`? Migrated ${count} allergies`, 'success');
+        }
+
+        async function migrateImmunizations() {
+            const patients = backupData.organizationData?.['Mecure Clinics']?.patients || [];
+            let count = 0;
+            
+            log('?? Migrating immunizations...', 'info');
+            
+            for (const patient of patients) {
+                const immunizations = patient.immunizations || [];
+                for (const imm of immunizations) {
+                    const { data: existing } = await supabaseClient
+                        .from('immunizations')
+                        .select('id')
+                        .eq('patient_id', patient.id)
+                        .eq('vaccine', imm.vaccine)
+                        .eq('administration_date', imm.date)
+                        .maybeSingle();
+                    
+                    if (existing) continue;
+                    
+                    await supabaseClient.from('immunizations').insert([{
+                        patient_id: patient.id,
+                        organization_id: orgId,
+                        vaccine: imm.vaccine,
+                        administration_date: imm.date,
+                        notes: imm.notes || null
+                    }]);
+                    count++;
+                }
+            }
+            
+            log(`? Migrated ${count} immunizations`, 'success');
+        }
+
+        async function migrateReferrals() {
+            const patients = backupData.organizationData?.['Mecure Clinics']?.patients || [];
+            let count = 0;
+            
+            log('?? Migrating referrals...', 'info');
+            
+            for (const patient of patients) {
+                const visits = patient.visits || [];
+                for (const visit of visits) {
+                    const referrals = visit.referrals || [];
+                    for (const ref of referrals) {
+                        await supabaseClient.from('referral_details').insert([{
+                            patient_id: patient.id,
+                            organization_id: orgId,
+                            referral_date: visit.date,
+                            referral_type: ref.type || null,
+                            specialist_id: ref.specialistId || null,
+                            specialist_name: ref.specialistName || 'Unknown',
+                            diagnoses: ref.diagnoses || null,
+                            urgency: ref.urgency || 'routine',
+                            status: ref.status || 'pending',
+                            note: ref.note || null,
+                            timestamp: ref.timestamp || null
+                        }]);
+                        count++;
+                    }
+                }
+            }
+            
+            log(`? Migrated ${count} referrals`, 'success');
+        }
+
+        async function migrateBillingInvoices() {
+            const invoices = backupData.organizationData?.['Mecure Clinics']?.billing_invoices || [];
+            let count = 0;
+            
+            log('?? Migrating billing invoices...', 'info');
+            
+            for (const inv of invoices) {
+                const { data: existing } = await supabaseClient
+                    .from('billing_invoices')
+                    .select('id')
+                    .eq('invoice_id', inv.id)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                const { data: newInvoice, error } = await supabaseClient
+                    .from('billing_invoices')
+                    .insert([{
+                        invoice_id: inv.id,
+                        invoice_number: inv.invoiceNumber,
+                        patient_id: inv.patientId,
+                        patient_name: inv.patientName,
+                        organization_id: orgId,
+                        encounter_id: inv.encounterId || null,
+                        invoice_date: inv.date,
+                        due_date: inv.dueDate || null,
+                        currency: inv.currency || 'CAD',
+                        subtotal: inv.subtotal || 0,
+                        tax_rate: inv.taxRate || 0,
+                        tax_amount: inv.taxAmount || 0,
+                        discount_amount: inv.discountAmount || 0,
+                        discount_reason: inv.discountReason || null,
+                        total: inv.total,
+                        amount_paid: inv.amountPaid || 0,
+                        amount_due: inv.amountDue || 0,
+                        status: inv.status || 'pending',
+                        payment_method: inv.paymentMethod || null,
+                        notes: inv.notes || null,
+                        created_by: inv.createdBy || null,
+                        created_at: inv.createdAt || new Date().toISOString(),
+                        last_modified: inv.lastModified || new Date().toISOString()
+                    }])
+                    .select()
+                    .single();
+                
+                if (error) {
+                    log(`  ?? Error migrating invoice ${inv.invoiceNumber}: ${error.message}`, 'warning');
+                    continue;
+                }
+                
+                // Migrate invoice services
+                if (inv.services && newInvoice) {
+                    for (const service of inv.services) {
+                        await supabaseClient.from('billing_invoice_services').insert([{
+                            invoice_id: newInvoice.id,
+                            service_id: service.id || null,
+                            service_code: service.code || null,
+                            service_name: service.name,
+                            quantity: service.quantity || 1,
+                            price: service.price,
+                            total: service.total || service.price
+                        }]);
+                    }
+                }
+                
+                count++;
+            }
+            
+            log(`? Migrated ${count} invoices with services`, 'success');
+        }
+
+        async function migrateBillingPayments() {
+            const payments = backupData.organizationData?.['Mecure Clinics']?.billing_payments || [];
+            let count = 0;
+            
+            log('?? Migrating billing payments...', 'info');
+            
+            for (const pay of payments) {
+                const { data: existing } = await supabaseClient
+                    .from('billing_payments')
+                    .select('id')
+                    .eq('payment_id', pay.id)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                await supabaseClient.from('billing_payments').insert([{
+                    payment_id: pay.id,
+                    reference: pay.reference,
+                    invoice_id: pay.invoiceId,
+                    patient_id: pay.patientId,
+                    patient_name: pay.patientName,
+                    organization_id: orgId,
+                    amount: pay.amount,
+                    currency: pay.currency || 'CAD',
+                    method: pay.method,
+                    method_details: pay.methodDetails || null,
+                    payment_date: pay.date,
+                    status: pay.status || 'completed',
+                    notes: pay.notes || null,
+                    received_by: pay.receivedBy || null,
+                    created_at: pay.createdAt || new Date().toISOString()
+                }]);
+                count++;
+            }
+            
+            log(`? Migrated ${count} payments`, 'success');
+        }
+
+        async function migrateSpecialists() {
+            const specialists = backupData.organizationData?.['Mecure Clinics']?.specialists || [];
+            let count = 0;
+            
+            log('????? Migrating specialists...', 'info');
+            
+            for (const spec of specialists) {
+                const { data: existing } = await supabaseClient
+                    .from('specialists')
+                    .select('id')
+                    .eq('specialist_id', spec.id)
+                    .maybeSingle();
+                
+                if (existing) continue;
+                
+                await supabaseClient.from('specialists').insert([{
+                    specialist_id: spec.id,
+                    organization_id: orgId,
+                    specialty: spec.specialty,
+                    business_name: spec.details?.businessName || null,
+                    first_name: spec.details?.firstName || '',
+                    last_name: spec.details?.lastName || '',
+                    gender: spec.details?.gender || null,
+                    medical_license: spec.details?.medicalLicense || null,
+                    business_type: spec.details?.businessType || null,
+                    address_line1: spec.details?.addressLine1 || null,
+                    address_line2: spec.details?.addressLine2 || null,
+                    city: spec.details?.city || null,
+                    state: spec.details?.state || null,
+                    country: spec.details?.country || null,
+                    telephone: spec.details?.telephone || null,
+                    fax: spec.details?.fax || null,
+                    email: spec.details?.email || null
+                }]);
+                count++;
+            }
+            
+            log(`? Migrated ${count} specialists`, 'success');
+        }
+    </script>  
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+
+

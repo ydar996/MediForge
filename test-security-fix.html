@@ -1,0 +1,243 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Security Fix Test - Data Leakage Prevention</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        .success { background-color: #d4edda; border-color: #c3e6cb; }
+        .error { background-color: #f8d7da; border-color: #f5c6cb; }
+        .info { background-color: #d1ecf1; border-color: #bee5eb; }
+        button { padding: 10px 20px; margin: 5px; background-color: #007bff; color: white; border: none; border-radius: 3px; cursor: pointer; }
+        button:hover { background-color: #0056b3; }
+        #console-output { background-color: #f8f9fa; padding: 10px; border: 1px solid #ddd; border-radius: 3px; height: 300px; overflow-y: auto; font-family: monospace; font-size: 12px; }
+    </style>
+</head>
+<body>
+    <h1>🔒 Security Fix Test - Data Leakage Prevention</h1>
+    
+    <div class="test-section info">
+        <h3>Test Overview</h3>
+        <p>This page tests the security fixes to prevent data leakage between organizations.</p>
+        <p><strong>Expected Result:</strong> Users should only see data from their own organization.</p>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 1: Setup Test Data</h3>
+        <button onclick="setupTestData()">Setup Test Organizations & Users</button>
+        <button onclick="simulateDataLeakage()">Simulate Data Leakage Scenario</button>
+        <div id="setup-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 2: Test Security Validation</h3>
+        <button onclick="testOrganizationValidation()">Test Organization ID Validation</button>
+        <button onclick="testDataCleanup()">Test Data Cleanup Function</button>
+        <div id="validation-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Step 3: Test Data Loading</h3>
+        <button onclick="testDataLoading()">Test Secure Data Loading</button>
+        <button onclick="clearAllData()">Clear All Test Data</button>
+        <div id="loading-status"></div>
+    </div>
+
+    <div class="test-section">
+        <h3>Console Output</h3>
+        <div id="console-output"></div>
+    </div>
+
+    <script>
+        // Capture console logs
+        const originalLog = console.log;
+        const originalWarn = console.warn;
+        const originalError = console.error;
+        
+        function addToConsole(message, type = 'log') {
+            const output = document.getElementById('console-output');
+            const timestamp = new Date().toLocaleTimeString();
+            const color = type === 'error' ? 'red' : type === 'warn' ? 'orange' : 'black';
+            output.innerHTML += `<div style="color: ${color};">[${timestamp}] ${message}</div>`;
+            output.scrollTop = output.scrollHeight;
+        }
+        
+        console.log = function(...args) {
+            originalLog.apply(console, args);
+            addToConsole(args.join(' '), 'log');
+        };
+        
+        console.warn = function(...args) {
+            originalWarn.apply(console, args);
+            addToConsole(args.join(' '), 'warn');
+        };
+        
+        console.error = function(...args) {
+            originalError.apply(console, args);
+            addToConsole(args.join(' '), 'error');
+        };
+
+        // Test data setup
+        function setupTestData() {
+            console.log('🧪 Setting up test data...');
+            
+            // Create test organizations
+            const organizations = {
+                "Axiom Medical": {
+                    id: "41b8993a-80f5-412f-8d33-fa3eb22ba260",
+                    name: "Axiom Medical"
+                },
+                "Eko Clinics": {
+                    id: "e9f8c7d6-1234-5678-9abc-def012345678",
+                    name: "Eko Clinics"
+                }
+            };
+            
+            localStorage.setItem("organizations", JSON.stringify(organizations));
+            
+            // Create test users
+            const users = [
+                {
+                    username: "ydar300",
+                    org: "Axiom Medical",
+                    organizationId: "41b8993a-80f5-412f-8d33-fa3eb22ba260"
+                },
+                {
+                    username: "eko_user",
+                    org: "Eko Clinics", 
+                    organizationId: "e9f8c7d6-1234-5678-9abc-def012345678"
+                }
+            ];
+            
+            localStorage.setItem("users", JSON.stringify(users));
+            localStorage.setItem("user", JSON.stringify(users[0])); // Set ydar300 as current user
+            
+            document.getElementById('setup-status').innerHTML = '<div class="success">✅ Test data created successfully</div>';
+            console.log('✅ Test organizations and users created');
+        }
+
+        function simulateDataLeakage() {
+            console.log('🚨 Simulating data leakage scenario...');
+            
+            // Create leaked patient data (Eko Clinics patient appearing in Axiom Medical)
+            const leakedPatients = [
+                {
+                    id: "EKO0001",
+                    firstName: "Haruna",
+                    lastName: "Ishola",
+                    organization_id: "e9f8c7d6-1234-5678-9abc-def012345678", // Eko Clinics ID
+                    dateOfBirth: "1985-03-15"
+                }
+            ];
+            
+            localStorage.setItem("Axiom Medical_patients", JSON.stringify(leakedPatients));
+            
+            document.getElementById('setup-status').innerHTML = '<div class="error">🚨 Simulated data leakage - Eko Clinics patient in Axiom Medical storage</div>';
+            console.log('🚨 Simulated data leakage: Eko Clinics patient in Axiom Medical storage');
+        }
+
+        function testOrganizationValidation() {
+            console.log('🔒 Testing organization ID validation...');
+            
+            // Load the universal data loader script
+            const script = document.createElement('script');
+            script.src = 'js/universal-data-loader.js?v=20251022020000';
+            script.onload = function() {
+                console.log('✅ Universal data loader loaded');
+                
+                // Test getOrganizationId function
+                if (typeof window.getOrganizationId === 'function') {
+                    const orgId = window.getOrganizationId();
+                    console.log('🔒 Organization ID for current user:', orgId);
+                    
+                    if (orgId === "41b8993a-80f5-412f-8d33-fa3eb22ba260") {
+                        document.getElementById('validation-status').innerHTML = '<div class="success">✅ Organization ID validation working correctly</div>';
+                        console.log('✅ Organization ID validation passed');
+                    } else {
+                        document.getElementById('validation-status').innerHTML = '<div class="error">❌ Organization ID validation failed</div>';
+                        console.error('❌ Organization ID validation failed');
+                    }
+                } else {
+                    document.getElementById('validation-status').innerHTML = '<div class="error">❌ getOrganizationId function not found</div>';
+                    console.error('❌ getOrganizationId function not found');
+                }
+            };
+            script.onerror = function() {
+                document.getElementById('validation-status').innerHTML = '<div class="error">❌ Failed to load universal-data-loader.js</div>';
+                console.error('❌ Failed to load universal-data-loader.js');
+            };
+            document.head.appendChild(script);
+        }
+
+        function testDataCleanup() {
+            console.log('🧹 Testing data cleanup function...');
+            
+            // Check if cleanup function exists and works
+            if (typeof window.cleanupLeakedData === 'function') {
+                window.cleanupLeakedData();
+                console.log('✅ Data cleanup function executed');
+                
+                // Check if leaked data was removed
+                const patients = JSON.parse(localStorage.getItem("Axiom Medical_patients") || "[]");
+                const hasLeakedData = patients.some(p => p.organization_id !== "41b8993a-80f5-412f-8d33-fa3eb22ba260");
+                
+                if (!hasLeakedData) {
+                    document.getElementById('validation-status').innerHTML = '<div class="success">✅ Data cleanup working - leaked data removed</div>';
+                    console.log('✅ Data cleanup successful - leaked data removed');
+                } else {
+                    document.getElementById('validation-status').innerHTML = '<div class="error">❌ Data cleanup failed - leaked data still present</div>';
+                    console.error('❌ Data cleanup failed - leaked data still present');
+                }
+            } else {
+                document.getElementById('validation-status').innerHTML = '<div class="error">❌ cleanupLeakedData function not found</div>';
+                console.error('❌ cleanupLeakedData function not found');
+            }
+        }
+
+        function testDataLoading() {
+            console.log('📡 Testing secure data loading...');
+            
+            // Test the loadPatientsWithSupabasePriority function
+            if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+                window.loadPatientsWithSupabasePriority(true).then(patients => {
+                    console.log('📡 Loaded patients:', patients.length);
+                    
+                    // Check if any patients belong to wrong organization
+                    const hasWrongOrgData = patients.some(p => p.organization_id && p.organization_id !== "41b8993a-80f5-412f-8d33-fa3eb22ba260");
+                    
+                    if (!hasWrongOrgData) {
+                        document.getElementById('loading-status').innerHTML = '<div class="success">✅ Secure data loading working - no cross-organization data</div>';
+                        console.log('✅ Secure data loading successful');
+                    } else {
+                        document.getElementById('loading-status').innerHTML = '<div class="error">❌ Data loading failed - cross-organization data detected</div>';
+                        console.error('❌ Data loading failed - cross-organization data detected');
+                    }
+                }).catch(error => {
+                    document.getElementById('loading-status').innerHTML = '<div class="error">❌ Data loading error: ' + error.message + '</div>';
+                    console.error('❌ Data loading error:', error);
+                });
+            } else {
+                document.getElementById('loading-status').innerHTML = '<div class="error">❌ loadPatientsWithSupabasePriority function not found</div>';
+                console.error('❌ loadPatientsWithSupabasePriority function not found');
+            }
+        }
+
+        function clearAllData() {
+            console.log('🧹 Clearing all test data...');
+            localStorage.clear();
+            document.getElementById('setup-status').innerHTML = '';
+            document.getElementById('validation-status').innerHTML = '';
+            document.getElementById('loading-status').innerHTML = '';
+            document.getElementById('console-output').innerHTML = '';
+            console.log('✅ All test data cleared');
+        }
+
+        // Initialize
+        console.log('🧪 Security Fix Test Page Loaded');
+        console.log('📋 Ready to test data leakage prevention fixes');
+    </script>
+</body>
+</html>

@@ -1,0 +1,2284 @@
+<!-- Purpose: User registration with organization management - users can either register a new organization or join an existing one using an org code -->
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">  
+  <!-- Auto Cache Buster for Mobile -->
+  <!-- DISABLED: Auto cache buster removed to prevent mobile refresh loops -->
+  <title>Register - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=20251021120000">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">  
+  <!-- Auto Cache Buster for Mobile -->
+  <!-- DISABLED: Auto cache buster removed to prevent mobile refresh loops -->
+  <style>
+    .registration-path {
+      background: linear-gradient(135deg, #f8f9fa 0%, #ffffff 100%);
+      border: 2px solid #e9ecef;
+      border-radius: 12px;
+      padding: 25px;
+      margin: 20px 0;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    
+    .registration-path:hover {
+      border-color: #008753;
+      background: linear-gradient(135deg, #f0f8f4 0%, #e8f5ea 100%);
+      transform: translateY(-3px);
+      box-shadow: 0 8px 25px rgba(0, 135, 83, 0.15);
+    }
+    
+    .registration-path.selected {
+      border-color: #B8860B;
+      background: linear-gradient(135deg, #faf8f0 0%, #f5f2e8 100%);
+      box-shadow: 0 4px 15px rgba(184, 134, 11, 0.2);
+    }
+    
+    .registration-path h3 {
+      margin: 0 0 10px 0;
+      color: #333;
+    }
+    .reg-icon {
+      display: inline-block;
+      margin-right: 6px;
+      vertical-align: middle;
+      line-height: 1;
+    }
+    .reg-icon svg,
+    .reg-icon i {
+      vertical-align: middle;
+    }
+    
+    .registration-path p {
+      margin: 0;
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .form-section {
+      display: none;
+      background: white;
+      border-radius: 12px;
+      padding: 30px;
+      margin: 20px 0;
+      box-shadow: 0 4px 15px rgba(0,0,0,0.08);
+      border: 1px solid #e9ecef;
+    }
+
+    .nav-link {
+      color: white;
+      text-decoration: none;
+      padding: 8px 16px;
+      border-radius: 6px;
+      transition: background 0.3s, color 0.3s;
+      font-weight: 500;
+      display: inline-block;
+    }
+
+    .nav-link:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .nav-link--primary {
+      background: rgba(255,255,255,0.1);
+    }
+
+    .nav-link--primary:hover {
+      background: rgba(255,255,255,0.2);
+    }
+
+    .cta-link {
+      color: #008753;
+      text-decoration: none;
+      font-weight: 600;
+      padding: 8px 16px;
+      border-radius: 6px;
+      background: white;
+      border: 2px solid #008753;
+      transition: all 0.3s;
+      display: inline-block;
+    }
+
+    .cta-link:hover {
+      background: #008753;
+      color: white;
+    }
+
+    .footer-link {
+      color: #ecf0f1;
+      text-decoration: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      transition: all 0.3s;
+      font-weight: 500;
+      display: inline-block;
+    }
+
+    .footer-link:hover {
+      color: white;
+    }
+
+    .footer-link--green:hover {
+      background: #008753;
+    }
+
+    .footer-link--gold:hover {
+      background: #B8860B;
+    }
+
+    .footer-link--yellow:hover {
+      background: #D4AF37;
+    }
+    
+    .form-section.active {
+      display: block;
+      animation: fadeInUp 0.5s ease-out;
+    }
+    
+    @keyframes fadeInUp {
+      from {
+        opacity: 0;
+        transform: translateY(20px);
+      }
+      to {
+        opacity: 1;
+        transform: translateY(0);
+      }
+    }
+    
+    .org-code-display {
+      background: #e8f5e8;
+      border: 2px solid #008753;
+      border-radius: 8px;
+      padding: 20px;
+      margin: 20px 0;
+      text-align: center;
+    }
+    
+    .org-code-display .code {
+      font-size: 32px;
+      font-weight: bold;
+      color: #006b42;
+      font-family: monospace;
+      letter-spacing: 4px;
+      margin: 10px 0;
+      background: white;
+      padding: 15px;
+      border-radius: 6px;
+      display: inline-block;
+    }
+    
+    .info-box {
+      background: #e8f5e8;
+      border-left: 4px solid #008753;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    .warning-box {
+      background: #faf8f0;
+      border-left: 4px solid #B8860B;
+      padding: 15px;
+      margin: 20px 0;
+      border-radius: 4px;
+    }
+    
+    /* Nigerian Heritage Button Styles */
+    .btn {
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      font-weight: 500;
+      cursor: pointer;
+      transition: all 0.3s ease;
+      text-decoration: none;
+      display: inline-block;
+      text-align: center;
+    }
+    
+    .btn-primary {
+      background: #008753;
+      color: white;
+      border: 2px solid #B8860B;
+    }
+    
+    .btn-primary:hover {
+      background: #006b42;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.3);
+    }
+    
+    .btn-secondary {
+      background: #B8860B;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #9a6f0a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+    }
+    
+    .btn-info {
+      background: #D4AF37;
+      color: white;
+    }
+    
+    .btn-info:hover {
+      background: #b8941f;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+    
+    .btn-success {
+      background: #B8860B;
+      color: white;
+    }
+    
+    .btn-success:hover {
+      background: #9a6f0a;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(184, 134, 11, 0.3);
+    }
+    
+    .btn-warning {
+      background: #D4AF37;
+      color: white;
+    }
+    
+    .btn-warning:hover {
+      background: #b8941f;
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(212, 175, 55, 0.3);
+    }
+    
+    /* Nigerian Heritage Form Elements */
+    input[type="text"], input[type="email"], input[type="password"], input[type="tel"], select {
+      border: 2px solid #e9ecef;
+      border-radius: 6px;
+      padding: 12px;
+      font-size: 14px;
+      transition: all 0.3s ease;
+    }
+    
+    input[type="text"]:focus, input[type="email"]:focus, input[type="password"]:focus, input[type="tel"]:focus, select:focus {
+      border-color: #008753;
+      box-shadow: 0 0 0 3px rgba(0, 135, 83, 0.1);
+      outline: none;
+    }
+    
+    .form-group label {
+      color: #006b42;
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: block;
+    }
+  </style>
+</head>
+<body>
+  <!-- Header with Navigation -->
+  <header style="background: linear-gradient(135deg, #008753 0%, #006b42 100%); color: white; padding: 20px 0; margin-bottom: 30px; box-shadow: 0 2px 10px rgba(0,0,0,0.1);">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; display: flex; justify-content: space-between; align-items: center;">
+      <div>
+        <h1 style="margin: 0; font-size: 28px; font-weight: 600;">MediForge Registration</h1>
+        <p style="margin: 5px 0 0 0; opacity: 0.9; font-size: 16px;">Join the future of healthcare management</p>
+      </div>
+      <nav style="display: flex; gap: 20px;">
+        <a href="about-us" class="nav-link">About Us</a>
+        <a href="key-features" class="nav-link">Key Features</a>
+        <a href="login" class="nav-link nav-link--primary">Login</a>
+      </nav>
+    </div>
+  </header>
+
+  <!-- Main Content Container -->
+  <div style="max-width: 800px; margin: 0 auto; padding: 0 20px;">
+  
+  <!-- Step 1: Choose Registration Path -->
+  <div id="step-1" class="form-section active">
+    <h2>How would you like to proceed?</h2>
+    <p style="color: #666; margin-bottom: 20px;">Choose one of the options below:</p>
+    
+    <div class="registration-path" onclick="selectPath('new-org')">
+      <h3><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-building" style="color:#008753"></i></span> Register a New Organization</h3>
+      <p>I'm setting up a new clinic/hospital for the first time</p>
+    </div>
+    
+    <div class="registration-path" onclick="selectPath('join-org')">
+      <h3><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-users" style="color:#008753"></i></span> Join an Existing Organization</h3>
+      <p>I have an organization code from my clinic/hospital</p>
+    </div>
+  </div>
+  
+  <!-- Step 2A: Register New Organization -->
+  <div id="step-new-org" class="form-section">
+    <h2>Register New Organization</h2>
+    <div class="info-box">
+      <strong><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-user-plus" style="color:#008753"></i></span> You're creating a new organization.</strong> You will be the first administrator and will receive an organization code that other staff can use to join.
+    </div>
+    
+    <form id="new-org-form">
+      <h3>Organization Details</h3>
+      
+      <div class="form-group">
+        <label for="org-name">Organization Name*:</label>
+        <input type="text" id="org-name" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="country">Country*:</label>
+        <select id="country" required>
+          <option value="">-- Select Country --</option>
+          <!-- Populated by countries-data.js -->
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="state">State/Province*:</label>
+        <select id="state" required>
+        <option value="">-- Select State/Province --</option>
+          <!-- Populated dynamically based on country selection -->
+      </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="org-city">City*:</label>
+        <input type="text" id="org-city" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="org-address1">Address Line 1*:</label>
+        <input type="text" id="org-address1" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="org-address2">Address Line 2:</label>
+        <input type="text" id="org-address2">
+      </div>
+      
+      <div class="form-group">
+        <label for="org-phone">Office Phone:</label>
+        <div style="display: flex; gap: 10px;">
+          <select id="org-phone-code" style="width: 120px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+            <option value="">Code</option>
+            <!-- Populated by JavaScript -->
+          </select>
+          <input type="tel" id="org-phone" placeholder="Phone number" style="flex: 1;">
+        </div>
+      </div>
+      
+      <div class="form-group">
+        <label for="org-after-hours">After Hours Phone:</label>
+        <div style="display: flex; gap: 10px;">
+          <select id="org-after-hours-code" style="width: 120px; padding: 8px 12px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;">
+            <option value="">Code</option>
+            <!-- Populated by JavaScript -->
+          </select>
+          <input type="tel" id="org-after-hours" placeholder="Phone number" style="flex: 1;">
+        </div>
+      </div>
+      
+      <h3>Your Account Details (Admin User)</h3>
+      
+      <div class="form-group">
+        <label for="admin-firstname">First Name*:</label>
+        <input type="text" id="admin-firstname" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-lastname">Last Name*:</label>
+        <input type="text" id="admin-lastname" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-username">Username*:</label>
+        <input type="text" id="admin-username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-password">Password*:</label>
+        <input type="password" id="admin-password" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-gender">Gender*:</label>
+        <select id="admin-gender" required>
+        <option value="">-- Select Gender --</option>
+        <option value="Male">Male</option>
+        <option value="Female">Female</option>
+      </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-role">Your Role*:</label>
+        <select id="admin-role" required>
+          <option value="">Administrator</option>
+        <option value="Doctor">Doctor</option>
+        <option value="Nurse">Nurse</option>
+        <option value="Physician Assistant">Physician Assistant</option>
+        <option value="Pharmacist">Pharmacist</option>
+        <option value="Optometrist">Optometrist</option>
+        <option value="Medical Lab Scientist">Medical Lab Scientist</option>
+        <option value="Biller/Accountant">Biller/Accountant</option>
+        <option value="Office Manager">Office Manager</option>
+        <option value="Medical Receptionist">Medical Receptionist</option>
+        <option value="Referrals Coordinator">Referrals Coordinator</option>
+        <option value="Medical Assistant">Medical Assistant</option>
+        <option value="Other">Other (Please specify)</option>
+      </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-phone-code">Country Code*:</label>
+        <select id="admin-phone-code" required style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+          <option value="">-- Select Country Code --</option>
+          <!-- Populated by JavaScript -->
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="admin-phone">Personal Phone Number*:</label>
+        <input type="tel" id="admin-phone" required placeholder="Enter your phone number" style="width: 100%;">
+      </div>
+      
+      <div class="form-group" id="other-role-group" style="display: none;">
+        <label for="admin-other-role">Please specify your exact role*:</label>
+        <input type="text" id="admin-other-role">
+      </div>
+      
+      <div class="form-group" id="admin-license-group" style="display: none;">
+        <label for="admin-license" id="admin-license-label">Medical License Number*:</label>
+        <input type="text" id="admin-license" required>
+      </div>
+      
+      <!-- Legal Agreement Acceptance -->
+      <div class="form-group" style="background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05)); padding: 20px; border-radius: 10px; border: 2px solid var(--primary-green); margin: 25px 0;">
+        <h3 style="color: var(--primary-green); margin-top: 0; margin-bottom: 15px; font-size: 1.2em;"><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-file-contract" style="color:#008753"></i></span> Legal Agreements</h3>
+        <p style="margin-bottom: 15px; color: var(--charcoal); font-size: 14px;">
+          By registering, you agree to the following legal agreements. Please read them carefully before accepting.
+        </p>
+        <div style="margin-bottom: 15px;">
+          <a href="legal-agreement" target="_blank" style="color: var(--adire-blue); text-decoration: underline; font-weight: 600; font-size: 14px;">
+            <span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-file-lines" style="vertical-align: middle;"></i></span> Read Service Subscription Agreement &amp; Business Associate Agreement (BAA)
+          </a>
+        </div>
+        <label style="display: flex; align-items: flex-start; cursor: pointer; margin-top: 15px;">
+          <input type="checkbox" id="admin-legal-agreement-accept" required style="margin-right: 10px; margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary-green);">
+          <span style="color: var(--charcoal); line-height: 1.6;">
+            <strong style="color: var(--dark-green);">I accept and agree</strong> to the MediForge Service Subscription and Data Processing Agreement and Business Associate Agreement (BAA). 
+            I confirm that I have the authority to bind my medical practice and accept these terms on behalf of myself and all authorized users in my organization. 
+            <strong style="color: var(--deep-red);">*Required</strong>
+          </span>
+        </label>
+        <p style="margin-top: 10px; font-size: 12px; color: #666; font-style: italic;">
+          An electronic copy of your signed agreement will be stored securely in your account and accessible to platform administrators.
+        </p>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" onclick="goBack()" class="btn btn-secondary"><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-arrow-left"></i></span> Back</button>
+        <button type="submit" class="btn btn-primary">Register Organization & Create Account</button>
+      </div>
+    </form>
+  </div>
+  
+  <!-- Step 2B: Join Existing Organization -->
+  <div id="step-join-org" class="form-section">
+    <h2>Join Existing Organization</h2>
+    <div class="info-box">
+      <strong><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-users" style="color:#008753"></i></span> You're joining an existing organization.</strong> Please enter the organization code provided by your administrator.
+    </div>
+    
+    <form id="join-org-form">
+      <h3>Organization Code</h3>
+      
+      <div class="form-group">
+      <label for="org-code">Enter Organization Code*:</label>
+        <input type="text" id="org-code" required placeholder="Enter the organization code">
+        <button type="button" onclick="verifyOrgCode()" class="btn btn-success"><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-circle-check"></i></span> Verify Code</button>
+      </div>
+      
+      <div id="org-code-status" style="display: none; margin: 10px 0; padding: 10px; border-radius: 4px;"></div>
+      
+        <h3>Your Account Details</h3>
+      
+      <div class="form-group">
+        <label for="user-firstname">First Name*:</label>
+        <input type="text" id="user-firstname" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-lastname">Last Name*:</label>
+        <input type="text" id="user-lastname" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-username">Username*:</label>
+        <input type="text" id="user-username" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-password">Password*:</label>
+        <input type="password" id="user-password" required>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-gender">Gender*:</label>
+        <select id="user-gender" required>
+          <option value="">-- Select Gender --</option>
+          <option value="Male">Male</option>
+          <option value="Female">Female</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-role">Your Role*:</label>
+        <select id="user-role" required>
+          <option value="">-- Select Role --</option>
+          <option value="Doctor">Doctor</option>
+          <option value="Nurse">Nurse</option>
+          <option value="Physician Assistant">Physician Assistant</option>
+          <option value="Pharmacist">Pharmacist</option>
+          <option value="Optometrist">Optometrist</option>
+          <option value="Medical Lab Scientist">Medical Lab Scientist</option>
+          <option value="Biller/Accountant">Biller/Accountant</option>
+          <option value="Office Manager">Office Manager</option>
+          <option value="Medical Receptionist">Medical Receptionist</option>
+          <option value="Referrals Coordinator">Referrals Coordinator</option>
+          <option value="Medical Assistant">Medical Assistant</option>
+          <option value="Other">Other (Please specify)</option>
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-phone-code">Country Code*:</label>
+        <select id="user-phone-code" required style="width: 100%; padding: 12px; border: 2px solid #e9ecef; border-radius: 6px; font-size: 14px;">
+          <option value="">-- Select Country Code --</option>
+          <!-- Populated by JavaScript -->
+        </select>
+      </div>
+      
+      <div class="form-group">
+        <label for="user-phone">Personal Phone Number*:</label>
+        <input type="tel" id="user-phone" required placeholder="Enter your phone number" style="width: 100%;">
+      </div>
+      
+      <div class="form-group" id="user-other-role-group" style="display: none;">
+        <label for="user-other-role">Please specify your exact role*:</label>
+        <input type="text" id="user-other-role">
+      </div>
+      
+      <div class="form-group" id="user-license-group" style="display: none;">
+        <label for="user-license" id="user-license-label">Medical License Number*:</label>
+        <input type="text" id="user-license" required>
+      </div>
+      
+      <!-- Legal Agreement Acceptance -->
+      <div class="form-group" style="background: linear-gradient(135deg, rgba(0, 135, 83, 0.1), rgba(0, 107, 66, 0.05)); padding: 20px; border-radius: 10px; border: 2px solid var(--primary-green); margin: 25px 0;">
+        <h3 style="color: var(--primary-green); margin-top: 0; margin-bottom: 15px; font-size: 1.2em;"><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-file-contract" style="color:#008753"></i></span> Legal Agreements</h3>
+        <p style="margin-bottom: 15px; color: var(--charcoal); font-size: 14px;">
+          By registering, you agree to the following legal agreements. Please read them carefully before accepting.
+        </p>
+        <div style="margin-bottom: 15px;">
+          <a href="legal-agreement" target="_blank" style="color: var(--adire-blue); text-decoration: underline; font-weight: 600; font-size: 14px;">
+            <span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-file-lines" style="vertical-align: middle;"></i></span> Read Service Subscription Agreement &amp; Business Associate Agreement (BAA)
+          </a>
+        </div>
+        <label style="display: flex; align-items: flex-start; cursor: pointer; margin-top: 15px;">
+          <input type="checkbox" id="user-legal-agreement-accept" required style="margin-right: 10px; margin-top: 3px; width: 20px; height: 20px; cursor: pointer; accent-color: var(--primary-green);">
+          <span style="color: var(--charcoal); line-height: 1.6;">
+            <strong style="color: var(--dark-green);">I accept and agree</strong> to the MediForge Service Subscription and Data Processing Agreement and Business Associate Agreement (BAA). 
+            I confirm that I have the authority to bind my medical practice and accept these terms on behalf of myself and all authorized users in my organization. 
+            <strong style="color: var(--deep-red);">*Required</strong>
+          </span>
+        </label>
+        <p style="margin-top: 10px; font-size: 12px; color: #666; font-style: italic;">
+          An electronic copy of your signed agreement will be stored securely in your account and accessible to platform administrators.
+        </p>
+      </div>
+      
+      <div class="form-actions">
+        <button type="button" onclick="goBack()" class="btn btn-secondary"><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-arrow-left"></i></span> Back</button>
+        <button type="submit" class="btn btn-primary">Create My Account</button>
+      </div>
+  </form>
+  </div>
+  
+  <!-- Step 3: Success -->
+  <div id="step-success" class="form-section">
+    <div class="org-code-display">
+      <h2><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-circle-check" style="color:#008753"></i></span> Registration Successful!</h2>
+      <p>Your organization has been created successfully.</p>
+      <div id="generated-org-code" style="display: none;">
+        <p><strong>Your Organization Code:</strong></p>
+        <div style="display: flex; gap: 10px; align-items: center; margin: 15px 0;">
+          <div class="code" id="org-code-value" style="flex: 1; user-select: all; -webkit-user-select: all; -moz-user-select: all; -ms-user-select: all;"></div>
+          <button onclick="copyOrgCode()" class="btn btn-info" style="padding: 8px 16px; font-size: 14px;"><span class="reg-icon" aria-hidden="true"><i class="fa-solid fa-copy"></i></span> Copy</button>
+        </div>
+        <p style="color: #666; font-size: 14px;">Share this code with your staff so they can join your organization.</p>
+        <div id="copy-status" style="margin-top: 10px; font-size: 14px; font-weight: bold;"></div>
+      </div>
+    </div>
+    
+    <div class="form-actions">
+      <button onclick="proceedToLogin()" class="btn btn-warning">Proceed to Login</button>
+    </div>
+  </div>
+  
+    <!-- Login Link Section -->
+    <div style="text-align: center; margin: 40px 0; padding: 20px; background: #f8f9fa; border-radius: 8px; border: 1px solid #e9ecef;">
+      <p style="margin: 0; color: #666; font-size: 16px;">Already have an account? 
+        <a href="login" class="cta-link">Login here</a>
+      </p>
+    </div>
+  </div>
+  
+  <!-- Footer -->
+  <footer style="background: linear-gradient(135deg, #008753 0%, #006b42 100%); color: white; padding: 40px 0; margin-top: 60px; border-top: 4px solid #B8860B;">
+    <div style="max-width: 1200px; margin: 0 auto; padding: 0 20px; text-align: center;">
+      <div style="margin-bottom: 20px;">
+        <h3 style="margin: 0 0 15px 0; color: #000000; font-size: 20px;">MediForge</h3>
+        <p style="margin: 0 0 20px 0; color: #bdc3c7; font-size: 16px;">Empowering healthcare with modern technology</p>
+      </div>
+      
+      <div style="display: flex; justify-content: center; gap: 30px; margin-bottom: 20px; flex-wrap: wrap;">
+        <a href="about-us" class="footer-link footer-link--green">About Us</a>
+        <a href="key-features" class="footer-link footer-link--gold">Key Features</a>
+        <a href="login" class="footer-link footer-link--yellow">Login</a>
+      </div>
+      
+      <div style="border-top: 1px solid #B8860B; padding-top: 20px;">
+        <p style="margin: 0; color: #95a5a6; font-size: 14px;">Powered by Work Chop Inc. | support@eworkchop.com</p>
+      </div>
+    </div>
+  </footer>
+
+  <script>
+    // Force cache bust - mobile browsers cache aggressively
+    const VERBOSE_LOGGING = localStorage.getItem('enableVerboseLogs') === 'true';
+    const trace = (...args) => { if (VERBOSE_LOGGING) console.log(...args); };
+    const traceWarn = (...args) => { if (VERBOSE_LOGGING) console.warn(...args); };
+    const scrubUser = (user) => {
+      if (!user || typeof user !== 'object') return user;
+      const sanitized = { ...user };
+      if ('password' in sanitized) sanitized.password = '[hidden]';
+      if ('passwordType' in sanitized) sanitized.passwordType = sanitized.passwordType || '';
+      if ('medicalLicenseNumber' in sanitized && sanitized.medicalLicenseNumber) sanitized.medicalLicenseNumber = '[hidden]';
+      if ('orgCode' in sanitized && sanitized.orgCode) sanitized.orgCode = '[hidden]';
+      return sanitized;
+    };
+    const scrubOrg = (org) => {
+      if (!org || typeof org !== 'object') return org;
+      const sanitized = { ...org };
+      if ('orgCode' in sanitized && sanitized.orgCode) sanitized.orgCode = '[hidden]';
+      if ('phone' in sanitized && sanitized.phone) sanitized.phone = '[hidden]';
+      if ('afterHoursPhone' in sanitized && sanitized.afterHoursPhone) sanitized.afterHoursPhone = '[hidden]';
+      return sanitized;
+    };
+    trace('[REG] Registration script loaded - version 20251021130000');
+    
+    // Password hashing function - mobile compatible
+    async function hashPassword(password) {
+      try {
+        // Check if crypto.subtle is available (mobile browsers sometimes don't support this)
+        if (!window.crypto || !window.crypto.subtle) {
+          traceWarn('crypto.subtle not available, using fallback hashing');
+          return btoa(password); // Base64 fallback
+        }
+        
+        const encoder = new TextEncoder();
+        const data = encoder.encode(password);
+        const hashBuffer = await crypto.subtle.digest('SHA-256', data);
+        const hashArray = Array.from(new Uint8Array(hashBuffer));
+        const hashHex = hashArray.map(b => b.toString(16).padStart(2, '0')).join('');
+        return hashHex;
+      } catch (error) {
+        // Fallback for older mobile browsers
+        traceWarn('Using fallback hashing for mobile browser');
+        trace(error);
+        return btoa(password); // Base64 fallback
+      }
+    }
+    
+    let currentStep = 'step-1';
+    let selectedPath = '';
+    let generatedOrgCode = '';
+    
+    // Function to populate country code dropdowns
+    function populateCountryCodeDropdowns() {
+      const orgPhoneCodeSelect = document.getElementById('org-phone-code');
+      const orgAfterHoursCodeSelect = document.getElementById('org-after-hours-code');
+      const adminPhoneCodeSelect = document.getElementById('admin-phone-code');
+      const userPhoneCodeSelect = document.getElementById('user-phone-code');
+      
+      // Populate organization phone code dropdowns
+      if (orgPhoneCodeSelect && orgAfterHoursCodeSelect) {
+        // Clear existing options
+        orgPhoneCodeSelect.innerHTML = '<option value="">Code</option>';
+        orgAfterHoursCodeSelect.innerHTML = '<option value="">Code</option>';
+        
+        // Add country codes from COUNTRIES_DATA
+        Object.entries(COUNTRIES_DATA).forEach(([country, data]) => {
+          const option1 = new Option(`${data.phoneCode} (${country})`, data.phoneCode);
+          const option2 = new Option(`${data.phoneCode} (${country})`, data.phoneCode);
+          orgPhoneCodeSelect.add(option1);
+          orgAfterHoursCodeSelect.add(option2);
+        });
+      }
+      
+      // Populate personal phone code dropdowns
+      if (adminPhoneCodeSelect) {
+        adminPhoneCodeSelect.innerHTML = '<option value="">-- Select Country Code --</option>';
+        Object.entries(COUNTRIES_DATA).forEach(([country, data]) => {
+          const option = new Option(`${data.phoneCode} (${country})`, data.phoneCode);
+          adminPhoneCodeSelect.add(option);
+        });
+      }
+      
+      if (userPhoneCodeSelect) {
+        userPhoneCodeSelect.innerHTML = '<option value="">-- Select Country Code --</option>';
+        Object.entries(COUNTRIES_DATA).forEach(([country, data]) => {
+          const option = new Option(`${data.phoneCode} (${country})`, data.phoneCode);
+          userPhoneCodeSelect.add(option);
+        });
+      }
+    }
+    
+    // Function to handle country change and populate states
+    function handleOrgCountryChange() {
+      const country = document.getElementById('country').value;
+      if (country) {
+        if (typeof window.populateStateDropdown === 'function') {
+          window.populateStateDropdown('state', country);
+        }
+        // Auto-select phone country code based on address country
+        const phoneCountryCode = document.getElementById('org-phone-code');
+        const afterHoursPhoneCode = document.getElementById('org-after-hours-code');
+        const adminPhoneCode = document.getElementById('admin-phone-code');
+        
+        if (COUNTRIES_DATA[country]) {
+          const countryCode = COUNTRIES_DATA[country].phoneCode;
+          if (phoneCountryCode) phoneCountryCode.value = countryCode;
+          if (afterHoursPhoneCode) afterHoursPhoneCode.value = countryCode;
+          // Auto-populate admin personal phone code (user can change it)
+          if (adminPhoneCode && !adminPhoneCode.value) {
+            adminPhoneCode.value = countryCode;
+          }
+        }
+      }
+    }
+    
+    // Function to handle organization country change for join-org form
+    function handleJoinOrgCountryChange() {
+      // For join-org form, get country from verified organization
+      if (window.verifiedOrgData && window.verifiedOrgData.country) {
+        const country = window.verifiedOrgData.country;
+        const userPhoneCode = document.getElementById('user-phone-code');
+        
+        if (COUNTRIES_DATA[country] && userPhoneCode && !userPhoneCode.value) {
+          const countryCode = COUNTRIES_DATA[country].phoneCode;
+          userPhoneCode.value = countryCode;
+        }
+      }
+    }
+    
+    // Function to handle role change for join organization form
+    function handleUserRoleChange() {
+      const role = document.getElementById('user-role').value;
+      const licenseGroup = document.getElementById('user-license-group');
+      const licenseField = document.getElementById('user-license');
+      const licenseLabel = document.getElementById('user-license-label');
+      const otherRoleGroup = document.getElementById('user-other-role-group');
+      
+      // Roles that require medical license
+      const rolesRequiringLicense = ['Doctor', 'Nurse', 'Physician Assistant', 'Pharmacist', 'Optometrist', 'Medical Lab Scientist'];
+      
+      if (rolesRequiringLicense.includes(role)) {
+        // Show and make license field required
+        licenseGroup.style.display = 'block';
+        licenseField.required = true;
+        licenseLabel.textContent = 'Medical License Number*:';
+        licenseField.placeholder = 'Enter your medical license number';
+      } else {
+        // Hide license field completely
+        licenseGroup.style.display = 'none';
+        licenseField.required = false;
+        licenseField.value = ''; // Clear the field when hidden
+      }
+      
+      // Handle "Other" role specification
+      if (role === 'Other') {
+        otherRoleGroup.style.display = 'block';
+        document.getElementById('user-other-role').required = true;
+      } else {
+        otherRoleGroup.style.display = 'none';
+        document.getElementById('user-other-role').required = false;
+        document.getElementById('user-other-role').value = '';
+      }
+    }
+    
+    window.selectPath = function(path) {
+      selectedPath = path;
+      
+      // Remove selected class from all paths
+      document.querySelectorAll('.registration-path').forEach(el => {
+        el.classList.remove('selected');
+      });
+      
+      // Add selected class to clicked path
+      if (event && event.currentTarget) {
+        event.currentTarget.classList.add('selected');
+      }
+      
+      // Show appropriate form after a short delay
+      setTimeout(() => {
+        if (path === 'new-org') {
+          window.showStep('step-new-org');
+        } else if (path === 'join-org') {
+          window.showStep('step-join-org');
+        }
+      }, 300);
+    };
+
+    window.showStep = function(stepId) {
+      // Hide all steps
+      document.querySelectorAll('.form-section').forEach(el => {
+        el.classList.remove('active');
+      });
+      
+      // Show selected step
+      document.getElementById(stepId).classList.add('active');
+      currentStep = stepId;
+    };
+
+    function goBack() {
+      showStep('step-1');
+      
+      // Clear form data
+      document.querySelectorAll('input, select').forEach(el => {
+        el.value = '';
+      });
+      
+      // Reset role selection visibility
+      document.getElementById('other-role-group').style.display = 'none';
+      document.getElementById('user-other-role-group').style.display = 'none';
+    }
+
+    function proceedToLogin() {
+      window.location.href = '/login';
+    }
+    
+    // Copy organization code to clipboard - mobile optimized
+    async function copyOrgCode() {
+      const orgCode = document.getElementById('org-code-value').textContent;
+      const statusDiv = document.getElementById('copy-status');
+      
+      try {
+        // Mobile-specific clipboard handling
+      if (/Mobi|Android/i.test(navigator.userAgent)) {
+          trace('[REG] Mobile clipboard copy attempt');
+          
+          // For mobile, try to make the text selectable and show instructions
+          const codeElement = document.getElementById('org-code-value');
+          codeElement.style.userSelect = 'all';
+          codeElement.style.webkitUserSelect = 'all';
+          codeElement.focus();
+          
+          // Try clipboard API first
+          if (navigator.clipboard && window.isSecureContext) {
+            try {
+              await navigator.clipboard.writeText(orgCode);
+              statusDiv.innerHTML = 'Organization code copied to clipboard!';
+              statusDiv.style.color = '#008753';
+            } catch (clipboardError) {
+              // Fallback for mobile
+              statusDiv.innerHTML = 'Tap and hold the code above, then select "Copy"';
+              statusDiv.style.color = '#B8860B';
+            }
+          } else {
+            // Mobile fallback
+            statusDiv.innerHTML = 'Tap and hold the code above, then select "Copy"';
+            statusDiv.style.color = '#B8860B';
+          }
+        } else {
+          // Desktop clipboard handling
+          if (navigator.clipboard && window.isSecureContext) {
+            await navigator.clipboard.writeText(orgCode);
+            statusDiv.innerHTML = 'Organization code copied to clipboard!';
+            statusDiv.style.color = '#008753';
+          } else {
+            // Fallback for older browsers
+            const textArea = document.createElement('textarea');
+            textArea.value = orgCode;
+            textArea.style.position = 'fixed';
+            textArea.style.left = '-999999px';
+            textArea.style.top = '-999999px';
+            document.body.appendChild(textArea);
+            textArea.focus();
+            textArea.select();
+            
+            try {
+              document.execCommand('copy');
+              statusDiv.innerHTML = 'Organization code copied to clipboard!';
+              statusDiv.style.color = '#008753';
+            } catch (err) {
+              statusDiv.innerHTML = 'Please manually select and copy the code above';
+              statusDiv.style.color = '#B8860B';
+            }
+            
+            document.body.removeChild(textArea);
+          }
+        }
+      } catch (err) {
+        console.error('Copy failed:', err);
+        statusDiv.innerHTML = 'Copy failed. Please manually select the code above';
+        statusDiv.style.color = '#dc3545';
+      }
+      
+      // Clear status after 5 seconds (longer for mobile)
+      setTimeout(() => {
+        statusDiv.innerHTML = '';
+      }, 5000);
+    }
+
+    // CRITICAL: Actually verify organization code (device-agnostic, works everywhere)
+    async function verifyOrgCode() {
+      const orgCode = document.getElementById('org-code').value.trim();
+      const statusDiv = document.getElementById('org-code-status');
+      
+      if (!orgCode) {
+        statusDiv.innerHTML = '<div style="color: #dc3545;">Please enter an organization code.</div>';
+        statusDiv.style.display = 'block';
+        return;
+      }
+      
+      statusDiv.innerHTML = '<div style="color: #007bff;">Verifying organization code...</div>';
+      statusDiv.style.display = 'block';
+      
+      try {
+        let verifiedOrg = null;
+
+        // Method 0: SECURITY DEFINER — org by code only (anon-safe; no table scan)
+        if (window.supabaseClient) {
+          try {
+            if (typeof window.verifyOrganizationCodeRpc === 'function') {
+              const { data: orgRow, error: orgRpcErr } = await window.verifyOrganizationCodeRpc(
+                window.supabaseClient,
+                orgCode
+              );
+              if (!orgRpcErr && orgRow) {
+                verifiedOrg = orgRow;
+                console.log('[REG] Organization verified via verify_organization_code RPC:', orgRow.name);
+              }
+            } else {
+              const { data: rows, error: rpcErr } = await window.supabaseClient.rpc('verify_organization_code', {
+                p_org_code: orgCode.trim()
+              });
+              if (!rpcErr && Array.isArray(rows) && rows.length) {
+                verifiedOrg = rows[0];
+                console.log('[REG] Organization verified via verify_organization_code RPC:', verifiedOrg.name);
+              }
+            }
+          } catch (m0Err) {
+            console.warn('[REG] verify_organization_code RPC failed:', m0Err);
+          }
+        }
+        
+        // Method 1: Try secure RPC (bypasses RLS, works on all devices)
+        if (!verifiedOrg && typeof window.secureSupabaseRpc === 'function') {
+          try {
+            const orgsResult = await window.secureSupabaseRpc('get_organizations_with_owner', {});
+            let orgs = [];
+            if (Array.isArray(orgsResult)) {
+              orgs = orgsResult;
+            } else if (orgsResult?.data && Array.isArray(orgsResult.data)) {
+              orgs = orgsResult.data;
+            }
+            
+            const found = orgs.find(o => {
+              const match = o.org_code === orgCode || o.org_code?.trim() === orgCode.trim();
+              return match;
+            });
+            if (found) verifiedOrg = found;
+            if (verifiedOrg) {
+              console.log('? [TRACE] Organization verified via secure RPC:', verifiedOrg.name);
+            } else {
+              // Only log if debug mode (reduce console noise)
+              if (window.DEBUG_MODE) {
+                console.log('[REG] [TRACE] Organization not found in RPC results. Available orgs:', orgs.map(o => o.org_code));
+              }
+            }
+          } catch (rpcError) {
+            console.warn('[REG] Secure RPC verification failed, trying direct query:', rpcError);
+          }
+        }
+        
+        // Method 2: Try direct Supabase query (exact match)
+        if (!verifiedOrg && window.supabaseClient) {
+          try {
+            const trimmedCode = orgCode.trim();
+            let { data: orgResult, error: orgError } = await window.supabaseClient
+              .from('organizations')
+              .select('id, name, org_code, country, state, city')
+              .eq('org_code', trimmedCode)
+              .maybeSingle();
+            
+            // If not found, try case-insensitive search
+            if (!orgResult && !orgError) {
+              console.log('[REG] Exact match not found, trying case-insensitive...');
+              const { data: caseResult, error: caseError } = await window.supabaseClient
+                .from('organizations')
+                .select('id, name, org_code, country, state, city')
+                .ilike('org_code', trimmedCode)
+                .maybeSingle();
+              
+              if (caseError) {
+                orgError = caseError;
+              } else {
+                orgResult = caseResult;
+              }
+            }
+            
+            if (!orgError && orgResult) {
+              verifiedOrg = orgResult;
+              console.log('? Organization verified via direct query:', orgResult.name, 'Code:', orgResult.org_code);
+            } else if (orgError) {
+              console.error('? Organization query error:', {
+                message: orgError.message,
+                code: orgError.code,
+                details: orgError.details,
+                hint: orgError.hint
+              });
+            } else {
+              console.log('[REG] Organization not found with code:', trimmedCode);
+              // Try to see if we can query organizations at all
+              const { data: testOrgs, error: testError } = await window.supabaseClient
+                .from('organizations')
+                .select('id, name, org_code')
+                .limit(5);
+              
+              if (testError) {
+                console.error('? Cannot query organizations table at all:', testError);
+              } else {
+                console.log('[REG] Sample organizations in database:', testOrgs);
+                console.log('[REG] Looking for code:', trimmedCode, 'in:', testOrgs.map(o => o.org_code));
+              }
+            }
+          } catch (queryError) {
+            console.warn('[REG] Direct query verification failed:', queryError);
+          }
+        }
+        
+        // Method 3: Fallback to localStorage (for offline/legacy support)
+        // Supabase attempts above: getAllOrganizations() and supabaseClient.from('organizations') tried
+        if (!verifiedOrg) {
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          for (const [name, data] of Object.entries(organizations)) {
+            if (data.orgCode === orgCode) {
+              verifiedOrg = {
+                id: data.id,
+                name: name,
+                org_code: orgCode,
+                country: data.country,
+                state: data.state,
+                city: data.city
+              };
+              console.log('? Organization verified via localStorage');
+              break;
+            }
+          }
+        }
+        
+        if (verifiedOrg) {
+          // Store verified organization data for form submission (device-agnostic)
+          window.verifiedOrgData = verifiedOrg;
+          console.log('? [TRACE] Organization verified and stored:', {
+            id: verifiedOrg.id,
+            name: verifiedOrg.name,
+            org_code: verifiedOrg.org_code,
+            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            timestamp: new Date().toISOString()
+          });
+          statusDiv.innerHTML = `<div style="color: #28a745;"><i class="fa-solid fa-circle-check"></i> Organization verified: <strong>${verifiedOrg.name}</strong></div>`;
+          statusDiv.style.display = 'block';
+          
+          // Auto-populate country code for user phone if organization country is available
+          handleJoinOrgCountryChange();
+        } else {
+          console.error('? [TRACE] Organization verification failed', {
+            orgCode: orgCode.trim(),
+            deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
+            timestamp: new Date().toISOString()
+          });
+          statusDiv.innerHTML = '<div style="color: #dc3545;">Organization code not found. Please check the code and try again.</div>';
+          statusDiv.style.display = 'block';
+          window.verifiedOrgData = null;
+        }
+      } catch (error) {
+        console.error('? Error verifying organization code:', error);
+        statusDiv.innerHTML = '<div style="color: #dc3545;">Error verifying organization code. Please try again.</div>';
+        statusDiv.style.display = 'block';
+        window.verifiedOrgData = null;
+      }
+    }
+
+    // Handle role selection changes
+    document.addEventListener('DOMContentLoaded', function() {
+      // Admin role change
+      const adminRole = document.getElementById('admin-role');
+      const otherRoleGroup = document.getElementById('other-role-group');
+      const adminLicenseGroup = document.getElementById('admin-license-group');
+      
+      if (adminRole) {
+        adminRole.addEventListener('change', function() {
+          const role = this.value;
+          const rolesRequiringLicense = ['Doctor', 'Nurse', 'Physician Assistant', 'Pharmacist', 'Optometrist', 'Medical Lab Scientist'];
+          
+          // Handle license field visibility
+          if (rolesRequiringLicense.includes(role)) {
+            adminLicenseGroup.style.display = 'block';
+            document.getElementById('admin-license').required = true;
+          } else {
+            adminLicenseGroup.style.display = 'none';
+            document.getElementById('admin-license').required = false;
+            document.getElementById('admin-license').value = '';
+          }
+          
+          // Handle "Other" role specification
+          if (role === 'Other') {
+            otherRoleGroup.style.display = 'block';
+            document.getElementById('admin-other-role').required = true;
+          } else {
+            otherRoleGroup.style.display = 'none';
+            document.getElementById('admin-other-role').required = false;
+            document.getElementById('admin-other-role').value = '';
+          }
+        });
+      }
+      
+      // User role change
+      const userRole = document.getElementById('user-role');
+      
+      if (userRole) {
+        userRole.addEventListener('change', handleUserRoleChange);
+      }
+    });
+
+    // Handle form submissions
+    document.getElementById('new-org-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      try {
+        // Collect form data
+        const orgPhoneCode = document.getElementById('org-phone-code').value;
+        const orgPhone = document.getElementById('org-phone').value;
+        const orgAfterHoursCode = document.getElementById('org-after-hours-code').value;
+        const orgAfterHours = document.getElementById('org-after-hours').value;
+        
+        // Build after-hours phone: combine code + number if both exist, otherwise use number only, or empty string
+        let afterHoursPhone = '';
+        if (orgAfterHoursCode && orgAfterHours) {
+          afterHoursPhone = `${orgAfterHoursCode} ${orgAfterHours}`;
+        } else if (orgAfterHours) {
+          afterHoursPhone = orgAfterHours;
+        } else {
+          afterHoursPhone = ''; // Explicitly empty if nothing provided
+        }
+        
+        console.log('After-hours phone registration:', {
+          code: orgAfterHoursCode,
+          number: orgAfterHours,
+          combined: afterHoursPhone
+        });
+        
+        const orgData = {
+          name: document.getElementById('org-name').value,
+          country: document.getElementById('country').value,
+          state: document.getElementById('state').value,
+          city: document.getElementById('org-city').value,
+          addressLine1: document.getElementById('org-address1').value,
+          addressLine2: document.getElementById('org-address2').value,
+          phone: orgPhoneCode && orgPhone ? `${orgPhoneCode} ${orgPhone}` : orgPhone,
+          afterHoursPhone: afterHoursPhone,
+          createdAt: new Date().toISOString()
+        };
+        
+        // CRITICAL: Validate password strength BEFORE hashing
+        const password = document.getElementById('admin-password').value;
+        
+        if (typeof window.validatePasswordStrength === 'function') {
+          const passwordValidation = window.validatePasswordStrength(password);
+          if (!passwordValidation.valid) {
+            alert('Password does not meet security requirements:\n\n' + passwordValidation.errors.join('\n') + '\n\nPlease create a stronger password.');
+            return;
+          }
+        } else {
+          // Fallback validation
+          if (password.length < 12) {
+            alert('Password must be at least 12 characters long.');
+            return;
+          }
+          if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+            alert('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
+            return;
+          }
+        }
+        
+        // PREFLIGHT CHECKS - Ensure first-attempt success
+        if (typeof window.registrationPreflight === 'undefined') {
+          alert('Registration system not fully loaded. Please wait a moment and try again.');
+          return;
+        }
+
+        // Collect form data for preflight (without organizationId - it will be created)
+        // Collect phone data
+        const adminPhoneCode = document.getElementById('admin-phone-code').value;
+        const adminPhone = document.getElementById('admin-phone').value.trim();
+        const adminPhoneFull = adminPhoneCode && adminPhone ? `${adminPhoneCode} ${adminPhone}` : adminPhone;
+        
+        const formData = {
+          username: document.getElementById('admin-username').value.trim(),
+          password: password,
+          firstName: document.getElementById('admin-firstname').value.trim(),
+          lastName: document.getElementById('admin-lastname').value.trim(),
+          gender: document.getElementById('admin-gender').value,
+          role: 'Admin',
+          medicalLicenseNumber: document.getElementById('admin-license')?.value?.trim() || '',
+          phone: adminPhoneFull
+          // NOTE: organizationId is NOT included for new org registration - it will be created first
+        };
+
+        // Run preflight checks (will verify internet, Supabase client, and mandatory fields)
+        // NOTE: For new org registration, organizationId is not required in preflight
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton ? submitButton.textContent : '';
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = 'Checking connection...';
+        }
+
+        // Run preflight without organizationId requirement (it will be created)
+        const preflightResults = await window.registrationPreflight.runAllChecks(formData, null);
+        
+        if (!preflightResults.passed) {
+          const errorMessage = preflightResults.errors.join('\n');
+          
+          // Check if error is username-related and show prominent alert
+          if (errorMessage.toLowerCase().includes('username') && 
+              (errorMessage.toLowerCase().includes('taken') || 
+               errorMessage.toLowerCase().includes('already'))) {
+            const usernameField = document.getElementById('admin-username');
+            const username = usernameField ? usernameField.value : '';
+            
+            alert('USERNAME ALREADY TAKEN\n\n' +
+                  'The username "' + username + '" is already in use.\n\n' +
+                  'Please choose a different username and try again.');
+            
+            // Highlight the username field
+            if (usernameField) {
+              usernameField.style.border = '2px solid #dc3545';
+              usernameField.style.backgroundColor = '#fff5f5';
+              usernameField.focus();
+              usernameField.select();
+              
+              // Remove highlight after 5 seconds
+              setTimeout(() => {
+                usernameField.style.border = '';
+                usernameField.style.backgroundColor = '';
+              }, 5000);
+            }
+          } else {
+            alert('Registration cannot proceed:\n\n' + errorMessage);
+          }
+          
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+
+        if (submitButton) submitButton.textContent = 'Preparing registration...';
+        
+        trace('[REG] Starting password hash for admin user...');
+        const hashedPassword = await hashPassword(password);
+        trace('[REG] Password hashed for admin user');
+        
+        // CRITICAL: SUPABASE-FIRST ARCHITECTURE
+        // Step 1: Try to save to Supabase FIRST (not localStorage)
+        let supabaseSuccess = false;
+        let supabaseError = null;
+        let organizationId = null; // Track organization ID for cleanup (scoped for catch block)
+        
+        // Generate organization code
+        generatedOrgCode = 'ORG' + Math.random().toString(36).substr(2, 8).toUpperCase();
+        orgData.orgCode = generatedOrgCode;
+        
+        // CRITICAL: Ensure Supabase client is ready using universal readiness guarantee
+        // This eliminates device-specific behavior by using the same initialization path
+        if (typeof window.ensureSupabaseClientReady === 'function') {
+          const clientReady = await window.ensureSupabaseClientReady(10000);
+          if (!clientReady) {
+            alert('Registration system not ready. Please refresh the page and try again.');
+            if (submitButton) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalButtonText;
+            }
+            return;
+          }
+        } else {
+          // Fallback: Wait for standard initialization
+          let waitAttempts = 0;
+          while (!window.supabaseClient && waitAttempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 200));
+            waitAttempts++;
+          }
+          if (!window.supabaseClient) {
+            alert('Registration system not ready. Please refresh the page and try again.');
+            if (submitButton) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalButtonText;
+            }
+            return;
+          }
+        }
+        
+        if (window.supabaseClient) {
+          try {
+            // PERMANENT FIX: Create organization with status='pending' initially
+            // This prevents orphaned active organizations if user creation fails
+            const { data: orgResult, error: orgError } = await window.supabaseClient
+              .from('organizations')
+              .insert([{
+                name: orgData.name,
+                country: orgData.country,
+                state: orgData.state,
+                city: orgData.city,
+                address_line1: orgData.addressLine1,
+                address_line2: orgData.addressLine2,
+                phone: orgData.phone,
+                after_hours_phone: orgData.afterHoursPhone,
+                org_code: generatedOrgCode,
+                created_at: orgData.createdAt,
+                created_by: document.getElementById('admin-username').value, // Track who created the organization
+                status: 'pending' // PERMANENT FIX: Start as pending, activate only after user creation succeeds
+              }])
+              .select('id'); // Get the organization ID back
+            
+            if (orgError) {
+              console.error('? Supabase organization save failed:', orgError);
+              
+              // If it's a duplicate key error, the org might already exist - check and use existing
+              if (orgError.code === '23505' || orgError.message.includes('duplicate') || orgError.message.includes('unique')) {
+                trace('[REG] Organization may already exist, checking...');
+                const { data: existingOrg, error: checkError } = await window.supabaseClient
+                  .from('organizations')
+                  .select('id')
+                  .eq('name', orgData.name)
+                  .maybeSingle();
+                
+                if (!checkError && existingOrg && existingOrg.id) {
+                  organizationId = existingOrg.id;
+                  trace('[OK] Using existing organization', existingOrg.id);
+                  // Skip retry, use existing org
+                } else {
+                  trace('[REG] Existing org not found, retrying organization save...');
+                  // Continue to retry below
+                }
+              } else {
+                trace('[REG] Retrying organization save with mobile-optimized settings...');
+              }
+              
+              // Only retry if we don't have an organizationId yet
+              if (!organizationId) {
+                // Retry with mobile-optimized settings
+                try {
+                  const { data: retryOrgResult, error: retryOrgError } = await window.supabaseClient
+                    .from('organizations')
+                    .insert([{
+                      name: orgData.name,
+                      country: orgData.country,
+                      state: orgData.state,
+                      city: orgData.city,
+                      address_line1: orgData.addressLine1,
+                      address_line2: orgData.addressLine2,
+                      phone: orgData.phone,
+                      after_hours_phone: orgData.afterHoursPhone,
+                      org_code: generatedOrgCode,
+                      created_at: orgData.createdAt,
+                      created_by: document.getElementById('admin-username').value, // Track who created the organization
+                      status: 'pending' // PERMANENT FIX: Start as pending
+                    }])
+                    .select('id');
+                  
+                  if (retryOrgError) {
+                    console.error('? Retry failed:', retryOrgError);
+                    alert('Registration failed: Could not save organization to database. Please check your internet connection and try again.');
+                    if (submitButton) {
+                      submitButton.disabled = false;
+                      submitButton.textContent = originalButtonText;
+                    }
+                    return;
+                  } else if (retryOrgResult && retryOrgResult[0] && retryOrgResult[0].id) {
+                    trace('[OK] Organization saved to Supabase on retry');
+                    const orgId = retryOrgResult[0].id;
+                    organizationId = orgId; // CRITICAL: Set organizationId variable
+                    
+                    // Update localStorage with organization ID
+                    const updatedOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                    if (updatedOrgs[orgData.name]) {
+                      updatedOrgs[orgData.name].id = orgId;
+                      localStorage.setItem('organizations', JSON.stringify(updatedOrgs)); // Cached after supabaseClient.insert()
+                    }
+                  } else {
+                    console.error('? Retry succeeded but no ID returned');
+                    alert('Registration failed: Could not retrieve organization ID. Please try again.');
+                    if (submitButton) {
+                      submitButton.disabled = false;
+                      submitButton.textContent = originalButtonText;
+                    }
+                    return;
+                  }
+                } catch (retryError) {
+                  console.error('? Retry attempt failed:', retryError);
+                  alert('Registration failed: Could not save organization to database. Please check your internet connection and try again.');
+                  if (submitButton) {
+                    submitButton.disabled = false;
+                    submitButton.textContent = originalButtonText;
+                  }
+                  return;
+                }
+              }
+            } else {
+              trace('[OK] Organization saved to Supabase successfully');
+              
+              // CRITICAL: Update organizationId variable from Supabase result
+              if (orgResult && orgResult[0] && orgResult[0].id) {
+                const orgId = orgResult[0].id;
+                organizationId = orgId; // CRITICAL: Set organizationId variable for use in registerWithSupabase
+                trace('[REG] Organization ID from Supabase captured:', organizationId);
+                
+                // Update organization data with ID in localStorage
+                const updatedOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+                if (updatedOrgs[orgData.name]) {
+                  updatedOrgs[orgData.name].id = orgId;
+                  localStorage.setItem('organizations', JSON.stringify(updatedOrgs));
+                  trace('[OK] Organization updated with ID in localStorage');
+                }
+              } else {
+                console.error('? CRITICAL: Organization saved but no ID returned from Supabase');
+                alert('Registration failed: Could not retrieve organization ID. Please try again.');
+                if (submitButton) {
+                  submitButton.disabled = false;
+                  submitButton.textContent = originalButtonText;
+                }
+                return;
+              }
+            }
+            
+            // CRITICAL: Verify organizationId is set before proceeding
+            if (!organizationId) {
+              console.error('? CRITICAL: organizationId is null after organization creation');
+              alert('Registration failed: Organization ID not available. Please try again.');
+              if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+              }
+              return;
+            }
+            
+            // CRITICAL: Use registerWithSupabase for proper Supabase Auth + users table creation
+            if (typeof window.registerWithSupabase === 'function') {
+              trace('[REG] Registering user with organizationId:', organizationId);
+              // Collect phone data for admin
+              const adminPhoneCode = document.getElementById('admin-phone-code').value;
+              const adminPhone = document.getElementById('admin-phone').value.trim();
+              const adminPhoneFull = adminPhoneCode && adminPhone ? `${adminPhoneCode} ${adminPhone}` : adminPhone;
+              
+              const registrationResult = await window.registerWithSupabase({
+                username: document.getElementById('admin-username').value,
+                password: password, // Plain password - registerWithSupabase handles it
+                firstName: document.getElementById('admin-firstname').value,
+                lastName: document.getElementById('admin-lastname').value,
+                gender: document.getElementById('admin-gender').value,
+                role: 'Admin',
+                organizationId: organizationId, // Now properly set from Supabase insert result
+                medicalLicenseNumber: '',
+                phone: adminPhoneFull
+              });
+              
+              if (registrationResult.success) {
+                supabaseSuccess = true;
+                if (registrationResult.recovered) {
+                  trace('[OK] Orphaned user profile recovered successfully!');
+                } else {
+                  trace('[OK] User registered successfully in Supabase Auth and users table');
+                }
+                
+                // PERMANENT FIX: Activate organization only after user creation succeeds
+                try {
+                  const { error: activateError } = await window.supabaseClient
+                    .from('organizations')
+                    .update({ status: 'active' })
+                    .eq('id', organizationId);
+                  
+                  if (activateError) {
+                    console.warn('[REG] Could not activate organization:', activateError);
+                    // Don't fail registration if activation fails - log it
+                  } else {
+                    trace('[OK] Organization activated (status changed from pending to active)');
+                  }
+                } catch (activateException) {
+                  console.warn('[REG] Error activating organization:', activateException);
+                  // Don't fail registration if activation fails
+                }
+                
+                // CRITICAL: Update organization email with admin user's generated email
+                // This ensures we can always contact the organization via the admin email
+                try {
+                  const adminUsername = document.getElementById('admin-username').value.trim();
+                  // Generate email the same way registerWithSupabase does
+                  const shortOrgId = organizationId.replace(/-/g, '').substring(0, 8);
+                  const adminEmail = adminUsername.includes('@') 
+                    ? adminUsername 
+                    : `${adminUsername}-${shortOrgId}@mediforge.app`;
+                  
+                  // Update organization email field
+                  const { error: updateEmailError } = await window.supabaseClient
+                    .from('organizations')
+                    .update({ email: adminEmail })
+                    .eq('id', organizationId);
+                  
+                  if (updateEmailError) {
+                    console.warn('[REG] Could not update organization email:', updateEmailError);
+                    // Don't fail registration if email update fails - log it
+                  } else {
+                    trace('[OK] Organization email updated with admin contact:', adminEmail);
+                  }
+                } catch (emailUpdateError) {
+                  console.warn('[REG] Error updating organization email:', emailUpdateError);
+                  // Don't fail registration if email update fails
+                }
+                
+                // CRITICAL: Save legal agreements if user accepted
+                const legalAgreementAccepted = document.getElementById('admin-legal-agreement-accept')?.checked;
+                if (legalAgreementAccepted && registrationResult.user?.id && typeof window.saveLegalAgreement === 'function') {
+                  try {
+                    trace('[REG] Saving legal agreements...');
+                    const firstName = document.getElementById('admin-firstname').value.trim();
+                    const lastName = document.getElementById('admin-lastname').value.trim();
+                    const userName = `${firstName} ${lastName}`;
+                    const userEmail = `${document.getElementById('admin-username').value}@mediforge.app`;
+                    const userRole = 'Admin';
+                    
+                    // Save Service Agreement
+                    const serviceAgreementResult = await window.saveLegalAgreement({
+                      userId: registrationResult.user.id,
+                      organizationId: organizationId,
+                      agreementType: 'service_agreement',
+                      userName: userName,
+                      userRole: userRole,
+                      userEmail: userEmail,
+                      agreementText: 'MediForge Service Subscription and Data Processing Agreement - Version 2025-11-18'
+                    });
+                    
+                    if (serviceAgreementResult.success) {
+                      trace('[OK] Service Agreement saved');
+                    } else {
+                      console.warn('[REG] Could not save Service Agreement:', serviceAgreementResult.error);
+                    }
+                    
+                    // Save BAA
+                    const baaResult = await window.saveLegalAgreement({
+                      userId: registrationResult.user.id,
+                      organizationId: organizationId,
+                      agreementType: 'baa',
+                      userName: userName,
+                      userRole: userRole,
+                      userEmail: userEmail,
+                      agreementText: 'Business Associate Agreement (BAA) - Version 2025-11-18'
+                    });
+                    
+                    if (baaResult.success) {
+                      trace('[OK] Business Associate Agreement (BAA) saved');
+                    } else {
+                      console.warn('[REG] Could not save BAA:', baaResult.error);
+                    }
+                  } catch (legalError) {
+                    console.error('? Error saving legal agreements:', legalError);
+                    // Don't fail registration if legal agreement save fails - log it
+                    trace('[REG] Legal agreement save failed, but registration continues');
+                  }
+                } else if (!legalAgreementAccepted) {
+                  console.error('? Legal agreement not accepted - this should not happen due to required checkbox');
+                }
+                
+                // Step 2: Save to localStorage as cache (only after Supabase success)
+                // Collect phone data for admin
+                const adminPhoneCode = document.getElementById('admin-phone-code').value;
+                const adminPhone = document.getElementById('admin-phone').value.trim();
+                const adminPhoneFull = adminPhoneCode && adminPhone ? `${adminPhoneCode} ${adminPhone}` : adminPhone;
+                
+                const userData = {
+                  firstName: document.getElementById('admin-firstname').value,
+                  lastName: document.getElementById('admin-lastname').value,
+                  username: document.getElementById('admin-username').value,
+                  password: hashedPassword,
+                  passwordType: 'sha256',
+                  gender: document.getElementById('admin-gender').value,
+                  role: 'Admin',
+                  phone: adminPhoneFull,
+                  org: orgData.name,
+                  organization: orgData.name,
+                  organizationId: organizationId,
+                  syncedToSupabase: true,
+                  createdAt: new Date().toISOString()
+                };
+                
+                // Save to localStorage as cache
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                users.push(userData);
+                localStorage.setItem('users', JSON.stringify(users));
+                
+                // Save organization to localStorage as cache
+                // Supabase write: supabaseClient.insert() completed above
+                const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                orgData.id = organizationId;
+                organizations[orgData.name] = orgData;
+                localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.insert()
+                trace('[OK] Data cached to localStorage after Supabase success');
+              } else {
+                supabaseError = registrationResult.error;
+                console.error('? Supabase registration failed:', supabaseError);
+                throw new Error(supabaseError);
+              }
+            } else {
+              // Fallback: Direct insert (doesn't create Auth user) - should not happen
+              console.error('? registerWithSupabase not available - using fallback');
+              throw new Error('Registration system not available');
+            }
+          } catch (supabaseError) {
+            console.error('? CRITICAL: Supabase registration failed:', supabaseError);
+            supabaseError = supabaseError.message || supabaseError;
+            
+            // PERMANENT FIX: Cleanup orphaned organization if user creation failed
+            if (organizationId) {
+              try {
+                trace('[REG] Cleaning up orphaned organization due to registration failure...');
+                const { error: deleteError } = await window.supabaseClient
+                  .from('organizations')
+                  .delete()
+                  .eq('id', organizationId);
+                
+                if (deleteError) {
+                  console.error('? Could not cleanup orphaned organization:', deleteError);
+                  // If cleanup fails, mark as pending so it can be recovered later
+                  await window.supabaseClient
+                    .from('organizations')
+                    .update({ status: 'pending' })
+                    .eq('id', organizationId);
+                  trace('[REG] Marked organization as pending for manual cleanup');
+                } else {
+                  trace('[OK] Successfully cleaned up orphaned organization');
+                }
+              } catch (cleanupException) {
+                console.error('? Exception during cleanup:', cleanupException);
+                // Try to mark as pending as last resort
+                try {
+                  await window.supabaseClient
+                    .from('organizations')
+                    .update({ status: 'pending' })
+                    .eq('id', organizationId);
+                } catch (pendingException) {
+                  console.error('? Could not mark organization as pending:', pendingException);
+                }
+              }
+            }
+            
+            alert(`Registration failed: ${supabaseError}\n\nPlease check your internet connection and try again.\n\nIf this problem persists, please contact support with your username: "${document.getElementById('admin-username').value}"`);
+            return;
+          }
+        } else {
+          alert('Registration system not available. Please refresh the page and try again.');
+          return;
+        }
+      
+      // Show success step with organization code
+      document.getElementById('org-code-value').textContent = generatedOrgCode;
+      document.getElementById('generated-org-code').style.display = 'block';
+      showStep('step-success');
+        
+      } catch (error) {
+        console.error('? Error during registration:', error);
+        alert('Registration failed. Please try again.');
+      }
+    });
+
+    document.getElementById('join-org-form').addEventListener('submit', async function(e) {
+      e.preventDefault();
+      
+      try {
+        // CRITICAL: Validate password strength BEFORE hashing
+        const password = document.getElementById('user-password').value;
+        
+        if (typeof window.validatePasswordStrength === 'function') {
+          const passwordValidation = window.validatePasswordStrength(password);
+          if (!passwordValidation.valid) {
+            alert('Password does not meet security requirements:\n\n' + passwordValidation.errors.join('\n') + '\n\nPlease create a stronger password.');
+            return;
+          }
+        } else {
+          // Fallback validation
+          if (password.length < 12) {
+            alert('Password must be at least 12 characters long.');
+            return;
+          }
+          if (!/[A-Z]/.test(password) || !/[a-z]/.test(password) || !/[0-9]/.test(password) || !/[!@#$%^&*()_+\-=\[\]{};':"\\|,.<>\/?]/.test(password)) {
+            alert('Password must contain at least one uppercase letter, one lowercase letter, one number, and one special character.');
+            return;
+          }
+        }
+        
+        trace('[REG] Starting password hash for user');
+        const hashedPassword = await hashPassword(password);
+        trace('[REG] Password hashed for user');
+        
+        // CRITICAL: Use verified organization data (device-agnostic)
+        // This ensures consistent behavior across all devices
+        const orgCode = document.getElementById('org-code').value.trim();
+        
+        // First, try to use the verified organization data from verifyOrgCode()
+        let orgData = window.verifiedOrgData;
+        let orgName = orgData ? orgData.name : null;
+        
+        // If not verified, try to find in localStorage (fallback)
+        if (!orgData || !orgName) {
+          const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+          for (const [name, data] of Object.entries(organizations)) {
+            if (data.orgCode === orgCode) {
+              orgName = name;
+              orgData = data;
+              break;
+            }
+          }
+        }
+        
+        // If still not found, try to verify now (user might have skipped verification)
+        if ((!orgData || !orgName) && window.supabaseClient) {
+          try {
+            if (typeof window.verifyOrganizationCodeRpc === 'function') {
+              const { data: row, error: rpcErr } = await window.verifyOrganizationCodeRpc(window.supabaseClient, orgCode);
+              if (!rpcErr && row) {
+                orgData = row;
+                orgName = row.name;
+                window.verifiedOrgData = row;
+              }
+            } else {
+              const { data: rows, error: rpcErr } = await window.supabaseClient.rpc('verify_organization_code', {
+                p_org_code: orgCode
+              });
+              if (!rpcErr && Array.isArray(rows) && rows.length) {
+                orgData = rows[0];
+                orgName = rows[0].name;
+                window.verifiedOrgData = rows[0];
+              }
+            }
+          } catch (rpc0) {
+            console.warn('[REG] verify_organization_code on submit failed:', rpc0);
+          }
+        }
+
+        if (!orgData || !orgName) {
+          // Try to verify the organization code now
+          if (typeof window.secureSupabaseRpc === 'function') {
+            try {
+              const orgsResult = await window.secureSupabaseRpc('get_organizations_with_owner', {});
+              let orgs = [];
+              if (Array.isArray(orgsResult)) {
+                orgs = orgsResult;
+              } else if (orgsResult?.data && Array.isArray(orgsResult.data)) {
+                orgs = orgsResult.data;
+              }
+              
+              const foundOrg = orgs.find(o => o.org_code === orgCode);
+              if (foundOrg) {
+                orgData = foundOrg;
+                orgName = foundOrg.name;
+                window.verifiedOrgData = foundOrg;
+              }
+            } catch (rpcError) {
+              console.warn('[REG] Could not verify organization:', rpcError);
+            }
+          }
+        }
+        
+        if (!orgName || !orgData) {
+          alert('Organization code not found. Please verify the organization code first by clicking "Verify Code" button.');
+          return;
+        }
+        
+        // Handle "Other" role specification
+        const roleValue = document.getElementById('user-role').value;
+        let finalRole = roleValue;
+        if (roleValue === 'Other') {
+          const otherRoleSpec = document.getElementById('user-other-role').value.trim();
+          if (!otherRoleSpec) {
+            alert('Please specify your exact role when selecting "Other".');
+            return;
+          }
+          finalRole = `Other (${otherRoleSpec})`;
+        }
+        
+        // Validate Medical License Number for roles that require it
+        const rolesRequiringLicense = ['Doctor', 'Nurse', 'Physician Assistant', 'Pharmacist', 'Optometrist', 'Medical Lab Scientist'];
+        const medicalLicenseNumber = document.getElementById('user-license').value;
+        if (rolesRequiringLicense.includes(roleValue) && !medicalLicenseNumber) {
+          alert('Medical License Number is required for ' + roleValue + 's.');
+          return;
+        }
+        
+        // Validate required fields
+        const firstName = document.getElementById('user-firstname').value.trim();
+        const lastName = document.getElementById('user-lastname').value.trim();
+        const username = document.getElementById('user-username').value.trim();
+        const gender = document.getElementById('user-gender').value;
+        
+        if (!firstName || !lastName || !username || !password || !gender || !roleValue || !orgCode) {
+          alert('Please fill in all required fields.');
+          return;
+        }
+
+        // PREFLIGHT CHECKS - Ensure first-attempt success
+        if (typeof window.registrationPreflight === 'undefined') {
+          alert('Registration system not fully loaded. Please wait a moment and try again.');
+          return;
+        }
+
+        // Collect phone data
+        const userPhoneCode = document.getElementById('user-phone-code').value;
+        const userPhone = document.getElementById('user-phone').value.trim();
+        const userPhoneFull = userPhoneCode && userPhone ? `${userPhoneCode} ${userPhone}` : userPhone;
+        
+        // Collect form data for preflight
+        const formData = {
+          username: username,
+          password: password,
+          firstName: firstName,
+          lastName: lastName,
+          gender: gender,
+          role: finalRole,
+          medicalLicenseNumber: medicalLicenseNumber || '',
+          phone: userPhoneFull,
+          organizationId: null // Will be set after org verification
+        };
+
+        // Run preflight checks (will verify internet, Supabase client, and mandatory fields)
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton ? submitButton.textContent : '';
+        if (submitButton) {
+          submitButton.disabled = true;
+          submitButton.textContent = 'Checking connection...';
+        }
+
+        // First verify organization exists
+        const orgPreflight = await window.registrationPreflight.verifyOrganization(orgCode);
+        if (!orgPreflight.success) {
+          alert(orgPreflight.message);
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+
+        formData.organizationId = orgPreflight.organizationId;
+
+        // Run full preflight checks
+        const preflightResults = await window.registrationPreflight.runAllChecks(formData, orgCode);
+        
+        if (!preflightResults.passed) {
+          const errorMessage = preflightResults.errors.join('\n');
+          
+          // Check if error is username-related and show prominent alert
+          if (errorMessage.toLowerCase().includes('username') && 
+              (errorMessage.toLowerCase().includes('taken') || 
+               errorMessage.toLowerCase().includes('already'))) {
+            const usernameField = document.getElementById('join-org-username');
+            const username = usernameField ? usernameField.value : '';
+            
+            alert('USERNAME ALREADY TAKEN\n\n' +
+                  'The username "' + username + '" is already in use.\n\n' +
+                  'Please choose a different username and try again.');
+            
+            // Highlight the username field
+            if (usernameField) {
+              usernameField.style.border = '2px solid #dc3545';
+              usernameField.style.backgroundColor = '#fff5f5';
+              usernameField.focus();
+              usernameField.select();
+              
+              // Remove highlight after 5 seconds
+              setTimeout(() => {
+                usernameField.style.border = '';
+                usernameField.style.backgroundColor = '';
+              }, 5000);
+            }
+          } else {
+            alert('Registration cannot proceed:\n\n' + errorMessage);
+          }
+          
+          if (submitButton) {
+            submitButton.disabled = false;
+            submitButton.textContent = originalButtonText;
+          }
+          return;
+        }
+
+        if (submitButton) submitButton.textContent = 'Registering...';
+        
+        // CRITICAL: SUPABASE-FIRST ARCHITECTURE
+        // Step 1: Try to save to Supabase FIRST (not localStorage)
+        let supabaseSuccess = false;
+        let supabaseError = null;
+        
+        // CRITICAL: Robust organization ID resolution (device-agnostic)
+        // The organization was already verified, so we know it exists
+        // We just need to get the UUID for Supabase registration
+        let organizationId = orgData.id;
+        
+        // If organization ID is not a UUID, look it up in Supabase using multiple methods
+        if (!organizationId || !organizationId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+          console.log('[REG] Organization ID not a UUID, looking up in Supabase...');
+          
+          // Method 1: Try secure RPC (bypasses RLS, works on all devices)
+          if (typeof window.secureSupabaseRpc === 'function') {
+            try {
+              const orgsResult = await window.secureSupabaseRpc('get_organizations_with_owner', {});
+              let orgs = [];
+              if (Array.isArray(orgsResult)) {
+                orgs = orgsResult;
+              } else if (orgsResult?.data && Array.isArray(orgsResult.data)) {
+                orgs = orgsResult.data;
+              }
+              
+              const foundOrg = orgs.find(o => o.name === orgName || o.org_code === orgCode);
+              if (foundOrg && foundOrg.id) {
+                organizationId = foundOrg.id;
+                console.log('? Found organization ID via secure RPC:', organizationId);
+              }
+            } catch (rpcError) {
+              console.warn('[REG] Secure RPC lookup failed, trying direct query:', rpcError);
+            }
+          }
+          
+          // Method 2: Try direct Supabase query (may fail due to RLS, but worth trying)
+          if (!organizationId && window.supabaseClient) {
+            try {
+              const { data: orgResult, error: orgError } = await window.supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', orgName)
+                .maybeSingle();
+              
+              if (!orgError && orgResult && orgResult.id) {
+                organizationId = orgResult.id;
+                console.log('? Found organization ID via direct query:', organizationId);
+              } else if (orgError) {
+                console.warn('[REG] Direct query failed (may be RLS):', orgError.message);
+              }
+            } catch (queryError) {
+              console.warn('[REG] Direct query exception:', queryError);
+            }
+          }
+          
+          // Method 3: Try lookup by org_code
+          if (!organizationId && window.supabaseClient) {
+            try {
+              const { data: orgResult, error: orgError } = await window.supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('org_code', orgCode)
+                .maybeSingle();
+              
+              if (!orgError && orgResult && orgResult.id) {
+                organizationId = orgResult.id;
+                console.log('? Found organization ID via org_code lookup:', organizationId);
+              }
+            } catch (codeError) {
+              console.warn('[REG] Org code lookup exception:', codeError);
+            }
+          }
+          
+          // If still no UUID found, but org was verified, we have a problem
+          if (!organizationId || !organizationId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
+            console.error('? CRITICAL: Organization verified but UUID not found');
+            console.error('Org name:', orgName);
+            console.error('Org code:', orgCode);
+            console.error('OrgData from localStorage:', orgData);
+            
+            // This should not happen if org was verified, but handle gracefully
+            alert(`Registration Error: Could not find organization in database.\n\nOrganization: ${orgName}\nCode: ${orgCode}\n\nPlease contact support or try again.`);
+            return;
+          }
+        }
+        
+        console.log('? Organization ID resolved:', organizationId);
+        
+        // Register user in Supabase FIRST
+        if (typeof window.registerWithSupabase === 'function' && window.supabaseClient) {
+          try {
+            // Collect phone data for user (reuse variables already declared above)
+            const userPhoneCodeValue = document.getElementById('user-phone-code').value;
+            const userPhoneValue = document.getElementById('user-phone').value.trim();
+            const userPhoneFullValue = userPhoneCodeValue && userPhoneValue ? `${userPhoneCodeValue} ${userPhoneValue}` : userPhoneValue;
+            
+            const registrationResult = await window.registerWithSupabase({
+              username: username,
+              password: password, // Plain password - registerWithSupabase handles it
+              firstName: firstName,
+              lastName: lastName,
+              gender: gender,
+              role: finalRole,
+              organizationId: organizationId,
+              medicalLicenseNumber: medicalLicenseNumber || '',
+              phone: userPhoneFullValue
+            });
+            
+            if (registrationResult.success) {
+              supabaseSuccess = true;
+              trace('[OK] User registered successfully in Supabase Auth and users table');
+              
+              // CRITICAL: Save legal agreements if user accepted
+              const legalAgreementAccepted = document.getElementById('user-legal-agreement-accept')?.checked;
+              if (legalAgreementAccepted && registrationResult.user?.id && typeof window.saveLegalAgreement === 'function') {
+                try {
+                  trace('[REG] Saving legal agreements...');
+                  const firstName = document.getElementById('user-firstname').value.trim();
+                  const lastName = document.getElementById('user-lastname').value.trim();
+                  const userName = `${firstName} ${lastName}`;
+                  const userEmail = `${document.getElementById('user-username').value}@mediforge.app`;
+                  const userRole = document.getElementById('user-role').value;
+                  
+                  // Get organization ID from verified org code
+                  let orgId = null;
+                  if (window.verifiedOrgData && window.verifiedOrgData.id) {
+                    orgId = window.verifiedOrgData.id;
+                  }
+                  
+                  // Save Service Agreement
+                  const serviceAgreementResult = await window.saveLegalAgreement({
+                    userId: registrationResult.user.id,
+                    organizationId: orgId,
+                    agreementType: 'service_agreement',
+                    userName: userName,
+                    userRole: userRole,
+                    userEmail: userEmail,
+                    agreementText: 'MediForge Service Subscription and Data Processing Agreement - Version 2025-11-18'
+                  });
+                  
+                  if (serviceAgreementResult.success) {
+                    trace('[OK] Service Agreement saved');
+                  } else {
+                    console.warn('[REG] Could not save Service Agreement:', serviceAgreementResult.error);
+                  }
+                  
+                  // Save BAA
+                  const baaResult = await window.saveLegalAgreement({
+                    userId: registrationResult.user.id,
+                    organizationId: orgId,
+                    agreementType: 'baa',
+                    userName: userName,
+                    userRole: userRole,
+                    userEmail: userEmail,
+                    agreementText: 'Business Associate Agreement (BAA) - Version 2025-11-18'
+                  });
+                  
+                  if (baaResult.success) {
+                    trace('[OK] Business Associate Agreement (BAA) saved');
+                  } else {
+                    console.warn('[REG] Could not save BAA:', baaResult.error);
+                  }
+                } catch (legalError) {
+                  console.error('? Error saving legal agreements:', legalError);
+                  // Don't fail registration if legal agreement save fails - log it
+                  trace('[REG] Legal agreement save failed, but registration continues');
+                }
+              } else if (!legalAgreementAccepted) {
+                console.error('? Legal agreement not accepted - this should not happen due to required checkbox');
+              }
+              
+              if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+              }
+            } else {
+              supabaseError = registrationResult.error;
+              console.error('? Supabase registration failed:', supabaseError);
+              if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+              }
+              throw new Error(supabaseError);
+            }
+          } catch (err) {
+            console.error('? CRITICAL: Supabase registration exception:', err);
+            supabaseError = err.message || err;
+            if (submitButton) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalButtonText;
+            }
+            alert(`Registration failed: ${supabaseError}\n\nPlease try again or contact support.`);
+            return;
+          }
+        } else {
+          alert('Registration system not available. Please refresh the page and try again.');
+          return;
+        }
+        
+        // Step 2: Save to localStorage as cache (only after Supabase success)
+        // Collect phone data for user (reuse variables already declared above)
+        const userPhoneCodeFinal = document.getElementById('user-phone-code').value;
+        const userPhoneFinal = document.getElementById('user-phone').value.trim();
+        const userPhoneFullFinal = userPhoneCodeFinal && userPhoneFinal ? `${userPhoneCodeFinal} ${userPhoneFinal}` : userPhoneFinal;
+        
+        const userData = {
+          firstName: firstName,
+          lastName: lastName,
+          username: username,
+          password: hashedPassword,
+          passwordType: 'sha256',
+          gender: gender,
+          role: finalRole,
+          medicalLicenseNumber: medicalLicenseNumber,
+          phone: userPhoneFullFinal,
+          orgCode: orgCode,
+          org: orgName,
+          organization: orgName,
+          organizationId: organizationId,
+          syncedToSupabase: true,
+          createdAt: new Date().toISOString()
+        };
+        
+        const users = JSON.parse(localStorage.getItem('users') || '[]');
+        users.push(userData);
+        localStorage.setItem('users', JSON.stringify(users));
+        trace('[OK] User data cached to localStorage after Supabase success', scrubUser(userData));
+      
+      // Show success step with appropriate message
+      if (supabaseSuccess) {
+        alert('Registration successful! Your account has been created and synced to the cloud. You can now login from any device.');
+        showStep('step-success');
+      } else {
+        alert(`Registration failed: ${supabaseError || 'Unknown error'}\n\nPlease try again or contact support.`);
+      }
+        
+      } catch (error) {
+        console.error('? Error during join organization:', error);
+        alert('Registration failed. Please try again.');
+      }
+    });
+    
+    // Initialize dropdowns when page loads - universal (works on all devices)
+    document.addEventListener('DOMContentLoaded', function() {
+      trace('[REG] TRACE: Register page loaded - initializing dropdowns');
+      
+      // Universal viewport fix (applies to all devices for consistency)
+      const viewportMeta = document.querySelector('meta[name="viewport"]');
+      if (viewportMeta) {
+        viewportMeta.setAttribute('content', 'width=device-width, initial-scale=1.0, maximum-scale=5.0, user-scalable=yes');
+      }
+      
+      // Universal form input fixes (applies to all devices for consistency)
+      const inputs = document.querySelectorAll('input, select, textarea');
+      inputs.forEach(input => {
+        // Prevent zoom on focus for small screens (applies to all devices)
+        input.addEventListener('focus', function() {
+          if (this.type === 'text' || this.type === 'email' || this.type === 'password' || this.type === 'tel') {
+            // Only adjust if screen is small (applies universally)
+            if (window.innerWidth < 768) {
+              this.style.fontSize = '16px';
+            }
+          }
+        });
+      });
+      
+      // Initialize country and state dropdowns
+      setTimeout(function() {
+        if (typeof window.populateCountryDropdown === 'function') {
+          window.populateCountryDropdown('country');
+        }
+        populateCountryCodeDropdowns();
+        
+        // Add event listener for country field changes
+        const countryField = document.getElementById('country');
+        if (countryField) {
+          countryField.addEventListener('change', handleOrgCountryChange);
+        }
+        
+        // Add auto-population for state dropdown when clicked/focused
+        const stateSelect = document.getElementById('state');
+        if (stateSelect && countryField) {
+          stateSelect.addEventListener('focus', function() {
+            const countryValue = countryField.value;
+            if (countryValue && stateSelect.options.length <= 1) {
+              if (typeof window.populateStateDropdown === 'function') {
+                window.populateStateDropdown('state', countryValue);
+              } else {
+                handleOrgCountryChange();
+              }
+            }
+          });
+          stateSelect.addEventListener('click', function() {
+            const countryValue = countryField.value;
+            if (countryValue && stateSelect.options.length <= 1) {
+              if (typeof window.populateStateDropdown === 'function') {
+                window.populateStateDropdown('state', countryValue);
+              } else {
+                handleOrgCountryChange();
+              }
+            }
+          });
+        }
+      }, 100);
+    });
+  </script>
+  
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251021140000"></script>
+  <script src="js/public-auth-rpc.js?v=20260416120000"></script>
+  <script src="js/supabase-auth.js?v=20260416120000"></script>  <!-- Required for registerWithSupabase -->
+  <script src="js/legal-agreements.js?v=20250118000000"></script>  <!-- Legal agreements management -->
+  <script src="js/registration-monitor.js?v=20250118000000"></script>  <!-- Registration monitoring -->
+  <script src="js/registration-preflight.js?v=20260416120000"></script>  <!-- Preflight checks -->
+  
+  <!-- Countries data -->
+  <script src="js/countries-data.js?v=20251021140000"></script>
+  
+  <!-- Universal Scripts -->
+  <script src="js/universal-data-loader.js?v=20251021140000"></script>  <!-- Universal data loader with Supabase priority -->
+  <script src="js/universal-sync-status.js?v=20251021140000"></script>  <!-- Universal sync status indicator -->
+  
+  <!-- DISABLED: Service Worker cache busting removed to prevent mobile refresh loops -->
+  <script>
+    // DISABLED: All cache busting code removed to prevent infinite refresh loops on mobile
+    if (typeof trace === 'function') {
+      trace('[REG] Cache busting disabled to prevent mobile refresh loops');
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

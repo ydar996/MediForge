@@ -1,0 +1,204 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Edit Payment - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=225">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113120113121312"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113120113121312"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113120113121312"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=288"></script>
+  <script src="js/payments.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113120113121312"></script>
+</head>
+<body>
+  <h1>&#128394; Edit Payment</h1>
+  <button onclick="window.location.href='payments'" style="background: #666; color: white; padding: 10px 15px; border: none; border-radius: 4px; cursor: pointer;">&#8592; Back to Payments</button>
+
+  <div style="max-width: 600px; margin: 20px auto; background: white; padding: 20px; border-radius: 8px;">
+    <h2>Payment Details</h2>
+    
+    <div id="payment-info" style="background: #e8f5e9; padding: 15px; margin: 15px 0; border-radius: 4px;">
+      <p><strong>Payment Reference:</strong> <span id="pay-reference"></span></p>
+      <p id="invoice-info" style="display: none;"><strong>Invoice:</strong> <span id="pay-invoice"></span></p>
+    </div>
+
+    <label for="patient-name">Patient Name:</label>
+    <input type="text" id="patient-name" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+
+    <label for="amount">Payment Amount:</label>
+    <input type="number" id="amount" step="0.01" min="0" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+
+    <label for="payment-method">Payment Method:</label>
+    <select id="payment-method" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+      <option value="cash">Cash</option>
+      <option value="mobile_money">Mobile Money (M-Pesa, etc.)</option>
+      <option value="card">Card</option>
+      <option value="bank_transfer">Bank Transfer</option>
+      <option value="check">Check/Cheque</option>
+    </select>
+
+    <label for="method-details">Transaction Reference/Details:</label>
+    <input type="text" id="method-details" placeholder="M-Pesa code, last 4 digits, etc." style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+
+    <label for="payment-date">Payment Date:</label>
+    <input type="date" id="payment-date" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+
+    <label for="payment-status">Payment Status:</label>
+    <select id="payment-status" required style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;">
+      <option value="completed">Completed</option>
+      <option value="pending">Pending</option>
+      <option value="failed">Failed</option>
+      <option value="refunded">Refunded</option>
+    </select>
+
+    <label for="notes">Notes:</label>
+    <textarea id="notes" rows="3" style="width: 100%; padding: 10px; box-sizing: border-box; border: 1px solid #ddd; border-radius: 4px;"></textarea>
+
+    <div style="display: flex; gap: 10px; margin-top: 20px;">
+      <button onclick="savePaymentChanges()" style="flex: 1; background: #4CAF50; color: white; font-size: 16px; padding: 15px; border: none; border-radius: 6px; cursor: pointer;">
+        &#10004; Save Changes
+      </button>
+      <button onclick="window.location.href='payments'" style="flex: 1; background: #666; color: white; font-size: 16px; padding: 15px; border: none; border-radius: 6px; cursor: pointer;">
+        Cancel
+      </button>
+    </div>
+  </div>
+
+  <script>
+    let currentPayment = null;
+    let originalInvoice = null;
+
+    window.addEventListener('load', async function() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const paymentId = urlParams.get('id');
+      
+      if (!paymentId) {
+        alert('Payment ID not provided');
+        window.location.href = 'payments';
+        return;
+      }
+      
+      try {
+        if (typeof window.getPaymentById !== 'function') {
+          alert('Billing system is not loaded. Please refresh the page and try again.');
+          window.location.href = 'payments';
+          return;
+        }
+        
+        currentPayment = window.getPaymentById(paymentId);
+        if (!currentPayment) {
+          alert('Payment not found');
+          window.location.href = 'payments';
+          return;
+        }
+        
+        // Load invoice if payment is linked to one
+        if (currentPayment.invoiceId && typeof window.getInvoiceById === 'function') {
+          originalInvoice = await window.getInvoiceById(currentPayment.invoiceId);
+        }
+        
+        displayPayment();
+      } catch (error) {
+        console.error('Error loading payment:', error);
+        alert('Error loading payment. Please try again.');
+        window.location.href = 'payments';
+      }
+    });
+
+    function displayPayment() {
+      if (!currentPayment) return;
+      
+      document.getElementById('pay-reference').textContent = currentPayment.reference || currentPayment.id;
+      
+      if (originalInvoice) {
+        document.getElementById('pay-invoice').textContent = originalInvoice.invoiceNumber || originalInvoice.id;
+        document.getElementById('invoice-info').style.display = 'block';
+      }
+      
+      document.getElementById('patient-name').value = currentPayment.patientName || '';
+      document.getElementById('amount').value = currentPayment.amount || 0;
+      document.getElementById('payment-method').value = currentPayment.method || 'cash';
+      document.getElementById('method-details').value = currentPayment.methodDetails || '';
+      document.getElementById('payment-date').value = currentPayment.date || new Date().toISOString().split('T')[0];
+      document.getElementById('payment-status').value = currentPayment.status || 'completed';
+      document.getElementById('notes').value = currentPayment.notes || '';
+    }
+
+    async function savePaymentChanges() {
+      if (!currentPayment) {
+        alert('Payment data not loaded. Please refresh the page and try again.');
+        return;
+      }
+      
+      const amount = parseFloat(document.getElementById('amount').value);
+      const patientName = document.getElementById('patient-name').value.trim();
+      
+      if (!amount || amount <= 0) {
+        alert('Please enter a valid amount');
+        return;
+      }
+      
+      if (!patientName) {
+        alert('Please enter patient name');
+        return;
+      }
+      
+      const updates = {
+        patientName: patientName,
+        amount: amount,
+        method: document.getElementById('payment-method').value,
+        methodDetails: document.getElementById('method-details').value,
+        date: document.getElementById('payment-date').value,
+        status: document.getElementById('payment-status').value,
+        notes: document.getElementById('notes').value
+      };
+      
+      try {
+        if (typeof window.updatePayment !== 'function') {
+          alert('Update payment function is not available. Please refresh the page and try again.');
+          return;
+        }
+        
+        const updated = await window.updatePayment(currentPayment.id, updates);
+        
+        if (updated) {
+          alert('Payment updated successfully!');
+          window.location.href = 'payments';
+        } else {
+          alert('Failed to update payment. Check console for details.');
+        }
+      } catch (error) {
+        console.error('Error updating payment:', error);
+        alert('Error updating payment. Please try again.');
+      }
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+

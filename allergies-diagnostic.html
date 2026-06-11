@@ -1,0 +1,184 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Allergies Table Diagnostic</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        .diagnostic { background: #f0f0f0; padding: 15px; margin: 10px 0; border-radius: 5px; }
+        .error { background: #ffebee; border-left: 4px solid #f44336; }
+        .success { background: #e8f5e8; border-left: 4px solid #4caf50; }
+        table { width: 100%; border-collapse: collapse; margin: 20px 0; }
+        th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+        th { background-color: #f2f2f2; }
+        button { background: #dc3545; color: white; padding: 6px 12px; border: none; border-radius: 4px; cursor: pointer; margin: 2px; }
+        button:hover { background: #c82333; }
+    </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308">
+
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+</head>
+<body>
+    <h1>?? Allergies Table Diagnostic Tool</h1>
+    
+    <div id="diagnostic-results"></div>
+    
+    <h2>Test Allergies Table</h2>
+    <table id="test-allergies-table">
+        <thead>
+            <tr>
+                <th>Allergen</th>
+                <th>Reaction</th>
+                <th>Severity</th>
+                <th>Notes</th>
+                <th>Actions</th>
+            </tr>
+        </thead>
+        <tbody id="test-allergies-list">
+        </tbody>
+    </table>
+
+    <script>
+        function addDiagnostic(message, type = 'info') {
+            const div = document.createElement('div');
+            div.className = `diagnostic ${type}`;
+            div.innerHTML = `<strong>${new Date().toLocaleTimeString()}:</strong> ${message}`;
+            document.getElementById('diagnostic-results').appendChild(div);
+        }
+
+        function testAllergiesTable() {
+            addDiagnostic('?? Starting allergies table diagnostic...', 'info');
+            
+            // Test 1: Check if elements exist
+            const tbody = document.getElementById('test-allergies-list');
+            const table = document.getElementById('test-allergies-table');
+            
+            if (!tbody) {
+                addDiagnostic('? ERROR: test-allergies-list tbody not found!', 'error');
+                return;
+            }
+            
+            if (!table) {
+                addDiagnostic('? ERROR: test-allergies-table not found!', 'error');
+                return;
+            }
+            
+            addDiagnostic('? Found tbody and table elements', 'success');
+            
+            // Test 2: Create test data
+            const testAllergies = [
+                { allergen: "Fish", reaction: "Anaphylaxis", severity: "Severe", notes: "Test note" },
+                { allergen: "Milk", reaction: "Hives", severity: "Moderate", notes: "Test note 2" }
+            ];
+            
+            addDiagnostic(`?? Creating ${testAllergies.length} test allergy entries...`, 'info');
+            
+            // Test 3: Clear and populate table
+            tbody.innerHTML = "";
+            
+            // Style the table
+            table.style.cssText = "width: 100%; min-width: 1200px; table-layout: fixed; border-collapse: collapse;";
+            
+            testAllergies.forEach((entry, index) => {
+                addDiagnostic(`?? Creating row ${index + 1} for allergen: ${entry.allergen}`, 'info');
+                
+                const row = document.createElement("tr");
+                row.style.cssText = "border: 1px solid #ddd;";
+                
+                // Create cells
+                const allergenCell = document.createElement("td");
+                allergenCell.textContent = entry.allergen;
+                allergenCell.style.cssText = "width: 20%; padding: 8px; border: 1px solid #ddd;";
+                
+                const reactionCell = document.createElement("td");
+                reactionCell.textContent = entry.reaction;
+                reactionCell.style.cssText = "width: 35%; padding: 8px; border: 1px solid #ddd;";
+                
+                const severityCell = document.createElement("td");
+                severityCell.textContent = entry.severity;
+                severityCell.style.cssText = "width: 15%; padding: 8px; border: 1px solid #ddd;";
+                
+                const notesCell = document.createElement("td");
+                notesCell.textContent = entry.notes;
+                notesCell.style.cssText = "width: 15%; padding: 8px; border: 1px solid #ddd;";
+                
+                const actionsCell = document.createElement("td");
+                actionsCell.style.cssText = "width: 15%; padding: 8px; border: 1px solid #ddd; text-align: center; background-color: #f9f9f9;";
+                
+                addDiagnostic(`?? Creating buttons for row ${index + 1}...`, 'info');
+                
+                // Create Edit button
+                const editButton = document.createElement("button");
+                editButton.type = "button";
+                editButton.textContent = "Edit";
+                editButton.style.cssText = "background: #007bff; color: white; padding: 8px 16px; border: none; border-radius: 4px; font-size: 12px; margin-right: 10px; cursor: pointer; font-weight: bold; display: inline-block;";
+                editButton.onclick = () => {
+                    addDiagnostic(`? Edit button clicked for ${entry.allergen}!`, 'success');
+                };
+                
+                // Create Delete button
+                const deleteButton = document.createElement("button");
+                deleteButton.type = "button";
+                deleteButton.textContent = "Delete";
+                deleteButton.style.cssText = "background: #dc3545; color: white; padding: 8px 16px; border: none; border-radius: 4px; font-size: 12px; cursor: pointer; font-weight: bold; display: inline-block;";
+                deleteButton.onclick = () => {
+                    addDiagnostic(`? Delete button clicked for ${entry.allergen}!`, 'success');
+                };
+                
+                addDiagnostic(`?? Adding buttons to actions cell for row ${index + 1}...`, 'info');
+                
+                // Add buttons to actions cell
+                actionsCell.appendChild(editButton);
+                actionsCell.appendChild(deleteButton);
+                
+                // Add cells to row
+                row.appendChild(allergenCell);
+                row.appendChild(reactionCell);
+                row.appendChild(severityCell);
+                row.appendChild(notesCell);
+                row.appendChild(actionsCell);
+                
+                tbody.appendChild(row);
+                
+                addDiagnostic(`? Row ${index + 1} created successfully with ${row.children.length} cells`, 'success');
+            });
+            
+            addDiagnostic(`?? Diagnostic complete! Created ${tbody.children.length} rows`, 'success');
+            
+            // Test 4: Verify buttons exist
+            const buttons = tbody.querySelectorAll('button');
+            addDiagnostic(`?? Found ${buttons.length} buttons in the table`, buttons.length > 0 ? 'success' : 'error');
+            
+            buttons.forEach((button, index) => {
+                addDiagnostic(`Button ${index + 1}: "${button.textContent}" - Visible: ${button.offsetWidth > 0}`, 'info');
+            });
+        }
+
+        // Run diagnostic when page loads
+        window.addEventListener('load', testAllergiesTable);
+    </script>
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>

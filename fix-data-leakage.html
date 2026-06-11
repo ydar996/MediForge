@@ -1,0 +1,299 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Fix Data Leakage - MediForge</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+        }
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        .error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 15px;
+            border-radius: 5px;
+            margin: 20px 0;
+        }
+        button {
+            background: #007bff;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            border-radius: 5px;
+            cursor: pointer;
+            margin: 5px;
+        }
+        button:hover {
+            background: #0056b3;
+        }
+        .danger {
+            background: #dc3545;
+        }
+        .danger:hover {
+            background: #c82333;
+        }
+        pre {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 5px;
+            overflow-x: auto;
+            font-size: 12px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🔧 Data Leakage Fix Tool</h1>
+        <p>This tool will help identify and fix data leakage issues where patients from other organizations are showing up in your organization.</p>
+        
+        <div id="status"></div>
+        
+        <h2>Current User Information</h2>
+        <div id="user-info"></div>
+        
+        <h2>Organization Data</h2>
+        <div id="org-info"></div>
+        
+        <h2>Data Analysis</h2>
+        <div id="data-analysis"></div>
+        
+        <h2>Actions</h2>
+        <button onclick="analyzeData()">🔍 Analyze Current Data</button>
+        <button onclick="fixOrganizationId()" class="danger">🔧 Fix Organization ID</button>
+        <button onclick="cleanupData()" class="danger">🧹 Clean Up Data Leakage</button>
+        <button onclick="testDataIsolation()">✅ Test Data Isolation</button>
+        
+        <div id="results"></div>
+    </div>
+
+    <script>
+        // Get data key with organization prefix
+        function getDataKey(key) {
+            const user = JSON.parse(localStorage.getItem("user") || '{}');
+            return user && user.org ? `${user.org}_${key}` : key;
+        }
+
+        function analyzeData() {
+            console.log('🔍 Analyzing data leakage...');
+            
+            // Get current user
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+            
+            // Display user info
+            document.getElementById('user-info').innerHTML = `
+                <pre>Current User:
+Username: ${user.username || 'Not set'}
+Organization: ${user.org || 'Not set'}
+Organization ID: ${user.organizationId || 'Not set'}
+User ID: ${user.id || 'Not set'}</pre>
+            `;
+            
+            // Display organization info
+            document.getElementById('org-info').innerHTML = `
+                <pre>Organizations in localStorage:
+${JSON.stringify(organizations, null, 2)}</pre>
+            `;
+            
+            // Analyze patients data
+            const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            const allPatients = JSON.parse(localStorage.getItem("patients") || "[]");
+            
+            document.getElementById('data-analysis').innerHTML = `
+                <div class="warning">
+                    <strong>Data Analysis:</strong><br>
+                    • Patients in your organization scope: ${patients.length}<br>
+                    • Patients in global scope: ${allPatients.length}<br>
+                    • Organization ID: ${user.organizationId || 'MISSING!'}<br>
+                    • Data key used: ${getDataKey("patients")}
+                </div>
+                <pre>Your Organization Patients:
+${JSON.stringify(patients.slice(0, 5), null, 2)}${patients.length > 5 ? '\n... (showing first 5)' : ''}</pre>
+            `;
+            
+            // Check for data leakage
+            if (patients.length > 0) {
+                const firstPatient = patients[0];
+                if (firstPatient.id && firstPatient.id.includes('MEC')) {
+                    document.getElementById('results').innerHTML = `
+                        <div class="error">
+                            <strong>⚠️ DATA LEAKAGE DETECTED!</strong><br>
+                            You are seeing patients from Mecure Clinics (MEC prefix) in your organization.
+                            This indicates the organization ID assignment is not working correctly.
+                        </div>
+                    `;
+                } else {
+                    document.getElementById('results').innerHTML = `
+                        <div class="success">
+                            <strong>✅ No obvious data leakage detected</strong><br>
+                            Your patients appear to belong to your organization.
+                        </div>
+                    `;
+                }
+            }
+        }
+
+        function fixOrganizationId() {
+            console.log('🔧 Fixing organization ID...');
+            
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+            
+            if (!user.org) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Cannot fix: No organization found for user</strong><br>
+                        User does not have an organization assigned.
+                    </div>
+                `;
+                return;
+            }
+            
+            // Try to get organization ID from organizations data
+            const orgData = organizations[user.org];
+            if (orgData && orgData.id) {
+                // Update user with organization ID
+                user.organizationId = orgData.id;
+                localStorage.setItem("user", JSON.stringify(user));
+                
+                document.getElementById('results').innerHTML = `
+                    <div class="success">
+                        <strong>✅ Organization ID Fixed!</strong><br>
+                        Updated user with organization ID: ${orgData.id}<br>
+                        Please refresh the page to see the changes.
+                    </div>
+                `;
+            } else {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Cannot fix: Organization data missing</strong><br>
+                        Organization "${user.org}" not found in organizations data or missing ID.
+                    </div>
+                `;
+            }
+        }
+
+        function cleanupData() {
+            console.log('🧹 Cleaning up data leakage...');
+            
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            
+            if (!user.organizationId) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Cannot cleanup: No organization ID</strong><br>
+                        Please fix the organization ID first.
+                    </div>
+                `;
+                return;
+            }
+            
+            // Clear all patient and appointment data for this user
+            const dataKeys = ['patients', 'appointments', 'clinical-notes', 'prescriptions'];
+            let cleanedCount = 0;
+            
+            dataKeys.forEach(key => {
+                const dataKey = getDataKey(key);
+                const data = JSON.parse(localStorage.getItem(dataKey) || "[]");
+                if (data.length > 0) {
+                    localStorage.removeItem(dataKey);
+                    cleanedCount += data.length;
+                    console.log(`Cleaned ${data.length} ${key} records`);
+                }
+            });
+            
+            // Clear cache
+            if (typeof window.dataCache !== 'undefined') {
+                window.dataCache = {
+                    patients: null,
+                    appointments: null,
+                    lastLoad: {
+                        patients: 0,
+                        appointments: 0
+                    }
+                };
+            }
+            
+            document.getElementById('results').innerHTML = `
+                <div class="success">
+                    <strong>✅ Data Cleanup Complete!</strong><br>
+                    Cleaned ${cleanedCount} records from localStorage.<br>
+                    Cache cleared. Please refresh the page to reload data with proper organization filtering.
+                </div>
+            `;
+        }
+
+        function testDataIsolation() {
+            console.log('✅ Testing data isolation...');
+            
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+            
+            if (!user.organizationId) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Data Isolation Test Failed</strong><br>
+                        User does not have an organization ID assigned.
+                    </div>
+                `;
+                return;
+            }
+            
+            // Check if any patients have organization_id that doesn't match
+            const mismatchedPatients = patients.filter(patient => 
+                patient.organization_id && patient.organization_id !== user.organizationId
+            );
+            
+            if (mismatchedPatients.length > 0) {
+                document.getElementById('results').innerHTML = `
+                    <div class="error">
+                        <strong>❌ Data Isolation Test Failed</strong><br>
+                        Found ${mismatchedPatients.length} patients with mismatched organization IDs:<br>
+                        <pre>${JSON.stringify(mismatchedPatients.slice(0, 3), null, 2)}</pre>
+                    </div>
+                `;
+            } else {
+                document.getElementById('results').innerHTML = `
+                    <div class="success">
+                        <strong>✅ Data Isolation Test Passed!</strong><br>
+                        All ${patients.length} patients belong to your organization (${user.organizationId}).
+                    </div>
+                `;
+            }
+        }
+
+        // Auto-analyze on page load
+        window.addEventListener('load', function() {
+            analyzeData();
+        });
+    </script>
+</body>
+</html>

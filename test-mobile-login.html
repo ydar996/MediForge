@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🧪 Test Mobile Login</title>
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; background: #f5f5f5; }
+        .container { max-width: 600px; margin: 0 auto; background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 10px rgba(0,0,0,0.1); }
+        .test-section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+        button { background: #007cba; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin: 5px; }
+        button:hover { background: #005a8b; }
+        .success { color: #388e3c; }
+        .error { color: #d32f2f; }
+        .info { color: #1976d2; }
+        .log { background: #f8f9fa; padding: 10px; border-radius: 5px; font-family: monospace; font-size: 12px; white-space: pre-wrap; max-height: 300px; overflow-y: auto; }
+        input { padding: 8px; margin: 5px; border: 1px solid #ddd; border-radius: 3px; width: 200px; }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>🧪 Test Mobile Login</h1>
+        <p><strong>Purpose:</strong> Test login functionality without cache dependencies</p>
+        
+        <div class="test-section">
+            <h3>🔑 Test ydar105 Login</h3>
+            <input type="text" id="testEmail" placeholder="Email" value="ydar105@eko.com">
+            <input type="password" id="testPassword" placeholder="Password" value="OlowoPoroku108%">
+            <button onclick="testLogin()">Test Login</button>
+            <button onclick="clearLog()">Clear Log</button>
+        </div>
+
+        <div class="test-section">
+            <h3>🔑 Test ydar2 Login</h3>
+            <input type="text" id="testUsername" placeholder="Username" value="ydar2">
+            <input type="password" id="testPassword2" placeholder="Password" value="ydar102">
+            <button onclick="testLocalLogin()">Test Local Login</button>
+        </div>
+
+        <div class="test-section">
+            <h3>📊 Test Log</h3>
+            <div id="testLog" class="log"></div>
+        </div>
+    </div>
+
+    <script src="js/vendor/supabase.min.js"></script>
+    <script>
+        const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+        const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+
+        function log(message, type = 'info') {
+            const timestamp = new Date().toLocaleTimeString();
+            const logElement = document.getElementById('testLog');
+            const colorClass = type === 'error' ? 'error' : type === 'success' ? 'success' : 'info';
+            logElement.innerHTML += `<span class="${colorClass}">[${timestamp}] ${message}</span>\n`;
+            logElement.scrollTop = logElement.scrollHeight;
+        }
+
+        function clearLog() {
+            document.getElementById('testLog').innerHTML = '';
+        }
+
+        async function testLogin() {
+            const email = document.getElementById('testEmail').value;
+            const password = document.getElementById('testPassword').value;
+
+            log(`🧪 Testing Supabase login for: ${email}`);
+            
+            try {
+                // Create Supabase client directly
+                const supabase = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                
+                log('✅ Supabase client created successfully', 'success');
+                
+                // Test login
+                const { data, error } = await supabase.auth.signInWithPassword({
+                    email: email,
+                    password: password
+                });
+
+                if (error) {
+                    log(`❌ Login failed: ${error.message}`, 'error');
+                } else {
+                    log(`✅ Login successful!`, 'success');
+                    log(`✅ User ID: ${data.user.id}`);
+                    log(`✅ Email: ${data.user.email}`);
+                    
+                    // Test profile fetch
+                    const { data: profile, error: profileError } = await supabase
+                        .from('users')
+                        .select('*')
+                        .eq('auth_user_id', data.user.id)
+                        .single();
+
+                    if (profileError) {
+                        log(`❌ Profile fetch failed: ${profileError.message}`, 'error');
+                    } else {
+                        log(`✅ Profile found: ${profile.username} (${profile.role})`, 'success');
+                    }
+
+                    // Sign out
+                    await supabase.auth.signOut();
+                    log(`🚪 Signed out`);
+                }
+            } catch (e) {
+                log(`❌ Exception during login: ${e.message}`, 'error');
+            }
+        }
+
+        async function testLocalLogin() {
+            const username = document.getElementById('testUsername').value;
+            const password = document.getElementById('testPassword2').value;
+
+            log(`🧪 Testing localStorage login for: ${username}`);
+            
+            try {
+                // Get users from localStorage
+                const users = JSON.parse(localStorage.getItem('users') || '[]');
+                const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+                
+                log(`📊 Found ${users.length} users in localStorage`);
+                
+                // Find user
+                const user = users.find(u => u.username === username);
+                
+                if (!user) {
+                    log(`❌ User not found: ${username}`, 'error');
+                    return;
+                }
+                
+                log(`✅ User found: ${user.username}`, 'success');
+                
+                // Validate password
+                const hashedPassword = btoa(password);
+                
+                if (user.password !== hashedPassword) {
+                    log(`❌ Invalid password`, 'error');
+                    return;
+                }
+                
+                log(`✅ Password validated`, 'success');
+                
+                // Get organization data
+                const orgData = organizations[user.org] || {};
+                
+                log(`✅ Organization found: ${user.org}`, 'success');
+                log(`✅ Login successful for: ${user.username} (${user.role})`, 'success');
+                
+            } catch (e) {
+                log(`❌ Exception during local login: ${e.message}`, 'error');
+            }
+        }
+
+        // Initialize on load
+        window.addEventListener('load', function() {
+            log('🚀 Mobile login test tool loaded and ready');
+            log('💡 This tool tests login without any cache dependencies');
+        });
+    </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
+
+</html>
+
+
+
+
+
+
+
+

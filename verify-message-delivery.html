@@ -1,0 +1,174 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Verify Message Delivery - MediForge</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      max-width: 1200px;
+      margin: 0 auto;
+      background: #f5f5f5;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      color: #008753;
+      margin-bottom: 20px;
+    }
+    .message-item {
+      border: 1px solid #ddd;
+      padding: 15px;
+      margin-bottom: 15px;
+      border-radius: 6px;
+      background: #fafafa;
+    }
+    .status {
+      display: inline-block;
+      padding: 4px 12px;
+      border-radius: 4px;
+      font-size: 12px;
+      font-weight: bold;
+      margin-left: 10px;
+    }
+    .status.delivered {
+      background: #d4edda;
+      color: #155724;
+    }
+    .status.not-found {
+      background: #f8d7da;
+      color: #721c24;
+    }
+    .status.read {
+      background: #cce5ff;
+      color: #004085;
+    }
+    .btn {
+      background: #008753;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-top: 20px;
+    }
+    .btn:hover {
+      background: #006b42;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>📬 Message Delivery Verification</h1>
+    <p>This tool verifies if messages were successfully delivered to recipients in Supabase.</p>
+    
+    <button class="btn" onclick="verifyAllMessages()">Verify All Sent Messages</button>
+    <button class="btn" onclick="window.location.href='messages.html'">Back to Messages</button>
+    
+    <div id="results" style="margin-top: 30px;"></div>
+  </div>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251019043800"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/messages.js?v=2"></script>
+  
+  <script>
+    async function verifyAllMessages() {
+      const resultsDiv = document.getElementById('results');
+      resultsDiv.innerHTML = '<p>🔍 Verifying messages...</p>';
+      
+      try {
+        const userId = await window.getCurrentUserId();
+        const orgId = await window.getCurrentOrgId();
+        
+        if (!userId || !orgId) {
+          resultsDiv.innerHTML = '<p style="color: red;">❌ Error: Could not get user ID or organization ID</p>';
+          return;
+        }
+        
+        // Get all sent messages
+        const { data: sentMessages, error } = await window.supabaseClient
+          .from('messages')
+          .select('*')
+          .eq('sender_id', userId)
+          .eq('organization_id', orgId)
+          .order('created_at', { ascending: false })
+          .limit(50);
+        
+        if (error) {
+          resultsDiv.innerHTML = `<p style="color: red;">❌ Error loading messages: ${error.message}</p>`;
+          return;
+        }
+        
+        if (!sentMessages || sentMessages.length === 0) {
+          resultsDiv.innerHTML = '<p>No sent messages found.</p>';
+          return;
+        }
+        
+        let html = '<h2>Sent Messages Verification</h2>';
+        
+        for (const message of sentMessages) {
+          const recipientId = message.recipient_id;
+          
+          if (!recipientId) {
+            html += `
+              <div class="message-item">
+                <strong>${message.subject}</strong> (${new Date(message.created_at).toLocaleString()})
+                <span class="status not-found">No Recipient ID</span>
+              </div>
+            `;
+            continue;
+          }
+          
+          // Check if message exists in recipient's inbox
+          const { data: recipientMessage, error: checkError } = await window.supabaseClient
+            .from('messages')
+            .select('*')
+            .eq('id', message.id)
+            .eq('recipient_id', recipientId)
+            .single();
+          
+          // Get recipient name
+          const recipientName = await window.getUserNameById(recipientId);
+          
+          let status = 'not-found';
+          let statusText = 'Not Found in Recipient Inbox';
+          
+          if (recipientMessage) {
+            status = recipientMessage.is_read ? 'read' : 'delivered';
+            statusText = recipientMessage.is_read 
+              ? `Read at ${new Date(recipientMessage.read_at).toLocaleString()}` 
+              : 'Delivered (Unread)';
+          }
+          
+          html += `
+            <div class="message-item">
+              <strong>${message.subject}</strong><br>
+              <small>To: ${recipientName || 'Unknown User'} (ID: ${recipientId.substring(0, 8)}...)</small><br>
+              <small>Sent: ${new Date(message.created_at).toLocaleString()}</small><br>
+              <span class="status ${status}">${statusText}</span>
+            </div>
+          `;
+        }
+        
+        resultsDiv.innerHTML = html;
+        
+      } catch (error) {
+        resultsDiv.innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+        console.error('Verification error:', error);
+      }
+    }
+  </script>
+</body>
+</html>
+

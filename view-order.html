@@ -1,0 +1,915 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>View Order - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f5f5 0%, #e8e8e8 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1200px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    
+    .header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 30px;
+      padding-bottom: 20px;
+      border-bottom: 2px solid #008753;
+    }
+    
+    .header h1 {
+      margin: 0;
+      color: #008753;
+      font-size: 28px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 14px;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-primary {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+    }
+    
+    .btn-primary:hover {
+      transform: translateY(-2px);
+      box-shadow: 0 4px 12px rgba(0, 135, 83, 0.4);
+    }
+    
+    .btn-secondary {
+      background: #6c757d;
+      color: white;
+    }
+    
+    .btn-secondary:hover {
+      background: #5a6268;
+    }
+    
+    .patient-info {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 6px;
+      margin-bottom: 30px;
+      border-left: 4px solid #008753;
+    }
+    
+    .patient-info p {
+      margin: 8px 0;
+      font-size: 14px;
+    }
+    
+    .patient-info strong {
+      color: #333;
+      min-width: 120px;
+      display: inline-block;
+    }
+    
+    .order-table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 30px;
+    }
+    
+    .order-table thead {
+      background: linear-gradient(135deg, #008753 0%, #006b42 100%);
+      color: white;
+    }
+    
+    .order-table th {
+      padding: 12px;
+      text-align: left;
+      font-weight: 600;
+      border: 1px solid #ddd;
+    }
+    
+    .order-table th.order-th-center {
+      text-align: center;
+    }
+    
+    .order-table td {
+      padding: 12px;
+      border: 1px solid #ddd;
+    }
+    
+    .order-table td.order-td-center {
+      text-align: center;
+    }
+    
+    .order-table tbody tr:nth-child(even) {
+      background-color: #f8f9fa;
+    }
+    
+    .order-table tbody tr:hover {
+      background-color: #e8f5e9;
+    }
+    
+    .footer {
+      text-align: center;
+      padding-top: 20px;
+      border-top: 1px solid #ddd;
+      color: #666;
+      font-size: 12px;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    .error {
+      background: #f8d7da;
+      color: #721c24;
+      padding: 20px;
+      border-radius: 6px;
+      border-left: 4px solid #dc3545;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="header">
+      <h1 id="order-title">Loading Order...</h1>
+      <div class="action-buttons">
+        <button class="btn btn-primary" onclick="printOrder()">🖨️ Print</button>
+        <button class="btn btn-secondary" onclick="goBack()">← Back</button>
+      </div>
+    </div>
+    
+    <div id="loading" class="loading">
+      Loading order details...
+    </div>
+    
+    <div id="error" class="error" style="display: none;"></div>
+    
+    <div id="order-content" style="display: none;">
+      <div id="patient-info" class="patient-info"></div>
+      <div id="order-table-container"></div>
+      <div class="footer">
+        <p id="generated-info"></p>
+      </div>
+    </div>
+  </div>
+  
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20251018191427"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script>
+    let currentOrder = null;
+    let currentPatient = null;
+    let currentUser = null;
+    let currentVisitDate = null;
+    let urlPatientId = null;
+    
+    /** Fill phone/email/address from DB if cache row is thin (common for localStorage-first hits). */
+    async function enrichPatientDemographicsForViewOrder(patient) {
+      if (!patient || !window.supabaseClient) return patient;
+      const uuid =
+        patient._supabaseUuid ||
+        (patient.id &&
+        /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(String(patient.id))
+          ? patient.id
+          : null);
+      if (!uuid) return patient;
+      const phone = String(patient.phone || patient.phone_number || '').trim();
+      const email = String(patient.email || '').trim();
+      const addr =
+        String(patient.addressLine1 || patient.address_line1 || '').trim() ||
+        String(patient.address || '').trim();
+      if (phone && email && addr) return patient;
+      try {
+        const { data, error } = await window.supabaseClient
+          .from('patients')
+          .select(
+            'phone, email, address, address_line1, address_line2, city, state, country, postal_code, first_name, last_name, middle_name, date_of_birth, gender'
+          )
+          .eq('id', uuid)
+          .maybeSingle();
+        if (error || !data) return patient;
+        const m = { ...patient };
+        if (!m.phone && data.phone) m.phone = data.phone;
+        if (!m.email && data.email) m.email = data.email;
+        if (!(m.addressLine1 || m.address_line1) && data.address_line1) m.addressLine1 = data.address_line1;
+        if (!(m.addressLine2 || m.address_line2) && data.address_line2) m.addressLine2 = data.address_line2;
+        if (!m.city && data.city) m.city = data.city;
+        if (!m.state && data.state) m.state = data.state;
+        if (!m.country && data.country) m.country = data.country;
+        if (!m.address && data.address) m.address = data.address;
+        if (!m.firstName && data.first_name) m.firstName = data.first_name;
+        if (!m.lastName && data.last_name) m.lastName = data.last_name;
+        if (!m.middleName && data.middle_name) m.middleName = data.middle_name;
+        if (!m.dob && data.date_of_birth) m.dob = data.date_of_birth;
+        if (!m.gender && data.gender) m.gender = data.gender;
+        return m;
+      } catch (e) {
+        console.warn('[view-order] enrichPatientDemographicsForViewOrder', e);
+      }
+      return patient;
+    }
+    
+    function viewOrderPatientDisplay(p) {
+      if (!p) {
+        return { name: '', phone: 'Not on file', email: 'Not on file', address: 'Not on file', dob: 'N/A', gender: 'N/A' };
+      }
+      const fn = p.firstName || p.first_name || '';
+      const mn = p.middleName || p.middle_name || '';
+      const ln = p.lastName || p.last_name || '';
+      const phone = String(p.phone || p.phone_number || p.mobile || '').trim();
+      const email = String(p.email || '').trim();
+      const a1 = String(p.addressLine1 || p.address_line1 || '').trim();
+      const a2 = String(p.addressLine2 || p.address_line2 || '').trim();
+      const city = String(p.city || '').trim();
+      const state = String(p.state || '').trim();
+      const country = String(p.country || '').trim();
+      const combined = String(p.address || '').trim();
+      const address = [a1, a2, city, state, country].filter(Boolean).join(', ') || combined || '';
+      return {
+        name: `${fn} ${mn} ${ln}`.replace(/\s+/g, ' ').trim(),
+        phone: phone || 'Not on file',
+        email: email || 'Not on file',
+        address: address || 'Not on file',
+        dob: p.dob || p.date_of_birth || 'N/A',
+        gender: p.gender || 'N/A'
+      };
+    }
+    
+    function viewOrderMergeLabRow(item) {
+      if (typeof window.ehrMergeLabOrderItemWithCatalog === 'function') {
+        return window.ehrMergeLabOrderItemWithCatalog(item);
+      }
+      const obj =
+        item && typeof item === 'object' && !Array.isArray(item) ? { ...item } : {};
+      if (typeof item === 'string') obj.name = String(item).trim();
+      const nameKey = String(obj.name || obj.testName || obj.test_name || '').trim();
+      if (!obj.name && nameKey) obj.name = nameKey;
+      return obj;
+    }
+    
+    function viewOrderMergeImagingRow(item) {
+      if (typeof window.ehrMergeImagingOrderItemWithCatalog === 'function') {
+        return window.ehrMergeImagingOrderItemWithCatalog(item);
+      }
+      const obj =
+        item && typeof item === 'object' && !Array.isArray(item) ? { ...item } : {};
+      if (typeof item === 'string') obj.name = String(item).trim();
+      const nameKey = String(obj.name || obj.testName || obj.test_name || '').trim();
+      if (!obj.name && nameKey) obj.name = nameKey;
+      return obj;
+    }
+    
+    function viewOrderFmtCell(val) {
+      if (val == null) return '—';
+      const s = String(val).trim();
+      if (s === '') return '—';
+      return escapeHtmlViewOrder(s);
+    }
+    
+    async function loadOrder() {
+      try {
+        const urlParams = new URLSearchParams(window.location.search);
+        const patientId = urlParams.get('patientId');
+        urlPatientId = patientId;
+        const visitDate = urlParams.get('visitDate');
+        const timestamp = urlParams.get('timestamp');
+        
+        if (!patientId || !visitDate || !timestamp) {
+          showError('Missing required parameters. Please access this page from the orders table.');
+          return;
+        }
+        
+        currentVisitDate = visitDate;
+        
+        // Resolve patient using Supabase-first approach
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          currentPatient = await window.resolvePatientByIdentifier(patientId);
+        } else {
+          // Fallback: try to get patients from localStorage
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const orgName = user.org || 'Mecure Clinics';
+          const patientsKey = `${orgName}_patients`;
+          const patients = JSON.parse(localStorage.getItem(patientsKey) || "[]");
+          currentPatient = patients.find(p => 
+            p.id === patientId || 
+            p.patient_id === patientId || 
+            p.patientNumber === patientId
+          );
+        }
+        
+        if (!currentPatient) {
+          console.error('🔍 [view-order] Patient not found for ID:', patientId);
+          showError('Patient not found. Please check the patient ID and try again.');
+          return;
+        }
+        
+        currentPatient = await enrichPatientDemographicsForViewOrder(currentPatient);
+        
+        console.log('🔍 [view-order] Patient resolved:', {
+          id: currentPatient.id,
+          patient_id: currentPatient.patient_id,
+          _supabaseUuid: currentPatient._supabaseUuid,
+          name: `${currentPatient.firstName || currentPatient.first_name} ${currentPatient.lastName || currentPatient.last_name}`,
+          hasVisits: !!currentPatient.visits,
+          visitsCount: currentPatient.visits ? currentPatient.visits.length : 0
+        });
+        
+        // Get user info
+        currentUser = JSON.parse(localStorage.getItem("user") || "{}");
+        
+        // SUPABASE-FIRST: Query Supabase orders table first (most reliable source)
+        let order = null;
+        let queryPatientId = null; // Declare outside if block for use in fallback
+        
+        console.log('🔍 [view-order] DEBUG: Starting order lookup', {
+          patientId,
+          visitDate,
+          timestamp,
+          hasSupabaseClient: !!window.supabaseClient,
+          hasSupabaseLib: typeof window.supabase !== 'undefined',
+          currentPatient: {
+            id: currentPatient.id,
+            patient_id: currentPatient.patient_id,
+            _supabaseUuid: currentPatient._supabaseUuid,
+            hasVisits: !!currentPatient.visits,
+            visitsCount: currentPatient.visits ? currentPatient.visits.length : 0
+          }
+        });
+        
+        // Determine patient UUID for query (needed for both initial query and fallback)
+        if (window.supabaseClient) {
+          console.log('✅ [view-order] DEBUG: window.supabaseClient is available');
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          const orgId = user.organizationId || user.organization_id;
+          
+          if (orgId) {
+            // Priority 1: Use _supabaseUuid if available (this is the actual UUID)
+            if (currentPatient._supabaseUuid && currentPatient._supabaseUuid.includes('-') && currentPatient._supabaseUuid.length === 36) {
+              queryPatientId = currentPatient._supabaseUuid;
+              console.log('✅ [view-order] DEBUG: Using _supabaseUuid:', queryPatientId);
+            }
+            // Priority 2: Use id if it's a UUID
+            else if (currentPatient.id && currentPatient.id.includes('-') && currentPatient.id.length === 36) {
+              queryPatientId = currentPatient.id;
+              console.log('✅ [view-order] DEBUG: Using currentPatient.id (UUID):', queryPatientId);
+            }
+            // Priority 3: If patientId from URL is a UUID, use it
+            else if (patientId && patientId.includes('-') && patientId.length === 36) {
+              queryPatientId = patientId;
+              console.log('✅ [view-order] DEBUG: Using patientId from URL (UUID):', queryPatientId);
+            }
+            // Priority 4: Try to query Supabase patients table to get UUID
+            else {
+              console.log('🔍 [view-order] DEBUG: Resolving legacy ID to UUID via Supabase query...', {
+                patientId,
+                orgId,
+                currentPatientId: currentPatient.id,
+                currentPatientPatientId: currentPatient.patient_id
+              });
+              try {
+                const { data: patientData, error: patientError } = await window.supabaseClient
+                  .from('patients')
+                  .select('id')
+                  .eq('patient_id', patientId)
+                  .eq('organization_id', orgId)
+                  .maybeSingle();
+                
+                console.log('🔍 [view-order] DEBUG: Supabase patient query result:', {
+                  patientData,
+                  patientError,
+                  hasId: patientData && patientData.id
+                });
+                
+                if (!patientError && patientData && patientData.id) {
+                  queryPatientId = patientData.id;
+                  console.log('✅ [view-order] DEBUG: Resolved UUID from Supabase:', queryPatientId);
+                } else {
+                  console.warn('⚠️ [view-order] DEBUG: Could not resolve UUID from Supabase:', patientError);
+                  queryPatientId = currentPatient.id || patientId;
+                  console.log('⚠️ [view-order] DEBUG: Using fallback queryPatientId:', queryPatientId);
+                }
+              } catch (resolveError) {
+                console.error('❌ [view-order] DEBUG: Error resolving UUID:', resolveError);
+                queryPatientId = currentPatient.id || patientId;
+                console.log('⚠️ [view-order] DEBUG: Using fallback queryPatientId after error:', queryPatientId);
+              }
+            }
+          } else {
+            console.warn('⚠️ [view-order] DEBUG: No orgId found in user object');
+          }
+        } else {
+          console.warn('⚠️ [view-order] DEBUG: window.supabaseClient is NOT available');
+        }
+        
+        // Query Supabase orders table using resolved UUID
+        console.log('🔍 [view-order] DEBUG: Before Supabase query check', {
+          hasSupabaseClient: !!window.supabaseClient,
+          hasQueryPatientId: !!queryPatientId,
+          queryPatientId: queryPatientId || 'NOT SET'
+        });
+        
+        if (window.supabaseClient && queryPatientId) {
+          try {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const orgId = user.organizationId || user.organization_id;
+            
+            console.log('🔍 [view-order] DEBUG: About to query Supabase orders', {
+              queryPatientId,
+              visitDate,
+              orgId,
+              patientId,
+              currentPatientId: currentPatient.id,
+              currentPatientPatientId: currentPatient.patient_id,
+              currentPatientSupabaseUuid: currentPatient._supabaseUuid
+            });
+            
+            if (orgId) {
+              // Query Supabase orders table
+              const { data: supabaseOrders, error } = await window.supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('patient_id', queryPatientId)
+                .eq('visit_date', visitDate)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: false });
+              
+              console.log('🔍 [view-order] DEBUG: Supabase orders query result:', {
+                error,
+                errorMessage: error ? error.message : null,
+                errorCode: error ? error.code : null,
+                ordersCount: supabaseOrders ? supabaseOrders.length : 0,
+                orders: supabaseOrders ? supabaseOrders.map(o => ({
+                  id: o.id,
+                  type: o.type,
+                  serial_number: o.serial_number,
+                  timestamp: o.timestamp,
+                  created_at: o.created_at,
+                  patient_id: o.patient_id,
+                  visit_date: o.visit_date
+                })) : null
+              });
+              
+              if (!error && supabaseOrders && supabaseOrders.length > 0) {
+                // Find order by timestamp (with increased tolerance - 30 seconds)
+                const timestampTime = new Date(timestamp).getTime();
+                let foundOrder = supabaseOrders.find(o => {
+                  const orderTimestamp = o.timestamp || o.created_at;
+                  if (!orderTimestamp) return false;
+                  const orderTimestampTime = new Date(orderTimestamp).getTime();
+                  const diff = Math.abs(orderTimestampTime - timestampTime);
+                  console.log('🔍 [view-order] Comparing Supabase order timestamp:', {
+                    orderTimestamp,
+                    orderTimestampTime,
+                    timestampTime,
+                    diff,
+                    withinTolerance: diff < 30000
+                  });
+                  return diff < 30000; // 30 second tolerance
+                });
+                
+                // If not found by timestamp, use the most recent order for this visit
+                if (!foundOrder && supabaseOrders.length > 0) {
+                  console.log('🔍 [view-order] Order not found by timestamp, using most recent order');
+                  foundOrder = supabaseOrders[0];
+                }
+                
+                // If found, convert to the format expected
+                if (foundOrder) {
+                  order = {
+                    id: foundOrder.id,
+                    type: foundOrder.type,
+                    serialNumber: foundOrder.serial_number,
+                    selectedItems: foundOrder.selected_items || [],
+                    noItemsChecked: foundOrder.no_items_checked || false,
+                    timestamp: foundOrder.timestamp || foundOrder.created_at,
+                    status: foundOrder.status || 'Generated',
+                    htmlContent: foundOrder.html_content || '',
+                    created_by: foundOrder.created_by,
+                    createdBy: foundOrder.created_by,
+                    organization_id: foundOrder.organization_id
+                  };
+                  console.log('✅ [view-order] Found order in Supabase:', order);
+                }
+              } else if (error) {
+                console.error('🔍 [view-order] Supabase query error:', error);
+              } else {
+                console.log('🔍 [view-order] No orders found in Supabase for this patient/visit');
+              }
+            }
+          } catch (error) {
+            console.error('Error querying Supabase for order:', error);
+          }
+        }
+        
+        // FALLBACK: Load orders from Supabase into patient visits if not already loaded
+        console.log('🔍 [view-order] DEBUG: Checking fallback - load orders into visits', {
+          hasOrder: !!order,
+          hasSupabaseClient: !!window.supabaseClient,
+          hasQueryPatientId: !!queryPatientId,
+          queryPatientId: queryPatientId || 'NOT SET'
+        });
+        
+        if (!order && window.supabaseClient && queryPatientId) {
+          try {
+            const user = JSON.parse(localStorage.getItem("user") || "{}");
+            const orgId = user.organizationId || user.organization_id;
+            
+            console.log('🔍 [view-order] DEBUG: Fallback - About to load orders from Supabase', {
+              orgId,
+              queryPatientId,
+              visitDate
+            });
+            
+            if (orgId) {
+              // Load orders from Supabase and merge into patient visits
+              const { data: supabaseOrders, error: ordersError } = await window.supabaseClient
+                .from('orders')
+                .select('*')
+                .eq('patient_id', queryPatientId)
+                .eq('visit_date', visitDate)
+                .is('deleted_at', null)
+                .order('created_at', { ascending: false });
+              
+              console.log('🔍 [view-order] DEBUG: Fallback Supabase query result:', {
+                ordersError,
+                ordersErrorMessage: ordersError ? ordersError.message : null,
+                ordersCount: supabaseOrders ? supabaseOrders.length : 0,
+                orders: supabaseOrders
+              });
+              
+              if (!ordersError && supabaseOrders && supabaseOrders.length > 0) {
+                // Ensure patient has visits array
+                if (!currentPatient.visits) {
+                  currentPatient.visits = [];
+                }
+                
+                // Find or create visit
+                let visit = currentPatient.visits.find(v => v.date === visitDate);
+                if (!visit) {
+                  visit = { date: visitDate, orders: [] };
+                  currentPatient.visits.push(visit);
+                }
+                if (!visit.orders) {
+                  visit.orders = [];
+                }
+                
+                // Convert Supabase orders to the format expected
+                const convertedOrders = supabaseOrders.map(o => ({
+                  type: o.type,
+                  serialNumber: o.serial_number,
+                  selectedItems: o.selected_items || [],
+                  noItemsChecked: o.no_items_checked || false,
+                  timestamp: o.timestamp || o.created_at,
+                  status: o.status || 'Generated',
+                  htmlContent: o.html_content || '',
+                  created_by: o.created_by,
+                  createdBy: o.created_by,
+                  organization_id: o.organization_id,
+                  id: o.id
+                }));
+                
+                // Merge orders (avoid duplicates)
+                convertedOrders.forEach(newOrder => {
+                  const exists = visit.orders.some(existing => 
+                    existing.serialNumber === newOrder.serialNumber && 
+                    existing.timestamp === newOrder.timestamp
+                  );
+                  if (!exists) {
+                    visit.orders.push(newOrder);
+                  }
+                });
+                
+                console.log('✅ [view-order] Loaded and merged orders from Supabase into patient visits:', visit.orders.length);
+                
+                // Now try to find the order in the loaded orders
+                const timestampTime = new Date(timestamp).getTime();
+                order = visit.orders.find(o => {
+                  const orderTimestamp = o.timestamp || o.created_at;
+                  if (!orderTimestamp) return false;
+                  const orderTimestampTime = new Date(orderTimestamp).getTime();
+                  const diff = Math.abs(orderTimestampTime - timestampTime);
+                  return diff < 30000; // 30 second tolerance
+                });
+                
+                if (!order && visit.orders.length > 0) {
+                  console.log('🔍 [view-order] Order not found by timestamp, using most recent order');
+                  order = visit.orders[0];
+                }
+              }
+            }
+          } catch (error) {
+            console.error('Error loading orders from Supabase:', error);
+          }
+        }
+        
+        // FALLBACK: Try to find order in visit orders (localStorage)
+        console.log('🔍 [view-order] DEBUG: Checking localStorage fallback', {
+          hasOrder: !!order,
+          hasVisits: !!currentPatient.visits,
+          visitsCount: currentPatient.visits ? currentPatient.visits.length : 0
+        });
+        
+        if (!order) {
+          const visit = currentPatient.visits ? currentPatient.visits.find(v => v.date === visitDate) : null;
+          
+          console.log('🔍 [view-order] DEBUG: localStorage fallback - visit found:', {
+            hasVisit: !!visit,
+            visitDate: visit ? visit.date : null,
+            hasOrders: visit && visit.orders ? visit.orders.length > 0 : false,
+            ordersCount: visit && visit.orders ? visit.orders.length : 0,
+            orders: visit && visit.orders ? visit.orders.map(o => ({
+              type: o.type,
+              serialNumber: o.serialNumber || o.serial_number,
+              timestamp: o.timestamp || o.created_at
+            })) : null
+          });
+          
+          if (visit && visit.orders && visit.orders.length > 0) {
+            const timestampTime = new Date(timestamp).getTime();
+            console.log('🔍 [view-order] DEBUG: Looking for order in visit orders:', {
+              timestamp,
+              timestampTime,
+              ordersCount: visit.orders.length,
+              orders: visit.orders.map(o => ({
+                serialNumber: o.serialNumber || o.serial_number,
+                timestamp: o.timestamp || o.created_at,
+                timestampTime: o.timestamp || o.created_at ? new Date(o.timestamp || o.created_at).getTime() : null
+              }))
+            });
+            
+            // Try exact timestamp match first
+            order = visit.orders.find(o => {
+              const orderTimestamp = o.timestamp || o.created_at;
+              if (!orderTimestamp) return false;
+              const orderTimestampTime = new Date(orderTimestamp).getTime();
+              const diff = Math.abs(orderTimestampTime - timestampTime);
+              return diff < 30000; // 30 second tolerance
+            });
+            
+            // If not found by timestamp, use the first order for this visit
+            if (!order) {
+              console.log('🔍 [view-order] Order not found by timestamp in visit, using first order');
+              order = visit.orders[0];
+            }
+            
+            if (order) {
+              console.log('✅ [view-order] Found order in visit:', order.serialNumber || order.serial_number);
+            }
+          }
+        }
+        
+        if (!order) {
+          // Get visit info for error logging
+          const visitForLogging = currentPatient.visits ? currentPatient.visits.find(v => v.date === visitDate) : null;
+          console.error('🔍 [view-order] Order not found:', {
+            patientId,
+            visitDate,
+            timestamp,
+            hasVisit: !!visitForLogging,
+            visitOrdersCount: visitForLogging ? (visitForLogging.orders ? visitForLogging.orders.length : 0) : 0,
+            queryPatientId: queryPatientId || 'not set',
+            currentPatientId: currentPatient.id,
+            currentPatientSupabaseUuid: currentPatient._supabaseUuid
+          });
+          showError('Order not found. The order may have been deleted or the timestamp does not match. Please check the console for details.');
+          return;
+        }
+        
+        currentOrder = order;
+        await displayOrder();
+        
+      } catch (error) {
+        console.error('Error loading order:', error);
+        showError('An error occurred while loading order details: ' + error.message);
+      }
+    }
+    
+    function showError(message) {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('error').style.display = 'block';
+      document.getElementById('error').textContent = message;
+    }
+    
+    function escapeHtmlViewOrder(text) {
+      if (text == null || text === '') return '';
+      return String(text)
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
+    }
+    
+    async function displayOrder() {
+      document.getElementById('loading').style.display = 'none';
+      document.getElementById('order-content').style.display = 'block';
+      
+      const orderedByLine =
+        typeof window.ehrResolveOrderedByLineForOrder === 'function'
+          ? await window.ehrResolveOrderedByLineForOrder(window.supabaseClient, currentOrder, currentUser)
+          : (currentOrder && (currentOrder.created_by || currentOrder.createdBy)
+              ? String(currentOrder.created_by || currentOrder.createdBy)
+              : (typeof window.ehrFormatOrderedByFromSessionUser === 'function'
+                  ? window.ehrFormatOrderedByFromSessionUser(currentUser)
+                  : ''));
+      const orgLine =
+        typeof window.ehrResolveOrganizationDisplayLineForOrder === 'function'
+          ? await window.ehrResolveOrganizationDisplayLineForOrder(window.supabaseClient, currentOrder, currentUser)
+          : (currentUser && currentUser.org
+              ? `${currentUser.org || 'N/A'}${currentUser.orgAddressLine1 ? ', Address: ' + currentUser.orgAddressLine1 + ' ' + (currentUser.orgAddressLine2 || '') + ', ' + (currentUser.orgCity || '') + ', ' + (currentUser.orgState || '') + ', ' + (currentUser.orgCountry || '') : ''}`
+              : '');
+      
+      const orderType = currentOrder.type === 'lab' ? 'Lab Order' : 'Imaging Order';
+      document.getElementById('order-title').textContent = orderType;
+      
+      const pd = viewOrderPatientDisplay(currentPatient);
+      const patientInfo = `
+        <p><strong>Patient:</strong> ${escapeHtmlViewOrder(pd.name)}</p>
+        <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? escapeHtmlViewOrder(String(window.patientMrnDisplay(currentPatient, urlPatientId))) : escapeHtmlViewOrder(String((typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(currentPatient) : null) || currentPatient.patient_id || currentPatient.patientNumber || (currentPatient.id && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(currentPatient.id) ? currentPatient.id : 'N/A')))}</p>
+        <p><strong>DOB:</strong> ${escapeHtmlViewOrder(pd.dob)} | <strong>Gender:</strong> ${escapeHtmlViewOrder(pd.gender)} | <strong>Phone:</strong> ${escapeHtmlViewOrder(pd.phone)} | <strong>Email:</strong> ${escapeHtmlViewOrder(pd.email)}</p>
+        <p><strong>Address:</strong> ${escapeHtmlViewOrder(pd.address)}</p>
+        <p><strong>Visit Date:</strong> ${currentVisitDate}</p>
+        <p><strong>Order Serial Number:</strong> ${typeof window.formatLabOrderSerial === 'function' ? window.formatLabOrderSerial(currentOrder.serialNumber || currentOrder.serial_number || 'N/A', currentOrder.id, currentOrder) : (currentOrder.serialNumber || currentOrder.serial_number || 'N/A')}</p>
+        <p><strong>Status:</strong> ${currentOrder.status || 'Generated'}</p>
+        <p><strong>Ordered By:</strong> ${escapeHtmlViewOrder(orderedByLine)}</p>
+        <p><strong>Organization:</strong> ${escapeHtmlViewOrder(orgLine)}</p>
+      `;
+      document.getElementById('patient-info').innerHTML = patientInfo;
+      
+      // Generate order table based on type
+      let tableHTML = '';
+      if (currentOrder.type === 'lab') {
+        tableHTML = generateLabOrderTable();
+      } else if (currentOrder.type === 'imaging') {
+        tableHTML = generateImagingOrderTable();
+      }
+      
+      document.getElementById('order-table-container').innerHTML = tableHTML;
+      
+      // Display generated info
+      document.getElementById('generated-info').textContent = `Generated on ${new Date(currentOrder.timestamp).toLocaleString()}`;
+    }
+    
+    function generateLabOrderTable() {
+      let tableRows = '';
+      
+      const items = window.ehrNormalizeOrderSelectedItems(currentOrder);
+      
+      if (currentOrder.noItemsChecked) {
+        tableRows = '<tr><td colspan="6" style="text-align: center; font-style: italic; color: #666;">No lab tests required</td></tr>';
+      } else if (items.length > 0) {
+        items.forEach(item => {
+          const row = viewOrderMergeLabRow(item);
+          if (row.name) {
+            tableRows += `
+              <tr>
+                <td class="order-td-left">${viewOrderFmtCell(row.name)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.cpt)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.specimen)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.container)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.transport)}</td>
+                <td class="order-td-left">${viewOrderFmtCell(row.notes)}</td>
+              </tr>
+            `;
+          } else {
+            const testName = typeof item === 'object' && item !== null ? (item.name || JSON.stringify(item)) : item;
+            tableRows += `
+              <tr>
+                <td class="order-td-left">${escapeHtmlViewOrder(String(testName))}</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-left">—</td>
+              </tr>
+            `;
+          }
+        });
+      } else {
+        tableRows = '<tr><td colspan="6" style="text-align: center; font-style: italic; color: #666;">No items selected</td></tr>';
+      }
+      
+      return `
+        <table class="order-table">
+          <thead>
+            <tr>
+              <th class="order-th-left">Test Name</th>
+              <th class="order-th-center">CPT Code(s)</th>
+              <th class="order-th-center">Specimen Type/Volume</th>
+              <th class="order-th-center">Container</th>
+              <th class="order-th-center">Transport/Stability</th>
+              <th class="order-th-left">Notes/Reflex</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      `;
+    }
+    
+    function generateImagingOrderTable() {
+      let tableRows = '';
+      
+      const items = window.ehrNormalizeOrderSelectedItems(currentOrder);
+      
+      if (currentOrder.noItemsChecked) {
+        tableRows = '<tr><td colspan="6" style="text-align: center; font-style: italic; color: #666;">No imaging tests required</td></tr>';
+      } else if (items.length > 0) {
+        items.forEach(item => {
+          const row = viewOrderMergeImagingRow(item);
+          if (row.name) {
+            tableRows += `
+              <tr>
+                <td class="order-td-left">${viewOrderFmtCell(row.name)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.cpt)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.modality)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.preparation)}</td>
+                <td class="order-td-center">${viewOrderFmtCell(row.contrast)}</td>
+                <td class="order-td-left">${viewOrderFmtCell(row.notes)}</td>
+              </tr>
+            `;
+          } else {
+            const testName = typeof item === 'object' && item !== null ? (item.name || JSON.stringify(item)) : item;
+            tableRows += `
+              <tr>
+                <td class="order-td-left">${escapeHtmlViewOrder(String(testName))}</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-center">—</td>
+                <td class="order-td-left">—</td>
+              </tr>
+            `;
+          }
+        });
+      } else {
+        tableRows = '<tr><td colspan="6" style="text-align: center; font-style: italic; color: #666;">No items selected</td></tr>';
+      }
+      
+      return `
+        <table class="order-table">
+          <thead>
+            <tr>
+              <th class="order-th-left">Test Name</th>
+              <th class="order-th-center">CPT Code</th>
+              <th class="order-th-center">Modality</th>
+              <th class="order-th-center">Patient Preparation</th>
+              <th class="order-th-center">Contrast Required</th>
+              <th class="order-th-left">Notes/Indications</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${tableRows}
+          </tbody>
+        </table>
+      `;
+    }
+    
+    function printOrder() {
+      window.print();
+    }
+    
+    function goBack() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const returnUrl = urlParams.get('returnUrl');
+      if (returnUrl) {
+        window.location.href = returnUrl;
+        return;
+      }
+      window.history.back();
+    }
+    
+    // Load order when page loads
+    window.addEventListener('DOMContentLoaded', loadOrder);
+  </script>
+</body>
+</html>

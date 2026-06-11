@@ -1,0 +1,251 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Restore Subscription Plans</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      max-width: 800px;
+      margin: 50px auto;
+      padding: 20px;
+      background: #f5f7fa;
+    }
+    .container {
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    .status {
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      font-weight: 600;
+    }
+    .success { background: #d4edda; color: #155724; border: 1px solid #c3e6cb; }
+    .error { background: #f8d7da; color: #721c24; border: 1px solid #f5c6cb; }
+    .info { background: #d1ecf1; color: #0c5460; border: 1px solid #bee5eb; }
+    button {
+      background: #667eea;
+      color: white;
+      padding: 12px 24px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-size: 16px;
+      margin: 10px 5px;
+    }
+    button:hover { background: #5a6fd8; }
+    .plan-info {
+      background: #f8f9fa;
+      padding: 15px;
+      border-radius: 6px;
+      margin: 15px 0;
+      border-left: 4px solid #667eea;
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+</head>
+<body>
+  <div class="container">
+    <h1>Restore Subscription Plans</h1>
+    <p>This tool will restore the subscription plans data from the backup file.</p>
+    
+    <div id="status"></div>
+    
+    <button onclick="restoreSubscriptionPlans()">Restore Subscription Plans</button>
+    <button onclick="checkCurrentPlans()">Check Current Plans</button>
+    <button onclick="window.location.href='platform-subscriptions'">Go to Subscriptions</button>
+    
+    <div id="plan-info"></div>
+  </div>
+
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
+  
+    // Subscription plans data from backup
+    const subscriptionPlans = {
+      "free": {
+        "id": "free",
+        "name": "Free Trial",
+        "prices": {
+          "KES": 0, "TZS": 0, "UGX": 0, "RWF": 0, "BIF": 0, "ETB": 0, "SOS": 0,
+          "NGN": 0, "GHS": 0, "XOF": 0, "LRD": 0, "SLL": 0, "GMD": 0,
+          "ZAR": 0, "BWP": 0, "NAD": 0, "MWK": 0, "ZMW": 0, "ZWL": 0,
+          "MZN": 0, "SZL": 0, "LSL": 0, "EGP": 0, "MAD": 0, "TND": 0,
+          "DZD": 0, "LYD": 0, "XAF": 0, "CDF": 0, "AOA": 0, "MUR": 0,
+          "SCR": 0, "MGA": 0, "KMF": 0, "CVE": 0, "USD": 0, "EUR": 0, "GBP": 0
+        },
+        "patientLimit": 20,
+        "userLimit": 3,
+        "trialDays": 30,
+        "features": [
+          "Basic patient management",
+          "Appointment scheduling", 
+          "Clinical notes",
+          "Basic billing (up to 20 patients)",
+          "3 user accounts"
+        ],
+        "enabled": true
+      },
+      "basic": {
+        "id": "basic",
+        "name": "Basic Plan",
+        "basePrice": 30000,
+        "basePriceCurrency": "NGN",
+        "prices": {
+          "KES": 2400, "TZS": 47800, "UGX": 70300, "RWF": 25100, "BIF": 55100,
+          "ETB": 2300, "SOS": 10800, "NGN": 30000, "GHS": 240, "XOF": 11500,
+          "LRD": 3600, "SLL": 417700, "GMD": 1290, "ZAR": 350, "BWP": 260,
+          "NAD": 350, "MWK": 32800, "ZMW": 510, "ZWL": 6100, "MZN": 1210,
+          "SZL": 350, "LSL": 350, "EGP": 930, "MAD": 190, "TND": 60,
+          "DZD": 2600, "LYD": 92, "XAF": 11500, "CDF": 53200, "AOA": 17500,
+          "MUR": 870, "SCR": 270, "MGA": 87300, "KMF": 11800, "CVE": 270,
+          "USD": 20, "EUR": 18, "GBP": 16
+        },
+        "patientLimit": 500,
+        "userLimit": 10,
+        "features": [
+          "All Free Trial features",
+          "Up to 500 patients",
+          "Up to 10 user accounts",
+          "Advanced billing & invoicing",
+          "Lab results management",
+          "Prescription management",
+          "Basic reporting",
+          "Email support"
+        ],
+        "enabled": true
+      },
+      "premium": {
+        "id": "premium", 
+        "name": "Premium Plan",
+        "basePrice": 60000,
+        "basePriceCurrency": "NGN",
+        "prices": {
+          "KES": 4800, "TZS": 95600, "UGX": 140600, "RWF": 50200, "BIF": 110200,
+          "ETB": 4600, "SOS": 21600, "NGN": 60000, "GHS": 480, "XOF": 23000,
+          "LRD": 7200, "SLL": 835400, "GMD": 2580, "ZAR": 700, "BWP": 520,
+          "NAD": 700, "MWK": 65600, "ZMW": 1020, "ZWL": 12200, "MZN": 2420,
+          "SZL": 700, "LSL": 700, "EGP": 1860, "MAD": 380, "TND": 120,
+          "DZD": 5200, "LYD": 184, "XAF": 23000, "CDF": 106400, "AOA": 35000,
+          "MUR": 1740, "SCR": 540, "MGA": 174600, "KMF": 23600, "CVE": 540,
+          "USD": 40, "EUR": 36, "GBP": 32
+        },
+        "patientLimit": 9999,
+        "userLimit": 50,
+        "features": [
+          "All Basic Plan features",
+          "Unlimited patients",
+          "Up to 50 user accounts", 
+          "Advanced analytics & reporting",
+          "Multi-location support",
+          "API access",
+          "Priority support",
+          "Custom integrations",
+          "Advanced security features"
+        ],
+        "enabled": true
+      }
+    };
+
+    function showStatus(message, type = 'info') {
+      const statusDiv = document.getElementById('status');
+      statusDiv.innerHTML = `<div class="status ${type}">${message}</div>`;
+    }
+
+    function restoreSubscriptionPlans() {
+      try {
+        console.log('?? Restoring subscription plans...');
+        
+        // Store the plans in localStorage
+        localStorage.setItem('platform_subscription_plans', JSON.stringify(subscriptionPlans));
+        
+        console.log('? Subscription plans restored successfully');
+        showStatus('Subscription plans restored successfully! The platform now has Free Trial, Basic Plan, and Premium Plan available.', 'success');
+        
+        // Show plan details
+        showPlanInfo();
+        
+      } catch (error) {
+        console.error('? Error restoring subscription plans:', error);
+        showStatus('Error restoring subscription plans: ' + error.message, 'error');
+      }
+    }
+
+    function checkCurrentPlans() {
+      const plans = JSON.parse(localStorage.getItem('platform_subscription_plans') || '{}');
+      console.log('[RESTORE-PLANS] Current subscription plans:', plans);
+      
+      if (Object.keys(plans).length === 0) {
+        showStatus('No subscription plans found in localStorage. Click "Restore Subscription Plans" to fix this.', 'error');
+      } else {
+        const planNames = Object.keys(plans).map(id => plans[id].name).join(', ');
+        showStatus(`Found ${Object.keys(plans).length} subscription plans: ${planNames}`, 'success');
+        showPlanInfo();
+      }
+    }
+
+    function showPlanInfo() {
+      const plans = JSON.parse(localStorage.getItem('platform_subscription_plans') || '{}');
+      const planInfoDiv = document.getElementById('plan-info');
+      
+      if (Object.keys(plans).length === 0) {
+        planInfoDiv.innerHTML = '<div class="plan-info">No subscription plans found.</div>';
+        return;
+      }
+
+      let html = '<div class="plan-info"><h3>Available Subscription Plans:</h3>';
+      
+      Object.values(plans).forEach(plan => {
+        html += `
+          <div style="margin: 15px 0; padding: 10px; background: white; border-radius: 6px; border-left: 4px solid #4CAF50;">
+            <h4 style="margin: 0 0 10px 0; color: #333;">${plan.name}</h4>
+            <p style="margin: 5px 0;"><strong>Patient Limit:</strong> ${plan.patientLimit === 9999 ? 'Unlimited' : plan.patientLimit}</p>
+            <p style="margin: 5px 0;"><strong>User Limit:</strong> ${plan.userLimit}</p>
+            <p style="margin: 5px 0;"><strong>Price (NGN):</strong> ₦${plan.prices?.NGN || 0}</p>
+            <p style="margin: 5px 0;"><strong>Price (USD):</strong> $${plan.prices?.USD || 0}</p>
+            ${plan.trialDays ? `<p style="margin: 5px 0;"><strong>Trial Days:</strong> ${plan.trialDays}</p>` : ''}
+          </div>
+        `;
+      });
+      
+      html += '</div>';
+      planInfoDiv.innerHTML = html;
+    }
+
+    // Check plans on load
+    window.addEventListener('load', function() {
+      checkCurrentPlans();
+    });
+  </script>  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+

@@ -1,0 +1,344 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Global Audit Log - Platform Admin</title>
+  <link rel="stylesheet" href="css/styles.css?v=260">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <style>
+    body {
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 20px;
+    }
+    
+    .filters {
+      background: #f8f9fa;
+      padding: 20px;
+      border-radius: 8px;
+      margin-bottom: 20px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .filters label {
+      display: inline-block;
+      margin-right: 10px;
+      font-weight: 600;
+    }
+    
+    .filters input, .filters select {
+      margin-right: 15px;
+      padding: 8px 12px;
+      border: 1px solid #ccc;
+      border-radius: 4px;
+    }
+  </style>
+
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+</head>
+<body>
+  <h1><i class="fa-solid fa-clipboard-list" aria-hidden="true"></i> Global Audit Log</h1>
+  <p style="color: #666; margin-bottom: 20px;">Combined audit trail from all registered clinics</p>
+  
+  <button onclick="window.location.href='platform-dashboard'" style="background: #666; color: white; padding: 10px 20px; border: none; border-radius: 6px; cursor: pointer; margin-bottom: 20px;">
+    <i class="fa-solid fa-arrow-left" aria-hidden="true"></i> Back to Platform Dashboard
+  </button>
+  
+  <!-- Filters -->
+  <div class="filters">
+    <label>Organization:</label>
+    <select id="filter-org">
+      <option value="">All Clinics</option>
+    </select>
+    
+    <label>Action:</label>
+    <select id="filter-action">
+      <option value="">All Actions</option>
+    </select>
+    
+    <label>User:</label>
+    <input type="text" id="filter-user" placeholder="Username">
+    
+    <label>From:</label>
+    <input type="date" id="filter-start-date">
+    
+    <label>To:</label>
+    <input type="date" id="filter-end-date">
+    
+    <button onclick="applyFilters()" style="background: #4CAF50; color: white; padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600;">
+      Apply Filters
+    </button>
+    
+    <button onclick="resetFilters()" style="background: #666; color: white; padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-left: 10px;">
+      Reset
+    </button>
+    
+    <button onclick="exportGlobalAuditLog()" style="background: #9C27B0; color: white; padding: 8px 20px; border: none; border-radius: 4px; cursor: pointer; font-weight: 600; margin-left: 10px;">
+      <i class="fa-solid fa-file-csv" aria-hidden="true"></i> Export to CSV
+    </button>
+  </div>
+  
+  <!-- Statistics -->
+  <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px; margin-bottom: 20px;">
+    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <h4 style="margin: 0 0 10px 0; color: #666; font-size: 12px;">TOTAL EVENTS</h4>
+      <div style="font-size: 28px; font-weight: bold; color: #333;" id="stat-total">0</div>
+    </div>
+    
+    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <h4 style="margin: 0 0 10px 0; color: #666; font-size: 12px;">SHOWING</h4>
+      <div style="font-size: 28px; font-weight: bold; color: #667eea;" id="stat-showing">0</div>
+    </div>
+    
+    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <h4 style="margin: 0 0 10px 0; color: #666; font-size: 12px;">ORGANIZATIONS</h4>
+      <div style="font-size: 28px; font-weight: bold; color: #4CAF50;" id="stat-orgs">0</div>
+    </div>
+    
+    <div style="background: white; padding: 15px; border-radius: 8px; box-shadow: 0 2px 8px rgba(0,0,0,0.08);">
+      <h4 style="margin: 0 0 10px 0; color: #666; font-size: 12px;">UNIQUE USERS</h4>
+      <div style="font-size: 28px; font-weight: bold; color: #FF9800;" id="stat-users">0</div>
+    </div>
+  </div>
+  
+  <!-- Audit Log Table -->
+  <div style="background: white; padding: 25px; border-radius: 12px; box-shadow: 0 2px 10px rgba(0,0,0,0.08);">
+    <table class="billing-table" id="audit-table">
+      <thead>
+        <tr>
+          <th class="center">Timestamp</th>
+          <th class="left">Organization</th>
+          <th class="left">User</th>
+          <th class="center">Role</th>
+          <th class="left">Action</th>
+          <th class="left">Details</th>
+        </tr>
+      </thead>
+      <tbody id="audit-tbody">
+        <!-- Populated by JavaScript -->
+      </tbody>
+    </table>
+  </div>
+  
+  <!-- Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader for Supabase-first architecture -->
+  <script src="js/universal-data-loader.js?v=20251103131800"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+  <script src="js/security.js?v=1"></script>
+  <script src="js/platform-admin.js?v=3"></script>
+  <script>
+    let allAuditLogs = [];
+    let filteredLogs = [];
+    
+    window.addEventListener('load', async function() {
+      // Check platform admin auth
+      const platformAdmin = JSON.parse(localStorage.getItem("platformAdmin") || "null");
+      if (!platformAdmin) {
+        alert('Please login as platform admin');
+        window.location.href = 'platform-login';
+        return;
+      }
+      
+      loadGlobalAuditLog();
+      await populateFilters();
+    });
+    
+    async function loadGlobalAuditLog() {
+      allAuditLogs = await getGlobalAuditLog();
+      filteredLogs = allAuditLogs;
+      
+      console.log('[Audit Log] Global audit log loaded:', allAuditLogs.length, 'events');
+      
+      displayAuditLog(filteredLogs.slice(0, 100));  // Show first 100
+      updateStats();
+    }
+    
+    async function populateFilters() {
+      // Populate organization filter
+      const orgs = await getAllOrganizations();
+      const orgFilter = document.getElementById('filter-org');
+      Object.keys(orgs).forEach(orgName => {
+        const option = document.createElement('option');
+        option.value = orgName;
+        option.textContent = orgName;
+        orgFilter.appendChild(option);
+      });
+      
+      // Populate action filter with unique actions
+      const uniqueActions = [...new Set(allAuditLogs.map(e => e.action))];
+      const actionFilter = document.getElementById('filter-action');
+      uniqueActions.sort().forEach(action => {
+        const option = document.createElement('option');
+        option.value = action;
+        option.textContent = action.replace(/_/g, ' ').toUpperCase();
+        actionFilter.appendChild(option);
+      });
+    }
+    
+    async function applyFilters() {
+      const filters = {
+        organization: document.getElementById('filter-org').value,
+        action: document.getElementById('filter-action').value,
+        user: document.getElementById('filter-user').value,
+        startDate: document.getElementById('filter-start-date').value,
+        endDate: document.getElementById('filter-end-date').value
+      };
+      
+      console.log('[Audit Log] Applying filters:', filters);
+      console.log('[Audit Log] Date range:', {
+        start: filters.startDate,
+        end: filters.endDate,
+        hasStart: !!filters.startDate,
+        hasEnd: !!filters.endDate
+      });
+      
+      filteredLogs = await getGlobalAuditLog(filters);
+      
+      const uniqueOrgs = [...new Set(filteredLogs.map(e => e.organization))];
+      const uniqueUsers = [...new Set(filteredLogs.map(e => e.user))];
+      
+        console.log('[Audit Log] Filter results:', {
+        total: filteredLogs.length,
+        uniqueOrgs: uniqueOrgs.length,
+        orgNames: uniqueOrgs,
+        uniqueUsers: uniqueUsers.length,
+        userNames: uniqueUsers.slice(0, 10), // First 10 users
+        dateRange: filters.startDate && filters.endDate ? `${filters.startDate} to ${filters.endDate}` : 'all time'
+      });
+      
+      // Show warning if no logs found
+      if (filteredLogs.length === 0) {
+        console.warn('[Audit Log] No audit logs found for the selected filters');
+      }
+      
+      displayAuditLog(filteredLogs.slice(0, 100));
+      updateStats();
+    }
+    
+    async function resetFilters() {
+      document.getElementById('filter-org').value = '';
+      document.getElementById('filter-action').value = '';
+      document.getElementById('filter-user').value = '';
+      document.getElementById('filter-start-date').value = '';
+      document.getElementById('filter-end-date').value = '';
+      
+      filteredLogs = allAuditLogs;
+      displayAuditLog(filteredLogs.slice(0, 100));
+      updateStats();
+    }
+    
+    function displayAuditLog(entries) {
+      const tbody = document.getElementById('audit-tbody');
+      tbody.innerHTML = '';
+      
+      if (entries.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 40px; color: #999;">No audit log entries found</td></tr>';
+        return;
+      }
+      
+      entries.forEach(entry => {
+        const row = tbody.insertRow();
+        row.innerHTML = `
+          <td class="center">${new Date(entry.timestamp).toLocaleString()}</td>
+          <td class="left"><strong>${entry.organization}</strong></td>
+          <td class="left">${entry.user}</td>
+          <td class="center">${entry.role}</td>
+          <td class="left">
+            <code style="background: #e9ecef; padding: 3px 8px; border-radius: 4px; font-size: 11px; font-weight: 600;">
+              ${entry.action}
+            </code>
+          </td>
+          <td class="left" style="font-size: 11px; max-width: 300px; overflow: hidden; text-overflow: ellipsis;" title="${JSON.stringify(entry.details)}">
+            ${JSON.stringify(entry.details).substring(0, 80)}${JSON.stringify(entry.details).length > 80 ? '...' : ''}
+          </td>
+        `;
+      });
+    }
+    
+    function updateStats() {
+      document.getElementById('stat-total').textContent = allAuditLogs.length.toLocaleString();
+      document.getElementById('stat-showing').textContent = filteredLogs.length.toLocaleString();
+      
+      const uniqueOrgs = new Set(filteredLogs.map(e => e.organization));
+      document.getElementById('stat-orgs').textContent = uniqueOrgs.size;
+      
+      const uniqueUsers = new Set(filteredLogs.map(e => e.user));
+      document.getElementById('stat-users').textContent = uniqueUsers.size;
+    }
+    
+    function exportGlobalAuditLog() {
+      if (filteredLogs.length === 0) {
+        alert('No audit log entries to export');
+        return;
+      }
+      
+      // Create CSV
+      let csv = "Timestamp,Organization,User,Role,Action,Details\n";
+      
+      filteredLogs.forEach(entry => {
+        const escapeCsv = (val) => {
+          if (!val) return '';
+          const str = String(val).replace(/"/g, '""');
+          return str.includes(',') || str.includes('"') || str.includes('\n') ? `"${str}"` : str;
+        };
+        
+        csv += [
+          new Date(entry.timestamp).toISOString(),
+          escapeCsv(entry.organization),
+          escapeCsv(entry.user),
+          escapeCsv(entry.role),
+          escapeCsv(entry.action),
+          escapeCsv(JSON.stringify(entry.details))
+        ].join(',') + '\n';
+      });
+      
+      // Download
+      const blob = new Blob([csv], { type: 'text/csv' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = `global-audit-log-${new Date().toISOString().split('T')[0]}.csv`;
+      document.body.appendChild(a);
+      a.click();
+      document.body.removeChild(a);
+      URL.revokeObjectURL(url);
+      
+      alert(`Exported ${filteredLogs.length} audit log entries`);
+    }
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+
+
+

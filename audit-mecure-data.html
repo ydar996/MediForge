@@ -1,0 +1,254 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Mecure Clinics Data Audit</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .info { background-color: #d1ecf1; }
+    .warning { background-color: #fff3cd; }
+    .success { background-color: #d4edda; }
+    .danger { background-color: #f8d7da; }
+    button { padding: 10px 15px; margin: 5px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .count { font-weight: bold; }
+    .zero { color: #28a745; }
+    .nonzero { color: #dc3545; }
+  </style>
+</head>
+<body>
+  <h1>?? Mecure Clinics Data Audit</h1>
+  
+  <!-- Load Supabase SDK -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <div class="section info">
+    <h2>?? Complete Data Audit</h2>
+    <button onclick="auditAllData()">?? Audit All Mecure Clinics Data</button>
+    <div id="audit-results"></div>
+  </div>
+
+  <script>
+    let currentOrgId = null;
+
+    async function initialize() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      currentOrgId = user.organizationId || (user.org ? JSON.parse(localStorage.getItem("organizations") || "{}")[user.org]?.id : null);
+      
+      if (!currentOrgId) {
+        alert('No organization ID found. Please login first.');
+        return;
+      }
+      
+      console.log('?? Organization ID:', currentOrgId);
+    }
+
+    async function auditAllData() {
+      if (typeof window.supabaseClient === 'undefined' || !window.supabaseClient) {
+        alert('Online data client not available');
+        return;
+      }
+      
+      try {
+        let html = '<h3>?? Mecure Clinics Data Audit Results</h3>';
+        
+        // Audit all possible data tables
+        const auditResults = await Promise.all([
+          auditTable('patients', 'Patients'),
+          auditTable('appointments', 'Appointments'),
+          auditTable('patient_encounters', 'Patient Encounters'),
+          auditTable('clinical_notes', 'Clinical Notes'),
+          auditTable('prescriptions', 'Prescriptions'),
+          auditTable('invoices', 'Invoices'),
+          auditTable('billing_history', 'Billing History'),
+          auditTable('payments', 'Payments'),
+          auditTable('lab_orders', 'Lab Orders'),
+          auditTable('imaging_orders', 'Imaging Orders'),
+          auditTable('referrals', 'Referrals'),
+          auditTable('documents', 'Documents'),
+          auditTable('users', 'Users'),
+          auditTable('organizations', 'Organizations')
+        ]);
+        
+        // Create summary table
+        html += '<table><tr><th>Data Type</th><th>Count</th><th>Status</th><th>Details</th></tr>';
+        
+        let totalRecords = 0;
+        let hasData = false;
+        
+        auditResults.forEach(result => {
+          const count = result.count;
+          const status = count === 0 ? 'Clean ?' : 'Has Data ??';
+          const statusClass = count === 0 ? 'zero' : 'nonzero';
+          const details = result.details || '-';
+          
+          html += `<tr>
+            <td>${result.name}</td>
+            <td class="count ${statusClass}">${count}</td>
+            <td class="${statusClass}">${status}</td>
+            <td>${details}</td>
+          </tr>`;
+          
+          totalRecords += count;
+          if (count > 0) hasData = true;
+        });
+        
+        html += '</table>';
+        
+        // Summary
+        html += '<div class="section ' + (hasData ? 'warning' : 'success') + '">';
+        html += '<h3>?? Audit Summary</h3>';
+        html += `<p><strong>Total Records:</strong> ${totalRecords}</p>`;
+        html += `<p><strong>Status:</strong> ${hasData ? '?? Data found - not completely clean' : '? Clean - minimal data'}</p>`;
+        
+        if (hasData) {
+          html += '<h4>?? Data Found:</h4><ul>';
+          auditResults.forEach(result => {
+            if (result.count > 0) {
+              html += `<li><strong>${result.name}:</strong> ${result.count} records</li>`;
+            }
+          });
+          html += '</ul>';
+        } else {
+          html += '<p>? Mecure Clinics has minimal data - only essential records remain.</p>';
+        }
+        
+        html += '</div>';
+        
+        // Check localStorage too
+        html += '<div class="section info">';
+        html += '<h3>?? localStorage Data Check</h3>';
+        html += await checkLocalStorageData();
+        html += '</div>';
+        
+        document.getElementById('audit-results').innerHTML = html;
+        
+        console.log('?? Data audit complete. Total records:', totalRecords);
+        
+      } catch (err) {
+        console.error('Exception during audit:', err);
+        document.getElementById('audit-results').innerHTML = `<p style="color: red;">? Exception: ${err.message}</p>`;
+      }
+    }
+
+    async function auditTable(tableName, displayName) {
+      try {
+        const { data, error } = await window.supabaseClient
+          .from(tableName)
+          .select('*')
+          .eq('organization_id', currentOrgId);
+        
+        if (error) {
+          // Table might not exist or have different structure
+          if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            return { name: displayName, count: 0, details: 'Table does not exist' };
+          }
+          return { name: displayName, count: 0, details: `Error: ${error.message}` };
+        }
+        
+        const records = data || [];
+        let details = '';
+        
+        if (records.length > 0) {
+          // Show sample of what's in the table
+          if (tableName === 'patients') {
+            details = records.map(p => `${p.first_name} ${p.last_name}`).join(', ');
+          } else if (tableName === 'appointments') {
+            details = records.map(a => `${a.patient_name || 'Unknown'} (${a.appointment_date})`).join(', ');
+          } else if (tableName === 'users') {
+            details = records.map(u => u.username || u.email).join(', ');
+          } else {
+            details = `${records.length} records found`;
+          }
+        }
+        
+        return { name: displayName, count: records.length, details };
+        
+      } catch (err) {
+        return { name: displayName, count: 0, details: `Exception: ${err.message}` };
+      }
+    }
+
+    async function checkLocalStorageData() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      const org = user.org || "Default";
+      
+      let html = '<table><tr><th>Key</th><th>Type</th><th>Count</th><th>Sample</th></tr>';
+      
+      const orgKeys = [];
+      for (let i = 0; i < localStorage.length; i++) {
+        const key = localStorage.key(i);
+        if (key.includes(org) || key === 'users' || key === 'organizations' || key === 'platform_subscription_plans') {
+          orgKeys.push(key);
+        }
+      }
+      
+      let totalLocalRecords = 0;
+      
+      orgKeys.forEach(key => {
+        const data = localStorage.getItem(key);
+        try {
+          const parsed = JSON.parse(data);
+          let count = 0;
+          let type = 'Unknown';
+          let sample = '';
+          
+          if (Array.isArray(parsed)) {
+            count = parsed.length;
+            type = 'Array';
+            if (count > 0) {
+              sample = JSON.stringify(parsed[0]).substring(0, 50) + '...';
+            }
+          } else if (typeof parsed === 'object' && parsed !== null) {
+            count = Object.keys(parsed).length;
+            type = 'Object';
+            sample = JSON.stringify(parsed).substring(0, 50) + '...';
+          } else {
+            count = 1;
+            type = typeof parsed;
+            sample = String(parsed).substring(0, 50) + '...';
+          }
+          
+          html += `<tr><td>${key}</td><td>${type}</td><td>${count}</td><td>${sample}</td></tr>`;
+          totalLocalRecords += count;
+        } catch (e) {
+          html += `<tr><td>${key}</td><td>String</td><td>1</td><td>${data.substring(0, 50)}...</td></tr>`;
+          totalLocalRecords += 1;
+        }
+      });
+      
+      html += '</table>';
+      html += `<p><strong>Total localStorage records:</strong> ${totalLocalRecords}</p>`;
+      
+      return html;
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', initialize);
+  </script>  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000">
+
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script></script>
+</html>
+
+
+
+
+
+
+

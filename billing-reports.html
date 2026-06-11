@@ -1,0 +1,744 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Billing Reports - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=242">
+  <link rel="stylesheet" href="css/billing-tables.css?v=1">
+  
+  <!-- Supabase CDN Library -->
+  <script src="js/vendor/supabase.min.js"></script>
+  
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  
+  <!-- Universal Data Loader -->
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
+  
+  <!-- General helpers -->
+  <script src="js/main.js?v=202510220113080113081308"></script>
+  
+  <!-- Billing functionality -->
+  <script src="js/billing.js?v=288"></script>
+  
+  <!-- Pricing functionality -->
+  <script src="js/pricing.js?v=1"></script>
+  
+  <!-- Billing reports functionality -->
+  <script src="js/billing-reports.js?v=1"></script>
+  
+  <!-- Universal Sync Status Indicator -->
+  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+</head>
+<body style="max-width: 1400px; margin: 0 auto; padding: 20px;">
+  <h1>📊 Comprehensive Financial Reports</h1>
+  <button onclick="window.location.href='billing-dashboard'" style="background: #666;">← Back to Billing</button>
+
+  <div style="margin: 20px 0;">
+    <!-- Date Range Filter with Quick Presets -->
+    <div style="background: linear-gradient(135deg, #4CAF50, #45a049); color: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h2 style="margin-top: 0; color: white;">Select Date Range</h2>
+      
+      <!-- Quick Date Presets -->
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(120px, 1fr)); gap: 10px; margin-bottom: 15px;">
+        <button onclick="setToday()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">Today</button>
+        <button onclick="setYesterday()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">Yesterday</button>
+        <button onclick="setThisWeek()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">This Week</button>
+        <button onclick="setLastWeek()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">Last Week</button>
+        <button onclick="setThisMonth()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">This Month</button>
+        <button onclick="setLastMonth()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">Last Month</button>
+        <button onclick="setThisYear()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">This Year</button>
+        <button onclick="setLastYear()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">Last Year</button>
+        <button onclick="setLast2Years()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">Last 2 Years</button>
+        <button onclick="setAllTime()" style="background: white; color: #4CAF50; border: none; padding: 10px; border-radius: 4px; cursor: pointer; font-weight: 600;">All Time</button>
+      </div>
+      
+      <!-- Custom Date Range -->
+      <div style="background: rgba(255,255,255,0.2); padding: 15px; border-radius: 4px;">
+        <p style="margin-top: 0; font-weight: 600;">Or Select Custom Range:</p>
+        <div style="display: grid; grid-template-columns: 1fr 1fr auto; gap: 10px;">
+          <div>
+            <label style="display: block; margin-bottom: 5px;">From:</label>
+            <input type="date" id="date-from" style="width: 100%; padding: 8px; border-radius: 4px; border: none;">
+          </div>
+          <div>
+            <label style="display: block; margin-bottom: 5px;">To:</label>
+            <input type="date" id="date-to" style="width: 100%; padding: 8px; border-radius: 4px; border: none;">
+          </div>
+          <div style="align-self: flex-end;">
+            <button onclick="loadReports()" style="background: #FF9800; color: white; border: none; padding: 10px 30px; border-radius: 4px; cursor: pointer; font-weight: 600; height: 38px;">Generate Reports</button>
+          </div>
+        </div>
+        <p id="selected-range" style="margin-bottom: 0; margin-top: 10px; font-size: 14px; opacity: 0.9;">Current range: This Month</p>
+      </div>
+    </div>
+
+    <!-- Revenue Summary -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h2>Revenue Summary</h2>
+      <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 15px;">
+        <div><strong>Total Revenue:</strong><br><span id="total-revenue"></span></div>
+        <div><strong>Total Collected:</strong><br><span id="total-collected" style="color: green;"></span></div>
+        <div><strong>Outstanding:</strong><br><span id="total-outstanding" style="color: red;"></span></div>
+        <div><strong>Collection Rate:</strong><br><span id="collection-rate"></span></div>
+        <div><strong>Total Invoices:</strong><br><span id="total-invoices"></span></div>
+        <div><strong>Average Invoice:</strong><br><span id="avg-invoice"></span></div>
+      </div>
+      <button onclick="exportRevenue()" style="margin-top: 15px; background: #4CAF50;">📊 Export to CSV</button>
+    </div>
+
+    <!-- Payment Methods Breakdown -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h2>Payment Methods</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Method</th>
+            <th>Count</th>
+            <th>Amount</th>
+            <th>Percentage</th>
+          </tr>
+        </thead>
+        <tbody id="payment-methods-body"></tbody>
+      </table>
+    </div>
+
+    <!-- Top Services -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h2>Top 10 Services by Revenue</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Service</th>
+            <th>Code</th>
+            <th>Count</th>
+            <th>Revenue</th>
+          </tr>
+        </thead>
+        <tbody id="top-services-body"></tbody>
+      </table>
+      <button onclick="exportTopServices()" style="margin-top: 15px; background: #4CAF50;">📊 Export to CSV</button>
+    </div>
+
+    <!-- Aging Report -->
+    <div style="background: white; padding: 20px; border-radius: 8px; margin-bottom: 20px;">
+      <h2>Accounts Receivable Aging</h2>
+      <div style="display: grid; grid-template-columns: repeat(4, 1fr); gap: 15px; margin-bottom: 15px;">
+        <div><strong>0-30 days:</strong><br><span id="aging-current"></span></div>
+        <div><strong>31-60 days:</strong><br><span id="aging-30"></span></div>
+        <div><strong>61-90 days:</strong><br><span id="aging-60" style="color: orange;"></span></div>
+        <div><strong>90+ days:</strong><br><span id="aging-90" style="color: red;"></span></div>
+      </div>
+      <details>
+        <summary style="cursor: pointer; font-weight: bold;">View Details</summary>
+        <div id="aging-details" style="margin-top: 15px;"></div>
+      </details>
+      <button onclick="exportAging()" style="margin-top: 15px; background: #4CAF50;">📊 Export to CSV</button>
+    </div>
+
+    <!-- Daily Cash Flow -->
+    <div style="background: white; padding: 20px; border-radius: 8px;">
+      <h2>Daily Cash Flow</h2>
+      <table>
+        <thead>
+          <tr>
+            <th>Date</th>
+            <th>Total Payments</th>
+            <th>Cash</th>
+            <th>Mobile Money</th>
+            <th>Card</th>
+            <th>Other</th>
+          </tr>
+        </thead>
+        <tbody id="cash-flow-body"></tbody>
+      </table>
+      <button onclick="exportCashFlow()" style="margin-top: 15px; background: #4CAF50;">📊 Export to CSV</button>
+    </div>
+  </div>
+  <script>
+    window.addEventListener('load', function() {
+      // Verify dependencies
+      if (typeof window.getAllInvoices === 'undefined') {
+        console.error('ERROR: billing.js not loaded - getAllInvoices undefined');
+        alert('Error loading billing reports. Please refresh the page.');
+        return;
+      }
+      
+      if (typeof window.getRevenueReport === 'undefined') {
+        console.error('ERROR: billing-reports.js not loaded - getRevenueReport undefined');
+        alert('Error loading report functions. Please refresh the page.');
+        return;
+      }
+      
+      // Set default date range to current month
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      document.getElementById('date-from').valueAsDate = firstDay;
+      document.getElementById('date-to').valueAsDate = today;
+      
+      console.log('Date range set:', firstDay.toISOString().split('T')[0], 'to', today.toISOString().split('T')[0]);
+      
+      // Audit log: Billing reports accessed
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('billing_reports_accessed', {
+          dateRange: `${firstDay.toISOString().split('T')[0]} to ${today.toISOString().split('T')[0]}`
+        });
+      }
+      
+      loadReports();
+    });
+
+    async function loadReports() {
+      console.log('loadReports() called');
+      const startDate = document.getElementById('date-from').value;
+      const endDate = document.getElementById('date-to').value;
+      
+      console.log('Generating reports for:', startDate, 'to', endDate);
+      
+      if (!startDate || !endDate) {
+        alert('Please select both start and end dates');
+        return;
+      }
+      
+      // Show loading indicator
+      const allTables = document.querySelectorAll('tbody');
+      allTables.forEach(tbody => {
+        tbody.innerHTML = '<tr><td colspan="10" style="text-align: center; padding: 20px; color: #4CAF50;">⏳ Loading data...</td></tr>';
+      });
+      
+      try {
+        console.log('Loading revenue summary...');
+        await loadRevenueSummary(startDate, endDate);
+        
+        console.log('Loading payment methods...');
+        await loadPaymentMethods(startDate, endDate);
+        
+        console.log('Loading top services...');
+        await loadTopServices(startDate, endDate);
+        
+        console.log('Loading aging report...');
+        await loadAgingReport();
+        
+        console.log('Loading cash flow...');
+        loadCashFlow(startDate, endDate);
+        
+        console.log('All reports loaded successfully');
+        
+        // Visual confirmation
+        const button = document.querySelector('button[onclick="loadReports()"]');
+        if (button) {
+          const originalText = button.textContent;
+          button.textContent = '✅ Reports Updated!';
+          button.style.background = '#4CAF50';
+          setTimeout(() => {
+            button.textContent = originalText;
+            button.style.background = '#FF9800';
+          }, 2000);
+        }
+      } catch (error) {
+        console.error('Error loading reports:', error);
+        alert('Error generating reports: ' + error.message);
+      }
+    }
+
+    async function loadRevenueSummary(startDate, endDate) {
+      try {
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const getReportFn = window.getRevenueReport || getRevenueReport;
+        if (typeof getReportFn !== 'function') {
+          throw new Error('getRevenueReport function not available');
+        }
+        
+        const defaultCurrency = getCurrencyFn();
+        const report = await getReportFn(startDate, endDate);
+        
+        if (!report) {
+          throw new Error('Report data is null or undefined');
+        }
+        
+        document.getElementById('total-revenue').textContent = formatCurrencyFn(report.totalRevenue || 0, defaultCurrency);
+        document.getElementById('total-collected').textContent = formatCurrencyFn(report.totalCollected || 0, defaultCurrency);
+        document.getElementById('total-outstanding').textContent = formatCurrencyFn(report.totalOutstanding || 0, defaultCurrency);
+        document.getElementById('collection-rate').textContent = (report.collectionRate || 0) + '%';
+        document.getElementById('total-invoices').textContent = report.totalInvoices || 0;
+        document.getElementById('avg-invoice').textContent = formatCurrencyFn(report.averageInvoiceValue || 0, defaultCurrency);
+      } catch (error) {
+        console.error('Error loading revenue summary:', error);
+        const defaultCurrency = (window.getDefaultCurrency || function() { return 'NGN'; })();
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        document.getElementById('total-revenue').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('total-collected').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('total-outstanding').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('collection-rate').textContent = '0%';
+        document.getElementById('total-invoices').textContent = '0';
+        document.getElementById('avg-invoice').textContent = formatCurrencyFn(0, defaultCurrency);
+      }
+    }
+
+    async function loadPaymentMethods(startDate, endDate) {
+      try {
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const getReportFn = window.getRevenueReport || getRevenueReport;
+        if (typeof getReportFn !== 'function') {
+          throw new Error('getRevenueReport function not available');
+        }
+        
+        const defaultCurrency = getCurrencyFn();
+        const report = await getReportFn(startDate, endDate);
+        const tbody = document.getElementById('payment-methods-body');
+        tbody.innerHTML = '';
+        
+        if (!report || !report.paymentsByMethod) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">No payment data for this period</td></tr>';
+          return;
+        }
+        
+        const total = report.totalCollected || 0;
+        const paymentsByMethod = report.paymentsByMethod || {};
+        const methodsWithData = Object.entries(paymentsByMethod).filter(([_, data]) => data && data.count > 0);
+        
+        if (methodsWithData.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">No payment data for this period</td></tr>';
+          return;
+        }
+        
+        methodsWithData.forEach(([method, data]) => {
+          const row = tbody.insertRow();
+          const percentage = total > 0 ? ((data.amount || 0) / total * 100).toFixed(1) : 0;
+          row.innerHTML = `
+            <td>${method.replace('_', ' ').toUpperCase()}</td>
+            <td>${data.count || 0}</td>
+            <td>${formatCurrencyFn(data.amount || 0, defaultCurrency)}</td>
+            <td>${percentage}%</td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error loading payment methods:', error);
+        const tbody = document.getElementById('payment-methods-body');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">Error loading payment methods</td></tr>';
+      }
+    }
+
+    async function loadTopServices(startDate, endDate) {
+      try {
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const getTopServicesFn = window.getTopServices || getTopServices;
+        if (typeof getTopServicesFn !== 'function') {
+          throw new Error('getTopServices function not available');
+        }
+        
+        const defaultCurrency = getCurrencyFn();
+        const services = await getTopServicesFn(startDate, endDate, 10);
+        const tbody = document.getElementById('top-services-body');
+        tbody.innerHTML = '';
+        
+        if (!services || !Array.isArray(services) || services.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">No services data for this period</td></tr>';
+          return;
+        }
+        
+        services.forEach(service => {
+          if (!service) return;
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td>${service.name || 'Unknown'}</td>
+            <td>${service.code || 'N/A'}</td>
+            <td>${service.count || 0}</td>
+            <td>${formatCurrencyFn(service.revenue || 0, defaultCurrency)}</td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error loading top services:', error);
+        const tbody = document.getElementById('top-services-body');
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 20px; color: #999;">Error loading top services</td></tr>';
+      }
+    }
+
+    async function loadAgingReport() {
+      try {
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const getAgingFn = window.getAgingReport || getAgingReport;
+        if (typeof getAgingFn !== 'function') {
+          throw new Error('getAgingReport function not available');
+        }
+        
+        const defaultCurrency = getCurrencyFn();
+        const aging = await getAgingFn();
+        
+        if (!aging || !aging.totals) {
+          throw new Error('Aging report data is invalid');
+        }
+        
+        document.getElementById('aging-current').textContent = formatCurrencyFn(aging.totals.current || 0, defaultCurrency);
+        document.getElementById('aging-30').textContent = formatCurrencyFn(aging.totals.days30 || 0, defaultCurrency);
+        document.getElementById('aging-60').textContent = formatCurrencyFn(aging.totals.days60 || 0, defaultCurrency);
+        document.getElementById('aging-90').textContent = formatCurrencyFn(aging.totals.days90plus || 0, defaultCurrency);
+        
+        // Details table
+        const detailsDiv = document.getElementById('aging-details');
+        let html = '';
+        
+        ['current', 'days30', 'days60', 'days90plus'].forEach(category => {
+          const items = aging[category];
+          if (items && Array.isArray(items) && items.length > 0) {
+            html += `<h4>${category === 'current' ? '0-30 days' : category === 'days30' ? '31-60 days' : category === 'days60' ? '61-90 days' : '90+ days'}</h4>`;
+            html += '<table style="width: 100%; margin-bottom: 15px;"><thead><tr><th>Invoice</th><th>Patient</th><th>Due Date</th><th>Amount</th><th>Days Overdue</th></tr></thead><tbody>';
+            
+            items.forEach(item => {
+              if (!item) return;
+              html += `<tr>
+                <td>${item.invoiceNumber || 'N/A'}</td>
+                <td>${item.patientName || 'Unknown'}</td>
+                <td>${item.dueDate || 'N/A'}</td>
+                <td>${formatCurrencyFn(item.amountDue || 0, defaultCurrency)}</td>
+                <td>${item.daysOverdue || 0}</td>
+              </tr>`;
+            });
+            
+            html += '</tbody></table>';
+          }
+        });
+        
+        detailsDiv.innerHTML = html || '<p>No outstanding invoices</p>';
+      } catch (error) {
+        console.error('Error loading aging report:', error);
+        const defaultCurrency = (window.getDefaultCurrency || function() { return 'NGN'; })();
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        document.getElementById('aging-current').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('aging-30').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('aging-60').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('aging-90').textContent = formatCurrencyFn(0, defaultCurrency);
+        document.getElementById('aging-details').innerHTML = '<p>Error loading aging report</p>';
+      }
+    }
+
+    function loadCashFlow(startDate, endDate) {
+      try {
+        const getCurrencyFn = window.getDefaultCurrency || function() { return 'NGN'; };
+        const formatCurrencyFn = window.formatCurrency || function(amount, curr) {
+          return `${curr} ${typeof amount === 'number' ? amount.toFixed(2) : amount}`;
+        };
+        
+        const getCashFlowFn = window.getDailyCashFlow || getDailyCashFlow;
+        if (typeof getCashFlowFn !== 'function') {
+          throw new Error('getDailyCashFlow function not available');
+        }
+        
+        const defaultCurrency = getCurrencyFn();
+        const cashFlow = getCashFlowFn(startDate, endDate);
+        const tbody = document.getElementById('cash-flow-body');
+        tbody.innerHTML = '';
+        
+        if (!cashFlow || !Array.isArray(cashFlow) || cashFlow.length === 0) {
+          tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">No cash flow data for this period</td></tr>';
+          return;
+        }
+        
+        cashFlow.forEach(day => {
+          if (!day) return;
+          const row = tbody.insertRow();
+          row.innerHTML = `
+            <td>${day.date || 'N/A'}</td>
+            <td>${formatCurrencyFn(day.cashIn || 0, defaultCurrency)}</td>
+            <td>${formatCurrencyFn(day.cashPayments || 0, defaultCurrency)}</td>
+            <td>${formatCurrencyFn(day.mobilePayments || 0, defaultCurrency)}</td>
+            <td>${formatCurrencyFn(day.cardPayments || 0, defaultCurrency)}</td>
+            <td>${formatCurrencyFn(day.otherPayments || 0, defaultCurrency)}</td>
+          `;
+        });
+      } catch (error) {
+        console.error('Error loading cash flow:', error);
+        const tbody = document.getElementById('cash-flow-body');
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px; color: #999;">Error loading cash flow data</td></tr>';
+      }
+    }
+
+    async function exportRevenue() {
+      try {
+        const startDate = document.getElementById('date-from').value;
+        const endDate = document.getElementById('date-to').value;
+        const getReportFn = window.getRevenueReport || getRevenueReport;
+        if (typeof getReportFn !== 'function') {
+          alert('Export function not available');
+          return;
+        }
+        const report = await getReportFn(startDate, endDate);
+        const exportFn = window.exportReportToCSV || exportReportToCSV;
+        if (typeof exportFn === 'function') {
+          exportFn(report, `revenue-report-${startDate}-${endDate}.csv`);
+        }
+      
+      // Audit log: Report exported
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('report_exported', {
+          reportType: 'revenue',
+          dateRange: `${startDate} to ${endDate}`,
+          recordCount: report.totalInvoices
+        });
+      }
+      } catch (error) {
+        console.error('Error exporting revenue report:', error);
+        alert('Failed to export revenue report');
+      }
+    }
+
+    async function exportTopServices() {
+      try {
+        const startDate = document.getElementById('date-from').value;
+        const endDate = document.getElementById('date-to').value;
+        const getTopServicesFn = window.getTopServices || getTopServices;
+        if (typeof getTopServicesFn !== 'function') {
+          alert('Export function not available');
+          return;
+        }
+        const services = await getTopServicesFn(startDate, endDate, 10);
+        const exportFn = window.exportReportToCSV || exportReportToCSV;
+        if (typeof exportFn === 'function') {
+          exportFn(services, `top-services-${startDate}-${endDate}.csv`);
+        }
+      
+      // Audit log: Report exported
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('report_exported', {
+          reportType: 'top_services',
+          dateRange: `${startDate} to ${endDate}`,
+          recordCount: services.length
+        });
+      }
+      } catch (error) {
+        console.error('Error exporting top services report:', error);
+        alert('Failed to export top services report');
+      }
+    }
+
+    async function exportAging() {
+      try {
+        const getAgingFn = window.getAgingReport || getAgingReport;
+        if (typeof getAgingFn !== 'function') {
+          alert('Export function not available');
+          return;
+        }
+        const aging = await getAgingFn();
+        if (!aging) {
+          alert('No aging report data available');
+          return;
+        }
+        const allItems = [
+          ...(aging.current || []),
+          ...(aging.days30 || []),
+          ...(aging.days60 || []),
+          ...(aging.days90plus || [])
+        ];
+        const exportFn = window.exportReportToCSV || exportReportToCSV;
+        if (typeof exportFn === 'function') {
+          exportFn(allItems, `aging-report-${new Date().toISOString().split('T')[0]}.csv`);
+        }
+      
+      // Audit log: Report exported
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('report_exported', {
+          reportType: 'aging',
+          recordCount: allItems.length,
+          totalOutstanding: aging.totals.total
+        });
+      }
+      } catch (error) {
+        console.error('Error exporting aging report:', error);
+        alert('Failed to export aging report');
+      }
+    }
+
+    function exportCashFlow() {
+      try {
+        const startDate = document.getElementById('date-from').value;
+        const endDate = document.getElementById('date-to').value;
+        const getCashFlowFn = window.getDailyCashFlow || getDailyCashFlow;
+        if (typeof getCashFlowFn !== 'function') {
+          alert('Export function not available');
+          return;
+        }
+        const cashFlow = getCashFlowFn(startDate, endDate);
+        const exportFn = window.exportReportToCSV || exportReportToCSV;
+        if (typeof exportFn === 'function') {
+          exportFn(cashFlow, `cash-flow-${startDate}-${endDate}.csv`);
+        }
+      
+      // Audit log: Report exported
+      if (typeof logAuditEvent !== 'undefined') {
+        logAuditEvent('report_exported', {
+          reportType: 'cash_flow',
+          dateRange: `${startDate} to ${endDate}`,
+          recordCount: cashFlow.length
+        });
+      }
+      } catch (error) {
+        console.error('Error exporting cash flow report:', error);
+        alert('Failed to export cash flow report');
+      }
+    }
+
+    // Quick date range presets
+    function setToday() {
+      const today = new Date().toISOString().split('T')[0];
+      document.getElementById('date-from').value = today;
+      document.getElementById('date-to').value = today;
+      document.getElementById('selected-range').textContent = 'Current range: Today';
+      loadReports();
+    }
+
+    function setYesterday() {
+      const yesterday = new Date();
+      yesterday.setDate(yesterday.getDate() - 1);
+      const dateStr = yesterday.toISOString().split('T')[0];
+      document.getElementById('date-from').value = dateStr;
+      document.getElementById('date-to').value = dateStr;
+      document.getElementById('selected-range').textContent = 'Current range: Yesterday';
+      loadReports();
+    }
+
+    function setThisWeek() {
+      const today = new Date();
+      const firstDay = new Date(today.setDate(today.getDate() - today.getDay()));
+      const lastDay = new Date();
+      document.getElementById('date-from').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastDay.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: This Week';
+      loadReports();
+    }
+
+    function setLastWeek() {
+      const today = new Date();
+      const lastWeekStart = new Date(today.setDate(today.getDate() - today.getDay() - 7));
+      const lastWeekEnd = new Date(today.setDate(today.getDate() + 6));
+      document.getElementById('date-from').value = lastWeekStart.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastWeekEnd.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: Last Week';
+      loadReports();
+    }
+
+    function setThisMonth() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth(), 1);
+      const lastDay = new Date();
+      document.getElementById('date-from').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastDay.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: This Month';
+      loadReports();
+    }
+
+    function setLastMonth() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), today.getMonth() - 1, 1);
+      const lastDay = new Date(today.getFullYear(), today.getMonth(), 0);
+      document.getElementById('date-from').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastDay.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: Last Month';
+      loadReports();
+    }
+
+    function setThisYear() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear(), 0, 1);
+      const lastDay = new Date();
+      document.getElementById('date-from').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastDay.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: This Year';
+      loadReports();
+    }
+
+    function setLastYear() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear() - 1, 0, 1);
+      const lastDay = new Date(today.getFullYear() - 1, 11, 31);
+      document.getElementById('date-from').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastDay.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: Last Year';
+      loadReports();
+    }
+
+    function setLast2Years() {
+      const today = new Date();
+      const firstDay = new Date(today.getFullYear() - 2, 0, 1);
+      const lastDay = new Date();
+      document.getElementById('date-from').value = firstDay.toISOString().split('T')[0];
+      document.getElementById('date-to').value = lastDay.toISOString().split('T')[0];
+      document.getElementById('selected-range').textContent = 'Current range: Last 2 Years';
+      loadReports();
+    }
+
+    async function setAllTime() {
+      try {
+        const getAllInvoicesFn = window.getAllInvoices || getAllInvoices;
+        if (typeof getAllInvoicesFn !== 'function') {
+          alert('Cannot load invoices. Please refresh the page.');
+          return;
+        }
+        
+        const invoices = await getAllInvoicesFn();
+        if (!invoices || !Array.isArray(invoices) || invoices.length === 0) {
+          alert('No invoices found');
+          return;
+        }
+        
+        // Find earliest and latest invoice dates
+        const dates = invoices.map(inv => inv.date).filter(date => date).sort();
+        if (dates.length === 0) {
+          alert('No valid invoice dates found');
+          return;
+        }
+        
+        const firstDate = dates[0];
+        const lastDate = dates[dates.length - 1];
+        
+        document.getElementById('date-from').value = firstDate;
+        document.getElementById('date-to').value = lastDate;
+        document.getElementById('selected-range').textContent = 'Current range: All Time (' + firstDate + ' to ' + lastDate + ')';
+        loadReports();
+      } catch (error) {
+        console.error('Error setting all time range:', error);
+        alert('Error loading invoice dates. Please try again.');
+      }
+    }
+  </script>  
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+
+

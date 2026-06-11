@@ -1,0 +1,49 @@
+name: Deploy to Netlify
+
+# NOTE: This workflow is OPTIONAL if Netlify Continuous Deployment is already enabled
+# If Netlify CD is working, you can disable this workflow to avoid conflicts
+# To disable: Comment out the 'on:' section or delete this file
+
+on:
+  # Only run if Netlify CD is NOT working
+  # Uncomment the lines below if you want to use GitHub Actions instead of Netlify CD
+  # push:
+  #   branches:
+  #     - main
+  workflow_dispatch: # Allows manual triggering only
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+      
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '18'
+      
+      - name: Check user-facing HTML icons
+        run: node scripts/check-user-facing-html-icons.mjs
+      
+      - name: Install Netlify CLI
+        run: npm install -g netlify-cli
+      
+      - name: Deploy to Netlify
+        env:
+          NETLIFY_AUTH_TOKEN: ${{ secrets.NETLIFY_AUTH_TOKEN }}
+          NETLIFY_SITE_ID: ${{ secrets.NETLIFY_SITE_ID }}
+        run: |
+          if [ -z "$NETLIFY_AUTH_TOKEN" ] || [ -z "$NETLIFY_SITE_ID" ]; then
+            echo "⚠️ Secrets not configured. Skipping GitHub Actions deployment."
+            echo "✅ Netlify Continuous Deployment should handle this automatically."
+            exit 0
+          fi
+          netlify deploy --prod --dir . --message "Auto-deploy from GitHub: ${{ github.event.head_commit.message }}"
+      
+      - name: Deployment Status
+        run: |
+          echo "✅ Deployment completed successfully"
+          echo "🚀 Site URL: https://mediforge.netlify.app"

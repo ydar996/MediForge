@@ -1,0 +1,340 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
+  <meta http-equiv="Pragma" content="no-cache">
+  <meta http-equiv="Expires" content="0">
+  <meta name="mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Cleanup Deleted Patient Traces</title>
+  <style>
+    body { font-family: Arial, sans-serif; margin: 20px; }
+    .section { margin: 20px 0; padding: 15px; border: 1px solid #ddd; border-radius: 5px; }
+    .info { background-color: #d1ecf1; }
+    .success { background-color: #d4edda; }
+    .warning { background-color: #fff3cd; }
+    .danger { background-color: #f8d7da; }
+    button { padding: 10px 15px; margin: 5px; cursor: pointer; background-color: #007bff; color: white; border: none; border-radius: 4px; }
+    .cleanup-btn { background-color: #dc3545; }
+    table { width: 100%; border-collapse: collapse; margin: 10px 0; }
+    th, td { border: 1px solid #ddd; padding: 8px; text-align: left; }
+    th { background-color: #f2f2f2; }
+    .count { font-weight: bold; }
+    .zero { color: #28a745; }
+    .nonzero { color: #dc3545; }
+  </style>
+</head>
+<body>
+  <h1>?? Cleanup Deleted Patient Traces</h1>
+  
+  <!-- Load Supabase SDK -->
+  <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2.106.1">
+
+  <!-- Supabase Client Initialization -->
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>  <!-- Universal data loader with Supabase priority -->
+  </script>
+  
+  <div class="section info">
+    <h2>?? Current Patient Status</h2>
+    <p>We want to keep only the 3 real patients and remove ALL traces of deleted test patients.</p>
+    <button onclick="showCurrentPatients()">?? Show Current Patients</button>
+    <div id="current-patients"></div>
+  </div>
+  
+  <div class="section warning">
+    <h2>?? Search for Deleted Patient Traces</h2>
+    <p>This will search for any remaining references to deleted test patients across all tables.</p>
+    <button onclick="searchDeletedPatientTraces()">?? Search for Test Patient References</button>
+    <div id="trace-results"></div>
+  </div>
+  
+  <div class="section danger">
+    <h2>??? Cleanup Actions</h2>
+    <div id="cleanup-section" style="display: none;">
+      <p><strong>?? Warning:</strong> This will permanently delete any remaining traces of test patients.</p>
+      <button class="cleanup-btn" onclick="cleanupAllTestPatientTraces()">??? Clean All Test Patient Traces</button>
+    </div>
+    <div id="cleanup-results"></div>
+  </div>
+
+  <script>
+    let currentOrgId = null;
+    let testPatientNames = [];
+
+    async function initialize() {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      currentOrgId = user.organizationId || (user.org ? JSON.parse(localStorage.getItem("organizations") || "{}")[user.org]?.id : null);
+      
+      if (!currentOrgId) {
+        alert('No organization ID found. Please login first.');
+        return;
+      }
+      
+      console.log('?? Organization ID:', currentOrgId);
+      
+      // Define test patient names that should be cleaned up
+      testPatientNames = [
+        'Verified2 Working', 'Verified3 Working', 'Final Test7', 'Verified Working',
+        'John Test3', 'Maria Test5', 'Debug Test6', 'Updated E2E Test Patient',
+        'E2E Test Patient', 'Unknown Patient', 'Test Patient', 'E2E Test'
+      ];
+    }
+
+    async function showCurrentPatients() {
+      try {
+        const { data: patients, error } = await window.supabaseClient
+          .from('patients')
+          .select('*')
+          .eq('organization_id', currentOrgId);
+        
+        if (error) throw error;
+        
+        let html = '<h3>?? Current Patients in Mecure Clinics</h3>';
+        
+        if (patients && patients.length > 0) {
+          html += '<table><tr><th>Name</th><th>ID</th><th>Phone</th><th>Created</th></tr>';
+          patients.forEach(patient => {
+            const name = `${patient.first_name} ${patient.last_name}`;
+            html += `<tr><td>${name}</td><td>${patient.id}</td><td>${patient.phone || 'N/A'}</td><td>${patient.created_at?.split('T')[0] || 'Unknown'}</td></tr>`;
+          });
+          html += '</table>';
+          
+          html += `<div class="success"><p><strong>? ${patients.length} patients remaining</strong></p></div>`;
+        } else {
+          html += '<div class="warning"><p>?? No patients found</p></div>';
+        }
+        
+        document.getElementById('current-patients').innerHTML = html;
+        
+      } catch (err) {
+        document.getElementById('current-patients').innerHTML = `<p style="color: red;">? Error: ${err.message}</p>`;
+      }
+    }
+
+    async function searchDeletedPatientTraces() {
+      try {
+        let html = '<h3>?? Searching for Test Patient References</h3>';
+        
+        // Search across all relevant tables
+        const searchResults = await Promise.all([
+          searchInTable('patient_encounters', 'Patient Encounters'),
+          searchInTable('clinical_notes', 'Clinical Notes'),
+          searchInTable('prescriptions', 'Prescriptions'),
+          searchInTable('lab_orders', 'Lab Orders'),
+          searchInTable('imaging_orders', 'Imaging Orders'),
+          searchInTable('referrals', 'Referrals'),
+          searchInTable('documents', 'Documents'),
+          searchInTable('invoices', 'Invoices'),
+          searchInTable('billing_history', 'Billing History'),
+          searchInTable('payments', 'Payments')
+        ]);
+        
+        let totalTraces = 0;
+        let hasTraces = false;
+        
+        html += '<table><tr><th>Table</th><th>References Found</th><th>Details</th></tr>';
+        
+        searchResults.forEach(result => {
+          const count = result.count;
+          totalTraces += count;
+          if (count > 0) hasTraces = true;
+          
+          const statusClass = count === 0 ? 'zero' : 'nonzero';
+          html += `<tr>
+            <td>${result.tableName}</td>
+            <td class="count ${statusClass}">${count}</td>
+            <td>${result.details}</td>
+          </tr>`;
+        });
+        
+        html += '</table>';
+        
+        // Summary
+        html += '<div class="section ' + (hasTraces ? 'warning' : 'success') + '">';
+        html += '<h3>?? Search Summary</h3>';
+        html += `<p><strong>Total test patient references found:</strong> ${totalTraces}</p>`;
+        
+        if (hasTraces) {
+          html += '<p>?? <strong>Test patient traces found!</strong> Use the cleanup section below to remove them.</p>';
+          document.getElementById('cleanup-section').style.display = 'block';
+        } else {
+          html += '<p>? <strong>No test patient traces found!</strong> Database is clean.</p>';
+        }
+        
+        html += '</div>';
+        
+        document.getElementById('trace-results').innerHTML = html;
+        
+      } catch (err) {
+        document.getElementById('trace-results').innerHTML = `<p style="color: red;">? Error: ${err.message}</p>`;
+      }
+    }
+
+    async function searchInTable(tableName, displayName) {
+      try {
+        // Search for any records that might reference test patients
+        const { data, error } = await window.supabaseClient
+          .from(tableName)
+          .select('*')
+          .eq('organization_id', currentOrgId);
+        
+        if (error) {
+          if (error.message.includes('relation') && error.message.includes('does not exist')) {
+            return { tableName: displayName, count: 0, details: 'Table does not exist' };
+          }
+          return { tableName: displayName, count: 0, details: `Error: ${error.message}` };
+        }
+        
+        const records = data || [];
+        let matchingRecords = [];
+        let details = '';
+        
+        // Check each record for test patient references
+        records.forEach(record => {
+          const recordStr = JSON.stringify(record).toLowerCase();
+          const hasTestReference = testPatientNames.some(testName => 
+            recordStr.includes(testName.toLowerCase())
+          );
+          
+          if (hasTestReference) {
+            matchingRecords.push(record);
+          }
+        });
+        
+        if (matchingRecords.length > 0) {
+          details = matchingRecords.slice(0, 3).map(r => {
+            // Try to find patient name in the record
+            const patientName = r.patient_name || r.patientName || r.patient_id || 'Unknown';
+            return `${patientName}`;
+          }).join(', ');
+          
+          if (matchingRecords.length > 3) {
+            details += ` ... and ${matchingRecords.length - 3} more`;
+          }
+        } else {
+          details = 'No test patient references';
+        }
+        
+        return { tableName: displayName, count: matchingRecords.length, details };
+        
+      } catch (err) {
+        return { tableName: displayName, count: 0, details: `Exception: ${err.message}` };
+      }
+    }
+
+    async function cleanupAllTestPatientTraces() {
+      if (!confirm('?? This will permanently delete ALL traces of test patients. Are you sure?')) {
+        return;
+      }
+      
+      try {
+        let cleanedTables = 0;
+        let totalCleaned = 0;
+        let errors = 0;
+        
+        const tablesToClean = [
+          'patient_encounters', 'clinical_notes', 'prescriptions', 'lab_orders',
+          'imaging_orders', 'referrals', 'documents', 'invoices', 'billing_history', 'payments'
+        ];
+        
+        for (const tableName of tablesToClean) {
+          try {
+            // Get all records for this table
+            const { data: records, error: fetchError } = await window.supabaseClient
+              .from(tableName)
+              .select('*')
+              .eq('organization_id', currentOrgId);
+            
+            if (fetchError) {
+              if (!fetchError.message.includes('does not exist')) {
+                console.error(`Error fetching from ${tableName}:`, fetchError);
+                errors++;
+              }
+              continue;
+            }
+            
+            if (!records || records.length === 0) continue;
+            
+            // Find records that reference test patients
+            const recordsToDelete = [];
+            records.forEach(record => {
+              const recordStr = JSON.stringify(record).toLowerCase();
+              const hasTestReference = testPatientNames.some(testName => 
+                recordStr.includes(testName.toLowerCase())
+              );
+              
+              if (hasTestReference) {
+                recordsToDelete.push(record);
+              }
+            });
+            
+            // Delete matching records
+            if (recordsToDelete.length > 0) {
+              const idsToDelete = recordsToDelete.map(r => r.id).filter(id => id);
+              
+              if (idsToDelete.length > 0) {
+                const { error: deleteError } = await window.supabaseClient
+                  .from(tableName)
+                  .delete()
+                  .in('id', idsToDelete);
+                
+                if (deleteError) {
+                  console.error(`Error deleting from ${tableName}:`, deleteError);
+                  errors++;
+                } else {
+                  console.log(`? Cleaned ${recordsToDelete.length} records from ${tableName}`);
+                  cleanedTables++;
+                  totalCleaned += recordsToDelete.length;
+                }
+              }
+            }
+            
+          } catch (err) {
+            console.error(`Exception cleaning ${tableName}:`, err);
+            errors++;
+          }
+        }
+        
+        document.getElementById('cleanup-results').innerHTML = `
+          <div class="success">
+            <h3>? Cleanup Complete!</h3>
+            <p><strong>Tables cleaned:</strong> ${cleanedTables}</p>
+            <p><strong>Total records removed:</strong> ${totalCleaned}</p>
+            <p><strong>Errors:</strong> ${errors}</p>
+            <p><strong>Status:</strong> ${totalCleaned > 0 ? 'Test patient traces removed!' : 'No traces found to clean.'}</p>
+          </div>
+        `;
+        
+        // Hide cleanup section after completion
+        document.getElementById('cleanup-section').style.display = 'none';
+        
+      } catch (err) {
+        document.getElementById('cleanup-results').innerHTML = `<p style="color: red;">? Exception: ${err.message}</p>`;
+      }
+    }
+
+    // Initialize when page loads
+    window.addEventListener('load', initialize);
+  </script>  <script src="js/universal-sync-status.js?v=202510220113080113081308"></script>
+
+
+  <!-- General helpers -->
+  <script src="js/main.js?v=20251101160000"></script>
+</html>
+
+
+
+
+
+
+
+
+
+
+
+
+

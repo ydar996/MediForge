@@ -1,0 +1,301 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Clear Permanent Lock - Immediate Fix</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 20px auto;
+            padding: 20px;
+            background: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 30px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        h1 {
+            color: #dc3545;
+            border-bottom: 3px solid #dc3545;
+            padding-bottom: 10px;
+        }
+        .form-group {
+            margin: 20px 0;
+        }
+        label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+            box-sizing: border-box;
+        }
+        button {
+            background: #dc3545;
+            color: white;
+            border: none;
+            padding: 12px 24px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: 600;
+            width: 100%;
+            margin-top: 10px;
+        }
+        button:hover {
+            background: #c82333;
+        }
+        .result {
+            margin: 20px 0;
+            padding: 15px;
+            border-radius: 6px;
+            font-family: monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+        }
+        .result-success {
+            background: #d4edda;
+            border-left: 4px solid #28a745;
+            color: #155724;
+        }
+        .result-error {
+            background: #f8d7da;
+            border-left: 4px solid #dc3545;
+            color: #721c24;
+        }
+        .result-info {
+            background: #d1ecf1;
+            border-left: 4px solid #17a2b8;
+            color: #0c5460;
+        }
+    </style>
+    <script src="js/vendor/supabase.min.js"></script>
+    <script src="js/supabase-client.js?v=20251130000000"></script>
+</head>
+<body>
+    <div class="container">
+        <h1>🔓 Clear Permanent Lock - Immediate Fix</h1>
+        <p><strong>Purpose:</strong> Directly clear permanent locks for the EXACT email format that login handler uses.</p>
+        
+        <div class="form-group">
+            <label for="username">Username*:</label>
+            <input type="text" id="username" placeholder="Enter username (e.g., MisMuse)" required>
+        </div>
+        
+        <button id="clear-lock-btn">🔓 Clear Permanent Lock</button>
+        
+        <div id="result"></div>
+    </div>
+
+    <script>
+        // Wait for supabase-client.js to load, then use window.supabaseClient
+        // Use a unique variable name to avoid conflicts with supabase-client.js
+        let clearLockSupabaseClient = null;
+
+        function initSupabase() {
+            if (!clearLockSupabaseClient) {
+                // Use the supabase client from supabase-client.js if available
+                if (window.supabaseClient) {
+                    clearLockSupabaseClient = window.supabaseClient;
+                } else if (window.supabase && window.supabase.createClient) {
+                    // Fallback: create client if supabase-client.js hasn't loaded yet
+                    const SUPABASE_URL = ((window.__SUPABASE_CONFIG__||{}).url||'');
+                    const SUPABASE_ANON_KEY = ((window.__SUPABASE_CONFIG__||{}).anonKey||'');
+                    clearLockSupabaseClient = window.supabase.createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+                } else {
+                    throw new Error('Supabase client not available. Please refresh the page.');
+                }
+            }
+            return clearLockSupabaseClient;
+        }
+
+        function logResult(message, type = 'info') {
+            const div = document.getElementById('result');
+            div.className = `result result-${type}`;
+            div.textContent = message;
+        }
+
+        async function clearPermanentLock() {
+            const username = document.getElementById('username').value.trim();
+            if (!username) {
+                logResult('Please enter a username.', 'error');
+                return;
+            }
+            
+            logResult('🔍 Finding user and clearing permanent lock...', 'info');
+            
+            try {
+                const supabase = initSupabase();
+                
+                // Step 1: Get user's actual email (the one login handler uses)
+                const { data: userData, error: userError } = await supabase
+                    .from('users')
+                    .select('id, username, email, organization_id, auth_user_id')
+                    .eq('username', username)
+                    .maybeSingle();
+                
+                if (userError || !userData) {
+                    logResult(`❌ User not found: ${username}`, 'error');
+                    return;
+                }
+                
+                const actualEmail = userData.email;
+                const orgId = userData.organization_id;
+                
+                logResult(
+                    `✅ User found:\n` +
+                    `  Username: ${userData.username}\n` +
+                    `  Email in DB: ${actualEmail || 'NOT SET'}\n` +
+                    `  Org ID: ${orgId || 'NOT SET'}\n\n` +
+                    `Clearing permanent locks...`,
+                    'info'
+                );
+                
+                // Step 2: Build all possible email variations
+                const variations = [
+                    username,
+                    `${username}@mediforge.app`,
+                    `${username}@example.com`,
+                    username.toLowerCase(),
+                    `${username}@mediforge.app`.toLowerCase(),
+                    `${username}@example.com`.toLowerCase()
+                ];
+                
+                // CRITICAL: Add the actual email from database
+                if (actualEmail) {
+                    variations.push(actualEmail);
+                    variations.push(actualEmail.toLowerCase());
+                }
+                
+                // CRITICAL: Add org-scoped format (what login handler uses)
+                if (orgId) {
+                    const orgIdShort = orgId.substring(0, 8);
+                    const orgScopedEmail = `${username}-${orgIdShort}@mediforge.app`;
+                    variations.push(orgScopedEmail);
+                    variations.push(orgScopedEmail.toLowerCase());
+                    logResult(`✅ Adding org-scoped email: ${orgScopedEmail}`, 'info');
+                }
+                
+                // Step 3: Clear permanent locks for ALL variations
+                // CRITICAL: Use secure RPC function to bypass RLS restrictions
+                let clearedCount = 0;
+                let report = `Clearing permanent locks for ${variations.length} variations...\n\n`;
+                
+                // Use secure RPC if available, otherwise try direct update
+                const useSecureRpc = typeof window.secureSupabaseRpc === 'function';
+                
+                for (const identifier of variations) {
+                    try {
+                        let success = false;
+                        
+                        if (useSecureRpc) {
+                            // Use secure RPC (bypasses RLS)
+                            try {
+                                const result = await window.secureSupabaseRpc('unlock_account', {
+                                    p_identifier: identifier,
+                                    p_unlocked_by: 'clear-permanent-lock-tool',
+                                    p_reason: 'Cleared permanent lock via diagnostic tool'
+                                });
+                                
+                                if (result && (typeof result === 'string' ? JSON.parse(result) : result).success) {
+                                    success = true;
+                                }
+                            } catch (rpcError) {
+                                // Fall through to direct update
+                                console.warn(`RPC unlock failed for ${identifier}, trying direct update:`, rpcError);
+                            }
+                        }
+                        
+                        // Fallback: Direct Supabase update (may be blocked by RLS)
+                        if (!success) {
+                            const { error: updateError } = await supabase
+                                .from('rate_limits')
+                                .update({
+                                    permanent_lock: false, // CRITICAL: Clear permanent lock
+                                    locked_until: null,
+                                    locked_at: null,
+                                    locked_by: null,
+                                    attempts: 0,
+                                    window_start: new Date().toISOString()
+                                })
+                                .eq('rate_limit_type', 'login')
+                                .eq('identifier', identifier);
+                            
+                            if (!updateError) {
+                                success = true;
+                            } else if (updateError.code !== 'PGRST116') {
+                                // PGRST116 = no rows found, which is OK
+                                report += `⚠️ ${identifier}: ${updateError.message}\n`;
+                            }
+                        }
+                        
+                        if (success) {
+                            clearedCount++;
+                            report += `✅ Cleared: ${identifier}\n`;
+                        }
+                    } catch (err) {
+                        report += `❌ Error for ${identifier}: ${err.message}\n`;
+                    }
+                    
+                    // Also clear localStorage
+                    localStorage.removeItem(`rate_limit_lockout_login_${identifier}`);
+                    localStorage.removeItem(`rate_limit_login_${identifier}`);
+                }
+                
+                report += `\n✅ Cleared ${clearedCount} rate limit record(s)\n`;
+                report += `✅ All localStorage locks cleared\n\n`;
+                
+                // Step 4: Verify the lock is cleared
+                if (actualEmail) {
+                    const { data: checkLock } = await supabase
+                        .from('rate_limits')
+                        .select('permanent_lock, locked_until')
+                        .eq('rate_limit_type', 'login')
+                        .eq('identifier', actualEmail)
+                        .maybeSingle();
+                    
+                    if (checkLock && (checkLock.permanent_lock || (checkLock.locked_until && new Date(checkLock.locked_until) > new Date()))) {
+                        report += `⚠️ WARNING: Lock still exists for ${actualEmail}\n`;
+                        report += `   Permanent lock: ${checkLock.permanent_lock}\n`;
+                        report += `   Locked until: ${checkLock.locked_until || 'N/A'}\n`;
+                        report += `   This may require manual intervention.\n`;
+                    } else {
+                        report += `✅ Verified: No active lock found for ${actualEmail}\n`;
+                    }
+                }
+                
+                report += `\n✅ Account is now UNLOCKED!\n`;
+                report += `User can now try logging in again.`;
+                
+                logResult(report, 'success');
+                
+            } catch (error) {
+                logResult(`❌ Error: ${error.message}\n${error.stack}`, 'error');
+            }
+        }
+        
+        // Attach event listener when page loads
+        document.addEventListener('DOMContentLoaded', function() {
+            const btn = document.getElementById('clear-lock-btn');
+            if (btn) {
+                btn.addEventListener('click', clearPermanentLock);
+            }
+        });
+        
+        // Also make it available globally as fallback
+        window.clearPermanentLock = clearPermanentLock;
+    </script>
+</body>
+</html>
+

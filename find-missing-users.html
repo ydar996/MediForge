@@ -1,0 +1,335 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Find Missing Users - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 20px;
+      background-color: #f4f7f6;
+      color: #333;
+    }
+    .container {
+      max-width: 1200px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 8px;
+      box-shadow: 0 2px 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #007bff;
+    }
+    button {
+      background-color: #007bff;
+      color: white;
+      padding: 10px 15px;
+      border: none;
+      border-radius: 5px;
+      cursor: pointer;
+      margin-right: 10px;
+      margin-bottom: 10px;
+    }
+    button:hover {
+      background-color: #0056b3;
+    }
+    .user-list {
+      margin-top: 20px;
+      border: 1px solid #ddd;
+      border-radius: 5px;
+      padding: 15px;
+      background-color: #fdfdfd;
+    }
+    .user-list table {
+      width: 100%;
+      border-collapse: collapse;
+      margin-top: 10px;
+    }
+    .user-list th, .user-list td {
+      border: 1px solid #ddd;
+      padding: 8px;
+      text-align: left;
+    }
+    .user-list th {
+      background-color: #f2f2f2;
+    }
+    .status-synced {
+      color: green;
+      font-weight: bold;
+    }
+    .status-missing {
+      color: orange;
+      font-weight: bold;
+    }
+    .status-error {
+      color: red;
+      font-weight: bold;
+    }
+    .log-entry {
+      border-bottom: 1px dotted #eee;
+      padding: 5px 0;
+      font-size: 0.9em;
+      color: #555;
+    }
+    .log-entry:last-child {
+      border-bottom: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>?? Find Missing Users</h1>
+    <p>This tool helps identify and recover users that may have been saved locally but not synced to the cloud database (Supabase).</p>
+
+    <div class="section">
+      <h2>Step 1: Auto-Detect Organization</h2>
+      <button onclick="autoDetectAndFindMissing()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 16px; padding: 15px 30px;">
+        ?? Auto-Detect & Find Missing Users
+      </button>
+      <p style="margin-top: 10px; color: #666; font-size: 14px;">
+        This will automatically detect your organization and search for missing users.
+      </p>
+      <div id="org-info" class="result" style="display: none;"></div>
+    </div>
+
+    <div class="section user-list">
+      <h2>Step 2: User Sync Status</h2>
+      <p>Below is the list of users found and their sync status:</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Name</th>
+            <th>Username</th>
+            <th>Role</th>
+            <th>Local Status</th>
+            <th>Cloud Status</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="user-status-list">
+          <tr><td colspan="6">No users scanned yet.</td></tr>
+        </tbody>
+      </table>
+      <button onclick="syncAllMissingUsers()" id="sync-all-btn" style="margin-top: 15px; background-color: #28a745; display: none;">Sync All Missing Users</button>
+    </div>
+
+    <div class="section activity-log">
+      <h2>Step 3: Activity Log</h2>
+      <div id="activity-log-content">
+        <p>No activity yet.</p>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=1"></script>
+  <script src="js/user-sync-recovery.js?v=1"></script>
+  <script>
+    // Global variables for logging
+    const logContent = document.getElementById('activity-log-content');
+    const userStatusList = document.getElementById('user-status-list');
+    const syncAllBtn = document.getElementById('sync-all-btn');
+    let allLocalUsers = [];
+    let currentOrgName = null;
+    let currentOrgId = null;
+
+    function appendLog(message, type = 'info') {
+      const entry = document.createElement('div');
+      entry.className = `log-entry log-${type}`;
+      entry.textContent = `${new Date().toLocaleTimeString()}: ${message}`;
+      logContent.prepend(entry);
+      if (logContent.children.length > 50) {
+        logContent.removeChild(logContent.lastChild);
+      }
+    }
+
+    function updateUserStatusDisplay(user, localStatus, cloudStatus, actionsHtml = '') {
+      const rowId = `user-row-${user.username}`;
+      let row = document.getElementById(rowId);
+      if (!row) {
+        row = document.createElement('tr');
+        row.id = rowId;
+        userStatusList.appendChild(row);
+      }
+      const fullName = `${user.firstName || ''} ${user.lastName || ''}`.trim() || user.username;
+      row.innerHTML = `
+        <td>${fullName}</td>
+        <td>${user.username}</td>
+        <td>${user.role || 'Unknown'}</td>
+        <td>${localStatus}</td>
+        <td class="${cloudStatus === 'Missing' ? 'status-missing' : cloudStatus === 'Synced' ? 'status-synced' : 'status-error'}">${cloudStatus}</td>
+        <td>${actionsHtml}</td>
+      `;
+    }
+
+    async function autoDetectOrganization() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+        
+        if (user.org) {
+          currentOrgName = user.org;
+          const orgData = organizations[user.org];
+          currentOrgId = user.organizationId || user.organization_id || orgData?.id;
+          
+          // If we have org name but not UUID, try to get it from Supabase
+          if (currentOrgName && !currentOrgId && window.supabaseClient) {
+            try {
+              const { data: org, error } = await window.supabaseClient
+                .from('organizations')
+                .select('id')
+                .eq('name', currentOrgName)
+                .single();
+              
+              if (!error && org && org.id) {
+                currentOrgId = org.id;
+              }
+            } catch (err) {
+              console.warn('?? Could not fetch organization UUID:', err);
+            }
+          }
+        }
+      } catch (error) {
+        console.error('? Error auto-detecting organization:', error);
+      }
+    }
+
+    async function autoDetectAndFindMissing() {
+      appendLog('Starting user scan...');
+      userStatusList.innerHTML = '';
+      syncAllBtn.style.display = 'none';
+
+      await autoDetectOrganization();
+      
+      if (!currentOrgName) {
+        appendLog('Error: Could not determine organization. Please ensure you are logged in.', 'error');
+        userStatusList.innerHTML = '<tr><td colspan="6" style="color: red;">Error: Not logged in or organization not found.</td></tr>';
+        return;
+      }
+      
+      appendLog(`Detected Organization: ${currentOrgName}`);
+      if (currentOrgId) {
+        appendLog(`Organization ID: ${currentOrgId}`);
+      }
+      
+      document.getElementById('org-info').innerHTML = `
+        <div style="background: #e3f2fd; padding: 10px; border-radius: 5px; margin-top: 10px;">
+          <strong>Organization:</strong> ${currentOrgName}<br>
+          ${currentOrgId ? `<strong>Organization ID:</strong> ${currentOrgId}` : ''}
+        </div>
+      `;
+      document.getElementById('org-info').style.display = 'block';
+
+      // Get local users for this organization
+      const allUsers = JSON.parse(localStorage.getItem('users') || '[]');
+      allLocalUsers = allUsers.filter(u => u.org === currentOrgName);
+      appendLog(`Found ${allLocalUsers.length} local users in local storage.`);
+
+      if (!currentOrgId) {
+        appendLog('Warning: Could not determine organization UUID. Users may not sync correctly.', 'error');
+        userStatusList.innerHTML = '<tr><td colspan="6" style="color: orange;">Warning: Organization UUID not found. Please contact support.</td></tr>';
+        return;
+      }
+
+      let missingCount = 0;
+      for (const localUser of allLocalUsers) {
+        updateUserStatusDisplay(localUser, 'Found Locally', 'Checking...');
+        const existsInCloud = await window.userExistsInSupabase(localUser.username, currentOrgId);
+        if (existsInCloud) {
+          updateUserStatusDisplay(localUser, 'Found Locally', 'Synced', `<button disabled style="background-color: #ccc;">Synced</button>`);
+        } else {
+          missingCount++;
+          updateUserStatusDisplay(localUser, 'Found Locally', 'Missing', `<button onclick="syncIndividualUser('${localUser.username}')">Sync This User</button>`);
+        }
+      }
+
+      if (missingCount > 0) {
+        appendLog(`${missingCount} users found locally but missing from cloud.`, 'warn');
+        syncAllBtn.style.display = 'block';
+      } else {
+        appendLog('All local users are synced to the cloud.', 'success');
+        userStatusList.innerHTML = '<tr><td colspan="6" style="color: green; font-weight: bold;">All local users are synced to the cloud.</td></tr>';
+      }
+      appendLog('User scan complete.');
+    }
+
+    window.syncIndividualUser = async function(username) {
+      appendLog(`Attempting to sync individual user: ${username}...`);
+      const user = allLocalUsers.find(u => u.username === username);
+      if (!user) {
+        appendLog(`Error: User ${username} not found in local list.`, 'error');
+        return;
+      }
+
+      updateUserStatusDisplay(user, 'Found Locally', 'Syncing...');
+      const result = await window.syncUserToSupabase(user, currentOrgId);
+      if (result.success) {
+        updateUserStatusDisplay(user, 'Found Locally', 'Synced', `<button disabled style="background-color: #ccc;">Synced</button>`);
+        appendLog(`Successfully synced user: ${username}`, 'success');
+        appendLog(`?? IMPORTANT: User ${username} has been assigned a temporary password: TempPassword123!`, 'warn');
+        appendLog(`The user must reset their password on first login.`, 'warn');
+      } else {
+        updateUserStatusDisplay(user, 'Found Locally', 'Error', `<button onclick="syncIndividualUser('${user.username}')">Retry Sync</button>`);
+        appendLog(`Failed to sync user: ${username}. Error: ${result.error}`, 'error');
+      }
+    };
+
+    async function syncAllMissingUsers() {
+      appendLog('Starting sync for all missing users...');
+      syncAllBtn.disabled = true;
+      let syncedCount = 0;
+      let errorCount = 0;
+
+      for (const user of allLocalUsers) {
+        const row = document.getElementById(`user-row-${user.username}`);
+        if (row && row.querySelector('.status-missing')) {
+          updateUserStatusDisplay(user, 'Found Locally', 'Syncing...');
+          const result = await window.syncUserToSupabase(user, currentOrgId);
+          if (result.success) {
+            syncedCount++;
+            updateUserStatusDisplay(user, 'Found Locally', 'Synced', `<button disabled style="background-color: #ccc;">Synced</button>`);
+          } else {
+            errorCount++;
+            updateUserStatusDisplay(user, 'Found Locally', 'Error', `<button onclick="syncIndividualUser('${user.username}')">Retry Sync</button>`);
+          }
+        }
+      }
+      appendLog(`Bulk sync complete. Synced: ${syncedCount}, Errors: ${errorCount}`, syncedCount > 0 ? 'success' : 'error');
+      if (syncedCount > 0) {
+        appendLog(`?? IMPORTANT: ${syncedCount} user(s) have been assigned temporary passwords: TempPassword123!`, 'warn');
+        appendLog(`These users must reset their passwords on first login.`, 'warn');
+      }
+      syncAllBtn.disabled = false;
+      if (errorCount === 0 && syncedCount > 0) {
+        userStatusList.innerHTML = '<tr><td colspan="6" style="color: green; font-weight: bold;">All local users are synced to the cloud.</td></tr>';
+      }
+    }
+
+    // Initial load
+    window.addEventListener('DOMContentLoaded', async () => {
+      const user = JSON.parse(localStorage.getItem("user") || "{}");
+      if (!user || !user.username) {
+        appendLog('Please log in to use the user recovery tool.', 'error');
+        userStatusList.innerHTML = '<tr><td colspan="6" style="color: red;">Please log in to use this tool.</td></tr>';
+        return;
+      }
+      appendLog(`Logged in as: ${user.username}`);
+    });
+  </script>
+
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+</body>
+</html>
+
+
+
+
+
+
+
+

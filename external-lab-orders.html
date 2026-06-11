@@ -1,0 +1,639 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>External Lab Orders - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=58">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      background: linear-gradient(135deg, #f5f5dc 0%, #fafafa 50%, #ffffff 100%);
+      min-height: 100vh;
+    }
+    
+    .container {
+      max-width: 1400px;
+      margin: 0 auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0,0,0,0.1);
+    }
+    
+    h1 {
+      color: #007bff;
+      margin-bottom: 10px;
+    }
+    
+    .back-button {
+      background: #6c757d;
+      color: white;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 6px;
+      cursor: pointer;
+      margin-bottom: 20px;
+      font-size: 14px;
+    }
+    
+    .back-button:hover {
+      background: #5a6268;
+    }
+    
+    .order-card {
+      background: #f8f9fa;
+      border: 2px solid #007bff;
+      border-left: 6px solid #007bff;
+      border-radius: 12px;
+      padding: 25px;
+      margin-bottom: 20px;
+      box-shadow: 0 4px 16px rgba(0,0,0,0.1);
+    }
+    
+    .order-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      margin-bottom: 15px;
+    }
+    
+    .order-info h3 {
+      margin: 0 0 5px 0;
+      color: #333;
+    }
+    
+    .order-meta {
+      color: #666;
+      font-size: 14px;
+    }
+    
+    .action-buttons {
+      display: flex;
+      gap: 10px;
+      margin-top: 15px;
+      flex-wrap: wrap;
+    }
+    
+    .btn {
+      padding: 10px 20px;
+      border: none;
+      border-radius: 6px;
+      cursor: pointer;
+      font-weight: 600;
+      transition: all 0.3s ease;
+    }
+    
+    .btn-print {
+      background: #28a745;
+      color: white;
+    }
+    
+    .btn-print:hover {
+      background: #218838;
+      transform: translateY(-2px);
+    }
+    
+    .btn-email {
+      background: #17a2b8;
+      color: white;
+    }
+    
+    .btn-email:hover {
+      background: #138496;
+      transform: translateY(-2px);
+    }
+    
+    .btn-pdf {
+      background: #dc3545;
+      color: white;
+    }
+    
+    .btn-pdf:hover {
+      background: #c82333;
+      transform: translateY(-2px);
+    }
+    
+    .btn-upload {
+      background: #6f42c1;
+      color: white;
+    }
+    
+    .btn-upload:hover {
+      background: #5a32a3;
+      transform: translateY(-2px);
+    }
+    
+    .attachments-section {
+      margin-top: 15px;
+      padding: 15px;
+      background: #fff;
+      border: 1px solid #dee2e6;
+      border-radius: 8px;
+    }
+    
+    .attachments-section h5 {
+      margin: 0 0 10px 0;
+      color: #495057;
+      font-size: 14px;
+    }
+    
+    .attachment-item {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 8px 10px;
+      background: #f8f9fa;
+      border-radius: 6px;
+      margin-bottom: 6px;
+      font-size: 13px;
+    }
+    
+    .attachment-item .att-name {
+      flex: 1;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+    
+    .attachment-item .att-actions {
+      display: flex;
+      gap: 8px;
+    }
+    
+    .attachments-section .no-attachments {
+      color: #6c757d;
+      font-size: 13px;
+    }
+    
+    .btn-small {
+      padding: 5px 10px;
+      font-size: 12px;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+      text-decoration: none;
+    }
+    
+    .btn-info {
+      background: #17a2b8;
+      color: white;
+    }
+    
+    .btn-success {
+      background: #28a745;
+      color: white;
+    }
+    
+    .tests-list {
+      margin: 18px 0;
+      padding: 20px;
+      background: white;
+      border-radius: 10px;
+      border: 1px solid #dee2e6;
+    }
+    
+    .test-item {
+      padding: 12px;
+      background: #f8f9fa;
+      margin: 8px 0;
+      border-radius: 8px;
+      border-left: 3px solid #007bff;
+    }
+    
+    .empty-state {
+      text-align: center;
+      padding: 60px 20px;
+      color: #666;
+    }
+    
+    .loading {
+      text-align: center;
+      padding: 40px;
+      color: #666;
+    }
+    
+    @media print {
+      .back-button, .action-buttons, .btn {
+        display: none !important;
+      }
+      .order-card {
+        page-break-inside: avoid;
+        border: 1px solid #000;
+      }
+    }
+  </style>
+  
+  <!-- Supabase Client -->
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=202510220113080113081308"></script>
+  <script src="js/format-lab-order-serial.js"></script>
+  <script src="js/security.js?v=1"></script>
+  <script src="js/patient-id-normalizer.js?v=1"></script>
+  <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+</head>
+<body>
+  <div class="container">
+    <button class="back-button" onclick="window.location.href='dashboard'">← Back to Dashboard</button>
+    
+    <h1>🧪 External Lab Orders Dashboard</h1>
+    
+    <!-- Role Check -->
+    <div id="access-denied" style="display: none; text-align: center; padding: 60px 20px;">
+      <h2>❌ Access Denied</h2>
+      <p>This page is only accessible to Nurses, Administrators, and Lab Scientists.</p>
+      <a href="dashboard" style="display: inline-block; margin-top: 20px; padding: 10px 20px; background: #667eea; color: white; text-decoration: none; border-radius: 6px;">Go to Dashboard</a>
+    </div>
+    
+    <!-- Main Content -->
+    <div id="orders-content" style="display: none;">
+      <div id="orders-list" class="loading">Loading external lab orders...</div>
+    </div>
+  </div>
+  
+  <script>
+    let organizationId = null;
+    
+    // Check access and initialize
+    document.addEventListener('DOMContentLoaded', async function() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      
+      // Check for nurse/admin/lab scientist role
+      const allowedRoles = ['Nurse', 'nurse', 'Admin', 'admin', 'Administrator', 'administrator', 'Medical Lab Scientist', 'Lab Scientist', 'Medical Laboratory Scientist', 'Laboratory Scientist', 'Lab Tech', 'Laboratory Technician'];
+      const isAllowed = allowedRoles.some(role => 
+        user.role === role || user.role?.toLowerCase() === role.toLowerCase()
+      );
+      
+      if (!isAllowed) {
+        document.getElementById('access-denied').style.display = 'block';
+        return;
+      }
+      
+      document.getElementById('orders-content').style.display = 'block';
+      
+      // Resolve organization ID
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        organizationId = user.organizationId || user.organization_id || user.org;
+      }
+      
+      // Load external lab orders
+      await loadExternalLabOrders();
+      
+      // Auto-refresh every 30 seconds
+      setInterval(loadExternalLabOrders, 30000);
+    });
+    
+    // Load external lab orders
+    async function loadExternalLabOrders() {
+      const container = document.getElementById('orders-list');
+      container.innerHTML = '<div class="loading">Loading external lab orders...</div>';
+      
+      try {
+        if (!window.supabaseClient || !organizationId) {
+          container.innerHTML = '<div class="empty-state"><h3>Error</h3><p>Database connection not available.</p></div>';
+          return;
+        }
+        
+        // Query orders with status sent_to_external
+        const { data, error } = await window.supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('organization_id', organizationId)
+          .eq('type', 'lab')
+          .eq('status', 'sent_to_external')
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false })
+          .limit(100);
+        
+        if (error) {
+          console.error('Error loading external lab orders:', error);
+          container.innerHTML = '<div class="empty-state"><h3>Error</h3><p>Failed to load orders. Please try again.</p></div>';
+          return;
+        }
+        
+        if (!data || data.length === 0) {
+          container.innerHTML = '<div class="empty-state"><h3>No External Lab Orders</h3><p>All external lab orders have been processed.</p></div>';
+          return;
+        }
+        
+        // Resolve UUID patient_ids to legacy format (MEC0006) - orders table may store UUID
+        const displayPatientIdMap = {};
+        const uuidPatientIds = [...new Set(data.map(o => o.patient_id).filter(Boolean))].filter(pid => 
+          typeof pid === 'string' && pid.includes('-') && pid.length === 36
+        );
+        if (uuidPatientIds.length > 0) {
+          const { data: patients } = await window.supabaseClient
+            .from('patients')
+            .select('id, patient_id')
+            .eq('organization_id', organizationId)
+            .in('id', uuidPatientIds);
+          if (patients) {
+            patients.forEach(p => { displayPatientIdMap[p.id] = p.patient_id || p.id; });
+          }
+        }
+        
+        // Store orders for upload handlers
+        window._externalLabOrders = data;
+        
+        // Display orders
+        container.innerHTML = data.map(order => {
+          // Parse selected_items
+          let selectedItems = [];
+          if (Array.isArray(order.selected_items)) {
+            selectedItems = order.selected_items;
+          } else if (typeof order.selected_items === 'string') {
+            try {
+              selectedItems = JSON.parse(order.selected_items);
+            } catch (e) {
+              selectedItems = [];
+            }
+          }
+          
+          const orderId = order.id || order.serial_number || 'N/A';
+          const displaySerial = typeof window.formatLabOrderSerial === 'function'
+            ? window.formatLabOrderSerial(order.serial_number || orderId, order.id, order) : (order.serial_number || orderId);
+          const patientId = (order.patient_id && displayPatientIdMap[order.patient_id]) 
+            ? displayPatientIdMap[order.patient_id] 
+            : (order.patient_id && !String(order.patient_id).includes('-') 
+              ? order.patient_id 
+              : (order.patient_id || 'N/A'));
+          const visitDate = order.visit_date || 'N/A';
+          const createdDate = order.created_at ? new Date(order.created_at).toLocaleDateString() : 'N/A';
+          
+          // Parse results - attachments are stored as array [{ name, data, type, uploadedAt, size }]
+          let attachments = [];
+          if (order.results) {
+            if (Array.isArray(order.results)) {
+              attachments = order.results.filter(r => r && (r.data || r.attachment));
+            } else if (order.results._attachments && Array.isArray(order.results._attachments)) {
+              attachments = order.results._attachments;
+            }
+          }
+          
+          return `
+            <div class="order-card" id="order-${orderId}" data-order-id="${order.id}" data-display-serial="${displaySerial}">
+              <div class="order-header">
+                <div class="order-info">
+                  <h3>Lab Order #${displaySerial}</h3>
+                  <div class="order-meta">
+                    <strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patientId, patientId) : patientId}<br>
+                    <strong>Visit Date:</strong> ${visitDate}<br>
+                    <strong>Order Date:</strong> ${createdDate}
+                  </div>
+                </div>
+              </div>
+              
+              <div class="tests-list">
+                <h4 style="margin-top: 0;">Tests Ordered:</h4>
+                ${selectedItems.length > 0 ? selectedItems.map(test => `
+                  <div class="test-item">
+                    <strong>${test.name || 'Unknown Test'}</strong>
+                    ${test.cpt ? `<br><small>CPT: ${test.cpt}</small>` : ''}
+                    ${test.specimen ? `<br><small>Specimen: ${test.specimen}</small>` : ''}
+                  </div>
+                `).join('') : '<p>No tests specified</p>'}
+              </div>
+              
+              <div class="attachments-section">
+                <h5>📎 Uploaded Results</h5>
+                ${attachments.length > 0 ? attachments.map((att, idx) => `
+                  <div class="attachment-item">
+                    <span class="att-name">${att.name || ('Result ' + (idx + 1))}</span>
+                    <span class="att-actions">
+                      <button class="btn btn-small btn-info" onclick="viewAttachment('${order.id}', ${idx})">View</button>
+                      <button class="btn btn-small btn-success" onclick="downloadAttachment('${order.id}', ${idx})">Download</button>
+                    </span>
+                  </div>
+                `).join('') : '<p class="no-attachments">No results uploaded yet.</p>'}
+              </div>
+              
+              <div class="action-buttons">
+                <button class="btn btn-print" onclick="printOrder('${orderId}')">🖨️ Print</button>
+                <button class="btn btn-email" onclick="emailOrder('${orderId}')">📧 Email</button>
+                <button class="btn btn-pdf" onclick="downloadPDF('${orderId}')">📄 Download PDF</button>
+                <button class="btn btn-upload" onclick="document.getElementById('upload-input-${order.id}').click()">📤 Upload Results</button>
+                <input type="file" id="upload-input-${order.id}" accept=".pdf,image/*" multiple style="display:none" onchange="handleUploadResults('${order.id}', this)">
+              </div>
+            </div>
+          `;
+        }).join('');
+      } catch (error) {
+        console.error('Error loading external lab orders:', error);
+        container.innerHTML = '<div class="empty-state"><h3>Error</h3><p>Failed to load orders. Please try again.</p></div>';
+      }
+    }
+    
+    // Print order
+    function printOrder(orderId) {
+      const orderCard = document.getElementById(`order-${orderId}`);
+      if (!orderCard) return;
+      
+      const printWindow = window.open('', '_blank');
+      printWindow.document.write(`
+        <html>
+          <head>
+            <title>Lab Order - ${orderId}</title>
+            <style>
+              body { font-family: Arial, sans-serif; padding: 20px; }
+              h1 { color: #007bff; }
+              .order-card { border: 1px solid #000; padding: 20px; margin-bottom: 20px; }
+              .test-item { margin: 10px 0; padding: 10px; background: #f8f9fa; }
+            </style>
+          </head>
+          <body>
+            ${orderCard.innerHTML}
+          </body>
+        </html>
+      `);
+      printWindow.document.close();
+      printWindow.print();
+    }
+    
+    // Email order (placeholder - implement actual email functionality)
+    function emailOrder(orderId) {
+      const orderCard = document.getElementById(`order-${orderId}`);
+      if (!orderCard) return;
+      
+      // Get order data
+      const orderData = orderCard.textContent;
+      const emailSubject = encodeURIComponent(`Lab Order - ${orderId}`);
+      const emailBody = encodeURIComponent(`Please find attached lab order:\n\n${orderData}`);
+      
+      // Open email client
+      window.location.href = `mailto:?subject=${emailSubject}&body=${emailBody}`;
+    }
+    
+    // Get attachments array from order.results
+    function getOrderAttachments(order) {
+      if (!order || !order.results) return [];
+      if (Array.isArray(order.results)) return order.results.filter(r => r && (r.data || r.attachment));
+      if (order.results._attachments && Array.isArray(order.results._attachments)) return order.results._attachments;
+      return [];
+    }
+    
+    // View attachment in new tab
+    function viewAttachment(orderUuid, attIndex) {
+      const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
+      if (!order) return;
+      const attachments = getOrderAttachments(order);
+      const att = attachments[attIndex];
+      if (!att || !(att.data || att.attachment)) return;
+      const data = att.data || att.attachment;
+      const dataUrl = data.startsWith('data:') ? data : `data:${att.type || 'application/pdf'};base64,${data}`;
+      window.open(dataUrl, '_blank');
+    }
+    
+    // Download attachment
+    function downloadAttachment(orderUuid, attIndex) {
+      const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
+      if (!order) return;
+      const attachments = getOrderAttachments(order);
+      const att = attachments[attIndex];
+      if (!att || !(att.data || att.attachment)) return;
+      const data = att.data || att.attachment;
+      const dataUrl = data.startsWith('data:') ? data : `data:${att.type || 'application/pdf'};base64,${data}`;
+      const a = document.createElement('a');
+      a.href = dataUrl;
+      a.download = (att.name || 'result').replace(/[^a-zA-Z0-9._-]/g, '_');
+      a.click();
+    }
+    
+    // Upload results (PDF or images)
+    async function handleUploadResults(orderUuid, fileInput) {
+      const files = fileInput && fileInput.files;
+      if (!files || files.length === 0) return;
+      
+      const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
+      if (!order) {
+        alert('Order not found.');
+        return;
+      }
+      
+      const maxSize = 10 * 1024 * 1024; // 10MB per file
+      const acceptedTypes = ['application/pdf', 'image/jpeg', 'image/png', 'image/gif', 'image/webp'];
+      
+      for (let i = 0; i < files.length; i++) {
+        const file = files[i];
+        if (file.size > maxSize) {
+          alert(`File "${file.name}" is too large (max 10MB).`);
+          continue;
+        }
+        if (!acceptedTypes.includes(file.type) && !file.name.match(/\.(pdf|jpg|jpeg|png|gif|webp)$/i)) {
+          alert(`File "${file.name}" is not a supported type (PDF or image).`);
+          continue;
+        }
+      }
+      
+      try {
+        const reader = (file) => new Promise((resolve, reject) => {
+          const r = new FileReader();
+          r.onload = () => resolve(r.result);
+          r.onerror = reject;
+          r.readAsDataURL(file);
+        });
+        
+        const newAttachments = [];
+        for (let i = 0; i < files.length; i++) {
+          const file = files[i];
+          const dataUrl = await reader(file);
+          const base64 = dataUrl.includes(',') ? dataUrl.split(',')[1] : dataUrl;
+          newAttachments.push({
+            name: file.name,
+            data: base64,
+            type: file.type,
+            uploadedAt: new Date().toISOString(),
+            size: file.size
+          });
+        }
+        
+        let updatedResults;
+        const existing = order.results;
+        if (!existing) {
+          updatedResults = newAttachments;
+        } else if (Array.isArray(existing)) {
+          updatedResults = [...existing, ...newAttachments];
+        } else {
+          updatedResults = { ...existing, _attachments: [...(existing._attachments || []), ...newAttachments] };
+        }
+        
+        const { error } = await window.supabaseClient
+          .from('orders')
+          .update({ results: updatedResults, updated_at: new Date().toISOString() })
+          .eq('id', orderUuid)
+          .eq('organization_id', organizationId);
+        
+        if (error) throw error;
+        
+        order.results = updatedResults;
+        fileInput.value = '';
+        await loadExternalLabOrders();
+      } catch (err) {
+        console.error('Upload error:', err);
+        alert('Failed to upload results: ' + (err.message || 'Unknown error'));
+      }
+    }
+    
+    // Download as PDF
+    async function downloadPDF(orderId) {
+      const orderCard = document.getElementById(`order-${orderId}`);
+      if (!orderCard) return;
+      
+      try {
+        // Check if html2canvas and jsPDF are available
+        if (typeof html2canvas === 'undefined' || typeof window.jspdf === 'undefined') {
+          alert('PDF generation libraries not loaded. Please refresh the page and try again.');
+          return;
+        }
+        
+        // Create canvas from order card
+        const canvas = await html2canvas(orderCard, {
+          scale: 2,
+          useCORS: true,
+          logging: false
+        });
+        
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Create PDF
+        const { jsPDF } = window.jspdf;
+        const pdf = new jsPDF('p', 'mm', 'a4');
+        const imgWidth = 210;
+        const pageHeight = 297;
+        const imgHeight = (canvas.height * imgWidth) / canvas.width;
+        let heightLeft = imgHeight;
+        let position = 0;
+        
+        pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+        heightLeft -= pageHeight;
+        
+        while (heightLeft >= 0) {
+          position = heightLeft - imgHeight;
+          pdf.addPage();
+          pdf.addImage(imgData, 'PNG', 0, position, imgWidth, imgHeight);
+          heightLeft -= pageHeight;
+        }
+        
+        // Download PDF
+        const displaySerial = orderCard.getAttribute('data-display-serial') || orderId;
+        pdf.save(`lab-order-${displaySerial}.pdf`);
+      } catch (error) {
+        console.error('Error generating PDF:', error);
+        alert('Error generating PDF. Please try again.');
+      }
+    }
+  </script>
+  
+  <!-- PDF Generation Libraries -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/4.2.1/jspdf.umd.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  
+  <!-- Logout Button Component -->
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>
+
