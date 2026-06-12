@@ -1081,6 +1081,43 @@ async function registerWithSupabase(userData) {
       };
     }
 
+    // Profile INSERT uses RLS policy: authenticated + auth.uid() = auth_user_id.
+    // signUp() often returns a user without attaching a session to REST calls — sign in first.
+    {
+      let { data: { session: activeSession } } = await supabaseClient.auth.getSession();
+      if (!activeSession) {
+        regTraceStep('profile_insert_sign_in', { reason: 'no_session_after_signup', authUserId });
+        if (typeof window.signInForRegistration === 'function') {
+          const signInResult = await window.signInForRegistration(email, userData.password, true);
+          if (signInResult.success && signInResult.session) {
+            activeSession = signInResult.session;
+          }
+        }
+        if (!activeSession) {
+          const { data: signInData, error: signInErr } = await supabaseClient.auth.signInWithPassword({
+            email,
+            password: userData.password
+          });
+          if (signInErr || !signInData?.session) {
+            regTraceFail('profile_insert_no_session', signInErr || { message: 'No session after sign-in' }, { authUserId });
+            return {
+              success: false,
+              error: 'Account created but profile setup failed. Please try logging in with your new username and password.'
+            };
+          }
+          activeSession = signInData.session;
+        }
+      }
+      if (activeSession.user?.id !== authUserId) {
+        regTraceFail('profile_insert_session_mismatch', {
+          authUserId,
+          sessionUserId: activeSession.user?.id
+        }, {});
+        return { success: false, error: 'Registration session mismatch. Please try again.' };
+      }
+      regTraceOk('profile_insert_session_ready', { authUserId });
+    }
+
     // Create user profile in public.users table with retry logic for network issues
     // Increased retries for mobile/tablet reliability
     let profileData = null;
