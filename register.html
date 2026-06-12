@@ -693,6 +693,19 @@
         '\n(F12 → Console → filter MediForge-REG, or run copy(getRegistrationTraceReport()))'
       );
     };
+
+    async function resolveOrgIdFromCode(orgCode) {
+      if (!orgCode || !window.supabaseClient) return null;
+      try {
+        const { data: rows, error } = await window.supabaseClient.rpc('verify_organization_code', {
+          p_org_code: orgCode
+        });
+        if (error || !rows || !rows.length) return null;
+        return rows[0].id || null;
+      } catch (e) {
+        return null;
+      }
+    }
     const scrubUser = (user) => {
       if (!user || typeof user !== 'object') return user;
       const sanitized = { ...user };
@@ -1329,6 +1342,9 @@
           });
         }
 
+        const submitButton = e.target.querySelector('button[type="submit"]');
+        const originalButtonText = submitButton ? submitButton.textContent : '';
+
         if (typeof window.validatePostalCode === 'function') {
           const postalCheck = window.validatePostalCode(orgData.country, orgData.postalCode);
           if (!postalCheck.valid) {
@@ -1348,8 +1364,6 @@
 
         // Run preflight checks (will verify internet, Supabase client, and mandatory fields)
         // NOTE: For new org registration, organizationId is not required in preflight
-        const submitButton = e.target.querySelector('button[type="submit"]');
-        const originalButtonText = submitButton ? submitButton.textContent : '';
         if (submitButton) {
           submitButton.disabled = true;
           submitButton.textContent = 'Checking connection...';
@@ -1447,7 +1461,7 @@
             if (window.RegTrace) window.RegTrace.step('org_insert_attempt', { orgName: orgData.name });
             // PERMANENT FIX: Create organization with status='pending' initially
             // This prevents orphaned active organizations if user creation fails
-            const { data: orgResult, error: orgError } = await window.supabaseClient
+            const { error: orgError } = await window.supabaseClient
               .from('organizations')
               .insert([{
                 name: orgData.name,
@@ -1461,30 +1475,29 @@
                 after_hours_phone: orgData.afterHoursPhone,
                 org_code: generatedOrgCode,
                 created_at: orgData.createdAt,
-                created_by: document.getElementById('admin-username').value, // Track who created the organization
-                status: 'pending' // PERMANENT FIX: Start as pending, activate only after user creation succeeds
-              }])
-              .select('id'); // Get the organization ID back
+                created_by: document.getElementById('admin-username').value,
+                status: 'pending'
+              }]);
+            
+            if (!orgError) {
+              organizationId = await resolveOrgIdFromCode(generatedOrgCode);
+              if (organizationId) {
+                trace('[OK] Organization saved; ID resolved via org code');
+                if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId });
+              }
+            }
             
             if (orgError) {
               console.error('? Supabase organization save failed:', orgError);
               
               // If it's a duplicate key error, the org might already exist - check and use existing
               if (orgError.code === '23505' || orgError.message.includes('duplicate') || orgError.message.includes('unique')) {
-                trace('[REG] Organization may already exist, checking...');
-                const { data: existingOrg, error: checkError } = await window.supabaseClient
-                  .from('organizations')
-                  .select('id')
-                  .eq('name', orgData.name)
-                  .maybeSingle();
-                
-                if (!checkError && existingOrg && existingOrg.id) {
-                  organizationId = existingOrg.id;
-                  trace('[OK] Using existing organization', existingOrg.id);
-                  // Skip retry, use existing org
+                trace('[REG] Organization may already exist, resolving by org code...');
+                organizationId = await resolveOrgIdFromCode(generatedOrgCode);
+                if (organizationId) {
+                  trace('[OK] Using existing organization', organizationId);
                 } else {
-                  trace('[REG] Existing org not found, retrying organization save...');
-                  // Continue to retry below
+                  trace('[REG] Could not resolve org by code, retrying insert...');
                 }
               } else {
                 trace('[REG] Retrying organization save with mobile-optimized settings...');
@@ -1494,7 +1507,7 @@
               if (!organizationId) {
                 // Retry with mobile-optimized settings
                 try {
-                  const { data: retryOrgResult, error: retryOrgError } = await window.supabaseClient
+                  const { error: retryOrgError } = await window.supabaseClient
                     .from('organizations')
                     .insert([{
                       name: orgData.name,
@@ -1508,10 +1521,13 @@
                       after_hours_phone: orgData.afterHoursPhone,
                       org_code: generatedOrgCode,
                       created_at: orgData.createdAt,
-                      created_by: document.getElementById('admin-username').value, // Track who created the organization
-                      status: 'pending' // PERMANENT FIX: Start as pending
-                    }])
-                    .select('id');
+                      created_by: document.getElementById('admin-username').value,
+                      status: 'pending'
+                    }]);
+                  
+                  if (!retryOrgError) {
+                    organizationId = await resolveOrgIdFromCode(generatedOrgCode);
+                  }
                   
                   if (retryOrgError) {
                     console.error('? Retry failed:', retryOrgError);
@@ -1525,18 +1541,9 @@
                       submitButton.textContent = originalButtonText;
                     }
                     return;
-                  } else if (retryOrgResult && retryOrgResult[0] && retryOrgResult[0].id) {
+                  } else if (organizationId) {
                     trace('[OK] Organization saved to Supabase on retry');
-                    const orgId = retryOrgResult[0].id;
-                    organizationId = orgId; // CRITICAL: Set organizationId variable
-                    if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId: orgId, retried: true });
-                    
-                    // Update localStorage with organization ID
-                    const updatedOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
-                    if (updatedOrgs[orgData.name]) {
-                      updatedOrgs[orgData.name].id = orgId;
-                      localStorage.setItem('organizations', JSON.stringify(updatedOrgs)); // Cached after supabaseClient.insert()
-                    }
+                    if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId, retried: true });
                   } else {
                     console.error('? Retry succeeded but no ID returned');
                     if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
@@ -1561,33 +1568,27 @@
                   return;
                 }
               }
-            } else {
+            } else if (!organizationId) {
+              organizationId = await resolveOrgIdFromCode(generatedOrgCode);
+            }
+            
+            if (organizationId) {
               trace('[OK] Organization saved to Supabase successfully');
-              
-              // CRITICAL: Update organizationId variable from Supabase result
-              if (orgResult && orgResult[0] && orgResult[0].id) {
-                const orgId = orgResult[0].id;
-                organizationId = orgId; // CRITICAL: Set organizationId variable for use in registerWithSupabase
-                if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId: orgId });
-                trace('[REG] Organization ID from Supabase captured:', organizationId);
-                
-                // Update organization data with ID in localStorage
-                const updatedOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
-                if (updatedOrgs[orgData.name]) {
-                  updatedOrgs[orgData.name].id = orgId;
-                  localStorage.setItem('organizations', JSON.stringify(updatedOrgs));
-                  trace('[OK] Organization updated with ID in localStorage');
-                }
-              } else {
-                console.error('? CRITICAL: Organization saved but no ID returned from Supabase');
-                if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
-                regTraceAlert('Registration failed', 'Could not retrieve your clinic ID. Please try again.');
-                if (submitButton) {
-                  submitButton.disabled = false;
-                  submitButton.textContent = originalButtonText;
-                }
-                return;
+              trace('[REG] Organization ID captured:', organizationId);
+              const updatedOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+              if (updatedOrgs[orgData.name]) {
+                updatedOrgs[orgData.name].id = organizationId;
+                localStorage.setItem('organizations', JSON.stringify(updatedOrgs));
               }
+            } else {
+              console.error('? CRITICAL: Organization saved but no ID resolved');
+              if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
+              regTraceAlert('Registration failed', 'Could not retrieve your clinic ID. Please try again.');
+              if (submitButton) {
+                submitButton.disabled = false;
+                submitButton.textContent = originalButtonText;
+              }
+              return;
             }
             
             // CRITICAL: Verify organizationId is set before proceeding
@@ -1942,13 +1943,15 @@
         // Handle "Other" role specification
         const roleValue = document.getElementById('user-role').value;
         let finalRole = roleValue;
+        let roleSpecialization = '';
         if (roleValue === 'Other') {
           const otherRoleSpec = document.getElementById('user-other-role').value.trim();
           if (!otherRoleSpec) {
             alert('Please specify your exact role when selecting "Other".');
             return;
           }
-          finalRole = `Other (${otherRoleSpec})`;
+          finalRole = 'Other';
+          roleSpecialization = otherRoleSpec;
         }
         
         // Validate Medical License Number for roles that require it
@@ -2025,7 +2028,7 @@
           if (errorMessage.toLowerCase().includes('username') && 
               (errorMessage.toLowerCase().includes('taken') || 
                errorMessage.toLowerCase().includes('already'))) {
-            const usernameField = document.getElementById('join-org-username');
+            const usernameField = document.getElementById('user-username');
             const username = usernameField ? usernameField.value : '';
             
             alert('USERNAME ALREADY TAKEN\n\n' +
@@ -2163,6 +2166,7 @@
               role: finalRole,
               organizationId: organizationId,
               medicalLicenseNumber: medicalLicenseNumber || '',
+              specialization: roleSpecialization || '',
               phone: userPhoneFullValue
             });
             
@@ -2373,8 +2377,9 @@
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js?v=20251021140000"></script>
   <script src="js/public-auth-rpc.js?v=20260416120000"></script>
-  <script src="js/registration-trace.js?v=20260611160000"></script>
-  <script src="js/supabase-auth.js?v=20260611160000"></script>  <!-- Required for registerWithSupabase -->
+  <script src="js/registration-trace.js?v=20260611180000"></script>
+  <script src="js/supabase-auth-registration.js?v=20260611180000"></script>
+  <script src="js/supabase-auth.js?v=20260611180000"></script>  <!-- Required for registerWithSupabase -->
   <script src="js/legal-agreements.js?v=20250118000000"></script>  <!-- Legal agreements management -->
   <script src="js/registration-monitor.js?v=20250118000000"></script>  <!-- Registration monitoring -->
   <script src="js/registration-preflight.js?v=20260611160000"></script>  <!-- Preflight checks -->

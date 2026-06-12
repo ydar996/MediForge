@@ -681,57 +681,12 @@ async function registerWithSupabase(userData) {
       };
     }
     
-    // Check organization exists
-    try {
-      console.log(`🔍 [TRACE-${traceId}] Checking organization exists...`, {
-        organizationId: userData.organizationId
-      });
-      
-      const orgCheckStartTime = Date.now();
-      const { data: orgData, error: orgError } = await supabaseClient
-        .from('organizations')
-        .select('id, name')
-        .eq('id', userData.organizationId)
-        .maybeSingle();
-      const orgCheckDuration = Date.now() - orgCheckStartTime;
-      
-      console.log(`🔍 [TRACE-${traceId}] Organization check completed`, {
-        duration: `${orgCheckDuration}ms`,
-        found: !!orgData,
-        error: orgError ? {
-          message: orgError.message,
-          code: orgError.code,
-          details: orgError.details
-        } : null,
-        orgName: orgData?.name
-      });
-      
-      if (orgError && orgError.code !== 'PGRST116') {
-        console.error(`❌ [TRACE-${traceId}] Error checking organization:`, orgError);
-        return { 
-          success: false, 
-          error: 'Cannot verify organization. Please check your organization code and try again.' 
-        };
-      }
-      
-      if (!orgData) {
-        console.error(`❌ [TRACE-${traceId}] Organization not found in database`);
-        return { 
-          success: false, 
-          error: 'Organization not found. Please verify your organization code and try again.' 
-        };
-      }
-      
-      console.log(`✅ [TRACE-${traceId}] Organization verified:`, orgData.name);
-      regTraceOk('organization_verified', { organizationId: userData.organizationId, orgName: orgData.name });
-    } catch (orgCheckException) {
-      console.error(`❌ [TRACE-${traceId}] Exception checking organization:`, orgCheckException);
-      regTraceFail('organization_check_exception', orgCheckException, { organizationId: userData.organizationId });
-      return { 
-        success: false, 
-        error: 'Cannot verify organization. Please check your internet connection and try again.' 
-      };
-    }
+    // Organization ID format already validated. Direct SELECT is blocked for anon by RLS;
+    // caller must resolve org via verify_organization_code RPC before calling this function.
+    regTraceOk('organization_verified', {
+      organizationId: userData.organizationId,
+      method: 'trusted_uuid'
+    });
     
     // 2. Check if username already exists globally (usernames must be unique across all organizations)
     try {
@@ -1177,6 +1132,10 @@ async function registerWithSupabase(userData) {
         // Add phone if provided
         if (userData.phone) {
           insertData.phone = userData.phone;
+        }
+
+        if (userData.specialization) {
+          insertData.specialization = userData.specialization;
         }
 
         regTraceStep('profile_insert_attempt', {

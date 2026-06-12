@@ -69,6 +69,7 @@ If the database already came from production or earlier setup, skip the full sch
 | **3** | `supabase/migrations/20260611170000_intake_approval_postal_demographics.sql` | Intake approval saves postal code + demographics | Yes (`CREATE OR REPLACE`) |
 | **4** | `supabase/migrations/20260611000000_interoperability_tables.sql` | Interop message queue + PHN identifiers | Yes |
 | **5** | `supabase/migrations/20260611100000_billing_payers_tables.sql` | Billing / payer profiles + claims | Yes |
+| **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | Org/patient columns, registration RLS, org Admin UPDATE, intake org RPC | Yes |
 
 ### Step 2 — skip if already applied
 
@@ -177,6 +178,7 @@ Copy and tick off per project:
 - [ ] Step 3 — intake approval postal/demographics
 - [ ] Step 4 — interoperability tables
 - [ ] Step 5 — billing tables
+- [ ] Step 6 — registration and intake fixes (`20260611180000_registration_and_intake_fixes.sql`)
 - [ ] Auth URLs configured
 - [ ] Test clinic registration
 - [ ] Test patient intake + approval

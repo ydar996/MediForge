@@ -861,15 +861,17 @@
 
   async function loadOrganizationDetails(supabaseClient) {
     try {
-      const { data, error } = await supabaseClient
-        .from("organizations")
-        .select("name, country, state")
-        .eq("id", organizationId)
-        .maybeSingle();
+      const { data: rows, error } = await supabaseClient.rpc('get_organization_intake_context', {
+        p_org_id: organizationId
+      });
+
+      const data = Array.isArray(rows) && rows.length ? rows[0] : null;
 
       if (error) {
         console.warn("Could not fetch organization details:", error.message);
-        applyDefaultAddressCountry("Canada", null);
+        if (typeof window.populateCountryDropdown === "function") {
+          applyDefaultAddressCountry("Canada", null);
+        }
         return;
       }
 

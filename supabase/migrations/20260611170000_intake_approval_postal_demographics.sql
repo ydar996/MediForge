@@ -194,4 +194,4 @@ end;
 $$;
 
 revoke all on function public.approve_patient_intake_submission(uuid, text, text, uuid) from public;
-grant execute on function public.approve_patient_intake_submission(uuid, text, text, uuid) to anon, authenticated;
+grant execute on function public.approve_patient_intake_submission(uuid, text, text, uuid) to service_role;
