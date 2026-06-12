@@ -244,7 +244,7 @@
       
       <div class="form-group">
         <label>Trial Period (days)</label>
-        <input type="number" id="free-trial-days" value="30" min="0" placeholder="30">
+        <input type="number" id="free-trial-days" value="60" min="0" placeholder="60">
       </div>
       
       <div class="form-group">
@@ -274,16 +274,17 @@ Basic billing (up to 100 patients)
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
         <div class="form-group">
           <label>Base Price (for auto-fill)</label>
-          <input type="number" id="basic-base-price" min="0" placeholder="30000">
+          <input type="number" id="basic-base-price" value="100" min="0" placeholder="100">
         </div>
         
         <div class="form-group">
           <label>Base Currency</label>
           <select id="basic-base-currency">
-            <option value="NGN" selected>₦ Nigerian Naira (₦)</option>
+            <option value="CAD" selected>CA$ Canadian Dollar (CAD)</option>
+            <option value="USD">$ US Dollar ($)</option>
+            <option value="NGN">₦ Nigerian Naira (₦)</option>
             <option value="KES">KSh Kenyan Shilling (KSh)</option>
             <option value="ZAR">R South African Rand (R)</option>
-            <option value="USD">$ US Dollar ($)</option>
           </select>
         </div>
       </div>
@@ -343,16 +344,17 @@ Mobile app access</textarea>
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 15px; margin-bottom: 15px;">
         <div class="form-group">
           <label>Base Price (for auto-fill)</label>
-          <input type="number" id="premium-base-price" value="75000" min="0" placeholder="75000">
+          <input type="number" id="premium-base-price" value="250" min="0" placeholder="250">
         </div>
         
         <div class="form-group">
           <label>Base Currency</label>
           <select id="premium-base-currency">
-            <option value="NGN" selected>₦ Nigerian Naira (₦)</option>
+            <option value="CAD" selected>CA$ Canadian Dollar (CAD)</option>
+            <option value="USD">$ US Dollar ($)</option>
+            <option value="NGN">₦ Nigerian Naira (₦)</option>
             <option value="KES">KSh Kenyan Shilling (KSh)</option>
             <option value="ZAR">R South African Rand (R)</option>
-            <option value="USD">$ US Dollar ($)</option>
           </select>
         </div>
       </div>
@@ -426,7 +428,7 @@ Data migration assistance</textarea>
     
     <div class="form-group">
       <label>Default Trial Period (days)</label>
-      <input type="number" id="default-trial" value="30" min="0" placeholder="30">
+      <input type="number" id="default-trial" value="60" min="0" placeholder="60">
     </div>
     
     <div class="form-group">
@@ -501,7 +503,7 @@ Data migration assistance</textarea>
       // Load Free plan
       if (plans.free) {
         document.getElementById('free-name').value = plans.free.name;
-        document.getElementById('free-trial-days').value = plans.free.trialDays || 30;
+        document.getElementById('free-trial-days').value = plans.free.trialDays || 60;
         document.getElementById('free-patient-limit').value = plans.free.patientLimit;
         document.getElementById('free-user-limit').value = plans.free.userLimit;
         document.getElementById('free-features').value = plans.free.features.join('\n');
@@ -523,10 +525,9 @@ Data migration assistance</textarea>
         // Always load basePrice if it exists (even if 0, to preserve user's setting)
         if (plans.basic.basePrice !== undefined && plans.basic.basePrice !== null) {
           document.getElementById('basic-base-price').value = plans.basic.basePrice;
-        } else if (plans.basic.prices && plans.basic.prices.NGN) {
-          // Fallback: Use NGN price as base price if basePrice not set
-          document.getElementById('basic-base-price').value = plans.basic.prices.NGN;
-          console.log('[Platform Settings] Using NGN price as base price:', plans.basic.prices.NGN);
+        } else if (plans.basic.prices && plans.basic.prices.CAD) {
+          document.getElementById('basic-base-price').value = plans.basic.prices.CAD;
+          console.log('[Platform Settings] Using CAD price as base price:', plans.basic.prices.CAD);
         }
         
         if (plans.basic.prices) {
@@ -668,7 +669,7 @@ Data migration assistance</textarea>
       document.getElementById('platform-name').value = settings.platformName || 'MediForge';
       document.getElementById('support-email').value = settings.supportEmail || 'support@mediforge.com';
       document.getElementById('support-phone').value = settings.supportPhone || '+234 XXX XXX XXXX';
-      document.getElementById('default-trial').value = settings.defaultTrialDays || 30;
+      document.getElementById('default-trial').value = settings.defaultTrialDays || 60;
       document.getElementById('auto-suspend').value = settings.autoSuspend || 'no';
     }
     
@@ -682,7 +683,7 @@ Data migration assistance</textarea>
         const basePriceInput = document.getElementById(`${planType}-base-price`);
         const baseCurrencySelect = document.getElementById(`${planType}-base-currency`);
         const basePrice = basePriceInput ? parseFloat(basePriceInput.value) || 0 : 0;
-        const baseCurrency = baseCurrencySelect ? baseCurrencySelect.value : 'NGN';
+        const baseCurrency = baseCurrencySelect ? baseCurrencySelect.value : 'CAD';
         
         allCurrencies.forEach(currency => {
           const input = document.getElementById(`${planType}-price-${currency}`);
@@ -729,7 +730,7 @@ Data migration assistance</textarea>
           prices: { /* Free is always 0 for all currencies */ },
           patientLimit: parseInt(document.getElementById('free-patient-limit').value) || 100,
           userLimit: parseInt(document.getElementById('free-user-limit').value) || 3,
-          trialDays: parseInt(document.getElementById('free-trial-days').value) || 30,
+          trialDays: parseInt(document.getElementById('free-trial-days').value) || 60,
           features: document.getElementById('free-features').value.split('\n').filter(f => f.trim()),
           enabled: document.getElementById('free-enabled').checked
         },
@@ -811,7 +812,7 @@ Data migration assistance</textarea>
         platformName: document.getElementById('platform-name').value,
         supportEmail: document.getElementById('support-email').value,
         supportPhone: document.getElementById('support-phone').value,
-        defaultTrialDays: parseInt(document.getElementById('default-trial').value) || 30,
+        defaultTrialDays: parseInt(document.getElementById('default-trial').value) || 60,
         autoSuspend: document.getElementById('auto-suspend').value,
         updatedAt: new Date().toISOString(),
         updatedBy: JSON.parse(localStorage.getItem("platformAdmin") || "{}").username

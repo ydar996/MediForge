@@ -6,5 +6,7 @@
 (function () {
   if (typeof window === 'undefined') return;
   window.__SUPABASE_CONFIG__ = Object.assign({}, window.__SUPABASE_CONFIG__ || {}, {
+    url: "****************e.co",
+    anonKey: "sb_publishable_j_1EFLBa4bFxClGLGKo6JQ_hoq4OqG4",
   });
 })();

@@ -11,9 +11,9 @@
 
 # Why MediForge?
 
-Healthcare institutions everywhere face unique challenges: unreliable connectivity, diverse clinical workflows, multi-currency operations, and the need for solutions that work in resource-constrained environments. MediForge was designed from the ground up to address these realities.
+Healthcare institutions in Canada face familiar challenges: reliable patient documentation, secure billing in Canadian dollars, and workflows that still work when connectivity drops. MediForge was built for North American physician practices—from solo clinics to multi-site groups.
 
-**Offline-first architecture** means your staff can document, prescribe, and manage patients even when the internet is down. **Multi-currency support** (NGN, USD, KES, ZAR, GHS) simplifies billing across regions. **ICD-11 integration** keeps you aligned with international standards. And **role-based access** ensures the right people see the right data—whether you run a single clinic or a multi-facility hospital network.
+**Offline-first architecture** means your staff can document, prescribe, and manage patients even when the internet is down. **Billing in CAD** by default, with multi-currency capability when you need it. **ICD-11 integration** keeps you aligned with international standards. And **role-based access** ensures the right people see the right data—whether you run a single clinic or a multi-facility network.
 
 ---
 
@@ -24,7 +24,7 @@ MediForge is a full-stack Electronic Health Record (EHR) and practice management
 - **Clinical documentation** — SOAP notes, e-prescriptions, lab and imaging orders, referrals
 - **Laboratory management** — 40+ structured lab templates, scientist workflow, external lab integration
 - **Pharmacy operations** — Dispensing, allergy checks, invoicing
-- **Financial management** — Multi-currency billing, invoicing, payments, cash register, reporting
+- **Financial management** — CAD billing, invoicing, payments, cash register, reporting; multi-currency capable
 - **Patient engagement** — Secure patient portal for appointments, medications, and results
 - **Inpatient care** — Admissions, rounds, discharge summaries
 - **Compliance & security** — Audit logs, encryption, legal agreements
@@ -182,7 +182,7 @@ The system runs as a **Progressive Web App (PWA)**—installable on any device, 
 | **Billing reports** | Financial reports for revenue, payments, and outstanding. |
 | **Billing permissions** | Role-based access to billing functions. |
 | **Subscription management** | Manage organization subscription and billing. |
-| **Multi-currency** | NGN, USD, KES, ZAR, GHS with currency selection per invoice. |
+| **Multi-currency** | CAD by default; optional multi-currency billing with currency selection per invoice. |
 | **Tax & discounts** | Tax calculation and discount management. |
 | **Payment receipts** | Receipt generation for patients. |
 | **Lab order billing** | Pay-before-result workflow for lab orders. |

@@ -53,7 +53,7 @@ async function generateRecurringInvoice(orgName, org, subscription) {
     const billingCycle = subscription.billingCycle || 'monthly';
     const currency = org.currency || org.defaultCurrency || 'CAD';
     const monthlyPrice = plan.prices?.[currency] || 0;
-    const amount = billingCycle === 'annual' ? monthlyPrice * 12 * 0.85 : monthlyPrice; // 15% discount for annual
+    const amount = billingCycle === 'annual' ? monthlyPrice * 12 * 0.90 : monthlyPrice; // 10% discount for annual
     
     // Generate payment ID
     const generateUUID = () => {

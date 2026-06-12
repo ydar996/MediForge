@@ -15,7 +15,7 @@
     for (const [orgName, orgData] of Object.entries(organizations)) {
       if (!orgData.subscription) {
         // Assign Free Trial plan
-        const trialDays = plans.free?.trialDays || 30;
+        const trialDays = plans.free?.trialDays || 60;
         const startDate = new Date(orgData.createdAt || Date.now());
         const expiryDate = new Date(startDate);
         expiryDate.setDate(expiryDate.getDate() + trialDays);

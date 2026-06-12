@@ -1783,7 +1783,7 @@ console.log('Platform admin module loaded successfully v4');
         },
         "patientLimit": 27,
         "userLimit": 3,
-        "trialDays": 30,
+        "trialDays": 60,
         "features": [
           "Basic patient management",
           "Appointment scheduling",
@@ -1796,17 +1796,17 @@ console.log('Platform admin module loaded successfully v4');
       "basic": {
         "id": "basic",
         "name": "Basic Plan",
-        "basePrice": 31,
+        "basePrice": 100,
         "basePriceCurrency": "CAD",
         "prices": {
-          "KES": 2800, "TZS": 55800, "UGX": 82000, "RWF": 29300, "BIF": 64300,
-          "ETB": 2680, "SOS": 12600, "NGN": 35000, "GHS": 280, "XOF": 13400,
-          "LRD": 4200, "SLL": 487500, "GMD": 1505, "ZAR": 408, "BWP": 303,
-          "NAD": 408, "MWK": 38300, "ZMW": 595, "ZWL": 7110, "MZN": 1410,
-          "SZL": 408, "LSL": 408, "EGP": 1085, "MAD": 222, "TND": 70,
-          "DZD": 3030, "LYD": 107, "XAF": 13400, "CDF": 62100, "AOA": 20400,
-          "MUR": 1015, "SCR": 315, "MGA": 101800, "KMF": 13750, "CVE": 315,
-          "USD": 23, "CAD": 31, "EUR": 21, "GBP": 18
+          "KES": 9000, "TZS": 179000, "UGX": 263000, "RWF": 94000, "BIF": 206000,
+          "ETB": 8600, "SOS": 40500, "NGN": 112000, "GHS": 900, "XOF": 43000,
+          "LRD": 13500, "SLL": 1562500, "GMD": 4820, "ZAR": 1300, "BWP": 970,
+          "NAD": 1300, "MWK": 123000, "ZMW": 1900, "ZWL": 22700, "MZN": 4500,
+          "SZL": 1300, "LSL": 1300, "EGP": 3450, "MAD": 710, "TND": 225,
+          "DZD": 9650, "LYD": 340, "XAF": 43000, "CDF": 199000, "AOA": 65500,
+          "MUR": 3250, "SCR": 1000, "MGA": 326000, "KMF": 44000, "CVE": 1000,
+          "USD": 73, "CAD": 100, "EUR": 68, "GBP": 58
         },
         "patientLimit": 250,
         "userLimit": 5,
@@ -1822,17 +1822,17 @@ console.log('Platform admin module loaded successfully v4');
       "premium": {
         "id": "premium",
         "name": "Premium Plan",
-        "basePrice": 74,
+        "basePrice": 250,
         "basePriceCurrency": "CAD",
         "prices": {
-          "KES": 6800, "TZS": 135400, "UGX": 199200, "RWF": 71100, "BIF": 156100,
-          "ETB": 6500, "SOS": 30600, "NGN": 84999, "GHS": 680, "XOF": 32500,
-          "LRD": 10200, "SLL": 1183000, "GMD": 3645, "ZAR": 990, "BWP": 735,
-          "NAD": 990, "MWK": 92800, "ZMW": 1440, "ZWL": 17220, "MZN": 3420,
-          "SZL": 990, "LSL": 990, "EGP": 2630, "MAD": 538, "TND": 170,
-          "DZD": 7340, "LYD": 260, "XAF": 32500, "CDF": 150500, "AOA": 49500,
-          "MUR": 2460, "SCR": 765, "MGA": 246600, "KMF": 33300, "CVE": 765,
-          "USD": 54, "CAD": 74, "EUR": 49, "GBP": 43
+          "KES": 22500, "TZS": 448000, "UGX": 658000, "RWF": 235000, "BIF": 515000,
+          "ETB": 21500, "SOS": 101000, "NGN": 280000, "GHS": 2250, "XOF": 108000,
+          "LRD": 33700, "SLL": 3906250, "GMD": 12050, "ZAR": 3250, "BWP": 2420,
+          "NAD": 3250, "MWK": 307000, "ZMW": 4750, "ZWL": 56700, "MZN": 11250,
+          "SZL": 3250, "LSL": 3250, "EGP": 8625, "MAD": 1775, "TND": 560,
+          "DZD": 24100, "LYD": 850, "XAF": 108000, "CDF": 498000, "AOA": 163750,
+          "MUR": 8125, "SCR": 2500, "MGA": 815000, "KMF": 110000, "CVE": 2500,
+          "USD": 182, "CAD": 250, "EUR": 170, "GBP": 145
         },
         "patientLimit": -1,
         "userLimit": -1,
