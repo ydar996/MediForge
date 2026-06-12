@@ -76,6 +76,7 @@ If the database already has production-style tables, skip this and start at **St
 | **4** | `supabase/migrations/20260611000000_interoperability_tables.sql` | Interop queue + PHN identifiers |
 | **5** | `supabase/migrations/20260611100000_billing_payers_tables.sql` | Billing / payer profiles + claims |
 | **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | **Required** — org Admin UPDATE, `get_organization_intake_context` RPC, intake approval permissions |
+| **7** | `supabase/migrations/20260612100000_registration_profile_rpc.sql` | **Required** — registration profile RPC + own-profile SELECT (fixes join-org RLS failures) |
 
 **Step 2 skip:** If `patient_intake_submissions` already exists, Step 2 is optional (re-running is still safe).
 

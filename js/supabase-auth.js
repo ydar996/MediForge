@@ -1082,40 +1082,40 @@ async function registerWithSupabase(userData) {
     }
 
     // Profile INSERT uses RLS policy: authenticated + auth.uid() = auth_user_id.
-    // signUp() often returns a user without attaching a session to REST calls — sign in first.
+    // Always establish the correct session (signUp alone often does not attach JWT to REST calls).
     {
-      let { data: { session: activeSession } } = await supabaseClient.auth.getSession();
-      if (!activeSession) {
-        regTraceStep('profile_insert_sign_in', { reason: 'no_session_after_signup', authUserId });
+      if (authData?.session?.user?.id === authUserId) {
+        regTraceOk('profile_insert_session_from_signup', { authUserId });
+      } else {
+        const { data: { session: existingSession } } = await supabaseClient.auth.getSession();
+        if (existingSession?.user?.id && existingSession.user.id !== authUserId) {
+          regTraceStep('profile_insert_sign_out', { reason: 'stale_session', staleUserId: existingSession.user.id });
+          await supabaseClient.auth.signOut();
+        }
+
+        regTraceStep('profile_insert_sign_in', { reason: 'establish_session_for_profile', authUserId });
+        let signInOk = false;
         if (typeof window.signInForRegistration === 'function') {
           const signInResult = await window.signInForRegistration(email, userData.password, true);
-          if (signInResult.success && signInResult.session) {
-            activeSession = signInResult.session;
+          if (signInResult.success && signInResult.session?.user?.id === authUserId) {
+            signInOk = true;
           }
         }
-        if (!activeSession) {
+        if (!signInOk) {
           const { data: signInData, error: signInErr } = await supabaseClient.auth.signInWithPassword({
             email,
             password: userData.password
           });
-          if (signInErr || !signInData?.session) {
+          if (signInErr || !signInData?.session || signInData.session.user?.id !== authUserId) {
             regTraceFail('profile_insert_no_session', signInErr || { message: 'No session after sign-in' }, { authUserId });
             return {
               success: false,
               error: 'Account created but profile setup failed. Please try logging in with your new username and password.'
             };
           }
-          activeSession = signInData.session;
         }
+        regTraceOk('profile_insert_session_ready', { authUserId });
       }
-      if (activeSession.user?.id !== authUserId) {
-        regTraceFail('profile_insert_session_mismatch', {
-          authUserId,
-          sessionUserId: activeSession.user?.id
-        }, {});
-        return { success: false, error: 'Registration session mismatch. Please try again.' };
-      }
-      regTraceOk('profile_insert_session_ready', { authUserId });
     }
 
     // Create user profile in public.users table with retry logic for network issues
@@ -1182,12 +1182,45 @@ async function registerWithSupabase(userData) {
           role: userData.role,
           fields: Object.keys(insertData)
         });
-        
-        const { data, error } = await supabaseClient
-          .from('users')
-          .insert(insertData)
-          .select()
-          .single();
+
+        let data = null;
+        let error = null;
+
+        if (attempt === 1) {
+          const { data: rpcRow, error: rpcError } = await supabaseClient.rpc('complete_registration_user_profile', {
+            p_auth_user_id: authUserId,
+            p_username: userData.username,
+            p_email: includeEmail ? email : `${userData.username}@mediforge.app`,
+            p_first_name: userData.firstName,
+            p_last_name: userData.lastName,
+            p_gender: userData.gender || 'Male',
+            p_role: userData.role,
+            p_organization_id: userData.organizationId,
+            p_phone: userData.phone || null,
+            p_license_number: (includeLicense && userData.medicalLicenseNumber) ? userData.medicalLicenseNumber : null,
+            p_specialization: userData.specialization || null
+          });
+          if (!rpcError && rpcRow) {
+            data = typeof rpcRow === 'string' ? JSON.parse(rpcRow) : rpcRow;
+            regTraceOk('profile_insert_rpc_created', { userId: data.id, attempt });
+          } else if (rpcError && !(
+            rpcError.message?.includes('complete_registration_user_profile') ||
+            rpcError.code === 'PGRST202' ||
+            rpcError.code === '42883'
+          )) {
+            error = rpcError;
+          }
+        }
+
+        if (!data && !error) {
+          const insertResult = await supabaseClient
+            .from('users')
+            .insert(insertData)
+            .select()
+            .single();
+          data = insertResult.data;
+          error = insertResult.error;
+        }
 
         if (!error && data) {
           profileData = data;
