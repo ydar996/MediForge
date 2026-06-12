@@ -1149,7 +1149,7 @@
       dob: form.elements["dob"].value,
       gender: form.elements["gender"].value,
       maritalStatus: form.elements["maritalStatus"].value,
-      tribe: form.elements["tribe"].value.trim(),
+      race: form.elements["race"].value.trim(),
       email: form.elements["email"].value.trim(),
       phone: toFullNumber("phone"),
       addressLine1: form.elements["addressLine1"].value.trim(),

@@ -130,7 +130,7 @@ console.log('\n\n=== CHECKING FOR UNMAPPED FIELDS ===');
 const mappedFields = [
     // Patient fields
     'id', 'firstName', 'middleName', 'lastName', 'dob', 'gender', 'maritalStatus',
-    'tribe', 'email', 'phone', 'addressLine1', 'addressLine2', 'city', 'state', 'country',
+    'race', 'email', 'phone', 'addressLine1', 'addressLine2', 'city', 'state', 'country',
     'emergencyFirstName', 'emergencyLastName', 'emergencyRelationship', 'emergencyPhone',
     'emergencyEmail', 'emergencyAddressLine1', 'emergencyAddressLine2', 'emergencyCity',
     'emergencyState', 'emergencyCountry', 'bloodGroup', 'allergies', 'conditions',

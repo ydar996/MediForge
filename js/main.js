@@ -248,7 +248,7 @@ window.migratePatientDemographics = async function() {
                 // Check if demographic fields are missing
                 const hasAddress = supabasePatient.address_line1 || supabasePatient.city || supabasePatient.state;
                 const hasEmergency = supabasePatient.emergency_contact_name || supabasePatient.emergency_contact_phone;
-                const hasDemographics = supabasePatient.email || supabasePatient.tribe || supabasePatient.marital_status;
+                const hasDemographics = supabasePatient.email || supabasePatient.race || supabasePatient.marital_status;
                 
                 if (!hasAddress || !hasEmergency || !hasDemographics) {
                     needsMigration++;
@@ -269,7 +269,7 @@ window.migratePatientDemographics = async function() {
         }
         
         // Ask for confirmation
-        const confirmMessage = `Found ${needsMigration} patients that need demographic data migration.\n\nThis will update their Supabase records with:\n- Address information\n- Emergency contact details\n- Demographics (email, tribe, etc.)\n\nDo you want to proceed?`;
+        const confirmMessage = `Found ${needsMigration} patients that need demographic data migration.\n\nThis will update their Supabase records with:\n- Address information\n- Emergency contact details\n- Demographics (email, race, etc.)\n\nDo you want to proceed?`;
         
         if (!confirm(confirmMessage)) {
             mainWarn('Migration cancelled by user');
@@ -359,7 +359,7 @@ async function migrateSinglePatient(localPatient, orgId) {
             `${localPatient.emergencyAddressLine1}${localPatient.emergencyAddressLine2 ? ', ' + localPatient.emergencyAddressLine2 : ''}, ${localPatient.emergencyCity || ''}, ${localPatient.emergencyState || ''}, ${localPatient.emergencyCountry || ''}` : null,
         blood_group: localPatient.bloodGroup || null,
         genotype: localPatient.genotype || null,
-        tribe: localPatient.tribe || null,
+        race: localPatient.race || null,
         occupation: localPatient.occupation || null,
         marital_status: localPatient.maritalStatus || null,
         allergies: localPatient.allergies ? JSON.stringify(localPatient.allergies) : '[]',
@@ -639,7 +639,7 @@ async function migrateSinglePatient(localPatient, orgId) {
             dob: patient.date_of_birth,
             gender: patient.gender || '',
             maritalStatus: patient.marital_status || '',
-            tribe: patient.tribe || '',
+            race: patient.race || '',
             occupation: patient.occupation || '',
             phone: patient.phone || '',
             email: patient.email || '',

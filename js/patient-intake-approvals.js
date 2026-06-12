@@ -319,7 +319,7 @@
       dob: payload.dob || "",
       gender: payload.gender || "",
       maritalStatus: payload.maritalStatus || "",
-      tribe: payload.tribe || "",
+      race: payload.race || "",
       email: payload.email || "",
       phone: payload.phone || "",
       addressLine1: payload.addressLine1 || "",

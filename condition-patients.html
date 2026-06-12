@@ -27,7 +27,7 @@
         <th>Name</th>
         <th>Age</th>
         <th>Gender</th>
-        <th>Tribe</th>
+        <th>Race</th>
       </tr>
     </thead>
     <tbody id="patient-list"></tbody>
@@ -91,7 +91,7 @@
           }
         }
       } catch (error) {
-        console.warn('?? Supabase load failed, falling back to localStorage:', error);
+        console.warn('Supabase load failed, falling back to localStorage:', error);
       }
       
       // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
@@ -114,21 +114,21 @@
       // Compute summary stats
       const total = filtered.length;
       const genderStats = { male: 0, female: 0 };
-      const tribeStats = {};
+      const raceStats = {};
       filtered.forEach(patient => {
         const gender = patient.gender.toLowerCase();
         if (gender === 'male') genderStats.male++;
         else if (gender === 'female') genderStats.female++;
-        const tribe = patient.tribe || 'Unknown';
-        tribeStats[tribe] = (tribeStats[tribe] || 0) + 1;
+        const raceVal = (patient.race || 'Unknown').trim() || 'Unknown';
+        raceStats[raceVal] = (raceStats[raceVal] || 0) + 1;
       });
 
       let genderStr = `Gender: Male (${Math.round((genderStats.male / total) * 100 || 0)}%), Female (${Math.round((genderStats.female / total) * 100 || 0)}%)`;
-      let tribeStr = 'Tribes: ' + Object.entries(tribeStats)
-        .map(([tribe, count]) => `${tribe} (${Math.round((count / total) * 100 || 0)}%)`)
+      let raceStr = 'Race: ' + Object.entries(raceStats)
+        .map(([raceVal, count]) => `${raceVal} (${Math.round((count / total) * 100 || 0)}%)`)
         .join(', ');
       
-      document.getElementById("summary-stats").innerHTML = `<p>${genderStr} | ${tribeStr}</p>`;
+      document.getElementById("summary-stats").innerHTML = `<p>${genderStr} | ${raceStr}</p>`;
 
       // Display patient list
       const tbody = document.getElementById("patient-list");
@@ -139,7 +139,7 @@
           <td><a href="patient-details?id=${patient.id}">${patient.firstName} ${patient.lastName}</a></td>
           <td>${age}</td>
           <td>${patient.gender}</td>
-          <td>${patient.tribe || 'Unknown'}</td>
+          <td>${(patient.race || 'Unknown').trim() || 'Unknown'}</td>
         `;
         tbody.appendChild(row);
       });

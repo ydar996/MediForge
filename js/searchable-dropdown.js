@@ -82,7 +82,7 @@ window.makeSearchableDropdown = function(selectId, options = {}) {
   let selectedText = select.options[select.selectedIndex]?.textContent || '';
   
   // Set initial input value
-  if (selectedValue && selectedText && selectedText !== 'Select Tribe' && selectedText !== 'Select...') {
+  if (selectedValue && selectedText && selectedText !== 'Select Race' && selectedText !== 'Select...') {
     input.value = selectedText;
   }
   
@@ -244,35 +244,6 @@ window.makeSearchableDropdown = function(selectId, options = {}) {
   console.log(`✅ Converted ${selectId} to searchable dropdown`);
 };
 
-/**
- * Initialize all tribe dropdowns on page load
- */
-window.initializeSearchableTribeDropdowns = function() {
-  const tribeSelects = document.querySelectorAll('select#tribe');
-  tribeSelects.forEach(select => {
-    if (select.options.length > 20) { // Only convert if many options
-      window.makeSearchableDropdown('tribe', {
-        placeholder: 'Type tribe name to search...',
-        minChars: 0,
-        maxHeight: '300px',
-        mobileOptimized: true
-      });
-    }
-  });
-};
-
-// Auto-initialize on DOM ready
-if (document.readyState === 'loading') {
-  document.addEventListener('DOMContentLoaded', () => {
-    setTimeout(() => {
-      window.initializeSearchableTribeDropdowns();
-    }, 100);
-  });
-} else {
-  setTimeout(() => {
-    window.initializeSearchableTribeDropdowns();
-  }, 100);
-}
 
 console.log('✅ Searchable dropdown utility loaded');
 

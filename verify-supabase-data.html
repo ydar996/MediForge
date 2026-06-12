@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <title>Verify Supabase Data</title>
   <style>
     body {
@@ -72,30 +73,30 @@
   <script src="js/universal-data-loader.js?v=202510220113080113081308"></script>
 </head>
 <body>
-  <h1>?? Verify Supabase Data</h1>
+  <h1><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Verify Supabase Data</h1>
   
   <div class="section">
-    <h2>?? Organizations</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Organizations</h2>
     <button onclick="checkOrganizations()">Check Organizations</button>
     <div id="orgs-result" class="result"></div>
   </div>
   
   <div class="section">
-    <h2>?? Patients</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Patients</h2>
     <button onclick="checkPatients()">Check All Patients</button>
     <button onclick="checkPatientsByOrg()">Check Patients by Org</button>
     <div id="patients-result" class="result"></div>
   </div>
   
   <div class="section">
-    <h2>?? Appointments</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Appointments</h2>
     <button onclick="checkAppointments()">Check All Appointments</button>
     <button onclick="checkAppointmentsByOrg()">Check Appointments by Org</button>
     <div id="appointments-result" class="result"></div>
   </div>
   
   <div class="section">
-    <h2>?? Users</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Users</h2>
     <button onclick="checkUsers()">Check All Users</button>
     <div id="users-result" class="result"></div>
   </div>
@@ -120,7 +121,7 @@
     
     async function checkOrganizations() {
       clear('orgs-result');
-      log('orgs-result', '?? Fetching organizations...', 'info');
+      log('orgs-result', '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fetching organizations...', 'info');
       
       try {
         const { data, error, count } = await supabaseClient
@@ -128,9 +129,9 @@
           .select('*', { count: 'exact' });
         
         if (error) {
-          log('orgs-result', `? Error: ${error.message}`, 'error');
+          log('orgs-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ${error.message}`, 'error');
         } else {
-          log('orgs-result', `? Found ${count} organizations:`, 'success');
+          log('orgs-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Found ${count} organizations:`, 'success');
           data.forEach(org => {
             log('orgs-result', `  - ${org.name} (ID: ${org.id})`, 'info');
           });
@@ -138,13 +139,13 @@
           log('orgs-result', JSON.stringify(data, null, 2), 'info');
         }
       } catch (error) {
-        log('orgs-result', `? Exception: ${error.message}`, 'error');
+        log('orgs-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Exception: ${error.message}`, 'error');
       }
     }
     
     async function checkPatients() {
       clear('patients-result');
-      log('patients-result', '?? Fetching all patients...', 'info');
+      log('patients-result', '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fetching all patients...', 'info');
       
       try {
         // First check total count without RLS
@@ -153,9 +154,9 @@
           .select('organization_id, patient_id, first_name, last_name', { count: 'exact' });
         
         if (error) {
-          log('patients-result', `? Error: ${error.message}`, 'error');
+          log('patients-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ${error.message}`, 'error');
         } else {
-          log('patients-result', `? Found ${count} patients total`, 'success');
+          log('patients-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Found ${count} patients total`, 'success');
           
           // Group by organization
           const byOrg = {};
@@ -176,13 +177,13 @@
           }
         }
       } catch (error) {
-        log('patients-result', `? Exception: ${error.message}`, 'error');
+        log('patients-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Exception: ${error.message}`, 'error');
       }
     }
     
     async function checkPatientsByOrg() {
       clear('patients-result');
-      log('patients-result', '?? Fetching patients by organization...', 'info');
+      log('patients-result', '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fetching patients by organization...', 'info');
       
       try {
         // First get organizations
@@ -193,7 +194,7 @@
         log('patients-result', `Found ${orgs.length} organizations:\n`, 'info');
         
         for (const org of orgs) {
-          log('patients-result', `\n?? Querying patients for: ${org.name}`, 'info');
+          log('patients-result', `\nQuerying patients for: ${org.name}`, 'info');
           log('patients-result', `   Org ID: ${org.id}`, 'info');
           log('patients-result', `   Org ID type: ${typeof org.id}`, 'info');
           
@@ -203,14 +204,14 @@
             .select('*', { count: 'exact', head: true })
             .eq('organization_id', org.id);
           
-          log('patients-result', `  ?? Count query raw response:`, 'info');
+          log('patients-result', `  Count query raw response:`, 'info');
           log('patients-result', `     count: ${count}`, 'info');
           log('patients-result', `     error: ${countError ? countError.message : 'none'}`, 'info');
           
           if (countError) {
             log('patients-result', `  ? Count query error: ${countError.message}`, 'error');
           } else {
-            log('patients-result', `  ?? Count query result: ${count || 0} patients`, count > 0 ? 'success' : 'info');
+            log('patients-result', `  Count query result: ${count || 0} patients`, count > 0 ? 'success' : 'info');
           }
           
           // Also try a data query to see actual records
@@ -219,14 +220,14 @@
             .select('patient_id, first_name, last_name, organization_id')
             .eq('organization_id', org.id);
           
-          log('patients-result', `  ?? Data query raw response:`, 'info');
+          log('patients-result', `  Data query raw response:`, 'info');
           log('patients-result', `     records: ${pData ? pData.length : 'null'}`, 'info');
           log('patients-result', `     error: ${dataError ? dataError.message : 'none'}`, 'info');
           
           if (dataError) {
             log('patients-result', `  ? Data query error: ${dataError.message}`, 'error');
           } else {
-            log('patients-result', `  ?? Data query result: ${pData.length} patients`, pData.length > 0 ? 'success' : 'info');
+            log('patients-result', `  Data query result: ${pData.length} patients`, pData.length > 0 ? 'success' : 'info');
             if (pData.length > 0) {
               log('patients-result', `  First 3 patients:`, 'info');
               pData.slice(0, 3).forEach(p => {
@@ -236,14 +237,14 @@
           }
         }
       } catch (error) {
-        log('patients-result', `? Exception: ${error.message}`, 'error');
+        log('patients-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Exception: ${error.message}`, 'error');
         console.error('Full error:', error);
       }
     }
     
     async function checkAppointments() {
       clear('appointments-result');
-      log('appointments-result', '?? Fetching all appointments...', 'info');
+      log('appointments-result', '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fetching all appointments...', 'info');
       
       try {
         const { data, error, count } = await supabaseClient
@@ -251,9 +252,9 @@
           .select('organization_id, appointment_id, patient_name, appointment_date', { count: 'exact' });
         
         if (error) {
-          log('appointments-result', `? Error: ${error.message}`, 'error');
+          log('appointments-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ${error.message}`, 'error');
         } else {
-          log('appointments-result', `? Found ${count} appointments total`, 'success');
+          log('appointments-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Found ${count} appointments total`, 'success');
           
           // Group by organization
           const byOrg = {};
@@ -274,13 +275,13 @@
           }
         }
       } catch (error) {
-        log('appointments-result', `? Exception: ${error.message}`, 'error');
+        log('appointments-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Exception: ${error.message}`, 'error');
       }
     }
     
     async function checkAppointmentsByOrg() {
       clear('appointments-result');
-      log('appointments-result', '?? Fetching appointments by organization...', 'info');
+      log('appointments-result', '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fetching appointments by organization...', 'info');
       
       try {
         // First get organizations
@@ -303,13 +304,13 @@
           }
         }
       } catch (error) {
-        log('appointments-result', `? Exception: ${error.message}`, 'error');
+        log('appointments-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Exception: ${error.message}`, 'error');
       }
     }
     
     async function checkUsers() {
       clear('users-result');
-      log('users-result', '?? Fetching all users...', 'info');
+      log('users-result', '<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fetching all users...', 'info');
       
       try {
         const { data, error, count } = await supabaseClient
@@ -317,9 +318,9 @@
           .select('organization_id, username, role', { count: 'exact' });
         
         if (error) {
-          log('users-result', `? Error: ${error.message}`, 'error');
+          log('users-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ${error.message}`, 'error');
         } else {
-          log('users-result', `? Found ${count} users total`, 'success');
+          log('users-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Found ${count} users total`, 'success');
           
           // Group by organization
           const byOrg = {};
@@ -337,7 +338,7 @@
           }
         }
       } catch (error) {
-        log('users-result', `? Exception: ${error.message}`, 'error');
+        log('users-result', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Exception: ${error.message}`, 'error');
       }
     }
   </script>  

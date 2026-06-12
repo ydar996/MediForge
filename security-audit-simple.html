@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <title>MediForge Security Audit</title>
   <style>
     body {
@@ -202,12 +203,18 @@
       element.textContent = message;
     }
 
+    function formatSecurityAuditMessage(message, status) {
+      const icons = { success: '<i class="fa-solid fa-circle-check" aria-hidden="true"></i>', critical: '<i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>', warning: '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>', info: '<i class="fa-solid fa-circle-info" aria-hidden="true"></i>' };
+      let text = String(message).replace(/^\?\s+/, '').replace(/^&#9888;\s+WARNING:\s+/, 'WARNING: ').replace(/^&#8505;\s+/, '');
+      return `${icons[status] || icons.info} ${text}`;
+    }
+
     function addSecurityItem(elementId, message, status = 'info') {
       const element = document.getElementById(elementId);
       if (element.textContent.trim() === '') {
         element.style.display = 'block';
       }
-      element.innerHTML += `<div class="security-item ${status}">${message}</div>`;
+      element.innerHTML += `<div class="security-item ${status}">${formatSecurityAuditMessage(message, status)}</div>`;
       
       // Update stats
       securityStats.total++;
@@ -225,9 +232,9 @@
         // Check 1: User Authentication
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         if (!user.username || !user.organizationId) {
-          addSecurityItem('auth-security-results', '? CRITICAL: User not properly authenticated', 'critical');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: User not properly authenticated', 'critical');
         } else {
-          addSecurityItem('auth-security-results', '? User properly authenticated', 'success');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> User properly authenticated', 'success');
         }
 
         // Check 2: Role-Based Access Control
@@ -235,9 +242,9 @@
         // Also accept "Other (Custom Role)" format
         const hasValidRole = validRoles.includes(user.role) || (user.role && user.role.startsWith('Other (') && user.role.endsWith(')'));
         if (!user.role || !hasValidRole) {
-          addSecurityItem('auth-security-results', '? CRITICAL: Invalid or missing user role', 'critical');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Invalid or missing user role', 'critical');
         } else {
-          addSecurityItem('auth-security-results', '? Valid user role assigned', 'success');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Valid user role assigned', 'success');
         }
 
         // Check 3: Session Management
@@ -249,14 +256,14 @@
           if (hoursSinceActivity > 8) {
             addSecurityItem('auth-security-results', '&#9888; WARNING: Session may be too long (8+ hours)', 'warning');
           } else {
-            addSecurityItem('auth-security-results', '? Session duration acceptable', 'success');
+            addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Session duration acceptable', 'success');
           }
         } else {
           addSecurityItem('auth-security-results', '&#9888; WARNING: No session tracking found', 'warning');
         }
 
       } catch (error) {
-        addSecurityItem('auth-security-results', `? CRITICAL: Authentication check failed: ${error.message}`, 'critical');
+        addSecurityItem('auth-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Authentication check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -274,9 +281,9 @@
       // Check if system properly validates organization access
       const currentOrgId = JSON.parse(localStorage.getItem("user") || "{}").organizationId;
       if (currentOrgId === 'malicious-org-id') {
-        addSecurityItem('auth-security-results', '? CRITICAL: Session manipulation possible', 'critical');
+        addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Session manipulation possible', 'critical');
       } else {
-        addSecurityItem('auth-security-results', '? Session validation working', 'success');
+        addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Session validation working', 'success');
       }
       
       // Restore original session
@@ -292,7 +299,7 @@
         // Check 1: Data Encryption in Transit
         const isHTTPS = window.location.protocol === 'https:';
         if (isHTTPS) {
-          addSecurityItem('data-security-results', '? HTTPS enabled - data encrypted in transit', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> HTTPS enabled - data encrypted in transit', 'success');
         } else {
           addSecurityItem('data-security-results', '&#9888; WARNING: Not using HTTPS - data not encrypted in transit', 'warning');
         }
@@ -313,21 +320,21 @@
         }
         
         if (foundSensitiveData) {
-          addSecurityItem('data-security-results', '? CRITICAL: Sensitive data found in localStorage', 'critical');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Sensitive data found in localStorage', 'critical');
         } else {
-          addSecurityItem('data-security-results', '? No sensitive data in localStorage', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> No sensitive data in localStorage', 'success');
         }
 
         // Check 3: Data Backup Security
         const hasBackup = localStorage.getItem('backup_data') || localStorage.getItem('backup');
         if (hasBackup) {
-          addSecurityItem('data-security-results', '? Data backup found', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Data backup found', 'success');
         } else {
           addSecurityItem('data-security-results', '&#9888; WARNING: No data backup found', 'warning');
         }
 
       } catch (error) {
-        addSecurityItem('data-security-results', `? CRITICAL: Data security check failed: ${error.message}`, 'critical');
+        addSecurityItem('data-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Data security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -339,9 +346,9 @@
       const encrypted = btoa(testData); // Simple base64 encoding
       
       if (encrypted !== testData) {
-        addSecurityItem('data-security-results', '? Data encoding/encryption capability available', 'success');
+        addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Data encoding/encryption capability available', 'success');
       } else {
-        addSecurityItem('data-security-results', '? CRITICAL: No data encryption found', 'critical');
+        addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: No data encryption found', 'critical');
       }
     }
 
@@ -353,7 +360,7 @@
         // Check 1: HTTPS Usage
         const isHTTPS = window.location.protocol === 'https:';
         if (isHTTPS) {
-          addSecurityItem('network-security-results', '? HTTPS enabled for secure communication', 'success');
+          addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> HTTPS enabled for secure communication', 'success');
         } else {
           addSecurityItem('network-security-results', '&#9888; WARNING: HTTP in use - upgrade to HTTPS', 'warning');
         }
@@ -362,9 +369,9 @@
         if (typeof supabaseClient !== 'undefined' && supabaseClient) {
           const supabaseUrl = supabaseClient.supabaseUrl;
           if (supabaseUrl && supabaseUrl.startsWith('https://')) {
-            addSecurityItem('network-security-results', '? Supabase connection uses HTTPS', 'success');
+            addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Supabase connection uses HTTPS', 'success');
           } else {
-            addSecurityItem('network-security-results', '? CRITICAL: Supabase connection not secure', 'critical');
+            addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Supabase connection not secure', 'critical');
           }
         }
 
@@ -372,14 +379,14 @@
         const supabaseKey = supabaseClient?.supabaseKey;
         if (supabaseKey) {
           if (supabaseKey.startsWith('eyJ')) {
-            addSecurityItem('network-security-results', '? Supabase anon key properly formatted', 'success');
+            addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Supabase anon key properly formatted', 'success');
           } else {
             addSecurityItem('network-security-results', '&#9888; WARNING: Supabase key format suspicious', 'warning');
           }
         }
 
       } catch (error) {
-        addSecurityItem('network-security-results', `? CRITICAL: Network security check failed: ${error.message}`, 'critical');
+        addSecurityItem('network-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Network security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -395,12 +402,12 @@
           const endTime = Date.now();
           const duration = endTime - startTime;
           
-          addSecurityItem('network-security-results', `? API connection working (${duration}ms)`, 'success');
+          addSecurityItem('network-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> API connection working (${duration}ms)`, 'success');
         } else {
           addSecurityItem('network-security-results', '&#9888; WARNING: Supabase client not available', 'warning');
         }
       } catch (error) {
-        addSecurityItem('network-security-results', '? API rate limiting working (requests blocked)', 'success');
+        addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> API rate limiting working (requests blocked)', 'success');
       }
     }
 
@@ -414,9 +421,9 @@
         const sanitized = testXSS.replace(/<script[^>]*>.*?<\/script>/gi, '');
         
         if (sanitized === '') {
-          addSecurityItem('input-security-results', '? XSS protection working', 'success');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> XSS protection working', 'success');
         } else {
-          addSecurityItem('input-security-results', '? CRITICAL: XSS protection failed', 'critical');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: XSS protection failed', 'critical');
         }
 
         // Check 2: Input Length Validation
@@ -424,11 +431,11 @@
         if (longInput.length > 1000) {
           addSecurityItem('input-security-results', '&#9888; WARNING: No input length validation detected', 'warning');
         } else {
-          addSecurityItem('input-security-results', '? Input length validation working', 'success');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Input length validation working', 'success');
         }
 
       } catch (error) {
-        addSecurityItem('input-security-results', `? CRITICAL: Input security check failed: ${error.message}`, 'critical');
+        addSecurityItem('input-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Input security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -456,9 +463,9 @@
       });
       
       if (xssBlocked > 0) {
-        addSecurityItem('input-security-results', `? ${xssBlocked}/${xssVectors.length} XSS vectors blocked`, 'success');
+        addSecurityItem('input-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${xssBlocked}/${xssVectors.length} XSS vectors blocked`, 'success');
       } else {
-        addSecurityItem('input-security-results', '? CRITICAL: No XSS protection detected', 'critical');
+        addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: No XSS protection detected', 'critical');
       }
     }
 
@@ -478,9 +485,9 @@
               .eq('organization_id', user.organizationId);
             
             if (error) {
-              addSecurityItem('rls-security-results', '? RLS policies active (access blocked)', 'success');
+              addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> RLS policies active (access blocked)', 'success');
             } else if (data) {
-              addSecurityItem('rls-security-results', '? RLS policies working - data filtered by organization', 'success');
+              addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> RLS policies working - data filtered by organization', 'success');
             }
           } else {
             addSecurityItem('rls-security-results', '&#9888; WARNING: No organization ID for RLS testing', 'warning');
@@ -490,7 +497,7 @@
         }
 
       } catch (error) {
-        addSecurityItem('rls-security-results', `? CRITICAL: RLS security check failed: ${error.message}`, 'critical');
+        addSecurityItem('rls-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: RLS security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -514,9 +521,9 @@
         });
         
         if (isolatedData) {
-          addSecurityItem('rls-security-results', '? Data properly isolated by organization', 'success');
+          addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Data properly isolated by organization', 'success');
         } else {
-          addSecurityItem('rls-security-results', '? CRITICAL: Data isolation failure detected', 'critical');
+          addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Data isolation failure detected', 'critical');
         }
       } else {
         addSecurityItem('rls-security-results', '&#9888; WARNING: Cannot test data isolation - no organization ID', 'warning');

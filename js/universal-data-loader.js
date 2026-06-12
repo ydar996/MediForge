@@ -1098,7 +1098,7 @@
               dob: patient.date_of_birth,
               gender: patient.gender || '',
               maritalStatus: patient.marital_status || '',
-              tribe: patient.tribe || '',
+              race: patient.race || '',
               occupation: patient.occupation || '',
               phone: patient.phone || '',
               phoneCountryCode: patient.phone_country_code || '',

@@ -7,6 +7,7 @@
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta http-equiv="Pragma" content="no-cache">
   <meta http-equiv="Expires" content="0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <title>Setup Encryption - MediForge</title>
   <link rel="stylesheet" href="css/styles.css">
   <style>
@@ -301,7 +302,7 @@
           if (data && data.settings && data.settings.encryption_enabled) {
             // Encryption already enabled
             document.getElementById('status-message').className = 'status-message success';
-            document.getElementById('status-message').textContent = '? Encryption is already enabled for this organization.';
+            document.getElementById('status-message').textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Encryption is already enabled for this organization.';
             document.getElementById('setup-button').disabled = true;
             document.getElementById('setup-button').textContent = 'Encryption Already Enabled';
             return true;
@@ -346,11 +347,11 @@
         strengthDiv.className = 'password-strength weak';
         return false;
       } else if (strength === 3) {
-        strengthDiv.textContent = '? Medium password';
+        strengthDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Medium password';
         strengthDiv.className = 'password-strength medium';
         return true;
       } else {
-        strengthDiv.textContent = '? Strong password';
+        strengthDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Strong password';
         strengthDiv.className = 'password-strength strong';
         return true;
       }
@@ -372,21 +373,21 @@
       // Validate passwords match
       if (password !== confirmPassword) {
         statusDiv.className = 'status-message error';
-        statusDiv.textContent = '? Passwords do not match. Please try again.';
+        statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Passwords do not match. Please try again.';
         return;
       }
 
       // Validate password length
       if (password.length < 12) {
         statusDiv.className = 'status-message error';
-        statusDiv.textContent = '? Password must be at least 12 characters long.';
+        statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Password must be at least 12 characters long.';
         return;
       }
 
       // Validate password strength
       if (!checkPasswordStrength(password)) {
         statusDiv.className = 'status-message error';
-        statusDiv.textContent = '? Password is too weak. Please use a stronger password with uppercase, lowercase, numbers, and special characters.';
+        statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Password is too weak. Please use a stronger password with uppercase, lowercase, numbers, and special characters.';
         return;
       }
 
@@ -396,7 +397,7 @@
 
       if (!orgId) {
         statusDiv.className = 'status-message error';
-        statusDiv.textContent = '? Organization not found. Please log in again.';
+        statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Organization not found. Please log in again.';
         return;
       }
 
@@ -405,7 +406,7 @@
       setupButton.disabled = true;
       setupButton.textContent = 'Setting up encryption...';
       statusDiv.className = 'status-message info';
-      statusDiv.textContent = '? Initializing encryption... This may take a few seconds.';
+      statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Initializing encryption... This may take a few seconds.';
 
       try {
         // Generate recovery key FIRST (before initializing encryption)
@@ -423,7 +424,7 @@
         try {
           wrappedEncryptionKey = await window.encryptionService.wrapEncryptionKeyWithRecoveryKey(recoveryKey);
         } catch (err) {
-          console.warn('?? Could not wrap encryption key with recovery key:', err);
+          console.warn('Could not wrap encryption key with recovery key:', err);
           // Continue anyway - recovery won't work but encryption will
         }
 
@@ -434,7 +435,7 @@
         try {
           encryptedRecoveryKey = await window.encryptionService.encryptRecoveryKey(recoveryKey, platformMasterKey);
         } catch (err) {
-          console.warn('?? Could not encrypt recovery key with platform key:', err);
+          console.warn('Could not encrypt recovery key with platform key:', err);
           // Continue anyway - platform admin recovery won't work but user recovery will
         }
 
@@ -462,7 +463,7 @@
             if (err.code === '42703' || err.message?.includes('does not exist') || err.message?.includes('column')) {
               existingSettings = {};
             } else {
-              console.warn('?? Could not fetch existing settings:', err);
+              console.warn('Could not fetch existing settings:', err);
             }
           }
 
@@ -483,7 +484,7 @@
             .eq('id', orgId);
 
           if (updateError) {
-            console.warn('?? Could not update organization settings:', updateError);
+            console.warn('Could not update organization settings:', updateError);
             // Continue anyway - encryption is initialized
           }
         }
@@ -531,7 +532,7 @@
 
         // Success message
         statusDiv.className = 'status-message success';
-        statusDiv.textContent = '? Encryption initialized! Please save your recovery key above.';
+        statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Encryption initialized! Please save your recovery key above.';
         
         setupButton.textContent = 'Encryption Enabled';
         setupButton.style.background = '#4caf50';
@@ -541,9 +542,9 @@
         confirmInput.value = '';
 
       } catch (error) {
-        console.error('? Error setting up encryption:', error);
+        console.error('Error setting up encryption:', error);
         statusDiv.className = 'status-message error';
-        statusDiv.textContent = '? Failed to enable encryption: ' + error.message;
+        statusDiv.textContent = '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Failed to enable encryption: ' + error.message;
         
         setupButton.disabled = false;
         setupButton.textContent = 'Enable Encryption';
@@ -554,7 +555,7 @@
     // Helper function to copy recovery key
     window.copyRecoveryKey = function(recoveryKey) {
       navigator.clipboard.writeText(recoveryKey).then(() => {
-        alert('? Recovery key copied to clipboard!');
+        alert('Recovery key copied to clipboard!');
       }).catch(err => {
         console.error('Failed to copy:', err);
         // Fallback: select text
@@ -566,9 +567,9 @@
         textArea.select();
         try {
           document.execCommand('copy');
-          alert('? Recovery key copied to clipboard!');
+          alert('Recovery key copied to clipboard!');
         } catch (err) {
-          alert('? Could not copy. Please manually copy the recovery key.');
+          alert('Could not copy. Please manually copy the recovery key.');
         }
         document.body.removeChild(textArea);
       });

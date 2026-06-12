@@ -394,14 +394,14 @@
             .eq('id', orgData.id);
           
           if (error) {
-            console.error('? Error updating archive status in Supabase:', error);
+            console.error('Error updating archive status in Supabase:', error);
             // Fallback: Cache to localStorage even if Supabase write failed
             organizations[orgName].archived = newArchivedStatus;
             organizations[orgName].archivedAt = newArchivedStatus ? new Date().toISOString() : null;
             organizations[orgName].archivedBy = newArchivedStatus ? JSON.parse(localStorage.getItem('platformAdmin') || '{}').username : null;
             localStorage.setItem('organizations', JSON.stringify(organizations));
           } else {
-            console.log('? Updated archive status in Supabase');
+            console.log('Updated archive status in Supabase');
             // Cache to localStorage immediately after successful Supabase write
             // Supabase write: supabaseClient.update() completed above
             organizations[orgName].archived = newArchivedStatus;
@@ -410,7 +410,7 @@
             localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
           }
         } catch (error) {
-          console.error('? Exception updating archive status in Supabase:', error);
+          console.error('Exception updating archive status in Supabase:', error);
           // Fallback: Cache to localStorage if Supabase exception
           organizations[orgName].archived = newArchivedStatus;
           organizations[orgName].archivedAt = newArchivedStatus ? new Date().toISOString() : null;
@@ -566,7 +566,7 @@
         
         // Check if function exists, if not create a fallback
         if (typeof deleteOrganizationWithZeroUsers !== 'function') {
-          console.error('? deleteOrganizationWithZeroUsers function not found, creating fallback');
+          console.error('deleteOrganizationWithZeroUsers function not found, creating fallback');
           
           // Create fallback delete function
           window.deleteOrganizationWithZeroUsers = async function(orgName) {
@@ -581,17 +581,17 @@
                 .eq('name', orgName);
               
               if (fetchError) {
-                console.error('? Error fetching organization:', fetchError);
+                console.error('Error fetching organization:', fetchError);
                 return { success: false, error: "Database fetch error: " + fetchError.message };
               }
               
               if (!freshOrgs || freshOrgs.length === 0) {
-                console.log('? Organization not found in fresh database query');
+                console.log('Organization not found in fresh database query');
                 return { success: false, error: "Organization not found in database" };
               }
               
               const org = freshOrgs[0];
-              console.log('? Found organization in fresh query:', org);
+              console.log('Found organization in fresh query:', org);
               
               const orgId = org.id;
               
@@ -608,7 +608,7 @@
               if (usersError) {
                 console.warn('[MANAGE-CLINICS] Error deleting users:', usersError);
               } else {
-                console.log('? Users deleted');
+                console.log('Users deleted');
               }
               
               // Delete patients
@@ -621,7 +621,7 @@
               if (patientsError) {
                 console.warn('[MANAGE-CLINICS] Error deleting patients:', patientsError);
               } else {
-                console.log('? Patients deleted');
+                console.log('Patients deleted');
               }
               
               // Delete appointments
@@ -634,7 +634,7 @@
               if (appointmentsError) {
                 console.warn('[MANAGE-CLINICS] Error deleting appointments:', appointmentsError);
               } else {
-                console.log('? Appointments deleted');
+                console.log('Appointments deleted');
               }
               
               // Delete clinical notes
@@ -647,7 +647,7 @@
               if (notesError) {
                 console.warn('[MANAGE-CLINICS] Error deleting clinical notes:', notesError);
               } else {
-                console.log('? Clinical notes deleted');
+                console.log('Clinical notes deleted');
               }
               
               // Delete invoices
@@ -660,7 +660,7 @@
               if (invoicesError) {
                 console.warn('[MANAGE-CLINICS] Error deleting invoices:', invoicesError);
               } else {
-                console.log('? Invoices deleted');
+                console.log('Invoices deleted');
               }
               
               // Delete payments
@@ -673,7 +673,7 @@
               if (paymentsError) {
                 console.warn('[MANAGE-CLINICS] Error deleting payments:', paymentsError);
               } else {
-                console.log('? Payments deleted');
+                console.log('Payments deleted');
               }
               
               // Finally delete the organization
@@ -695,7 +695,7 @@
               
               if (!error1 && deleteData1 && deleteData1.length > 0) {
                 deleteSuccess = true;
-                console.log('? Direct delete successful');
+                console.log('Direct delete successful');
               } else {
                 // Approach 2: Try with name match
                 console.log('[MANAGE-CLINICS] Attempting delete by name...');
@@ -709,7 +709,7 @@
                 
                 if (!error2 && deleteData2 && deleteData2.length > 0) {
                   deleteSuccess = true;
-                  console.log('? Name delete successful');
+                  console.log('Name delete successful');
                 } else {
                   // Approach 3: Try with org_code
                   console.log('[MANAGE-CLINICS] Attempting delete by org_code...');
@@ -723,20 +723,20 @@
                   
                   if (!error3 && deleteData3 && deleteData3.length > 0) {
                     deleteSuccess = true;
-                    console.log('? Org code delete successful');
+                    console.log('Org code delete successful');
                   } else {
                     deleteError = error3 || error2 || error1;
-                    console.error('? All delete approaches failed');
+                    console.error('All delete approaches failed');
                   }
                 }
               }
               
               if (!deleteSuccess) {
-                console.error('? Failed to delete organization with all approaches');
+                console.error('Failed to delete organization with all approaches');
                 return { success: false, error: "Database deletion failed: " + (deleteError?.message || "Unknown error") };
               }
               
-              console.log(`? Organization ${orgName} deleted from Supabase`);
+              console.log(`Organization ${orgName} deleted from Supabase`);
               
               // Clear cache and force refresh
               if (typeof clearOrganizationsCache === 'function') {
@@ -754,7 +754,7 @@
                 message: `Organization "${orgName}" deleted successfully` 
               };
             } catch (error) {
-              console.error('? Exception deleting organization:', error);
+              console.error('Exception deleting organization:', error);
               return { success: false, error: "Unexpected error: " + error.message };
             }
           };
@@ -804,7 +804,7 @@
         }
         
       } catch (error) {
-        console.error('? Error in deleteSingleOrganization:', error);
+        console.error('Error in deleteSingleOrganization:', error);
         alert('Error deleting organization: ' + error.message);
       }
     }

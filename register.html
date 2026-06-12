@@ -1085,7 +1085,7 @@
             });
             if (found) verifiedOrg = found;
             if (verifiedOrg) {
-              console.log('? [TRACE] Organization verified via secure RPC:', verifiedOrg.name);
+              console.log('[TRACE] Organization verified via secure RPC:', verifiedOrg.name);
             } else {
               // Only log if debug mode (reduce console noise)
               if (window.DEBUG_MODE) {
@@ -1125,9 +1125,9 @@
             
             if (!orgError && orgResult) {
               verifiedOrg = orgResult;
-              console.log('? Organization verified via direct query:', orgResult.name, 'Code:', orgResult.org_code);
+              console.log('Organization verified via direct query:', orgResult.name, 'Code:', orgResult.org_code);
             } else if (orgError) {
-              console.error('? Organization query error:', {
+              console.error('Organization query error:', {
                 message: orgError.message,
                 code: orgError.code,
                 details: orgError.details,
@@ -1142,7 +1142,7 @@
                 .limit(5);
               
               if (testError) {
-                console.error('? Cannot query organizations table at all:', testError);
+                console.error('Cannot query organizations table at all:', testError);
               } else {
                 console.log('[REG] Sample organizations in database:', testOrgs);
                 console.log('[REG] Looking for code:', trimmedCode, 'in:', testOrgs.map(o => o.org_code));
@@ -1167,7 +1167,7 @@
                 state: data.state,
                 city: data.city
               };
-              console.log('? Organization verified via localStorage');
+              console.log('Organization verified via localStorage');
               break;
             }
           }
@@ -1176,7 +1176,7 @@
         if (verifiedOrg) {
           // Store verified organization data for form submission (device-agnostic)
           window.verifiedOrgData = verifiedOrg;
-          console.log('? [TRACE] Organization verified and stored:', {
+          console.log('[TRACE] Organization verified and stored:', {
             id: verifiedOrg.id,
             name: verifiedOrg.name,
             org_code: verifiedOrg.org_code,
@@ -1189,7 +1189,7 @@
           // Auto-populate country code for user phone if organization country is available
           handleJoinOrgCountryChange();
         } else {
-          console.error('? [TRACE] Organization verification failed', {
+          console.error('[TRACE] Organization verification failed', {
             orgCode: orgCode.trim(),
             deviceType: /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop',
             timestamp: new Date().toISOString()
@@ -1199,7 +1199,7 @@
           window.verifiedOrgData = null;
         }
       } catch (error) {
-        console.error('? Error verifying organization code:', error);
+        console.error('Error verifying organization code:', error);
         statusDiv.innerHTML = '<div style="color: #dc3545;">Error verifying organization code. Please try again.</div>';
         statusDiv.style.display = 'block';
         window.verifiedOrgData = null;
@@ -1488,7 +1488,7 @@
             }
             
             if (orgError) {
-              console.error('? Supabase organization save failed:', orgError);
+              console.error('Supabase organization save failed:', orgError);
               
               // If it's a duplicate key error, the org might already exist - check and use existing
               if (orgError.code === '23505' || orgError.message.includes('duplicate') || orgError.message.includes('unique')) {
@@ -1530,7 +1530,7 @@
                   }
                   
                   if (retryOrgError) {
-                    console.error('? Retry failed:', retryOrgError);
+                    console.error('Retry failed:', retryOrgError);
                     if (window.RegTrace) window.RegTrace.fail('org_insert_failed', retryOrgError, { orgName: orgData.name });
                     regTraceAlert(
                       'Registration failed',
@@ -1545,7 +1545,7 @@
                     trace('[OK] Organization saved to Supabase on retry');
                     if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId, retried: true });
                   } else {
-                    console.error('? Retry succeeded but no ID returned');
+                    console.error('Retry succeeded but no ID returned');
                     if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
                     regTraceAlert('Registration failed', 'Could not retrieve your clinic ID. Please try again.');
                     if (submitButton) {
@@ -1555,7 +1555,7 @@
                     return;
                   }
                 } catch (retryError) {
-                  console.error('? Retry attempt failed:', retryError);
+                  console.error('Retry attempt failed:', retryError);
                   if (window.RegTrace) window.RegTrace.fail('org_insert_exception', retryError, {});
                   regTraceAlert(
                     'Registration failed',
@@ -1581,7 +1581,7 @@
                 localStorage.setItem('organizations', JSON.stringify(updatedOrgs));
               }
             } else {
-              console.error('? CRITICAL: Organization saved but no ID resolved');
+              console.error('CRITICAL: Organization saved but no ID resolved');
               if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
               regTraceAlert('Registration failed', 'Could not retrieve your clinic ID. Please try again.');
               if (submitButton) {
@@ -1593,7 +1593,7 @@
             
             // CRITICAL: Verify organizationId is set before proceeding
             if (!organizationId) {
-              console.error('? CRITICAL: organizationId is null after organization creation');
+              console.error('CRITICAL: organizationId is null after organization creation');
               if (window.RegTrace) window.RegTrace.fail('org_id_missing', 'organizationId is null', {});
               regTraceAlert('Registration failed', 'Clinic ID not available. Please try again.');
               if (submitButton) {
@@ -1737,12 +1737,12 @@
                       console.warn('[REG] Could not save Canadian Addendum:', canadianAddendumResult.error);
                     }
                   } catch (legalError) {
-                    console.error('? Error saving legal agreements:', legalError);
+                    console.error('Error saving legal agreements:', legalError);
                     // Don't fail registration if legal agreement save fails - log it
                     trace('[REG] Legal agreement save failed, but registration continues');
                   }
                 } else if (!legalAgreementAccepted) {
-                  console.error('? Legal agreement not accepted - this should not happen due to required checkbox');
+                  console.error('Legal agreement not accepted - this should not happen due to required checkbox');
                 }
                 
                 // Step 2: Save to localStorage as cache (only after Supabase success)
@@ -1781,16 +1781,16 @@
                 trace('[OK] Data cached to localStorage after Supabase success');
               } else {
                 supabaseError = registrationResult.error;
-                console.error('? Supabase registration failed:', supabaseError);
+                console.error('Supabase registration failed:', supabaseError);
                 throw new Error(supabaseError);
               }
             } else {
               // Fallback: Direct insert (doesn't create Auth user) - should not happen
-              console.error('? registerWithSupabase not available - using fallback');
+              console.error('registerWithSupabase not available - using fallback');
               throw new Error('Registration system not available');
             }
           } catch (supabaseError) {
-            console.error('? CRITICAL: Supabase registration failed:', supabaseError);
+            console.error('CRITICAL: Supabase registration failed:', supabaseError);
             supabaseError = supabaseError.message || supabaseError;
             const friendlyError = typeof window.userFriendlyRegistrationError === 'function'
               ? window.userFriendlyRegistrationError(supabaseError)
@@ -1806,7 +1806,7 @@
                   .eq('id', organizationId);
                 
                 if (deleteError) {
-                  console.error('? Could not cleanup orphaned organization:', deleteError);
+                  console.error('Could not cleanup orphaned organization:', deleteError);
                   // If cleanup fails, mark as pending so it can be recovered later
                   await window.supabaseClient
                     .from('organizations')
@@ -1817,7 +1817,7 @@
                   trace('[OK] Successfully cleaned up orphaned organization');
                 }
               } catch (cleanupException) {
-                console.error('? Exception during cleanup:', cleanupException);
+                console.error('Exception during cleanup:', cleanupException);
                 // Try to mark as pending as last resort
                 try {
                   await window.supabaseClient
@@ -1825,7 +1825,7 @@
                     .update({ status: 'pending' })
                     .eq('id', organizationId);
                 } catch (pendingException) {
-                  console.error('? Could not mark organization as pending:', pendingException);
+                  console.error('Could not mark organization as pending:', pendingException);
                 }
               }
             }
@@ -1847,7 +1847,7 @@
       showStep('step-success');
         
       } catch (error) {
-        console.error('? Error during registration:', error);
+        console.error('Error during registration:', error);
         if (window.RegTrace) window.RegTrace.fail('registration_page_exception', error, {});
         regTraceAlert('Registration failed', 'Something went wrong. Please try again.');
       }
@@ -2105,7 +2105,7 @@
               const foundOrg = orgs.find(o => o.name === orgName || o.org_code === orgCode);
               if (foundOrg && foundOrg.id) {
                 organizationId = foundOrg.id;
-                console.log('? Found organization ID via secure RPC:', organizationId);
+                console.log('Found organization ID via secure RPC:', organizationId);
               }
             } catch (rpcError) {
               console.warn('[REG] Secure RPC lookup failed, trying direct query:', rpcError);
@@ -2123,7 +2123,7 @@
               
               if (!orgError && orgResult && orgResult.id) {
                 organizationId = orgResult.id;
-                console.log('? Found organization ID via direct query:', organizationId);
+                console.log('Found organization ID via direct query:', organizationId);
               } else if (orgError) {
                 console.warn('[REG] Direct query failed (may be RLS):', orgError.message);
               }
@@ -2143,7 +2143,7 @@
               
               if (!orgError && orgResult && orgResult.id) {
                 organizationId = orgResult.id;
-                console.log('? Found organization ID via org_code lookup:', organizationId);
+                console.log('Found organization ID via org_code lookup:', organizationId);
               }
             } catch (codeError) {
               console.warn('[REG] Org code lookup exception:', codeError);
@@ -2152,7 +2152,7 @@
           
           // If still no UUID found, but org was verified, we have a problem
           if (!organizationId || !organizationId.match(/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i)) {
-            console.error('? CRITICAL: Organization verified but UUID not found');
+            console.error('CRITICAL: Organization verified but UUID not found');
             console.error('Org name:', orgName);
             console.error('Org code:', orgCode);
             console.error('OrgData from localStorage:', orgData);
@@ -2163,7 +2163,7 @@
           }
         }
         
-        console.log('? Organization ID resolved:', organizationId);
+        console.log('Organization ID resolved:', organizationId);
         
         // Register user in Supabase FIRST
         if (typeof window.registerWithSupabase === 'function' && window.supabaseClient) {
@@ -2257,12 +2257,12 @@
                     console.warn('[REG] Could not save Canadian Addendum:', canadianAddendumResult.error);
                   }
                 } catch (legalError) {
-                  console.error('? Error saving legal agreements:', legalError);
+                  console.error('Error saving legal agreements:', legalError);
                   // Don't fail registration if legal agreement save fails - log it
                   trace('[REG] Legal agreement save failed, but registration continues');
                 }
               } else if (!legalAgreementAccepted) {
-                console.error('? Legal agreement not accepted - this should not happen due to required checkbox');
+                console.error('Legal agreement not accepted - this should not happen due to required checkbox');
               }
               
               if (submitButton) {
@@ -2271,7 +2271,7 @@
               }
             } else {
               supabaseError = registrationResult.error;
-              console.error('? Supabase registration failed:', supabaseError);
+              console.error('Supabase registration failed:', supabaseError);
               if (submitButton) {
                 submitButton.disabled = false;
                 submitButton.textContent = originalButtonText;
@@ -2279,7 +2279,7 @@
               throw new Error(supabaseError);
             }
           } catch (err) {
-            console.error('? CRITICAL: Supabase registration exception:', err);
+            console.error('CRITICAL: Supabase registration exception:', err);
             supabaseError = err.message || err;
             if (submitButton) {
               submitButton.disabled = false;
@@ -2331,7 +2331,7 @@
       }
         
       } catch (error) {
-        console.error('? Error during join organization:', error);
+        console.error('Error during join organization:', error);
         alert('Registration failed. Please try again.');
       }
     });

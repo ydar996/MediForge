@@ -370,7 +370,7 @@
       createDetailItem("Date of Birth", payload.dob || "—"),
       createDetailItem("Gender", payload.gender || "—"),
       createDetailItem("Marital Status", payload.maritalStatus || "—"),
-      createDetailItem("Tribe / Ethnic Group", payload.tribe || "—"),
+      createDetailItem("Race", payload.race || "—"),
       createDetailItem("Email", payload.email || "—"),
       createDetailItem("Phone", formatPhone(payload.phone)),
       createDetailItem("Payment Source", payload.paymentSource || "—"),

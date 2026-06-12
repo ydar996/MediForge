@@ -657,7 +657,7 @@ window.exportPatientsCSV = function() {
     }
     
     // Comprehensive CSV with all patient fields
-    let csv = "ID,First Name,Middle Name,Last Name,DOB,Gender,Marital Status,Tribe,Email,Phone,";
+    let csv = "ID,First Name,Middle Name,Last Name,DOB,Gender,Marital Status,Race,Email,Phone,";
     csv += "Address Line 1,Address Line 2,City,State,Country,";
     csv += "Emergency Contact,Emergency Phone,Payment Source,Insurance Name,";
     csv += "Medical History Count,Diagnoses Count,Medications Count,Allergies Count,Immunizations Count,Visits Count\n";
@@ -670,7 +670,7 @@ window.exportPatientsCSV = function() {
       };
       
       csv += `${escapeCsv(p.id)},${escapeCsv(p.firstName)},${escapeCsv(p.middleName)},${escapeCsv(p.lastName)},`;
-      csv += `${escapeCsv(p.dob)},${escapeCsv(p.gender)},${escapeCsv(p.maritalStatus)},${escapeCsv(p.tribe)},`;
+      csv += `${escapeCsv(p.dob)},${escapeCsv(p.gender)},${escapeCsv(p.maritalStatus)},${escapeCsv(p.race)},`;
       csv += `${escapeCsv(p.email)},${escapeCsv(p.phone)},`;
       csv += `${escapeCsv(p.addressLine1)},${escapeCsv(p.addressLine2)},${escapeCsv(p.city)},${escapeCsv(p.state)},${escapeCsv(p.country)},`;
       csv += `${escapeCsv(p.emergencyFirstName + ' ' + p.emergencyLastName)},${escapeCsv(p.phone)},`;
@@ -741,7 +741,7 @@ window.exportPatientRecord = function(patientId) {
         dob: patient.dob,
         gender: patient.gender,
         maritalStatus: patient.maritalStatus,
-        tribe: patient.tribe,
+        race: patient.race,
         email: patient.email,
         phone: patient.phone,
         address: {

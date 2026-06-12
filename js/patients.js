@@ -948,7 +948,7 @@ window.resolvePatientByIdentifier = async function(identifier) {
               email: supabasePatient.email || '',
               gender: supabasePatient.gender || 'Male',
               maritalStatus: supabasePatient.marital_status || '',
-              tribe: supabasePatient.tribe || '',
+              race: supabasePatient.race || '',
               // Address fields
               address: supabasePatient.address || '',
               addressLine1: parsedAddressLine1,
@@ -3643,7 +3643,7 @@ async function loadPatients(page = 1) {
             dob: patient.date_of_birth, // This is the key field!
             gender: patient.gender || '',
             maritalStatus: patient.marital_status || '',
-            tribe: patient.tribe || '',
+            race: patient.race || '',
             occupation: patient.occupation || '',
             phone: patient.phone || '',
             email: patient.email || '',
@@ -3954,9 +3954,9 @@ if (searchInput) {
     
     const filtered = patients.filter(p => {
       const fullName = (p.firstName + " " + p.lastName).toLowerCase();
-      const tribe = (p.tribe || '').toLowerCase();
+      const race = (p.race || '').toLowerCase();
       const gender = (p.gender || '').toLowerCase();
-      return fullName.includes(query) || tribe.includes(query) || gender.includes(query);
+      return fullName.includes(query) || race.includes(query) || gender.includes(query);
     });
     currentPatientPage = 1;  // Reset to first page on search
     // Display filtered filtered as if full list, with pagination
@@ -4191,7 +4191,7 @@ if (addPatientForm) {
     if (!isExisting) {
       // Restore required attributes for core fields for new patients
       const requiredIds = [
-        "dob", "gender", "maritalStatus", "tribe", "phone", "addressLine1",
+        "dob", "gender", "maritalStatus", "race", "phone", "addressLine1",
         "city", "state", "country", "paymentSource"
       ];
       requiredIds.forEach((id) => {
@@ -4211,7 +4211,7 @@ if (addPatientForm) {
     const requiredIds = isExisting
       ? ["firstName", "lastName"].concat(manualNumberingEnabled ? ["customPatientId"] : [])
       : [
-          "firstName", "lastName", "dob", "gender", "maritalStatus", "tribe",
+          "firstName", "lastName", "dob", "gender", "maritalStatus", "race",
           "phone", "addressLine1", "city", "state", "country", "paymentSource"
         ];
     const labels = addPatientForm.querySelectorAll("label[for]");
@@ -4396,7 +4396,7 @@ if (addPatientForm) {
           { id: "dob", label: "Date of Birth" },
           { id: "gender", label: "Gender" },
           { id: "maritalStatus", label: "Marital Status" },
-          { id: "tribe", label: "Tribe" },
+          { id: "race", label: "Race" },
           { id: "phone", label: "Phone" },
           { id: "addressLine1", label: "Address Line 1" },
           { id: "city", label: "City" },
@@ -4674,7 +4674,7 @@ if (addPatientForm) {
         dob: document.getElementById("dob").value,
         gender: document.getElementById("gender").value,
         maritalStatus: document.getElementById("maritalStatus").value,
-        tribe: document.getElementById("tribe").value,
+        race: document.getElementById("race").value,
         email: document.getElementById("email").value,
         phone: (typeof getFullPhoneNumber === 'function' ? getFullPhoneNumber('phone') : document.getElementById("phone").value),
         phoneCountryCode: phoneCountryCode, // Save phone country code separately
@@ -4773,7 +4773,7 @@ if (addPatientForm) {
         emergency_contact_phone: patient.emergencyPhone || null,
         blood_group: patient.bloodGroup || null,
         genotype: patient.genotype || null,
-        tribe: patient.tribe || null,
+        race: patient.race || null,
         marital_status: patient.maritalStatus || null,
         allergies: patient.allergies ? JSON.stringify(patient.allergies) : '[]',
         chronic_conditions: patient.conditions ? JSON.stringify(patient.conditions) : '[]',
@@ -5042,7 +5042,7 @@ if (addPatientForm) {
           dob: document.getElementById("dob")?.value || '',
           gender: document.getElementById("gender")?.value || '',
           maritalStatus: document.getElementById("maritalStatus")?.value || '',
-          tribe: document.getElementById("tribe")?.value || '',
+          race: document.getElementById("race")?.value || '',
           email: document.getElementById("email")?.value || '',
           phone: (typeof getFullPhoneNumber === 'function' ? getFullPhoneNumber('phone') : document.getElementById("phone")?.value || ''),
           addressLine1: document.getElementById("addressLine1")?.value || '',
@@ -5166,31 +5166,11 @@ if (editPatientForm) {
       window.history.replaceState({}, '', `${window.location.pathname}?${urlParams.toString()}`);
     }
     
-    // Get tribe value - handle searchable dropdown
-    let tribeValue = '';
-    const tribeSelect = document.getElementById("tribe");
-    const tribeInput = document.getElementById("tribe-search"); // Searchable dropdown input
-    if (tribeInput && tribeInput.value) {
-      // If searchable dropdown exists, get value from input text and find matching option
-      const inputText = tribeInput.value.trim();
-      if (tribeSelect) {
-        // Find option that matches the input text
-        const matchingOption = Array.from(tribeSelect.options).find(opt => 
-          opt.textContent.trim() === inputText || opt.value === inputText
-        );
-        tribeValue = matchingOption ? matchingOption.value : inputText;
-      } else {
-        tribeValue = inputText;
-      }
-    } else if (tribeSelect) {
-      tribeValue = tribeSelect.value || '';
-    }
-    
+    const raceValue = (document.getElementById("race")?.value || '').trim();
+
     console.log('🔍 [EDIT-PATIENT] Saving patient data:', {
       middleName: document.getElementById("middleName").value,
-      tribe: tribeValue,
-      tribeSelectValue: tribeSelect ? tribeSelect.value : 'NO SELECT',
-      tribeInputValue: tribeInput ? tribeInput.value : 'NO INPUT'
+      race: raceValue
     });
     
     const updated = {
@@ -5200,7 +5180,7 @@ if (editPatientForm) {
       dob: document.getElementById("dob").value,
       gender: document.getElementById("gender").value,
       maritalStatus: document.getElementById("maritalStatus").value,
-      tribe: tribeValue,
+      race: raceValue,
       email: document.getElementById("email").value,
       phone: (typeof getFullPhoneNumber === 'function' ? getFullPhoneNumber('phone') : document.getElementById("phone").value),
       addressLine1: document.getElementById("addressLine1").value,
@@ -5298,7 +5278,7 @@ if (editPatientForm) {
             emergency_contact_phone: updated.emergencyPhone || null,
             blood_group: updated.bloodGroup || patient.bloodGroup || null,
             genotype: updated.genotype || patient.genotype || null,
-            tribe: updated.tribe || null,
+            race: updated.race || null,
             marital_status: updated.maritalStatus || null,
             allergies: patient.allergies ? JSON.stringify(patient.allergies) : '[]',
             chronic_conditions: patient.conditions ? JSON.stringify(patient.conditions) : '[]',
@@ -5315,7 +5295,6 @@ if (editPatientForm) {
             patient_id: patient.id,
             organization_id: orgId,
             middle_name: supabasePatientUpdate.middle_name,
-            tribe: supabasePatientUpdate.tribe,
             first_name: supabasePatientUpdate.first_name,
             last_name: supabasePatientUpdate.last_name
           });
@@ -5335,8 +5314,7 @@ if (editPatientForm) {
           
           console.log('✅ [EDIT-PATIENT] Supabase update successful:', {
             updated_patient: data,
-            middle_name: data?.middle_name,
-            tribe: data?.tribe
+            middle_name: data?.middle_name
           });
           
           // CRITICAL: Update the patient object with the returned data from Supabase
@@ -5346,7 +5324,7 @@ if (editPatientForm) {
             patient.firstName = data.first_name || patient.firstName;
             patient.middleName = data.middle_name || patient.middleName;
             patient.lastName = data.last_name || patient.lastName;
-            patient.tribe = data.tribe || patient.tribe;
+            patient.race = data.race || patient.race;
             patient.gender = data.gender || patient.gender;
             patient.dob = data.date_of_birth || patient.dob;
             patient.email = data.email || patient.email;
@@ -5372,8 +5350,7 @@ if (editPatientForm) {
             patient.paymentSource = data.payment_source || patient.paymentSource;
             
             console.log('✅ [EDIT-PATIENT] Patient object updated with Supabase data:', {
-              middleName: patient.middleName,
-              tribe: patient.tribe
+              middleName: patient.middleName
             });
           }
           
@@ -5396,8 +5373,7 @@ if (editPatientForm) {
           }
           
           console.log('✅ [EDIT-PATIENT] Patient saved to localStorage:', {
-            middleName: patient.middleName,
-            tribe: patient.tribe,
+            middleName: patient.middleName
             patientId: patient.id
           });
           
@@ -5405,7 +5381,7 @@ if (editPatientForm) {
           try {
             const { data: verifyData, error: verifyError } = await window.supabaseClient
               .from('patients')
-              .select('middle_name, first_name, last_name, tribe')
+              .select('middle_name, first_name, last_name, race')
               .eq('patient_id', patient.id)
               .eq('organization_id', orgId)
               .single();
@@ -5415,7 +5391,6 @@ if (editPatientForm) {
             } else {
               console.log('✅ [EDIT-PATIENT] Verified save in Supabase:', {
                 middle_name: verifyData.middle_name,
-                tribe: verifyData.tribe,
                 first_name: verifyData.first_name,
                 last_name: verifyData.last_name
               });
@@ -5526,8 +5501,7 @@ if (editPatientForm) {
       
       console.log('✅ [EDIT-PATIENT] Redirecting to patients page. Final patient data:', {
         id: patient.id,
-        middleName: patient.middleName,
-        tribe: patient.tribe,
+        middleName: patient.middleName
         firstName: patient.firstName,
         lastName: patient.lastName
       });
@@ -6112,12 +6086,12 @@ async function loadPatientDetails() {
     // Also check localStorage directly as fallback if Supabase doesn't have the data
     // This handles cases where columns were added after patient registration
     let maritalStatus = (patient.maritalStatus || patient.marital_status || '').trim();
-    let tribe = (patient.tribe || '').trim();
+    let race = (patient.race || '').trim();
     
     // If still empty, try to get from localStorage directly (for patients registered before columns existed)
-    if (!maritalStatus || !tribe) {
+    if (!maritalStatus || !race) {
       try {
-        console.log('🔍 Checking localStorage for marital_status/tribe. Patient:', {
+        console.log('🔍 Checking localStorage for marital_status/race. Patient:', {
           id: patient.id,
           patient_id: patient.patient_id,
           _supabaseUuid: patient._supabaseUuid,
@@ -6125,7 +6099,7 @@ async function loadPatientDetails() {
           lastName: patient.lastName,
           dob: patient.dob,
           currentMaritalStatus: maritalStatus,
-          currentTribe: tribe
+          currentRace: race
         });
         
         const localStoragePatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
@@ -6173,47 +6147,48 @@ async function loadPatientDetails() {
           console.log('🔍 localStorage patient found:', {
             id: localPatient.id,
             patient_id: localPatient.patient_id,
-            maritalStatus: localPatient.maritalStatus || localPatient.marital_status,
-            tribe: localPatient.tribe,
+            maritalStatus: localPatient.maritalStatus || localPatient.marital_status
             firstName: localPatient.firstName,
             lastName: localPatient.lastName,
             dob: localPatient.dob,
-            allKeys: Object.keys(localPatient).filter(k => k.includes('marital') || k.includes('tribe') || k.includes('Marital') || k.includes('Tribe'))
+            allKeys: Object.keys(localPatient).filter(k => k.includes('marital') || k.includes('race') || k.includes('Marital') || k.includes('Race'))
           });
           
           // Check ALL possible field name variations
           const localMaritalStatus = localPatient.maritalStatus || localPatient.marital_status || localPatient.MaritalStatus || localPatient.Marital_Status || '';
-          const localTribe = localPatient.tribe || localPatient.Tribe || '';
+          const localRace = localPatient.race || '';
           
           console.log('🔍 Raw localStorage values:', {
             maritalStatus: localMaritalStatus,
-            tribe: localTribe,
+            race: localRace,
             'localPatient.maritalStatus': localPatient.maritalStatus,
             'localPatient.marital_status': localPatient.marital_status,
-            'localPatient.tribe': localPatient.tribe
+            'localPatient.race': localPatient.race,
+            'localPatient.race': localPatient.race
           });
           
           if (!maritalStatus) maritalStatus = String(localMaritalStatus || '').trim();
-          if (!tribe) tribe = String(localTribe || '').trim();
+          if (!race) race = String(localRace || '').trim();
           
-          console.log('🔍 After localStorage lookup:', { maritalStatus, tribe, 'maritalStatus length': maritalStatus.length, 'tribe length': tribe.length });
+          console.log('🔍 After localStorage lookup:', { maritalStatus, race, 'maritalStatus length': maritalStatus.length, 'race length': race.length });
           
           // If we found data in localStorage but not in Supabase, sync it back
           // Use patient._supabaseUuid or patient.id (if UUID) for Supabase update
           const supabasePatientId = patient._supabaseUuid || (patient.id && patient.id.includes('-') ? patient.id : null);
           const patientDisplayId = patient.patient_id || patient.id;
           
-          if ((maritalStatus || tribe) && window.supabaseClient) {
+          if ((maritalStatus || race) && window.supabaseClient) {
             const updateData = {};
             // Only update if Supabase doesn't have the data (check both empty string and null)
             const hasMaritalStatusInSupabase = patient.maritalStatus || patient.marital_status;
-            const hasTribeInSupabase = patient.tribe;
+            const hasRaceInSupabase = patient.race;
             
             if (maritalStatus && !hasMaritalStatusInSupabase) {
               updateData.marital_status = maritalStatus;
             }
-            if (tribe && !hasTribeInSupabase) {
-              updateData.tribe = tribe;
+            if (race && !hasRaceInSupabase) {
+              updateData.race = race;
+              
             }
             
             if (Object.keys(updateData).length > 0) {
@@ -6244,18 +6219,18 @@ async function loadPatientDetails() {
                 updatePromise
                   .then(({ data, error }) => {
                     if (error) {
-                      console.error('❌ Could not sync marital_status/tribe to Supabase:', error);
+                      console.error('❌ Could not sync marital_status/race to Supabase:', error);
                     } else {
-                      console.log('✅ Synced marital_status/tribe from localStorage to Supabase:', updateData);
+                      console.log('✅ Synced marital_status/race from localStorage to Supabase:', updateData);
                       // Update the patient object immediately so display updates
                       if (maritalStatus) patient.maritalStatus = maritalStatus;
-                      if (tribe) patient.tribe = tribe;
+                      if (race) patient.race = race; patient.race = race;
                       // Reload patient details to show updated data
                       setTimeout(() => loadPatientDetails(), 500);
                     }
                   })
                   .catch(err => {
-                    console.error('❌ Exception syncing marital_status/tribe to Supabase:', err);
+                    console.error('❌ Exception syncing marital_status/race to Supabase:', err);
                   });
               } else {
                 console.warn('⚠️ Cannot sync: missing UUID or patient_id. supabaseClient:', !!window.supabaseClient, 'supabasePatientId:', supabasePatientId, 'patientDisplayId:', patientDisplayId);
@@ -6264,7 +6239,7 @@ async function loadPatientDetails() {
               console.log('ℹ️ No update needed - data already in Supabase or no new data found');
             }
           } else {
-            console.warn('⚠️ Cannot sync: missing supabaseClient or no data found. supabaseClient:', !!window.supabaseClient, 'maritalStatus:', maritalStatus, 'tribe:', tribe);
+            console.warn('⚠️ Cannot sync: missing supabaseClient or no data found. supabaseClient:', !!window.supabaseClient, 'maritalStatus:', maritalStatus, 'race:', race);
           }
         } else {
           console.warn('⚠️ Patient not found in localStorage. Searched by:', {
@@ -6275,7 +6250,7 @@ async function loadPatientDetails() {
           });
         }
       } catch (e) {
-        console.error('❌ Exception checking localStorage for marital_status/tribe:', e);
+        console.error('❌ Exception checking localStorage for marital_status/race:', e);
       }
     }
     
@@ -6289,7 +6264,7 @@ async function loadPatientDetails() {
     const paymentSource = patient.paymentSource || 'Cash';
     
     document.getElementById("patient-info").innerHTML = `
-      <p><strong>Patient ID:</strong> ${patientIdForUi} | <strong>Full Name:</strong> ${patient.firstName} ${patient.middleName ? patient.middleName : ''} ${patient.lastName} | <strong>DOB:</strong> ${patient.dob} | <strong>Gender:</strong> ${patient.gender} | <strong>Marital Status:</strong> ${maritalStatus || 'N/A'} | <strong>Tribe:</strong> ${tribe || 'N/A'}</p>
+      <p><strong>Patient ID:</strong> ${patientIdForUi} | <strong>Full Name:</strong> ${patient.firstName} ${patient.middleName ? patient.middleName : ''} ${patient.lastName} | <strong>DOB:</strong> ${patient.dob} | <strong>Gender:</strong> ${patient.gender} | <strong>Marital Status:</strong> ${maritalStatus || 'N/A'} | <strong>Race:</strong> ${race || 'N/A'}</p>
       <p><strong>Email:</strong> ${email || 'N/A'} | <strong>Phone:</strong> ${phone || 'N/A'} | <strong>Address:</strong> ${addressDisplay}</p>
       <p><strong>Emergency Contact:</strong> ${emergencyNameDisplay}${emergencyRelationship ? ` (${emergencyRelationship})` : ''} | <strong>Emergency Phone:</strong> ${emergencyPhone || 'N/A'} | <strong>Emergency Email:</strong> ${emergencyEmail || 'N/A'} | <strong>Emergency Address:</strong> ${emergencyAddressDisplay}</p>
       <p><strong>Has Diabetes:</strong> ${patient.hasDiabetes ? 'Yes' : 'No'} | <strong>Payment Source:</strong> ${paymentSource}</p>
@@ -12380,7 +12355,7 @@ async function loadClinicalNote() {
             country: supabasePatient.country || '',
             gender: supabasePatient.gender || 'Male',
             maritalStatus: supabasePatient.marital_status || '',
-            tribe: supabasePatient.tribe || '',
+            race: supabasePatient.race || '',
             organizationId: supabasePatient.organization_id,
             medicalHistory: parseJSONField(supabasePatient.medical_history, []),
             diagnoses: parseJSONField(supabasePatient.diagnoses, []),
@@ -17090,8 +17065,7 @@ async function loadEditForm() {
   
   // DEBUG: Log patient data to see what fields are available
   console.log('🔍 [EDIT-PATIENT] Patient data loaded:', {
-    id: patient.id,
-    tribe: patient.tribe,
+    id: patient.id
     paymentSource: patient.paymentSource || patient.payment_source,
     phoneCountryCode: patient.phoneCountryCode,
     emergencyPhoneCountryCode: patient.emergencyPhoneCountryCode,
@@ -17318,58 +17292,16 @@ async function loadEditForm() {
   setValue("gender", patient.gender || '');
   setValue("maritalStatus", patient.maritalStatus || patient.marital_status || '');
   
-  // DEBUG: Log tribe value before setting
-  console.log('🔍 [EDIT-PATIENT] Setting tribe:', {
-    tribe: patient.tribe,
-    tribeType: typeof patient.tribe,
-    tribeValue: patient.tribe || ''
-  });
-  
-  // Set tribe value - handle searchable dropdown
-  const tribeValue = patient.tribe || '';
-  if (tribeValue) {
-    // Try to set on the select first
-    const tribeSelect = document.getElementById('tribe');
-    if (tribeSelect) {
-      // Check if it's been converted to searchable dropdown
-      if (tribeSelect.dataset.searchable === 'true') {
-        // It's a searchable dropdown - set the input value
-        const tribeInput = document.getElementById('tribe-search');
-        if (tribeInput) {
-          tribeInput.value = tribeValue;
-          console.log('✅ [EDIT-PATIENT] Set tribe (searchable input) to:', tribeValue);
-        } else {
-          // Fallback: try to find the option and select it
-          const option = Array.from(tribeSelect.options).find(opt => opt.value === tribeValue || opt.textContent === tribeValue);
-          if (option) {
-            tribeSelect.value = option.value;
-            // Trigger change to update searchable input
-            tribeSelect.dispatchEvent(new Event('change'));
-            console.log('✅ [EDIT-PATIENT] Set tribe (select option) to:', tribeValue);
-          }
-        }
-      } else {
-        // Regular select - set value directly
-        tribeSelect.value = tribeValue;
-        console.log('✅ [EDIT-PATIENT] Set tribe (regular select) to:', tribeValue);
-      }
-    } else {
-      console.warn('⚠️ [EDIT-PATIENT] Tribe select not found');
-    }
-    
-    // Also set using setValue as fallback
-    setValue("tribe", tribeValue);
-    
-    // Wait a bit and try to set the searchable input if it exists
-    setTimeout(() => {
-      const tribeInput = document.getElementById('tribe-search');
-      if (tribeInput && !tribeInput.value) {
-        tribeInput.value = tribeValue;
-        console.log('✅ [EDIT-PATIENT] Set tribe (delayed searchable input) to:', tribeValue);
-      }
-    }, 500);
+  const raceValue = (typeof window.normalizePatientRaceForLoad === 'function'
+    ? window.normalizePatientRaceForLoad(patient)
+    : (patient.race || ''));
+  if (typeof window.populatePatientRaceSelect === 'function') {
+    window.populatePatientRaceSelect(document.getElementById('race'), raceValue);
+  } else {
+    setValue("race", raceValue);
   }
-  setValue("email", patient.email);
+
+    setValue("email", patient.email);
   setValue("phone", phoneNumber); // Phone number without country code
   setValue("addressLine1", patient.addressLine1 || patient.address_line1 || patient.address || '');
   setValue("addressLine2", patient.addressLine2 || patient.address_line2 || '');
@@ -17685,13 +17617,14 @@ async function loadEditForm() {
         sameAsContact.dispatchEvent(new Event('change'));
       }
 
-      // Re-apply tribe (searchable dropdown may reinitialize)
-      const tribeValue = patient.tribe || '';
-      if (tribeValue) {
-        const tribeSelect = document.getElementById('tribe');
-        const tribeInput = document.getElementById('tribe-search');
-        if (tribeInput) tribeInput.value = tribeValue;
-        if (tribeSelect) tribeSelect.value = tribeValue;
+      const raceVal = (typeof window.normalizePatientRaceForLoad === 'function'
+        ? window.normalizePatientRaceForLoad(patient)
+        : (patient.race || ''));
+      if (raceVal && typeof window.populatePatientRaceSelect === 'function') {
+        window.populatePatientRaceSelect(document.getElementById('race'), raceVal);
+      } else if (raceVal) {
+        const raceSelect = document.getElementById('race');
+        if (raceSelect) raceSelect.value = raceVal;
       }
 
       // Re-apply payment source (ensure select matches normalized value)
@@ -17710,8 +17643,7 @@ async function loadEditForm() {
   // Trace final DOM values after all async setters
   setTimeout(() => {
     console.log('🔍 [EDIT-PATIENT] DOM values after apply:', {
-      tribeSelect: document.getElementById('tribe')?.value || '',
-      tribeSearch: document.getElementById('tribe-search')?.value || '',
+      race: document.getElementById('race')?.value || '',
       paymentSource: document.getElementById('paymentSource')?.value || '',
       sameAsContact: document.getElementById('sameAsContact')?.checked,
       emergencyCountry: document.getElementById('emergencyCountry')?.value || '',
@@ -17724,7 +17656,7 @@ async function loadEditForm() {
   // Final verification: Ensure all critical fields are set
   // This is a safety net to catch any fields that might have been missed
   console.log('🔍 [EDIT-PATIENT] Field verification:', {
-    tribe: document.getElementById('tribe')?.value || 'NOT SET',
+    race: document.getElementById('race')?.value || 'NOT SET',
     phoneCountryCode: document.getElementById('phoneCountryCode')?.value || 'NOT SET',
     emergencyCountry: document.getElementById('emergencyCountry')?.value || 'NOT SET',
     emergencyState: document.getElementById('emergencyState')?.value || 'NOT SET',

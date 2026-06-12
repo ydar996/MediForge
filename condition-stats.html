@@ -243,7 +243,7 @@
       <tr>
         <th>Medical Condition</th>
         <th>Gender Breakdown</th>
-        <th>Tribe Breakdown</th>
+        <th>Race Breakdown</th>
         <th>Age Breakdown</th>
       </tr>
     </thead>
@@ -285,7 +285,7 @@
         const patients = await window.loadPatientsWithSupabasePriority();
         
         if (!patients || !Array.isArray(patients) || patients.length === 0) {
-          console.warn('?? No patients found');
+          console.warn('No patients found');
           displayConditionStats([]);
           return;
         }
@@ -352,7 +352,7 @@
             conditionStatsMap.set(diagnosisName, {
               name: diagnosisName,
               genderBreakdown: { male: 0, female: 0 },
-              tribeBreakdown: new Set(),
+              raceBreakdown: new Set(),
               ageBreakdown: { '0-18': 0, '19-25': 0, '26-65': 0, '66+': 0 }
             });
           }
@@ -364,8 +364,8 @@
           if (gender === 'male') stats.genderBreakdown.male++;
           else if (gender === 'female') stats.genderBreakdown.female++;
           
-          // Tribe breakdown
-          if (patient.tribe) stats.tribeBreakdown.add(patient.tribe);
+          // Race breakdown
+          const raceVal = (patient.race || '').trim(); if (raceVal) stats.raceBreakdown.add(raceVal);
           
           // Age breakdown
           const dob = patient.dateOfBirth || patient.dob;
@@ -428,11 +428,11 @@
           genderBreakdown = `Male: ${malePct}%, Female: ${femalePct}%`;
         }
         
-        // Format tribe breakdown
-        const tribes = Array.from(condition.tribeBreakdown);
-        let tribeBreakdown = 'N/A';
-        if (tribes.length > 0) {
-          tribeBreakdown = tribes.join(', ');
+        // Format race breakdown
+        const races = Array.from(condition.raceBreakdown);
+        let raceBreakdown = 'N/A';
+        if (races.length > 0) {
+          raceBreakdown = races.join(', ');
         }
         
         // Format age breakdown with percentages
@@ -457,7 +457,7 @@
         row.innerHTML = `
           <td><a href="condition-patients?condition=${encodedCondition}" style="color: ${linkColor} !important; text-decoration: none; font-weight: 600;">${condition.name}</a></td>
           <td style="color: var(--charcoal);">${genderBreakdown}</td>
-          <td style="color: var(--charcoal);">${tribeBreakdown}</td>
+          <td style="color: var(--charcoal);">${raceBreakdown}</td>
           <td style="color: var(--charcoal);">${ageBreakdown}</td>
         `;
         tbody.appendChild(row);

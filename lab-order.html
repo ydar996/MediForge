@@ -128,7 +128,7 @@
 
     // Ensure order is synced to Supabase
     async function ensureOrderSyncedToSupabase(patient, visitDate, selectedLabs) {
-      console.log('?? [LAB-ORDER] ensureOrderSyncedToSupabase called', {
+      console.log('[LAB-ORDER] ensureOrderSyncedToSupabase called', {
         patientId: patient.id,
         visitDate,
         selectedLabsCount: selectedLabs.length,
@@ -139,7 +139,7 @@
       try {
         // Find the most recent order for this visit
         const visit = patient.visits?.find(v => v.date === visitDate);
-        console.log('?? [LAB-ORDER] Visit found:', {
+        console.log('[LAB-ORDER] Visit found:', {
           hasVisit: !!visit,
           visitDate: visit?.date,
           hasOrders: !!visit?.orders,
@@ -147,40 +147,40 @@
         });
         
         if (!visit || !visit.orders || visit.orders.length === 0) {
-          console.log('?? [LAB-ORDER] No orders found in visit, creating new order...');
+          console.log('[LAB-ORDER] No orders found in visit, creating new order...');
           // Create order using saveGeneratedOrderToChart if available
           if (typeof saveGeneratedOrderToChart === 'function') {
-            console.log('? [LAB-ORDER] Calling saveGeneratedOrderToChart...');
+            console.log('[LAB-ORDER] Calling saveGeneratedOrderToChart...');
             await saveGeneratedOrderToChart('lab', selectedLabs, false, patient.id, visitDate);
-            console.log('? [LAB-ORDER] saveGeneratedOrderToChart completed');
+            console.log('[LAB-ORDER] saveGeneratedOrderToChart completed');
           } else {
-            console.warn('?? [LAB-ORDER] saveGeneratedOrderToChart function not available');
+            console.warn('[LAB-ORDER] saveGeneratedOrderToChart function not available');
           }
           return;
         }
         
         // Find lab orders
         const labOrders = visit.orders.filter(o => o.type === 'lab');
-        console.log('?? [LAB-ORDER] Lab orders found:', {
+        console.log('[LAB-ORDER] Lab orders found:', {
           labOrdersCount: labOrders.length,
           allOrdersCount: visit.orders.length
         });
         
         if (labOrders.length === 0) {
-          console.log('?? [LAB-ORDER] No lab orders found, creating new order...');
+          console.log('[LAB-ORDER] No lab orders found, creating new order...');
           if (typeof saveGeneratedOrderToChart === 'function') {
-            console.log('? [LAB-ORDER] Calling saveGeneratedOrderToChart...');
+            console.log('[LAB-ORDER] Calling saveGeneratedOrderToChart...');
             await saveGeneratedOrderToChart('lab', selectedLabs, false, patient.id, visitDate);
-            console.log('? [LAB-ORDER] saveGeneratedOrderToChart completed');
+            console.log('[LAB-ORDER] saveGeneratedOrderToChart completed');
           } else {
-            console.warn('?? [LAB-ORDER] saveGeneratedOrderToChart function not available');
+            console.warn('[LAB-ORDER] saveGeneratedOrderToChart function not available');
           }
           return;
         }
         
         // Get the most recent lab order
         const latestOrder = labOrders[labOrders.length - 1];
-        console.log('?? [LAB-ORDER] Found existing order:', {
+        console.log('[LAB-ORDER] Found existing order:', {
           serialNumber: latestOrder.serialNumber,
           type: latestOrder.type,
           timestamp: latestOrder.timestamp
@@ -188,15 +188,15 @@
         
         // Check if it's already synced to Supabase
         if (typeof syncOrderToSupabase === 'function') {
-          console.log('? [LAB-ORDER] Syncing order to Supabase...');
+          console.log('[LAB-ORDER] Syncing order to Supabase...');
           await syncOrderToSupabase(latestOrder, patient, visit);
-          console.log('? [LAB-ORDER] syncOrderToSupabase call completed');
+          console.log('[LAB-ORDER] syncOrderToSupabase call completed');
         } else {
-          console.warn('?? [LAB-ORDER] syncOrderToSupabase function not available');
+          console.warn('[LAB-ORDER] syncOrderToSupabase function not available');
         }
       } catch (error) {
-        console.error('? [LAB-ORDER] Error ensuring order sync:', error);
-        console.error('? [LAB-ORDER] Error stack:', error.stack);
+        console.error('[LAB-ORDER] Error ensuring order sync:', error);
+        console.error('[LAB-ORDER] Error stack:', error.stack);
       }
     }
 
@@ -215,7 +215,7 @@
         return;
       }
 
-      console.log('?? [LAB-ORDER] Saving order to chart...');
+      console.log('[LAB-ORDER] Saving order to chart...');
 
       // Capture the current page content as HTML
       const orderContent = document.documentElement.outerHTML;
@@ -269,14 +269,14 @@
           if (typeof window.generateOrderSerialNumber === 'function') {
             try {
               serialNumber = await window.generateOrderSerialNumber(orderType);
-              console.log('? [lab-order] Generated serial number:', serialNumber);
+              console.log('[lab-order] Generated serial number:', serialNumber);
             } catch (error) {
-              console.error('? [lab-order] Error generating serial number:', error);
+              console.error('[lab-order] Error generating serial number:', error);
               // Fallback to timestamp-based format if generation fails
               serialNumber = `${orderType.toUpperCase()}-${patientId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
             }
           } else {
-            console.warn('?? [lab-order] generateOrderSerialNumber not available, using fallback');
+            console.warn('[lab-order] generateOrderSerialNumber not available, using fallback');
             // Fallback if function not available
             serialNumber = `${orderType.toUpperCase()}-${patientId}-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
           }
@@ -290,11 +290,11 @@
             .maybeSingle();
           
           if (checkError && checkError.code !== 'PGRST116') {
-            console.warn('?? [LAB-ORDER] Error checking existing order:', checkError);
+            console.warn('[LAB-ORDER] Error checking existing order:', checkError);
           }
           
           if (existingOrder) {
-            console.log('? [LAB-ORDER] Order already exists, updating...');
+            console.log('[LAB-ORDER] Order already exists, updating...');
             // Update existing order
             const { data: updatedData, error: updateError } = await supabaseClient
               .from('orders')
@@ -338,7 +338,7 @@
               .single();
             
             if (error) {
-              console.error('? [LAB-ORDER] Supabase insert error details:', {
+              console.error('[LAB-ORDER] Supabase insert error details:', {
                 message: error.message,
                 code: error.code,
                 details: error.details,
@@ -390,7 +390,7 @@
             });
           }
         } catch (err) {
-          console.error('? Supabase order save failed:', err);
+          console.error('Supabase order save failed:', err);
           
           // Fallback: Save to localStorage and queue for sync
           // Supabase-first: Try Supabase again via standard function, then fallback to localStorage
@@ -710,7 +710,7 @@
 
     // Load data on page load
     window.onload = async function() {
-      console.log('?? [LAB-ORDER] Page loaded, initializing...');
+      console.log('[LAB-ORDER] Page loaded, initializing...');
       
       const urlParams = new URLSearchParams(window.location.search);
       const patientId = urlParams.get("patientId");
@@ -750,7 +750,7 @@
           }
         }
       } catch (error) {
-        console.warn('?? Supabase load failed, falling back to localStorage:', error);
+        console.warn('Supabase load failed, falling back to localStorage:', error);
       }
       
       // Fallback to localStorage if Supabase didn't provide data
@@ -761,7 +761,7 @@
       const patient = patients.find(p => p.id === patientId);
       const user = JSON.parse(localStorage.getItem("user"));
       
-      console.log('?? [LAB-ORDER] Order data:', {
+      console.log('[LAB-ORDER] Order data:', {
         patientId,
         visitDate,
         selectedLabsCount: selectedLabs.length,
@@ -772,22 +772,22 @@
       
       // Ensure order is synced to Supabase when page loads
       if (patient && visitDate && selectedLabs.length > 0) {
-        console.log('?? [LAB-ORDER] Conditions met - Ensuring order is synced to Supabase...');
+        console.log('[LAB-ORDER] Conditions met - Ensuring order is synced to Supabase...');
         try {
           await ensureOrderSyncedToSupabase(patient, visitDate, selectedLabs);
-          console.log('? [LAB-ORDER] Order sync check completed');
+          console.log('[LAB-ORDER] Order sync check completed');
         } catch (error) {
-          console.error('? [LAB-ORDER] Error in ensureOrderSyncedToSupabase:', error);
+          console.error('[LAB-ORDER] Error in ensureOrderSyncedToSupabase:', error);
         }
       } else {
-        console.warn('?? [LAB-ORDER] Order sync skipped - conditions not met:', {
+        console.warn('[LAB-ORDER] Order sync skipped - conditions not met:', {
           hasPatient: !!patient,
           hasVisitDate: !!visitDate,
           selectedLabsCount: selectedLabs.length
         });
       }
       
-      console.log('?? [LAB-ORDER] Rendering order display...');
+      console.log('[LAB-ORDER] Rendering order display...');
       
       if (patient && user) {
         // Display patient and order info
@@ -822,9 +822,9 @@
             tbody.appendChild(row);
           }
         });
-        console.log('? [LAB-ORDER] Order display rendered successfully');
+        console.log('[LAB-ORDER] Order display rendered successfully');
       } else {
-        console.error('? [LAB-ORDER] Patient or user data not found:', {
+        console.error('[LAB-ORDER] Patient or user data not found:', {
           hasPatient: !!patient,
           hasUser: !!user
         });
@@ -833,12 +833,12 @@
 
       // Clean up sessionStorage
       sessionStorage.removeItem("selectedLabs");
-      console.log('? [LAB-ORDER] Page initialization complete');
+      console.log('[LAB-ORDER] Page initialization complete');
     };
 
     // Function to download lab order as image with multi-page support
     function downloadLabOrderAsImage() {
-      console.log('?? Starting lab order image download...');
+      console.log('Starting lab order image download...');
       
       try {
         const labTable = document.getElementById('lab-table');
@@ -851,7 +851,7 @@
         
         // Get all table rows to determine if we need multiple pages
         const tableRows = labTable.querySelectorAll('tbody tr');
-        console.log(`?? Found ${tableRows.length} table rows`);
+        console.log(`Found ${tableRows.length} table rows`);
         
         if (tableRows.length === 0) {
           alert('No lab tests selected to download.');
@@ -861,20 +861,20 @@
         // Calculate rows per page (approximately 20-25 rows per A4 page)
         const rowsPerPage = 20;
         const totalPages = Math.ceil(tableRows.length / rowsPerPage);
-        console.log(`?? Will generate ${totalPages} page(s) of lab orders`);
+        console.log(`Will generate ${totalPages} page(s) of lab orders`);
         
         // Generate each page
         generateLabOrderPages(labTable, patientInfo, tableRows, rowsPerPage, totalPages, 0);
         
       } catch (error) {
-        console.error('? Error in lab order image download:', error);
+        console.error('Error in lab order image download:', error);
         alert('Error downloading image. Please try again.');
       }
     }
     
     // Function to generate multiple pages of lab orders
     function generateLabOrderPages(labTable, patientInfo, allRows, rowsPerPage, totalPages, currentPage) {
-      console.log(`?? Generating page ${currentPage + 1} of ${totalPages}`);
+      console.log(`Generating page ${currentPage + 1} of ${totalPages}`);
       
       // Create a visible container for this page
       const tempContainer = document.createElement('div');
@@ -987,7 +987,7 @@
       const startRow = currentPage * rowsPerPage;
       const endRow = Math.min(startRow + rowsPerPage, allRows.length);
       
-      console.log(`?? Adding rows ${startRow} to ${endRow - 1} to page ${currentPage + 1}`);
+      console.log(`Adding rows ${startRow} to ${endRow - 1} to page ${currentPage + 1}`);
       
       // Add rows for this page
       for (let i = startRow; i < endRow; i++) {
@@ -1112,7 +1112,7 @@
           link.click();
           document.body.removeChild(link);
           
-          console.log(`? Lab order page ${currentPage + 1} downloaded as image:`, link.download);
+          console.log(`Lab order page ${currentPage + 1} downloaded as image:`, link.download);
           
           // Show success message
           showPageSuccessMessage(currentPage + 1, totalPages);
@@ -1130,7 +1130,7 @@
           }
           
         }).catch(error => {
-          console.error(`? Error generating lab order page ${currentPage + 1}:`, error);
+          console.error(`Error generating lab order page ${currentPage + 1}:`, error);
           alert(`Error generating page ${currentPage + 1}. Please try again.`);
           if (document.body.contains(tempContainer)) {
             document.body.removeChild(tempContainer);

@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" crossorigin="anonymous" referrerpolicy="no-referrer">
   <title>MediForge Security Audit</title>
   <style>
     body {
@@ -234,12 +235,18 @@
       element.textContent = message;
     }
 
+    function formatSecurityAuditMessage(message, status) {
+      const icons = { success: '<i class="fa-solid fa-circle-check" aria-hidden="true"></i>', critical: '<i class="fa-solid fa-circle-xmark" aria-hidden="true"></i>', warning: '<i class="fa-solid fa-triangle-exclamation" aria-hidden="true"></i>', info: '<i class="fa-solid fa-circle-info" aria-hidden="true"></i>' };
+      let text = String(message).replace(/^\?\s+/, '').replace(/^&#9888;\s+WARNING:\s+/, 'WARNING: ').replace(/^&#8505;\s+/, '');
+      return `${icons[status] || icons.info} ${text}`;
+    }
+
     function addSecurityItem(elementId, message, status = 'info') {
       const element = document.getElementById(elementId);
       if (element.textContent.trim() === '') {
         element.style.display = 'block';
       }
-      element.innerHTML += `<div class="security-item ${status}">${message}</div>`;
+      element.innerHTML += `<div class="security-item ${status}">${formatSecurityAuditMessage(message, status)}</div>`;
       
       // Update stats
       securityStats.total++;
@@ -282,10 +289,10 @@
         // Check 1: User Authentication
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         if (!user.username || !user.organizationId) {
-          addSecurityItem('auth-security-results', '? CRITICAL: User not properly authenticated', 'critical');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: User not properly authenticated', 'critical');
           addRecommendation('Fix Authentication', 'Ensure users are properly authenticated before accessing the system', 'critical');
         } else {
-          addSecurityItem('auth-security-results', '? User properly authenticated', 'success');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> User properly authenticated', 'success');
         }
 
         // Check 2: Password Security
@@ -294,7 +301,7 @@
             addSecurityItem('auth-security-results', '&#9888; WARNING: Password may be too short', 'warning');
             addRecommendation('Strengthen Password Policy', 'Implement minimum password length requirements (8+ characters)', 'warning');
           } else {
-            addSecurityItem('auth-security-results', '? Password length acceptable', 'success');
+            addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Password length acceptable', 'success');
           }
         }
 
@@ -303,10 +310,10 @@
         // Also accept "Other (Custom Role)" format
         const hasValidRole = validRoles.includes(user.role) || (user.role && user.role.startsWith('Other (') && user.role.endsWith(')'));
         if (!user.role || !hasValidRole) {
-          addSecurityItem('auth-security-results', '? CRITICAL: Invalid or missing user role', 'critical');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Invalid or missing user role', 'critical');
           addRecommendation('Implement Role Validation', 'Ensure all users have valid roles assigned', 'critical');
         } else {
-          addSecurityItem('auth-security-results', '? Valid user role assigned', 'success');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Valid user role assigned', 'success');
         }
 
         // Check 4: Session Management
@@ -319,7 +326,7 @@
             addSecurityItem('auth-security-results', '&#9888; WARNING: Session may be too long (8+ hours)', 'warning');
             addRecommendation('Implement Session Timeout', 'Add automatic session timeout for security', 'warning');
           } else {
-            addSecurityItem('auth-security-results', '? Session duration acceptable', 'success');
+            addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Session duration acceptable', 'success');
           }
         } else {
           addSecurityItem('auth-security-results', '&#9888; WARNING: No session tracking found', 'warning');
@@ -327,7 +334,7 @@
         }
 
       } catch (error) {
-        addSecurityItem('auth-security-results', `? CRITICAL: Authentication check failed: ${error.message}`, 'critical');
+        addSecurityItem('auth-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Authentication check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -345,10 +352,10 @@
       // Check if system properly validates organization access
       const currentOrgId = JSON.parse(localStorage.getItem("user") || "{}").organizationId;
       if (currentOrgId === 'malicious-org-id') {
-        addSecurityItem('auth-security-results', '? CRITICAL: Session manipulation possible', 'critical');
+        addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Session manipulation possible', 'critical');
         addRecommendation('Implement Session Validation', 'Add server-side session validation to prevent tampering', 'critical');
       } else {
-        addSecurityItem('auth-security-results', '? Session validation working', 'success');
+        addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Session validation working', 'success');
       }
       
       // Restore original session
@@ -363,14 +370,14 @@
       
       // Test admin access
       if (user.role === 'Admin' || user.role === 'admin') {
-        addSecurityItem('auth-security-results', '? Admin role detected - full access granted', 'success');
+        addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Admin role detected - full access granted', 'success');
       } else {
-        addSecurityItem('auth-security-results', '? Non-admin role - restricted access', 'success');
+        addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Non-admin role - restricted access', 'success');
         
         // Check if restricted features are properly hidden
         const adminButtons = document.querySelectorAll('[data-admin-only]');
         if (adminButtons.length > 0) {
-          addSecurityItem('auth-security-results', '? Admin-only features properly restricted', 'success');
+          addSecurityItem('auth-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Admin-only features properly restricted', 'success');
         } else {
           addSecurityItem('auth-security-results', '&#9888; WARNING: No admin-only restrictions found', 'warning');
           addRecommendation('Implement Feature Restrictions', 'Add role-based feature restrictions for non-admin users', 'warning');
@@ -386,7 +393,7 @@
         // Check 1: Data Encryption in Transit
         const isHTTPS = window.location.protocol === 'https:';
         if (isHTTPS) {
-          addSecurityItem('data-security-results', '? HTTPS enabled - data encrypted in transit', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> HTTPS enabled - data encrypted in transit', 'success');
         } else {
           addSecurityItem('data-security-results', '&#9888; WARNING: Not using HTTPS - data not encrypted in transit', 'warning');
           addRecommendation('Enable HTTPS', 'Use HTTPS to encrypt data transmission between client and server', 'warning');
@@ -408,23 +415,23 @@
         }
         
         if (foundSensitiveData) {
-          addSecurityItem('data-security-results', '? CRITICAL: Sensitive data found in localStorage', 'critical');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Sensitive data found in localStorage', 'critical');
           addRecommendation('Secure Sensitive Data', 'Remove sensitive data from localStorage or encrypt it', 'critical');
         } else {
-          addSecurityItem('data-security-results', '? No sensitive data in localStorage', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> No sensitive data in localStorage', 'success');
         }
 
         // Check 3: Data Backup Security
         const hasBackup = localStorage.getItem('backup_data') || localStorage.getItem('backup');
         if (hasBackup) {
-          addSecurityItem('data-security-results', '? Data backup found', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Data backup found', 'success');
         } else {
           addSecurityItem('data-security-results', '&#9888; WARNING: No data backup found', 'warning');
           addRecommendation('Implement Data Backup', 'Add automated data backup functionality', 'warning');
         }
 
       } catch (error) {
-        addSecurityItem('data-security-results', `? CRITICAL: Data security check failed: ${error.message}`, 'critical');
+        addSecurityItem('data-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Data security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -436,10 +443,10 @@
       const encrypted = btoa(testData); // Simple base64 encoding
       
       if (encrypted !== testData) {
-        addSecurityItem('data-security-results', '? Data encoding/encryption capability available', 'success');
+        addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Data encoding/encryption capability available', 'success');
         addRecommendation('Implement Strong Encryption', 'Use AES encryption instead of base64 for sensitive data', 'warning');
       } else {
-        addSecurityItem('data-security-results', '? CRITICAL: No data encryption found', 'critical');
+        addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: No data encryption found', 'critical');
         addRecommendation('Implement Data Encryption', 'Add encryption for sensitive patient data', 'critical');
       }
     }
@@ -462,7 +469,7 @@
         });
         
         if (hasPII) {
-          addSecurityItem('data-security-results', '? PII data properly structured', 'success');
+          addSecurityItem('data-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> PII data properly structured', 'success');
           addRecommendation('Implement PII Masking', 'Add PII masking for non-authorized users', 'warning');
         } else {
           addSecurityItem('data-security-results', '&#9888; WARNING: No PII data found in patients', 'warning');
@@ -480,7 +487,7 @@
         // Check 1: HTTPS Usage
         const isHTTPS = window.location.protocol === 'https:';
         if (isHTTPS) {
-          addSecurityItem('network-security-results', '? HTTPS enabled for secure communication', 'success');
+          addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> HTTPS enabled for secure communication', 'success');
         } else {
           addSecurityItem('network-security-results', '&#9888; WARNING: HTTP in use - upgrade to HTTPS', 'warning');
           addRecommendation('Upgrade to HTTPS', 'Use HTTPS for all communications to protect data in transit', 'warning');
@@ -490,9 +497,9 @@
         if (typeof supabaseClient !== 'undefined' && supabaseClient) {
           const supabaseUrl = supabaseClient.supabaseUrl;
           if (supabaseUrl.startsWith('https://')) {
-            addSecurityItem('network-security-results', '? Supabase connection uses HTTPS', 'success');
+            addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Supabase connection uses HTTPS', 'success');
           } else {
-            addSecurityItem('network-security-results', '? CRITICAL: Supabase connection not secure', 'critical');
+            addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Supabase connection not secure', 'critical');
             addRecommendation('Secure Supabase Connection', 'Ensure Supabase connection uses HTTPS', 'critical');
           }
         }
@@ -501,14 +508,14 @@
         const supabaseKey = supabaseClient?.supabaseKey;
         if (supabaseKey) {
           if (supabaseKey.startsWith('eyJ')) {
-            addSecurityItem('network-security-results', '? Supabase anon key properly formatted', 'success');
+            addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Supabase anon key properly formatted', 'success');
           } else {
             addSecurityItem('network-security-results', '&#9888; WARNING: Supabase key format suspicious', 'warning');
           }
         }
 
       } catch (error) {
-        addSecurityItem('network-security-results', `? CRITICAL: Network security check failed: ${error.message}`, 'critical');
+        addSecurityItem('network-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Network security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -531,13 +538,13 @@
         const duration = endTime - startTime;
         
         if (duration > 1000) {
-          addSecurityItem('network-security-results', '? API rate limiting appears to be working', 'success');
+          addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> API rate limiting appears to be working', 'success');
         } else {
           addSecurityItem('network-security-results', '&#9888; WARNING: No apparent API rate limiting', 'warning');
           addRecommendation('Implement API Rate Limiting', 'Add rate limiting to prevent API abuse', 'warning');
         }
       } catch (error) {
-        addSecurityItem('network-security-results', '? API rate limiting working (requests blocked)', 'success');
+        addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> API rate limiting working (requests blocked)', 'success');
       }
     }
 
@@ -555,10 +562,10 @@
       });
       
       if (insecureResources > 0) {
-        addSecurityItem('network-security-results', `? CRITICAL: ${insecureResources} insecure resources found`, 'critical');
+        addSecurityItem('network-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: ${insecureResources} insecure resources found`, 'critical');
         addRecommendation('Secure External Resources', 'Use HTTPS for all external scripts and resources', 'critical');
       } else {
-        addSecurityItem('network-security-results', '? All external resources use secure protocols', 'success');
+        addSecurityItem('network-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> All external resources use secure protocols', 'success');
       }
     }
 
@@ -572,9 +579,9 @@
         const sanitized = testXSS.replace(/<script[^>]*>.*?<\/script>/gi, '');
         
         if (sanitized === '') {
-          addSecurityItem('input-security-results', '? XSS protection working', 'success');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> XSS protection working', 'success');
         } else {
-          addSecurityItem('input-security-results', '? CRITICAL: XSS protection failed', 'critical');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: XSS protection failed', 'critical');
           addRecommendation('Implement XSS Protection', 'Add input sanitization to prevent XSS attacks', 'critical');
         }
 
@@ -584,7 +591,7 @@
           addSecurityItem('input-security-results', '&#9888; WARNING: No input length validation detected', 'warning');
           addRecommendation('Implement Input Validation', 'Add maximum length validation for all inputs', 'warning');
         } else {
-          addSecurityItem('input-security-results', '? Input length validation working', 'success');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Input length validation working', 'success');
         }
 
         // Check 3: SQL Injection Protection
@@ -594,11 +601,11 @@
           addSecurityItem('input-security-results', '&#9888; WARNING: Potential SQL injection vectors present', 'warning');
           addRecommendation('Implement SQL Injection Protection', 'Use parameterized queries and input validation', 'warning');
         } else {
-          addSecurityItem('input-security-results', '? SQL injection protection in place', 'success');
+          addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> SQL injection protection in place', 'success');
         }
 
       } catch (error) {
-        addSecurityItem('input-security-results', `? CRITICAL: Input security check failed: ${error.message}`, 'critical');
+        addSecurityItem('input-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Input security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -627,9 +634,9 @@
       });
       
       if (xssBlocked > 0) {
-        addSecurityItem('input-security-results', `? ${xssBlocked}/${xssVectors.length} XSS vectors blocked`, 'success');
+        addSecurityItem('input-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> ${xssBlocked}/${xssVectors.length} XSS vectors blocked`, 'success');
       } else {
-        addSecurityItem('input-security-results', '? CRITICAL: No XSS protection detected', 'critical');
+        addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: No XSS protection detected', 'critical');
         addRecommendation('Implement Comprehensive XSS Protection', 'Add protection against all XSS attack vectors', 'critical');
       }
     }
@@ -660,7 +667,7 @@
         addSecurityItem('input-security-results', `&#9888; WARNING: ${sqlBlocked} potential SQL injection vectors detected`, 'warning');
         addRecommendation('Implement SQL Injection Protection', 'Use parameterized queries and input validation', 'warning');
       } else {
-        addSecurityItem('input-security-results', '? No obvious SQL injection vectors detected', 'success');
+        addSecurityItem('input-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> No obvious SQL injection vectors detected', 'success');
       }
     }
 
@@ -680,9 +687,9 @@
               .eq('organization_id', user.organizationId);
             
             if (error) {
-              addSecurityItem('rls-security-results', '? RLS policies active (access blocked)', 'success');
+              addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> RLS policies active (access blocked)', 'success');
             } else if (data) {
-              addSecurityItem('rls-security-results', '? RLS policies working - data filtered by organization', 'success');
+              addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> RLS policies working - data filtered by organization', 'success');
             }
           } else {
             addSecurityItem('rls-security-results', '&#9888; WARNING: No organization ID for RLS testing', 'warning');
@@ -692,7 +699,7 @@
         }
 
       } catch (error) {
-        addSecurityItem('rls-security-results', `? CRITICAL: RLS security check failed: ${error.message}`, 'critical');
+        addSecurityItem('rls-security-results', `<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: RLS security check failed: ${error.message}`, 'critical');
       }
     }
 
@@ -716,9 +723,9 @@
         });
         
         if (isolatedData) {
-          addSecurityItem('rls-security-results', '? Data properly isolated by organization', 'success');
+          addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Data properly isolated by organization', 'success');
         } else {
-          addSecurityItem('rls-security-results', '? CRITICAL: Data isolation failure detected', 'critical');
+          addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Data isolation failure detected', 'critical');
           addRecommendation('Fix Data Isolation', 'Ensure data is properly isolated between organizations', 'critical');
         }
       } else {
@@ -742,9 +749,9 @@
       const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
       
       if (patients.length === 0) {
-        addSecurityItem('rls-security-results', '? Cross-organization access properly blocked', 'success');
+        addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Cross-organization access properly blocked', 'success');
       } else {
-        addSecurityItem('rls-security-results', '? CRITICAL: Cross-organization access possible', 'critical');
+        addSecurityItem('rls-security-results', '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> CRITICAL: Cross-organization access possible', 'critical');
         addRecommendation('Implement Cross-Org Access Control', 'Add validation to prevent cross-organization data access', 'critical');
       }
       

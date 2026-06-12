@@ -9,6 +9,7 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <title>Patient Data Diagnostics</title>
   <style>
     body {
@@ -70,11 +71,11 @@
   <script src="js/supabase-client.js?v=202510220113080113081308"></script>
 </head>
 <body>
-  <h1>?? Patient Data Diagnostics</h1>
+  <h1><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Patient Data Diagnostics</h1>
   <p>Analyzing patient data to identify issues causing "UNKNOWN" tags in Disease Analytics...</p>
   <div style="margin: 20px 0; background: #e3f2fd; padding: 15px; border-radius: 8px; border-left: 4px solid #2196F3;">
     <button onclick="location.reload()" style="background: #4CAF50; color: white; padding: 12px 24px; border: none; border-radius: 6px; cursor: pointer; font-size: 16px; font-weight: 600; box-shadow: 0 2px 4px rgba(0,0,0,0.2);">
-      ?? Refresh Data
+      <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Refresh Data
     </button>
     <span style="margin-left: 15px; color: #666; font-size: 14px;">Click to reload after making changes to patient data</span>
     <div style="margin-top: 10px; font-size: 13px; color: #555;">
@@ -83,32 +84,32 @@
   </div>
   
   <div class="section">
-    <h2>?? Summary</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Summary</h2>
     <div id="summary">Loading...</div>
   </div>
   
   <div class="section">
-    <h2>?? Patients with Missing Age/Date of Birth</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Patients with Missing Age/Date of Birth</h2>
     <div id="missing-age">Loading...</div>
   </div>
   
   <div class="section">
-    <h2>?? Diagnoses with UNKNOWN ICD Codes</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Diagnoses with UNKNOWN ICD Codes</h2>
     <div id="unknown-diagnoses">Loading...</div>
   </div>
   
   <div class="section">
-    <h2>? Patients with Missing Gender</h2>
+    <h2><i class="fa-solid fa-circle-xmark" aria-hidden="true"></i> Patients with Missing Gender</h2>
     <div id="missing-gender">Loading...</div>
   </div>
   
   <div class="section">
-    <h2>?? Patients with Missing Tribe/Ethnicity</h2>
-    <div id="missing-tribe">Loading...</div>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Patients with Missing Race</h2>
+    <div id="missing-race">Loading...</div>
   </div>
   
   <div class="section">
-    <h2>?? All Patients Overview</h2>
+    <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> All Patients Overview</h2>
     <div id="all-patients">Loading...</div>
   </div>
   
@@ -143,7 +144,7 @@
       let allPatients = [];
       let patientsWithMissingAge = [];
       let patientsWithMissingGender = [];
-      let patientsWithMissingTribe = [];
+      let patientsWithMissingRace = [];
       let diagnosesWithUnknownCode = [];
       
       let totalPatients = 0;
@@ -161,7 +162,7 @@
           const birthDate = patient.dateOfBirth || patient.dob;
           const age = calculateAge(birthDate);
           const hasGender = patient.gender && patient.gender !== 'Unknown';
-          const hasTribe = patient.tribe || patient.ethnicity;
+          const hasRace = patient.race && String(patient.race).trim();
           const diagnoses = patient.diagnoses || [];
           
           // Check for missing data - Debug log to see what's happening
@@ -174,7 +175,7 @@
               name: `${patient.firstName} ${patient.lastName}`,
               dateOfBirth: birthDate || 'NOT SET',
               gender: patient.gender || 'NOT SET',
-              tribe: patient.tribe || patient.ethnicity || 'NOT SET'
+              race: patient.race || 'NOT SET'
             });
           }
           
@@ -189,12 +190,12 @@
             });
           }
           
-          if (!hasTribe) {
-            patientsWithMissingTribe.push({
+          if (!hasRace) {
+            patientsWithMissingRace.push({
               org: orgName,
               id: patient.id,
               name: `${patient.firstName} ${patient.lastName}`,
-              tribe: hasTribe || 'NOT SET',
+              race: hasRace || 'NOT SET',
               age: age !== null ? age : 'UNKNOWN',
               dateOfBirth: birthDate || 'NOT SET'
             });
@@ -236,7 +237,7 @@
           gender: patient.gender || 'NOT SET',
           dateOfBirth: birthDate || 'NOT SET',
           age: age !== null ? age : 'UNKNOWN',
-          tribe: patient.tribe || patient.ethnicity || 'NOT SET',
+          race: patient.race || 'NOT SET',
           diagnosesCount: diagnoses.length
         });
         });
@@ -275,10 +276,10 @@
             <td>${patientsWithMissingGender.length}</td>
             <td><span class="badge ${patientsWithMissingGender.length > 0 ? 'badge-warning' : 'badge-ok'}">${patientsWithMissingGender.length > 0 ? 'WARNING' : 'OK'}</span></td>
           </tr>
-          <tr class="${patientsWithMissingTribe.length > 0 ? 'issue' : ''}">
-            <td><strong>Patients Missing Tribe/Ethnicity</strong></td>
-            <td>${patientsWithMissingTribe.length}</td>
-            <td><span class="badge ${patientsWithMissingTribe.length > 0 ? 'badge-warning' : 'badge-ok'}">${patientsWithMissingTribe.length > 0 ? 'WARNING' : 'OK'}</span></td>
+          <tr class="${patientsWithMissingRace.length > 0 ? 'issue' : ''}">
+            <td><strong>Patients Missing Race</strong></td>
+            <td>${patientsWithMissingRace.length}</td>
+            <td><span class="badge ${patientsWithMissingRace.length > 0 ? 'badge-warning' : 'badge-ok'}">${patientsWithMissingRace.length > 0 ? 'WARNING' : 'OK'}</span></td>
           </tr>
           <tr class="${diagnosesWithUnknownCode.length > 0 ? 'issue' : ''}">
             <td><strong>Diagnoses with UNKNOWN Code</strong></td>
@@ -292,7 +293,7 @@
       // Display patients with missing age
       if (patientsWithMissingAge.length > 0) {
         let html = `
-          <p class="warning">?? Found ${patientsWithMissingAge.length} patient(s) without date of birth. These will show as "Age Unknown" in analytics.</p>
+          <p class="warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found ${patientsWithMissingAge.length} patient(s) without date of birth. These will show as "Age Unknown" in analytics.</p>
           <table>
             <tr>
               <th>Organization</th>
@@ -300,7 +301,7 @@
               <th>Name</th>
               <th>Date of Birth</th>
               <th>Gender</th>
-              <th>Tribe</th>
+              <th>Race</th>
             </tr>
         `;
         patientsWithMissingAge.forEach(p => {
@@ -311,20 +312,20 @@
               <td><strong>${p.name}</strong></td>
               <td class="warning">${p.dateOfBirth}</td>
               <td>${p.gender}</td>
-              <td>${p.tribe}</td>
+              <td>${p.race}</td>
             </tr>
           `;
         });
         html += '</table>';
         document.getElementById('missing-age').innerHTML = html;
       } else {
-        document.getElementById('missing-age').innerHTML = '<p class="good">? All patients have valid date of birth</p>';
+        document.getElementById('missing-age').innerHTML = '<p class="good"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> All patients have valid date of birth</p>';
       }
       
       // Display diagnoses with unknown codes
       if (diagnosesWithUnknownCode.length > 0) {
         let html = `
-          <p class="warning">?? Found ${diagnosesWithUnknownCode.length} diagnosis/diagnoses without proper ICD-11 codes. These show as "UNKNOWN" in analytics.</p>
+          <p class="warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found ${diagnosesWithUnknownCode.length} diagnosis/diagnoses without proper ICD-11 codes. These show as "UNKNOWN" in analytics.</p>
           <p><strong>Cause:</strong> Diagnosis text doesn't follow the format "CODE - Name" (e.g., "A09.9 - Gastroenteritis")</p>
           <table>
             <tr>
@@ -351,7 +352,7 @@
         html += '</table>';
         html += `
           <div style="margin-top: 20px; padding: 15px; background: #fff3cd; border-left: 4px solid #ff9800; border-radius: 4px;">
-            <strong>?? How to Fix:</strong>
+            <strong><i class="fa-solid fa-circle-info" aria-hidden="true"></i> How to Fix:</strong>
             <ol>
               <li>Go to the patient's details page</li>
               <li>Edit the diagnosis entry</li>
@@ -362,13 +363,13 @@
         `;
         document.getElementById('unknown-diagnoses').innerHTML = html;
       } else {
-        document.getElementById('unknown-diagnoses').innerHTML = '<p class="good">? All diagnoses have proper ICD-11 codes</p>';
+        document.getElementById('unknown-diagnoses').innerHTML = '<p class="good"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> All diagnoses have proper ICD-11 codes</p>';
       }
       
       // Display patients with missing gender
       if (patientsWithMissingGender.length > 0) {
         let html = `
-          <p class="warning">?? Found ${patientsWithMissingGender.length} patient(s) without gender set.</p>
+          <p class="warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found ${patientsWithMissingGender.length} patient(s) without gender set.</p>
           <table>
             <tr>
               <th>Organization</th>
@@ -392,37 +393,37 @@
         html += '</table>';
         document.getElementById('missing-gender').innerHTML = html;
       } else {
-        document.getElementById('missing-gender').innerHTML = '<p class="good">? All patients have gender information</p>';
+        document.getElementById('missing-gender').innerHTML = '<p class="good"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> All patients have gender information</p>';
       }
       
-      // Display patients with missing tribe
-      if (patientsWithMissingTribe.length > 0) {
+      // Display patients with missing race
+      if (patientsWithMissingRace.length > 0) {
         let html = `
-          <p class="warning">?? Found ${patientsWithMissingTribe.length} patient(s) without tribe/ethnicity set.</p>
+          <p class="warning"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found ${patientsWithMissingRace.length} patient(s) without race set.</p>
           <table>
             <tr>
               <th>Organization</th>
               <th>Patient ID</th>
               <th>Name</th>
-              <th>Tribe/Ethnicity</th>
+              <th>Race</th>
               <th>Age</th>
             </tr>
         `;
-        patientsWithMissingTribe.forEach(p => {
+        patientsWithMissingRace.forEach(p => {
           html += `
             <tr class="issue">
               <td>${p.org}</td>
               <td>${p.id}</td>
               <td><strong>${p.name}</strong></td>
-              <td class="warning">${p.tribe}</td>
+              <td class="warning">${p.race}</td>
               <td>${p.age}</td>
             </tr>
           `;
         });
         html += '</table>';
-        document.getElementById('missing-tribe').innerHTML = html;
+        document.getElementById('missing-race').innerHTML = html;
       } else {
-        document.getElementById('missing-tribe').innerHTML = '<p class="good">? All patients have tribe/ethnicity information</p>';
+        document.getElementById('missing-race').innerHTML = '<p class="good"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> All patients have race information</p>';
       }
       
       // Display all patients
@@ -435,7 +436,7 @@
             <th>Gender</th>
             <th>DOB</th>
             <th>Age</th>
-            <th>Tribe</th>
+              <th>Race</th>
             <th>Diagnoses</th>
           </tr>
       `;
@@ -449,7 +450,7 @@
             <td>${p.gender}</td>
             <td>${p.dateOfBirth}</td>
             <td>${p.age}</td>
-            <td>${p.tribe}</td>
+            <td>${p.race}</td>
             <td>${p.diagnosesCount}</td>
           </tr>
         `;
@@ -462,7 +463,7 @@
       console.log('Total Patients:', totalPatients);
       console.log('Patients with Missing Age:', patientsWithMissingAge);
       console.log('Patients with Missing Gender:', patientsWithMissingGender);
-      console.log('Patients with Missing Tribe:', patientsWithMissingTribe);
+      console.log('Patients with Missing Race:', patientsWithMissingRace);
       console.log('Diagnoses with UNKNOWN Code:', diagnosesWithUnknownCode);
     });
   </script>  <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>

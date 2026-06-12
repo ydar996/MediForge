@@ -108,7 +108,7 @@
         emergency_contact_phone: patient.emergencyPhone || null,
         blood_group: patient.bloodGroup || null,
         genotype: patient.genotype || null,
-        tribe: patient.tribe || null,
+        race: patient.race || null,
         marital_status: patient.maritalStatus || null,
         allergies: patient.allergies ? JSON.stringify(patient.allergies) : '[]',
         chronic_conditions: patient.conditions ? JSON.stringify(patient.conditions) : '[]',

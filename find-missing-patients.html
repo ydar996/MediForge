@@ -4,6 +4,7 @@
   <script src="/js/supabase-env.js"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
   <title>Find Missing Patients - Diagnostic Tool</title>
   <style>
     body {
@@ -98,13 +99,13 @@
 </head>
 <body>
   <div class="container">
-    <h1>?? Find Missing Patients - Diagnostic Tool</h1>
+    <h1><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Find Missing Patients - Diagnostic Tool</h1>
     <p>This tool helps identify patients that may have been saved with incorrect organization IDs (organization names instead of UUIDs).</p>
     
     <div class="section">
       <h2>Step 1: Auto-Detect Organization</h2>
       <button onclick="autoDetectAndFindOrphaned()" style="background: linear-gradient(135deg, #667eea 0%, #764ba2 100%); font-size: 16px; padding: 15px 30px;">
-        ?? Auto-Detect & Find Orphaned Patients
+        <i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Auto-Detect & Find Orphaned Patients
       </button>
       <p style="margin-top: 10px; color: #666; font-size: 14px;">
         This will automatically detect your organization and search for orphaned patients.
@@ -120,7 +121,7 @@
     <div class="section">
       <h2>Step 3: Fix Orphaned Patients</h2>
       <button onclick="fixOrphanedPatients()" id="fix-btn" style="background: #dc3545; display: none;">
-        ?? Fix Orphaned Patients
+        <i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Fix Orphaned Patients
       </button>
       <div id="fix-result" class="result" style="display: none;"></div>
     </div>
@@ -141,9 +142,9 @@
     
     if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
       supabaseClient = window.supabaseClient;
-      console.log('? Using existing Supabase client');
+      console.log('Using existing Supabase client');
     } else {
-      console.warn('?? Supabase client not available');
+      console.warn('Supabase client not available');
     }
     
     // Auto-detect organization on page load
@@ -167,7 +168,7 @@
             input.value = currentOrgName;
           }
           
-          console.log('? Auto-detected organization:', {
+          console.log('Auto-detected organization:', {
             name: currentOrgName,
             id: currentOrgId
           });
@@ -183,15 +184,15 @@
               
               if (!error && org && org.id) {
                 currentOrgId = org.id;
-                console.log('? Found organization UUID from Supabase:', currentOrgId);
+                console.log('Found organization UUID from Supabase:', currentOrgId);
               }
             } catch (err) {
-              console.warn('?? Could not fetch organization UUID:', err);
+              console.warn('Could not fetch organization UUID:', err);
             }
           }
         }
       } catch (error) {
-        console.error('? Error auto-detecting organization:', error);
+        console.error('Error auto-detecting organization:', error);
       }
     }
     
@@ -200,7 +201,7 @@
       const orgInfoDiv = document.getElementById('org-info');
       resultDiv.style.display = 'block';
       orgInfoDiv.style.display = 'block';
-      resultDiv.innerHTML = '<p>?? Auto-detecting organization and searching for orphaned patients...</p>';
+      resultDiv.innerHTML = '<p><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Auto-detecting organization and searching for orphaned patients...</p>';
       
       try {
         // First, ensure we have organization info
@@ -208,7 +209,7 @@
         
         if (!currentOrgName) {
           resultDiv.className = 'result error';
-          resultDiv.innerHTML = '<p>? Error: Could not detect organization. Please ensure you are logged in.</p>';
+          resultDiv.innerHTML = '<p><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: Could not detect organization. Please ensure you are logged in.</p>';
           orgInfoDiv.className = 'result error';
           orgInfoDiv.innerHTML = '<p>Current user: ' + JSON.stringify(JSON.parse(localStorage.getItem('user') || '{}'), null, 2) + '</p>';
           return;
@@ -216,7 +217,7 @@
         
         // Show organization info
         const user = JSON.parse(localStorage.getItem('user') || '{}');
-        let orgInfoHtml = '<h3>?? Detected Organization Info:</h3>';
+        let orgInfoHtml = '<h3>${I.info} Detected Organization Info:</h3>';
         orgInfoHtml += '<table style="width: 100%; margin-top: 10px;"><tbody>';
         orgInfoHtml += '<tr><td><strong>Organization Name:</strong></td><td>' + currentOrgName + '</td></tr>';
         orgInfoHtml += '<tr><td><strong>Organization UUID:</strong></td><td>' + (currentOrgId || 'Not found - will search by name') + '</td></tr>';
@@ -229,7 +230,7 @@
         await findOrphanedPatients(true);
       } catch (error) {
         resultDiv.className = 'result error';
-        resultDiv.innerHTML = '<p>? Error: ' + error.message + '</p>';
+        resultDiv.innerHTML = '<p><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ' + error.message + '</p>';
       }
     }
 
@@ -310,7 +311,7 @@
         }
         
         resultDiv.className = 'result warning';
-        let html = '<h3>?? Found ' + patients.length + ' patients with organization_id as NAME (not UUID):</h3>';
+        let html = '<h3>${I.info} Found ' + patients.length + ' patients with organization_id as NAME (not UUID):</h3>';
         html += '<table><thead><tr><th>Patient ID</th><th>Name</th><th>Organization ID (WRONG)</th><th>Created At</th></tr></thead><tbody>';
         
         patients.forEach(patient => {
@@ -369,7 +370,7 @@
         }
         
         resultDiv.className = 'result success';
-        let html = '<h3>? Found ' + (patients?.length || 0) + ' patients with correct organization UUID:</h3>';
+        let html = '<h3>${I.check} Found ' + (patients?.length || 0) + ' patients with correct organization UUID:</h3>';
         
         if (patients && patients.length > 0) {
           html += '<table><thead><tr><th>Patient ID</th><th>Name</th><th>Organization ID</th><th>Created At</th></tr></thead><tbody>';
@@ -449,7 +450,7 @@
         currentOrgId = orgId;
         
         resultDiv.className = 'result warning';
-        let html = '<h3>?? Orphaned Patients Found:</h3>';
+        let html = '<h3>${I.info} Orphaned Patients Found:</h3>';
         html += '<p>Organization: <strong>' + orgName + '</strong></p>';
         html += '<p>Organization UUID: <strong>' + orgId + '</strong></p>';
         html += '<p>Found <strong>' + (wrongPatients?.length || 0) + '</strong> patients with wrong organization_id (org name instead of UUID)</p>';
@@ -474,7 +475,7 @@
             fixBtn.style.display = 'inline-block';
           }
         } else {
-          html += '<p style="color: green; font-size: 18px; font-weight: bold;">? No orphaned patients found! All patients are correctly associated with your organization.</p>';
+          html += '<p style="color: green; font-size: 18px; font-weight: bold;"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> No orphaned patients found! All patients are correctly associated with your organization.</p>';
           const fixBtn = document.getElementById('fix-btn');
           if (fixBtn) {
             fixBtn.style.display = 'none';
@@ -546,7 +547,7 @@
         
         if (!wrongPatients || wrongPatients.length === 0) {
           resultDiv.className = 'result success';
-          resultDiv.innerHTML = '<p>? No patients to fix!</p>';
+          resultDiv.innerHTML = '<p><i class="fa-solid fa-circle-check" aria-hidden="true"></i> No patients to fix!</p>';
           return;
         }
         
@@ -569,13 +570,13 @@
         
         resultDiv.className = errors.length > 0 ? 'result warning' : 'result success';
         let html = '<h3>Fix Results:</h3>';
-        html += '<p>? Fixed: ' + fixed + ' patients</p>';
+        html += '<p><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Fixed: ' + fixed + ' patients</p>';
         
         if (errors.length > 0) {
-          html += '<p>? Errors: ' + errors.length + '</p>';
+          html += '<p><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Errors: ' + errors.length + '</p>';
           html += '<pre>' + errors.join('\n') + '</pre>';
         } else {
-          html += '<p>? All patients fixed successfully!</p>';
+          html += '<p><i class="fa-solid fa-circle-check" aria-hidden="true"></i> All patients fixed successfully!</p>';
         }
         
         resultDiv.innerHTML = html;

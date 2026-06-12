@@ -856,7 +856,7 @@ exports.handler = async function handler(event) {
           country: payload.country || null,
           postal_code: payload.postalCode || null,
           marital_status: payload.maritalStatus || null,
-          tribe: payload.tribe || null,
+          race: payload.race || null,
           payment_source: payload.paymentSource || 'Self Pay',
           emergency_contact_name: [payload.emergencyFirstName, payload.emergencyLastName].filter(Boolean).join(' ') || null,
           emergency_contact_phone: payload.emergencyPhone || null,

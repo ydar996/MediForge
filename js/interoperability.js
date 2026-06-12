@@ -80,8 +80,8 @@ const CSV_FIELD_MAPPING = {
   'Sex': 'gender',
   'Marital Status': 'maritalStatus',
   'MaritalStatus': 'maritalStatus',
-  'Tribe': 'tribe',
-  'Ethnicity': 'tribe',
+  'Race': 'race',
+  'Ethnicity': 'race',
   'Email': 'email',
   'Phone': 'phone',
   'Telephone': 'phone',
@@ -135,7 +135,7 @@ window.importPatientsFromCSV = function(file) {
           // Set defaults for optional fields
           patient.gender = patient.gender || 'Unknown';
           patient.maritalStatus = patient.maritalStatus || 'Unknown';
-          patient.tribe = patient.tribe || 'Other';
+          patient.race = patient.race || 'Other';
           patient.phone = patient.phone || '';
           patient.email = patient.email || '';
           patient.addressLine1 = patient.addressLine1 || '';
@@ -259,7 +259,7 @@ window.exportPatientHL7Style = function(patientId) {
     let hl7 = `MSH|^~\\&|MEDIFORGE|${patient.id}|RECEIVER||${new Date().toISOString()}||ADT^A01|MSG${Date.now()}|P|2.5\n`;
     
     // Patient Identification
-    hl7 += `PID|1||${patient.id}||${patient.lastName}^${patient.firstName}^${patient.middleName || ''}||${patient.dob}|${patient.gender}|||${patient.addressLine1}^${patient.addressLine2}^${patient.city}^${patient.state}^^${patient.country}||${patient.phone}||${patient.maritalStatus}|||${patient.tribe}\n`;
+    hl7 += `PID|1||${patient.id}||${patient.lastName}^${patient.firstName}^${patient.middleName || ''}||${patient.dob}|${patient.gender}|||${patient.addressLine1}^${patient.addressLine2}^${patient.city}^${patient.state}^^${patient.country}||${patient.phone}||${patient.maritalStatus}|||${patient.race}\n`;
     
     // Diagnoses
     if (patient.diagnoses && patient.diagnoses.length > 0) {

@@ -77,6 +77,11 @@ If the database already has production-style tables, skip this and start at **St
 | **5** | `supabase/migrations/20260611100000_billing_payers_tables.sql` | Billing / payer profiles + claims |
 | **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | **Required** — org Admin UPDATE, `get_organization_intake_context` RPC, intake approval permissions |
 | **7** | `supabase/migrations/20260612100000_registration_profile_rpc.sql` | **Required** — registration profile RPC + own-profile SELECT (fixes join-org RLS failures) |
+| **8** | `supabase/migrations/20260612110000_add_patient_race_column.sql` | **Required** — `race` column on patients (replaces Tribe in UI) |
+| **9** | `supabase/migrations/20260612120000_intake_approval_race_column.sql` | **Required** — intake approval RPC writes `race` from self-registration payload |
+| **10** | `supabase/migrations/20260612130000_drop_patient_tribe_column.sql` | **Required** — adds `race` if missing, backfills from `tribe`, race-only intake RPC, drops `tribe` |
+
+**Step 8 skip:** Step 10 includes `ADD COLUMN race` — safe to run Step 10 even if Step 8 was skipped.
 
 **Step 2 skip:** If `patient_intake_submissions` already exists, Step 2 is optional (re-running is still safe).
 
@@ -130,6 +135,13 @@ WHERE table_schema = 'public'
     'patient_payer_profiles'
   );
 
+-- Race column present; legacy tribe column removed
+SELECT column_name
+FROM information_schema.columns
+WHERE table_schema = 'public'
+  AND table_name = 'patients'
+  AND column_name IN ('race', 'tribe');
+
 -- Required RPCs for current app code
 SELECT proname
 FROM pg_proc
@@ -139,7 +151,7 @@ WHERE proname IN (
 );
 ```
 
-**Expected:** at least **2** registration policies, **3** tables, **2** functions.
+**Expected:** at least **2** registration policies, **3** tables, **`race` only** (no `tribe` column), **2** functions.
 
 ---
 
@@ -147,10 +159,11 @@ WHERE proname IN (
 
 On **Dev** (repeat on Staging when Dev passes):
 
-1. Register a **test clinic** at `/register` (Canada address + postal code).
+1. Register a **test clinic** at `/register` (Canada address + postal code), or **Join Existing Organization** with an org code.
 2. Accept legal agreements on the registration form.
-3. Open the clinic **patient intake link** and submit a test patient.
-4. Staff: approve intake → patient should have address + postal code.
+3. Staff: **Add patient** — confirm **Race** dropdown (including *Declined to Disclose*) and research note under the field.
+4. Open the clinic **patient intake link** and submit a test patient (self-registration).
+5. Staff: approve intake → patient record should have **race**, address, and postal code.
 
 ---
 
@@ -160,7 +173,7 @@ When promoting **Staging → main** (production website):
 
 1. Merge and deploy production code on Netlify (`main` branch).
 2. Open **MediForge-Prod** in Supabase SQL Editor.
-3. Run **Steps 1–6 in the same order** (skip Step 2 if intake tables already exist).
+3. Run **Steps 1–10 in the same order** (skip Step 2 if intake tables already exist).
 4. Do **not** turn off email confirmation on production.
 5. Run the **Verify** queries above, then smoke-test with a controlled test org if possible.
 
@@ -190,24 +203,28 @@ When promoting **Staging → main** (production website):
 - [ ] Step 4 — interoperability tables
 - [ ] Step 5 — billing tables
 - [ ] Step 6 — `20260611180000_registration_and_intake_fixes.sql`
+- [ ] Step 7 — `20260612100000_registration_profile_rpc.sql`
+- [ ] Step 8 — `20260612110000_add_patient_race_column.sql`
+- [ ] Step 9 — `20260612120000_intake_approval_race_column.sql`
+- [ ] Step 10 — `20260612130000_drop_patient_tribe_column.sql`
 - [ ] Auth URLs + Confirm email OFF
 - [ ] Verify queries pass
-- [ ] Smoke test: clinic registration + patient intake
+- [ ] Smoke test: clinic registration + add patient + patient self-intake
 
 **MediForge Staging**
 
 - [ ] Latest code deployed to Staging
-- [ ] Steps 1–6 (same as Dev)
+- [ ] Steps 1–10 (same as Dev)
 - [ ] Auth URLs + Confirm email OFF
 - [ ] Verify + smoke test
 
 **MediForge Production** *(when promoting a release)*
 
 - [ ] Code merged to `main` and deployed
-- [ ] Steps 1–6 on MediForge-Prod
+- [ ] Steps 1–10 on MediForge-Prod
 - [ ] Verify queries pass
 - [ ] Controlled smoke test (optional)
 
 ---
 
-*Last updated: 11 June 2026 — Canada/US registration, postal codes, intake RPC, interop, billing, legal agreements (app-only).*
+*Last updated: 12 June 2026 — race-only demographics; tribe column removed (Step 10).*

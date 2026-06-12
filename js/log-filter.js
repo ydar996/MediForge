@@ -41,7 +41,7 @@
     'phone',
     'address',
     'gender',
-    'tribe',
+    'race',
     'national_id',
     'nin',
     'medical_history',

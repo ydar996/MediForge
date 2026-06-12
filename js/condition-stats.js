@@ -1,4 +1,4 @@
-// Purpose: Handles logic for condition-stats.html: computes percentage breakdowns by gender, tribe, age for all or specific conditions.
+// Purpose: Handles logic for condition-stats.html: computes percentage breakdowns by gender, race, age for all or specific conditions.
 
 const AGE_GROUPS = [
   { label: '0-18', min: 0, max: 18 },
@@ -33,9 +33,9 @@ function aggregateStats(specificCondition = null) {
   diagnoses.forEach(diagnosis => {
     let total = 0;
     const gender = { male: 0, female: 0 };
-    const tribes = {};
+    const races = {};
     const ages = AGE_GROUPS.map(() => 0);
-    const tribeCount = {}; // For counting unique tribes
+    const raceCount = {}; // For counting unique races
     const patientSet = new Set();
     patients.forEach(patient => {
       const hasDiag = patient.diagnoses?.some(d => d.diagnosis === diagnosis);
@@ -45,9 +45,9 @@ function aggregateStats(specificCondition = null) {
         const g = patient.gender.toLowerCase();
         if (g === 'male') gender.male++;
         else if (g === 'female') gender.female++;
-        const tribe = patient.tribe || 'Unknown';
-        tribes[tribe] = (tribes[tribe] || 0) + 1;
-        tribeCount[tribe] = true; // Just to count unique
+        const raceVal = (patient.race || 'Unknown').trim() || 'Unknown';
+        races[raceVal] = (races[raceVal] || 0) + 1;
+        raceCount[raceVal] = true; // Just to count unique
         const age = calculateAge(patient.dob);
         const groupIndex = AGE_GROUPS.findIndex(g => age >= g.min && age <= g.max);
         if (groupIndex !== -1) ages[groupIndex]++;
@@ -55,12 +55,12 @@ function aggregateStats(specificCondition = null) {
     });
     if (total > 0) {
       const genderStr = `Male: ${Math.round((gender.male / total) * 100)}%, Female: ${Math.round((gender.female / total) * 100)}%`;
-      const numTribes = Object.keys(tribeCount).length;
-      let tribeStr = numTribes > 1 ? 'Multiple' : Object.entries(tribes)
+      const numRaces = Object.keys(raceCount).length;
+      let raceStr = numRaces > 1 ? 'Multiple' : Object.entries(races)
         .map(([t, c]) => `${t}: ${Math.round((c / total) * 100)}%`)
         .join(', ');
       const ageStr = AGE_GROUPS.map((g, i) => `${g.label}: ${Math.round((ages[i] / total) * 100)}%`).join(', ');
-      summary.push({ diagnosis, genderStr, tribeStr, ageStr, numTribes });
+      summary.push({ diagnosis, genderStr, raceStr, ageStr, numRaces });
     }
   });
   return summary;
@@ -75,11 +75,11 @@ function displayStats() {
   summary.forEach(item => {
     const row = document.createElement("tr");
     const encodedDiagnosis = encodeURIComponent(item.diagnosis);
-    const tribeHtml = item.numTribes > 1 ? `<a href="condition-patients?condition=${encodedDiagnosis}">Multiple</a>` : item.tribeStr;
+    const raceHtml = item.numRaces > 1 ? `<a href="condition-patients?condition=${encodedDiagnosis}">Multiple</a>` : item.raceStr;
     row.innerHTML = `
       <td><a href="condition-patients?condition=${encodedDiagnosis}">${item.diagnosis}</a></td>
       <td>${item.genderStr}</td>
-      <td>${tribeHtml}</td>
+      <td>${raceHtml}</td>
       <td>${item.ageStr}</td>
     `;
     tbody.appendChild(row);

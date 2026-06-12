@@ -301,21 +301,21 @@
           // Ensure plan name comes from payment if it exists there
           if (payment.planName && subscription.planName !== payment.planName) {
             subscription.planName = payment.planName;
-            console.log('? Updated subscription plan name from payment:', payment.planName);
+            console.log('Updated subscription plan name from payment:', payment.planName);
           }
           
           // Ensure billing cycle is correctly set from organization subscription (user's selection) first, then payment
           // Organization's billing cycle takes priority as it reflects the user's actual selection
           if (subscription.billingCycle && payment.billingCycle && subscription.billingCycle !== payment.billingCycle) {
             // Keep organization's billing cycle (user's selection)
-            console.log('? Using organization billing cycle (user selection):', subscription.billingCycle, 'instead of payment:', payment.billingCycle);
+            console.log('Using organization billing cycle (user selection):', subscription.billingCycle, 'instead of payment:', payment.billingCycle);
           } else if (payment.billingCycle && !subscription.billingCycle) {
             // Only use payment's billing cycle if organization doesn't have one set
             subscription.billingCycle = payment.billingCycle;
-            console.log('? Using payment billing cycle as fallback:', payment.billingCycle);
+            console.log('Using payment billing cycle as fallback:', payment.billingCycle);
           }
           
-          console.log('? Found payment in subscription.lastPayment, plan:', subscription.planName, 'billing cycle:', subscription.billingCycle);
+          console.log('Found payment in subscription.lastPayment, plan:', subscription.planName, 'billing cycle:', subscription.billingCycle);
         }
       }
       
@@ -347,7 +347,7 @@
             );
             
             if (foundPayment) {
-              console.log('? Found payment in billing_history:', foundPayment);
+              console.log('Found payment in billing_history:', foundPayment);
               
               // Extract payment data from billing_history record
               if (foundPayment.last_payment && typeof foundPayment.last_payment === 'object') {
@@ -422,7 +422,7 @@
               console.warn('[INVOICE] Error checking payment_receipts:', receiptError);
             }
           } else if (receiptData) {
-            console.log('? [INVOICE] Found receipt approval status:', receiptData);
+            console.log('[INVOICE] Found receipt approval status:', receiptData);
             // Update payment status based on receipt approval
             if (receiptData.status === 'approved') {
               payment.status = 'completed';
@@ -495,13 +495,13 @@
         }
       };
       
-      console.log('? Invoice data loaded:', currentInvoiceData);
+      console.log('Invoice data loaded:', currentInvoiceData);
       displayInvoice();
     }
     
     function displayInvoice() {
       if (!currentInvoiceData) {
-        console.error('? No invoice data available');
+        console.error('No invoice data available');
         return;
       }
       
@@ -648,7 +648,7 @@
       `;
       
       document.getElementById('invoiceContent').innerHTML = invoiceHTML;
-      console.log('? Invoice displayed:', currentInvoiceData);
+      console.log('Invoice displayed:', currentInvoiceData);
     }
     
     function downloadInvoicePDF() {
@@ -708,17 +708,17 @@
           const fileName = `invoice-${currentInvoiceData.invoiceNumber}.pdf`;
           doc.save(fileName);
           
-          console.log('? PDF invoice downloaded:', fileName);
+          console.log('PDF invoice downloaded:', fileName);
           
           // Remove loading indicator
           document.body.removeChild(loadingMsg);
         } catch (error) {
-          console.error('? Error generating PDF:', error);
+          console.error('Error generating PDF:', error);
           document.body.removeChild(loadingMsg);
           alert('Error generating PDF. Please try again.');
         }
       }).catch(error => {
-        console.error('? Error capturing invoice:', error);
+        console.error('Error capturing invoice:', error);
         document.body.removeChild(loadingMsg);
         alert('Error capturing invoice. Please try again.');
       });
@@ -746,13 +746,13 @@
           link.click();
           document.body.removeChild(link);
           
-          console.log('? Image invoice downloaded:', link.download);
+          console.log('Image invoice downloaded:', link.download);
         }).catch(error => {
-          console.error('? Error generating image:', error);
+          console.error('Error generating image:', error);
           alert('Error generating image. Please try again.');
         });
       } catch (error) {
-        console.error('? Error in image generation:', error);
+        console.error('Error in image generation:', error);
         alert('Error generating image. Please try again.');
       }
     }
@@ -765,9 +765,9 @@
       
       try {
         window.print();
-        console.log('? Invoice sent to printer');
+        console.log('Invoice sent to printer');
       } catch (error) {
-        console.error('? Error printing invoice:', error);
+        console.error('Error printing invoice:', error);
         alert('Error printing invoice. Please try again.');
       }
     }
@@ -881,13 +881,13 @@
                 console.warn('[RECEIPT-UPLOAD] payment_receipts table does not exist in Supabase yet. Will save to localStorage as fallback.');
                 console.warn('[RECEIPT-UPLOAD] Please run the migration: supabase/migrations/20250120000000_create_payment_receipts_table.sql');
               } else {
-                console.error('? [RECEIPT-UPLOAD] Error saving receipt to Supabase:', error);
-                console.error('? [RECEIPT-UPLOAD] Error details:', JSON.stringify(error, null, 2));
+                console.error('[RECEIPT-UPLOAD] Error saving receipt to Supabase:', error);
+                console.error('[RECEIPT-UPLOAD] Error details:', JSON.stringify(error, null, 2));
                 console.warn('[RECEIPT-UPLOAD] Falling back to localStorage');
               }
             } else {
-              console.log('? [RECEIPT-UPLOAD] Receipt saved to Supabase successfully:', data);
-              console.log('? [RECEIPT-UPLOAD] Receipt ID:', data.id);
+              console.log('[RECEIPT-UPLOAD] Receipt saved to Supabase successfully:', data);
+              console.log('[RECEIPT-UPLOAD] Receipt ID:', data.id);
               supabaseSaved = true;
               supabaseReceiptId = data.id;
               
@@ -896,8 +896,8 @@
               receiptData.supabaseId = data.id;
             }
           } catch (err) {
-            console.error('? [RECEIPT-UPLOAD] Exception saving receipt to Supabase:', err);
-            console.error('? [RECEIPT-UPLOAD] Exception stack:', err.stack);
+            console.error('[RECEIPT-UPLOAD] Exception saving receipt to Supabase:', err);
+            console.error('[RECEIPT-UPLOAD] Exception stack:', err.stack);
             console.warn('[RECEIPT-UPLOAD] Falling back to localStorage');
           }
         } else {
@@ -917,7 +917,7 @@
           } else {
             receipts.push({ ...receiptData, id: supabaseReceiptId, supabaseId: supabaseReceiptId });
           }
-          console.log('? [RECEIPT-UPLOAD] Updated localStorage cache with Supabase receipt ID');
+          console.log('[RECEIPT-UPLOAD] Updated localStorage cache with Supabase receipt ID');
         } else {
           // Queue for sync if Supabase save failed
           receipts.push(receiptData);
@@ -958,7 +958,7 @@
                 .eq('organization_id', orgData.id);
               
               if (error) {
-                console.warn('?? Could not update subscription in Supabase:', error);
+                console.warn('Could not update subscription in Supabase:', error);
                 // Try updating organizations table as fallback
                 const { error: orgError } = await window.supabaseClient
                   .from('organizations')
@@ -976,7 +976,7 @@
                 
                 if (!orgError) {
                   supabaseSuccess = true;
-                  console.log('? Updated receipt in organizations.settings');
+                  console.log('Updated receipt in organizations.settings');
                   // Cache to localStorage immediately after successful Supabase write
                   // Supabase write: supabaseClient.update() completed above
                   organizations[orgName] = orgData;
@@ -984,14 +984,14 @@
                 }
               } else {
                 supabaseSuccess = true;
-                console.log('? Updated receipt in Supabase subscriptions table');
+                console.log('Updated receipt in Supabase subscriptions table');
                 // Cache to localStorage immediately after successful Supabase write
                 // Supabase write: supabaseClient.update() completed above
                 organizations[orgName] = orgData;
                 localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
               }
             } catch (err) {
-              console.warn('?? Could not update subscription in Supabase:', err);
+              console.warn('Could not update subscription in Supabase:', err);
               // Fallback: Cache to localStorage if Supabase write failed
               organizations[orgName] = orgData;
               localStorage.setItem('organizations', JSON.stringify(organizations));
@@ -1011,7 +1011,7 @@
           displayInvoice();
         }
         
-        console.log('? Receipt uploaded:', receiptData);
+        console.log('Receipt uploaded:', receiptData);
       };
       
       reader.readAsDataURL(file);
@@ -1058,7 +1058,7 @@
                 if (deleteError) {
                   console.warn('[INVOICE] Could not delete receipt from Supabase:', deleteError);
                 } else {
-                  console.log('? Deleted receipt from Supabase payment_receipts');
+                  console.log('Deleted receipt from Supabase payment_receipts');
                 }
               }
             }
@@ -1075,7 +1075,7 @@
             return rPaymentId !== paymentId && !rPaymentId.includes(paymentId) && !paymentId.includes(rPaymentId);
           });
           localStorage.setItem('payment_receipts', JSON.stringify(receipts));
-          console.log('? Removed receipt from localStorage');
+          console.log('Removed receipt from localStorage');
         } catch (err) {
           console.warn('[INVOICE] Error updating localStorage receipts:', err);
         }
@@ -1100,7 +1100,7 @@
               .eq('organization_id', orgData.id);
               
             if (error) {
-              console.warn('?? Error updating Supabase subscriptions:', error);
+              console.warn('Error updating Supabase subscriptions:', error);
               // Try updating organizations table as fallback
               try {
                 await window.supabaseClient
@@ -1123,14 +1123,14 @@
                 localStorage.setItem('organizations', JSON.stringify(organizations));
               }
             } else {
-              console.log('? Updated subscription in Supabase');
+              console.log('Updated subscription in Supabase');
               // Cache to localStorage immediately after successful Supabase write
               // Supabase write: supabaseClient.update() completed above
               organizations[orgName] = orgData;
               localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
             }
           } catch (err) {
-            console.warn('?? Could not update subscription in Supabase:', err);
+            console.warn('Could not update subscription in Supabase:', err);
             // Fallback: Cache to localStorage if Supabase exception
             organizations[orgName] = orgData;
             localStorage.setItem('organizations', JSON.stringify(organizations));
@@ -1150,7 +1150,7 @@
         displayInvoice();
         alert('Receipt deleted successfully! You can now upload a new receipt.');
       } catch (error) {
-        console.error('? Error deleting receipt:', error);
+        console.error('Error deleting receipt:', error);
         alert('Error deleting receipt. Please try again.');
       }
     }

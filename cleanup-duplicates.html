@@ -10,7 +10,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Cleanup Duplicate Data</title>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <title>Cleanup Duplicate Data</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; }
         .container { max-width: 800px; margin: 0 auto; }
@@ -29,7 +30,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>?? Duplicate Data Cleanup Tool</h1>
+        <h1><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Duplicate Data Cleanup Tool</h1>
         
         <div class="section">
             <h3>Current Data Status</h3>
@@ -39,14 +40,14 @@
 
         <div class="section">
             <h3>Cleanup Actions</h3>
-            <button class="button danger" onclick="cleanupPatientData()">?? Clean Duplicate Data</button>
-            <button class="button success" onclick="verifyCleanup()">? Verify Cleanup</button>
+            <button class="button danger" onclick="cleanupPatientData()"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Clean Duplicate Data</button>
+            <button class="button success" onclick="verifyCleanup()"><i class="fa-solid fa-magnifying-glass" aria-hidden="true"></i> Verify Cleanup</button>
             <div id="cleanup-log" class="log"></div>
         </div>
 
         <div class="section">
             <h3>Vitals Fix</h3>
-            <button class="button" onclick="fixVitalsStructure()">?? Fix Vitals Structure</button>
+            <button class="button" onclick="fixVitalsStructure()"><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fix Vitals Structure</button>
             <div id="vitals-log" class="log"></div>
         </div>
     </div>
@@ -112,11 +113,11 @@
 
         async function checkCurrentData() {
             clearLog('current-data-log');
-            log('?? Checking current data status...', 'current-data-log');
+            log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Checking current data status...', 'current-data-log');
             
             try {
                 const supabaseClient = initializeSupabaseClient();
-                log('? Supabase client initialized', 'current-data-log');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Supabase client initialized', 'current-data-log');
                 
                 const user = JSON.parse(localStorage.getItem("user") || "{}");
                 const orgId = user.organizationId || '576522cc-e769-4fb4-9487-3d150857d970';
@@ -127,11 +128,11 @@
                     .eq('organization_id', orgId);
                 
                 if (error) {
-                    log('? Error fetching patients: ' + error.message, 'current-data-log');
+                    log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error fetching patients: ' + error.message, 'current-data-log');
                     return;
                 }
                 
-                log(`?? Found ${patients.length} patients`, 'current-data-log');
+                log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found ${patients.length} patients`, 'current-data-log');
                 
                 patients.forEach(patient => {
                     try {
@@ -140,7 +141,7 @@
                         const immunizations = JSON.parse(patient.immunizations || '[]');
                         const medicalHistory = JSON.parse(patient.medical_history || '[]');
                         
-                        log(`?? ${patient.patient_id} (${patient.first_name} ${patient.last_name}):`, 'current-data-log');
+                        log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> ${patient.patient_id} (${patient.first_name} ${patient.last_name}):`, 'current-data-log');
                         log(`   Allergies: ${allergies.length} entries`, 'current-data-log');
                         log(`   Diagnoses: ${diagnoses.length} entries`, 'current-data-log');
                         log(`   Immunizations: ${immunizations.length} entries`, 'current-data-log');
@@ -153,7 +154,7 @@
                         const historyDuplicates = medicalHistory.length - new Set(medicalHistory.map(h => JSON.stringify(h))).size;
                         
                         if (allergyDuplicates > 0 || diagnosisDuplicates > 0 || immunizationDuplicates > 0 || historyDuplicates > 0) {
-                            log(`   ?? DUPLICATES FOUND:`, 'current-data-log');
+                            log(`   DUPLICATES FOUND:`, 'current-data-log');
                             if (allergyDuplicates > 0) log(`     Allergies: ${allergyDuplicates} duplicates`, 'current-data-log');
                             if (diagnosisDuplicates > 0) log(`     Diagnoses: ${diagnosisDuplicates} duplicates`, 'current-data-log');
                             if (immunizationDuplicates > 0) log(`     Immunizations: ${immunizationDuplicates} duplicates`, 'current-data-log');
@@ -161,18 +162,18 @@
                         }
                         
                     } catch (e) {
-                        log(`? Error parsing data for ${patient.patient_id}: ${e.message}`, 'current-data-log');
+                        log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error parsing data for ${patient.patient_id}: ${e.message}`, 'current-data-log');
                     }
                 });
                 
             } catch (error) {
-                log('? Error: ' + error.message, 'current-data-log');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ' + error.message, 'current-data-log');
             }
         }
 
         async function cleanupPatientData() {
             clearLog();
-            log('?? Starting duplicate cleanup...');
+            log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Starting duplicate cleanup...');
             
             try {
                 await waitForSupabaseClient();
@@ -186,14 +187,14 @@
                     .eq('organization_id', orgId);
                 
                 if (error) {
-                    log('? Error fetching patients: ' + error.message);
+                    log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error fetching patients: ' + error.message);
                     return;
                 }
                 
-                log(`?? Processing ${patients.length} patients...`);
+                log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Processing ${patients.length} patients...`);
                 
                 for (const patient of patients) {
-                    log(`?? Cleaning ${patient.patient_id} (${patient.first_name} ${patient.last_name})...`);
+                    log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Cleaning ${patient.patient_id} (${patient.first_name} ${patient.last_name})...`);
                     
                     try {
                         // Parse and deduplicate each field
@@ -215,9 +216,9 @@
                             .eq('organization_id', orgId);
                         
                         if (updateError) {
-                            log(`? Error updating ${patient.patient_id}: ${updateError.message}`);
+                            log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error updating ${patient.patient_id}: ${updateError.message}`);
                         } else {
-                            log(`? Cleaned ${patient.patient_id}:`);
+                            log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Cleaned ${patient.patient_id}:`);
                             log(`   Allergies: ${allergies.length} entries`);
                             log(`   Diagnoses: ${diagnoses.length} entries`);
                             log(`   Immunizations: ${immunizations.length} entries`);
@@ -225,14 +226,14 @@
                         }
                         
                     } catch (e) {
-                        log(`? Error processing ${patient.patient_id}: ${e.message}`);
+                        log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error processing ${patient.patient_id}: ${e.message}`);
                     }
                 }
                 
-                log('?? Cleanup completed!');
+                log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Cleanup completed!');
                 
             } catch (error) {
-                log('? Error: ' + error.message);
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ' + error.message);
             }
         }
 
@@ -250,13 +251,13 @@
 
         async function verifyCleanup() {
             clearLog();
-            log('? Verifying cleanup...');
+            log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Verifying cleanup...');
             await checkCurrentData();
         }
 
         async function fixVitalsStructure() {
             clearLog('vitals-log');
-            log('?? Fixing vitals structure...', 'vitals-log');
+            log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Fixing vitals structure...', 'vitals-log');
             
             try {
                 await waitForSupabaseClient();
@@ -267,12 +268,12 @@
                 // Get patients from localStorage
                 const patients = JSON.parse(localStorage.getItem("Mecure Clinics_patients") || "[]");
                 
-                log(`?? Found ${patients.length} patients in localStorage`, 'vitals-log');
+                log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found ${patients.length} patients in localStorage`, 'vitals-log');
                 
                 for (const patient of patients) {
                     if (!patient.visits) {
                         patient.visits = [];
-                        log(`?? Added visits array to ${patient.id}`, 'vitals-log');
+                        log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Added visits array to ${patient.id}`, 'vitals-log');
                     }
                     
                     // Ensure each visit has proper SOAP structure
@@ -284,24 +285,24 @@
                                 assessment: {},
                                 plan: {}
                             };
-                            log(`?? Added SOAP structure to visit ${visit.date} for ${patient.id}`, 'vitals-log');
+                            log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Added SOAP structure to visit ${visit.date} for ${patient.id}`, 'vitals-log');
                         }
                         
                         if (!visit.soap.objective) {
                             visit.soap.objective = {};
-                            log(`?? Added objective structure to visit ${visit.date} for ${patient.id}`, 'vitals-log');
+                            log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Added objective structure to visit ${visit.date} for ${patient.id}`, 'vitals-log');
                         }
                         
                         if (!visit.soap.objective.vitals) {
                             visit.soap.objective.vitals = [];
-                            log(`?? Added vitals array to visit ${visit.date} for ${patient.id}`, 'vitals-log');
+                            log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Added vitals array to visit ${visit.date} for ${patient.id}`, 'vitals-log');
                         }
                     });
                 }
                 
                 // Save back to localStorage
                 localStorage.setItem("Mecure Clinics_patients", JSON.stringify(patients));
-                log('? Vitals structure fixed in localStorage', 'vitals-log');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Vitals structure fixed in localStorage', 'vitals-log');
                 
                 // Also update Supabase
                 for (const patient of patients) {
@@ -314,16 +315,16 @@
                         .eq('organization_id', orgId);
                     
                     if (error) {
-                        log(`? Error updating visits for ${patient.id}: ${error.message}`, 'vitals-log');
+                        log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error updating visits for ${patient.id}: ${error.message}`, 'vitals-log');
                     } else {
-                        log(`? Updated visits structure for ${patient.id} in Supabase`, 'vitals-log');
+                        log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Updated visits structure for ${patient.id} in Supabase`, 'vitals-log');
                     }
                 }
                 
-                log('?? Vitals structure fix completed!', 'vitals-log');
+                log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Vitals structure fix completed!', 'vitals-log');
                 
             } catch (error) {
-                log('? Error: ' + error.message, 'vitals-log');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ' + error.message, 'vitals-log');
             }
         }
 

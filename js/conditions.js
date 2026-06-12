@@ -1,4 +1,4 @@
-// Purpose: Handles logic for conditions-breakdown.html: aggregates unique diagnoses from patients, computes counts by gender, tribe, age, and displays in table.
+// Purpose: Handles logic for conditions-breakdown.html: aggregates unique diagnoses from patients, computes counts by gender, race, age, and displays in table.
 
 const AGE_GROUPS = [
   { label: '0-18', min: 0, max: 18 },
@@ -35,7 +35,7 @@ function aggregateData() {
       total: 0,
       male: 0,
       female: 0,
-      tribes: {},
+      races: {},
       ages: AGE_GROUPS.map(() => 0)
     };
     const patientSet = new Set(); // To ensure unique patients per diagnosis
@@ -47,25 +47,25 @@ function aggregateData() {
         const gender = patient.gender.toLowerCase();
         if (gender === 'male') stats.male++;
         else if (gender === 'female') stats.female++;
-        const tribe = patient.tribe || 'Unknown';
-        stats.tribes[tribe] = (stats.tribes[tribe] || 0) + 1;
+        const raceVal = (patient.race || 'Unknown').trim() || 'Unknown';
+        stats.races[raceVal] = (stats.races[raceVal] || 0) + 1;
         const age = calculateAge(patient.dob);
         const groupIndex = AGE_GROUPS.findIndex(g => age >= g.min && age <= g.max);
         if (groupIndex !== -1) stats.ages[groupIndex]++;
       }
     });
     if (stats.total > 0) { // Only include if at least one patient has it
-      let tribeStr = Object.entries(stats.tribes)
-        .map(([tribe, count]) => `${tribe}: ${count}`)
+      let raceStr = Object.entries(stats.races)
+        .map(([raceVal, count]) => `${raceVal}: ${count}`)
         .join(', ');
-      const tribeCount = Object.keys(stats.tribes).length;
-      const tribeDisplay = tribeCount > 1 ? 'Multiple' : tribeStr;
+      const raceCount = Object.keys(stats.races).length;
+      const raceDisplay = raceCount > 1 ? 'Multiple' : raceStr;
       summary.push({
         diagnosis,
         ...stats,
-        tribeStr,
-        tribeDisplay,
-        tribeCount
+        raceStr,
+        raceDisplay,
+        raceCount
       });
     }
   });
@@ -79,13 +79,13 @@ function displaySummary() {
   summary.forEach(item => {
     const row = document.createElement("tr");
     const encodedDiagnosis = encodeURIComponent(item.diagnosis);
-    const tribeHtml = item.tribeCount > 1 ? `<a href="condition-stats?condition=${encodedDiagnosis}">Multiple</a>` : item.tribeStr || 'N/A';
+    const raceHtml = item.raceCount > 1 ? `<a href="condition-stats?condition=${encodedDiagnosis}">Multiple</a>` : item.raceStr || 'N/A';
     row.innerHTML = `
       <td><a href="condition-patients?condition=${encodedDiagnosis}">${item.diagnosis}</a></td>
       <td><a href="condition-patients?condition=${encodedDiagnosis}">${item.total}</a></td>
       <td>${item.male}</td>
       <td>${item.female}</td>
-      <td>${tribeHtml}</td>
+      <td>${raceHtml}</td>
       <td>${item.ages[0]}</td>
       <td>${item.ages[1]}</td>
       <td>${item.ages[2]}</td>

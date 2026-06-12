@@ -9,7 +9,8 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Complete Clinical Data Migration</title>
+      <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+  <title>Complete Clinical Data Migration</title>
     <style>
         body {
             font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
@@ -160,11 +161,11 @@
   </script>
 
     <div class="container">
-        <h1>?? Complete Clinical Data Migration</h1>
+        <h1><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Complete Clinical Data Migration</h1>
         <p class="subtitle">Migrating ALL patient data including encounters, vitals, diagnoses, medications, prescriptions, lab orders, imaging, referrals, and billing</p>
         
         <div class="section">
-            <h2>?? Step 1: Load Backup File</h2>
+            <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Step 1: Load Backup File</h2>
             <input type="file" id="backup-file" accept=".json" style="margin-bottom: 15px;">
             <button class="btn" onclick="loadBackup()">Load Backup</button>
             
@@ -213,7 +214,7 @@
         </div>
         
         <div class="section">
-            <h2>?? Step 2: Migrate All Clinical Data</h2>
+            <h2><i class="fa-solid fa-circle-info" aria-hidden="true"></i> Step 2: Migrate All Clinical Data</h2>
             <button class="btn" id="migrate-btn" onclick="startMigration()" disabled>Start Full Migration</button>
             <button class="btn" onclick="clearLogs()">Clear Logs</button>
             
@@ -262,14 +263,14 @@
                 return;
             }
 
-            log('?? Reading backup file...', 'info');
+            log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Reading backup file...', 'info');
             
             try {
                 const text = await file.text();
                 const cleanedText = text.replace(/"followup":\s*"[^"]*",\s*"followUp"/g, '"followUp"');
                 backupData = JSON.parse(cleanedText);
                 
-                log('? Backup file loaded successfully', 'success');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Backup file loaded successfully', 'success');
                 
                 // Calculate stats
                 const mecureData = backupData.organizationData?.['Mecure Clinics'];
@@ -315,14 +316,14 @@
                     document.getElementById('backup-stats').style.display = 'grid';
                     document.getElementById('migrate-btn').disabled = false;
                     
-                    log(`?? Found: ${totalVisits} visits, ${totalVitals} vitals, ${totalDiagnoses} diagnoses`, 'info');
-                    log(`?? Found: ${totalMedications} medications, ${totalPrescriptions} prescriptions`, 'info');
-                    log(`?? Found: ${totalLabOrders} lab orders, ${totalImagingOrders} imaging orders`, 'info');
+                    log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found: ${totalVisits} visits, ${totalVitals} vitals, ${totalDiagnoses} diagnoses`, 'info');
+                    log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found: ${totalMedications} medications, ${totalPrescriptions} prescriptions`, 'info');
+                    log(`<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Found: ${totalLabOrders} lab orders, ${totalImagingOrders} imaging orders`, 'info');
                 } else {
-                    log('?? No Mecure Clinics data found in backup', 'warning');
+                    log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> No Mecure Clinics data found in backup', 'warning');
                 }
             } catch (error) {
-                log(`? Error loading backup: ${error.message}`, 'error');
+                log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error loading backup: ${error.message}`, 'error');
                 console.error(error);
             }
         }
@@ -334,13 +335,13 @@
             }
 
             if (!supabaseClient) {
-                log('? Supabase client not initialized', 'error');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Supabase client not initialized', 'error');
                 return;
             }
 
             document.getElementById('migrate-btn').disabled = true;
-            log('?? Starting COMPLETE clinical data migration...', 'info');
-            log('?? This will take several minutes. Please wait...', 'warning');
+            log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> Starting COMPLETE clinical data migration...', 'info');
+            log('<i class="fa-solid fa-circle-info" aria-hidden="true"></i> This will take several minutes. Please wait...', 'warning');
             
             try {
                 // Get organization ID
@@ -351,7 +352,7 @@
                 
                 for (let i = 0; i < patients.length; i++) {
                     const patient = patients[i];
-                    log(`\n?? Processing patient ${i + 1}/${totalSteps}: ${patient.firstName} ${patient.lastName}`, 'info');
+                    log(`\nProcessing patient ${i + 1}/${totalSteps}: ${patient.firstName} ${patient.lastName}`, 'info');
                     
                     await migratePatientClinicalData(patient);
                     
@@ -359,11 +360,11 @@
                     updateProgress(progress, `Processing patient ${i + 1}/${totalSteps}...`);
                 }
                 
-                log('\n?? COMPLETE MIGRATION FINISHED!', 'success');
-                updateProgress(100, '? Complete');
+                log('\nCOMPLETE MIGRATION FINISHED!', 'success');
+                updateProgress(100, '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Complete');
                 
             } catch (error) {
-                log(`? Migration failed: ${error.message}`, 'error');
+                log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Migration failed: ${error.message}`, 'error');
                 console.error(error);
             } finally {
                 document.getElementById('migrate-btn').disabled = false;
@@ -380,7 +381,7 @@
             
             if (!orgs) throw new Error('Mecure Clinics not found in Supabase');
             orgId = orgs.id;
-            log(`? Using organization ID: ${orgId}`, 'success');
+            log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Using organization ID: ${orgId}`, 'success');
         }
 
         async function migratePatientClinicalData(patient) {
@@ -407,7 +408,7 @@
             const visits = patient.visits || [];
             if (visits.length === 0) return;
             
-            log(`  ?? Migrating ${visits.length} encounters...`, 'info');
+            log(`  Migrating ${visits.length} encounters...`, 'info');
             
             for (const visit of visits) {
                 // Check if encounter already exists
@@ -467,7 +468,7 @@
                     .single();
                 
                 if (error) {
-                    log(`    ?? Error migrating encounter: ${error.message}`, 'warning');
+                    log(`    Error migrating encounter: ${error.message}`, 'warning');
                     continue;
                 }
                 
@@ -523,7 +524,7 @@
             const diagnoses = patient.diagnoses || [];
             if (diagnoses.length === 0) return;
             
-            log(`  ?? Migrating ${diagnoses.length} diagnoses...`, 'info');
+            log(`  Migrating ${diagnoses.length} diagnoses...`, 'info');
             
             for (const diag of diagnoses) {
                 const { data: existing } = await supabaseClient
@@ -554,7 +555,7 @@
             const medications = patient.medications || [];
             if (medications.length === 0) return;
             
-            log(`  ?? Migrating ${medications.length} medications...`, 'info');
+            log(`  Migrating ${medications.length} medications...`, 'info');
             
             for (const med of medications) {
                 const { data: existing } = await supabaseClient
@@ -588,7 +589,7 @@
             const prescriptions = patient.prescriptions || [];
             if (prescriptions.length === 0) return;
             
-            log(`  ?? Migrating ${prescriptions.length} prescriptions...`, 'info');
+            log(`  Migrating ${prescriptions.length} prescriptions...`, 'info');
             
             for (const rx of prescriptions) {
                 await supabaseClient
@@ -614,7 +615,7 @@
             const history = patient.medicalHistory || [];
             if (history.length === 0) return;
             
-            log(`  ?? Migrating ${history.length} medical history items...`, 'info');
+            log(`  Migrating ${history.length} medical history items...`, 'info');
             
             for (const item of history) {
                 const { data: existing } = await supabaseClient
@@ -645,7 +646,7 @@
             const preventive = patient.preventiveGaps || [];
             if (preventive.length === 0) return;
             
-            log(`  ?? Migrating ${preventive.length} preventive care items...`, 'info');
+            log(`  Migrating ${preventive.length} preventive care items...`, 'info');
             
             for (const item of preventive) {
                 const { data: existing } = await supabaseClient

@@ -281,7 +281,7 @@
                         // Check if demographic fields are missing
                         const hasAddress = supabasePatient.address_line1 || supabasePatient.city || supabasePatient.state;
                         const hasEmergency = supabasePatient.emergency_contact_name || supabasePatient.emergency_contact_phone;
-                        const hasDemographics = supabasePatient.email || supabasePatient.tribe || supabasePatient.marital_status;
+                        const hasDemographics = supabasePatient.email || supabasePatient.race || supabasePatient.marital_status;
                         
                         if (!hasAddress || !hasEmergency || !hasDemographics) {
                             needsMigration++;
@@ -293,7 +293,7 @@
                     }
                 }
                 
-                analysisResults.appendChild(showStatus(`? Patients with complete data: ${hasAllData}`, 'success'));
+                analysisResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Patients with complete data: ${hasAllData}`, 'success'));
                 analysisResults.appendChild(showStatus(`Patients needing migration: ${needsMigration}`, 'warning'));
                 analysisResults.appendChild(showStatus(`Total local patients: ${localPatients.length}`, 'info'));
                 analysisResults.appendChild(showStatus(`Total Supabase patients: ${supabasePatients.length}`, 'info'));
@@ -305,13 +305,13 @@
                     document.getElementById('full-migration-btn').disabled = false;
                 }
                 
-                log(`? Analysis complete. ${needsMigration} patients need migration.`);
+                log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Analysis complete. ${needsMigration} patients need migration.`);
                 
             } catch (error) {
-                log(`? Analysis failed: ${error.message}`, 'error');
+                log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Analysis failed: ${error.message}`, 'error');
                 const analysisResults = document.getElementById('analysis-results');
                 analysisResults.innerHTML = '';
-                analysisResults.appendChild(showStatus(`? Analysis failed: ${error.message}`, 'error'));
+                analysisResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Analysis failed: ${error.message}`, 'error'));
             }
         }
         
@@ -326,7 +326,7 @@
                 const supabasePatient = supabasePatients.find(sp => sp.patient_id === localPatient.id);
                 const hasAddress = supabasePatient && (supabasePatient.address_line1 || supabasePatient.city);
                 const hasEmergency = supabasePatient && (supabasePatient.emergency_contact_name || supabasePatient.emergency_contact_phone);
-                const hasDemographics = supabasePatient && (supabasePatient.email || supabasePatient.tribe);
+                const hasDemographics = supabasePatient && (supabasePatient.email || supabasePatient.race);
                 
                 const needsMigration = !hasAddress || !hasEmergency || !hasDemographics;
                 
@@ -382,19 +382,19 @@
                 testResults.innerHTML = '';
                 
                 if (result.success) {
-                    testResults.appendChild(showStatus(`? Test migration successful!`, 'success'));
+                    testResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Test migration successful!`, 'success'));
                     testResults.appendChild(showStatus(`Updated fields: ${result.updatedFields.join(', ')}`, 'info'));
-                    log(`? Test migration completed successfully`);
+                    log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Test migration completed successfully`);
                 } else {
-                    testResults.appendChild(showStatus(`? Test migration failed: ${result.error}`, 'error'));
-                    log(`? Test migration failed: ${result.error}`);
+                    testResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Test migration failed: ${result.error}`, 'error'));
+                    log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Test migration failed: ${result.error}`);
                 }
                 
             } catch (error) {
-                log(`? Test migration error: ${error.message}`);
+                log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Test migration error: ${error.message}`);
                 const testResults = document.getElementById('test-results');
                 testResults.innerHTML = '';
-                testResults.appendChild(showStatus(`? Test migration error: ${error.message}`, 'error'));
+                testResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Test migration error: ${error.message}`, 'error'));
             }
         }
         
@@ -420,16 +420,16 @@
                     const result = await migratePatient(patient);
                     if (result.success) {
                         successCount++;
-                        log(`? Success: ${patient.firstName} ${patient.lastName}`);
+                        log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Success: ${patient.firstName} ${patient.lastName}`);
                     } else {
                         errorCount++;
                         errors.push(`${patient.firstName} ${patient.lastName}: ${result.error}`);
-                        log(`? Failed: ${patient.firstName} ${patient.lastName} - ${result.error}`);
+                        log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Failed: ${patient.firstName} ${patient.lastName} - ${result.error}`);
                     }
                 } catch (error) {
                     errorCount++;
                     errors.push(`${patient.firstName} ${patient.lastName}: ${error.message}`);
-                    log(`? Error: ${patient.firstName} ${patient.lastName} - ${error.message}`);
+                    log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error: ${patient.firstName} ${patient.lastName} - ${error.message}`);
                 }
                 
                 // Small delay to avoid overwhelming the API
@@ -437,8 +437,8 @@
             }
             
             // Show final results
-            migrationResults.appendChild(showStatus(`? Successful migrations: ${successCount}`, 'success'));
-            migrationResults.appendChild(showStatus(`? Failed migrations: ${errorCount}`, errorCount > 0 ? 'error' : 'info'));
+            migrationResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Successful migrations: ${successCount}`, 'success'));
+            migrationResults.appendChild(showStatus(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Failed migrations: ${errorCount}`, errorCount > 0 ? 'error' : 'info'));
             
             if (errors.length > 0) {
                 const errorDetails = document.createElement('div');
@@ -504,7 +504,7 @@
                     `${localPatient.emergencyAddressLine1}${localPatient.emergencyAddressLine2 ? ', ' + localPatient.emergencyAddressLine2 : ''}, ${localPatient.emergencyCity || ''}, ${localPatient.emergencyState || ''}, ${localPatient.emergencyCountry || ''}` : null,
                 blood_group: localPatient.bloodGroup || null,
                 genotype: localPatient.genotype || null,
-                tribe: localPatient.tribe || null,
+                race: localPatient.race || null,
                 occupation: localPatient.occupation || null,
                 marital_status: localPatient.maritalStatus || null,
                 allergies: localPatient.allergies ? JSON.stringify(localPatient.allergies) : '[]',

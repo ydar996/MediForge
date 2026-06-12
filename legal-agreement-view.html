@@ -383,7 +383,7 @@
       if (!agreementId) {
         container.innerHTML = `
           <div class="error">
-            <h2>? Agreement ID Missing</h2>
+            <h2><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Agreement ID Missing</h2>
             <p>No agreement ID provided in the URL.</p>
             <button onclick="goBack()">Go Back</button>
           </div>
@@ -437,11 +437,11 @@
         let agreementText = agreement.agreement_text || '';
         let agreementHTML = null;
         
-        console.log('?? Loading agreement text. Stored text length:', agreementText?.length || 0);
+        console.log('Loading agreement text. Stored text length:', agreementText?.length || 0);
         
         // Always fetch from legal-agreement.html to get the full formatted text
         try {
-          console.log('?? Fetching agreement text from legal-agreement.html...');
+          console.log('Fetching agreement text from legal-agreement.html...');
           const response = await fetch('legal-agreement.html');
           
           if (!response.ok) {
@@ -449,33 +449,33 @@
           }
           
           const html = await response.text();
-          console.log('? Fetched HTML, length:', html.length);
+          console.log('Fetched HTML, length:', html.length);
           
           const parser = new DOMParser();
           const doc = parser.parseFromString(html, 'text/html');
           
           // Find the correct agreement container based on agreement type
           const containers = doc.querySelectorAll('.agreement-container');
-          console.log('?? Found', containers.length, 'agreement containers');
+          console.log('Found', containers.length, 'agreement containers');
           
           let content = null;
           
           if (agreement.agreement_type === 'baa') {
             // Find BAA container (second one, index 1)
-            console.log('?? Looking for BAA container (index 1)');
+            console.log('Looking for BAA container (index 1)');
             content = containers[1] || containers[0];
           } else if (agreement.agreement_type === 'service_agreement') {
             // Find Service Agreement container (first one, index 0)
-            console.log('?? Looking for Service Agreement container (index 0)');
+            console.log('Looking for Service Agreement container (index 0)');
             content = containers[0];
           } else {
             // Default to first container or body
-            console.log('?? Using default container');
+            console.log('Using default container');
             content = containers[0] || doc.body;
           }
           
           if (content) {
-            console.log('? Found content container');
+            console.log('Found content container');
             // Clone to avoid modifying original
             const clone = content.cloneNode(true);
             
@@ -488,24 +488,24 @@
             // Also get text version for fallback
             agreementText = clone.innerText || clone.textContent || '';
             
-            console.log('? Extracted HTML length:', agreementHTML.length);
-            console.log('? Extracted text length:', agreementText.length);
+            console.log('Extracted HTML length:', agreementHTML.length);
+            console.log('Extracted text length:', agreementText.length);
             
             // Clean up extra whitespace in text version
             agreementText = agreementText.replace(/\n{3,}/g, '\n\n').trim();
           } else {
-            console.warn('?? No content container found, using body');
+            console.warn('No content container found, using body');
             agreementText = doc.body.innerText || doc.body.textContent || '';
             agreementHTML = doc.body.innerHTML;
           }
         } catch (fetchError) {
-          console.error('? Error fetching agreement text:', fetchError);
+          console.error('Error fetching agreement text:', fetchError);
           agreementText = `Error loading agreement text: ${fetchError.message}. Please contact support.`;
         }
         
         // If still no text, provide a default message
         if ((!agreementText || agreementText.trim().length === 0) && !agreementHTML) {
-          console.error('? No agreement text or HTML available');
+          console.error('No agreement text or HTML available');
           agreementText = `This ${agreementTypeLabel} was signed on ${signedDate} by ${agreement.user_name} (${agreement.user_email}) in the role of ${agreement.user_role}.\n\nAgreement text not available. Please contact support for the full agreement text.`;
         }
         
@@ -600,7 +600,7 @@
         console.error('Error loading agreement:', error);
         container.innerHTML = `
           <div class="error">
-            <h2>? Error Loading Agreement</h2>
+            <h2><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Error Loading Agreement</h2>
             <p>${error.message}</p>
             <button onclick="goBack()">Go Back</button>
           </div>

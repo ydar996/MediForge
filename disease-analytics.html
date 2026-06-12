@@ -264,7 +264,7 @@
       display: inline-block;
     }
     
-    .tribe-badge {
+    .race-badge {
       background: #e8f5e9;
       color: #2e7d32;
       padding: 2px 8px;
@@ -537,9 +537,9 @@
       </div>
       
       <div class="filter-group">
-        <label>Tribe/Ethnicity</label>
-        <select id="tribe-filter">
-          <option value="">All Tribes</option>
+        <label>Race</label>
+        <select id="race-filter">
+          <option value="">All Races</option>
         </select>
       </div>
       
@@ -614,15 +614,15 @@
         </div>
       </div>
       
-      <!-- Tribe/Ethnicity Distribution Chart -->
+      <!-- Race Distribution Chart -->
       <div class="chart-container">
-        <h3><i class="fa-solid fa-people-group" aria-hidden="true"></i> Tribe/Ethnicity Distribution</h3>
+        <h3><i class="fa-solid fa-people-group" aria-hidden="true"></i> Race Distribution</h3>
         <div class="chart-wrapper">
-          <canvas id="tribeDistributionChart"></canvas>
+          <canvas id="raceDistributionChart"></canvas>
         </div>
         <div class="chart-actions">
-          <button class="chart-btn" onclick="exportChart('tribeDistributionChart', 'tribe-distribution')"><i class="fa-solid fa-download" aria-hidden="true"></i> Export</button>
-          <button class="chart-btn secondary" onclick="toggleFullscreen('tribeDistributionChart')"><i class="fa-solid fa-expand" aria-hidden="true"></i> Fullscreen</button>
+          <button class="chart-btn" onclick="exportChart('raceDistributionChart', 'race-distribution')"><i class="fa-solid fa-download" aria-hidden="true"></i> Export</button>
+          <button class="chart-btn secondary" onclick="toggleFullscreen('raceDistributionChart')"><i class="fa-solid fa-expand" aria-hidden="true"></i> Fullscreen</button>
         </div>
       </div>
       
@@ -728,7 +728,7 @@
       disease: '',
       gender: '',
       ageGroup: '',
-      tribe: '',
+      race: '',
       sortBy: 'prevalence'
     };
     
@@ -1041,31 +1041,31 @@
       });
     }
     
-    // Create Tribe/Ethnicity Distribution Chart
-    function createTribeDistributionChart(data) {
-      const ctx = document.getElementById('tribeDistributionChart');
+    // Create Race Distribution Chart
+    function createRaceDistributionChart(data) {
+      const ctx = document.getElementById('raceDistributionChart');
       if (!ctx) return;
       
-      if (chartInstances.tribeDistribution) {
-        chartInstances.tribeDistribution.destroy();
+      if (chartInstances.raceDistribution) {
+        chartInstances.raceDistribution.destroy();
       }
       
-      // Aggregate by tribes
-      const tribeData = {};
+      // Aggregate by race
+      const raceData = {};
       data.forEach(disease => {
-        Object.keys(disease.tribes).forEach(tribe => {
-          tribeData[tribe] = (tribeData[tribe] || 0) + disease.tribes[tribe];
+        Object.keys(disease.races).forEach(raceVal => {
+          raceData[raceVal] = (raceData[raceVal] || 0) + disease.races[raceVal];
         });
       });
       
-      const sortedTribes = Object.entries(tribeData)
+      const sortedRaces = Object.entries(raceData)
         .sort(([,a], [,b]) => b - a)
-        .slice(0, 10); // Top 10 tribes
+        .slice(0, 10); // Top 10 races
       
-      const labels = sortedTribes.map(([tribe]) => tribe);
-      const values = sortedTribes.map(([,count]) => count);
+      const labels = sortedRaces.map(([raceVal]) => raceVal);
+      const values = sortedRaces.map(([,count]) => count);
       
-      chartInstances.tribeDistribution = new Chart(ctx, {
+      chartInstances.raceDistribution = new Chart(ctx, {
         type: 'bar',
         data: {
           labels: labels,
@@ -1110,8 +1110,8 @@
           },
           onClick: (event, elements) => {
             if (elements.length > 0) {
-              const tribe = labels[elements[0].index];
-              document.getElementById('tribe-filter').value = tribe;
+              const race = labels[elements[0].index];
+              document.getElementById('race-filter').value = raceVal;
               applyFilters();
             }
           }
@@ -1246,7 +1246,7 @@
       
       // Create close button
       const closeBtn = document.createElement('button');
-      closeBtn.innerHTML = '?';
+      closeBtn.innerHTML = '<i class="fa-solid fa-xmark" aria-hidden="true"></i>';
       closeBtn.style.cssText = `
         position: absolute;
         top: 10px;
@@ -1310,7 +1310,7 @@
       createAgeDistributionChart(data);
       createGenderDistributionChart(data);
       createGeographicDistributionChart(data);
-      createTribeDistributionChart(data);
+      createRaceDistributionChart(data);
       createTimeTrendsChart(data);
     }
     
@@ -1323,7 +1323,7 @@
       allDiseaseData = [];
       let diseaseMap = {};
       let countrySet = new Set();
-      let tribeSet = new Set();
+      let raceSet = new Set();
       
       // Collect all disease data from all organizations
       for (const orgName of orgNames) {
@@ -1350,14 +1350,14 @@
         patients.forEach(patient => {
           // Get patient demographics (Supabase uses snake_case)
           const gender = patient.gender || 'Unknown';
-          const tribe = patient.tribe || patient.ethnicity || 'Not specified';
+          const race = patient.race || patient.ethnicity || 'Not specified';
           // Check both date_of_birth (Supabase) and dateOfBirth (localStorage) fields
           const birthDate = patient.date_of_birth || patient.dateOfBirth || patient.dob;
           const age = calculateAge(birthDate);
           const ageGroup = getAgeGroup(age);
           
-          if (tribe && tribe !== 'Not specified') {
-            tribeSet.add(tribe);
+          if (race && race !== 'Not specified') {
+            raceSet.add(race);
           }
           
           // Get patient diagnoses - parse if it's a JSON string (from Supabase JSONB)
@@ -1417,7 +1417,7 @@
                 countries: {},
                 genders: { Male: 0, Female: 0, Other: 0, Unknown: 0 },
                 ageGroups: { '0-17': 0, '18-35': 0, '36-55': 0, '56-70': 0, '71+': 0, 'Unknown': 0 },
-                tribes: {},
+                races: {},
                 organizations: new Set()
               };
             }
@@ -1431,17 +1431,17 @@
                 count: 0,
                 genders: { Male: 0, Female: 0, Other: 0, Unknown: 0 },
                 ageGroups: { '0-17': 0, '18-35': 0, '36-55': 0, '56-70': 0, '71+': 0, 'Unknown': 0 },
-                tribes: {}
+                races: {}
               };
             }
             disease.countries[country].count++;
             disease.countries[country].genders[gender]++;
             disease.countries[country].ageGroups[ageGroup]++;
             
-            // Track by tribe
-            if (tribe !== 'Not specified') {
-              disease.tribes[tribe] = (disease.tribes[tribe] || 0) + 1;
-              disease.countries[country].tribes[tribe] = (disease.countries[country].tribes[tribe] || 0) + 1;
+            // Track by race
+            if (race !== 'Not specified') {
+              disease.races[race] = (disease.races[race] || 0) + 1;
+              disease.countries[country].races[race] = (disease.countries[country].races[race] || 0) + 1;
             }
             
             // Track by gender and age globally
@@ -1464,7 +1464,7 @@
       console.log('Disease data:', allDiseaseData);
       
       // Populate filter dropdowns
-      populateFilters(countrySet, allDiseaseData, tribeSet);
+      populateFilters(countrySet, allDiseaseData, raceSet);
       
       // Apply filters and display
       applyFilters();
@@ -1491,7 +1491,7 @@
       return '71+';
     }
     
-    function populateFilters(countries, diseases, tribes) {
+    function populateFilters(countries, diseases, races) {
       // Populate country filter
       const countryFilter = document.getElementById('country-filter');
       Array.from(countries).sort().forEach(country => {
@@ -1510,13 +1510,13 @@
         diseaseFilter.appendChild(option);
       });
       
-      // Populate tribe filter
-      const tribeFilter = document.getElementById('tribe-filter');
-      Array.from(tribes).sort().forEach(tribe => {
+      // Populate race filter
+      const raceFilter = document.getElementById('race-filter');
+      Array.from(races).sort().forEach(raceVal => {
         const option = document.createElement('option');
-        option.value = tribe;
-        option.textContent = tribe;
-        tribeFilter.appendChild(option);
+        option.value = raceVal;
+        option.textContent = raceVal;
+        raceFilter.appendChild(option);
       });
     }
     
@@ -1526,7 +1526,7 @@
       currentFilters.disease = document.getElementById('disease-filter').value;
       currentFilters.gender = document.getElementById('gender-filter').value;
       currentFilters.ageGroup = document.getElementById('age-filter').value;
-      currentFilters.tribe = document.getElementById('tribe-filter').value;
+      currentFilters.race = document.getElementById('race-filter').value;
       currentFilters.sortBy = document.getElementById('sort-filter').value;
       
       // Filter data
@@ -1543,7 +1543,7 @@
           countries: {},
           genders: { Male: 0, Female: 0, Other: 0, Unknown: 0 },
           ageGroups: { '0-17': 0, '18-35': 0, '36-55': 0, '56-70': 0, '71+': 0, 'Unknown': 0 },
-          tribes: {}
+          races: {}
         };
         
         // Filter by country
@@ -1573,13 +1573,13 @@
             });
           }
           
-          // Filter by tribe
-          if (currentFilters.tribe) {
-            countryCount = countryData.tribes[currentFilters.tribe] || 0;
-            filteredDisease.tribes[currentFilters.tribe] = (filteredDisease.tribes[currentFilters.tribe] || 0) + countryCount;
+          // Filter by race
+          if (currentFilters.race) {
+            countryCount = countryData.races[currentFilters.race] || 0;
+            filteredDisease.races[currentFilters.race] = (filteredDisease.races[currentFilters.race] || 0) + countryCount;
           } else {
-            Object.keys(countryData.tribes).forEach(t => {
-              filteredDisease.tribes[t] = (filteredDisease.tribes[t] || 0) + countryData.tribes[t];
+            Object.keys(countryData.races).forEach(t => {
+              filteredDisease.races[t] = (filteredDisease.races[t] || 0) + countryData.races[t];
             });
           }
           
@@ -1708,10 +1708,10 @@
                       `<span class="age-badge">Age ${a}: ${c}</span>`
                     ).join('')}
                   </div>
-                  ${Object.keys(disease.countryData.tribes).length > 0 ? `
+                  ${Object.keys(disease.countryData.races).length > 0 ? `
                     <div class="demographic-breakdown">
-                      ${Object.entries(disease.countryData.tribes).filter(([t, c]) => c > 0).map(([t, c]) => 
-                        `<span class="tribe-badge">${t}: ${c}</span>`
+                      ${Object.entries(disease.countryData.races).filter(([t, c]) => c > 0).map(([t, c]) => 
+                        `<span class="race-badge">${t}: ${c}</span>`
                       ).join('')}
                     </div>
                   ` : ''}
@@ -1765,12 +1765,12 @@
                 `<span class="age-badge">Age ${a}: ${c}</span>`
               ).join('')}
             </div>
-            ${Object.keys(disease.tribes).length > 0 ? `
+            ${Object.keys(disease.races).length > 0 ? `
               <div class="demographic-breakdown">
-                ${Object.entries(disease.tribes).slice(0, 5).filter(([t, c]) => c > 0).map(([t, c]) => 
-                  `<span class="tribe-badge">${t}: ${c}</span>`
+                ${Object.entries(disease.races).slice(0, 5).filter(([t, c]) => c > 0).map(([t, c]) => 
+                  `<span class="race-badge">${t}: ${c}</span>`
                 ).join('')}
-                ${Object.keys(disease.tribes).length > 5 ? '<span class="tribe-badge">...</span>' : ''}
+                ${Object.keys(disease.races).length > 5 ? '<span class="race-badge">...</span>' : ''}
               </div>
             ` : ''}
           </div>
@@ -1842,7 +1842,7 @@
       document.getElementById('disease-filter').value = '';
       document.getElementById('gender-filter').value = '';
       document.getElementById('age-filter').value = '';
-      document.getElementById('tribe-filter').value = '';
+      document.getElementById('race-filter').value = '';
       document.getElementById('sort-filter').value = 'prevalence';
       applyFilters();
     }
@@ -1892,21 +1892,21 @@
         </div>
       `;
       
-      // Top tribes
-      const tribeTotals = {};
+      // Top races
+      const raceTotals = {};
       allDiseaseData.forEach(d => {
-        Object.keys(d.tribes).forEach(t => {
-          tribeTotals[t] = (tribeTotals[t] || 0) + d.tribes[t];
+        Object.keys(d.races).forEach(t => {
+          raceTotals[t] = (raceTotals[t] || 0) + d.races[t];
         });
       });
       
-      const topTribes = Object.entries(tribeTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
+      const topRaces = Object.entries(raceTotals).sort((a, b) => b[1] - a[1]).slice(0, 10);
       
       insights += `
         <div style="background: #e8f5e9; padding: 20px; border-radius: 8px;">
-          <h3 style="margin-top: 0;"><i class="fa-solid fa-people-group" aria-hidden="true"></i> Top Ethnicities/Tribes</h3>
-          ${topTribes.map(([t, c]) => {
-            const total = Object.values(tribeTotals).reduce((a, b) => a + b, 0);
+          <h3 style="margin-top: 0;"><i class="fa-solid fa-people-group" aria-hidden="true"></i> Top Races</h3>
+          ${topRaces.map(([t, c]) => {
+            const total = Object.values(raceTotals).reduce((a, b) => a + b, 0);
             const pct = ((c / total) * 100).toFixed(1);
             return `<p><strong>${t}:</strong> ${c.toLocaleString()} (${pct}%)</p>`;
           }).join('')}
@@ -1927,17 +1927,17 @@
       }
       
       // Create CSV content
-      let csv = 'Disease,ICD Code,Country,Total Cases,Male,Female,Other,Age 0-17,Age 18-35,Age 36-55,Age 56-70,Age 71+,Top Tribes\n';
+      let csv = 'Disease,ICD Code,Country,Total Cases,Male,Female,Other,Age 0-17,Age 18-35,Age 36-55,Age 56-70,Age 71+,Top Races\n';
       
       allDiseaseData.forEach(disease => {
         Object.keys(disease.countries).forEach(country => {
           const cd = disease.countries[country];
-          const topTribes = Object.entries(cd.tribes).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, c]) => `${t}(${c})`).join('; ');
+          const topRaces = Object.entries(cd.races).sort((a, b) => b[1] - a[1]).slice(0, 3).map(([t, c]) => `${t}(${c})`).join('; ');
           
           csv += `"${disease.name}","${disease.code}","${country}",${cd.count},`;
           csv += `${cd.genders.Male},${cd.genders.Female},${cd.genders.Other},`;
           csv += `${cd.ageGroups['0-17']},${cd.ageGroups['18-35']},${cd.ageGroups['36-55']},${cd.ageGroups['56-70']},${cd.ageGroups['71+']},`;
-          csv += `"${topTribes}"\n`;
+          csv += `"${topRaces}"\n`;
         });
       });
       
