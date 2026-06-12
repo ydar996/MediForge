@@ -5,7 +5,7 @@
 // ==================== DATA MODELS ====================
 
 // Invoice Status: draft, pending, paid, partial, overdue, cancelled
-// Payment Method: cash, mobile_money, card, bank_transfer, insurance, check
+// Payment Method: cash, check, bank_transfer, etransfer, zelle, card, debit, mobile_money, insurance
 // Payment Status: completed, pending, failed, refunded
 
 // ==================== STORAGE KEYS ====================

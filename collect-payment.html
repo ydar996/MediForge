@@ -100,28 +100,38 @@
     <div class="amount-display" id="amount-display">
       <!-- Amount will be loaded here -->
     </div>
+    <div id="payer-split-info" style="display:none;background:#e8f4fd;padding:12px 16px;border-radius:8px;margin:12px 0;font-size:14px;color:#1565c0;"></div>
 
     <h2>Select Payment Method</h2>
+    <p style="color:#555;margin-bottom:12px;">Flexible patient payments — cash and bank options are always available for private-pay and copays.</p>
     <div class="payment-methods">
       <button class="payment-method-btn" data-method="cash" onclick="selectPaymentMethod('cash', event)">
         <div style="font-size: 50px; margin-bottom: 8px;">&#128176;</div>
         <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Cash</div>
       </button>
-      <button class="payment-method-btn" data-method="mobile_money" onclick="selectPaymentMethod('mobile_money', event)">
-        <div style="font-size: 50px; margin-bottom: 8px;">&#128241;</div>
-        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Mobile Money</div>
-      </button>
-      <button class="payment-method-btn" data-method="card" onclick="selectPaymentMethod('card', event)">
-        <div style="font-size: 50px; margin-bottom: 8px;">&#128179;</div>
-        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Card</div>
+      <button class="payment-method-btn" data-method="check" onclick="selectPaymentMethod('check', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128424;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Check/Cheque</div>
       </button>
       <button class="payment-method-btn" data-method="bank_transfer" onclick="selectPaymentMethod('bank_transfer', event)">
         <div style="font-size: 50px; margin-bottom: 8px;">&#127974;</div>
         <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Bank Transfer</div>
       </button>
-      <button class="payment-method-btn" data-method="check" onclick="selectPaymentMethod('check', event)">
-        <div style="font-size: 50px; margin-bottom: 8px;">&#128424;</div>
-        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Check/Cheque</div>
+      <button class="payment-method-btn" data-method="etransfer" onclick="selectPaymentMethod('etransfer', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128241;</div>
+        <div style="font-size: 18px; font-weight: 800;">Interac e-Transfer</div>
+      </button>
+      <button class="payment-method-btn" data-method="zelle" onclick="selectPaymentMethod('zelle', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128179;</div>
+        <div style="font-size: 20px; font-weight: 800;">Zelle</div>
+      </button>
+      <button class="payment-method-btn" data-method="card" onclick="selectPaymentMethod('card', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128179;</div>
+        <div style="font-size: 20px; font-weight: 800; text-shadow: 1px 1px 2px rgba(0,0,0,0.1);">Credit/Debit Card</div>
+      </button>
+      <button class="payment-method-btn" data-method="mobile_money" onclick="selectPaymentMethod('mobile_money', event)">
+        <div style="font-size: 50px; margin-bottom: 8px;">&#128241;</div>
+        <div style="font-size: 18px; font-weight: 800;">Mobile Money</div>
       </button>
     </div>
 
@@ -191,6 +201,26 @@
       <p style="font-size: 12px; color: #666; margin-top: 5px;">Upload a screenshot or PDF of the bank transfer confirmation for audit purposes.</p>
     </div>
 
+    <div id="etransfer-details" class="payment-details">
+      <h3>Interac e-Transfer (Canada)</h3>
+      <label>Sender email or name:</label>
+      <input type="text" id="etransfer-sender" placeholder="patient@email.com">
+      <label>Transfer reference / confirmation:</label>
+      <input type="text" id="etransfer-reference" placeholder="CA123456">
+      <label>Date received:</label>
+      <input type="date" id="etransfer-date">
+    </div>
+
+    <div id="zelle-details" class="payment-details">
+      <h3>Zelle</h3>
+      <label>Sender name:</label>
+      <input type="text" id="zelle-sender" placeholder="Patient name">
+      <label>Confirmation / memo:</label>
+      <input type="text" id="zelle-reference" placeholder="Zelle confirmation">
+      <label>Date received:</label>
+      <input type="date" id="zelle-date">
+    </div>
+
     <div id="check-details" class="payment-details">
       <h3>Check/Cheque Payment</h3>
       <label>Check Number:</label>
@@ -238,8 +268,11 @@
   <!-- General helpers -->
   <script src="js/main.js?v=202510220113090113091309"></script>
   
+  <!-- Billing payer engine (Canadian provincial + flexible payments) -->
+  <script src="js/billing-payer-engine.js"></script>
   <!-- Billing functionality -->
   <script src="js/billing.js?v=286"></script>
+  <script src="js/billing-payer-hooks.js"></script>
   <script src="js/gl.js?v=1"></script>
   <script src="js/pharmacy-manager.js"></script>
   <script src="js/payments.js?v=1"></script>
@@ -343,6 +376,17 @@
       
       const formatCurrencyFn = window.formatCurrency || function(amount, curr) { return `${curr} ${amount.toFixed(2)}`; };
       document.getElementById('amount-display').textContent = formatCurrencyFn(currentInvoice.amountDue, currentInvoice.currency);
+
+      const payerEl = document.getElementById('payer-split-info');
+      if (payerEl && currentInvoice.payerSplit) {
+        const ps = currentInvoice.payerSplit;
+        payerEl.innerHTML = ps.payerCovered > 0
+          ? `<strong>Insurer/payer:</strong> ${formatCurrencyFn(ps.payerCovered, currentInvoice.currency)} pending claim &nbsp;|&nbsp; <strong>Patient due now:</strong> ${formatCurrencyFn(ps.patientDue, currentInvoice.currency)}`
+          : `<strong>Patient pay:</strong> full amount due at checkout`;
+        payerEl.style.display = 'block';
+      } else if (payerEl) {
+        payerEl.style.display = 'none';
+      }
       
       // Display invoice services/description
       displayInvoiceDescription();
@@ -598,6 +642,24 @@
             return;
           }
           methodDetails = `Check #${checkNum} - ${checkBank}`;
+          break;
+        case 'etransfer':
+          const etRef = document.getElementById('etransfer-reference').value;
+          const etSender = document.getElementById('etransfer-sender').value;
+          if (!etRef) {
+            alert('Please enter e-Transfer confirmation reference');
+            return;
+          }
+          methodDetails = `Interac e-Transfer - ${etSender} - Ref: ${etRef}`;
+          break;
+        case 'zelle':
+          const zRef = document.getElementById('zelle-reference').value;
+          const zSender = document.getElementById('zelle-sender').value;
+          if (!zRef) {
+            alert('Please enter Zelle confirmation');
+            return;
+          }
+          methodDetails = `Zelle - ${zSender} - Ref: ${zRef}`;
           break;
       }
       

@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 11, 2026  
+**Last updated:** June 12, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -95,7 +95,32 @@ Batch changes into **one** deploy with a **detailed** `--message` listing all ta
 
 ### 3. Site IDs
 
-Use **`NETLIFY-SITE-IDS.txt`** after sites exist. Until then, create sites per **`GO-LIVE-GUIDE.md`**.
+Use **`NETLIFY-SITE-IDS.txt`** after sites exist. Full pipeline: **`DEPLOYMENT-PIPELINE.md`**.
+
+### 4. Keep git, GitHub, and Netlify in sync (mandatory)
+
+**After every session that changes code**, agents must leave the repo in a synced state:
+
+| Step | Action |
+|------|--------|
+| 1 | `git add` changed files — **never** commit secrets (`.env`, service role keys, `supabase-credentials*.txt`, live tokens) |
+| 2 | `git commit -m "..."` with a clear message |
+| 3 | `git push origin <branch>` — default **`dev`** for new work; **`main`** only when owner approved a production release |
+| 4 | Deploy (if approved) via **git push** to the matching branch when Netlify CD is linked, or CLI with site ID |
+| 5 | Verify: `git status` clean; `Your branch is up to date with 'origin/...'` |
+
+**Never finish a session** with uncommitted work on disk while telling the owner “it’s deployed.”  
+**If you CLI-deploy to production**, also **commit and push to `main`** so GitHub matches what is live.
+
+**Preferred deploy path (once dev/staging sites exist):**
+
+```powershell
+git push origin dev      # → mediforge-dev
+git push origin staging  # → mediforge-staging (after PR)
+git push origin main     # → mediforge production (after PR + approval)
+```
+
+Do **not** rely on manual `netlify deploy` for routine releases — it desyncs GitHub from the live site.
 
 ### Netlify CLI auth
 
@@ -112,10 +137,16 @@ Use **`NETLIFY-SITE-IDS.txt`** after sites exist. Until then, create sites per *
 | `staging` | `mediforge-staging` | Pre-production validation |
 | `main` | `mediforge` | Production |
 
-Site IDs: fill in **`NETLIFY-SITE-IDS.txt`** when created.  
-Promotion: `dev` → `staging` → `main` via PR. Details: **`DEPLOYMENT-ENVIRONMENTS.md`**.
+Site IDs: **`NETLIFY-SITE-IDS.txt`**.  
+Promotion: `dev` → `staging` → `main` via PR. Full setup: **`DEPLOYMENT-PIPELINE.md`**.
 
-**Current git state:** Single `main` branch with initial commit (`173f3ac`). Dev/staging branches and Netlify sites are **not created yet** unless the owner has done go-live steps.
+**Current git state (June 12, 2026):**
+
+- GitHub: https://github.com/ydar996/MediForge
+- **`main`** — live production; pushed and deployed
+- **`dev` / `staging` branches** — create per **`DEPLOYMENT-PIPELINE.md`** § one-time setup
+- Production Netlify site ID: `06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a`
+- Dev/staging Netlify sites — **not created yet** (URLs reserved in `NETLIFY-SITE-IDS.txt`)
 
 ---
 
@@ -152,10 +183,21 @@ npm run inject:supabase-env   # regenerate supabase-env.js from env vars
 ## Quick commands
 
 ```powershell
+# Repo sync check
+git status
+git log --oneline -3
+
+# Push to environment (preferred when Netlify CD is linked)
+git push origin dev
+git push origin staging
+git push origin main
+
+# CLI deploy (emergency or before CD linked — use site ID from NETLIFY-SITE-IDS.txt)
 netlify status
-netlify link --id YOUR-SITE-ID-FROM-NETLIFY-SITE-IDS.txt
+netlify link --id 06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a   # production example
 netlify deploy --prod --dir . --message "Summary: ..."
 .\deploy-with-message.ps1 -SiteId YOUR-SITE-ID -Prod -MessageOverride "..."
+
 git restore .netlify/   # if pre-push hook complains about .netlify churn
 ```
 
@@ -170,7 +212,8 @@ git restore .netlify/   # if pre-push hook complains about .netlify churn
 | **`docs/DOCUMENTATION-INDEX.md`** | Everyone | Master index of all docs |
 | **`docs/PROJECT-OVERVIEW.md`** | Developers | Technical deep dive |
 | **`docs/MEDIFORGE-PRODUCT-RULES.md`** | Agents + owner | CAD, orgs, branding rules |
-| **`DEPLOYMENT-ENVIRONMENTS.md`** | DevOps | Branch/site promotion |
+| **`DEPLOYMENT-PIPELINE.md`** | Owner + agents | Git sync, dev/staging/prod promotion, one-time setup |
+| **`DEPLOYMENT-ENVIRONMENTS.md`** | DevOps | Branch/site mapping |
 | **`CRITICAL-WORKFLOWS.md`** | QA / agents | Regression scenarios before deploy |
 | **`docs/USER-DOCUMENTATION-INDEX.md`** | Clinic staff | End-user help topics |
 
@@ -218,6 +261,15 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Renamed `diagnose-ehr-app.html` → `diagnose-mediforge-app.html`.
 - Updated cache keys (`mediforge-cache`), session cookies, dashboard title, and 88+ files via `scripts/scrub-ehr-legacy-names.ps1`.
 - **Still OK to keep:** “Electronic Health Record (EHR)” as a medical acronym on marketing pages — that is not “EHR Africa” branding.
+
+### June 12, 2026 — Production live, GitHub connected, deployment pipeline docs
+
+- Production live at https://mediforge.netlify.app (Netlify site ID recorded in `NETLIFY-SITE-IDS.txt`).
+- GitHub repo https://github.com/ydar996/MediForge on branch `main`.
+- Canada-first marketing and CAD subscription pricing deployed.
+- Added **`DEPLOYMENT-PIPELINE.md`** (mirrors EHR-Africa dev → staging → main flow).
+- **Mandatory agent rule:** always commit + push; keep PC, GitHub, and Netlify in sync.
+- **Owner next steps:** create `dev` + `staging` branches, Netlify sites, and Dev/Staging Supabase projects per **`DEPLOYMENT-PIPELINE.md`**.
 
 ---
 

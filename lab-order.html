@@ -382,6 +382,13 @@
           } else {
             alert(`${orderType === 'lab' ? 'Lab' : 'Imaging'} order saved to patient chart successfully!`);
           }
+
+          if (typeof window.MediForgeInterop !== 'undefined' && orderType === 'lab') {
+            window.MediForgeInterop.transmitLabOrder({
+              patientId,
+              order: { serial_number: serialNumber, selected_items: selectedItems, timestamp: orderData.timestamp }
+            });
+          }
         } catch (err) {
           console.error('? Supabase order save failed:', err);
           
@@ -1184,6 +1191,8 @@
   </script>  
   
   <!-- Logout Button Component -->
+  <script src="js/interop-client.js"></script>
+  <script src="js/interop-hooks.js"></script>
   <script src="js/logout-button.js"></script>
   <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
 </body>

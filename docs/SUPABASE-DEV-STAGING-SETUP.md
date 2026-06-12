@@ -10,9 +10,18 @@
 
 ## 1. What you are actually doing (plain English)
 
+**Organization vs project (read this first):**
+
+| Term | Meaning | For dev/staging |
+|------|---------|-----------------|
+| **Organization** | Billing folder (e.g. **MediForge**) | **Keep the one you have** — do not create a new org |
+| **Project** | One database + Auth + Storage for one environment | **Create 2 new projects** inside MediForge org |
+
+You end with **1 organization, 3 projects** (Prod + Dev + Staging). You are **not** creating extra organizations.
+
 - **Supabase project** = one dedicated PostgreSQL database + Auth + Storage + APIs for that environment.
 - **Production** stays where it is. You **do not delete or move** it in this guide.
-- You will **create two new projects** in the Supabase website, then **replay** the same SQL migration files your team already uses so the new databases **look like** production structurally (tables, policies, functions)—usually **without** copying real patient rows.
+- You will **create two new projects** (click **New project**, not **New organization**), then **replay** the same SQL migration files your team already uses so the new databases **look like** production structurally (tables, policies, functions)—usually **without** copying real patient rows.
 
 ---
 
@@ -28,13 +37,14 @@
 ## 3. Create the Staging project
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard).
-2. Click **New project**.
-3. Choose the **organization** (same one as production is fine if your plan allows multiple projects there).
-4. **Name:** e.g. `MediForge Staging` (any clear name).
-5. **Database password:** generate a strong password and **save it** in your password manager (you rarely need it day-to-day, but you need it for some tools).
-6. **Region:** match production (see §2).
-7. **Pricing plan:** choose what fits your org (Free tier has limits; paid orgs bill **compute per project**—see Supabase pricing). Staging is often on the **smallest** instance size.
-8. Click **Create new project** and wait until the dashboard shows the project as ready.
+2. Open your **MediForge** organization (where **MediForge-Prod** already lives).
+3. Click **New project** — **not** “+ New organization”.
+4. Confirm **Organization: MediForge** on the form (same org as production).
+5. **Name:** e.g. `MediForge Staging` (any clear name).
+6. **Database password:** generate a strong password and **save it** in your password manager (you rarely need it day-to-day, but you need it for some tools).
+7. **Region:** match production (see §2).
+8. **Pricing plan:** choose what fits your org (Free tier has limits; paid orgs bill **compute per project**—see Supabase pricing). Staging is often on the **smallest** instance size.
+9. Click **Create new project** and wait until the dashboard shows the project as ready.
 
 **Write down:**
 

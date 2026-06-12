@@ -4696,6 +4696,12 @@ if (addPatientForm) {
         emergencyCountry: document.getElementById("emergencyCountry").value,
         hasDiabetes: document.getElementById("hasDiabetes").checked,
         paymentSource: document.getElementById("paymentSource").value,
+        province: document.getElementById("patientProvince")?.value || document.getElementById("state")?.value || 'ON',
+        state: document.getElementById("state")?.value || document.getElementById("patientProvince")?.value,
+        healthCardNumber: document.getElementById("healthCardNumber")?.value || "",
+        healthCardVersion: document.getElementById("healthCardVersion")?.value || "",
+        phn: document.getElementById("healthCardNumber")?.value || "",
+        preferredPaymentMethod: document.getElementById("preferredPaymentMethod")?.value || "cash",
         insuranceName: document.getElementById("insuranceName").value || "",
         insurancePolicyGroupNumber: document.getElementById("insurancePolicyGroupNumber").value || "",
         insuranceMemberNumber: document.getElementById("insuranceMemberNumber").value || "",
@@ -4807,6 +4813,24 @@ if (addPatientForm) {
           // SUCCESS - Supabase save successful
           savedToSupabase = true;
           console.log('✅ [PATIENTS] Patient saved to Supabase successfully:', data.patient_id);
+
+          if (typeof window.MediForgePayerEngine !== 'undefined' && window.MediForgePayerEngine.savePayerProfile) {
+            try {
+              await window.MediForgePayerEngine.savePayerProfile(data.id, {
+                province: patient.province,
+                phn: patient.phn || patient.healthCardNumber,
+                healthCardVersion: patient.healthCardVersion,
+                paymentSource: patient.paymentSource,
+                primaryPayerCode: window.MediForgePayerEngine.PROVINCE_PAYER_MAP?.[patient.province],
+                privateInsurerId: patient.insuranceName,
+                insuranceMemberNumber: patient.insuranceMemberNumber,
+                insurancePolicyNumber: patient.insurancePolicyGroupNumber,
+                preferredPaymentMethod: patient.preferredPaymentMethod
+              });
+            } catch (payerErr) {
+              console.warn('[PATIENTS] Payer profile save skipped:', payerErr.message);
+            }
+          }
           
           // STEP 2: Cache to localStorage after successful Supabase save
           try {

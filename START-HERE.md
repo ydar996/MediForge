@@ -10,7 +10,9 @@
 
 1. **Not live yet?** → **[GO-LIVE-GUIDE.md](GO-LIVE-GUIDE.md)** (about 30 minutes: Supabase + Netlify + register Mecure Clinics).
 2. **Already live?** → Open your Netlify URL → `/login` for staff, `/platform-login` for platform admin.
-3. **Need help using the app?** → **[docs/USER-DOCUMENTATION-INDEX.md](docs/USER-DOCUMENTATION-INDEX.md)**
+3. **Set up dev + staging (test before production)?** → **[SETUP-DEV-STAGING-SIMPLE.md](SETUP-DEV-STAGING-SIMPLE.md)**
+4. **Safe updates (full pipeline detail)?** → **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)**
+5. **Need help using the app?** → **[docs/USER-DOCUMENTATION-INDEX.md](docs/USER-DOCUMENTATION-INDEX.md)**
 
 **Defaults for this product:**
 
@@ -24,7 +26,9 @@
 1. Read **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living doc — **update it before you finish**).
 2. Read **[docs/MEDIFORGE-PRODUCT-RULES.md](docs/MEDIFORGE-PRODUCT-RULES.md)** (CAD, orgs, no legacy branding).
 3. Use **[docs/DOCUMENTATION-INDEX.md](docs/DOCUMENTATION-INDEX.md)** to find deeper docs.
-4. **Never deploy** without explicit owner approval (“Yes, deploy” / “I approve”).
+4. Read **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)** — git sync + dev/staging/prod promotion.
+5. **Never deploy** without explicit owner approval (“Yes, deploy” / “I approve”).
+6. **Always commit and push** before finishing — keep PC, GitHub, and Netlify in sync.
 
 ---
 

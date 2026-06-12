@@ -34,6 +34,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 
 | Document | Description |
 |----------|-------------|
+| **[DEPLOYMENT-PIPELINE.md](../DEPLOYMENT-PIPELINE.md)** | **Git sync + dev/staging/prod promotion (read this)** |
 | **[DEPLOYMENT-ENVIRONMENTS.md](../DEPLOYMENT-ENVIRONMENTS.md)** | dev / staging / main branches and Netlify sites |
 | **[DEPLOYMENT-HANDOVER.md](../DEPLOYMENT-HANDOVER.md)** | Deploy process summary |
 | **[DEPLOYMENT-GUIDE.md](../DEPLOYMENT-GUIDE.md)** | General deployment guide |

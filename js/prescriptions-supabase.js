@@ -197,6 +197,14 @@ async function createPrescription(prescriptionData) {
     }
     
     console.log('✅ [PRESCRIPTIONS] Prescription created:', data.id);
+
+    if (typeof window.MediForgeInterop !== 'undefined' && data.status === 'signed') {
+      window.MediForgeInterop.transmitPrescription({
+        patientId: data.patient_id,
+        prescription: data
+      });
+    }
+
     return data;
   } catch (error) {
     console.error('❌ [PRESCRIPTIONS] Exception creating prescription:', error);

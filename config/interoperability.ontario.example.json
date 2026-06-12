@@ -1,0 +1,71 @@
+{
+  "version": "1.0",
+  "province": "ON",
+  "enabled": true,
+  "description": "Example Ontario configuration for OLIS-compatible lab orders and Infoway FHIR. Replace placeholder URLs with production values from Infoway onboarding.",
+  "hl7": {
+    "sendingApplication": "MEDIFORGE",
+    "sendingFacility": "MECURE-CLINIC",
+    "receivingApplication": "OLIS",
+    "receivingFacility": "EHEALTH-ON",
+    "version": "2.5",
+    "mllp": {
+      "host": "olis-mllp.example.ehealthontario.ca",
+      "port": 2575,
+      "useTls": true,
+      "timeoutMs": 30000
+    }
+  },
+  "fhir": {
+    "baseUrl": "https://fhir.example.ehealthontario.ca/r4",
+    "imagingFacility": "HOSPITAL-PACS",
+    "rxEndpoint": "https://rx.example.infoway-inforoute.ca/fhir",
+    "oauth": {
+      "tokenUrl": "https://login.example.infoway-inforoute.ca/oauth2/token",
+      "clientId": "SET_IN_NETLIFY_ENV_INTEROP_FHIR_CLIENT_ID",
+      "clientSecret": "SET_IN_NETLIFY_ENV_INTEROP_FHIR_CLIENT_SECRET",
+      "scope": "system/Patient.read system/ServiceRequest.write system/DiagnosticReport.read system/DiagnosticReport.write system/MedicationRequest.write"
+    }
+  },
+  "dicomweb": {
+    "qidoRsRoot": "https://pacs.example.ca/dicomweb",
+    "wadoRsRoot": "https://pacs.example.ca/dicomweb",
+    "stowRsRoot": "https://pacs.example.ca/dicomweb",
+    "dimseGatewayUrl": "https://dicom-gateway.example.ca/api",
+    "bearerToken": "SET_IN_NETLIFY_ENV_INTEROP_DICOM_TOKEN"
+  },
+  "adapters": {
+    "lab": "hl7",
+    "labMessageType": "ORM^O01",
+    "imaging": "fhir",
+    "rx": "fhir"
+  },
+  "rx": {
+    "infowayProfile": "http://infoway-inforoute.ca/fhir/StructureDefinition/ca-medication-transmission-v2",
+    "pharmacyEndpoint": "https://rx.example.infoway-inforoute.ca/fhir/MedicationRequest",
+    "requireCcdd": true
+  },
+  "terminology": {
+    "labCodeSystem": "http://loinc.org",
+    "pclocdEnabled": true,
+    "drugCodeSystem": "https://health-products.canada.ca/dpd/",
+    "labMappings": {
+      "FBS": { "loinc": "1558-6", "pclocd": "1558-6", "display": "Fasting glucose" },
+      "HbA1c": { "loinc": "4548-4", "pclocd": "4548-4", "display": "Hemoglobin A1c" }
+    }
+  },
+  "patientMatching": {
+    "primaryIdentifier": "PHN",
+    "province": "ON",
+    "identifierSystem": "http://ehealthontario.ca/fhir/NamingSystem/id-on-patient-hcn"
+  },
+  "security": {
+    "requireConsent": true,
+    "auditAllMessages": true,
+    "maxRetries": 3
+  },
+  "consent": {
+    "olisQueryRequiresConsent": true,
+    "consentResourceProfile": "http://ehealthontario.ca/fhir/StructureDefinition/olis-consent"
+  }
+}

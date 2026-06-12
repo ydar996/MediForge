@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Interoperability Dashboard - MediForge</title>
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { font-family: system-ui, sans-serif; background: #f4f6f8; margin: 0; padding: 20px; }
+    .container { max-width: 960px; margin: 0 auto; }
+    h1 { color: #008753; }
+    .card { background: #fff; border-radius: 12px; padding: 24px; margin-bottom: 20px; box-shadow: 0 2px 12px rgba(0,0,0,0.08); }
+    .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
+    .status.ok { background: #d4edda; color: #155724; }
+    .status.off { background: #f8d7da; color: #721c24; }
+    textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.85rem; }
+    button { background: #008753; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+    button:hover { background: #006b42; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
+    .metric { background: #f8f9fa; padding: 16px; border-radius: 8px; border-left: 4px solid #008753; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <p><a href="/">← Home</a> | <a href="MEDIFORGE-INTEROPERABILITY-DOCS.md">Documentation</a></p>
+    <h1>Interoperability Dashboard</h1>
+    <p>HL7 v2 · FHIR R4 · DICOMweb · Ontario OLIS / Infoway compatible</p>
+
+    <div class="card">
+      <h2>Connection status</h2>
+      <div id="config-status">Loading…</div>
+    </div>
+
+    <div class="card">
+      <h2>Test ORU ingest (paste HL7)</h2>
+      <p>Paste an <code>ORU^R01</code> message to preview chart mapping. See <code>tests/samples/hl7/oru-r01-lab-result.hl7</code>.</p>
+      <textarea id="oru-input" placeholder="MSH|^~\&|..."></textarea>
+      <button type="button" id="btn-parse-oru">Parse ORU → chart preview</button>
+      <pre id="oru-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Gateway actions</h2>
+      <div class="grid">
+        <div class="metric"><strong>Lab orders</strong><br>ORM^O01 / FHIR ServiceRequest</div>
+        <div class="metric"><strong>Lab results</strong><br>ORU^R01 / DiagnosticReport</div>
+        <div class="metric"><strong>Imaging</strong><br>DICOMweb + ImagingStudy</div>
+        <div class="metric"><strong>eRx</strong><br>MedicationRequest / CCDD</div>
+      </div>
+      <p style="margin-top:16px;color:#666;">Configure <code>config/interoperability.json</code> and Netlify env vars. Set <code>enabled: true</code> for live transmit.</p>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/interop-client.js"></script>
+  <script>
+    async function loadStatus() {
+      const el = document.getElementById('config-status');
+      try {
+        const res = await MediForgeInteropClient.getConfig();
+        const c = res.result || {};
+        el.innerHTML = `
+          <p>Enabled: <span class="status ${c.enabled ? 'ok' : 'off'}">${c.enabled ? 'ON' : 'OFF'}</span></p>
+          <p>Province: ${c.province || '—'}</p>
+          <p>HL7 MLLP: <span class="status ${c.hl7Configured ? 'ok' : 'off'}">${c.hl7Configured ? 'Configured' : 'Not set'}</span></p>
+          <p>FHIR: <span class="status ${c.fhirConfigured ? 'ok' : 'off'}">${c.fhirConfigured ? 'Configured' : 'Not set'}</span></p>
+          <p>DICOMweb: <span class="status ${c.dicomConfigured ? 'ok' : 'off'}">${c.dicomConfigured ? 'Configured' : 'Not set'}</span></p>
+          <p>Adapters: lab=${c.adapters?.lab}, imaging=${c.adapters?.imaging}, rx=${c.adapters?.rx}</p>
+        `;
+      } catch (e) {
+        el.innerHTML = `<p class="status off">Gateway unreachable: ${e.message}</p>`;
+      }
+    }
+
+    document.getElementById('btn-parse-oru').addEventListener('click', async () => {
+      const raw = document.getElementById('oru-input').value.trim();
+      const out = document.getElementById('oru-output');
+      if (!raw) { out.textContent = 'Paste HL7 first.'; return; }
+      try {
+        const res = await MediForgeInteropClient.callGateway({ action: 'parseOru', rawHl7: raw });
+        out.textContent = JSON.stringify(res.result, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    loadStatus();
+  </script>
+</body>
+</html>
