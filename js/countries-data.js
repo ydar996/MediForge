@@ -529,8 +529,21 @@ const COUNTRIES_DATA = {
   }
 };
 
+// Attach US/Canada city lists when us-ca-cities-data.js is loaded
+if (typeof window.US_CA_CITIES_BY_STATE !== 'undefined') {
+  if (window.US_CA_CITIES_BY_STATE.Canada) {
+    COUNTRIES_DATA.Canada.citiesByState = window.US_CA_CITIES_BY_STATE.Canada;
+  }
+  if (window.US_CA_CITIES_BY_STATE['United States']) {
+    COUNTRIES_DATA['United States'].citiesByState = window.US_CA_CITIES_BY_STATE['United States'];
+  }
+}
+
 // Expose countries data globally for intake and other modules
 window.COUNTRIES_DATA = COUNTRIES_DATA;
+
+/** Shown first in country dropdowns (registration, patient forms). */
+window.PRIORITY_COUNTRIES = ['Canada', 'United States'];
 
 // Helper function to get country by phone code
 window.getCountryByPhoneCode = function(phoneCode) {
@@ -562,14 +575,34 @@ window.formatPhoneNumber = function(phone, country) {
   return cleaned;
 };
 
+function appendCountryOptions(select, countries, selectedCountry) {
+  countries.forEach(country => {
+    if (!COUNTRIES_DATA[country]) return;
+    const option = document.createElement('option');
+    option.value = country;
+    option.textContent = `${COUNTRIES_DATA[country].code} ${country}`;
+    if (country === selectedCountry) {
+      option.selected = true;
+    }
+    select.appendChild(option);
+  });
+}
+
 // Helper function to populate country dropdown
 window.populateCountryDropdown = function(selectId, selectedCountry = '') {
   const select = document.getElementById(selectId);
   if (!select) return;
-  
+
   select.innerHTML = '<option value="">-- Select Country --</option>';
-  
-  // Group countries by region
+
+  const priority = window.PRIORITY_COUNTRIES || ['Canada', 'United States'];
+  const prioritySet = new Set(priority);
+
+  const priorityGroup = document.createElement('optgroup');
+  priorityGroup.label = 'North America';
+  appendCountryOptions(priorityGroup, priority, selectedCountry);
+  select.appendChild(priorityGroup);
+
   const regions = {
     'East Africa': ['Kenya', 'Tanzania', 'Uganda', 'Rwanda', 'Burundi', 'Ethiopia', 'Somalia', 'Djibouti', 'Eritrea', 'South Sudan'],
     'West Africa': ['Nigeria', 'Ghana', 'Senegal', 'Ivory Coast', 'Mali', 'Burkina Faso', 'Liberia', 'Sierra Leone', 'Gambia', 'Togo', 'Benin', 'Guinea', 'Guinea-Bissau', 'Niger'],
@@ -577,23 +610,16 @@ window.populateCountryDropdown = function(selectId, selectedCountry = '') {
     'North Africa': ['Egypt', 'Morocco', 'Tunisia', 'Algeria', 'Libya', 'Sudan', 'Mauritania'],
     'Central Africa': ['Cameroon', 'DR Congo', 'Angola', 'Chad', 'Central African Republic', 'Gabon', 'Equatorial Guinea', 'São Tomé and Príncipe'],
     'Island Nations': ['Mauritius', 'Seychelles', 'Madagascar', 'Comoros', 'Cape Verde'],
-    'International': ['Canada', 'United States', 'United Kingdom']
+    'International': ['United Kingdom']
   };
-  
+
   for (const [region, countries] of Object.entries(regions)) {
+    const filtered = countries.filter(country => !prioritySet.has(country));
+    if (filtered.length === 0) continue;
+
     const optgroup = document.createElement('optgroup');
     optgroup.label = region;
-    
-    countries.forEach(country => {
-      const option = document.createElement('option');
-      option.value = country;
-      option.textContent = `${COUNTRIES_DATA[country].code} ${country}`;
-      if (country === selectedCountry) {
-        option.selected = true;
-      }
-      optgroup.appendChild(option);
-    });
-    
+    appendCountryOptions(optgroup, filtered, selectedCountry);
     select.appendChild(optgroup);
   }
 };
@@ -619,6 +645,39 @@ window.populateStateDropdown = function(stateSelectId, country, selectedState = 
       option.selected = true;
     }
     stateSelect.appendChild(option);
+  });
+
+  return states;
+};
+
+// Helper function to populate city dropdown based on country + state/province
+window.populateCityDropdown = function(citySelectId, country, state, selectedCity = '') {
+  const citySelect = document.getElementById(citySelectId);
+  if (!citySelect) return;
+
+  citySelect.innerHTML = '<option value="">-- Select City --</option>';
+
+  if (!country || !state || !COUNTRIES_DATA[country]) {
+    return;
+  }
+
+  const countryData = COUNTRIES_DATA[country];
+  let cities = [];
+
+  if (countryData.citiesByState && countryData.citiesByState[state]) {
+    cities = countryData.citiesByState[state];
+  } else {
+    cities = [state];
+  }
+
+  cities.forEach(city => {
+    const option = document.createElement('option');
+    option.value = city;
+    option.textContent = city;
+    if (city === selectedCity) {
+      option.selected = true;
+    }
+    citySelect.appendChild(option);
   });
 };
 

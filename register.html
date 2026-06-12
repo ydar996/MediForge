@@ -354,7 +354,9 @@
       
       <div class="form-group">
         <label for="org-city">City*:</label>
-        <input type="text" id="org-city" required>
+        <select id="org-city" required disabled>
+          <option value="">-- Select state/province first --</option>
+        </select>
       </div>
       
       <div class="form-group">
@@ -758,6 +760,12 @@
     // Function to handle country change and populate states
     function handleOrgCountryChange() {
       const country = document.getElementById('country').value;
+      const citySelect = document.getElementById('org-city');
+      if (citySelect) {
+        citySelect.innerHTML = '<option value="">-- Select state/province first --</option>';
+        citySelect.disabled = true;
+        citySelect.required = true;
+      }
       if (country) {
         if (typeof window.populateStateDropdown === 'function') {
           window.populateStateDropdown('state', country);
@@ -777,6 +785,25 @@
           }
         }
       }
+    }
+
+    // Function to handle state change and populate cities
+    function handleOrgStateChange() {
+      const country = document.getElementById('country').value;
+      const state = document.getElementById('state').value;
+      const citySelect = document.getElementById('org-city');
+      if (!citySelect) return;
+
+      if (!country || !state) {
+        citySelect.innerHTML = '<option value="">-- Select state/province first --</option>';
+        citySelect.disabled = true;
+        return;
+      }
+
+      if (typeof window.populateCityDropdown === 'function') {
+        window.populateCityDropdown('org-city', country, state);
+      }
+      citySelect.disabled = false;
     }
     
     // Function to handle organization country change for join-org form
@@ -2225,9 +2252,13 @@
         if (countryField) {
           countryField.addEventListener('change', handleOrgCountryChange);
         }
-        
-        // Add auto-population for state dropdown when clicked/focused
+
         const stateSelect = document.getElementById('state');
+        if (stateSelect) {
+          stateSelect.addEventListener('change', handleOrgStateChange);
+        }
+        
+        // Populate state dropdown when focused if country already selected
         if (stateSelect && countryField) {
           stateSelect.addEventListener('focus', function() {
             const countryValue = countryField.value;
@@ -2264,7 +2295,8 @@
   <script src="js/registration-preflight.js?v=20260416120000"></script>  <!-- Preflight checks -->
   
   <!-- Countries data -->
-  <script src="js/countries-data.js?v=20251021140000"></script>
+  <script src="js/us-ca-cities-data.js?v=20260611120000"></script>
+  <script src="js/countries-data.js?v=20260611120000"></script>
   
   <!-- Universal Scripts -->
   <script src="js/universal-data-loader.js?v=20251021140000"></script>  <!-- Universal data loader with Supabase priority -->
