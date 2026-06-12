@@ -4683,6 +4683,7 @@ if (addPatientForm) {
         city: document.getElementById("city").value,
         state: document.getElementById("state").value,
         country: document.getElementById("country").value,
+        postalCode: document.getElementById("postalCode")?.value?.trim() || "",
         emergencyFirstName: document.getElementById("emergencyFirstName").value,
         emergencyLastName: document.getElementById("emergencyLastName").value,
         emergencyRelationship: document.getElementById("emergencyRelationship").value,
@@ -5049,6 +5050,7 @@ if (addPatientForm) {
           city: document.getElementById("city")?.value || '',
           state: document.getElementById("state")?.value || '',
           country: document.getElementById("country")?.value || '',
+          postalCode: document.getElementById("postalCode")?.value?.trim() || '',
           emergencyFirstName: document.getElementById("emergencyFirstName")?.value || '',
           emergencyLastName: document.getElementById("emergencyLastName")?.value || '',
           emergencyRelationship: document.getElementById("emergencyRelationship")?.value || '',
@@ -5206,6 +5208,7 @@ if (editPatientForm) {
       city: document.getElementById("city").value,
       state: document.getElementById("state").value,
       country: document.getElementById("country").value,
+      postalCode: document.getElementById("postalCode")?.value?.trim() || "",
       emergencyFirstName: document.getElementById("emergencyFirstName").value,
       emergencyLastName: document.getElementById("emergencyLastName").value,
       emergencyRelationship: document.getElementById("emergencyRelationship").value,
@@ -17371,6 +17374,10 @@ async function loadEditForm() {
   setValue("addressLine1", patient.addressLine1 || patient.address_line1 || patient.address || '');
   setValue("addressLine2", patient.addressLine2 || patient.address_line2 || '');
   setValue("city", patient.city || '');
+  setValue("postalCode", patient.postalCode || patient.postal_code || '');
+  if (patient.country && typeof window.updatePostalCodeField === 'function') {
+    window.updatePostalCodeField(patient.country, 'postalCode', 'postal-code-label');
+  }
   setValue("country", patient.country || '');
   // Handle emergency contact name (might be stored as single field or split)
   const emergencyName = patient.emergencyContactName || patient.emergency_contact_name || '';

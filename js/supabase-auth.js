@@ -590,6 +590,16 @@ function getCurrentUser() {
 // REGISTER NEW USER
 // ============================================
 
+function regTraceStep(step, data) {
+  if (typeof window.RegTrace !== 'undefined') window.RegTrace.step(step, data);
+}
+function regTraceOk(step, data) {
+  if (typeof window.RegTrace !== 'undefined') window.RegTrace.ok(step, data);
+}
+function regTraceFail(step, err, data) {
+  if (typeof window.RegTrace !== 'undefined') window.RegTrace.fail(step, err, data);
+}
+
 /**
  * Register a new user via Supabase Auth
  * @param {object} userData - User registration data
@@ -608,9 +618,16 @@ async function registerWithSupabase(userData) {
       hasSupabaseClient: !!supabaseClient,
       timestamp: new Date().toISOString()
     });
+    regTraceStep('registerWithSupabase_start', {
+      username: userData.username,
+      organizationId: userData.organizationId,
+      role: userData.role,
+      deviceType
+    });
     
     if (!supabaseClient) {
       console.error(`❌ [TRACE-${traceId}] Supabase client not initialized`);
+      regTraceFail('supabase_client_missing', 'Supabase client not initialized', {});
       return { success: false, error: 'Supabase client not initialized' };
     }
 
@@ -625,16 +642,19 @@ async function registerWithSupabase(userData) {
     if (typeof window.buildMediForgeAuthEmail === 'function') {
       const built = window.buildMediForgeAuthEmail(normalizedUsername, userData.organizationId);
       if (!built.ok) {
+        regTraceFail('auth_email_build_failed', built.error, { username: normalizedUsername });
         return { success: false, error: built.error };
       }
       email = built.email;
       console.log(`📧 [TRACE-${traceId}] Generated org-scoped email:`, email);
+      regTraceOk('auth_email_built', { authEmail: email });
     } else if (normalizedUsername.includes('@')) {
       email = normalizedUsername;
     } else {
       const shortOrgId = String(userData.organizationId || '').replace(/-/g, '').substring(0, 8);
       email = `${normalizedUsername}-${shortOrgId}@mediforge.app`;
       console.log(`📧 [TRACE-${traceId}] Generated org-scoped email:`, email);
+      regTraceOk('auth_email_built', { authEmail: email });
     }
 
     // CRITICAL PRE-VALIDATION: Check everything BEFORE creating Auth user
@@ -703,8 +723,10 @@ async function registerWithSupabase(userData) {
       }
       
       console.log(`✅ [TRACE-${traceId}] Organization verified:`, orgData.name);
+      regTraceOk('organization_verified', { organizationId: userData.organizationId, orgName: orgData.name });
     } catch (orgCheckException) {
       console.error(`❌ [TRACE-${traceId}] Exception checking organization:`, orgCheckException);
+      regTraceFail('organization_check_exception', orgCheckException, { organizationId: userData.organizationId });
       return { 
         success: false, 
         error: 'Cannot verify organization. Please check your internet connection and try again.' 
@@ -1060,6 +1082,7 @@ async function registerWithSupabase(userData) {
         }
       } else {
         console.error(`❌ [TRACE-${traceId}] Supabase Auth registration error:`, authError);
+        regTraceFail('auth_signup_failed', authError, { authEmail: email });
         const friendly = typeof window.formatMediForgeAuthError === 'function'
           ? window.formatMediForgeAuthError(authError.message, email)
           : authError.message;
@@ -1068,6 +1091,7 @@ async function registerWithSupabase(userData) {
     } else if (authData?.user) {
       authUserId = authData.user.id;
       console.log('✅ Auth user created:', authUserId);
+      regTraceOk('auth_signup_created', { authUserId });
     } else {
       return { success: false, error: 'Failed to create user account' };
     }
@@ -1154,6 +1178,14 @@ async function registerWithSupabase(userData) {
         if (userData.phone) {
           insertData.phone = userData.phone;
         }
+
+        regTraceStep('profile_insert_attempt', {
+          attempt,
+          authUserId,
+          organizationId: userData.organizationId,
+          role: userData.role,
+          fields: Object.keys(insertData)
+        });
         
         const { data, error } = await supabaseClient
           .from('users')
@@ -1165,6 +1197,7 @@ async function registerWithSupabase(userData) {
           profileData = data;
           profileError = null;
           console.log('✅ User profile created successfully on attempt', attempt);
+          regTraceOk('profile_insert_created', { userId: data.id, attempt });
           break;
         } else {
           profileError = error;
@@ -1264,6 +1297,11 @@ async function registerWithSupabase(userData) {
 
     if (profileError || !profileData) {
       console.error('❌ Error creating user profile after retries:', profileError);
+      regTraceFail('profile_insert_failed', profileError, {
+        authUserId,
+        organizationId: userData.organizationId,
+        attempts: maxRetries
+      });
       
       // Provide detailed error information
       let errorMessage = 'Account created but profile setup failed. ';
@@ -1308,6 +1346,11 @@ async function registerWithSupabase(userData) {
     }
 
     console.log('User profile created successfully');
+    regTraceOk('registration_complete', {
+      userId: profileData.id,
+      username: profileData.username,
+      organizationId: profileData.organization_id
+    });
 
     // Log audit event
     if (typeof logAuditEvent !== 'undefined') {
@@ -1337,6 +1380,7 @@ async function registerWithSupabase(userData) {
 
   } catch (error) {
     console.error('Registration error:', error);
+    regTraceFail('registerWithSupabase_exception', error, {});
     return { 
       success: false, 
       error: error.message || 'An unexpected error occurred during registration' 

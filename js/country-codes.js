@@ -80,7 +80,7 @@ window.COUNTRY_CODES_DATA = [
  * @param {string} defaultCode - Default country code to select (e.g., '+234')
  * @param {boolean} includeSelectOption - Whether to include "Select Country" as first option
  */
-window.populateCountryCodeDropdown = function(selectId, defaultCode = '+234', includeSelectOption = true) {
+window.populateCountryCodeDropdown = function(selectId, defaultCode = '+1', includeSelectOption = true) {
   const select = document.getElementById(selectId);
   if (!select) {
     console.warn(`Country code dropdown not found: ${selectId}`);
@@ -109,10 +109,22 @@ window.populateCountryCodeDropdown = function(selectId, defaultCode = '+234', in
     }
   });
   
-  uniqueCountries.sort((a, b) => a.country.localeCompare(b.country));
-  
-  // Populate dropdown
+  const priorityNames = ['Canada', 'United States'];
+  const priorityItems = [];
+  const otherItems = [];
   uniqueCountries.forEach(item => {
+    if (priorityNames.includes(item.country)) {
+      priorityItems.push(item);
+    } else {
+      otherItems.push(item);
+    }
+  });
+  priorityItems.sort((a, b) => priorityNames.indexOf(a.country) - priorityNames.indexOf(b.country));
+  otherItems.sort((a, b) => a.country.localeCompare(b.country));
+  const orderedCountries = priorityItems.concat(otherItems);
+
+  // Populate dropdown
+  orderedCountries.forEach(item => {
     const option = document.createElement('option');
     option.value = item.code;
     // Use proper flag emoji and correct character encoding

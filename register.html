@@ -368,6 +368,11 @@
         <label for="org-address2">Address Line 2:</label>
         <input type="text" id="org-address2">
       </div>
+
+      <div class="form-group">
+        <label for="org-postal-code" id="org-postal-label">Postal Code*:</label>
+        <input type="text" id="org-postal-code" autocomplete="postal-code" placeholder="e.g. K1A 0B1">
+      </div>
       
       <div class="form-group">
         <label for="org-phone">Office Phone:</label>
@@ -671,8 +676,23 @@
   <script>
     // Force cache bust - mobile browsers cache aggressively
     const VERBOSE_LOGGING = localStorage.getItem('enableVerboseLogs') === 'true';
-    const trace = (...args) => { if (VERBOSE_LOGGING) console.log(...args); };
-    const traceWarn = (...args) => { if (VERBOSE_LOGGING) console.warn(...args); };
+    const trace = (...args) => {
+      if (window.RegTrace) window.RegTrace.step('page', { message: args.map(String).join(' ') });
+      else if (VERBOSE_LOGGING) console.log(...args);
+    };
+    const traceWarn = (...args) => {
+      if (window.RegTrace) window.RegTrace.step('page_warn', { message: args.map(String).join(' ') });
+      else if (VERBOSE_LOGGING) console.warn(...args);
+    };
+    const regTraceRef = () => (window.RegTrace && window.RegTrace.traceId) ? window.RegTrace.traceId : 'n/a';
+    const regTraceAlert = (title, body) => {
+      const ref = regTraceRef();
+      alert(
+        title + '\n\n' + body +
+        '\n\nTrace ID: ' + ref +
+        '\n(F12 → Console → filter MediForge-REG, or run copy(getRegistrationTraceReport()))'
+      );
+    };
     const scrubUser = (user) => {
       if (!user || typeof user !== 'object') return user;
       const sanitized = { ...user };
@@ -725,8 +745,16 @@
       const orgAfterHoursCodeSelect = document.getElementById('org-after-hours-code');
       const adminPhoneCodeSelect = document.getElementById('admin-phone-code');
       const userPhoneCodeSelect = document.getElementById('user-phone-code');
+
+      if (typeof window.populatePhoneCodeDropdownPriority === 'function') {
+        if (orgPhoneCodeSelect) window.populatePhoneCodeDropdownPriority('org-phone-code', 'Canada');
+        if (orgAfterHoursCodeSelect) window.populatePhoneCodeDropdownPriority('org-after-hours-code', 'Canada');
+        if (adminPhoneCodeSelect) window.populatePhoneCodeDropdownPriority('admin-phone-code', 'Canada');
+        if (userPhoneCodeSelect) window.populatePhoneCodeDropdownPriority('user-phone-code', 'Canada');
+        return;
+      }
       
-      // Populate organization phone code dropdowns
+      // Fallback: populate from COUNTRIES_DATA with Canada/US first
       if (orgPhoneCodeSelect && orgAfterHoursCodeSelect) {
         // Clear existing options
         orgPhoneCodeSelect.innerHTML = '<option value="">Code</option>';
@@ -785,6 +813,9 @@
           if (adminPhoneCode && !adminPhoneCode.value) {
             adminPhoneCode.value = countryCode;
           }
+        }
+        if (typeof window.updatePostalCodeField === 'function') {
+          window.updatePostalCodeField(country, 'org-postal-code', 'org-postal-label');
         }
       }
     }
@@ -1238,6 +1269,7 @@
           city: document.getElementById('org-city').value,
           addressLine1: document.getElementById('org-address1').value,
           addressLine2: document.getElementById('org-address2').value,
+          postalCode: document.getElementById('org-postal-code').value.trim(),
           phone: orgPhoneCode && orgPhone ? `${orgPhoneCode} ${orgPhone}` : orgPhone,
           afterHoursPhone: afterHoursPhone,
           createdAt: new Date().toISOString()
@@ -1288,6 +1320,32 @@
           // NOTE: organizationId is NOT included for new org registration - it will be created first
         };
 
+        if (window.RegTrace) {
+          window.RegTrace.start({
+            username: formData.username,
+            orgName: orgData.name,
+            country: orgData.country,
+            state: orgData.state
+          });
+        }
+
+        if (typeof window.validatePostalCode === 'function') {
+          const postalCheck = window.validatePostalCode(orgData.country, orgData.postalCode);
+          if (!postalCheck.valid) {
+            if (window.RegTrace) window.RegTrace.fail('postal_code_invalid', postalCheck.error, { country: orgData.country });
+            regTraceAlert('Registration cannot proceed', postalCheck.error);
+            if (submitButton) {
+              submitButton.disabled = false;
+              submitButton.textContent = originalButtonText;
+            }
+            return;
+          }
+          if (postalCheck.normalized) {
+            document.getElementById('org-postal-code').value = postalCheck.normalized;
+            orgData.postalCode = postalCheck.normalized;
+          }
+        }
+
         // Run preflight checks (will verify internet, Supabase client, and mandatory fields)
         // NOTE: For new org registration, organizationId is not required in preflight
         const submitButton = e.target.querySelector('button[type="submit"]');
@@ -1328,7 +1386,8 @@
               }, 5000);
             }
           } else {
-            alert('Registration cannot proceed:\n\n' + errorMessage);
+            if (window.RegTrace) window.RegTrace.fail('preflight_blocked', errorMessage, {});
+            regTraceAlert('Registration cannot proceed', errorMessage);
           }
           
           if (submitButton) {
@@ -1385,6 +1444,7 @@
         
         if (window.supabaseClient) {
           try {
+            if (window.RegTrace) window.RegTrace.step('org_insert_attempt', { orgName: orgData.name });
             // PERMANENT FIX: Create organization with status='pending' initially
             // This prevents orphaned active organizations if user creation fails
             const { data: orgResult, error: orgError } = await window.supabaseClient
@@ -1396,6 +1456,7 @@
                 city: orgData.city,
                 address_line1: orgData.addressLine1,
                 address_line2: orgData.addressLine2,
+                postal_code: orgData.postalCode || null,
                 phone: orgData.phone,
                 after_hours_phone: orgData.afterHoursPhone,
                 org_code: generatedOrgCode,
@@ -1442,6 +1503,7 @@
                       city: orgData.city,
                       address_line1: orgData.addressLine1,
                       address_line2: orgData.addressLine2,
+                      postal_code: orgData.postalCode || null,
                       phone: orgData.phone,
                       after_hours_phone: orgData.afterHoursPhone,
                       org_code: generatedOrgCode,
@@ -1453,7 +1515,11 @@
                   
                   if (retryOrgError) {
                     console.error('? Retry failed:', retryOrgError);
-                    alert('Registration failed: Could not save organization to database. Please check your internet connection and try again.');
+                    if (window.RegTrace) window.RegTrace.fail('org_insert_failed', retryOrgError, { orgName: orgData.name });
+                    regTraceAlert(
+                      'Registration failed',
+                      'Could not save your clinic to the database. Please check your internet connection and try again.'
+                    );
                     if (submitButton) {
                       submitButton.disabled = false;
                       submitButton.textContent = originalButtonText;
@@ -1463,6 +1529,7 @@
                     trace('[OK] Organization saved to Supabase on retry');
                     const orgId = retryOrgResult[0].id;
                     organizationId = orgId; // CRITICAL: Set organizationId variable
+                    if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId: orgId, retried: true });
                     
                     // Update localStorage with organization ID
                     const updatedOrgs = JSON.parse(localStorage.getItem('organizations') || '{}');
@@ -1472,7 +1539,8 @@
                     }
                   } else {
                     console.error('? Retry succeeded but no ID returned');
-                    alert('Registration failed: Could not retrieve organization ID. Please try again.');
+                    if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
+                    regTraceAlert('Registration failed', 'Could not retrieve your clinic ID. Please try again.');
                     if (submitButton) {
                       submitButton.disabled = false;
                       submitButton.textContent = originalButtonText;
@@ -1481,7 +1549,11 @@
                   }
                 } catch (retryError) {
                   console.error('? Retry attempt failed:', retryError);
-                  alert('Registration failed: Could not save organization to database. Please check your internet connection and try again.');
+                  if (window.RegTrace) window.RegTrace.fail('org_insert_exception', retryError, {});
+                  regTraceAlert(
+                    'Registration failed',
+                    'Could not save your clinic to the database. Please check your internet connection and try again.'
+                  );
                   if (submitButton) {
                     submitButton.disabled = false;
                     submitButton.textContent = originalButtonText;
@@ -1496,6 +1568,7 @@
               if (orgResult && orgResult[0] && orgResult[0].id) {
                 const orgId = orgResult[0].id;
                 organizationId = orgId; // CRITICAL: Set organizationId variable for use in registerWithSupabase
+                if (window.RegTrace) window.RegTrace.ok('org_insert_created', { organizationId: orgId });
                 trace('[REG] Organization ID from Supabase captured:', organizationId);
                 
                 // Update organization data with ID in localStorage
@@ -1507,7 +1580,8 @@
                 }
               } else {
                 console.error('? CRITICAL: Organization saved but no ID returned from Supabase');
-                alert('Registration failed: Could not retrieve organization ID. Please try again.');
+                if (window.RegTrace) window.RegTrace.fail('org_insert_no_id', 'No organization ID returned', {});
+                regTraceAlert('Registration failed', 'Could not retrieve your clinic ID. Please try again.');
                 if (submitButton) {
                   submitButton.disabled = false;
                   submitButton.textContent = originalButtonText;
@@ -1519,7 +1593,8 @@
             // CRITICAL: Verify organizationId is set before proceeding
             if (!organizationId) {
               console.error('? CRITICAL: organizationId is null after organization creation');
-              alert('Registration failed: Organization ID not available. Please try again.');
+              if (window.RegTrace) window.RegTrace.fail('org_id_missing', 'organizationId is null', {});
+              regTraceAlert('Registration failed', 'Clinic ID not available. Please try again.');
               if (submitButton) {
                 submitButton.disabled = false;
                 submitButton.textContent = originalButtonText;
@@ -1738,7 +1813,7 @@
               }
             }
             
-            alert(`Registration did not complete.\n\n${friendlyError}`);
+            alert(`Registration did not complete.\n\n${friendlyError}\n\nTrace ID: ${regTraceRef()}\n(F12 → Console → filter MediForge-REG, or run copy(getRegistrationTraceReport()))`);
             return;
           }
         } else {
@@ -1747,13 +1822,17 @@
         }
       
       // Show success step with organization code
+      if (window.RegTrace) {
+        window.RegTrace.ok('registration_page_complete', { orgCode: generatedOrgCode, organizationId: organizationId });
+      }
       document.getElementById('org-code-value').textContent = generatedOrgCode;
       document.getElementById('generated-org-code').style.display = 'block';
       showStep('step-success');
         
       } catch (error) {
         console.error('? Error during registration:', error);
-        alert('Registration failed. Please try again.');
+        if (window.RegTrace) window.RegTrace.fail('registration_page_exception', error, {});
+        regTraceAlert('Registration failed', 'Something went wrong. Please try again.');
       }
     });
 
@@ -2294,15 +2373,16 @@
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js?v=20251021140000"></script>
   <script src="js/public-auth-rpc.js?v=20260416120000"></script>
-  <script src="js/supabase-auth.js?v=20260611130000"></script>  <!-- Required for registerWithSupabase -->
+  <script src="js/registration-trace.js?v=20260611160000"></script>
+  <script src="js/supabase-auth.js?v=20260611160000"></script>  <!-- Required for registerWithSupabase -->
   <script src="js/legal-agreements.js?v=20250118000000"></script>  <!-- Legal agreements management -->
   <script src="js/registration-monitor.js?v=20250118000000"></script>  <!-- Registration monitoring -->
-  <script src="js/registration-preflight.js?v=20260611140000"></script>  <!-- Preflight checks -->
+  <script src="js/registration-preflight.js?v=20260611160000"></script>  <!-- Preflight checks -->
   
   <!-- Countries data -->
   <script src="js/us-ca-cities-data.js?v=20260611120000"></script>
-  <script src="js/countries-data.js?v=20260611120000"></script>
-  <script src="js/auth-email.js?v=20260611140000"></script>
+  <script src="js/countries-data.js?v=20260611170000"></script>
+  <script src="js/auth-email.js?v=20260611160000"></script>
   
   <!-- Universal Scripts -->
   <script src="js/universal-data-loader.js?v=20251021140000"></script>  <!-- Universal data loader with Supabase priority -->

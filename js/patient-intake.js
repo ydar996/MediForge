@@ -228,10 +228,11 @@
     }
   }
 
-  function handleCountryChange(countrySelectId, stateSelectId, phoneInputId) {
+  function handleCountryChange(countrySelectId, stateSelectId, phoneInputId, options) {
     const countrySelect = document.getElementById(countrySelectId);
     if (!countrySelect) return;
     const country = countrySelect.value;
+    const opts = options || {};
 
     if (typeof populateStateDropdown === "function") {
       populateStateDropdown(stateSelectId, country);
@@ -240,6 +241,50 @@
       updatePhoneFormat(phoneInputId, country);
     }
     setPhoneCountryCode(phoneInputId, country);
+
+    if (opts.postalInputId && typeof window.updatePostalCodeField === "function") {
+      window.updatePostalCodeField(country, opts.postalInputId, opts.postalLabelId);
+    }
+    if (opts.cityDatalistId && typeof window.populateCityDatalist === "function") {
+      const state = document.getElementById(stateSelectId)?.value || "";
+      window.populateCityDatalist(opts.cityDatalistId, country, state);
+    }
+  }
+
+  function handleStateChange(countrySelectId, stateSelectId, cityDatalistId) {
+    const country = document.getElementById(countrySelectId)?.value || "";
+    const state = document.getElementById(stateSelectId)?.value || "";
+    if (typeof window.populateCityDatalist === "function") {
+      window.populateCityDatalist(cityDatalistId, country, state);
+    }
+  }
+
+  function applyDefaultAddressCountry(country, state) {
+    const resolved = country || "Canada";
+    const countrySelect = document.getElementById("country");
+    const emergencyCountrySelect = document.getElementById("emergencyCountry");
+    if (countrySelect && !countrySelect.value && countrySelect.querySelector(`option[value="${resolved}"]`)) {
+      countrySelect.value = resolved;
+      handleCountryChange("country", "state", "phone", {
+        postalInputId: "postalCode",
+        postalLabelId: "postal-code-label",
+        cityDatalistId: "city-options"
+      });
+      if (state) {
+        const stateSelect = document.getElementById("state");
+        if (stateSelect) {
+          if (typeof window.populateStateDropdown === "function") {
+            window.populateStateDropdown("state", resolved, state);
+          }
+          stateSelect.value = state;
+          handleStateChange("country", "state", "city-options");
+        }
+      }
+    }
+    if (emergencyCountrySelect && !emergencyCountrySelect.value && emergencyCountrySelect.querySelector(`option[value="${resolved}"]`)) {
+      emergencyCountrySelect.value = resolved;
+      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone");
+    }
   }
 
   function syncTableState(tableId) {
@@ -818,12 +863,13 @@
     try {
       const { data, error } = await supabaseClient
         .from("organizations")
-        .select("name")
+        .select("name, country, state")
         .eq("id", organizationId)
         .maybeSingle();
 
       if (error) {
         console.warn("Could not fetch organization details:", error.message);
+        applyDefaultAddressCountry("Canada", null);
         return;
       }
 
@@ -831,8 +877,10 @@
         const tagline = hint || (orgHintEl && !orgHintEl.hidden ? orgHintEl.textContent : "");
         applyOrgBranding(data.name, tagline);
       }
+      applyDefaultAddressCountry(data?.country || "Canada", data?.state || null);
     } catch (error) {
       console.warn("Organization lookup failed:", error);
+      applyDefaultAddressCountry("Canada", null);
     }
   }
 
@@ -892,6 +940,20 @@
         return false;
       }
     }
+    return true;
+  }
+
+  function validateIntakePostalFields() {
+    const country = form.elements["country"]?.value || "";
+    const postalEl = form.elements["postalCode"];
+    if (!postalEl || typeof window.validatePostalCode !== "function") return true;
+    const check = window.validatePostalCode(country, postalEl.value.trim());
+    if (!check.valid) {
+      showStatus(check.error, "error");
+      postalEl.focus();
+      return false;
+    }
+    if (check.normalized) postalEl.value = check.normalized;
     return true;
   }
 
@@ -1093,6 +1155,7 @@
       city: form.elements["city"].value.trim(),
       state: form.elements["state"].value,
       country: form.elements["country"].value,
+      postalCode: form.elements["postalCode"] ? form.elements["postalCode"].value.trim() : "",
       emergencyFirstName,
       emergencyLastName,
       emergencyRelationship: form.elements["emergencyRelationship"].value.trim(),
@@ -1153,6 +1216,10 @@
     }
 
     if (!validateIntakeEmailFields()) {
+      return;
+    }
+
+    if (!validateIntakePostalFields()) {
       return;
     }
 
@@ -1288,8 +1355,8 @@
 
     // Populate country code dropdowns with full list if available
     if (typeof window.populateCountryCodeDropdown === "function") {
-      window.populateCountryCodeDropdown("phoneCountryCode", "+234", true);
-      window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+234", true);
+      window.populateCountryCodeDropdown("phoneCountryCode", "+1", true);
+      window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+1", true);
     }
     const ensureCountryCodes = () => {
       const phoneCodeSelect = document.getElementById("phoneCountryCode");
@@ -1297,8 +1364,8 @@
       const needsPopulate = (select) => select && select.options && select.options.length <= 1;
       if (needsPopulate(phoneCodeSelect) || needsPopulate(emergencyCodeSelect)) {
         if (typeof window.populateCountryCodeDropdown === "function") {
-          window.populateCountryCodeDropdown("phoneCountryCode", "+234", true);
-          window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+234", true);
+          window.populateCountryCodeDropdown("phoneCountryCode", "+1", true);
+          window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+1", true);
         }
       }
     };
@@ -1360,20 +1427,14 @@
     setupIntakeIcdSearch();
     setupIcdClickSuggestions();
 
-    const countrySelect = document.getElementById("country");
-    if (countrySelect && !countrySelect.value && countrySelect.querySelector('option[value="Nigeria"]')) {
-      countrySelect.value = "Nigeria";
-      handleCountryChange("country", "state", "phone");
-    }
-
-    const emergencyCountrySelect = document.getElementById("emergencyCountry");
-    if (emergencyCountrySelect && !emergencyCountrySelect.value && emergencyCountrySelect.querySelector('option[value="Nigeria"]')) {
-      emergencyCountrySelect.value = "Nigeria";
-      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone");
-    }
-
-    document.getElementById("country")?.addEventListener("change", () => handleCountryChange("country", "state", "phone"));
+    document.getElementById("country")?.addEventListener("change", () => handleCountryChange("country", "state", "phone", {
+      postalInputId: "postalCode",
+      postalLabelId: "postal-code-label",
+      cityDatalistId: "city-options"
+    }));
     document.getElementById("emergencyCountry")?.addEventListener("change", () => handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone"));
+
+    document.getElementById("state")?.addEventListener("change", () => handleStateChange("country", "state", "city-options"));
 
     // Add auto-population for state dropdowns when clicked/focused
     const stateSelect = document.getElementById("state");

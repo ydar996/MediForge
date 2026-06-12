@@ -480,7 +480,11 @@
  <input type="text" id="addressLine2">
  
  <label for="city" style="display: block; margin-top: 10px;">City*:</label>
- <input type="text" id="city" required>
+ <input type="text" id="city" list="city-options" required>
+ <datalist id="city-options"></datalist>
+
+ <label for="postalCode" id="postal-code-label" style="display: block; margin-top: 10px;">Postal Code*:</label>
+ <input type="text" id="postalCode" autocomplete="postal-code" placeholder="e.g. K1A 0B1">
  
  <label for="country" style="display: block; margin-top: 10px;">Country*:</label>
  <select id="country" required onchange="handleEditPatientCountryChange()">
@@ -764,6 +768,13 @@
           const currentState = document.getElementById('state').value;
           await window.populateStateDropdown('state', country, currentState);
         }
+        if (typeof window.updatePostalCodeField === 'function') {
+          window.updatePostalCodeField(country, 'postalCode', 'postal-code-label');
+        }
+        const stateVal = document.getElementById('state')?.value || '';
+        if (typeof window.populateCityDatalist === 'function') {
+          window.populateCityDatalist('city-options', country, stateVal);
+        }
         
         // Auto-select phone country code based on address country
         const phoneCountryCode = document.getElementById('phoneCountryCode');
@@ -816,8 +827,8 @@
       
       // Initialize country code dropdowns with default values
       if (typeof window.populateCountryCodeDropdown === 'function') {
-        await window.populateCountryCodeDropdown('phoneCountryCode', '+234', true);
-        await window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+234', true);
+        await window.populateCountryCodeDropdown('phoneCountryCode', '+1', true);
+        await window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+1', true);
       }
       
       // Load patient data (this will populate all fields including country/state)
@@ -846,6 +857,11 @@
             if (typeof window.populateStateDropdown === 'function') {
               window.populateStateDropdown('state', countryValue);
             }
+          }
+        });
+        stateSelect.addEventListener('change', function() {
+          if (typeof window.populateCityDatalist === 'function') {
+            window.populateCityDatalist('city-options', countrySelect.value, stateSelect.value);
           }
         });
       }
@@ -888,7 +904,8 @@
   <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
   
   <!-- Enhanced selectors -->
-  <script src="js/countries-data.js?v=1"></script>
+  <script src="js/us-ca-cities-data.js?v=20260611120000"></script>
+  <script src="js/countries-data.js?v=20260611170000"></script>
   <script src="js/country-codes.js"></script>
   <script src="js/searchable-dropdown.js"></script>
   <script src="js/icd-selector.js?v=105"></script>

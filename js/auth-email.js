@@ -25,7 +25,9 @@
     const raw = String(username || '').normalize('NFKC').trim();
 
     if (!raw) {
-      return { ok: false, error: 'Please enter a username.' };
+      const err = 'Please enter a username.';
+      if (typeof window.RegTrace !== 'undefined') window.RegTrace.fail('auth_email_build', err, {});
+      return { ok: false, error: err };
     }
 
     if (raw.includes('@')) {
@@ -53,6 +55,9 @@
 
     const shortOrgId = orgHex.substring(0, 8);
     const email = `${cleanUser}-${shortOrgId}@${authEmailDomain()}`;
+    if (typeof window.RegTrace !== 'undefined') {
+      window.RegTrace.step('auth_email_built', { authEmail: email, username: cleanUser });
+    }
     return { ok: true, email };
   };
 

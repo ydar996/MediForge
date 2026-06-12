@@ -327,6 +327,7 @@
       city: payload.city || "",
       state: payload.state || "",
       country: payload.country || "",
+      postalCode: payload.postalCode || "",
       emergencyFirstName: payload.emergencyFirstName || "",
       emergencyLastName: payload.emergencyLastName || "",
       emergencyRelationship: payload.emergencyRelationship || "",

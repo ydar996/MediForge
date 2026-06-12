@@ -302,21 +302,33 @@ class RegistrationPreflight {
       data: {}
     };
 
+    if (typeof window.RegTrace !== 'undefined') {
+      window.RegTrace.step('preflight_start', { orgCode: orgCode || null, username: formData.username });
+    }
+
     // 1. Check internet connection
     const internetCheck = await this.checkInternetConnection();
     if (!internetCheck.success) {
       results.passed = false;
       results.errors.push(internetCheck.message);
+      if (typeof window.RegTrace !== 'undefined') {
+        window.RegTrace.fail('preflight_internet', internetCheck.message, {});
+      }
       return results;
     }
+    if (typeof window.RegTrace !== 'undefined') window.RegTrace.ok('preflight_internet', {});
 
     // 2. Check Supabase client (async - uses universal readiness guarantee)
     const clientCheck = await this.checkSupabaseClient();
     if (!clientCheck.success) {
       results.passed = false;
       results.errors.push(clientCheck.message);
+      if (typeof window.RegTrace !== 'undefined') {
+        window.RegTrace.fail('preflight_supabase_client', clientCheck.message, {});
+      }
       return results;
     }
+    if (typeof window.RegTrace !== 'undefined') window.RegTrace.ok('preflight_supabase_client', {});
 
     // 3. Validate mandatory fields
     // Determine if this is new org registration (no orgCode provided)
@@ -325,8 +337,12 @@ class RegistrationPreflight {
     if (!fieldsCheck.success) {
       results.passed = false;
       results.errors.push(fieldsCheck.message);
+      if (typeof window.RegTrace !== 'undefined') {
+        window.RegTrace.fail('preflight_fields', fieldsCheck.message, {});
+      }
       return results;
     }
+    if (typeof window.RegTrace !== 'undefined') window.RegTrace.ok('preflight_fields', {});
 
     // 4. Verify organization (if org code provided)
     // NOTE: For new organization registration, orgCode will be null
@@ -358,8 +374,14 @@ class RegistrationPreflight {
     if (!usernameCheck.available) {
       results.passed = false;
       results.errors.push(usernameCheck.message);
+      if (typeof window.RegTrace !== 'undefined') {
+        window.RegTrace.fail('preflight_username', usernameCheck.message, { username: formData.username });
+      }
       return results;
     }
+    if (typeof window.RegTrace !== 'undefined') window.RegTrace.ok('preflight_username', {});
+
+    if (typeof window.RegTrace !== 'undefined') window.RegTrace.ok('preflight_complete', {});
 
     return results;
   }

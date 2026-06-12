@@ -718,7 +718,11 @@
     <input type="text" id="addressLine2">
     
     <label for="city" style="display: block; margin-top: 10px;">City*:</label>
-    <input type="text" id="city" required>
+    <input type="text" id="city" list="city-options" required>
+    <datalist id="city-options"></datalist>
+
+    <label for="postalCode" id="postal-code-label" style="display: block; margin-top: 10px;">Postal Code*:</label>
+    <input type="text" id="postalCode" autocomplete="postal-code" placeholder="e.g. K1A 0B1">
     
     <label for="phone" style="display: block; margin-top: 10px;">Phone*:</label>
     <div style="display: flex; gap: 5px;">
@@ -1081,7 +1085,8 @@
   <script src="js/main.js?v=202510220113070113071307"></script>
   
   <!-- Countries data -->
-  <script src="js/countries-data.js?v=1"></script>
+  <script src="js/us-ca-cities-data.js?v=20260611120000"></script>
+  <script src="js/countries-data.js?v=20260611170000"></script>
   
   <!-- Country codes with flags -->
   <script src="js/country-codes.js"></script>
@@ -1162,6 +1167,13 @@
       if (country) {
         if (typeof window.populateStateDropdown === 'function') {
           window.populateStateDropdown('state', country);
+        }
+        if (typeof window.updatePostalCodeField === 'function') {
+          window.updatePostalCodeField(country, 'postalCode', 'postal-code-label');
+        }
+        const state = document.getElementById('state')?.value || '';
+        if (typeof window.populateCityDatalist === 'function') {
+          window.populateCityDatalist('city-options', country, state);
         }
         
         // Auto-select phone country code based on address country
@@ -1278,8 +1290,8 @@
         
         // Initialize country code dropdowns with proper flags
         if (typeof window.populateCountryCodeDropdown === 'function') {
-          window.populateCountryCodeDropdown('phoneCountryCode', '+234', true);
-          window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+234', true);
+          window.populateCountryCodeDropdown('phoneCountryCode', '+1', true);
+          window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+1', true);
         }
         
         // Add auto-population for state dropdowns when clicked/focused
@@ -1303,6 +1315,11 @@
               if (typeof window.populateStateDropdown === 'function') {
                 window.populateStateDropdown('state', countryValue);
               }
+            }
+          });
+          stateSelect.addEventListener('change', function() {
+            if (typeof window.populateCityDatalist === 'function') {
+              window.populateCityDatalist('city-options', countrySelect.value, stateSelect.value);
             }
           });
         }
