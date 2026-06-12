@@ -616,19 +616,24 @@ async function registerWithSupabase(userData) {
 
     console.log(`📝 [TRACE-${traceId}] Registering new user:`, userData.username);
 
+    const normalizedUsername = String(userData.username || '').normalize('NFKC').trim().replace(/\s+/g, '');
+    userData.username = normalizedUsername;
+
     // Generate email from username with organization context
     // Format: username-{shortOrgId}@mediforge.app
-    // This ensures emails are unique per organization (required by Supabase Auth)
-    // shortOrgId is first 8 characters of organization ID (without dashes) for readability
     let email;
-    if (userData.username.includes('@')) {
-      // Username is already an email, use it as-is
-      email = userData.username;
+    if (typeof window.buildMediForgeAuthEmail === 'function') {
+      const built = window.buildMediForgeAuthEmail(normalizedUsername, userData.organizationId);
+      if (!built.ok) {
+        return { success: false, error: built.error };
+      }
+      email = built.email;
+      console.log(`📧 [TRACE-${traceId}] Generated org-scoped email:`, email);
+    } else if (normalizedUsername.includes('@')) {
+      email = normalizedUsername;
     } else {
-      // Generate organization-scoped email
-      // Use first 8 chars of org ID (without dashes) to keep email reasonable length
-      const shortOrgId = userData.organizationId.replace(/-/g, '').substring(0, 8);
-      email = `${userData.username}-${shortOrgId}@mediforge.app`;
+      const shortOrgId = String(userData.organizationId || '').replace(/-/g, '').substring(0, 8);
+      email = `${normalizedUsername}-${shortOrgId}@mediforge.app`;
       console.log(`📧 [TRACE-${traceId}] Generated org-scoped email:`, email);
     }
 
@@ -1055,7 +1060,10 @@ async function registerWithSupabase(userData) {
         }
       } else {
         console.error(`❌ [TRACE-${traceId}] Supabase Auth registration error:`, authError);
-        return { success: false, error: authError.message };
+        const friendly = typeof window.formatMediForgeAuthError === 'function'
+          ? window.formatMediForgeAuthError(authError.message, email)
+          : authError.message;
+        return { success: false, error: friendly };
       }
     } else if (authData?.user) {
       authUserId = authData.user.id;

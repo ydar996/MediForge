@@ -137,6 +137,20 @@ class RegistrationPreflight {
       };
     }
 
+    if (formData.username && /\s/.test(String(formData.username))) {
+      return {
+        success: false,
+        message: 'Username cannot contain spaces. Use letters and numbers only (e.g. ydar102).'
+      };
+    }
+
+    if (formData.username && !formData.username.includes('@') && !/^[a-z0-9._-]+$/i.test(formData.username)) {
+      return {
+        success: false,
+        message: 'Username can only contain letters, numbers, dots, underscores, and hyphens.'
+      };
+    }
+
     // Validate password strength
     if (formData.password && formData.password.length < 12) {
       return {
