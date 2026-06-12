@@ -51,7 +51,7 @@ async function saveLegalAgreement(agreementData) {
       // Ignore
     }
 
-    const agreementVersion = '2026-06-11'; // Canada/US legal update
+    const agreementVersion = '2026-06-12'; // Canada-first legal framework
 
     console.log('💼 Saving legal agreement:', {
       userId,
