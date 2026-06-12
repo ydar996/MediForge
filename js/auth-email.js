@@ -72,6 +72,9 @@
     if (msg.includes('password')) {
       return message;
     }
+    if (msg.includes('profile setup failed') || msg.includes('permission denied') || msg.includes('row-level security')) {
+      return 'We could not finish setting up your account. Please try registering again in a few minutes. If it keeps failing, contact support.';
+    }
     if (msg.includes('invalid') || msg.includes('not authorized') || msg.includes('mediforge.app')) {
       return 'We could not finish creating your login. Please wait a minute and try again. If it still fails, contact support.';
     }
