@@ -73,15 +73,19 @@ ALTER TABLE insurance_claims ENABLE ROW LEVEL SECURITY;
 ALTER TABLE payment_plans ENABLE ROW LEVEL SECURITY;
 ALTER TABLE remittance_records ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS patient_payer_profiles_org ON patient_payer_profiles;
 CREATE POLICY patient_payer_profiles_org ON patient_payer_profiles
   FOR ALL USING (organization_id IN (SELECT organization_id FROM users WHERE auth_user_id = auth.uid()));
 
+DROP POLICY IF EXISTS insurance_claims_org ON insurance_claims;
 CREATE POLICY insurance_claims_org ON insurance_claims
   FOR ALL USING (organization_id IN (SELECT organization_id FROM users WHERE auth_user_id = auth.uid()));
 
+DROP POLICY IF EXISTS payment_plans_org ON payment_plans;
 CREATE POLICY payment_plans_org ON payment_plans
   FOR ALL USING (organization_id IN (SELECT organization_id FROM users WHERE auth_user_id = auth.uid()));
 
+DROP POLICY IF EXISTS remittance_records_org ON remittance_records;
 CREATE POLICY remittance_records_org ON remittance_records
   FOR ALL USING (organization_id IN (SELECT organization_id FROM users WHERE auth_user_id = auth.uid()));
 

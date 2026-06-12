@@ -58,6 +58,7 @@ ALTER TABLE interop_messages ENABLE ROW LEVEL SECURITY;
 ALTER TABLE patient_identifiers ENABLE ROW LEVEL SECURITY;
 ALTER TABLE interop_endpoints ENABLE ROW LEVEL SECURITY;
 
+DROP POLICY IF EXISTS interop_messages_org_access ON interop_messages;
 CREATE POLICY interop_messages_org_access ON interop_messages
   FOR ALL USING (
     organization_id IN (
@@ -65,6 +66,7 @@ CREATE POLICY interop_messages_org_access ON interop_messages
     )
   );
 
+DROP POLICY IF EXISTS patient_identifiers_org_access ON patient_identifiers;
 CREATE POLICY patient_identifiers_org_access ON patient_identifiers
   FOR ALL USING (
     organization_id IN (
@@ -72,6 +74,7 @@ CREATE POLICY patient_identifiers_org_access ON patient_identifiers
     )
   );
 
+DROP POLICY IF EXISTS interop_endpoints_org_access ON interop_endpoints;
 CREATE POLICY interop_endpoints_org_access ON interop_endpoints
   FOR ALL USING (
     organization_id IN (
