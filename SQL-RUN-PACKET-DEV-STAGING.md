@@ -1,28 +1,34 @@
-# SQL run packet — Dev & Staging
+# SQL run packet — Dev, Staging & Production
 
-Run these scripts in **Supabase → SQL Editor** for **each** practice database:
+Simple checklist for Supabase **SQL Editor**. Run scripts **one at a time**, wait for **Success**, then move on.
 
-| Project | Website |
-|---------|---------|
-| **MediForge Dev** | https://mediforge-dev.netlify.app |
-| **MediForge Staging** | https://mediforge-staging.netlify.app |
+| Environment | Supabase project | Website |
+|-------------|------------------|---------|
+| **Dev** | MediForge Dev | https://mediforge-dev.netlify.app |
+| **Staging** | MediForge Staging | https://mediforge-staging.netlify.app |
+| **Production** | MediForge-Prod | https://mediforge.netlify.app |
 
-**Do not run on Production** unless you are deliberately promoting the same changes there.
+All scripts below are **idempotent** (safe to run more than once).
 
-All scripts listed below are **idempotent** (safe to run more than once).
+---
+
+## When to run this
+
+1. **Deploy the latest app code first** (Dev → Staging → Production when ready).
+2. Then run the SQL steps on the **matching** Supabase project.
+3. **Step 6 is required** for the current registration and patient intake flows (Canada/US addresses, postal codes, org activation, intake org lookup).
+
+**Order for each environment:** Dev first → Staging → Production (only when you are deliberately promoting the same release).
 
 ---
 
 ## Before you start
 
-1. Open the correct Supabase project (Dev or Staging — not Prod).
+1. Open the **correct** Supabase project (Dev, Staging, or Prod — do not mix them up).
 2. Go to **SQL Editor → New query**.
-3. Run **one step at a time**, in order. Wait for **Success** before the next step.
-4. Repeat the full list on the **other** project when Dev is done.
+3. Open each file from your repo, **Select all → Copy → Paste → Run**.
 
-### Quick check (optional)
-
-Run this first to see what is already in place:
+### Optional quick check
 
 ```sql
 SELECT table_name
@@ -41,11 +47,11 @@ ORDER BY table_name;
 
 ---
 
-## Is this a brand-new empty database?
+## Brand-new empty database?
 
-If you **just created** MediForge Dev or Staging and **no migrations have been applied yet**, run the **full schema** first:
+If Dev or Staging has **no tables yet**, apply the full schema first:
 
-**Option A (recommended):** from your repo folder in PowerShell:
+**Option A (recommended):**
 
 ```powershell
 cd C:\Users\yinka\Documents\MediForge
@@ -54,67 +60,56 @@ supabase link --project-ref YOUR_PROJECT_REF
 supabase db push
 ```
 
-**Option B:** run every file in `supabase/migrations/` in **date order** (filename prefix), then continue with **Step 1** below.
+**Option B:** Run every file in `supabase/migrations/` in **filename date order**, then continue with Step 1 below.
 
-If the database already came from production or earlier setup, skip the full schema and start at **Step 1**.
-
----
-
-## Execution order (Dev and Staging)
-
-| Step | File | What it fixes | Idempotent |
-|------|------|---------------|------------|
-| **1** | `sql-scripts/RUN-PACKET-dev-staging-idempotent.sql` | Address columns, registration RLS, demographics columns | Yes |
-| **2** | `supabase/migrations/20251109000000_create_patient_intake_tables.sql` | Patient self-onboarding tables | Yes (`IF NOT EXISTS`) |
-| **3** | `supabase/migrations/20260611170000_intake_approval_postal_demographics.sql` | Intake approval saves postal code + demographics | Yes (`CREATE OR REPLACE`) |
-| **4** | `supabase/migrations/20260611000000_interoperability_tables.sql` | Interop message queue + PHN identifiers | Yes |
-| **5** | `supabase/migrations/20260611100000_billing_payers_tables.sql` | Billing / payer profiles + claims | Yes |
-| **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | Org/patient columns, registration RLS, org Admin UPDATE, intake org RPC | Yes |
-
-### Step 2 — skip if already applied
-
-If `patient_intake_submissions` appears in the quick check above, Step 2 is optional (re-running is still safe).
+If the database already has production-style tables, skip this and start at **Step 1**.
 
 ---
 
-## How to run each step
+## Steps (run in order)
 
-1. Open the file in your repo (paths above).
-2. **Select all** → **Copy**.
-3. Supabase **SQL Editor** → paste → **Run**.
-4. Confirm **Success** (no red error).
+| Step | File | What it does |
+|------|------|--------------|
+| **1** | `sql-scripts/RUN-PACKET-dev-staging-idempotent.sql` | Address columns, registration RLS, demographics columns |
+| **2** | `supabase/migrations/20251109000000_create_patient_intake_tables.sql` | Patient self-onboarding tables |
+| **3** | `supabase/migrations/20260611170000_intake_approval_postal_demographics.sql` | Intake approval: postal code + demographics |
+| **4** | `supabase/migrations/20260611000000_interoperability_tables.sql` | Interop queue + PHN identifiers |
+| **5** | `supabase/migrations/20260611100000_billing_payers_tables.sql` | Billing / payer profiles + claims |
+| **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | **Required** — org Admin UPDATE, `get_organization_intake_context` RPC, intake approval permissions |
 
-**Shortcut:** Step 1 is a single combined script. Steps 2–5 are separate migration files.
+**Step 2 skip:** If `patient_intake_submissions` already exists, Step 2 is optional (re-running is still safe).
+
+**Do not run separately:** `supabase/migrations/20260611150000_users_registration_rls.sql` — already included in Step 1.
 
 ---
 
-## After SQL — Auth settings (each project)
+## After SQL — Auth settings (Dev & Staging only)
 
-In **Authentication → URL configuration**:
+**Authentication → URL configuration**
 
 | Project | Site URL |
 |---------|----------|
 | Dev | `https://mediforge-dev.netlify.app` |
-| Staging | `https://mediforge-staging.netlify.app |
+| Staging | `https://mediforge-staging.netlify.app` |
 
 Add the same URLs under **Redirect URLs**, plus `/login` and `/register` if prompted.
 
-For Dev/Staging only: **Authentication → Email → Confirm email** → turn **OFF** (easier clinic test registration).
+**Authentication → Email → Confirm email** → turn **OFF** on Dev and Staging (easier test registration).
+
+Production: keep **Confirm email ON** unless your prod policy says otherwise.
 
 ---
 
-## Optional — platform admin (you only)
+## Optional — platform admin (Dev / Staging)
 
-Only if you need `/platform-login` on Dev or Staging:
+Only if you need `/platform-login`:
 
 1. **Authentication → Users → Add user** (confirm email).
-2. Edit and run `sql-scripts/create-platform-admin.sql` (uses `ON CONFLICT` — idempotent).
+2. Run `sql-scripts/create-platform-admin.sql` (idempotent).
 
 ---
 
-## Verify everything worked
-
-Run after all steps:
+## Verify (run after all steps)
 
 ```sql
 -- Registration policies
@@ -134,61 +129,84 @@ WHERE table_schema = 'public'
     'patient_payer_profiles'
   );
 
--- Intake approval function exists
+-- Required RPCs for current app code
 SELECT proname
 FROM pg_proc
-WHERE proname = 'approve_patient_intake_submission';
+WHERE proname IN (
+  'approve_patient_intake_submission',
+  'get_organization_intake_context'
+);
 ```
 
-Expected: at least **2** registration policies (`organizations` + `users`), **3** tables, **1** function.
+**Expected:** at least **2** registration policies, **3** tables, **2** functions.
 
 ---
 
-## Smoke test in the app
+## Smoke test
 
-On **Dev** only:
+On **Dev** (repeat on Staging when Dev passes):
 
 1. Register a **test clinic** at `/register` (Canada address + postal code).
-2. Open the clinic **patient intake link** and submit a test patient.
-3. Staff: approve intake → patient should have address + postal code.
-
-Repeat on Staging when Dev looks good.
+2. Accept legal agreements on the registration form.
+3. Open the clinic **patient intake link** and submit a test patient.
+4. Staff: approve intake → patient should have address + postal code.
 
 ---
 
-## Do not run on Dev/Staging
+## Production
+
+When promoting **Staging → main** (production website):
+
+1. Merge and deploy production code on Netlify (`main` branch).
+2. Open **MediForge-Prod** in Supabase SQL Editor.
+3. Run **Steps 1–6 in the same order** (skip Step 2 if intake tables already exist).
+4. Do **not** turn off email confirmation on production.
+5. Run the **Verify** queries above, then smoke-test with a controlled test org if possible.
+
+**No SQL needed for:** legal agreement text updates (Canada/US) — those are HTML/JS only, deployed with the app.
+
+---
+
+## Do not run on Dev / Staging
 
 | File | Why |
 |------|-----|
-| `sql-scripts/fix-registration-rls.sql` | Superseded by Step 1 packet (same policies, cleaner merge) |
-| `supabase/migrations/20260611150000_users_registration_rls.sql` | Already included in Step 1 packet |
-| `supabase/migrations/20251105000002_fix_staff_data_access.sql` | Old version; use `20251105000003` only on Prod if needed |
-| One-off `RUN_THIS_*` / data-fix scripts | For specific prod data issues, not fresh Dev/Staging setup |
+| `sql-scripts/fix-registration-rls.sql` | Superseded by Step 1 |
+| `supabase/migrations/20260611150000_users_registration_rls.sql` | Included in Step 1 |
+| `supabase/migrations/20251105000002_fix_staff_data_access.sql` | Old; use `20251105000003` on Prod only if needed |
+| One-off `RUN_THIS_*` / data-fix scripts | Prod data fixes only — not fresh setup |
 
 ---
 
-## Checklist
-
-Copy and tick off per project:
+## Checklist (copy per project)
 
 **MediForge Dev**
 
+- [ ] Latest code deployed to Dev
 - [ ] Step 1 — `RUN-PACKET-dev-staging-idempotent.sql`
 - [ ] Step 2 — patient intake tables (if needed)
 - [ ] Step 3 — intake approval postal/demographics
 - [ ] Step 4 — interoperability tables
 - [ ] Step 5 — billing tables
-- [ ] Step 6 — registration and intake fixes (`20260611180000_registration_and_intake_fixes.sql`)
-- [ ] Auth URLs configured
-- [ ] Test clinic registration
-- [ ] Test patient intake + approval
+- [ ] Step 6 — `20260611180000_registration_and_intake_fixes.sql`
+- [ ] Auth URLs + Confirm email OFF
+- [ ] Verify queries pass
+- [ ] Smoke test: clinic registration + patient intake
 
 **MediForge Staging**
 
-- [ ] Same steps as Dev
-- [ ] Auth URLs configured
-- [ ] Smoke test
+- [ ] Latest code deployed to Staging
+- [ ] Steps 1–6 (same as Dev)
+- [ ] Auth URLs + Confirm email OFF
+- [ ] Verify + smoke test
+
+**MediForge Production** *(when promoting a release)*
+
+- [ ] Code merged to `main` and deployed
+- [ ] Steps 1–6 on MediForge-Prod
+- [ ] Verify queries pass
+- [ ] Controlled smoke test (optional)
 
 ---
 
-*Last updated: June 2026 — registration, postal code, intake, interop, and billing fixes.*
+*Last updated: 11 June 2026 — Canada/US registration, postal codes, intake RPC, interop, billing, legal agreements (app-only).*

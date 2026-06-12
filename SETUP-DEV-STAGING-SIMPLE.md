@@ -106,7 +106,11 @@ Open **MediForge Dev** → **Project Settings** → **API**. Copy all three. The
 
 **Or do it yourself:** open your production schema file `mediforge-schema.sql` (or ask a developer to export it again), then in each **new** project → **SQL Editor** → paste → **Run**.
 
-Also in **each** new project (Dev and Staging):
+Also in **each** new project (Dev and Staging), run the SQL packet:
+
+→ **`SQL-RUN-PACKET-DEV-STAGING.md`** (Steps 1–6 in Supabase SQL Editor)
+
+Then optionally:
 
 - **Storage** → create private bucket named `patient-documents`
 - Run `sql-scripts/create-platform-admin.sql` if you want a test platform admin login

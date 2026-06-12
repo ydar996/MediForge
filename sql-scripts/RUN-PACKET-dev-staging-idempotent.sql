@@ -118,5 +118,5 @@ WHERE schemaname = 'public'
 ORDER BY tablename, policyname;
 
 -- =============================================================================
--- Next: run Steps 2–5 from SQL-RUN-PACKET-DEV-STAGING.md
+-- Next: run Steps 2–6 from SQL-RUN-PACKET-DEV-STAGING.md
 -- =============================================================================

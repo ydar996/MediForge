@@ -8,7 +8,7 @@
  * @param {object} agreementData - Agreement data
  * @param {string} agreementData.userId - User ID who signed
  * @param {string} agreementData.organizationId - Organization ID
- * @param {string} agreementData.agreementType - 'service_agreement', 'baa', or 'dpa'
+ * @param {string} agreementData.agreementType - 'service_agreement', 'baa', 'canadian_addendum', or legacy 'dpa'
  * @param {string} agreementData.userName - Full name of signer
  * @param {string} agreementData.userRole - Role at time of signing
  * @param {string} agreementData.userEmail - Email at time of signing
@@ -51,7 +51,7 @@ async function saveLegalAgreement(agreementData) {
       // Ignore
     }
 
-    const agreementVersion = '2025-11-18'; // Current version date
+    const agreementVersion = '2026-06-11'; // Canada/US legal update
 
     console.log('💼 Saving legal agreement:', {
       userId,
