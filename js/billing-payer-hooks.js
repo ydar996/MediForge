@@ -52,7 +52,15 @@
         const enriched = await global.MediForgePayerEngine.enrichInvoice(invoiceData, patient);
         const invoice = await origCreate(enriched);
         if (invoice && global.MediForgePayerEngine.queueClaimDraft) {
-          await global.MediForgePayerEngine.queueClaimDraft(invoice, patient, enriched.services);
+          const claim = await global.MediForgePayerEngine.queueClaimDraft(invoice, patient, enriched.services);
+          if (claim && global.MediForgeIntegrationWorkflow?.submitClaimForInvoice) {
+            await global.MediForgeIntegrationWorkflow.submitClaimForInvoice(
+              invoice,
+              patient,
+              enriched.services,
+              { organizationId: await global.resolveOrganizationId?.() }
+            );
+          }
         }
         return invoice;
       } catch (e) {

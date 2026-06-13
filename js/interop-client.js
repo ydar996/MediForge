@@ -1,5 +1,5 @@
 /**
- * Browser client for MediForge interoperability gateway
+ * Browser client for MediForge interoperability / integration gateway
  */
 (function (global) {
   const GATEWAY_URL = '/.netlify/functions/interop-gateway';
@@ -25,57 +25,92 @@
   }
 
   async function getConfig() {
-    return callGateway({ action: 'config' });
+    return callGateway({ action: 'integrationStatus' });
   }
 
-  async function transmitLabOrder({ organizationId, patient, order, userId }) {
+  async function listProvinces() {
+    return callGateway({ action: 'listProvinces' });
+  }
+
+  async function transmitLabOrder({ organizationId, patient, order, userId, province }) {
     return callGateway({
       action: 'transmitLabOrder',
       organizationId,
       patient,
       order,
-      userId
+      userId,
+      province
     });
   }
 
-  async function transmitImagingOrder({ organizationId, patient, order, userId }) {
+  async function transmitImagingOrder({ organizationId, patient, order, userId, province }) {
     return callGateway({
       action: 'transmitImagingOrder',
       organizationId,
       patient,
       order,
-      userId
+      userId,
+      province
     });
   }
 
-  async function transmitPrescription({ organizationId, patient, prescription, userId }) {
+  async function transmitPrescription({ organizationId, patient, prescription, userId, province }) {
     return callGateway({
       action: 'transmitPrescription',
       organizationId,
       patient,
       prescription,
-      userId
+      userId,
+      province
     });
   }
 
-  async function ingestOru({ organizationId, rawHl7, userId }) {
-    return callGateway({ action: 'ingestOru', organizationId, rawHl7, userId });
+  async function submitClaim({ organizationId, patient, provider, invoice, services, payerCode, userId, province }) {
+    return callGateway({
+      action: 'submitClaim',
+      organizationId,
+      patient,
+      provider,
+      invoice,
+      services,
+      payerCode,
+      userId,
+      province
+    });
+  }
+
+  async function processRemittance({ organizationId, raw, invoices, userId, province }) {
+    return callGateway({
+      action: 'processRemittance',
+      organizationId,
+      raw,
+      invoices,
+      userId,
+      province
+    });
+  }
+
+  async function ingestOru({ organizationId, rawHl7, userId, province }) {
+    return callGateway({ action: 'ingestOru', organizationId, rawHl7, userId, province });
   }
 
   async function matchPatient(params) {
     return callGateway({ action: 'matchPatient', ...params });
   }
 
-  async function dicomweb(operation, params, organizationId) {
-    return callGateway({ action: 'dicomweb', operation, params, organizationId });
+  async function dicomweb(operation, params, organizationId, province) {
+    return callGateway({ action: 'dicomweb', operation, params, organizationId, province });
   }
 
   global.MediForgeInteropClient = {
     callGateway,
     getConfig,
+    listProvinces,
     transmitLabOrder,
     transmitImagingOrder,
     transmitPrescription,
+    submitClaim,
+    processRemittance,
     ingestOru,
     matchPatient,
     dicomweb

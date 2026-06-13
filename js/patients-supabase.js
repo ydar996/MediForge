@@ -1037,6 +1037,9 @@ async function addPatientFromForm() {
     const newPatient = await createPatient(patientData);
     
     if (newPatient) {
+      if (typeof window.MediForgeIntegrationWorkflow !== 'undefined') {
+        window.MediForgeIntegrationWorkflow.registerPatientIdentifiers(newPatient);
+      }
       // Check if patient was synced to Supabase or just saved locally
       if (newPatient._queued && !newPatient._synced) {
         // Patient saved locally, will sync later
