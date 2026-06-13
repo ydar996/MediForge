@@ -7,7 +7,8 @@
     medName: "med-name",
     medDosage: "med-dosage",
     medicationSuggestions: "medication-suggestions",
-    dosageSuggestions: "dosage-suggestions"
+    dosageSuggestions: "dosage-suggestions",
+    customButton: "med-use-custom-name-btn"
   };
 
   const SEARCH_LIMIT = 25;
@@ -124,6 +125,9 @@
 
   function bindDrugSuggestionClicks(container) {
     Array.from(container.querySelectorAll(".medication-suggestion")).forEach((node) => {
+      node.addEventListener("mousedown", (event) => {
+        event.preventDefault();
+      });
       node.addEventListener("click", () => {
         if (node.dataset.custom === "true") {
           selectCustomMedication(node.dataset.name || "");
@@ -139,20 +143,33 @@
     });
   }
 
+  const DEFAULT_DOSAGE_PLACEHOLDER = "e.g. 500 mg twice daily";
+
   function enableManualDosage(placeholder) {
     const dosageInput = el(activeIds.medDosage);
     if (!dosageInput) return;
     dosageInput.readOnly = false;
-    dosageInput.placeholder = placeholder || "Enter dosage (e.g. 500 mg twice daily)";
+    dosageInput.removeAttribute("readonly");
+    dosageInput.placeholder = placeholder || DEFAULT_DOSAGE_PLACEHOLDER;
   }
 
   function resetDosageField() {
     const dosageInput = el(activeIds.medDosage);
     if (!dosageInput) return;
     dosageInput.value = "";
-    dosageInput.readOnly = true;
-    dosageInput.placeholder = "Select from list or type medication name first";
+    dosageInput.readOnly = false;
+    dosageInput.removeAttribute("readonly");
+    dosageInput.placeholder = DEFAULT_DOSAGE_PLACEHOLDER;
     hideSuggestions(el(activeIds.dosageSuggestions));
+  }
+
+  function confirmCustomFromInput() {
+    const medNameInput = el(activeIds.medName);
+    if (!medNameInput) return false;
+    const query = medNameInput.value.trim();
+    if (!query) return false;
+    selectCustomMedication(query);
+    return true;
   }
 
   function selectMedication(name, strength, form, category) {
@@ -216,10 +233,11 @@
     if (!suggestionsDiv) return;
 
     const trimmed = (customQuery || "").trim();
-    let html = drugs.map(renderDrugSuggestion).join("");
+    let html = "";
     if (trimmed) {
       html += renderCustomSuggestion(trimmed);
     }
+    html += drugs.map(renderDrugSuggestion).join("");
 
     if (!html) {
       hideSuggestions(suggestionsDiv);
@@ -246,7 +264,7 @@
       return;
     }
 
-    enableManualDosage("Choose a suggested dosage or type your own");
+    enableManualDosage();
 
     const matches = getSearchIndex().filter((item) =>
       item.nameLower.includes(queryLower) ||
@@ -314,6 +332,15 @@
     }
   }
 
+  function handleMedicationBlur() {
+    const medNameInput = el(activeIds.medName);
+    if (!medNameInput) return;
+    const query = medNameInput.value.trim();
+    if (!query) return;
+    if (global.selectedMedication && global.selectedMedication.name === query) return;
+    selectCustomMedication(query);
+  }
+
   function handleDosageKeydown(event) {
     if (event.key === " " && !event.target.value.trim()) {
       event.preventDefault();
@@ -345,26 +372,44 @@
       timer = setTimeout(searchMedications, debounceMs);
     };
 
-    medNameInput.addEventListener("input", debouncedSearch);
+    medNameInput.addEventListener("input", () => {
+      const query = medNameInput.value.trim();
+      if (query) {
+        enableManualDosage();
+      } else {
+        global.selectedMedication = null;
+        resetDosageField();
+      }
+      debouncedSearch();
+    });
     medNameInput.addEventListener("keydown", handleMedicationKeydown);
+    medNameInput.addEventListener("blur", handleMedicationBlur);
     medNameInput.addEventListener("focus", showAllMedications);
     medNameInput.addEventListener("click", showAllMedications);
 
     medDosageInput.addEventListener("input", searchDosages);
     medDosageInput.addEventListener("keydown", handleDosageKeydown);
     medDosageInput.addEventListener("focus", () => {
-      if (medDosageInput.readOnly && medNameInput.value.trim()) {
+      if (medNameInput.value.trim()) {
         enableManualDosage();
       }
       if (global.selectedMedication && global.selectedMedication.strength) {
         showAllDosages();
       }
     });
-    medDosageInput.addEventListener("click", () => {
-      if (medDosageInput.readOnly && medNameInput.value.trim()) {
-        enableManualDosage();
-      }
-    });
+
+    const customBtn = el(activeIds.customButton);
+    if (customBtn) {
+      customBtn.addEventListener("click", (event) => {
+        event.preventDefault();
+        if (!confirmCustomFromInput()) {
+          alert("Enter a medication name first, then click this button to use it.");
+          el(activeIds.medName)?.focus();
+        } else {
+          el(activeIds.medDosage)?.focus();
+        }
+      });
+    }
 
     resetFields(activeIds);
   }
@@ -376,9 +421,11 @@
     showAllMedications,
     selectMedication,
     selectCustomMedication,
+    confirmCustomFromInput,
     searchDosages,
     showAllDosages,
     handleMedicationKeydown,
+    handleMedicationBlur,
     handleDosageKeydown,
     getPool: getPatientReportedMedicationPool,
     getOtcList

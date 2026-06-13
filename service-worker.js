@@ -1,8 +1,8 @@
 // Purpose: Root-scoped service worker with absolute paths to avoid cache addAll failures
 // TRACE LOG: Service worker updated to v=200 for mobile consistency
-const CACHE_NAME = "mediforge-cache-v20260613160000";
-const STATIC_CACHE = "mediforge-static-v20260613160000";
-const DYNAMIC_CACHE = "mediforge-dynamic-v20260613160000";
+const CACHE_NAME = "mediforge-cache-v20260613170000";
+const STATIC_CACHE = "mediforge-static-v20260613170000";
+const DYNAMIC_CACHE = "mediforge-dynamic-v20260613170000";
 const ASSETS_TO_CACHE = [
   "/",
   "/index.html",
@@ -58,6 +58,8 @@ const ASSETS_TO_CACHE = [
   "/js/icd10ca.js",
   "/js/icd11.js",
   "/js/icd-selector.js",
+  "/js/common-otc-medications-ca.js",
+  "/js/patient-reported-medication-search.js",
   "/js/prescriptions.js",
   "/js/table-alignment-fix.js",
   "/js/backup.js",
