@@ -40,8 +40,6 @@
     '.intake-primary-button',
     '.intake-secondary-button',
     'th',
-    'option',
-    'optgroup',
     '.page-title',
     '#page-title'
   ].join(',');
@@ -49,6 +47,7 @@
   function shouldSkip(el) {
     if (!el || el.nodeType !== 1) return true;
     if (el.closest(SKIP_SELECTORS)) return true;
+    if (el.matches('select, option, optgroup')) return true;
     if (el.isContentEditable) return true;
     return false;
   }
@@ -117,12 +116,6 @@
       if (el.tagName === 'INPUT' && (el.type === 'button' || el.type === 'submit' || el.type === 'reset')) {
         applyToTextNode(el, 'value');
       }
-      return;
-    }
-
-    if (el.matches('option, optgroup')) {
-      applyToTextNode(el, 'label');
-      applyToTextNode(el, 'textContent');
       return;
     }
 
