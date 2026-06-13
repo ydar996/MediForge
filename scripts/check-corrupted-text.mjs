@@ -8,8 +8,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BAD = '\uFFFD';
 const SKIP_DIRS = new Set(['node_modules', '.git', 'js/vendor', 'tests']);
-/** Large generated ICD code databases — mojibake scan is for UI copy, not code titles. */
-const MOJIBAKE_SKIP = new Set(['js/icd11.js', 'js/icd10ca.js']);
+/** Large generated ICD code databases — icd10ca excluded (stable build output). */
+const MOJIBAKE_SKIP = new Set(['js/icd10ca.js']);
 
 /** Legacy double-encoding sequences that should not appear in cleaned UTF-8 text. */
 const MOJIBAKE_PATTERNS = [

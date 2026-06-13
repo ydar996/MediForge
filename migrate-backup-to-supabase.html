@@ -1,6 +1,8 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
   <script src="/js/supabase-env.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -139,10 +141,10 @@
     <script src="js/supabase-client.js?v=20251018191427?v=1"></script>
 
     <div class="container">
-        <h1>ðŸ“¦ Migrate Backup to Supabase</h1>
+        <h1><i class="fa-solid fa-lock" aria-hidden="true"></i> Migrate Backup to Supabase</h1>
         
         <div class="section">
-            <h2>ðŸ“Š Step 1: Load Backup File</h2>
+            <h2><i class="fa-solid fa-lock" aria-hidden="true"></i> Step 1: Load Backup File</h2>
             <input type="file" id="backup-file" accept=".json" style="margin-bottom: 15px;">
             <button class="btn" onclick="loadBackup()">Load Backup</button>
             
@@ -167,7 +169,7 @@
         </div>
         
         <div class="section">
-            <h2>ðŸ”„ Step 2: Migrate Data</h2>
+            <h2><i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Step 2: Migrate Data</h2>
             <button class="btn" id="migrate-btn" onclick="startMigration()" disabled>Start Migration</button>
             <button class="btn" onclick="clearLogs()">Clear Logs</button>
             
@@ -215,7 +217,7 @@
                 return;
             }
 
-            log('ðŸ“– Reading backup file...', 'info');
+            log('<i class="fa-solid fa-lock" aria-hidden="true"></i> Reading backup file...', 'info');
             
             try {
                 const text = await file.text();
@@ -223,7 +225,7 @@
                 const cleanedText = text.replace(/"followup":\s*"[^"]*",\s*"followUp"/g, '"followUp"');
                 backupData = JSON.parse(cleanedText);
                 
-                log('âœ… Backup file loaded successfully', 'success');
+                log('✓ Backup file loaded successfully', 'success');
                 
                 // Display stats
                 const mecureData = backupData.organizationData?.['Mecure Clinics'];
@@ -242,9 +244,9 @@
                     document.getElementById('backup-stats').style.display = 'grid';
                     document.getElementById('migrate-btn').disabled = false;
                     
-                    log(`ðŸ“Š Found: ${mecureData.patients?.length || 0} patients, ${mecureData.appointments?.length || 0} appointments`, 'info');
+                    log(`<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Found: ${mecureData.patients?.length || 0} patients, ${mecureData.appointments?.length || 0} appointments`, 'info');
                 } else {
-                    log('âš ï¸ No Mecure Clinics data found in backup', 'warning');
+                    log('âš  No Mecure Clinics data found in backup', 'warning');
                 }
             } catch (error) {
                 log(`âŒ Error loading backup: ${error.message}`, 'error');
@@ -264,7 +266,7 @@
             }
 
             document.getElementById('migrate-btn').disabled = true;
-            log('ðŸš€ Starting migration process...', 'info');
+            log('<i class="fa-solid fa-rocket" aria-hidden="true"></i> Starting migration process...', 'info');
             
             try {
                 // Step 1: Get or create organization
@@ -279,8 +281,8 @@
                 // Step 4: Migrate appointments
                 await migrateAppointments();
                 
-                log('ðŸŽ‰ Migration completed successfully!', 'success');
-                updateProgress(100, 'âœ… Complete');
+                log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Migration completed successfully!', 'success');
+                updateProgress(100, '✓ Complete');
                 
             } catch (error) {
                 log(`âŒ Migration failed: ${error.message}`, 'error');
@@ -291,7 +293,7 @@
         }
 
         async function migrateOrganization() {
-            log('ðŸ“ Step 1: Checking organization...', 'info');
+            log('<i class="fa-solid fa-building" aria-hidden="true"></i> Step 1: Checking organization...', 'info');
             updateProgress(10, 'Checking organization...');
             
             const orgData = backupData.organizations?.['Mecure Clinics'];
@@ -320,11 +322,11 @@
 
             if (existingOrgs && existingOrgs.length > 0) {
                 orgId = existingOrgs[0].id;
-                log(`âœ… Organization already exists: ${orgData.name} (ID: ${orgId})`, 'success');
+                log(`✓ Organization already exists: ${orgData.name} (ID: ${orgId})`, 'success');
                 
                 // Update org_code if it's missing
                 if (!existingOrgs[0].org_code && orgData.orgCode) {
-                    log(`ðŸ”„ Updating org_code to: ${orgData.orgCode}`, 'info');
+                    log(`<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Updating org_code to: ${orgData.orgCode}`, 'info');
                     await supabaseClient
                         .from('organizations')
                         .update({ org_code: orgData.orgCode })
@@ -352,12 +354,12 @@
 
                 if (createError) throw createError;
                 orgId = newOrg.id;
-                log(`âœ… Organization created (ID: ${orgId})`, 'success');
+                log(`✓ Organization created (ID: ${orgId})`, 'success');
             }
         }
 
         async function migrateUsers() {
-            log('ðŸ‘¥ Step 2: Migrating users...', 'info');
+            log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Step 2: Migrating users...', 'info');
             updateProgress(20, 'Migrating users...');
             
             const users = backupData.users || [];
@@ -422,17 +424,17 @@
                     .insert([userData]);
 
                 if (error) {
-                    log(`âš ï¸ Error migrating user ${user.username}: ${error.message}`, 'warning');
+                    log(`âš  Error migrating user ${user.username}: ${error.message}`, 'warning');
                 } else {
                     migratedCount++;
                 }
             }
 
-            log(`âœ… Users: ${migratedCount} migrated, ${skippedCount} skipped`, 'success');
+            log(`✓ Users: ${migratedCount} migrated, ${skippedCount} skipped`, 'success');
         }
 
         async function migratePatients() {
-            log('ðŸ¥ Step 3: Migrating patients...', 'info');
+            log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Step 3: Migrating patients...', 'info');
             updateProgress(40, 'Migrating patients...');
             
             const patients = backupData.organizationData?.['Mecure Clinics']?.patients || [];
@@ -487,7 +489,7 @@
                     .insert([patientData]);
 
                 if (error) {
-                    log(`âš ï¸ Error migrating patient ${patient.id}: ${error.message}`, 'warning');
+                    log(`âš  Error migrating patient ${patient.id}: ${error.message}`, 'warning');
                     errorCount++;
                 } else {
                     migratedCount++;
@@ -498,11 +500,11 @@
                 updateProgress(progress, `Migrating patients... ${i + 1}/${patients.length}`);
             }
 
-            log(`âœ… Patients: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`, 'success');
+            log(`✓ Patients: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`, 'success');
         }
 
         async function migrateAppointments() {
-            log('ðŸ“… Step 4: Migrating appointments...', 'info');
+            log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Step 4: Migrating appointments...', 'info');
             updateProgress(70, 'Migrating appointments...');
             
             const appointments = backupData.organizationData?.['Mecure Clinics']?.appointments || [];
@@ -522,7 +524,7 @@
             }
 
             if (appointments.length !== uniqueAppointments.length) {
-                log(`âš ï¸ Removed ${appointments.length - uniqueAppointments.length} duplicate appointments`, 'warning');
+                log(`âš  Removed ${appointments.length - uniqueAppointments.length} duplicate appointments`, 'warning');
             }
 
             for (let i = 0; i < uniqueAppointments.length; i++) {
@@ -580,7 +582,7 @@
                     .insert([appointmentData]);
 
                 if (error) {
-                    log(`âš ï¸ Error migrating appointment ${appt.id}: ${error.message}`, 'warning');
+                    log(`âš  Error migrating appointment ${appt.id}: ${error.message}`, 'warning');
                     errorCount++;
                 } else {
                     migratedCount++;
@@ -591,7 +593,7 @@
                 updateProgress(progress, `Migrating appointments... ${i + 1}/${uniqueAppointments.length}`);
             }
 
-            log(`âœ… Appointments: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`, 'success');
+            log(`✓ Appointments: ${migratedCount} migrated, ${skippedCount} skipped, ${errorCount} errors`, 'success');
         }
     </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
 

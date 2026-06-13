@@ -1,6 +1,8 @@
 ﻿<!DOCTYPE html>
 <html lang="en">
 <head>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css" integrity="sha512-DTOQO9RWCH3ppGqcWaEA1BIZOC6xxalwEsw9c2QQeAIftl+Vegovlnee1c9QX4TctnWMn13TZye+giMm8e2LwA==" crossorigin="anonymous" referrerpolicy="no-referrer">
+
   <script src="/js/supabase-env.js"></script>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -25,7 +27,7 @@
 </head>
 <body>
     <div class="container">
-        <h1>ðŸ”„ Complete Backup Migration</h1>
+        <h1><i class="fa-solid fa-lock" aria-hidden="true"></i> Complete Backup Migration</h1>
         <p><strong>Simple approach:</strong> Upload backup file â†’ Migrate all data to Supabase â†’ Sync app</p>
         
         <div class="file-input">
@@ -33,9 +35,9 @@
             <input type="file" id="backupFile" accept=".json" style="margin: 10px 0;">
         </div>
         
-        <button class="btn" onclick="analyzeBackup()">ðŸ“Š Analyze Backup File</button>
-        <button class="btn btn-success" onclick="migrateToSupabase()">ðŸš€ Migrate All Data to Supabase</button>
-        <button class="btn btn-danger" onclick="clearSupabase()">ðŸ—‘ï¸ Clear Supabase (Reset)</button>
+        <button class="btn" onclick="analyzeBackup()"><i class="fa-solid fa-lock" aria-hidden="true"></i> Analyze Backup File</button>
+        <button class="btn btn-success" onclick="migrateToSupabase()"><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Migrate All Data to Supabase</button>
+        <button class="btn btn-danger" onclick="clearSupabase()"><i class="fa-solid fa-trash" aria-hidden="true"></i> Clear Supabase (Reset)</button>
         
         <div class="progress" id="progress" style="display: none;">
             <div class="progress-bar" id="progressBar"></div>
@@ -89,34 +91,34 @@
                 return;
             }
             
-            log('ðŸ” Analyzing backup file...');
+            log('<i class="fa-solid fa-lock" aria-hidden="true"></i> Analyzing backup file...');
             
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
                     backupData = JSON.parse(e.target.result);
-                    log(`âœ… Backup file loaded successfully (${file.size} bytes)`);
+                    log(`✓ Backup file loaded successfully (${file.size} bytes)`);
                     
                     // Analyze the data structure
                     if (backupData.patients) {
-                        log(`ðŸ“Š Found ${backupData.patients.length} patients in backup`);
+                        log(`<i class="fa-solid fa-lock" aria-hidden="true"></i> Found ${backupData.patients.length} patients in backup`);
                         
                         const withDob = backupData.patients.filter(p => p.dob);
                         const withoutDob = backupData.patients.filter(p => !p.dob);
                         
-                        log(`âœ… ${withDob.length} patients with DOB data`);
+                        log(`✓ ${withDob.length} patients with DOB data`);
                         log(`âŒ ${withoutDob.length} patients without DOB data`);
                         
                         if (withDob.length > 0) {
-                            log(`ðŸ“‹ Sample patients with DOB: ${withDob.slice(0, 3).map(p => `${p.firstName} ${p.lastName} (${p.dob})`).join(', ')}`);
+                            log(`<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Sample patients with DOB: ${withDob.slice(0, 3).map(p => `${p.firstName} ${p.lastName} (${p.dob})`).join(', ')}`);
                         }
                         
                         // Check for other data types
-                        if (backupData.visits) log(`ðŸ¥ Found ${backupData.visits.length} visits`);
-                        if (backupData.prescriptions) log(`ðŸ’Š Found ${backupData.prescriptions.length} prescriptions`);
-                        if (backupData.appointments) log(`ðŸ“… Found ${backupData.appointments.length} appointments`);
+                        if (backupData.visits) log(`<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Found ${backupData.visits.length} visits`);
+                        if (backupData.prescriptions) log(`<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Found ${backupData.prescriptions.length} prescriptions`);
+                        if (backupData.appointments) log(`<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Found ${backupData.appointments.length} appointments`);
                         
-                        log('âœ… Backup analysis complete. Ready for migration!', 'success');
+                        log('✓ Backup analysis complete. Ready for migration!', 'success');
                     } else {
                         log('âŒ No patients found in backup file', 'error');
                     }
@@ -139,7 +141,7 @@
                 return;
             }
             
-            log('ðŸš€ Starting complete migration to Supabase...');
+            log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Starting complete migration to Supabase...');
             updateProgress(0);
             
             const orgId = '576522cc-e769-4fb4-9487-3d150857d970'; // Mecure Clinics
@@ -148,16 +150,16 @@
             let errorCount = 0;
             
             // Clear existing patients for this organization first
-            log('ðŸ—‘ï¸ Clearing existing patients for Mecure Clinics...');
+            log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Clearing existing patients for Mecure Clinics...');
             const { error: deleteError } = await supabaseClient
                 .from('patients')
                 .delete()
                 .eq('organization_id', orgId);
             
             if (deleteError) {
-                log(`âš ï¸ Warning clearing existing patients: ${deleteError.message}`, 'warning');
+                log(`âš  Warning clearing existing patients: ${deleteError.message}`, 'warning');
             } else {
-                log('âœ… Cleared existing patients');
+                log('✓ Cleared existing patients');
             }
             
             // Migrate patients
@@ -201,7 +203,7 @@
                         log(`âŒ Error migrating ${patient.firstName} ${patient.lastName}: ${error.message}`, 'error');
                         errorCount++;
                     } else {
-                        log(`âœ… Migrated ${patient.firstName} ${patient.lastName} (DOB: ${patient.dob || 'N/A'})`);
+                        log(`✓ Migrated ${patient.firstName} ${patient.lastName} (DOB: ${patient.dob || 'N/A'})`);
                         successCount++;
                     }
                 } catch (error) {
@@ -212,12 +214,12 @@
             
             updateProgress(100);
             
-            log(`ðŸŽ‰ Migration complete!`, 'success');
-            log(`âœ… Successfully migrated: ${successCount} patients`);
+            log(`<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Migration complete!`, 'success');
+            log(`✓ Successfully migrated: ${successCount} patients`);
             log(`âŒ Failed to migrate: ${errorCount} patients`);
             
             // Verify the migration
-            log('ðŸ” Verifying migration...');
+            log('<i class="fa-solid fa-rocket" aria-hidden="true"></i> Verifying migration...');
             const { data: verifyPatients, error: verifyError } = await supabaseClient
                 .from('patients')
                 .select('*')
@@ -227,25 +229,25 @@
                 log(`âŒ Verification error: ${verifyError.message}`, 'error');
             } else {
                 const withDob = verifyPatients.filter(p => p.date_of_birth);
-                log(`âœ… Verification complete: ${verifyPatients.length} patients in Supabase`);
-                log(`âœ… ${withDob.length} patients with DOB data`);
+                log(`✓ Verification complete: ${verifyPatients.length} patients in Supabase`);
+                log(`✓ ${withDob.length} patients with DOB data`);
                 
                 // Now sync the app
-                log('ðŸ”„ Syncing app with Supabase...');
+                log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Syncing app with Supabase...');
                 await syncAppWithSupabase();
             }
         }
 
         async function syncAppWithSupabase() {
-            log('ðŸ”„ Creating app sync code...');
+            log('<i class="fa-solid fa-arrows-rotate" aria-hidden="true"></i> Creating app sync code...');
             
             const syncCode = `
 // APP SYNC CODE - Paste this in MediForge console
-console.log('ðŸ”„ Syncing app with Supabase...');
+console.log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Syncing app with Supabase...');
 
 // Override loadPatients to use Supabase as primary source
 window.loadPatients = async function(page = 1) {
-    console.log('ðŸ”„ Loading patients from Supabase (primary source)...');
+    console.log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Loading patients from Supabase (primary source)...');
     
     const supabaseClient = window.supabaseClient;
     
@@ -261,7 +263,7 @@ window.loadPatients = async function(page = 1) {
                 return;
             }
             
-            console.log('âœ… Loaded', patients.length, 'patients from Supabase');
+            console.log('✓ Loaded', patients.length, 'patients from Supabase');
             
             // Convert to app format
             const appPatients = patients.map(patient => ({
@@ -340,7 +342,7 @@ function displayPatients(patients, page) {
                         <button onclick="deletePatient('\${patient.id}')" style="background-color: #dc3545; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Delete</button>
                         <button onclick="addEncounter('\${patient.id}')" style="background-color: #fd7e14; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Encounter</button>
                         <button onclick="addAppointment('\${patient.id}')" style="background-color: #6f42c1; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">Add New Appointment</button>
-                        <button onclick="printPatientSummary('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;">ðŸ“„ Print Patient Summary</button>
+                        <button onclick="printPatientSummary('\${patient.id}')" style="background-color: #28a745; color: white; padding: 5px 10px; border: none; border-radius: 3px; margin: 2px; cursor: pointer;"><i class="fa-solid fa-print" aria-hidden="true"></i> Print Patient Summary</button>
                     </td>
                 \`;
                 tbody.appendChild(row);
@@ -371,13 +373,13 @@ function displayPatients(patients, page) {
     }
 }
 
-console.log('âœ… App sync code ready');
-console.log('ðŸ”„ Loading patients...');
+console.log('✓ App sync code ready');
+console.log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Loading patients...');
 window.loadPatients(1);
 `;
             
-            log('ðŸ“‹ Copy the code above and paste it in MediForge console to complete the sync', 'success');
-            log('ðŸŽ‰ Complete migration and sync process finished!', 'success');
+            log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Copy the code above and paste it in MediForge console to complete the sync', 'success');
+            log('<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Complete migration and sync process finished!', 'success');
         }
 
         async function clearSupabase() {
@@ -385,7 +387,7 @@ window.loadPatients(1);
                 return;
             }
             
-            log('ðŸ—‘ï¸ Clearing all patients from Supabase...');
+            log('<i class="fa-solid fa-file-lines" aria-hidden="true"></i> Clearing all patients from Supabase...');
             
             const { error } = await supabaseClient
                 .from('patients')
@@ -395,7 +397,7 @@ window.loadPatients(1);
             if (error) {
                 log(`âŒ Error clearing patients: ${error.message}`, 'error');
             } else {
-                log('âœ… All patients cleared from Supabase', 'success');
+                log('✓ All patients cleared from Supabase', 'success');
             }
         }
     </script>  <script src="js/universal-data-loader.js?v=20251018191427"></script>
