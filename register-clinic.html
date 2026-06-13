@@ -219,22 +219,20 @@
         states: ['Abia', 'Adamawa', 'Akwa Ibom', 'Anambra', 'Bauchi', 'Bayelsa', 'Benue', 'Borno', 'Cross River', 'Delta', 'Ebonyi', 'Edo', 'Ekiti', 'Enugu', 'Gombe', 'Imo', 'Jigawa', 'Kaduna', 'Kano', 'Katsina', 'Kebbi', 'Kogi', 'Kwara', 'Lagos', 'Nasarawa', 'Niger', 'Ogun', 'Ondo', 'Osun', 'Oyo', 'Plateau', 'Rivers', 'Sokoto', 'Taraba', 'Yobe', 'Zamfara', 'Federal Capital Territory (FCT) Abuja'],
         code: '+234'
       };
+    }
 
-    // Populate country dropdown with African countries
-    // Use centralized function if available, otherwise fallback
-    function populateCountryDropdown(selectId) {
-      // Use centralized function if available
+    // Populate country dropdown — use distinct names so we do not overwrite window.populateCountryDropdown
+    function fillCountryDropdown(selectId) {
       if (typeof window.populateCountryDropdown === 'function') {
         window.populateCountryDropdown(selectId);
         return;
       }
-      
-      // Fallback to local implementation
+
       const select = document.getElementById(selectId);
       if (!select) return;
-      
+
       select.innerHTML = '<option value="">-- Select Country --</option>';
-      
+
       Object.keys(africanCountries).forEach(country => {
         const option = document.createElement('option');
         option.value = country;
@@ -243,22 +241,17 @@
       });
     }
 
-    // Populate state dropdown based on selected country
-    // Use centralized populateStateDropdown if available, otherwise fallback
-    function populateStateDropdown(selectId, country) {
-      // Use centralized function if available
+    function fillStateDropdown(selectId, country) {
       if (typeof window.populateStateDropdown === 'function') {
         window.populateStateDropdown(selectId, country);
         return;
       }
-      
-      // Fallback to local implementation
+
       const select = document.getElementById(selectId);
       if (!select) return;
-      
+
       select.innerHTML = '<option value="">-- Select State/Province --</option>';
-      
-      // Try COUNTRIES_DATA first
+
       if (typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country] && COUNTRIES_DATA[country].states) {
         COUNTRIES_DATA[country].states.forEach(state => {
           const option = document.createElement('option');
@@ -303,9 +296,9 @@
     function handleClinicCountryChange() {
       const country = document.getElementById('country').value;
       if (country) {
-        populateStateDropdown('state', country);
-        // Auto-select country code when country is selected
-        const countryCode = africanCountries[country]?.code;
+        fillStateDropdown('state', country);
+        const countryCode = (typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]?.phoneCode)
+          || africanCountries[country]?.code;
         if (countryCode) {
           document.getElementById('country-code').value = countryCode;
         }
@@ -322,7 +315,7 @@
       }
       
       // Initialize dropdowns
-      populateCountryDropdown('country');
+      fillCountryDropdown('country');
       populateCountryCodeDropdown();
       
       // Add auto-population for state dropdown when clicked/focused
@@ -334,13 +327,13 @@
           stateSelect.addEventListener('focus', function() {
             const countryValue = countrySelect.value;
             if (countryValue && stateSelect.options.length <= 1) {
-              populateStateDropdown('state', countryValue);
+              fillStateDropdown('state', countryValue);
             }
           });
           stateSelect.addEventListener('click', function() {
             const countryValue = countrySelect.value;
             if (countryValue && stateSelect.options.length <= 1) {
-              populateStateDropdown('state', countryValue);
+              fillStateDropdown('state', countryValue);
             }
           });
         }

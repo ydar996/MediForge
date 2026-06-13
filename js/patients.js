@@ -5451,7 +5451,7 @@ if (editPatientForm) {
           }
           
           console.log('✅ [EDIT-PATIENT] Patient saved to localStorage:', {
-            middleName: patient.middleName
+            middleName: patient.middleName,
             patientId: patient.id
           });
           
@@ -5579,7 +5579,7 @@ if (editPatientForm) {
       
       console.log('✅ [EDIT-PATIENT] Redirecting to patients page. Final patient data:', {
         id: patient.id,
-        middleName: patient.middleName
+        middleName: patient.middleName,
         firstName: patient.firstName,
         lastName: patient.lastName
       });
@@ -6226,7 +6226,7 @@ async function loadPatientDetails() {
           console.log('🔍 localStorage patient found:', {
             id: localPatient.id,
             patient_id: localPatient.patient_id,
-            maritalStatus: localPatient.maritalStatus || localPatient.marital_status
+            maritalStatus: localPatient.maritalStatus || localPatient.marital_status,
             firstName: localPatient.firstName,
             lastName: localPatient.lastName,
             dob: localPatient.dob,
@@ -17144,7 +17144,7 @@ async function loadEditForm() {
   
   // DEBUG: Log patient data to see what fields are available
   console.log('🔍 [EDIT-PATIENT] Patient data loaded:', {
-    id: patient.id
+    id: patient.id,
     paymentSource: patient.paymentSource || patient.payment_source,
     phoneCountryCode: patient.phoneCountryCode,
     emergencyPhoneCountryCode: patient.emergencyPhoneCountryCode,
