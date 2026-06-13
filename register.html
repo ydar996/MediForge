@@ -285,6 +285,7 @@
       display: block;
     }
   </style>
+  <script src="js/ui-title-case.js?v=20260612170000" defer></script>
 </head>
 <body>
   <!-- Header with Navigation -->
@@ -371,7 +372,9 @@
 
       <div class="form-group">
         <label for="org-postal-code" id="org-postal-label">Postal Code*:</label>
-        <input type="text" id="org-postal-code" autocomplete="postal-code" placeholder="e.g. K1A 0B1">
+        <select id="org-postal-code" required disabled>
+          <option value="">-- Select city first --</option>
+        </select>
       </div>
       
       <div class="form-group">
@@ -850,6 +853,18 @@
         window.populateCityDropdown('org-city', country, state);
       }
       citySelect.disabled = false;
+      if (typeof window.populatePostalCodeDropdown === 'function') {
+        window.populatePostalCodeDropdown('org-postal-code', country, state, '');
+      }
+    }
+
+    function handleOrgCityChange() {
+      const country = document.getElementById('country').value;
+      const state = document.getElementById('state').value;
+      const city = document.getElementById('org-city')?.value || '';
+      if (typeof window.populatePostalCodeDropdown === 'function') {
+        window.populatePostalCodeDropdown('org-postal-code', country, state, city);
+      }
     }
     
     // Function to handle organization country change for join-org form
@@ -2377,6 +2392,10 @@
         if (stateSelect) {
           stateSelect.addEventListener('change', handleOrgStateChange);
         }
+        const orgCitySelect = document.getElementById('org-city');
+        if (orgCitySelect) {
+          orgCitySelect.addEventListener('change', handleOrgCityChange);
+        }
         
         // Populate state dropdown when focused if country already selected
         if (stateSelect && countryField) {
@@ -2418,6 +2437,7 @@
   
   <!-- Countries data -->
   <script src="js/us-ca-cities-data.js?v=20260611120000"></script>
+  <script src="js/us-ca-postal-codes-data.js?v=20260612140000"></script>
   <script src="js/countries-data.js?v=20260611170000"></script>
   <script src="js/auth-email.js?v=20260611160000"></script>
   

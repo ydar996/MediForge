@@ -31,6 +31,9 @@
     if (src === 'Insurance' || src === 'private_insurance') {
       return { type: 'private', payerId: patient.privateInsurerId || patient.insuranceName || 'PRIVATE' };
     }
+    if (src === 'wcb' || String(src).toLowerCase().includes('workers')) {
+      return { type: 'wcb', payerId: 'WCB', payerName: 'Workers compensation', claimNumber: patient.wcbClaimNumber };
+    }
     if (src === 'Cash' || src === 'cash' || src === 'self_pay') {
       return { type: 'patient_pay', payerId: 'PATIENT' };
     }
@@ -91,6 +94,9 @@
     if (typeof global.resolveOrganizationId === 'function') orgId = await global.resolveOrganizationId();
     if (!orgId) return null;
 
+    const metadata = {};
+    if (profile.wcbClaimNumber) metadata.wcbClaimNumber = profile.wcbClaimNumber;
+
     const row = {
       patient_id: patientId,
       organization_id: orgId,
@@ -102,10 +108,12 @@
       private_insurer_id: profile.privateInsurerId,
       insurance_member_number: profile.insuranceMemberNumber,
       insurance_policy_number: profile.insurancePolicyNumber,
+      insurance_group_number: profile.insurancePolicyNumber,
       preferred_payment_method: profile.preferredPaymentMethod || 'cash',
       copay_amount: profile.copayAmount || 0,
       updated_at: new Date().toISOString()
     };
+    if (Object.keys(metadata).length) row.metadata = metadata;
 
     const { data, error } = await supabase.from('patient_payer_profiles').upsert(row, {
       onConflict: 'patient_id,organization_id'

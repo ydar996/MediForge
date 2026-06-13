@@ -4453,7 +4453,26 @@ if (addPatientForm) {
     });
     if (missing.length > 0) {
       alert("Please fill in the following required fields: " + missing.join(", "));
+      reEnableButton();
       return;
+    }
+
+    if (typeof window.MediForgePaymentSourceFields?.getMissingFields === 'function') {
+      const payerMissing = window.MediForgePaymentSourceFields.getMissingFields();
+      if (payerMissing.length > 0) {
+        alert("Please fill in the following payer ID fields: " + payerMissing.join(", "));
+        reEnableButton();
+        return;
+      }
+    }
+
+    if (typeof window.MediForgePatientCardUploads?.getMissingRegistrationCards === 'function') {
+      const cardMissing = window.MediForgePatientCardUploads.getMissingRegistrationCards();
+      if (cardMissing.length > 0) {
+        alert("Please upload the following required documents: " + cardMissing.join(", "));
+        reEnableButton();
+        return;
+      }
     }
 
     // CRITICAL: Check for duplicate patients (same name and DOB) before saving
@@ -4590,21 +4609,28 @@ if (addPatientForm) {
     // ROOT CAUSE FIX: Wrap entire handler in try-catch to ensure patient ALWAYS saves
     try {
       // Proceed with saving if valid
-      // Handle file uploads with error handling (non-blocking)
+      // Handle required document uploads
+      let identificationCard = "";
+      let insuranceCard = "";
+      let identificationCardFileName = "";
+      let insuranceCardFileName = "";
       let insuranceCardFront = null;
       let insuranceCardBack = null;
       try {
-        const frontInput = document.getElementById("insuranceCardFront");
-        const backInput = document.getElementById("insuranceCardBack");
-        if (frontInput && typeof handleFileUpload === 'function') {
-          insuranceCardFront = await handleFileUpload(frontInput);
-        }
-        if (backInput && typeof handleFileUpload === 'function') {
-          insuranceCardBack = await handleFileUpload(backInput);
+        if (typeof window.MediForgePatientCardUploads?.readRegistrationCards === 'function') {
+          const cards = await window.MediForgePatientCardUploads.readRegistrationCards({ required: true });
+          identificationCard = cards.identificationCard;
+          insuranceCard = cards.insuranceCard;
+          identificationCardFileName = cards.identificationCardFileName;
+          insuranceCardFileName = cards.insuranceCardFileName;
+          insuranceCardFront = cards.insuranceCardFront || cards.insuranceCard;
+        } else {
+          throw new Error('Document upload handler is not available. Please refresh the page.');
         }
       } catch (fileError) {
-        console.warn('File upload error (non-critical):', fileError);
-        // Continue without file uploads - patient can still be saved
+        alert(fileError.message || 'Please upload both required document files.');
+        reEnableButton();
+        return;
       }
 
       // For Existing Old Patient: always require custom file number.
@@ -4703,9 +4729,14 @@ if (addPatientForm) {
         healthCardVersion: document.getElementById("healthCardVersion")?.value || "",
         phn: document.getElementById("healthCardNumber")?.value || "",
         preferredPaymentMethod: document.getElementById("preferredPaymentMethod")?.value || "cash",
+        wcbClaimNumber: document.getElementById("wcbClaimNumber")?.value?.trim() || "",
         insuranceName: document.getElementById("insuranceName").value || "",
         insurancePolicyGroupNumber: document.getElementById("insurancePolicyGroupNumber").value || "",
         insuranceMemberNumber: document.getElementById("insuranceMemberNumber").value || "",
+        identificationCard,
+        identificationCardFileName,
+        insuranceCard,
+        insuranceCardFileName,
         insuranceCardFront: insuranceCardFront,
         insuranceCardBack: insuranceCardBack,
         visits: [],  // Empty list for visits
@@ -4826,7 +4857,8 @@ if (addPatientForm) {
                 privateInsurerId: patient.insuranceName,
                 insuranceMemberNumber: patient.insuranceMemberNumber,
                 insurancePolicyNumber: patient.insurancePolicyGroupNumber,
-                preferredPaymentMethod: patient.preferredPaymentMethod
+                preferredPaymentMethod: patient.preferredPaymentMethod,
+                wcbClaimNumber: patient.wcbClaimNumber
               });
             } catch (payerErr) {
               console.warn('[PATIENTS] Payer profile save skipped:', payerErr.message);
@@ -5203,23 +5235,50 @@ if (editPatientForm) {
       emergencyPhoneCountryCode: document.getElementById("emergencyPhoneCountryCode")?.value || '',
       hasDiabetes: document.getElementById("hasDiabetes").checked,
       paymentSource: document.getElementById("paymentSource").value,
+      province: document.getElementById("patientProvince")?.value || document.getElementById("state")?.value || "",
+      healthCardNumber: document.getElementById("healthCardNumber")?.value || "",
+      healthCardVersion: document.getElementById("healthCardVersion")?.value || "",
+      phn: document.getElementById("healthCardNumber")?.value || "",
+      preferredPaymentMethod: document.getElementById("preferredPaymentMethod")?.value || "cash",
+      wcbClaimNumber: document.getElementById("wcbClaimNumber")?.value?.trim() || "",
       insuranceName: document.getElementById("insuranceName").value || "",
       insurancePolicyGroupNumber: document.getElementById("insurancePolicyGroupNumber").value || "",
-      insuranceMemberNumber: document.getElementById("insuranceMemberNumber").value || "",
-      insuranceCardFront: await handleFileUpload(document.getElementById("insuranceCardFront")) || "",
-      insuranceCardBack: await handleFileUpload(document.getElementById("insuranceCardBack")) || ""
+      insuranceMemberNumber: document.getElementById("insuranceMemberNumber").value || ""
     };
+
+    if (typeof window.MediForgePatientCardUploads?.readRegistrationCards === 'function') {
+      try {
+        const cards = await window.MediForgePatientCardUploads.readRegistrationCards({ required: false });
+        if (cards.identificationCard) {
+          updated.identificationCard = cards.identificationCard;
+          updated.identificationCardFileName = cards.identificationCardFileName;
+        }
+        if (cards.insuranceCard) {
+          updated.insuranceCard = cards.insuranceCard;
+          updated.insuranceCardFileName = cards.insuranceCardFileName;
+          updated.insuranceCardFront = cards.insuranceCardFront || cards.insuranceCard;
+        }
+      } catch (cardError) {
+        alert(cardError.message || 'Could not read uploaded document files.');
+        return;
+      }
+    }
     
     const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
     const patient = patients.find(p => p.id === currentPatientId || p.patient_id === currentPatientId);
     
     if (patient) {
       // Preserve existing insurance card files if no new ones uploaded
-      if (!updated.insuranceCardFront && patient.insuranceCardFront) {
+      if (!updated.insuranceCard && !updated.insuranceCardFront && patient.insuranceCardFront) {
         updated.insuranceCardFront = patient.insuranceCardFront;
+        updated.insuranceCard = patient.insuranceCard || patient.insuranceCardFront;
       }
       if (!updated.insuranceCardBack && patient.insuranceCardBack) {
         updated.insuranceCardBack = patient.insuranceCardBack;
+      }
+      if (!updated.identificationCard && patient.identificationCard) {
+        updated.identificationCard = patient.identificationCard;
+        updated.identificationCardFileName = patient.identificationCardFileName;
       }
       
       // HYBRID ARCHITECTURE FIX: Supabase-first, localStorage fallback
@@ -5285,10 +5344,10 @@ if (editPatientForm) {
             medications: patient.medications ? JSON.stringify(patient.medications) : '[]',
             medical_history: patient.medicalHistory ? JSON.stringify(patient.medicalHistory) : '[]',
             diagnoses: patient.diagnoses ? JSON.stringify(patient.diagnoses) : '[]',
-            payment_source: patient.paymentSource || 'Self Pay',
-            insurance_name: patient.insuranceName || null,
-            insurance_policy_number: patient.insurancePolicyNumber || null,
-            insurance_member_number: patient.insuranceMemberNumber || null
+            payment_source: updated.paymentSource || patient.paymentSource || 'Self Pay',
+            insurance_name: updated.insuranceName || patient.insuranceName || null,
+            insurance_policy_number: updated.insurancePolicyGroupNumber || patient.insurancePolicyGroupNumber || null,
+            insurance_member_number: updated.insuranceMemberNumber || patient.insuranceMemberNumber || null
           };
           
           console.log('🔍 [EDIT-PATIENT] Updating Supabase with:', {
@@ -5348,6 +5407,25 @@ if (editPatientForm) {
             patient.emergencyPhoneCountryCode = data.emergency_phone_country_code || patient.emergencyPhoneCountryCode;
             patient.maritalStatus = data.marital_status || patient.maritalStatus;
             patient.paymentSource = data.payment_source || patient.paymentSource;
+
+            if (typeof window.MediForgePayerEngine !== 'undefined' && window.MediForgePayerEngine.savePayerProfile && data?.id) {
+              try {
+                await window.MediForgePayerEngine.savePayerProfile(data.id, {
+                  province: patient.province,
+                  phn: patient.phn || patient.healthCardNumber,
+                  healthCardVersion: patient.healthCardVersion,
+                  paymentSource: patient.paymentSource,
+                  primaryPayerCode: window.MediForgePayerEngine.PROVINCE_PAYER_MAP?.[patient.province],
+                  privateInsurerId: patient.insuranceName,
+                  insuranceMemberNumber: patient.insuranceMemberNumber,
+                  insurancePolicyNumber: patient.insurancePolicyGroupNumber,
+                  preferredPaymentMethod: patient.preferredPaymentMethod,
+                  wcbClaimNumber: patient.wcbClaimNumber
+                });
+              } catch (payerErr) {
+                console.warn('[EDIT-PATIENT] Payer profile save skipped:', payerErr.message);
+              }
+            }
             
             console.log('✅ [EDIT-PATIENT] Patient object updated with Supabase data:', {
               middleName: patient.middleName
@@ -5936,7 +6014,8 @@ async function loadPatientDetails() {
         <p><strong>Insurance Name:</strong> ${patient.insuranceName || 'Not provided'}</p>
         <p><strong>Policy Group Number:</strong> ${patient.insurancePolicyGroupNumber || 'Not provided'}</p>
         <p><strong>Member Number:</strong> ${patient.insuranceMemberNumber || 'Not provided'}</p>
-        ${patient.insuranceCardFront ? '<p><strong>Insurance Card Front:</strong> ✓ Uploaded</p>' : ''}
+        ${patient.identificationCard ? '<p><strong>Identification Card:</strong> ✓ Uploaded</p>' : ''}
+        ${(patient.insuranceCard || patient.insuranceCardFront) ? '<p><strong>Insurance Card:</strong> ✓ Uploaded</p>' : ''}
         ${patient.insuranceCardBack ? '<p><strong>Insurance Card Back:</strong> ✓ Uploaded</p>' : ''}
       `;
     } else {
@@ -17175,7 +17254,7 @@ async function loadEditForm() {
   
   // Default to +234 if still empty
   if (!phoneCountryCode || phoneCountryCode === '') {
-    phoneCountryCode = '+234';
+    phoneCountryCode = '+1';
   }
   
   // Extract emergency phone country code - use same logic as phone
@@ -17236,8 +17315,8 @@ async function loadEditForm() {
   
   // Initialize country code dropdowns with extracted codes
   if (typeof window.populateCountryCodeDropdown === 'function') {
-    await window.populateCountryCodeDropdown('phoneCountryCode', phoneCountryCode, true);
-    await window.populateCountryCodeDropdown('emergencyPhoneCountryCode', emergencyPhoneCountryCode, true);
+    await window.populateCountryCodeDropdown('phoneCountryCode', phoneCountryCode, true, patient.country || 'Canada');
+    await window.populateCountryCodeDropdown('emergencyPhoneCountryCode', emergencyPhoneCountryCode, true, emergencyCountryValueForPhone || patient.country || 'Canada');
   }
   
   // Explicitly set phone country code values after dropdowns are populated
@@ -17250,9 +17329,13 @@ async function loadEditForm() {
     // Fix: If we extracted +2348, it should be +234 (Nigeria's code)
     let correctedPhoneCountryCode = phoneCountryCode;
     if (phoneCountryCode === '+2348' || phoneCountryCode.startsWith('+2348')) {
-      correctedPhoneCountryCode = '+234';
+      correctedPhoneCountryCode = '+1';
     }
-    phoneCountryCodeSelect.value = correctedPhoneCountryCode;
+    if (typeof window.setPhoneCountryCodeForAddressCountry === 'function') {
+      window.setPhoneCountryCodeForAddressCountry(phoneCountryCodeSelect, patient.country || 'Canada', correctedPhoneCountryCode);
+    } else {
+      phoneCountryCodeSelect.value = correctedPhoneCountryCode;
+    }
     console.log('✅ [EDIT-PATIENT] Set phoneCountryCode to:', correctedPhoneCountryCode, '(was:', phoneCountryCode, ')');
   } else {
     console.warn('⚠️ [EDIT-PATIENT] phoneCountryCodeSelect not found or phoneCountryCode empty');
@@ -17305,8 +17388,8 @@ async function loadEditForm() {
   setValue("phone", phoneNumber); // Phone number without country code
   setValue("addressLine1", patient.addressLine1 || patient.address_line1 || patient.address || '');
   setValue("addressLine2", patient.addressLine2 || patient.address_line2 || '');
-  setValue("city", patient.city || '');
-  setValue("postalCode", patient.postalCode || patient.postal_code || '');
+  const savedCity = patient.city || '';
+  const savedPostal = patient.postalCode || patient.postal_code || '';
   if (patient.country && typeof window.updatePostalCodeField === 'function') {
     window.updatePostalCodeField(patient.country, 'postalCode', 'postal-code-label');
   }
@@ -17439,28 +17522,49 @@ async function loadEditForm() {
   setChecked("hasDiabetes", patient.hasDiabetes);
   
   // Populate payment and insurance fields (normalize legacy values)
-  const rawPaymentSource = patient.paymentSource || patient.payment_source || "Cash";
-  const normalizedPaymentSource = (() => {
-    const value = String(rawPaymentSource || "").toLowerCase();
-    if (value.includes("insur")) return "Insurance";
-    if (value.includes("cash") || value.includes("self")) return "Cash";
-    return rawPaymentSource || "Cash";
-  })();
+  const rawPaymentSource = patient.paymentSource || patient.payment_source || "self_pay";
+  const normalize = window.MediForgePaymentSourceFields?.normalizePaymentSource;
+  const normalizedPaymentSource = typeof normalize === "function"
+    ? normalize(rawPaymentSource)
+    : (() => {
+      const value = String(rawPaymentSource || "").toLowerCase();
+      if (value.includes("insur")) return "private_insurance";
+      if (value.includes("cash") || value.includes("self")) return "self_pay";
+      if (value.includes("provincial") || value.includes("ohip")) return "provincial";
+      if (value.includes("wcb") || value.includes("workers")) return "wcb";
+      return rawPaymentSource || "self_pay";
+    })();
   setValue("paymentSource", normalizedPaymentSource);
+  setValue("preferredPaymentMethod", patient.preferredPaymentMethod || patient.preferred_payment_method || "cash");
+  setValue("patientProvince", patient.province || patient.state || "ON");
+  setValue("healthCardNumber", patient.healthCardNumber || patient.phn || patient.health_card_number || "");
+  setValue("healthCardVersion", patient.healthCardVersion || patient.health_card_version || "");
+  setValue("wcbClaimNumber", patient.wcbClaimNumber || patient.wcb_claim_number || patient.metadata?.wcbClaimNumber || "");
   setValue("insuranceName", patient.insuranceName);
   setValue("insurancePolicyGroupNumber", patient.insurancePolicyGroupNumber);
   setValue("insuranceMemberNumber", patient.insuranceMemberNumber);
-  
-  // Show insurance fields if payment source is Insurance
-  const insuranceFields = document.getElementById("insuranceFields");
-  if (insuranceFields) {
-    insuranceFields.style.display = (patient.paymentSource === "Insurance") ? "block" : "none";
+
+  if (typeof window.MediForgePaymentSourceFields !== "undefined") {
+    window.MediForgePaymentSourceFields.update(document.getElementById("paymentSource"));
+  } else {
+    const insuranceFields = document.getElementById("insuranceFields");
+    if (insuranceFields) {
+      insuranceFields.style.display = (normalizedPaymentSource === "private_insurance") ? "block" : "none";
+    }
   }
   
-  // Show current insurance card status
+  // Show current document upload status
+  const currentIdentificationCard = document.getElementById("currentIdentificationCard");
+  if (currentIdentificationCard && patient.identificationCard) {
+    currentIdentificationCard.textContent = "Current identification card: ✓ Uploaded";
+  }
+  const currentInsuranceCard = document.getElementById("currentInsuranceCard");
+  if (currentInsuranceCard && (patient.insuranceCard || patient.insuranceCardFront)) {
+    currentInsuranceCard.textContent = "Current insurance card: ✓ Uploaded";
+  }
   const currentCardFront = document.getElementById("currentCardFront");
-  if (currentCardFront && patient.insuranceCardFront) {
-    currentCardFront.textContent = "Current card front: ✓ Uploaded";
+  if (currentCardFront && patient.insuranceCardFront && !patient.insuranceCard) {
+    currentCardFront.textContent = "Legacy insurance card front: ✓ Uploaded";
   }
   const currentCardBack = document.getElementById("currentCardBack");
   if (currentCardBack && patient.insuranceCardBack) {
@@ -17470,13 +17574,24 @@ async function loadEditForm() {
   // Populate state dropdowns AFTER country is set
   if (patient.country && typeof window.populateStateDropdown === 'function') {
     await window.populateStateDropdown('state', patient.country, patient.state);
-    // Explicitly set state value after dropdown is populated
     if (patient.state) {
       const stateSelect = document.getElementById('state');
       if (stateSelect) {
         stateSelect.value = patient.state;
       }
     }
+    if (typeof window.handleAddressStateChange === 'function') {
+      window.handleAddressStateChange('country', 'state', 'city', 'postalCode', savedCity);
+    } else if (typeof window.populateCityDropdown === 'function' && patient.state) {
+      window.populateCityDropdown('city', patient.country, patient.state, savedCity);
+      const citySelect = document.getElementById('city');
+      if (citySelect) citySelect.disabled = false;
+    }
+    if (savedCity && typeof window.populatePostalCodeDropdown === 'function') {
+      window.populatePostalCodeDropdown('postalCode', patient.country, patient.state, savedCity, savedPostal);
+    }
+    setValue('city', savedCity);
+    setValue('postalCode', savedPostal);
   } else if (patient.country) {
     // Fallback: Try to set state value directly if dropdown already populated
     const stateSelect = document.getElementById('state');

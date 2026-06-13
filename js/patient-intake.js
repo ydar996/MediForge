@@ -167,9 +167,18 @@
   }
 
   function setPhoneCountryCode(inputId, country) {
-    if (!window.COUNTRIES_DATA || !COUNTRIES_DATA[country]) return;
-    const code = COUNTRIES_DATA[country].phoneCode;
-    // Try multiple patterns for country code selector
+    const resolved = country || "Canada";
+    const codeSelectId = inputId === "phone" ? "phoneCountryCode"
+      : inputId === "emergencyPhone" ? "emergencyPhoneCountryCode"
+      : `${inputId}CountryCode`;
+    if (typeof window.setPhoneCountryCodeForAddressCountry === "function") {
+      window.setPhoneCountryCodeForAddressCountry(codeSelectId, resolved);
+      updatePhonePlaceholder();
+      updateEmergencyPhonePlaceholder();
+      return;
+    }
+    if (!window.COUNTRIES_DATA || !COUNTRIES_DATA[resolved]) return;
+    const code = COUNTRIES_DATA[resolved].phoneCode;
     const codeSelect = document.getElementById(`${inputId}-country-code`) || 
                        document.getElementById(`${inputId}CountryCode`) ||
                        (inputId === 'phone' ? document.getElementById('phoneCountryCode') : null) ||
@@ -240,22 +249,46 @@
     if (typeof updatePhoneFormat === "function") {
       updatePhoneFormat(phoneInputId, country);
     }
-    setPhoneCountryCode(phoneInputId, country);
 
     if (opts.postalInputId && typeof window.updatePostalCodeField === "function") {
       window.updatePostalCodeField(country, opts.postalInputId, opts.postalLabelId);
     }
-    if (opts.cityDatalistId && typeof window.populateCityDatalist === "function") {
+    if (opts.citySelectId && typeof window.handleAddressStateChange === "function") {
       const state = document.getElementById(stateSelectId)?.value || "";
-      window.populateCityDatalist(opts.cityDatalistId, country, state);
+      window.handleAddressStateChange(countrySelectId, stateSelectId, opts.citySelectId, opts.postalInputId || null);
+    } else if (opts.citySelectId && typeof window.populateCityDropdown === "function") {
+      const state = document.getElementById(stateSelectId)?.value || "";
+      if (state) {
+        window.populateCityDropdown(opts.citySelectId, country, state);
+        const cityEl = document.getElementById(opts.citySelectId);
+        if (cityEl) cityEl.disabled = false;
+      }
+    }
+    if (typeof window.setPhoneCountryCodeForAddressCountry === "function") {
+      const codeSelectId = phoneInputId === "phone" ? "phoneCountryCode" : "emergencyPhoneCountryCode";
+      window.setPhoneCountryCodeForAddressCountry(codeSelectId, country || "Canada");
+    } else {
+      setPhoneCountryCode(phoneInputId, country);
     }
   }
 
-  function handleStateChange(countrySelectId, stateSelectId, cityDatalistId) {
+  function handleStateChange(countrySelectId, stateSelectId, citySelectId, postalSelectId) {
     const country = document.getElementById(countrySelectId)?.value || "";
     const state = document.getElementById(stateSelectId)?.value || "";
-    if (typeof window.populateCityDatalist === "function") {
-      window.populateCityDatalist(cityDatalistId, country, state);
+    const postalId = postalSelectId !== undefined ? postalSelectId : "postalCode";
+    if (typeof window.handleAddressStateChange === "function") {
+      window.handleAddressStateChange(countrySelectId, stateSelectId, citySelectId, postalId);
+    } else if (typeof window.populateCityDropdown === "function" && country && state) {
+      window.populateCityDropdown(citySelectId, country, state);
+      const cityEl = document.getElementById(citySelectId);
+      if (cityEl) cityEl.disabled = false;
+    }
+  }
+
+  function handleCityChange(countrySelectId, stateSelectId, citySelectId, postalSelectId) {
+    const postalId = postalSelectId !== undefined ? postalSelectId : "postalCode";
+    if (typeof window.handleAddressCityChange === "function") {
+      window.handleAddressCityChange(countrySelectId, stateSelectId, citySelectId, postalId);
     }
   }
 
@@ -268,7 +301,7 @@
       handleCountryChange("country", "state", "phone", {
         postalInputId: "postalCode",
         postalLabelId: "postal-code-label",
-        cityDatalistId: "city-options"
+        citySelectId: "city"
       });
       if (state) {
         const stateSelect = document.getElementById("state");
@@ -277,13 +310,13 @@
             window.populateStateDropdown("state", resolved, state);
           }
           stateSelect.value = state;
-          handleStateChange("country", "state", "city-options");
+          handleStateChange("country", "state", "city", "postalCode");
         }
       }
     }
     if (emergencyCountrySelect && !emergencyCountrySelect.value && emergencyCountrySelect.querySelector(`option[value="${resolved}"]`)) {
       emergencyCountrySelect.value = resolved;
-      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone");
+      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone", { citySelectId: "emergencyCity" });
     }
   }
 
@@ -341,24 +374,34 @@
 
       emergencyLine1.value = patientAddressLine1;
       if (emergencyLine2) emergencyLine2.value = patientAddressLine2;
-      emergencyCity.value = patientCity;
       emergencyCountry.value = patientCountry;
 
-      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone");
+      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone", { citySelectId: "emergencyCity" });
       if (patientState) {
-        // Populate state after country change has refreshed options
         emergencyState.value = patientState;
+        if (typeof window.handleAddressStateChange === "function") {
+          window.handleAddressStateChange("emergencyCountry", "emergencyState", "emergencyCity", null, patientCity);
+        } else if (typeof window.populateCityDropdown === "function") {
+          window.populateCityDropdown("emergencyCity", patientCountry, patientState, patientCity);
+          emergencyCity.disabled = false;
+        }
       }
-      setPhoneCountryCode("emergencyPhone", patientCountry);
+      if (patientCity) emergencyCity.value = patientCity;
+      setPhoneCountryCode("emergencyPhone", patientCountry || "Canada");
     }
 
     function clearEmergencyAddress() {
       emergencyLine1.value = "";
       if (emergencyLine2) emergencyLine2.value = "";
-      emergencyCity.value = "";
+      if (emergencyCity.tagName === "SELECT") {
+        emergencyCity.innerHTML = '<option value="">-- Select state/province first --</option>';
+        emergencyCity.disabled = true;
+      } else {
+        emergencyCity.value = "";
+      }
       emergencyState.value = "";
       emergencyCountry.value = "";
-      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone");
+      handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone", { citySelectId: "emergencyCity" });
     }
 
     function applySameAddressState(options = {}) {
@@ -1170,6 +1213,15 @@
       emergencyCountry: form.elements["emergencyCountry"].value,
       hasDiabetes: diabetesValue === "true",
       paymentSource: form.elements["paymentSource"].value,
+      preferredPaymentMethod: form.elements["preferredPaymentMethod"]?.value || "cash",
+      province: form.elements["patientProvince"]?.value || form.elements["state"]?.value || "",
+      healthCardNumber: form.elements["healthCardNumber"]?.value?.trim() || "",
+      healthCardVersion: form.elements["healthCardVersion"]?.value?.trim() || "",
+      phn: form.elements["healthCardNumber"]?.value?.trim() || "",
+      insuranceName: form.elements["insuranceName"]?.value?.trim() || "",
+      insuranceMemberNumber: form.elements["insuranceMemberNumber"]?.value?.trim() || "",
+      insurancePolicyGroupNumber: form.elements["insurancePolicyGroupNumber"]?.value?.trim() || "",
+      wcbClaimNumber: form.elements["wcbClaimNumber"]?.value?.trim() || "",
       medicalHistory,
       medications,
       allergies,
@@ -1206,6 +1258,9 @@
       hideStatus();
     }
     refreshEmergencyAddressState?.();
+    if (typeof window.MediForgePaymentSourceFields !== "undefined") {
+      window.MediForgePaymentSourceFields.update(document.getElementById("paymentSource"));
+    }
   }
 
   async function handleSubmit(event) {
@@ -1215,6 +1270,22 @@
     if (!form.reportValidity()) {
       showStatus("Please complete all required fields before submitting.", "error");
       return;
+    }
+
+    if (typeof window.MediForgePaymentSourceFields?.getMissingFields === "function") {
+      const payerMissing = window.MediForgePaymentSourceFields.getMissingFields();
+      if (payerMissing.length > 0) {
+        showStatus("Please complete payer ID fields: " + payerMissing.join(", "), "error");
+        return;
+      }
+    }
+
+    if (typeof window.MediForgePatientCardUploads?.getMissingRegistrationCards === "function") {
+      const cardMissing = window.MediForgePatientCardUploads.getMissingRegistrationCards();
+      if (cardMissing.length > 0) {
+        showStatus("Please upload required documents: " + cardMissing.join(", "), "error");
+        return;
+      }
     }
 
     if (!validateIntakeEmailFields()) {
@@ -1267,7 +1338,20 @@
     submitButton.textContent = "Submitting…";
     showStatus("Submitting your details. Please wait…", "info");
 
-    const patientPayload = buildPatientPayload();
+    let cardUploads = {};
+    try {
+      if (typeof window.MediForgePatientCardUploads?.readRegistrationCards !== "function") {
+        throw new Error("Document upload handler is not available. Please refresh the page.");
+      }
+      cardUploads = await window.MediForgePatientCardUploads.readRegistrationCards({ required: true });
+    } catch (cardError) {
+      showStatus(cardError.message || "Please upload both required document files.", "error");
+      submitButton.disabled = false;
+      submitButton.textContent = "Submit Intake Form";
+      return;
+    }
+
+    const patientPayload = { ...buildPatientPayload(), ...cardUploads };
     const customFieldValues = collectCustomFieldValues();
 
     const submissionPayload = {
@@ -1357,8 +1441,8 @@
 
     // Populate country code dropdowns with full list if available
     if (typeof window.populateCountryCodeDropdown === "function") {
-      window.populateCountryCodeDropdown("phoneCountryCode", "+1", true);
-      window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+1", true);
+      window.populateCountryCodeDropdown("phoneCountryCode", "+1", true, "Canada");
+      window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+1", true, "Canada");
     }
     const ensureCountryCodes = () => {
       const phoneCodeSelect = document.getElementById("phoneCountryCode");
@@ -1366,8 +1450,8 @@
       const needsPopulate = (select) => select && select.options && select.options.length <= 1;
       if (needsPopulate(phoneCodeSelect) || needsPopulate(emergencyCodeSelect)) {
         if (typeof window.populateCountryCodeDropdown === "function") {
-          window.populateCountryCodeDropdown("phoneCountryCode", "+1", true);
-          window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+1", true);
+          window.populateCountryCodeDropdown("phoneCountryCode", "+1", true, "Canada");
+          window.populateCountryCodeDropdown("emergencyPhoneCountryCode", "+1", true, "Canada");
         }
       }
     };
@@ -1432,11 +1516,16 @@
     document.getElementById("country")?.addEventListener("change", () => handleCountryChange("country", "state", "phone", {
       postalInputId: "postalCode",
       postalLabelId: "postal-code-label",
-      cityDatalistId: "city-options"
+      citySelectId: "city"
     }));
-    document.getElementById("emergencyCountry")?.addEventListener("change", () => handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone"));
+    document.getElementById("emergencyCountry")?.addEventListener("change", () => handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone", {
+      citySelectId: "emergencyCity"
+    }));
 
-    document.getElementById("state")?.addEventListener("change", () => handleStateChange("country", "state", "city-options"));
+    document.getElementById("state")?.addEventListener("change", () => handleStateChange("country", "state", "city", "postalCode"));
+    document.getElementById("city")?.addEventListener("change", () => handleCityChange("country", "state", "city", "postalCode"));
+    document.getElementById("emergencyState")?.addEventListener("change", () => handleStateChange("emergencyCountry", "emergencyState", "emergencyCity", null));
+    document.getElementById("emergencyCity")?.addEventListener("change", () => handleCityChange("emergencyCountry", "emergencyState", "emergencyCity", null));
 
     // Add auto-population for state dropdowns when clicked/focused
     const stateSelect = document.getElementById("state");
@@ -1490,6 +1579,9 @@
     }
 
     setupEmergencyAddressSync();
+    if (typeof window.MediForgePaymentSourceFields !== "undefined") {
+      window.MediForgePaymentSourceFields.init("paymentSource");
+    }
     setupMedicationSearchHandlers();
     shimSubformReset("add-history-form", ["history-date", "history-event", "history-notes"]);
     shimSubformReset("add-medication-form", ["med-name", "med-dosage", "med-start", "med-end", "med-notes"], () => {

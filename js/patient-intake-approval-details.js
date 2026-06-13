@@ -373,9 +373,33 @@
       createDetailItem("Race", payload.race || "—"),
       createDetailItem("Email", payload.email || "—"),
       createDetailItem("Phone", formatPhone(payload.phone)),
-      createDetailItem("Payment Source", payload.paymentSource || "—"),
       createDetailItem("Has Diabetes", payload.hasDiabetes === true ? "Yes" : payload.hasDiabetes === false ? "No" : "—")
     ]);
+
+    const paymentItems = [
+      createDetailItem("Primary Payer", payload.paymentSource || "—"),
+      createDetailItem("Preferred Payment Method", payload.preferredPaymentMethod || "—")
+    ];
+    const payerSource = String(payload.paymentSource || "").toLowerCase();
+    if (payerSource.includes("provincial") || payerSource.includes("ohip")) {
+      paymentItems.push(createDetailItem("Province / Territory", payload.province || "—"));
+      paymentItems.push(createDetailItem("Health Card (PHN)", payload.healthCardNumber || payload.phn || "—"));
+      if (payload.healthCardVersion) {
+        paymentItems.push(createDetailItem("Health Card Version", payload.healthCardVersion));
+      }
+    } else if (payerSource.includes("insur") || payerSource.includes("private")) {
+      paymentItems.push(createDetailItem("Insurance Company", payload.insuranceName || "—"));
+      paymentItems.push(createDetailItem("Member Number", payload.insuranceMemberNumber || "—"));
+      if (payload.insurancePolicyGroupNumber) {
+        paymentItems.push(createDetailItem("Policy / Group Number", payload.insurancePolicyGroupNumber));
+      }
+    } else if (payerSource.includes("wcb") || payerSource.includes("workers")) {
+      paymentItems.push(createDetailItem("Province / Territory", payload.province || "—"));
+      paymentItems.push(createDetailItem("WCB Claim / File Number", payload.wcbClaimNumber || "—"));
+    }
+    paymentItems.push(createDetailItem("Identification Card", payload.identificationCard ? "✓ Uploaded" : "—"));
+    paymentItems.push(createDetailItem("Insurance Card", (payload.insuranceCard || payload.insuranceCardFront) ? "✓ Uploaded" : "—"));
+    const paymentSection = createDetailSection("Payment & Coverage", paymentItems);
 
     const addressSection = createDetailSection("Address", [
       createDetailItem("Address Line 1", payload.addressLine1 || "—"),
@@ -442,6 +466,7 @@
     detailBody.innerHTML = "";
     [
       personalSection,
+      paymentSection,
       addressSection,
       emergencySection,
       medicalHistorySection,

@@ -67,6 +67,7 @@ window.COUNTRY_CODES_DATA = [
   { code: '+249', country: 'Sudan', flag: '🇸🇩' },
   
   // Other common countries
+  { code: '+1', country: 'Canada', flag: '🇨🇦' },
   { code: '+44', country: 'United Kingdom', flag: '🇬🇧' },
   { code: '+1', country: 'United States', flag: '🇺🇸' },
   { code: '+33', country: 'France', flag: '🇫🇷' },
@@ -77,10 +78,11 @@ window.COUNTRY_CODES_DATA = [
 /**
  * Populate country code dropdown with proper flags and encoding
  * @param {string} selectId - ID of the select element
- * @param {string} defaultCode - Default country code to select (e.g., '+234')
+ * @param {string} defaultCode - Default country code to select (e.g., '+1')
  * @param {boolean} includeSelectOption - Whether to include "Select Country" as first option
+ * @param {string} defaultCountry - When multiple entries share a code (e.g. +1), pick this country
  */
-window.populateCountryCodeDropdown = function(selectId, defaultCode = '+1', includeSelectOption = true) {
+window.populateCountryCodeDropdown = function(selectId, defaultCode = '+1', includeSelectOption = true, defaultCountry = 'Canada') {
   const select = document.getElementById(selectId);
   if (!select) {
     console.warn(`Country code dropdown not found: ${selectId}`);
@@ -98,15 +100,14 @@ window.populateCountryCodeDropdown = function(selectId, defaultCode = '+1', incl
     select.appendChild(selectOption);
   }
   
-  // Remove duplicates and sort by country name
+  // Keep all entries (Canada and US both use +1)
   const uniqueCountries = [];
-  const seenCodes = new Set();
-  
+  const seenKeys = new Set();
   window.COUNTRY_CODES_DATA.forEach(item => {
-    if (!seenCodes.has(item.code)) {
-      seenCodes.add(item.code);
-      uniqueCountries.push(item);
-    }
+    const key = item.code + '|' + item.country;
+    if (seenKeys.has(key)) return;
+    seenKeys.add(key);
+    uniqueCountries.push(item);
   });
   
   const priorityNames = ['Canada', 'United States'];
@@ -132,12 +133,10 @@ window.populateCountryCodeDropdown = function(selectId, defaultCode = '+1', incl
     option.setAttribute('data-flag', item.flag);
     option.setAttribute('data-country', item.country);
     
-    if (item.code === defaultCode) {
-      option.selected = true;
-    }
-    
     select.appendChild(option);
   });
+
+  window.setPhoneCountryCodeForAddressCountry(select, defaultCountry, defaultCode);
   
   // Ensure UTF-8 encoding is set
   if (document.characterSet !== 'UTF-8' && document.charset !== 'UTF-8') {
@@ -150,6 +149,23 @@ window.populateCountryCodeDropdown = function(selectId, defaultCode = '+1', incl
       document.head.insertBefore(meta, document.head.firstChild);
     }
   }
+};
+
+/** Select phone country code option; prefers data-country when +1 is shared by CA/US. */
+window.setPhoneCountryCodeForAddressCountry = function(selectId, addressCountry, fallbackCode) {
+  const select = typeof selectId === 'string' ? document.getElementById(selectId) : selectId;
+  if (!select) return;
+  const country = addressCountry || 'Canada';
+  const byCountry = Array.from(select.options).find(function (o) {
+    return o.getAttribute('data-country') === country;
+  });
+  if (byCountry) {
+    byCountry.selected = true;
+    return;
+  }
+  const code = fallbackCode || (window.COUNTRIES_DATA && window.COUNTRIES_DATA[country] && window.COUNTRIES_DATA[country].phoneCode) || '+1';
+  const byCode = Array.from(select.options).find(function (o) { return o.value === code; });
+  if (byCode) byCode.selected = true;
 };
 
 console.log('✅ Country codes utility loaded');

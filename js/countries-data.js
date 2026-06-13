@@ -679,6 +679,13 @@ window.populateCityDropdown = function(citySelectId, country, state, selectedCit
     }
     citySelect.appendChild(option);
   });
+  if (selectedCity && cities.indexOf(selectedCity) === -1) {
+    const legacy = document.createElement('option');
+    legacy.value = selectedCity;
+    legacy.textContent = selectedCity;
+    legacy.selected = true;
+    citySelect.appendChild(legacy);
+  }
 };
 
 window.getPostalCodeLabel = function getPostalCodeLabel(country) {
@@ -723,27 +730,93 @@ window.validatePostalCode = function validatePostalCode(country, value) {
 };
 
 window.updatePostalCodeField = function updatePostalCodeField(country, postalInputId, labelId) {
-  const input = document.getElementById(postalInputId);
+  const field = document.getElementById(postalInputId);
   const label = labelId ? document.getElementById(labelId) : null;
   const labelText = window.getPostalCodeLabel(country);
   if (label) {
     label.textContent = `${labelText}${country === 'Canada' || country === 'United States' ? '*' : ''}:`;
   }
-  if (!input) return;
-  if (country === 'Canada') {
-    input.placeholder = 'e.g. K1A 0B1';
-    input.pattern = '[A-Za-z][0-9][A-Za-z][ ]?[0-9][A-Za-z][0-9]';
-    input.title = 'Canadian postal code, e.g. K1A 0B1';
-  } else if (country === 'United States') {
-    input.placeholder = 'e.g. 90210';
-    input.pattern = '\\d{5}(-\\d{4})?';
-    input.title = 'US ZIP code, e.g. 90210 or 90210-1234';
-  } else {
-    input.placeholder = 'Postal or ZIP code';
-    input.removeAttribute('pattern');
-    input.title = '';
+  if (!field) return;
+  if (field.tagName === 'SELECT') {
+    field.innerHTML = '<option value="">-- Select city first --</option>';
+    field.disabled = true;
+    field.required = country === 'Canada' || country === 'United States';
+    return;
   }
-  input.required = country === 'Canada' || country === 'United States';
+  if (country === 'Canada') {
+    field.placeholder = 'e.g. K1A 0B1';
+    field.pattern = '[A-Za-z][0-9][A-Za-z][ ]?[0-9][A-Za-z][0-9]';
+    field.title = 'Canadian postal code, e.g. K1A 0B1';
+  } else if (country === 'United States') {
+    field.placeholder = 'e.g. 90210';
+    field.pattern = '\\d{5}(-\\d{4})?';
+    field.title = 'US ZIP code, e.g. 90210 or 90210-1234';
+  } else {
+    field.placeholder = 'Postal or ZIP code';
+    field.removeAttribute('pattern');
+    field.title = '';
+  }
+  field.required = country === 'Canada' || country === 'United States';
+};
+
+window.populatePostalCodeDropdown = function populatePostalCodeDropdown(selectId, country, state, city, selectedPostal) {
+  const select = document.getElementById(selectId);
+  if (!select) return;
+  const prev = selectedPostal || select.value || '';
+  select.innerHTML = '<option value="">-- Select ' + (country === 'United States' ? 'ZIP Code' : 'Postal Code') + ' --</option>';
+  if (!country || !state || !city) {
+    select.disabled = true;
+    return;
+  }
+  const codes = typeof window.getPostalCodesForCity === 'function'
+    ? window.getPostalCodesForCity(country, state, city)
+    : [];
+  if (!codes.length) {
+    select.disabled = true;
+    return;
+  }
+  codes.forEach(function (code) {
+    const option = document.createElement('option');
+    option.value = code;
+    option.textContent = code;
+    if (prev === code) option.selected = true;
+    select.appendChild(option);
+  });
+  if (prev && codes.indexOf(prev) === -1) {
+    const legacy = document.createElement('option');
+    legacy.value = prev;
+    legacy.textContent = prev;
+    legacy.selected = true;
+    select.appendChild(legacy);
+  }
+  select.disabled = false;
+  select.required = country === 'Canada' || country === 'United States';
+};
+
+window.handleAddressCityChange = function handleAddressCityChange(countrySelectId, stateSelectId, citySelectId, postalSelectId) {
+  const country = document.getElementById(countrySelectId)?.value || '';
+  const state = document.getElementById(stateSelectId)?.value || '';
+  const city = document.getElementById(citySelectId)?.value || '';
+  if (typeof window.populatePostalCodeDropdown === 'function') {
+    window.populatePostalCodeDropdown(postalSelectId, country, state, city);
+  }
+};
+
+window.handleAddressStateChange = function handleAddressStateChange(countrySelectId, stateSelectId, citySelectId, postalSelectId, selectedCity) {
+  const country = document.getElementById(countrySelectId)?.value || '';
+  const state = document.getElementById(stateSelectId)?.value || '';
+  const citySelect = document.getElementById(citySelectId);
+  if (citySelect) {
+    citySelect.innerHTML = '<option value="">-- Select City --</option>';
+    citySelect.disabled = !country || !state;
+  }
+  if (typeof window.populateCityDropdown === 'function' && country && state) {
+    window.populateCityDropdown(citySelectId, country, state, selectedCity || '');
+    if (citySelect) citySelect.disabled = false;
+  }
+  if (typeof window.populatePostalCodeDropdown === 'function') {
+    window.populatePostalCodeDropdown(postalSelectId, country, state, selectedCity || '');
+  }
 };
 
 window.populateCityDatalist = function populateCityDatalist(datalistId, country, state) {
@@ -794,7 +867,13 @@ window.populatePhoneCodeDropdownPriority = function populatePhoneCodeDropdownPri
   const preferred = defaultCountry && COUNTRIES_DATA[defaultCountry]
     ? COUNTRIES_DATA[defaultCountry].phoneCode
     : COUNTRIES_DATA.Canada?.phoneCode || '+1';
-  if (preferred) select.value = preferred;
+  if (preferred) {
+    const match = Array.from(select.options).find(function (o) {
+      return o.getAttribute('data-country') === (defaultCountry || 'Canada');
+    });
+    if (match) match.selected = true;
+    else select.value = preferred;
+  }
 };
 
 // Helper function to update phone field format/placeholder based on country

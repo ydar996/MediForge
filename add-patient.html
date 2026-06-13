@@ -252,6 +252,7 @@
       flex: 1;
     }
   </style>
+  <script src="js/ui-title-case.js?v=20260612170000" defer></script>
 </head>
 <body>
   <div style="position: fixed; top: 10px; right: 10px; font-size: 14px; color: #333;" id="org-info"></div>  <!-- Top right org display -->
@@ -339,11 +340,14 @@
     <input type="text" id="addressLine2">
     
     <label for="city" style="display: block; margin-top: 10px;">City*:</label>
-    <input type="text" id="city" list="city-options" required>
-    <datalist id="city-options"></datalist>
+    <select id="city" required disabled>
+      <option value="">-- Select state/province first --</option>
+    </select>
 
     <label for="postalCode" id="postal-code-label" style="display: block; margin-top: 10px;">Postal Code*:</label>
-    <input type="text" id="postalCode" autocomplete="postal-code" placeholder="e.g. K1A 0B1">
+    <select id="postalCode" required disabled>
+      <option value="">-- Select city first --</option>
+    </select>
     
     <label for="phone" style="display: block; margin-top: 10px;">Phone*:</label>
     <div style="display: flex; gap: 5px;">
@@ -423,31 +427,7 @@
       <input type="text" id="emergencyCity">
     </div>
     
-    <!-- Payment Source Section - Moved next to emergency contact -->
-    <h2 style="margin-top: 20px;">Canadian Health Card &amp; Payer</h2>
-
-    <label for="patientProvince" style="display: block; margin-top: 10px;">Province / Territory:</label>
-    <select id="patientProvince">
-      <option value="ON" selected>Ontario</option>
-      <option value="QC">Quebec</option>
-      <option value="BC">British Columbia</option>
-      <option value="AB">Alberta</option>
-      <option value="SK">Saskatchewan</option>
-      <option value="MB">Manitoba</option>
-      <option value="NB">New Brunswick</option>
-      <option value="NS">Nova Scotia</option>
-      <option value="PE">Prince Edward Island</option>
-      <option value="NL">Newfoundland and Labrador</option>
-      <option value="NT">Northwest Territories</option>
-      <option value="YT">Yukon</option>
-      <option value="NU">Nunavut</option>
-    </select>
-
-    <label for="healthCardNumber" style="display: block; margin-top: 10px;">Health Card Number (PHN):</label>
-    <input type="text" id="healthCardNumber" placeholder="e.g., 1234-567-890 AB">
-
-    <label for="healthCardVersion" style="display: block; margin-top: 10px;">Version code (if applicable):</label>
-    <input type="text" id="healthCardVersion" maxlength="2" placeholder="e.g., AB">
+    <h2 style="margin-top: 20px;">Payment Information</h2>
 
     <label for="preferredPaymentMethod" style="display: block; margin-top: 10px;">Preferred payment method at clinic:</label>
     <select id="preferredPaymentMethod">
@@ -459,8 +439,6 @@
       <option value="check">Check / cheque</option>
     </select>
 
-    <h2 style="margin-top: 20px;">Payment Information</h2>
-    
     <label for="paymentSource" style="display: block; margin-top: 10px;">Primary payer for insured services*:</label>
     <select id="paymentSource" required>
       <option value="" disabled selected>Select primary payer</option>
@@ -469,25 +447,71 @@
       <option value="self_pay">Self-pay / uninsured (cash, bank, card)</option>
       <option value="wcb">Workers compensation (WCB)</option>
     </select>
-    
-    <!-- Insurance Information Section (shown when Insurance is selected) -->
-    <div id="insuranceFields" style="display: none;">
-      <h3>Insurance Information</h3>
-      
-      <label for="insuranceName" style="display: block; margin-top: 10px;">Insurance Name:</label>
+
+    <div id="selfPayPayerNote" style="display: none; margin-top: 12px; padding: 10px 12px; background: #f5f8fa; border-radius: 6px; color: #444; font-size: 14px; line-height: 1.5;">
+      No payer ID is required for self-pay. Payment will be collected using the preferred method selected above.
+    </div>
+
+    <h2 style="margin-top: 20px;">Canadian Health Card &amp; Payer</h2>
+
+    <div id="sharedPayerProvinceFields" style="display: none; margin-top: 12px;">
+      <label for="patientProvince" style="display: block; margin-top: 10px;">Province / Territory*:</label>
+      <select id="patientProvince">
+        <option value="ON" selected>Ontario</option>
+        <option value="QC">Quebec</option>
+        <option value="BC">British Columbia</option>
+        <option value="AB">Alberta</option>
+        <option value="SK">Saskatchewan</option>
+        <option value="MB">Manitoba</option>
+        <option value="NB">New Brunswick</option>
+        <option value="NS">Nova Scotia</option>
+        <option value="PE">Prince Edward Island</option>
+        <option value="NL">Newfoundland and Labrador</option>
+        <option value="NT">Northwest Territories</option>
+        <option value="YT">Yukon</option>
+        <option value="NU">Nunavut</option>
+      </select>
+    </div>
+
+    <div id="provincialPayerFields" style="display: none; margin-top: 8px;">
+      <h3 style="margin: 12px 0 8px;">Provincial health plan ID</h3>
+      <label for="healthCardNumber" style="display: block; margin-top: 10px;">Health card number (PHN)*:</label>
+      <input type="text" id="healthCardNumber" placeholder="e.g., 1234-567-890 AB">
+
+      <label for="healthCardVersion" style="display: block; margin-top: 10px;">Version code (if applicable):</label>
+      <input type="text" id="healthCardVersion" maxlength="2" placeholder="e.g., AB">
+    </div>
+
+    <div id="insuranceFields" style="display: none; margin-top: 8px;">
+      <h3 style="margin: 12px 0 8px;">Private insurance ID</h3>
+
+      <label for="insuranceName" style="display: block; margin-top: 10px;">Insurance company name*:</label>
       <input type="text" id="insuranceName">
-      
-      <label for="insurancePolicyGroupNumber" style="display: block; margin-top: 10px;">Insurance Policy Group Number:</label>
+
+      <label for="insuranceMemberNumber" style="display: block; margin-top: 10px;">Member / certificate number*:</label>
+      <input type="text" id="insuranceMemberNumber" placeholder="On your insurance card">
+
+      <label for="insurancePolicyGroupNumber" style="display: block; margin-top: 10px;">Policy / group number:</label>
       <input type="text" id="insurancePolicyGroupNumber">
-      
-      <label for="insuranceMemberNumber" style="display: block; margin-top: 10px;">Insurance Member Number:</label>
-      <input type="text" id="insuranceMemberNumber">
-      
-      <label for="insuranceCardFront" style="display: block; margin-top: 10px;">Insurance Card Front (PDF, PNG, JPEG):</label>
-      <input type="file" id="insuranceCardFront" accept=".pdf,.png,.jpg,.jpeg">
-      
-      <label for="insuranceCardBack" style="display: block; margin-top: 10px;">Insurance Card Back (PDF, PNG, JPEG):</label>
-      <input type="file" id="insuranceCardBack" accept=".pdf,.png,.jpg,.jpeg">
+    </div>
+
+    <div id="wcbPayerFields" style="display: none; margin-top: 8px;">
+      <h3 style="margin: 12px 0 8px;">Workers compensation (WCB) ID</h3>
+      <label for="wcbClaimNumber" style="display: block; margin-top: 10px;">WCB claim / file number*:</label>
+      <input type="text" id="wcbClaimNumber" placeholder="Claim or file number from WCB board">
+    </div>
+
+    <div id="patientDocumentUploads" style="margin-top: 20px;">
+      <h3 style="margin: 12px 0 8px;">Document uploads (required)</h3>
+      <p style="margin: 0 0 12px; font-size: 14px; color: #555; line-height: 1.5;">
+        Upload clear photos or PDF scans (max 4 MB each). For provincial plans, use your health card as the insurance card.
+      </p>
+
+      <label for="patientIdentificationCard" style="display: block; margin-top: 10px;">Patient identification card* (PDF, PNG, JPEG):</label>
+      <input type="file" id="patientIdentificationCard" required accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
+
+      <label for="patientInsuranceCard" style="display: block; margin-top: 10px;">Patient insurance card* (PDF, PNG, JPEG):</label>
+      <input type="file" id="patientInsuranceCard" required accept=".pdf,.png,.jpg,.jpeg,application/pdf,image/png,image/jpeg">
     </div>
     
     <label for="hasDiabetes" style="display: block; margin-top: 20px;">Has Diabetes:</label>
@@ -662,19 +686,10 @@
       document.getElementById("page-title").innerHTML = `Add New Patient for ${orgName}`;
     }
     
-    // Handle payment source selection to show/hide insurance fields
+    // Show payer-specific ID fields when primary payer changes
     document.addEventListener('DOMContentLoaded', function() {
-      const paymentSourceSelect = document.getElementById('paymentSource');
-      const insuranceFields = document.getElementById('insuranceFields');
-      
-      if (paymentSourceSelect && insuranceFields) {
-        paymentSourceSelect.addEventListener('change', function() {
-          if (this.value === 'private_insurance' || this.value === 'Insurance') {
-            insuranceFields.style.display = 'block';
-          } else {
-            insuranceFields.style.display = 'none';
-          }
-        });
+      if (typeof window.MediForgePaymentSourceFields !== 'undefined') {
+        window.MediForgePaymentSourceFields.init('paymentSource');
       }
     });
   </script>
@@ -707,6 +722,7 @@
   
   <!-- Countries data -->
   <script src="js/us-ca-cities-data.js?v=20260611120000"></script>
+  <script src="js/us-ca-postal-codes-data.js?v=20260612140000"></script>
   <script src="js/countries-data.js?v=20260611170000"></script>
   
   <!-- Country codes with flags -->
@@ -724,7 +740,9 @@
   <!-- Manual patient numbering -->
   <script src="js/manual-patient-numbering.js?v=1"></script>
   <!-- Patient management -->
-  <script src="js/patients.js?v=20260201134500"></script>
+  <script src="js/payment-source-fields.js?v=20260612150000"></script>
+  <script src="js/patient-card-uploads.js?v=20260612160000"></script>
+  <script src="js/patients.js?v=20260612160000"></script>
   <script src="js/billing-payer-engine.js"></script>
   <script src="js/patient-identity.js?v=20260427160000"></script>
   <script src="js/patient-sync-recovery.js?v=20250117"></script>  <!-- Auto-sync patients from localStorage to Supabase -->
@@ -794,53 +812,25 @@
           window.updatePostalCodeField(country, 'postalCode', 'postal-code-label');
         }
         const state = document.getElementById('state')?.value || '';
-        if (typeof window.populateCityDatalist === 'function') {
-          window.populateCityDatalist('city-options', country, state);
+        if (typeof window.handleAddressStateChange === 'function') {
+          window.handleAddressStateChange('country', 'state', 'city', 'postalCode');
+        } else if (typeof window.populateCityDropdown === 'function' && state) {
+          window.populateCityDropdown('city', country, state);
+          document.getElementById('city').disabled = false;
         }
         
-        // Auto-select phone country code based on address country
-        const phoneCountryCode = document.getElementById('phoneCountryCode');
-        if (phoneCountryCode && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
-          const countryData = COUNTRIES_DATA[country];
-          if (countryData.phoneCode) {
-            phoneCountryCode.value = countryData.phoneCode;
-            updatePhonePlaceholder();
-          }
+        // Auto-select phone country code based on address country (Canada default)
+        if (typeof window.setPhoneCountryCodeForAddressCountry === 'function') {
+          window.setPhoneCountryCodeForAddressCountry('phoneCountryCode', country || 'Canada');
+          updatePhonePlaceholder();
         } else {
-          // Fallback to manual mapping
-          const countryCodeMap = {
-            'Nigeria': '+234',
-            'Kenya': '+254', 
-            'South Africa': '+27',
-            'Ghana': '+233',
-            'Uganda': '+256',
-            'Tanzania': '+255',
-            'Rwanda': '+250',
-            'Ethiopia': '+251',
-            'Egypt': '+20',
-            'Morocco': '+212',
-            'Algeria': '+213',
-            'Zambia': '+260',
-            'Zimbabwe': '+263',
-            'Senegal': '+221',
-            'Ivory Coast': '+225',
-            'Côte d\'Ivoire': '+225',
-            'Mali': '+223',
-            'Burkina Faso': '+226',
-            'Niger': '+227',
-            'Togo': '+228',
-            'Benin': '+229',
-            'Gambia': '+220',
-            'Guinea': '+224',
-            'Guinea-Bissau': '+245',
-            'Cape Verde': '+238',
-            'Sierra Leone': '+232',
-            'Liberia': '+231'
-          };
-          
-          if (countryCodeMap[country]) {
-            phoneCountryCode.value = countryCodeMap[country];
-            updatePhonePlaceholder();
+          const phoneCountryCode = document.getElementById('phoneCountryCode');
+          if (phoneCountryCode && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
+            const countryData = COUNTRIES_DATA[country];
+            if (countryData.phoneCode) {
+              phoneCountryCode.value = countryData.phoneCode;
+              updatePhonePlaceholder();
+            }
           }
         }
       }
@@ -854,13 +844,17 @@
           window.populateStateDropdown('emergencyState', country);
         }
         
-        // Auto-select phone country code based on emergency contact country
-        const emergencyPhoneCountryCode = document.getElementById('emergencyPhoneCountryCode');
-        if (emergencyPhoneCountryCode && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
-          const countryData = COUNTRIES_DATA[country];
-          if (countryData.phoneCode) {
-            emergencyPhoneCountryCode.value = countryData.phoneCode;
-            updateEmergencyPhonePlaceholder();
+        if (typeof window.setPhoneCountryCodeForAddressCountry === 'function') {
+          window.setPhoneCountryCodeForAddressCountry('emergencyPhoneCountryCode', country || 'Canada');
+          updateEmergencyPhonePlaceholder();
+        } else {
+          const emergencyPhoneCountryCode = document.getElementById('emergencyPhoneCountryCode');
+          if (emergencyPhoneCountryCode && typeof COUNTRIES_DATA !== 'undefined' && COUNTRIES_DATA[country]) {
+            const countryData = COUNTRIES_DATA[country];
+            if (countryData.phoneCode) {
+              emergencyPhoneCountryCode.value = countryData.phoneCode;
+              updateEmergencyPhonePlaceholder();
+            }
           }
         } else {
           // Fallback to manual mapping
@@ -912,8 +906,8 @@
         
         // Initialize country code dropdowns with proper flags
         if (typeof window.populateCountryCodeDropdown === 'function') {
-          window.populateCountryCodeDropdown('phoneCountryCode', '+1', true);
-          window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+1', true);
+          window.populateCountryCodeDropdown('phoneCountryCode', '+1', true, 'Canada');
+          window.populateCountryCodeDropdown('emergencyPhoneCountryCode', '+1', true, 'Canada');
         }
         
         // Add auto-population for state dropdowns when clicked/focused
@@ -940,8 +934,16 @@
             }
           });
           stateSelect.addEventListener('change', function() {
-            if (typeof window.populateCityDatalist === 'function') {
-              window.populateCityDatalist('city-options', countrySelect.value, stateSelect.value);
+            if (typeof window.handleAddressStateChange === 'function') {
+              window.handleAddressStateChange('country', 'state', 'city', 'postalCode');
+            } else if (typeof window.populateCityDropdown === 'function') {
+              window.populateCityDropdown('city', countrySelect.value, stateSelect.value);
+              document.getElementById('city').disabled = !stateSelect.value;
+            }
+          });
+          document.getElementById('city')?.addEventListener('change', function() {
+            if (typeof window.handleAddressCityChange === 'function') {
+              window.handleAddressCityChange('country', 'state', 'city', 'postalCode');
             }
           });
         }
