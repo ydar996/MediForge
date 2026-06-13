@@ -71,6 +71,13 @@
       }
       this.version = normalized;
       global.__icdScriptLoading = null;
+      delete global.ICD_CODES;
+      if (normalized !== "icd11") {
+        delete global.ICD11_CODES;
+      }
+      if (normalized !== "icd10ca") {
+        delete global.ICD10CA_CODES;
+      }
       if (typeof global.__resetIcdSearchIndex === "function") {
         global.__resetIcdSearchIndex();
       }

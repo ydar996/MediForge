@@ -8,6 +8,8 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BAD = '\uFFFD';
 const SKIP_DIRS = new Set(['node_modules', '.git', 'js/vendor', 'tests']);
+/** Large generated ICD code databases — mojibake scan is for UI copy, not code titles. */
+const MOJIBAKE_SKIP = new Set(['js/icd11.js', 'js/icd10ca.js']);
 
 /** Legacy double-encoding sequences that should not appear in cleaned UTF-8 text. */
 const MOJIBAKE_PATTERNS = [
@@ -57,10 +59,10 @@ const replacementHits = [];
 const mojibakeHits = [];
 
 for (const file of walk(ROOT)) {
-  const rel = path.relative(ROOT, file);
+  const rel = path.relative(ROOT, file).split(path.sep).join('/');
   const text = fs.readFileSync(file, 'utf8');
   replacementHits.push(...findReplacementCharHits(rel, text));
-  if (rel === 'js/icd11.js' || !rel.startsWith('js/vendor/')) {
+  if (!MOJIBAKE_SKIP.has(rel) && !rel.startsWith('js/vendor/')) {
     mojibakeHits.push(...findMojibakeHits(rel, text));
   }
 }
@@ -83,4 +85,4 @@ if (mojibakeHits.length) {
 
 if (failed) process.exit(1);
 
-console.log('No U+FFFD or known mojibake sequences in scanned files (including js/icd11.js).');
+console.log('No U+FFFD or known mojibake sequences in scanned UI files (ICD databases excluded).');

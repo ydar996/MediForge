@@ -1,7 +1,16 @@
 // Lazy-load active ICD code set (default ICD-10-CA; see js/icd-config.js)
+const ICD_DATA_BUILD = '20260613160000';
 let codesLoaded = false;
 let icdIndex = null;
 let icdScriptPromise = null;
+
+function isActiveIcdDatasetLoaded() {
+  const version = getIcdConfig().version || 'icd10ca';
+  if (version === 'icd11') {
+    return Array.isArray(window.ICD11_CODES) && window.ICD11_CODES.length > 0;
+  }
+  return Array.isArray(window.ICD10CA_CODES) && window.ICD10CA_CODES.length > 0;
+}
 
 function getIcdConfig() {
   return window.MEDIFORGE_ICD_CONFIG || {
@@ -27,25 +36,26 @@ function loadIcdCodes() {
     if (typeof window.initIcdVersionFromOrganization === "function") {
       await window.initIcdVersionFromOrganization();
     }
-    if (typeof window.getActiveIcdCodes === "function" && window.getActiveIcdCodes().length) {
+    if (isActiveIcdDatasetLoaded()) {
       return true;
     }
 
     const config = getIcdConfig();
     const scriptPath = config.getScriptPath();
     const scriptId = config.getScriptId();
+    const scriptUrl = `${scriptPath}?v=${ICD_DATA_BUILD}`;
 
     await new Promise((resolve, reject) => {
       const existing = document.getElementById(scriptId);
       if (existing) {
         existing.addEventListener("load", () => resolve(true));
-        existing.addEventListener("error", () => reject(new Error(`Failed to load ${scriptPath}`)));
+        existing.addEventListener("error", () => reject(new Error(`Failed to load ${scriptUrl}`)));
         return;
       }
 
       const script = document.createElement("script");
       script.id = scriptId;
-      script.src = scriptPath;
+      script.src = scriptUrl;
       script.async = true;
       script.onload = () => resolve(true);
       script.onerror = () => reject(new Error(`Failed to load ${scriptPath}`));
@@ -65,7 +75,7 @@ function buildIcdIndex() {
   if (icdIndex) return icdIndex;
   const codes = typeof window.getActiveIcdCodes === 'function'
     ? window.getActiveIcdCodes()
-    : (window.ICD_CODES || window.ICD11_CODES || []);
+    : (window.ICD10CA_CODES || window.ICD_CODES || []);
   icdIndex = codes.map(item => ({
     code: item.code,
     title: item.title,
