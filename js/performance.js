@@ -239,8 +239,11 @@ window.createVirtualScroll = function(container, data, renderItem, rowHeight = 6
 
 // Lazy load ICD codes by prefix (instead of all 5000 at once)
 window.getICDCodesByPrefix = function(prefix) {
-  if (!window.ICD11_CODES) {
-    console.warn('ICD11_CODES not available');
+  const icdCodes = typeof window.getActiveIcdCodes === 'function'
+    ? window.getActiveIcdCodes()
+    : (window.ICD_CODES || window.ICD11_CODES || []);
+  if (!icdCodes.length) {
+    console.warn('ICD codes not available');
     return [];
   }
   
@@ -248,8 +251,8 @@ window.getICDCodesByPrefix = function(prefix) {
   const results = [];
   
   // Binary search would be faster if codes were sorted
-  for (let i = 0; i < window.ICD11_CODES.length; i++) {
-    const code = window.ICD11_CODES[i];
+  for (let i = 0; i < icdCodes.length; i++) {
+    const code = icdCodes[i];
     if (code.code.toLowerCase().startsWith(prefixLower) || 
         code.title.toLowerCase().includes(prefixLower)) {
       results.push(code);

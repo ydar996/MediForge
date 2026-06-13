@@ -498,14 +498,16 @@
     historyInput.dataset.icdBound = "true";
 
     const showInitial = async () => {
-      if (typeof window.loadIcd11Codes === "function") {
-        await window.loadIcd11Codes();
+      if (typeof window.loadIcdCodes === "function") {
+        await window.loadIcdCodes();
       }
       let initial = [];
       if (typeof window.getIcdInitialSuggestions === "function") {
         initial = window.getIcdInitialSuggestions(20);
       } else {
-        const codes = window.ICD11_CODES || [];
+        const codes = typeof window.getActiveIcdCodes === "function"
+          ? window.getActiveIcdCodes()
+          : (window.ICD_CODES || window.ICD11_CODES || []);
         if (!codes.length) return;
         initial = codes.slice(0, 20);
       }
@@ -561,14 +563,16 @@
     historyInput.dataset.icdSearchBound = "true";
 
     const showInitial = async () => {
-      if (typeof window.loadIcd11Codes === "function") {
-        await window.loadIcd11Codes();
+      if (typeof window.loadIcdCodes === "function") {
+        await window.loadIcdCodes();
       }
       let initial = [];
       if (typeof window.getIcdInitialSuggestions === "function") {
         initial = window.getIcdInitialSuggestions(20);
       } else {
-        const codes = window.ICD11_CODES || [];
+        const codes = typeof window.getActiveIcdCodes === "function"
+          ? window.getActiveIcdCodes()
+          : (window.ICD_CODES || window.ICD11_CODES || []);
         if (!codes.length) return;
         initial = codes.slice(0, 20);
       }
@@ -585,8 +589,8 @@
         historyResults.style.display = "none";
         return;
       }
-      if (typeof window.loadIcd11Codes === "function") {
-        await window.loadIcd11Codes();
+      if (typeof window.loadIcdCodes === "function") {
+        await window.loadIcdCodes();
       }
       let results = [];
       if (typeof window.searchLocalCodesOptimized === "function") {
@@ -1311,7 +1315,7 @@
 
     // Ensure ICD codes are loaded before initializing search
     let icdRetries = 0;
-    while (icdRetries < 30 && typeof window.ICD11_CODES === "undefined") {
+    while (icdRetries < 30 && !(typeof window.getActiveIcdCodes === "function" && window.getActiveIcdCodes().length)) {
       await new Promise(resolve => setTimeout(resolve, 100));
       icdRetries++;
     }

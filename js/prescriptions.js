@@ -1176,7 +1176,10 @@ function showDiagnosisSuggestionsOnFocus() {
   const recent = getCustomDiagnoses();
   const items = recent.slice(0,20);
   // Build ICD suggestions if available
-  const icdList = (window.ICD11_CODES || []).slice(0).sort((a,b)=>(a.title||'').localeCompare(b.title||'')).slice(0,10);
+  const icdSource = typeof window.getActiveIcdCodes === 'function'
+    ? window.getActiveIcdCodes()
+    : (window.ICD_CODES || window.ICD11_CODES || []);
+  const icdList = icdSource.slice(0).sort((a,b)=>(a.title||'').localeCompare(b.title||'')).slice(0,10);
   const icdMarkup = icdList.map(c => `
     <div class="drug-suggestion" onclick="selectDiagnosis('${(c.code + ' - ' + c.title).replace(/'/g, "\\'")}')"><div class="drug-name">${c.code} - ${c.title}</div></div>
   `).join('');

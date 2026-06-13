@@ -54,6 +54,8 @@ const ASSETS_TO_CACHE = [
   "/js/appointments.js",
   "/js/reports.js",
   "/js/preventive.js",
+  "/js/icd-config.js",
+  "/js/icd10ca.js",
   "/js/icd11.js",
   "/js/icd-selector.js",
   "/js/prescriptions.js",

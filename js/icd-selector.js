@@ -1,41 +1,71 @@
-// Lazy-load ICD11_CODES on first use
+// Lazy-load active ICD code set (default ICD-10-CA; see js/icd-config.js)
 let codesLoaded = false;
 let icdIndex = null;
 let icdScriptPromise = null;
 
-function loadIcd11Codes() {
-  if (window.ICD11_CODES) {
-    return Promise.resolve(true);
-  }
+function getIcdConfig() {
+  return window.MEDIFORGE_ICD_CONFIG || {
+    getScriptPath: () => 'js/icd10ca.js',
+    getScriptId: () => 'icd-data-script-icd10ca',
+    getLabel: () => 'ICD-10-CA'
+  };
+}
+
+function resetIcdSearchIndex() {
+  icdIndex = null;
+  codesLoaded = false;
+  icdScriptPromise = null;
+}
+window.__resetIcdSearchIndex = resetIcdSearchIndex;
+
+function loadIcdCodes() {
   if (icdScriptPromise) {
     return icdScriptPromise;
   }
 
-  icdScriptPromise = new Promise((resolve, reject) => {
-    const existing = document.getElementById('icd11-script');
-    if (existing) {
-      existing.addEventListener('load', () => resolve(true));
-      existing.addEventListener('error', () => reject(new Error('Failed to load icd11.js')));
-      return;
+  icdScriptPromise = (async () => {
+    if (typeof window.initIcdVersionFromOrganization === "function") {
+      await window.initIcdVersionFromOrganization();
+    }
+    if (typeof window.getActiveIcdCodes === "function" && window.getActiveIcdCodes().length) {
+      return true;
     }
 
-    const script = document.createElement('script');
-    script.id = 'icd11-script';
-    script.src = 'js/icd11.js';
-    script.async = true;
-    script.onload = () => resolve(true);
-    script.onerror = () => reject(new Error('Failed to load icd11.js'));
-    document.head.appendChild(script);
-  });
+    const config = getIcdConfig();
+    const scriptPath = config.getScriptPath();
+    const scriptId = config.getScriptId();
+
+    await new Promise((resolve, reject) => {
+      const existing = document.getElementById(scriptId);
+      if (existing) {
+        existing.addEventListener("load", () => resolve(true));
+        existing.addEventListener("error", () => reject(new Error(`Failed to load ${scriptPath}`)));
+        return;
+      }
+
+      const script = document.createElement("script");
+      script.id = scriptId;
+      script.src = scriptPath;
+      script.async = true;
+      script.onload = () => resolve(true);
+      script.onerror = () => reject(new Error(`Failed to load ${scriptPath}`));
+      document.head.appendChild(script);
+    });
+
+    return true;
+  })();
 
   return icdScriptPromise;
 }
 
-window.loadIcd11Codes = loadIcd11Codes;
+window.loadIcdCodes = loadIcdCodes;
+window.loadIcd11Codes = loadIcdCodes;
 
 function buildIcdIndex() {
   if (icdIndex) return icdIndex;
-  const codes = window.ICD11_CODES || [];
+  const codes = typeof window.getActiveIcdCodes === 'function'
+    ? window.getActiveIcdCodes()
+    : (window.ICD_CODES || window.ICD11_CODES || []);
   icdIndex = codes.map(item => ({
     code: item.code,
     title: item.title,
@@ -184,19 +214,21 @@ function createIcdSelector(fieldId, isMultiple = true, targetId = fieldId) {
 
   async function ensureCodesLoaded() {
     if (codesLoaded) return;
-    if (!window.ICD11_CODES) {
+    const hasCodes = typeof window.getActiveIcdCodes === 'function' && window.getActiveIcdCodes().length;
+    if (!hasCodes) {
       try {
-        await loadIcd11Codes();
+        await loadIcdCodes();
       } catch (error) {
-        console.warn('ICD11_CODES script failed to load:', error);
+        console.warn('ICD codes script failed to load:', error);
       }
     }
-    if (window.ICD11_CODES) {
+    const codes = typeof window.getActiveIcdCodes === 'function' ? window.getActiveIcdCodes() : [];
+    if (codes.length) {
       codesLoaded = true;
       buildIcdIndex();
-      console.log(`Loaded ${window.ICD11_CODES.length} ICD-11 codes from global`);
+      console.log(`Loaded ${codes.length} ${getIcdConfig().getLabel()} codes`);
     } else {
-      console.warn('ICD11_CODES not available globally');
+      console.warn('ICD codes not available globally');
       codesLoaded = true;
     }
   }

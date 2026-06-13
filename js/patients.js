@@ -2870,31 +2870,10 @@ function setupIcdSearch() {
   };
 
   const loadIcdCodes = async () => {
-    if (window.ICD11_CODES) return;
-    if (typeof window.loadIcd11Codes === 'function') {
-      await window.loadIcd11Codes();
-      return;
+    if (typeof window.getActiveIcdCodes === 'function' && window.getActiveIcdCodes().length) return;
+    if (typeof window.loadIcdCodes === 'function') {
+      await window.loadIcdCodes();
     }
-    if (window.__icd11ScriptLoading) {
-      await window.__icd11ScriptLoading;
-      return;
-    }
-    window.__icd11ScriptLoading = new Promise((resolve, reject) => {
-      const existing = document.getElementById('icd11-script');
-      if (existing) {
-        existing.addEventListener('load', () => resolve(true));
-        existing.addEventListener('error', () => reject(new Error('Failed to load icd11.js')));
-        return;
-      }
-      const script = document.createElement('script');
-      script.id = 'icd11-script';
-      script.src = 'js/icd11.js';
-      script.async = true;
-      script.onload = () => resolve(true);
-      script.onerror = () => reject(new Error('Failed to load icd11.js'));
-      document.head.appendChild(script);
-    });
-    await window.__icd11ScriptLoading;
   };
 
   const debounce = (fn, delay = 250) => {
@@ -2913,8 +2892,8 @@ function setupIcdSearch() {
     let initial = [];
     if (typeof window.getIcdInitialSuggestions === 'function') {
       initial = window.getIcdInitialSuggestions(20);
-    } else if (window.ICD11_CODES && window.ICD11_CODES.length) {
-      initial = window.ICD11_CODES.slice(0, 20);
+    } else if (typeof window.getActiveIcdCodes === 'function' && window.getActiveIcdCodes().length) {
+      initial = window.getActiveIcdCodes().slice(0, 20);
     }
     if (initial.length) {
       displayIcdResults(initial, resultsDiv, targetInputId);
@@ -3015,8 +2994,8 @@ function displayIcdResults(results, resultsDiv, targetInputId, query = '') {
 window.showIcdDropdown = async function(targetInputId, resultsDivId) {
   try {
     console.log('[ICD] showIcdDropdown called', { targetInputId, resultsDivId });
-    if (typeof window.loadIcd11Codes === 'function') {
-      await window.loadIcd11Codes();
+    if (typeof window.loadIcdCodes === 'function') {
+      await window.loadIcdCodes();
     }
     const resultsDiv = document.getElementById(resultsDivId);
     if (!resultsDiv) {
@@ -3026,8 +3005,8 @@ window.showIcdDropdown = async function(targetInputId, resultsDivId) {
     let initial = [];
     if (typeof window.getIcdInitialSuggestions === 'function') {
       initial = window.getIcdInitialSuggestions(20);
-    } else if (window.ICD11_CODES && window.ICD11_CODES.length) {
-      initial = window.ICD11_CODES.slice(0, 20);
+    } else if (typeof window.getActiveIcdCodes === 'function' && window.getActiveIcdCodes().length) {
+      initial = window.getActiveIcdCodes().slice(0, 20);
     }
     console.log('[ICD] initial suggestions count', initial.length);
     if (initial.length) {
@@ -3049,8 +3028,8 @@ window.filterIcdDropdown = async function(targetInputId, resultsDivId, query) {
       }
       return;
     }
-    if (typeof window.loadIcd11Codes === 'function') {
-      await window.loadIcd11Codes();
+    if (typeof window.loadIcdCodes === 'function') {
+      await window.loadIcdCodes();
     }
     const resultsDiv = document.getElementById(resultsDivId);
     if (!resultsDiv) return;
