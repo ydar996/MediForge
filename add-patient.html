@@ -582,18 +582,19 @@
     </table>
     <div id="add-medication-form" style="background: #f8f9fa; padding: 15px; border-radius: 4px; border: 1px solid #dee2e6;">
       <h5 style="margin-top: 0; color: #495057;">Add Patient-Reported Medication</h5>
+      <p style="font-size: 12px; color: #666; margin: 0 0 10px;">Pick from common Canadian OTC medications or type any medication not listed. Press Enter to use your typed name.</p>
       <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 10px; margin-bottom: 10px;">
         <div>
           <label for="med-name" style="display: block; font-size: 12px; color: #666; margin-bottom: 2px;">Name:</label>
           <div style="position: relative;">
-            <input type="text" id="med-name" placeholder="Search medication or type manually (press spacebar to see all)" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px;" oninput="searchMedications()" onkeydown="handleMedicationKeydown(event)">
+            <input type="text" id="med-name" placeholder="Search common OTC meds or type your medication name" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px;">
             <div id="medication-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-top: none; border-radius: 0 0 3px 3px; max-height: 200px; overflow-y: auto; z-index: 1000; display: none;"></div>
           </div>
         </div>
         <div>
           <label for="med-dosage" style="display: block; font-size: 12px; color: #666; margin-bottom: 2px;">Dosage:</label>
           <div style="position: relative;">
-            <input type="text" id="med-dosage" placeholder="Select medication first to see available dosages (press spacebar to see all)" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px;" oninput="searchDosages()" onkeydown="handleDosageKeydown(event)" readonly>
+            <input type="text" id="med-dosage" placeholder="Enter dosage after medication name (e.g. 500 mg daily)" style="width: 100%; padding: 6px; border: 1px solid #ccc; border-radius: 3px;" readonly>
             <div id="dosage-suggestions" style="position: absolute; top: 100%; left: 0; right: 0; background: white; border: 1px solid #ccc; border-top: none; border-radius: 0 0 3px 3px; max-height: 150px; overflow-y: auto; z-index: 1000; display: none;"></div>
           </div>
         </div>
@@ -747,6 +748,8 @@
   <script src="js/patient-identity.js?v=20260427160000"></script>
   <script src="js/patient-sync-recovery.js?v=20250117"></script>  <!-- Auto-sync patients from localStorage to Supabase -->
   <script src="js/prescriptions.js?v=1"></script>
+  <script src="js/common-otc-medications-ca.js?v=20260613120000"></script>
+  <script src="js/patient-reported-medication-search.js?v=20260613120000"></script>
   
   <!-- Enhanced selectors -->
   <script src="js/allergy-selector.js?v=213"></script>
@@ -985,144 +988,11 @@
       }, 100);
     });
     
-    // Medication search functionality
+    // Patient-reported medication search (OTC list + free-text) in js/patient-reported-medication-search.js
     function initializeMedicationSearch() {
-      const medNameInput = document.getElementById('med-name');
-      if (medNameInput) {
-        medNameInput.addEventListener('input', searchMedications);
+      if (typeof window.MediForgePatientReportedMeds !== "undefined") {
+        window.MediForgePatientReportedMeds.setup();
       }
-    }
-    
-    function searchMedications() {
-      const searchTerm = document.getElementById('med-name').value.toLowerCase();
-      const suggestionsDiv = document.getElementById('medication-suggestions');
-      
-      if (searchTerm.length < 2) {
-        suggestionsDiv.style.display = 'none';
-        return;
-      }
-      
-      // Search in the drug database from prescriptions.js
-      if (typeof DRUG_DATABASE !== 'undefined') {
-        const matches = DRUG_DATABASE.filter(drug => 
-          drug.name.toLowerCase().includes(searchTerm) || 
-          drug.generic.toLowerCase().includes(searchTerm)
-        ).slice(0, 10);
-        
-        if (matches.length === 0) {
-          suggestionsDiv.style.display = 'none';
-          return;
-        }
-        
-        suggestionsDiv.innerHTML = matches.map(drug => `
-          <div class="medication-suggestion" onclick="selectMedication('${drug.name}', '${drug.strength}', '${drug.form}', '${drug.category}')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
-            <div style="font-weight: bold; color: #333;">${drug.name}</div>
-            <div style="font-size: 12px; color: #666;">${drug.strength} | ${drug.form} | ${drug.category}</div>
-          </div>
-        `).join('');
-        
-        suggestionsDiv.style.display = 'block';
-        
-        // Hide suggestions when clicking outside
-        setTimeout(() => {
-          document.addEventListener('click', function hideSuggestions(e) {
-            if (!e.target.closest('#med-name') && !e.target.closest('#medication-suggestions')) {
-              suggestionsDiv.style.display = 'none';
-              document.removeEventListener('click', hideSuggestions);
-            }
-          });
-        }, 100);
-      }
-    }
-    
-    function selectMedication(name, strength, form, category) {
-      const medNameInput = document.getElementById('med-name');
-      const medDosageInput = document.getElementById('med-dosage');
-      const suggestionsDiv = document.getElementById('medication-suggestions');
-      
-      // Set the medication name
-      medNameInput.value = name;
-      
-      // Store selected medication data for dosage selection
-      window.selectedMedication = { name, strength, form, category };
-      
-      // Populate dosage dropdown with available strengths
-      if (medDosageInput && strength) {
-        const strengths = strength.split(',').map(s => s.trim());
-        populateDosageDropdown(strengths);
-        
-        // Clear the dosage field to let user choose
-        medDosageInput.value = '';
-      }
-      
-      // Enable dosage field for selection
-      medDosageInput.readOnly = false;
-      medDosageInput.placeholder = "Click to see available dosages or type manually";
-      
-      // Hide suggestions
-      suggestionsDiv.style.display = 'none';
-      
-      console.log('Selected medication:', { name, strength, form, category });
-    }
-    
-    function populateDosageDropdown(strengths) {
-      const dosageSuggestionsDiv = document.getElementById('dosage-suggestions');
-      
-      if (strengths && strengths.length > 0) {
-        dosageSuggestionsDiv.innerHTML = strengths.map(strength => `
-          <div class="dosage-suggestion" onclick="selectDosage('${strength}')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
-            <div style="font-weight: bold; color: #333;">${strength}</div>
-          </div>
-        `).join('');
-      }
-    }
-    
-    function selectDosage(dosage) {
-      const medDosageInput = document.getElementById('med-dosage');
-      const suggestionsDiv = document.getElementById('dosage-suggestions');
-      
-      medDosageInput.value = dosage;
-      suggestionsDiv.style.display = 'none';
-      
-      console.log('Selected dosage:', dosage);
-    }
-    
-    function searchDosages() {
-      const searchTerm = document.getElementById('med-dosage').value.toLowerCase();
-      const suggestionsDiv = document.getElementById('dosage-suggestions');
-      
-      if (!window.selectedMedication || !window.selectedMedication.strength) {
-        suggestionsDiv.style.display = 'none';
-        return;
-      }
-      
-      const strengths = window.selectedMedication.strength.split(',').map(s => s.trim());
-      const matches = strengths.filter(strength => 
-        strength.toLowerCase().includes(searchTerm)
-      );
-      
-      if (matches.length === 0) {
-        suggestionsDiv.style.display = 'none';
-        return;
-      }
-      
-      suggestionsDiv.innerHTML = matches.map(strength => `
-        <div class="dosage-suggestion" onclick="selectDosage('${strength}')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
-          <div style="font-weight: bold; color: #333;">${strength}</div>
-        </div>
-      `).join('');
-      
-      suggestionsDiv.style.display = 'block';
-      
-      // Hide suggestions when clicking outside
-      setTimeout(() => {
-        document.addEventListener('click', function hideSuggestions(e) {
-          if (!e.target.closest('#med-dosage') && !e.target.closest('#dosage-suggestions')) {
-            suggestionsDiv.style.display = 'none';
-            document.removeEventListener('click', hideSuggestions);
-          }
-        });
-      }, 100);
     }
     
     // Vaccine search functionality
@@ -1182,87 +1052,12 @@
       console.log('Selected vaccine:', { name, purpose, status });
     }
     
-    // Spacebar handlers to show all options
-    function handleMedicationKeydown(event) {
-      if (event.key === ' ' && !event.target.value.trim()) {
-        event.preventDefault(); // Prevent adding space to input
-        showAllMedications();
-      }
-    }
-    
-    function handleDosageKeydown(event) {
-      if (event.key === ' ' && !event.target.value.trim()) {
-        event.preventDefault(); // Prevent adding space to input
-        showAllDosages();
-      }
-    }
-    
+    // Spacebar handlers for vaccine browse only
     function handleVaccineKeydown(event) {
       if (event.key === ' ' && !event.target.value.trim()) {
         event.preventDefault(); // Prevent adding space to input
         showAllVaccines();
       }
-    }
-    
-    function showAllMedications() {
-      const suggestionsDiv = document.getElementById('medication-suggestions');
-      
-      if (!window.DRUG_DATABASE) {
-        console.log('TRACE: DRUG_DATABASE not available yet');
-        return;
-      }
-      
-      // Show first 20 medications for browsing
-      const allMeds = window.DRUG_DATABASE.slice(0, 20);
-      
-      suggestionsDiv.innerHTML = allMeds.map(drug => `
-        <div class="medication-suggestion" onclick="selectMedication('${drug.name}', '${drug.strength}', '${drug.form}', '${drug.category}')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
-          <div style="font-weight: bold; color: #333;">${drug.name}</div>
-          <div style="font-size: 12px; color: #666;">${drug.strength} � ${drug.form}</div>
-          <div style="font-size: 11px; color: #888;">${drug.category}</div>
-        </div>
-      `).join('');
-      
-      suggestionsDiv.style.display = 'block';
-      
-      // Hide suggestions when clicking outside
-      setTimeout(() => {
-        document.addEventListener('click', function hideSuggestions(e) {
-          if (!e.target.closest('#med-name') && !e.target.closest('#medication-suggestions')) {
-            suggestionsDiv.style.display = 'none';
-            document.removeEventListener('click', hideSuggestions);
-          }
-        });
-      }, 100);
-    }
-    
-    function showAllDosages() {
-      const suggestionsDiv = document.getElementById('dosage-suggestions');
-      
-      if (!window.selectedMedication || !window.selectedMedication.strength) {
-        console.log('TRACE: No medication selected for dosage browsing');
-        return;
-      }
-      
-      const strengths = window.selectedMedication.strength.split(',').map(s => s.trim());
-      
-      suggestionsDiv.innerHTML = strengths.map(strength => `
-        <div class="dosage-suggestion" onclick="selectDosage('${strength}')" style="padding: 8px; cursor: pointer; border-bottom: 1px solid #eee;">
-          <div style="font-weight: bold; color: #333;">${strength}</div>
-        </div>
-      `).join('');
-      
-      suggestionsDiv.style.display = 'block';
-      
-      // Hide suggestions when clicking outside
-      setTimeout(() => {
-        document.addEventListener('click', function hideSuggestions(e) {
-          if (!e.target.closest('#med-dosage') && !e.target.closest('#dosage-suggestions')) {
-            suggestionsDiv.style.display = 'none';
-            document.removeEventListener('click', hideSuggestions);
-          }
-        });
-      }, 100);
     }
     
     function showAllVaccines() {

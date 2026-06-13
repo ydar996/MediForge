@@ -485,33 +485,9 @@
   }
 
   function setupMedicationSearchHandlers() {
-    const medNameInput = document.getElementById("med-name");
-    const medDosageInput = document.getElementById("med-dosage");
-    if (!medNameInput || !medDosageInput) return;
-
-    const debouncedMedSearch = debounce(searchMedications, 200);
-    const debouncedDosageSearch = debounce(searchDosages, 200);
-
-    medNameInput.addEventListener("input", debouncedMedSearch);
-    medNameInput.addEventListener("keydown", handleMedicationKeydown);
-    medDosageInput.addEventListener("input", debouncedDosageSearch);
-    medDosageInput.addEventListener("keydown", handleDosageKeydown);
-
-    // Show suggestions on click/focus like add-patient
-    medNameInput.addEventListener("focus", showAllMedications);
-    medNameInput.addEventListener("click", showAllMedications);
-    medDosageInput.addEventListener("focus", () => {
-      const dosageSuggestions = document.getElementById("dosage-suggestions");
-      if (dosageSuggestions && dosageSuggestions.children.length) {
-        dosageSuggestions.style.display = "block";
-      }
-    });
-    medDosageInput.addEventListener("click", () => {
-      const dosageSuggestions = document.getElementById("dosage-suggestions");
-      if (dosageSuggestions && dosageSuggestions.children.length) {
-        dosageSuggestions.style.display = "block";
-      }
-    });
+    if (typeof window.MediForgePatientReportedMeds !== "undefined") {
+      window.MediForgePatientReportedMeds.setup();
+    }
   }
 
   function setupIcdClickSuggestions() {
@@ -636,172 +612,6 @@
       if (timer) clearTimeout(timer);
       timer = setTimeout(() => fn.apply(this, args), delay);
     };
-  }
-
-  function getDrugSearchIndex() {
-    if (!Array.isArray(window.DRUG_DATABASE)) return [];
-    if (window.__drugSearchIndex && window.__drugSearchIndex.length === window.DRUG_DATABASE.length) {
-      return window.__drugSearchIndex;
-    }
-    window.__drugSearchIndex = window.DRUG_DATABASE.map(drug => ({
-      drug,
-      nameLower: String(drug.name || "").toLowerCase(),
-      genericLower: String(drug.generic || "").toLowerCase()
-    }));
-    return window.__drugSearchIndex;
-  }
-
-  function searchMedications() {
-    const input = document.getElementById("med-name");
-    const suggestionsDiv = document.getElementById("medication-suggestions");
-    if (!input || !suggestionsDiv) return;
-
-    const searchTerm = input.value.toLowerCase();
-    if (searchTerm.length < 2) {
-      suggestionsDiv.style.display = "none";
-      return;
-    }
-
-    const index = getDrugSearchIndex();
-    if (!index.length) {
-      suggestionsDiv.style.display = "none";
-      return;
-    }
-
-    const matches = index.filter(item =>
-      item.nameLower.includes(searchTerm) ||
-      item.genericLower.includes(searchTerm)
-    ).slice(0, 10).map(item => item.drug);
-
-    if (!matches.length) {
-      suggestionsDiv.style.display = "none";
-      return;
-    }
-
-    suggestionsDiv.innerHTML = matches.map(drug => `
-      <div class="medication-suggestion" data-name="${drug.name.replace(/"/g, "&quot;")}" data-strength="${drug.strength.replace(/"/g, "&quot;")}" data-form="${drug.form.replace(/"/g, "&quot;")}" data-category="${drug.category.replace(/"/g, "&quot;")}">
-        <div style="font-weight: 600; color: #0b3356;">${drug.name}</div>
-        <div style="font-size: 12px; color: var(--intake-muted);">${drug.strength} | ${drug.form} | ${drug.category}</div>
-      </div>
-    `).join("");
-
-    suggestionsDiv.style.display = "block";
-
-    setTimeout(() => {
-      const handler = function(e) {
-        if (!e.target.closest("#med-name") && !e.target.closest("#medication-suggestions")) {
-          suggestionsDiv.style.display = "none";
-          document.removeEventListener("click", handler);
-        }
-      };
-      document.addEventListener("click", handler);
-    }, 100);
-
-    Array.from(suggestionsDiv.children).forEach(option => {
-      option.addEventListener("click", () => {
-        selectMedication(option.dataset.name, option.dataset.strength, option.dataset.form, option.dataset.category);
-      });
-    });
-  }
-
-  function selectMedication(name, strength, form, category) {
-    const medNameInput = document.getElementById("med-name");
-    const medDosageInput = document.getElementById("med-dosage");
-    const suggestionsDiv = document.getElementById("medication-suggestions");
-    if (!medNameInput || !medDosageInput || !suggestionsDiv) return;
-
-    medNameInput.value = name;
-    window.selectedMedication = { name, strength, form, category };
-
-    if (strength) {
-      const strengths = strength.split(",").map(s => s.trim());
-      populateDosageDropdown(strengths);
-      medDosageInput.value = "";
-      medDosageInput.readOnly = false;
-      medDosageInput.placeholder = "Click or type to select an available dosage";
-    }
-
-    suggestionsDiv.style.display = "none";
-  }
-
-  function populateDosageDropdown(strengths) {
-    const dosageSuggestions = document.getElementById("dosage-suggestions");
-    if (!dosageSuggestions) return;
-
-    dosageSuggestions.innerHTML = strengths.map(strength => `
-      <div class="dosage-suggestion" data-dosage="${strength.replace(/"/g, "&quot;")}">
-        <div style="font-weight: 600; color: #0b3356;">${strength}</div>
-      </div>
-    `).join("");
-
-    Array.from(dosageSuggestions.children).forEach(option => {
-      option.addEventListener("click", () => selectDosage(option.dataset.dosage));
-    });
-  }
-
-  function selectDosage(dosage) {
-    const medDosageInput = document.getElementById("med-dosage");
-    const dosageSuggestions = document.getElementById("dosage-suggestions");
-    if (!medDosageInput || !dosageSuggestions) return;
-
-    medDosageInput.value = dosage;
-    dosageSuggestions.style.display = "none";
-  }
-
-  function searchDosages() {
-    const medDosageInput = document.getElementById("med-dosage");
-    const dosageSuggestions = document.getElementById("dosage-suggestions");
-    if (!medDosageInput || !dosageSuggestions || !window.selectedMedication) return;
-
-    const searchTerm = medDosageInput.value.toLowerCase();
-    const strengths = (window.selectedMedication.strength || "").split(",").map(s => s.trim());
-    const matches = strengths.filter(strength => strength.toLowerCase().includes(searchTerm));
-
-    if (!matches.length) {
-      dosageSuggestions.style.display = "none";
-      return;
-    }
-
-    populateDosageDropdown(matches);
-    dosageSuggestions.style.display = "block";
-  }
-
-  function showAllMedications() {
-    if (typeof window.DRUG_DATABASE === "undefined") return;
-    const suggestionsDiv = document.getElementById("medication-suggestions");
-    if (!suggestionsDiv) return;
-
-    const matches = window.DRUG_DATABASE.slice(0, 20);
-    suggestionsDiv.innerHTML = matches.map(drug => `
-      <div class="medication-suggestion" data-name="${drug.name.replace(/"/g, "&quot;")}" data-strength="${drug.strength.replace(/"/g, "&quot;")}" data-form="${drug.form.replace(/"/g, "&quot;")}" data-category="${drug.category.replace(/"/g, "&quot;")}">
-        <div style="font-weight: 600; color: #0b3356;">${drug.name}</div>
-        <div style="font-size: 12px; color: var(--intake-muted);">${drug.strength} | ${drug.form} | ${drug.category}</div>
-      </div>
-    `).join("");
-
-    suggestionsDiv.style.display = "block";
-    Array.from(suggestionsDiv.children).forEach(option => {
-      option.addEventListener("click", () => {
-        selectMedication(option.dataset.name, option.dataset.strength, option.dataset.form, option.dataset.category);
-      });
-    });
-  }
-
-  function handleMedicationKeydown(event) {
-    if (event.key === " " && !event.target.value.trim()) {
-      event.preventDefault();
-      showAllMedications();
-    }
-  }
-
-  function handleDosageKeydown(event) {
-    if (event.key === " " && event.target.readOnly === false) {
-      event.preventDefault();
-      const dosageSuggestions = document.getElementById("dosage-suggestions");
-      if (dosageSuggestions && dosageSuggestions.children.length) {
-        dosageSuggestions.style.display = "block";
-      }
-    }
   }
 
   function getLocalQueue() {
@@ -1589,10 +1399,8 @@
       if (medSuggestions) medSuggestions.style.display = "none";
       const dosageSuggestions = document.getElementById("dosage-suggestions");
       if (dosageSuggestions) dosageSuggestions.style.display = "none";
-      const medDosageInput = document.getElementById("med-dosage");
-      if (medDosageInput) {
-        medDosageInput.readOnly = true;
-        medDosageInput.placeholder = "Select medication first to see available dosages";
+      if (typeof window.MediForgePatientReportedMeds !== "undefined") {
+        window.MediForgePatientReportedMeds.resetFields();
       }
       window.selectedMedication = null;
     });

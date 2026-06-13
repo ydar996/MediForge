@@ -3216,6 +3216,9 @@ window.addMedicationEntry = function() {
   tempMedications.push({ name, dosage, startDate, endDate, notes });
   displayTempTable('medications-table', tempMedications, ['name', 'dosage', 'startDate', 'endDate', 'notes']);
   document.getElementById("add-medication-form").reset();
+  if (typeof window.MediForgePatientReportedMeds !== "undefined") {
+    window.MediForgePatientReportedMeds.resetFields();
+  }
 };
 // Function to add allergy entry on add-patient.html
 window.addAllergyEntry = function() {
