@@ -1,32 +1,37 @@
 # MediForge User Manual
 
-**Last updated:** May 2026  
+**Last updated:** June 2026  
 **Who this is for:** Doctors, nurses, receptionists, billers, lab staff, pharmacists, and clinic administrators.  
 **Plain language:** Step-by-step help for everyday tasks—not technical setup.
 
 **Also available as a web page with pictures:** open `user-manual.html` on your site (e.g. `https://mediforge.netlify.app/user-manual`).
+
+**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, manual medication entry, and **patient self-intake**.
 
 ---
 
 ## Table of contents
 
 1. [What is MediForge?](#1-what-is-mediforge)
-2. [Logging in and registering](#2-logging-in-and-registering)
-3. [Your dashboard](#3-your-dashboard)
-4. [Patients](#4-patients)
-5. [Clinical notes (SOAP)](#5-clinical-notes-soap)
-6. [Appointments and schedule](#6-appointments-and-schedule)
-7. [Billing and payments](#7-billing-and-payments)
-8. [Messages and tasks](#8-messages-and-tasks)
-9. [Patient portal](#9-patient-portal)
-10. [Role-specific dashboards](#10-role-specific-dashboards)
-11. [In-patient care (hospitals)](#11-in-patient-care-hospitals)
-12. [Working without internet](#12-working-without-internet)
-13. [Reports and audit](#13-reports-and-audit)
-14. [Administrator tasks](#14-administrator-tasks)
-15. [Platform owner (all clinics)](#15-platform-owner-all-clinics)
-16. [When something goes wrong](#16-when-something-goes-wrong)
-17. [Getting more help](#17-getting-more-help)
+2. [Logging in](#2-logging-in)
+3. [Registering a clinic (Canada)](#3-registering-a-clinic-canada)
+4. [Your dashboard](#4-your-dashboard)
+5. [Patients — find a chart](#5-patients--find-a-chart)
+6. [Add a patient (race, ICD-10, medications)](#6-add-a-patient-race-icd-10-medications)
+7. [Patient self-intake](#7-patient-self-intake)
+8. [Clinical notes (SOAP)](#8-clinical-notes-soap)
+9. [Appointments and schedule](#9-appointments-and-schedule)
+10. [Billing and payments](#10-billing-and-payments)
+11. [Messages and tasks](#11-messages-and-tasks)
+12. [Patient portal](#12-patient-portal)
+13. [Role-specific dashboards](#13-role-specific-dashboards)
+14. [In-patient care (hospitals)](#14-in-patient-care-hospitals)
+15. [Working without internet](#15-working-without-internet)
+16. [Reports and audit](#16-reports-and-audit)
+17. [Administrator tasks](#17-administrator-tasks)
+18. [Platform owner (all clinics)](#18-platform-owner-all-clinics)
+19. [When something goes wrong](#19-when-something-goes-wrong)
+20. [Getting more help](#20-getting-more-help)
 
 ---
 
@@ -48,9 +53,9 @@ Your clinic’s data is kept **separate** from other clinics on the system. You 
 
 ---
 
-## 2. Logging in and registering
+## 2. Logging in
 
-### Logging in (existing users)
+### Existing staff
 
 1. Open your clinic’s MediForge address (your administrator will give you the link).
 2. Enter your **username** (not always your email).
@@ -61,54 +66,59 @@ You should land on the **Dashboard**.
 
 ![Login screen](user-manual/images/01-login.png)
 
-### Registering a new clinic (first-time organization)
+---
 
-1. Go to **Register** from the login page.
-2. Choose to **create a new organization** (new clinic).
-3. Fill in clinic name, country, and your details as the first administrator.
-4. Complete all required fields and submit.
-5. Log in with the username and password you chose.
+## 3. Registering a clinic (Canada)
 
-### Joining an existing clinic
+### Create a new clinic
 
-1. Go to **Register**.
-2. Choose to **join an existing organization**.
-3. Enter the **organization code** your administrator gave you.
-4. Fill in your name, role (Doctor, Nurse, etc.), and password.
-5. Submit. Your administrator may need to approve you.
+1. From the login page, click **Register**.
+2. Choose **create a new organization**.
+3. Enter clinic name, **Canada** address (province, city, **postal code**), and your details as first administrator.
+4. Optional: provincial health card / insurance fields if your clinic uses them.
+5. Accept legal agreements and submit.
+6. Log in. Save your **organization code** for staff who will join.
+
+### Join an existing clinic
+
+1. **Register** → **join an existing organization**.
+2. Enter the **organization code** from your administrator.
+3. Fill in name, role, and password → submit → log in.
+
+![Registration](user-manual/images/13-register.png)
 
 ### Account locked during registration?
 
-If you see **“permanently locked”** after a failed registration, **do not keep trying**. See [USER-INSTRUCTIONS-ACCOUNT-LOCKED.md](../USER-INSTRUCTIONS-ACCOUNT-LOCKED.md) and ask your administrator to remove the incomplete account.
+See [USER-INSTRUCTIONS-ACCOUNT-LOCKED.md](../USER-INSTRUCTIONS-ACCOUNT-LOCKED.md).
 
 ---
 
-## 3. Your dashboard
+## 4. Your dashboard
 
 After login you see the **Dashboard**—your home screen with buttons for each area.
 
 ![Dashboard](user-manual/images/02-dashboard.png)
+
+**Diagnosis codes (administrators):** Under **Facility Configuration**, click **Diagnosis Codes: ICD-10-CA / ICD-11**. Canadian clinics usually keep **ICD-10-CA** (default).
+
+![ICD-10 setting](user-manual/images/18-icd-settings.png)
 
 **Common buttons (your clinic may hide some by role):**
 
 | Button | What it does |
 |--------|----------------|
 | **Manage Patients** | Patient list and charts |
+| **Review Patient Intake** | Approve online patient forms |
 | **Manage Appointments** | Book and edit visits |
 | **Billing & Payments** | Invoices, checkout, cash register |
 | **Messages** | Internal messages and tasks |
 | **User Management** | Add staff (admins) |
-| **View Reports** | Clinic statistics |
-| **Setup Patient Portal** | Let patients log in to their records |
-| **In-Patient Services** | Turn hospital beds/wards on or off |
 
 **Tip:** If you do not see a button, your **role** may not include that permission. Ask your administrator.
 
-**Platform admin banner:** If you are the system owner viewing a clinic, a **purple banner** shows which clinic you are viewing. Use **Exit to Platform Dashboard** to go back.
-
 ---
 
-## 4. Patients
+## 5. Patients — find a chart
 
 ### Find a patient
 
@@ -118,30 +128,47 @@ After login you see the **Dashboard**—your home screen with buttons for each a
 
 ![Patients list](user-manual/images/03-patients.png)
 
-### Add a new patient
-
-1. On the patients page, click **Add Patient** (or similar).
-2. Enter name, date of birth, gender, contact details, and other required fields.
-3. Save. The system assigns a patient ID for your clinic.
-
-### Patient chart (details)
-
-From the patient you can open:
-
-- **Demographics** — contact and identifiers  
-- **Medical visits / encounters** — visit history  
-- **Medications, allergies, labs**, etc. — depending on your workflow  
-- **Clinical note** — document a visit (see next section)
-
 ![Patient details](user-manual/images/04-patient-details.png)
-
-### Review patient self-registration
-
-If patients register online, admins use **Review Patient Intake** on the dashboard to approve or fix records.
 
 ---
 
-## 5. Clinical notes (SOAP)
+## 6. Add a patient (race, ICD-10, medications)
+
+1. **Manage Patients** → **Add Patient**.
+2. Enter name, date of birth, gender, phone, and **Canadian address** (province, city, **postal code**).
+3. Select **Race** (required). *Declined to Disclose* is allowed.
+4. Optional: PHN / insurance numbers.
+5. **Past medical history — diagnosis search:** type a condition (e.g. *diabetes*) and pick an **ICD-10-CA** code, or use a custom entry.
+6. **Medications patient already takes:** search the list, or type a name and click **Not in list? Use my typed medication name**, then enter **dosage**.
+7. **Save**.
+
+![Add patient](user-manual/images/14-add-patient.png)
+
+![Manual medication entry](user-manual/images/15-manual-medication.png)
+
+---
+
+## 7. Patient self-intake
+
+### Patient submits online
+
+1. Open the intake link your clinic sent (email or SMS).
+2. Fill in details, **race**, medications, and history.
+3. Submit (no staff login needed).
+
+![Patient intake form](user-manual/images/16-patient-intake.png)
+
+### Staff approves
+
+1. Dashboard → **Review Patient Intake**.
+2. Open a pending submission → **Approve** or reject.
+3. Approved patients appear in your patient list.
+
+![Intake approvals](user-manual/images/17-intake-approvals.png)
+
+---
+
+## 8. Clinical notes (SOAP)
 
 A **clinical note** is where you document a visit (Subjective, Objective, Assessment, Plan).
 
@@ -152,13 +179,13 @@ A **clinical note** is where you document a visit (Subjective, Objective, Assess
 
 ![Clinical note](user-manual/images/05-clinical-note.png)
 
-**Bill a visit from the chart:** On the patient’s **Medical Visits** tab, use **Bill Visit** to create an invoice for that encounter (see [Billing](#7-billing-and-payments)).
+**Bill a visit from the chart:** On the patient’s **Medical Visits** tab, use **Bill Visit** to create an invoice for that encounter (see [Billing](#10-billing-and-payments)).
 
 **Admit a patient (in-patient):** If in-patient care is enabled, you may see **Admit Patient** on the clinical note.
 
 ---
 
-## 6. Appointments and schedule
+## 9. Appointments and schedule
 
 ### Manage appointments
 
@@ -177,7 +204,7 @@ A **clinical note** is where you document a visit (Subjective, Objective, Assess
 
 ---
 
-## 7. Billing and payments
+## 10. Billing and payments
 
 **Full detail:** [BILLING-SYSTEM-GUIDE.md](../BILLING-SYSTEM-GUIDE.md)
 
@@ -212,7 +239,7 @@ Dashboard → **Billing & Payments**.
 
 ---
 
-## 8. Messages and tasks
+## 11. Messages and tasks
 
 1. Dashboard → **Messages**.
 2. Read messages; reply or mark done.
@@ -224,7 +251,7 @@ Use messages for handoffs (“please call this patient”), not for emergency ca
 
 ---
 
-## 9. Patient portal
+## 12. Patient portal
 
 Lets patients see limited information (results, appointments, etc.) with their own login.
 
@@ -236,7 +263,7 @@ Lets patients see limited information (results, appointments, etc.) with their o
 
 ---
 
-## 10. Role-specific dashboards
+## 13. Role-specific dashboards
 
 If your role includes them, the dashboard shows extra entry points:
 
@@ -253,7 +280,7 @@ Open the button that matches your job; workflows inside are similar to the main 
 
 ---
 
-## 11. In-patient care (hospitals)
+## 14. In-patient care (hospitals)
 
 **Setup guide:** [INPATIENT-SETUP-GUIDE.md](../INPATIENT-SETUP-GUIDE.md)
 
@@ -266,7 +293,7 @@ Open the button that matches your job; workflows inside are similar to the main 
 
 ---
 
-## 12. Working without internet
+## 15. Working without internet
 
 MediForge can keep working when the connection drops **if you prepared while online**.
 
@@ -281,7 +308,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 13. Reports and audit
+## 16. Reports and audit
 
 - **View Reports** — clinic-level summaries  
 - **Preventive Gaps Summary**, **Conditions Breakdown**, etc. — quality and population views  
@@ -290,7 +317,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 14. Administrator tasks
+## 17. Administrator tasks
 
 ### Add or manage staff
 
@@ -312,7 +339,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 15. Platform owner (all clinics)
+## 18. Platform owner (all clinics)
 
 **Only for the owner of MediForge**, not regular clinic staff.
 
@@ -324,23 +351,26 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 16. When something goes wrong
+## 19. When something goes wrong
 
 | Problem | What to do |
 |---------|------------|
 | Wrong password | Use your clinic’s password reset process or ask admin |
 | Locked during registration | See [USER-INSTRUCTIONS-ACCOUNT-LOCKED.md](../USER-INSTRUCTIONS-ACCOUNT-LOCKED.md) |
+| ICD search empty | Wait for codes to load; type at least 2 letters (e.g. *diabetes*) |
+| Medication not in list | Type name → **Not in list? Use my typed medication name** |
+| Intake link broken | Ask admin to verify intake URL and database |
 | Blank screen after login | Refresh; try another browser; check internet |
 | Data not syncing | Go online; refresh; stay logged in |
-| Cannot see a patient | Confirm correct clinic; ask admin if user is in right organization |
 | Billing total wrong | Check invoice line items; use **Void** only for mistaken payments |
-| Platform dashboard shows zeros | Database updates may be needed on that environment—contact technical support |
 
 ---
 
-## 17. Getting more help
+## 20. Getting more help
 
-- **This manual:** `user-manual.html` on your site  
+- **This manual (web):** `user-manual.html` on your site  
+- **Update manual when adding features:** [HOW-TO-UPDATE-MANUAL.md](user-manual/HOW-TO-UPDATE-MANUAL.md)
+- **Screenshots:** [README-SCREENSHOTS.md](user-manual/README-SCREENSHOTS.md)
 - **Billing:** [BILLING-SYSTEM-GUIDE.md](../BILLING-SYSTEM-GUIDE.md)  
 - **Offline:** [HOW-TO-USE-OFFLINE-CAPABILITIES.md](../HOW-TO-USE-OFFLINE-CAPABILITIES.md)  
 - **In-patient:** [INPATIENT-SETUP-GUIDE.md](../INPATIENT-SETUP-GUIDE.md)  
@@ -349,4 +379,4 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-*MediForge — healthcare management built for African clinics. Powered by Work Chop Inc.*
+*MediForge — clinic management for Canada and beyond. Powered by Work Chop Inc.*

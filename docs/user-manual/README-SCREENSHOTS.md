@@ -77,3 +77,11 @@ Images are saved as `01-login.png`, `02-dashboard.png`, etc.
 | `10-patient-portal.png` | Setup patient portal (admin) |
 | `11-offline.png` | Browser offline or app offline banner (optional) |
 | `12-org-users.png` | User management (admin) |
+| `13-register.png` | Registration (new clinic / join org) |
+| `14-add-patient.png` | Add patient — address, race, health card |
+| `15-manual-medication.png` | Add patient — medication “Not in list” area |
+| `16-patient-intake.png` | Patient self-intake form |
+| `17-intake-approvals.png` | Review Patient Intake (admin) |
+| `18-icd-settings.png` | Dashboard — Diagnosis Codes ICD-10-CA / ICD-11 toggle |
+
+When you add a feature, follow **`HOW-TO-UPDATE-MANUAL.md`** in this folder.

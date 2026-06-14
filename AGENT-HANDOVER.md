@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 12, 2026  
+**Last updated:** June 13, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -20,12 +20,14 @@ Every agent that makes meaningful changes **must** update this file before finis
 
 ## Communication with the user (mandatory)
 
-**Always explain things in layman's terms.** The project owner is not asking for jargon, long checklists they must execute themselves, or consultant-style prose.
+**Always use the simplest layman's terms.** The project owner is not a developer. Do not assume they know git, SQL, Netlify, or terminal commands unless you explain them in one plain sentence.
 
-- Say **what** changed, **why** it matters, and **what they need to do next** — in plain English.
-- When you can **do the work yourself** (deploy, commit, run checks), **do it** — don’t hand back a long DIY checklist unless they asked to do it themselves.
-- Keep answers **short and direct**.
+- Say **what** changed, **why** it matters, and **what they should do next** — like explaining to a smart friend who does not work in tech.
+- **Never** give jargon-first answers (e.g. “run the idempotent migration packet”) without a plain-English version first.
+- When you can **do the work yourself** (deploy, commit, run checks, capture screenshots), **do it** — do not hand back a long DIY checklist unless they asked to do it themselves.
+- Keep answers **short and direct**. Use numbered steps for anything they must click or type.
 - Technical detail belongs in code comments or docs — not in every chat reply.
+- For **user manual screenshots**: point them to **`docs/user-manual/GET-THE-PICTURES.md`** (Snipping Tool method first; automatic script second).
 
 ---
 
@@ -270,6 +272,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Added **`DEPLOYMENT-PIPELINE.md`** (mirrors EHR-Africa dev → staging → main flow).
 - **Mandatory agent rule:** always commit + push; keep PC, GitHub, and Netlify in sync.
 - **Owner next steps:** create `dev` + `staging` branches, Netlify sites, and Dev/Staging Supabase projects per **`DEPLOYMENT-PIPELINE.md`**.
+
+### June 13, 2026 — User manual update + plain-language rule
+
+- Updated **`user-manual.html`** and **`docs/USER-MANUAL.md`** for June 2026 features (Canada registration, race, ICD-10-CA, manual meds, patient intake).
+- Added **`docs/user-manual/GET-THE-PICTURES.md`** — plain steps for manual screenshots (Snipping Tool) or automatic capture.
+- Strengthened **Communication with the user** in this file: simplest layman's terms always; point to GET-THE-PICTURES for manual images.
+- **Owner next steps:** Save PNGs into `docs/user-manual/images/` (see GET-THE-PICTURES.md), then deploy so `/user-manual` shows pictures on production.
 
 ---
 

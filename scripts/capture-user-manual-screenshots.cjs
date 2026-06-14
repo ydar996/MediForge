@@ -9,9 +9,39 @@ const fs = require('fs');
 const path = require('path');
 
 const delay = (ms) => new Promise((r) => setTimeout(r, ms));
+const NAV = { waitUntil: 'domcontentloaded', timeout: 90000 };
+
+async function goto(page, url) {
+  await page.goto(url, NAV);
+  await delay(1500);
+}
 const OUT_DIR = path.join(__dirname, '..', 'docs', 'user-manual', 'images');
 const BASE = (process.env.MANUAL_BASE_URL || 'https://mediforge-dev.netlify.app').replace(/\/$/, '');
 const PLATFORM = process.argv.includes('--platform');
+const SEED_AUTH = process.argv.includes('--seed-auth');
+
+function seedDevSession() {
+  return () => {
+    localStorage.setItem(
+      'user',
+      JSON.stringify({
+        username: 'manual-screenshots',
+        role: 'Admin',
+        org: 'Test Clinic',
+        organizationId: '00000000-0000-0000-0000-000000000001',
+      })
+    );
+    localStorage.setItem(
+      'organizations',
+      JSON.stringify({
+        'Test Clinic': {
+          id: '00000000-0000-0000-0000-000000000001',
+          settings: { icd_version: 'icd10ca' },
+        },
+      })
+    );
+  };
+}
 
 const clinicUser = process.env.MANUAL_USERNAME;
 const clinicPass = process.env.MANUAL_PASSWORD;
@@ -98,6 +128,9 @@ async function main() {
       args: ['--no-sandbox'],
     });
     page = await browser.newPage();
+    if (SEED_AUTH) {
+      await page.evaluateOnNewDocument(seedDevSession());
+    }
   }
   await page.setViewport({ width: 1280, height: 800 });
 
@@ -117,22 +150,56 @@ async function main() {
     await page.goto(`${BASE}/login`, { waitUntil: 'networkidle2' }).catch(() => {});
     await shot(page, '01-login.png');
   } else {
-    await page.goto(`${BASE}/login`, { waitUntil: 'networkidle2' });
+    await goto(page, `${BASE}/login`);
     await shot(page, '01-login.png');
-    if (!attached) await loginClinic(page);
-    else {
+    if (SEED_AUTH) {
+      console.log('Using dev session seed (no password). Pages may show empty data.');
+      await page.evaluate(seedDevSession());
+    } else if (!attached) {
+      await loginClinic(page);
+    } else {
       console.log('Connected Chrome is not logged in — log in on dev, then re-run with --connect');
       await browser.disconnect();
       process.exit(1);
     }
   }
 
-  await page.goto(`${BASE}/dashboard`, { waitUntil: 'networkidle2', timeout: 90000 });
-  await delay(2000);
+  await goto(page, `${BASE}/dashboard`);
+  await delay(500);
   await shot(page, '02-dashboard.png');
+  try {
+    await page.evaluate(() => {
+      const btn = document.getElementById('icd-coding-standard-btn');
+      if (btn) btn.scrollIntoView({ block: 'center' });
+    });
+    await delay(800);
+    await shot(page, '18-icd-settings.png');
+  } catch (e) {
+    console.log('  (ICD settings screenshot skipped:', e.message, ')');
+  }
 
-  await page.goto(`${BASE}/patients`, { waitUntil: 'networkidle2', timeout: 60000 });
-  await delay(2500);
+  await goto(page, `${BASE}/register`);
+  await shot(page, '13-register.png');
+
+  await goto(page, `${BASE}/add-patient`);
+  await delay(1000);
+  await shot(page, '14-add-patient.png');
+  try {
+    await page.evaluate(() => {
+      const med = document.getElementById('med-name');
+      if (med) med.scrollIntoView({ block: 'center' });
+    });
+    await delay(500);
+    await shot(page, '15-manual-medication.png');
+  } catch (e) {
+    console.log('  (medication screenshot skipped:', e.message, ')');
+  }
+
+  await goto(page, `${BASE}/patient-intake`);
+  await shot(page, '16-patient-intake.png');
+
+  await goto(page, `${BASE}/patients`);
+  await delay(1000);
   await shot(page, '03-patients.png');
 
   try {
@@ -164,10 +231,10 @@ async function main() {
     ['08-quick-checkout.png', '/quick-checkout'],
     ['09-messages.png', '/messages'],
     ['10-patient-portal.png', '/setup-patient-portal'],
+    ['17-intake-approvals.png', '/patient-intake-approvals'],
     ['12-org-users.png', '/org-user-management'],
   ]) {
-    await page.goto(`${BASE}${route}`, { waitUntil: 'networkidle2', timeout: 60000 });
-    await delay(1500);
+    await goto(page, `${BASE}${route}`);
     await shot(page, file);
   }
 
