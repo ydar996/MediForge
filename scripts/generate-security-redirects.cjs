@@ -39,6 +39,11 @@ const PREFIX_BLOCK = [
   'docs',
 ];
 
+/** Public assets under blocked prefixes (must appear before prefix wildcards in _redirects). */
+const PUBLIC_UNDER_PREFIX = [
+  'docs/user-manual/images/*',
+];
+
 const GLOB_BLOCK = [
   'unlock-*',
   'recover-*',
@@ -249,6 +254,11 @@ function main() {
   rules.push('# Block leaked secrets and internal tools on public Netlify deploys.');
   rules.push('# Regenerate: node scripts/generate-security-redirects.cjs');
   rules.push('');
+
+  for (const pattern of PUBLIC_UNDER_PREFIX) {
+    rules.push(`/${pattern} /${pattern.replace('*', ':splat')} 200`);
+  }
+  if (PUBLIC_UNDER_PREFIX.length) rules.push('');
 
   for (const item of [...blocked].sort()) {
     if (item.endsWith('/*')) {
