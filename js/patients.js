@@ -4367,25 +4367,9 @@ if (addPatientForm) {
       }
     }
 
-    const requiredFields = isExistingPatient
-      ? [
-          { id: "firstName", label: "First Name" },
-          { id: "lastName", label: "Last Name" }
-        ].concat(manualNumberingEnabled ? [{ id: "customPatientId", label: "Patient/File Number" }] : [])
-      : [
-          { id: "firstName", label: "First Name" },
-          { id: "lastName", label: "Last Name" },
-          { id: "dob", label: "Date of Birth" },
-          { id: "gender", label: "Gender" },
-          { id: "maritalStatus", label: "Marital Status" },
-          { id: "race", label: "Race" },
-          { id: "phone", label: "Phone" },
-          { id: "addressLine1", label: "Address Line 1" },
-          { id: "city", label: "City" },
-          { id: "state", label: "State" },
-          { id: "country", label: "Country" },
-          { id: "paymentSource", label: "Source of Payment for Services" }
-        ];
+    if (isExistingPatient && manualNumberingEnabled && customPatientIdInput) {
+      customPatientIdInput.required = true;
+    }
     
     // Check if emergency contact is required based on organization setting
     let emergencyContactRequired = true; // Default to required for backward compatibility
@@ -4397,21 +4381,7 @@ if (addPatientForm) {
       console.warn('⚠️ Error checking emergency contact required setting, defaulting to required:', error);
     }
     
-    // Only add emergency contact fields if required
-    if (emergencyContactRequired && !isExistingPatient) {
-      requiredFields.push({ id: "emergencyFirstName", label: "Emergency First Name" });
-      requiredFields.push({ id: "emergencyLastName", label: "Emergency Last Name" });
-      requiredFields.push({ id: "emergencyRelationship", label: "Relationship to Patient" });
-      requiredFields.push({ id: "emergencyPhone", label: "Emergency Phone" });
-      
-    const sameAsContact = document.getElementById("sameAsContact").checked;
-    if (!sameAsContact) {
-      requiredFields.push({ id: "emergencyAddressLine1", label: "Emergency Address Line 1" });
-      requiredFields.push({ id: "emergencyCity", label: "Emergency City" });
-      requiredFields.push({ id: "emergencyState", label: "Emergency State" });
-      requiredFields.push({ id: "emergencyCountry", label: "Emergency Country" });
-      }
-    } else {
+    if (!emergencyContactRequired || isExistingPatient) {
       // When optional, ensure HTML5 required attributes are removed (double-check)
       const emergencyFields = [
         "emergencyFirstName", "emergencyLastName", "emergencyRelationship", 
@@ -4427,14 +4397,8 @@ if (addPatientForm) {
       console.log('✅ [PATIENTS] Emergency contact fields set to optional - removed required attributes');
     }
 
-    const missing = [];
-    requiredFields.forEach(f => {
-      const value = document.getElementById(f.id).value.trim();
-      // Field validation checked
-      if (!value) missing.push(f.label);
-    });
-    if (missing.length > 0) {
-      alert("Please fill in the following required fields: " + missing.join(", "));
+    if (!addPatientForm.checkValidity()) {
+      addPatientForm.reportValidity();
       reEnableButton();
       return;
     }

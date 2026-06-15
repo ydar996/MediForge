@@ -469,20 +469,7 @@ async function initializePrescriptionForm() {
   // Set current date
   document.getElementById('prescription-date').value = new Date().toISOString().split('T')[0];
 
-  // Wire diagnosis field focus suggestions
-  const dxInput = document.getElementById('prescription-diagnosis') || document.getElementById('diagnosis');
-  if (dxInput) {
-    if (!document.getElementById('diagnosis-suggestions')) {
-      const sug = document.createElement('div');
-      sug.id = 'diagnosis-suggestions';
-      sug.className = 'drug-suggestions';
-      dxInput.parentElement.style.position = 'relative';
-      dxInput.parentElement.appendChild(sug);
-    }
-    dxInput.setAttribute('autocomplete','off');
-    dxInput.addEventListener('focus', showDiagnosisSuggestionsOnFocus);
-    dxInput.addEventListener('input', filterDiagnosisSuggestionsOnInput);
-  }
+  // Diagnosis ICD search is handled by createIcdSelector() in prescription.html (full ICD-10-CA index).
   
   // Generate prescription ID
   generatePrescriptionId();
@@ -2064,6 +2051,56 @@ async function savePrescription() {
   }
 }
 
+// Merge prescription diagnosis and medications into the patient chart (problem list + med list).
+function mergePrescriptionClinicalDataIntoPatient(patient, prescription) {
+  const chartDate = prescription.date || new Date().toISOString().split('T')[0];
+  let diagnosisAdded = null;
+  const medicationsAdded = [];
+
+  if (prescription.diagnosis && prescription.diagnosis.trim()) {
+    if (!patient.diagnoses) patient.diagnoses = [];
+    const dxText = prescription.diagnosis.trim();
+    const diagnosisExists = patient.diagnoses.some((d) => {
+      const existing = (d.diagnosis || d || '').toString().trim().toLowerCase();
+      return existing === dxText.toLowerCase();
+    });
+    if (!diagnosisExists) {
+      diagnosisAdded = {
+        diagnosis: dxText,
+        date: chartDate,
+        notes: 'From prescription'
+      };
+      patient.diagnoses.push(diagnosisAdded);
+    }
+  }
+
+  if (!patient.medications) patient.medications = [];
+  for (const med of prescription.medications || []) {
+    const name = (med.name || med.drugName || '').trim();
+    if (!name) continue;
+    const dosage = (med.dosage || med.strength || '').trim();
+    const exists = patient.medications.some((m) =>
+      (m.name || '').trim().toLowerCase() === name.toLowerCase() &&
+      (m.dosage || m.strength || '').trim() === dosage
+    );
+    if (!exists) {
+      const entry = {
+        name,
+        dosage,
+        startDate: med.startDate || chartDate,
+        endDate: med.endDate || '',
+        notes: (med.notes || '').trim() || 'From prescription',
+        source: 'prescription',
+        prescriptionId: prescription.id
+      };
+      patient.medications.push(entry);
+      medicationsAdded.push(entry);
+    }
+  }
+
+  return { diagnosisAdded, medicationsAdded };
+}
+
 // Save prescription to patient record
 async function savePrescriptionToPatient() {
   console.log('*** PATIENT RECORD UPDATE FUNCTION CALLED ***');
@@ -2152,173 +2189,64 @@ async function savePrescriptionToPatient() {
       encounterDate: currentPrescription.encounterDate || null,
       savedAt: new Date().toISOString()
     });
-    patients[patientIndex] = patient; // Update the patient in the array
+    patients[patientIndex] = patient;
     console.log('*** New prescription added. Total prescriptions:', patient.prescriptions.length);
   }
-  
-  // Save to localStorage first
+
+  const { diagnosisAdded, medicationsAdded } = mergePrescriptionClinicalDataIntoPatient(patient, currentPrescription);
+  patients[patientIndex] = patient;
+
   localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
-  console.log('*** Prescription saved to localStorage ***');
-  
-  // Sync to Supabase (CRITICAL for persistence after hard refresh)
+  console.log('*** Prescription + chart lists saved to localStorage ***');
+
   if (typeof window.savePatientToSupabase === 'function') {
-    console.log('*** SYNCING PRESCRIPTION TO SUPABASE ***');
     try {
       await window.savePatientToSupabase(patient);
-      console.log('*** PRESCRIPTION SYNCED TO SUPABASE SUCCESSFULLY ***');
+      console.log('*** Patient chart synced to Supabase (Rx, diagnoses, medications) ***');
     } catch (error) {
       console.error('*** SUPABASE SYNC FAILED:', error, '***');
     }
-  } else {
-    console.error('*** savePatientToSupabase function NOT AVAILABLE ***');
   }
-  
-  // Add diagnosis to patient's diagnoses array if not already present (for both new and updated prescriptions)
-  if (currentPrescription.diagnosis && currentPrescription.diagnosis.trim()) {
-    console.log('*** ADDING DIAGNOSIS TO PATIENT RECORD:', currentPrescription.diagnosis, '***');
-    
-    if (!patient.diagnoses) {
-      patient.diagnoses = [];
-    }
-    
-    // Check if diagnosis already exists
-    const diagnosisExists = patient.diagnoses.some(d => 
-      d.diagnosis?.toLowerCase() === currentPrescription.diagnosis.toLowerCase() ||
-      d.toLowerCase === currentPrescription.diagnosis.toLowerCase()
-    );
-    
-    if (!diagnosisExists) {
-      const newDiagnosis = {
-        diagnosis: currentPrescription.diagnosis,
-        date: currentPrescription.date || new Date().toISOString().split('T')[0],
-        status: 'Active',
-        notes: 'From prescription'
-      };
-      
-      patient.diagnoses.push(newDiagnosis);
-      patients[patientIndex] = patient; // Update the patient in the array
-      console.log('*** DIAGNOSIS ADDED TO PATIENT RECORD ***');
-      
-      // Notify that a diagnosis was added to trigger UI refresh
-      localStorage.setItem('patientDataSync', JSON.stringify({
-        type: 'patientDataUpdated',
-        patientId: patient.id || patient.patient_id,
-        action: 'diagnosisAdded',
-        data: newDiagnosis
-      }));
-    } else {
-      console.log('*** DIAGNOSIS ALREADY EXISTS IN PATIENT RECORD ***');
-    }
+
+  const patientIdParam = urlParams.get('patientId') || urlParams.get('id') || patient.id || patient.patient_id;
+
+  if (diagnosisAdded) {
+    localStorage.setItem('patientDataSync', JSON.stringify({
+      type: 'patientDataUpdated',
+      patientId: patientIdParam,
+      action: 'diagnosisAdded',
+      data: diagnosisAdded
+    }));
   }
-  
-  // Final save after all updates (urlParams already declared above at line 1748)
-  localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
-  console.log('*** FINAL SAVE: Total prescriptions for patient:', patient.prescriptions.length, '***');
-  
-  // Trigger refresh of prescription displays (reuse urlParams from above)
-  const patientIdParam = urlParams.get('patientId') || urlParams.get('id');
-  const visitDateParam = urlParams.get('visitDate');
-  
-  // Dispatch events to refresh displays
+  if (medicationsAdded.length) {
+    localStorage.setItem('patientDataSync', JSON.stringify({
+      type: 'patientDataUpdated',
+      patientId: patientIdParam,
+      action: 'medicationAdded',
+      data: medicationsAdded
+    }));
+  }
+
   window.dispatchEvent(new CustomEvent('prescriptionSaved', {
     detail: {
-      patientId: patientIdParam || patient.id || patient.patient_id,
-      visitDate: visitDateParam,
+      patientId: patientIdParam,
+      visitDate: urlParams.get('visitDate'),
       prescriptionId: currentPrescription.id
     }
   }));
-  
-  console.log('*** PRESCRIPTION SAVE COMPLETE - Events dispatched for UI refresh ***');
-  
-  if (existingIndex !== -1) {
-    return; // Early return for updates only
-  }
-    
-    // Legacy code block - removed duplicate diagnosis addition
-    if (currentPrescription.diagnosis && currentPrescription.diagnosis.trim()) {
-      console.log('*** ADDING DIAGNOSIS TO PATIENT RECORD:', currentPrescription.diagnosis, '***');
-      
-      if (!patient.diagnoses) {
-        patient.diagnoses = [];
-      }
-      
-      // Check if diagnosis already exists
-      const diagnosisExists = patient.diagnoses.some(d => 
-        d.diagnosis?.toLowerCase() === currentPrescription.diagnosis.toLowerCase() ||
-        d.toLowerCase === currentPrescription.diagnosis.toLowerCase()
-      );
-      
-      if (!diagnosisExists) {
-        const newDiagnosis = {
-          diagnosis: currentPrescription.diagnosis,
-          date: currentPrescription.date || new Date().toISOString().split('T')[0],
-          status: 'Active',
-          notes: 'From prescription'
-        };
-        
-        patient.diagnoses.push(newDiagnosis);
-        console.log('*** DIAGNOSIS ADDED TO PATIENT RECORD ***');
-        
-        // Notify that a diagnosis was added to trigger UI refresh
-        localStorage.setItem('patientDataSync', JSON.stringify({
-          type: 'patientDataUpdated',
-          patientId: patient.id,
-          action: 'diagnosisAdded',
-          data: newDiagnosis
-        }));
-      } else {
-        console.log('*** DIAGNOSIS ALREADY EXISTS IN PATIENT RECORD ***');
-      }
-    }
-    
-    console.log('*** SAVING PATIENTS DATA TO LOCALSTORAGE ***');
-    console.log('*** TOTAL PRESCRIPTIONS FOR PATIENT NOW:', patient.prescriptions.length, '***');
-    console.log('*** TOTAL DIAGNOSES FOR PATIENT NOW:', patient.diagnoses?.length || 0, '***');
-    console.log('Saving patients data to localStorage:', patients);
-    localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
-    console.log('*** PRESCRIPTION SAVED TO PATIENT RECORD ***');
-    
-    // Sync to Supabase (CRITICAL for persistence after hard refresh)
-    if (typeof window.savePatientToSupabase === 'function') {
-      console.log('*** SYNCING PRESCRIPTION TO SUPABASE ***');
-      console.log('*** PATIENT DATA BEING SYNCED:', {
-        id: patient.id,
-        prescriptionsCount: patient.prescriptions?.length || 0,
-        diagnosesCount: patient.diagnoses?.length || 0
-      });
-      
-      try {
-        await window.savePatientToSupabase(patient);
-        console.log('*** PRESCRIPTION SYNCED TO SUPABASE SUCCESSFULLY ***');
-        
-        // Verify the sync worked by checking localStorage
-        const verifyPatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
-        const verifyPatient = verifyPatients.find(p => p.id === patient.id);
-        console.log('*** VERIFICATION - PATIENT PRESCRIPTIONS AFTER SYNC:', verifyPatient?.prescriptions?.length || 0, '***');
-      } catch (error) {
-        console.error('*** SUPABASE SYNC FAILED:', error, '***');
-        console.error('*** ERROR DETAILS:', error.message, '***');
-      }
-    } else {
-      console.error('*** savePatientToSupabase function not available ***');
-      console.error('*** AVAILABLE FUNCTIONS:', Object.keys(window).filter(k => k.includes('save') || k.includes('Patient')));
-    }
-    
-    // Dispatch storage event for cross-tab synchronization
-    localStorage.setItem('patientDataSync', JSON.stringify({
-      type: 'prescriptionSaved',
-      patientId: currentPrescription.patient.id,
-      prescriptionId: currentPrescription.id,
-      timestamp: new Date().toISOString()
+
+  if (diagnosisAdded) {
+    window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+      detail: { patientId: patientIdParam, action: 'diagnosisAdded', data: diagnosisAdded }
     }));
-    console.log('*** CROSS-TAB SYNC EVENT DISPATCHED ***');
-    
-    // Verify the save worked
-    const savedPatients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
-    const savedPatient = savedPatients.find(p => p.id === currentPrescription.patient.id);
-    const savedPrescription = savedPatient?.prescriptions?.find(p => p.id === currentPrescription.id);
-    console.log('*** VERIFICATION - SAVED PATIENT PRESCRIPTIONS:', savedPatient?.prescriptions?.length, 'prescriptions ***');
-    console.log('*** VERIFICATION - UPDATED PRESCRIPTION IN PATIENT RECORD:', savedPrescription, '***');
+  }
+  if (medicationsAdded.length) {
+    window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+      detail: { patientId: patientIdParam, action: 'medicationAdded', data: medicationsAdded }
+    }));
+  }
+
+  console.log('*** PRESCRIPTION SAVE COMPLETE ***');
   }
 }
 
@@ -2394,6 +2322,46 @@ async function syncPrescriptionToSupabaseTable() {
     console.warn('Could not sync prescription to pharmacy table:', err);
   }
 }
+
+/** Send signed Rx to in-clinic pharmacy queue and optional provincial e-prescribing hub. */
+async function sendPrescriptionToPharmacy() {
+  if (!currentPrescription || currentPrescription.status !== 'signed') {
+    alert('Sign the prescription first, then save it, before sending to a pharmacy.');
+    return;
+  }
+
+  collectPrescriptionData();
+  await syncPrescriptionToSupabaseTable();
+
+  let externalMessage = '';
+  if (typeof window.MediForgeInterop !== 'undefined' && typeof window.MediForgeInterop.transmitPrescription === 'function') {
+    try {
+      const patientId = currentPrescription.patient?.id;
+      const result = await window.MediForgeInterop.transmitPrescription({
+        patientId,
+        prescription: currentPrescription
+      });
+      if (result && result.skipped) {
+        externalMessage = '\n\nExternal e-prescribing is not enabled yet (provincial hub credentials required). The in-clinic pharmacy dashboard was updated.';
+      } else if (result && result.ok === false) {
+        externalMessage = '\n\nExternal transmit did not complete: ' + (result.message || 'check integration settings.');
+      } else {
+        externalMessage = '\n\nExternal e-prescribing transmit was queued.';
+      }
+    } catch (err) {
+      externalMessage = '\n\nExternal transmit failed: ' + (err.message || err);
+    }
+  } else {
+    externalMessage = '\n\nFor electronic delivery to an outside pharmacy, provincial e-prescribing must be configured (see MEDIFORGE-CONNECTION-GUIDE.md).';
+  }
+
+  alert(
+    'Prescription sent to the in-clinic pharmacy queue (Pharmacy dashboard → Incoming).' +
+    externalMessage
+  );
+}
+
+window.sendPrescriptionToPharmacy = sendPrescriptionToPharmacy;
 
 // Save prescription to storage
 function savePrescriptionToStorage() {
