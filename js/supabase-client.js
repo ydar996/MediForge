@@ -216,10 +216,71 @@ function initializeSupabaseClient() {
   }
 }
 
-loadSupabaseEnvScript().then(function () {
+function isValidSupabaseUrl(url) {
+  return (
+    typeof url === 'string' &&
+    url.startsWith('https://') &&
+    !url.includes('*') &&
+    url.includes('.supabase.co')
+  );
+}
+
+async function fetchSupabaseConfigFromServer() {
+  const res = await fetch('/.netlify/functions/get-supabase-browser-config');
+  if (!res.ok) {
+    throw new Error('Supabase config endpoint returned ' + res.status);
+  }
+  const cfg = await res.json();
+  if (!cfg || !isValidSupabaseUrl(cfg.url) || !cfg.anonKey) {
+    throw new Error('Supabase config endpoint returned invalid data');
+  }
+  SUPABASE_URL = cfg.url;
+  SUPABASE_ANON_KEY = cfg.anonKey;
+  if (typeof window !== 'undefined') {
+    window.__SUPABASE_CONFIG__ = Object.assign({}, window.__SUPABASE_CONFIG__ || {}, {
+      url: SUPABASE_URL,
+      anonKey: SUPABASE_ANON_KEY,
+    });
+  }
+}
+
+async function ensureSupabaseConfig() {
+  await loadSupabaseEnvScript();
   applySupabaseConfigFromWindow();
-  initializeSupabaseClient();
-});
+  if (isValidSupabaseUrl(SUPABASE_URL) && SUPABASE_ANON_KEY) {
+    return;
+  }
+  await fetchSupabaseConfigFromServer();
+}
+
+var supabaseInitResolve;
+var supabaseInitReject;
+if (typeof window !== 'undefined') {
+  window.__supabaseInitPromise = new Promise(function (resolve, reject) {
+    supabaseInitResolve = resolve;
+    supabaseInitReject = reject;
+  });
+  window.waitForSupabaseClient = function () {
+    return window.__supabaseInitPromise;
+  };
+}
+
+ensureSupabaseConfig()
+  .then(function () {
+    if (!isValidSupabaseUrl(SUPABASE_URL) || !SUPABASE_ANON_KEY) {
+      throw new Error('Supabase URL or publishable key missing after config load');
+    }
+    initializeSupabaseClient();
+    if (supabaseInitResolve) {
+      supabaseInitResolve(window.supabaseClient);
+    }
+  })
+  .catch(function (err) {
+    console.error('Failed to load Supabase configuration:', err);
+    if (supabaseInitReject) {
+      supabaseInitReject(err);
+    }
+  });
 
 // Helper function to get current user's organization ID
 async function getCurrentUserOrganizationId() {

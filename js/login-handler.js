@@ -69,6 +69,16 @@ document.addEventListener('DOMContentLoaded', function() {
     showLoginVerifyingOverlay();
 
     try {
+      if (typeof window.waitForSupabaseClient === 'function') {
+        await window.waitForSupabaseClient();
+      } else {
+        let attempts = 0;
+        while ((!window.supabaseClient || !window.__SUPABASE_CONFIG__?.url) && attempts < 50) {
+          await new Promise(resolve => setTimeout(resolve, 100));
+          attempts++;
+        }
+      }
+
       // CRITICAL: Users should ALWAYS be able to login with just their username
       // We automatically convert username to email for Supabase Auth (which requires email)
       // Users should NEVER need to know or enter their email address
