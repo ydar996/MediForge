@@ -64,3 +64,6 @@ Use **dev or staging** (not production) for screenshots. Log in first in Chrome 
 | Patient self-intake | `16-patient-intake.png` |
 | Approve intake | `17-intake-approvals.png` |
 | ICD-10 / ICD-11 toggle | `18-icd-settings.png` |
+| Clinical note (SOAP) | `05-clinical-note.png` |
+| Prescriptions (DIN formulary) | `19-prescription.png` |
+| Preventive care gaps | `20-preventive-gaps.png` |

@@ -83,5 +83,7 @@ Images are saved as `01-login.png`, `02-dashboard.png`, etc.
 | `16-patient-intake.png` | Patient self-intake form |
 | `17-intake-approvals.png` | Review Patient Intake (admin) |
 | `18-icd-settings.png` | Dashboard — Diagnosis Codes ICD-10-CA / ICD-11 toggle |
+| `19-prescription.png` | Prescription — diagnosis search + Health Canada drug search |
+| `20-preventive-gaps.png` | Clinical note — Preventive Care Gaps tab (expanded) |
 
 When you add a feature, follow **`HOW-TO-UPDATE-MANUAL.md`** in this folder.

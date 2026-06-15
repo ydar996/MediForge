@@ -39,7 +39,9 @@ You do **not** need to be a developer for this.
 | `15-manual-medication.png` | Add Patient — medication area (“Not in list…”) |
 | `16-patient-intake.png` | Patient intake form (public link page) |
 | `17-intake-approvals.png` | Review Patient Intake page |
-| `05-clinical-note.png` | Clinical note for a patient |
+| `05-clinical-note.png` | Clinical note for a patient (SOAP tabs) |
+| `19-prescription.png` | Prescription screen (diagnosis + drug search) |
+| `20-preventive-gaps.png` | Clinical note — Preventive Care Gaps tab expanded |
 | `06-appointments.png` | Appointments page |
 | `07-billing.png` | Billing dashboard |
 | `08-quick-checkout.png` | Quick checkout |

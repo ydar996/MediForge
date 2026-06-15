@@ -124,7 +124,7 @@ async function main() {
   } else {
     browser = await puppeteer.launch({
       headless: 'new',
-      protocolTimeout: 120000,
+      protocolTimeout: 180000,
       args: ['--no-sandbox'],
     });
     page = await browser.newPage();
@@ -212,7 +212,10 @@ async function main() {
     await shot(page, '04-patient-details.png');
 
     const patientId =
-      new URL(page.url()).searchParams.get('id') || process.env.MANUAL_PATIENT_ID || '';
+      new URL(page.url()).searchParams.get('id') ||
+      new URL(page.url()).searchParams.get('patientId') ||
+      process.env.MANUAL_PATIENT_ID ||
+      '';
     if (patientId) {
       const visitDate = new Date().toISOString().slice(0, 10);
       await goto(
@@ -221,10 +224,32 @@ async function main() {
       );
       await delay(3000);
       await shot(page, '05-clinical-note.png');
+
+      try {
+        await page.evaluate(() => {
+          if (typeof window.switchClinicalTab === 'function') {
+            window.switchClinicalTab('preventive-gaps');
+          }
+          const toggle = document.getElementById('toggle-preventive-gaps-btn');
+          const container = document.getElementById('preventive-gaps-container');
+          if (toggle && container && container.style.display === 'none') toggle.click();
+        });
+        await delay(2500);
+        await shot(page, '20-preventive-gaps.png');
+      } catch (e) {
+        console.log('  (preventive gaps screenshot skipped:', e.message, ')');
+      }
+
+      await goto(
+        page,
+        `${BASE}/prescription.html?patientId=${encodeURIComponent(patientId)}`
+      );
+      await delay(3500);
+      await shot(page, '19-prescription.png');
     }
   } catch (e) {
     console.log('  (could not open patient chart:', e.message, ')');
-    const fallbackId = process.env.MANUAL_PATIENT_ID;
+    const fallbackId = process.env.MANUAL_PATIENT_ID || 'MAP0001';
     if (fallbackId && !fs.existsSync(path.join(OUT_DIR, '05-clinical-note.png'))) {
       try {
         const visitDate = new Date().toISOString().slice(0, 10);
@@ -234,8 +259,19 @@ async function main() {
         );
         await delay(3000);
         await shot(page, '05-clinical-note.png');
+        await page.evaluate(() => {
+          if (typeof window.switchClinicalTab === 'function') window.switchClinicalTab('preventive-gaps');
+          const toggle = document.getElementById('toggle-preventive-gaps-btn');
+          const container = document.getElementById('preventive-gaps-container');
+          if (toggle && container && container.style.display === 'none') toggle.click();
+        });
+        await delay(2500);
+        await shot(page, '20-preventive-gaps.png');
+        await goto(page, `${BASE}/prescription.html?patientId=${encodeURIComponent(fallbackId)}`);
+        await delay(3500);
+        await shot(page, '19-prescription.png');
       } catch (e2) {
-        console.log('  (clinical note fallback skipped:', e2.message, ')');
+        console.log('  (clinical note / Rx fallback skipped:', e2.message, ')');
       }
     }
   }
@@ -253,7 +289,7 @@ async function main() {
     await shot(page, file);
   }
 
-  const missing = ['04-patient-details.png', '05-clinical-note.png'].filter(
+  const missing = ['04-patient-details.png', '05-clinical-note.png', '19-prescription.png', '20-preventive-gaps.png'].filter(
     (f) => !fs.existsSync(path.join(OUT_DIR, f))
   );
   if (missing.length) console.log('\nMissing:', missing.join(', '));

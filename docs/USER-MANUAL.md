@@ -6,7 +6,7 @@
 
 **Also available as a web page with pictures:** open `user-manual.html` on your site (e.g. `https://mediforge.netlify.app/user-manual`).
 
-**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, manual medication entry, and **patient self-intake**.
+**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, **Health Canada prescription drug search**, **preventive care gaps** with proof attachments, manual medication entry, and **patient self-intake**.
 
 ---
 
@@ -20,18 +20,20 @@
 6. [Add a patient (race, ICD-10, medications)](#6-add-a-patient-race-icd-10-medications)
 7. [Patient self-intake](#7-patient-self-intake)
 8. [Clinical notes (SOAP)](#8-clinical-notes-soap)
-9. [Appointments and schedule](#9-appointments-and-schedule)
-10. [Billing and payments](#10-billing-and-payments)
-11. [Messages and tasks](#11-messages-and-tasks)
-12. [Patient portal](#12-patient-portal)
-13. [Role-specific dashboards](#13-role-specific-dashboards)
-14. [In-patient care (hospitals)](#14-in-patient-care-hospitals)
-15. [Working without internet](#15-working-without-internet)
-16. [Reports and audit](#16-reports-and-audit)
-17. [Administrator tasks](#17-administrator-tasks)
-18. [Platform owner (all clinics)](#18-platform-owner-all-clinics)
-19. [When something goes wrong](#19-when-something-goes-wrong)
-20. [Getting more help](#20-getting-more-help)
+9. [Prescriptions](#9-prescriptions)
+10. [Preventive care gaps](#10-preventive-care-gaps)
+11. [Appointments and schedule](#11-appointments-and-schedule)
+12. [Billing and payments](#12-billing-and-payments)
+13. [Messages and tasks](#13-messages-and-tasks)
+14. [Patient portal](#14-patient-portal)
+15. [Role-specific dashboards](#15-role-specific-dashboards)
+16. [In-patient care (hospitals)](#16-in-patient-care-hospitals)
+17. [Working without internet](#17-working-without-internet)
+18. [Reports and audit](#18-reports-and-audit)
+19. [Administrator tasks](#19-administrator-tasks)
+20. [Platform owner (all clinics)](#20-platform-owner-all-clinics)
+21. [When something goes wrong](#21-when-something-goes-wrong)
+22. [Getting more help](#22-getting-more-help)
 
 ---
 
@@ -138,9 +140,10 @@ After login you see the **Dashboard**—your home screen with buttons for each a
 2. Enter name, date of birth, gender, phone, and **Canadian address** (province, city, **postal code**).
 3. Select **Race** (required). *Declined to Disclose* is allowed.
 4. Optional: PHN / insurance numbers.
-5. **Past medical history — diagnosis search:** type a condition (e.g. *diabetes*) and pick an **ICD-10-CA** code, or use a custom entry.
-6. **Medications patient already takes:** search the list, or type a name and click **Not in list? Use my typed medication name**, then enter **dosage**.
-7. **Save**.
+5. **Past medical history — dates:** *Estimated date is acceptable* appears under date fields when the exact day is unknown.
+6. **Past medical history — diagnosis search:** type a condition (e.g. *diabetes*) and pick an **ICD-10-CA** code, or use a custom entry.
+7. **Medications patient already takes:** search the list, or type a name and click **Not in list? Use my typed medication name**, then enter **dosage**.
+8. **Save**.
 
 ![Add patient](user-manual/images/14-add-patient.png)
 
@@ -179,13 +182,48 @@ A **clinical note** is where you document a visit (Subjective, Objective, Assess
 
 ![Clinical note](user-manual/images/05-clinical-note.png)
 
-**Bill a visit from the chart:** On the patient’s **Medical Visits** tab, use **Bill Visit** to create an invoice for that encounter (see [Billing](#10-billing-and-payments)).
+**Medical history dates:** When adding past history, immunizations, or similar items, you may see *Estimated date is acceptable.* Use your best estimate if the exact day is unknown.
+
+**Bill a visit from the chart:** On the patient’s **Medical Visits** tab, use **Bill Visit** to create an invoice for that encounter (see [Billing](#12-billing-and-payments)).
 
 **Admit a patient (in-patient):** If in-patient care is enabled, you may see **Admit Patient** on the clinical note.
 
 ---
 
-## 9. Appointments and schedule
+## 9. Prescriptions
+
+Write prescriptions with full **ICD-10-CA** diagnosis codes and **Health Canada** medication search (DIN).
+
+1. Open a patient → **Prescription** (or use the Rx button from the chart).
+2. Search **diagnosis** (type at least 2 letters, e.g. *diabetes*).
+3. Add **medications**: type a drug name (e.g. *metformin*) and select from the formulary list.
+4. Enter dose, route, frequency, and duration.
+5. Click **Save Prescription** — diagnosis and medications update the patient chart.
+6. Optional: **Send to Pharmacy** queues the Rx for your in-clinic pharmacy dashboard.
+7. Print, download, or email per clinic policy.
+
+![Prescription screen](user-manual/images/19-prescription.png)
+
+---
+
+## 10. Preventive care gaps
+
+MediForge lists screenings and immunizations the patient may still need (by age, sex, and chart data).
+
+1. Clinical note → tab **Preventive Care Gaps** → **Expand Preventive Care Gaps**.
+2. Red = **Unaddressed**. When done, click **Mark Addressed**.
+3. Click **Add Proof** to attach a PDF or image (lab, immunization record, etc.). Proof saves to the chart.
+4. **Mark Unaddressed** reverses the status. **View Proof** opens attachments.
+
+**Tip:** Buttons are disabled while the note is **locked** — unlock first if needed.
+
+![Preventive care gaps](user-manual/images/20-preventive-gaps.png)
+
+See also **Preventive Gaps Summary** on the dashboard for clinic-wide reports.
+
+---
+
+## 11. Appointments and schedule
 
 ### Manage appointments
 
@@ -204,7 +242,7 @@ A **clinical note** is where you document a visit (Subjective, Objective, Assess
 
 ---
 
-## 10. Billing and payments
+## 12. Billing and payments
 
 **Full detail:** [BILLING-SYSTEM-GUIDE.md](../BILLING-SYSTEM-GUIDE.md)
 
@@ -239,7 +277,7 @@ Dashboard → **Billing & Payments**.
 
 ---
 
-## 11. Messages and tasks
+## 13. Messages and tasks
 
 1. Dashboard → **Messages**.
 2. Read messages; reply or mark done.
@@ -251,7 +289,7 @@ Use messages for handoffs (“please call this patient”), not for emergency ca
 
 ---
 
-## 12. Patient portal
+## 14. Patient portal
 
 Lets patients see limited information (results, appointments, etc.) with their own login.
 
@@ -263,7 +301,7 @@ Lets patients see limited information (results, appointments, etc.) with their o
 
 ---
 
-## 13. Role-specific dashboards
+## 15. Role-specific dashboards
 
 If your role includes them, the dashboard shows extra entry points:
 
@@ -280,7 +318,7 @@ Open the button that matches your job; workflows inside are similar to the main 
 
 ---
 
-## 14. In-patient care (hospitals)
+## 16. In-patient care (hospitals)
 
 **Setup guide:** [INPATIENT-SETUP-GUIDE.md](../INPATIENT-SETUP-GUIDE.md)
 
@@ -293,7 +331,7 @@ Open the button that matches your job; workflows inside are similar to the main 
 
 ---
 
-## 15. Working without internet
+## 17. Working without internet
 
 MediForge can keep working when the connection drops **if you prepared while online**.
 
@@ -308,7 +346,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 16. Reports and audit
+## 18. Reports and audit
 
 - **View Reports** — clinic-level summaries  
 - **Preventive Gaps Summary**, **Conditions Breakdown**, etc. — quality and population views  
@@ -317,7 +355,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 17. Administrator tasks
+## 19. Administrator tasks
 
 ### Add or manage staff
 
@@ -339,7 +377,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 18. Platform owner (all clinics)
+## 20. Platform owner (all clinics)
 
 **Only for the owner of MediForge**, not regular clinic staff.
 
@@ -351,14 +389,16 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 19. When something goes wrong
+## 21. When something goes wrong
 
 | Problem | What to do |
 |---------|------------|
 | Wrong password | Use your clinic’s password reset process or ask admin |
 | Locked during registration | See [USER-INSTRUCTIONS-ACCOUNT-LOCKED.md](../USER-INSTRUCTIONS-ACCOUNT-LOCKED.md) |
 | ICD search empty | Wait for codes to load; type at least 2 letters (e.g. *diabetes*) |
-| Medication not in list | Type name → **Not in list? Use my typed medication name** |
+| Medication not in list (add patient) | Type name → **Not in list? Use my typed medication name** |
+| Prescription drug not in list | Try generic name; wait for formulary; check spelling |
+| Preventive gap buttons inactive | Unlock clinical note if locked; refresh page |
 | Intake link broken | Ask admin to verify intake URL and database |
 | Blank screen after login | Refresh; try another browser; check internet |
 | Data not syncing | Go online; refresh; stay logged in |
@@ -366,7 +406,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ---
 
-## 20. Getting more help
+## 22. Getting more help
 
 - **This manual (web):** `user-manual.html` on your site  
 - **Update manual when adding features:** [HOW-TO-UPDATE-MANUAL.md](user-manual/HOW-TO-UPDATE-MANUAL.md)
