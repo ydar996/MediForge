@@ -14990,7 +14990,7 @@ function disableFormEditing() {
   });
 
   // Disable preventive care gap buttons
-  const gapButtons = document.querySelectorAll("button[onclick*='markGapAddressed']");
+  const gapButtons = document.querySelectorAll('.gap-action-btn, .gap-group-action-btn, button[onclick*="markGapAddressed"]');
   gapButtons.forEach(button => {
     button.disabled = true;
     button.style.backgroundColor = "#f8f9fa";
@@ -15446,7 +15446,7 @@ function enableFormEditing() {
   });
 
   // Enable preventive care gap buttons
-  const gapButtons = document.querySelectorAll("button[onclick*='markGapAddressed']");
+  const gapButtons = document.querySelectorAll('.gap-action-btn, .gap-group-action-btn, button[onclick*="markGapAddressed"]');
   gapButtons.forEach(button => {
     button.disabled = false;
     button.style.backgroundColor = "";
@@ -15522,7 +15522,7 @@ function enableFormEditing() {
   });
 
   // Enable preventive care gap buttons
-  const gapButtons = document.querySelectorAll("button[onclick*='markGapAddressed']");
+  const gapButtons = document.querySelectorAll('.gap-action-btn, .gap-group-action-btn, button[onclick*="markGapAddressed"]');
   gapButtons.forEach(button => {
     button.disabled = false;
     button.style.backgroundColor = "";

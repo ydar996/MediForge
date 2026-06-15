@@ -116,6 +116,156 @@ function getPatientsWithFallback() {
   return { patients, storageKey };
 }
 
+function findPatientInList(patients, identifier) {
+  if (!identifier || !Array.isArray(patients)) return null;
+  const id = String(identifier).trim();
+  return patients.find(p =>
+    p &&
+    (p.id === id ||
+      p.patient_id === id ||
+      p.patientNumber === id ||
+      p._supabaseUuid === id)
+  ) || null;
+}
+
+function findPatientIndexInList(patients, patientOrId) {
+  if (!Array.isArray(patients) || !patientOrId) return -1;
+  const ids = typeof patientOrId === 'object'
+    ? [patientOrId.id, patientOrId.patient_id, patientOrId.patientNumber, patientOrId._supabaseUuid].filter(Boolean)
+    : [patientOrId];
+  return patients.findIndex(p =>
+    p && ids.some(id =>
+      p.id === id ||
+      p.patient_id === id ||
+      p.patientNumber === id ||
+      p._supabaseUuid === id
+    )
+  );
+}
+
+function mergeLocalPreventiveGapsIntoPatient(patient) {
+  if (!patient) return patient;
+  const { patients } = getPatientsWithFallback();
+  const local = findPatientInList(
+    patients,
+    patient.id || patient.patient_id || patient.patientNumber || patient._supabaseUuid
+  );
+  if (local && Array.isArray(local.preventiveGaps)) {
+    patient.preventiveGaps = local.preventiveGaps;
+  } else if (!Array.isArray(patient.preventiveGaps)) {
+    patient.preventiveGaps = [];
+  }
+  return patient;
+}
+
+async function resolvePatientForGapSave(patientId) {
+  let patient = null;
+  if (typeof window.resolvePatientByIdentifier === 'function') {
+    try {
+      patient = await window.resolvePatientByIdentifier(patientId);
+    } catch (error) {
+      console.warn('resolvePatientForGapSave: resolve failed:', error);
+    }
+  }
+  if (!patient) {
+    const { patients } = getPatientsWithFallback();
+    patient = findPatientInList(patients, patientId);
+  }
+  return mergeLocalPreventiveGapsIntoPatient(patient);
+}
+
+function attrEsc(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/"/g, '&quot;')
+    .replace(/</g, '&lt;');
+}
+
+function buildGapActionButton(action, patientId, intervention, elementId, label) {
+  return `<button type="button" class="gap-action-btn" data-gap-action="${attrEsc(action)}" data-gap-patient-id="${attrEsc(patientId)}" data-gap-intervention="${attrEsc(intervention)}" data-gap-element-id="${attrEsc(elementId)}">${label}</button>`;
+}
+
+function bindGapActionHandlers() {
+  if (window._preventiveGapHandlersBound) return;
+  window._preventiveGapHandlersBound = true;
+  document.addEventListener('click', async (event) => {
+    const groupBtn = event.target.closest('.gap-group-action-btn');
+    if (groupBtn && !groupBtn.disabled) {
+      const groupId = groupBtn.dataset.gapGroupId;
+      const patientId = groupBtn.dataset.gapPatientId;
+      const elementId = groupBtn.dataset.gapElementId;
+      if (groupId && patientId && elementId) {
+        event.preventDefault();
+        await window.markGroupAddressed(patientId, groupId, elementId);
+      }
+      return;
+    }
+    const btn = event.target.closest('.gap-action-btn');
+    if (!btn || btn.disabled) return;
+    const action = btn.dataset.gapAction;
+    const patientId = btn.dataset.gapPatientId;
+    const intervention = btn.dataset.gapIntervention;
+    const elementId = btn.dataset.gapElementId;
+    if (!action || !patientId || !intervention || !elementId) return;
+    event.preventDefault();
+    if (action === 'mark-addressed') {
+      await window.markGapAddressed(patientId, intervention, elementId);
+    } else if (action === 'mark-unaddressed') {
+      await window.markGapUnaddressed(patientId, intervention, elementId);
+    } else if (action === 'add-proof') {
+      window.addProofAttachment(patientId, intervention, elementId);
+    } else if (action === 'view-proof') {
+      window.viewProofAttachments(patientId, intervention);
+    }
+  });
+}
+
+function syncGapProofToUnstructuredRecords(patient) {
+  if (!patient || !Array.isArray(patient.preventiveGaps)) return;
+  patient.unstructuredRecords = patient.unstructuredRecords || [];
+  const recordsMap = new Map();
+  patient.unstructuredRecords.forEach(record => {
+    if (record && record.id) recordsMap.set(record.id, record);
+  });
+  patient.preventiveGaps.forEach(gap => {
+    (gap.proofAttachments || []).forEach(att => {
+      const recordId = 'gap-proof-' + String(att.id || att.name).replace(/\s/g, '-');
+      recordsMap.set(recordId, {
+        id: recordId,
+        type: 'preventive_gap_proof',
+        title: 'Preventive gap proof: ' + gap.intervention,
+        description: att.name,
+        date: att.uploadedDate || gap.markedDate || new Date().toISOString(),
+        category: 'Preventive Care',
+        data: att.data,
+        mimeType: att.type,
+        fileName: att.name,
+        intervention: gap.intervention
+      });
+    });
+  });
+  patient.unstructuredRecords = Array.from(recordsMap.values());
+}
+
+async function persistPatientPreventiveGaps(patient) {
+  syncGapProofToUnstructuredRecords(patient);
+  const { patients, storageKey } = getPatientsWithFallback();
+  const idx = findPatientIndexInList(patients, patient);
+  if (idx >= 0) {
+    patients[idx] = { ...patients[idx], preventiveGaps: patient.preventiveGaps, unstructuredRecords: patient.unstructuredRecords };
+  } else {
+    patients.push(patient);
+  }
+  localStorage.setItem(storageKey, JSON.stringify(patients));
+  if (typeof window.savePatientToSupabase === 'function') {
+    try {
+      await window.savePatientToSupabase(patient);
+    } catch (error) {
+      console.warn('preventiveGaps: Supabase sync failed, saved locally:', error);
+    }
+  }
+}
+
 // Define groups for alternatives
 const GROUPS = {
   'Cervical Cancer Screening': [
@@ -369,20 +519,19 @@ async function displayGaps(patientId, elementId) {
     }
     return;
   }
-  
+
+  patient = mergeLocalPreventiveGapsIntoPatient(patient);
+  bindGapActionHandlers();
+
   // Get storage key for saving updates
   const { patients: allPatients, storageKey } = getPatientsWithFallback();
-  const patientIndex = allPatients.findIndex(p => 
-    p.id === patient.id || 
-    p.patient_id === patient.patient_id ||
-    p._supabaseUuid === patient._supabaseUuid ||
-    p.id === patientId ||
-    p.patient_id === patientId
-  );
+  const patientIndex = findPatientIndexInList(allPatients, patient);
   if (patient.hasDiabetes === undefined) {
     patient.hasDiabetes = false;
-    patients[patientIndex] = patient;
-    localStorage.setItem(storageKey, JSON.stringify(patients));
+    if (patientIndex >= 0) {
+      allPatients[patientIndex] = { ...allPatients[patientIndex], hasDiabetes: false };
+    }
+    localStorage.setItem(storageKey, JSON.stringify(allPatients));
   }
   const container = document.getElementById(elementId);
   if (container) {
@@ -441,16 +590,18 @@ async function displayGaps(patientId, elementId) {
         if (!isGrouped) {
           const status = gap.addressed ? 'Addressed' : 'Unaddressed';
           let buttonHtml = '';
+          const proofCount = gap.proofAttachments ? gap.proofAttachments.length : 0;
           if (!gap.addressed) {
-            const safeIntervention = gap.intervention.replace(/'/g, "\\'");
-            buttonHtml = `<button onclick="markGapAddressed('${patientId}', '${safeIntervention}', '${elementId}')">Mark Addressed</button>`;
-          } else {
-            const safeIntervention = gap.intervention.replace(/'/g, "\\'");
-            const proofCount = gap.proofAttachments ? gap.proofAttachments.length : 0;
-            buttonHtml = `<button onclick="markGapUnaddressed('${patientId}', '${safeIntervention}', '${elementId}')">Mark Unaddressed</button>`;
-            buttonHtml += `<button onclick="addProofAttachment('${patientId}', '${safeIntervention}', '${elementId}')">Add Proof</button>`;
+            buttonHtml = buildGapActionButton('mark-addressed', patientId, gap.intervention, elementId, 'Mark Addressed');
+            buttonHtml += buildGapActionButton('add-proof', patientId, gap.intervention, elementId, 'Add Proof');
             if (proofCount > 0) {
-              buttonHtml += `<button onclick="viewProofAttachments('${patientId}', '${safeIntervention}')">View Proof (${proofCount})</button>`;
+              buttonHtml += buildGapActionButton('view-proof', patientId, gap.intervention, elementId, 'View Proof (' + proofCount + ')');
+            }
+          } else {
+            buttonHtml = buildGapActionButton('mark-unaddressed', patientId, gap.intervention, elementId, 'Mark Unaddressed');
+            buttonHtml += buildGapActionButton('add-proof', patientId, gap.intervention, elementId, 'Add Proof');
+            if (proofCount > 0) {
+              buttonHtml += buildGapActionButton('view-proof', patientId, gap.intervention, elementId, 'View Proof (' + proofCount + ')');
             }
           }
           // Color coding for status
@@ -469,10 +620,10 @@ async function displayGaps(patientId, elementId) {
           let html = `<li style="color: ${addressedVariant ? 'green' : 'red'};" title="${addressedVariant ? addressedVariant.frequency : ''}">`;
           if (addressedVariant) {
             const proofCount = addressedVariant.proofAttachments ? addressedVariant.proofAttachments.length : 0;
-            let buttonHtml = `<button onclick="markGapUnaddressed('${patientId}', '${addressedVariant.intervention.replace(/'/g, "\\'")}', '${elementId}')">Mark Unaddressed</button>`;
-            buttonHtml += `<button onclick="addProofAttachment('${patientId}', '${addressedVariant.intervention.replace(/'/g, "\\'")}', '${elementId}')">Add Proof</button>`;
+            let buttonHtml = buildGapActionButton('mark-unaddressed', patientId, addressedVariant.intervention, elementId, 'Mark Unaddressed');
+            buttonHtml += buildGapActionButton('add-proof', patientId, addressedVariant.intervention, elementId, 'Add Proof');
             if (proofCount > 0) {
-              buttonHtml += `<button onclick="viewProofAttachments('${patientId}', '${addressedVariant.intervention.replace(/'/g, "\\'")}')">View Proof (${proofCount})</button>`;
+              buttonHtml += buildGapActionButton('view-proof', patientId, addressedVariant.intervention, elementId, 'View Proof (' + proofCount + ')');
             }
             html += `<div class="gap-text">${groupName}: Addressed with ${addressedVariant.intervention} (${addressedVariant.frequency})</div>`;
             html += `<div class="gap-buttons">${buttonHtml}</div>`;
@@ -482,7 +633,7 @@ async function displayGaps(patientId, elementId) {
               selectHtml += `<option value="${v.intervention}">${v.intervention} (${v.frequency})</option>`;
             });
             selectHtml += '</select>';
-            let buttonHtml = `<button onclick="markGroupAddressed('${patientId}', '${groupName.replace(/\s/g, '')}', '${elementId}')">Mark Addressed</button>`;
+            let buttonHtml = `<button type="button" class="gap-group-action-btn" data-gap-group-id="${attrEsc(groupName.replace(/\s/g, ''))}" data-gap-patient-id="${attrEsc(patientId)}" data-gap-element-id="${attrEsc(elementId)}">Mark Addressed</button>`;
             html += `<div class="gap-text">${groupName}: Unaddressed</div>`;
             html += `<div class="gap-buttons">${selectHtml} ${buttonHtml}</div>`;
           }
@@ -533,17 +684,19 @@ window.debugGaps = function(patientId) {
 };
 
 // Function to mark a group as addressed (mark selected variant)
-window.markGroupAddressed = function(patientId, groupId, elementId) {
+window.markGroupAddressed = async function(patientId, groupId, elementId) {
   const select = document.getElementById('select-' + groupId);
-  const selectedIntervention = select.value;
-  markGapAddressed(patientId, selectedIntervention, elementId);
+  if (!select) return;
+  await markGapAddressed(patientId, select.value, elementId);
 };
 
 // Function to mark a gap as addressed
-window.markGapAddressed = function(patientId, intervention, elementId) {
-  const { patients, storageKey } = getPatientsWithFallback();
-  const patient = patients.find(p => p.id === patientId);
-  if (!patient) return;
+window.markGapAddressed = async function(patientId, intervention, elementId) {
+  const patient = await resolvePatientForGapSave(patientId);
+  if (!patient) {
+    alert('Patient not found. Please refresh the page and try again.');
+    return;
+  }
   patient.preventiveGaps = patient.preventiveGaps || [];
   let gapEntry = patient.preventiveGaps.find(g => g.intervention === intervention);
   if (!gapEntry) {
@@ -554,28 +707,28 @@ window.markGapAddressed = function(patientId, intervention, elementId) {
     gapEntry.markedDate = new Date().toISOString();
     gapEntry.proofAttachments = gapEntry.proofAttachments || [];
   }
-  localStorage.setItem(storageKey, JSON.stringify(patients));
-  displayGaps(patientId, elementId);  // Refresh the list
-  
-  // Trigger custom event for real-time sync
+  await persistPatientPreventiveGaps(patient);
+  await displayGaps(patientId, elementId);
+
   window.dispatchEvent(new CustomEvent('preventiveGapsUpdated', {
     detail: { patientId, intervention, action: 'markedAddressed' }
   }));
 };
 
-window.markGapUnaddressed = function(patientId, intervention, elementId) {
-  const { patients, storageKey } = getPatientsWithFallback();
-  const patient = patients.find(p => p.id === patientId);
-  if (!patient) return;
+window.markGapUnaddressed = async function(patientId, intervention, elementId) {
+  const patient = await resolvePatientForGapSave(patientId);
+  if (!patient) {
+    alert('Patient not found. Please refresh the page and try again.');
+    return;
+  }
   patient.preventiveGaps = patient.preventiveGaps || [];
   const gapIndex = patient.preventiveGaps.findIndex(g => g.intervention === intervention);
   if (gapIndex !== -1) {
     patient.preventiveGaps.splice(gapIndex, 1);
   }
-  localStorage.setItem(storageKey, JSON.stringify(patients));
-  displayGaps(patientId, elementId);  // Refresh the list
-  
-  // Trigger custom event for real-time sync
+  await persistPatientPreventiveGaps(patient);
+  await displayGaps(patientId, elementId);
+
   window.dispatchEvent(new CustomEvent('preventiveGapsUpdated', {
     detail: { patientId, intervention, action: 'markedUnaddressed' }
   }));
@@ -587,56 +740,61 @@ window.addProofAttachment = function(patientId, intervention, elementId) {
   input.type = 'file';
   input.accept = '.pdf,.jpg,.jpeg,.png,.doc,.docx';
   input.multiple = true;
-  
-  input.onchange = function(e) {
+
+  input.onchange = async function(e) {
     const files = Array.from(e.target.files);
     if (files.length === 0) return;
-    
-    const { patients, storageKey } = getPatientsWithFallback();
-    const patient = patients.find(p => p.id === patientId);
-    if (!patient) return;
-    
+
+    const patient = await resolvePatientForGapSave(patientId);
+    if (!patient) {
+      alert('Patient not found. Please refresh the page and try again.');
+      return;
+    }
+
     patient.preventiveGaps = patient.preventiveGaps || [];
     let gapEntry = patient.preventiveGaps.find(g => g.intervention === intervention);
     if (!gapEntry) {
-      gapEntry = { intervention, addressed: true, markedDate: new Date().toISOString(), proofAttachments: [] };
+      gapEntry = { intervention, addressed: false, markedDate: null, proofAttachments: [] };
       patient.preventiveGaps.push(gapEntry);
     }
     gapEntry.proofAttachments = gapEntry.proofAttachments || [];
-    
-    // Process each file
+
+    let pending = files.length;
     files.forEach(file => {
       const reader = new FileReader();
-      reader.onload = function(e) {
+      reader.onload = async function(loadEvent) {
         const attachment = {
           id: Date.now() + Math.random(),
           name: file.name,
           type: file.type,
           size: file.size,
-          data: e.target.result,
+          data: loadEvent.target.result,
           uploadedDate: new Date().toISOString()
         };
         gapEntry.proofAttachments.push(attachment);
-        localStorage.setItem(storageKey, JSON.stringify(patients));
-        displayGaps(patientId, elementId); // Refresh the display
-        
-        // Trigger custom event for real-time sync
-        window.dispatchEvent(new CustomEvent('preventiveGapsUpdated', {
-          detail: { patientId, intervention, action: 'attachmentAdded', attachmentName: file.name }
-        }));
+        pending -= 1;
+        if (pending === 0) {
+          await persistPatientPreventiveGaps(patient);
+          await displayGaps(patientId, elementId);
+          window.dispatchEvent(new CustomEvent('preventiveGapsUpdated', {
+            detail: { patientId, intervention, action: 'attachmentAdded', attachmentName: file.name }
+          }));
+        }
       };
       reader.readAsDataURL(file);
     });
   };
-  
+
   input.click();
 };
 
 // Function to view proof attachments
-window.viewProofAttachments = function(patientId, intervention) {
-  const { patients } = getPatientsWithFallback();
-  const patient = patients.find(p => p.id === patientId);
-  if (!patient) return;
+window.viewProofAttachments = async function(patientId, intervention) {
+  const patient = await resolvePatientForGapSave(patientId);
+  if (!patient) {
+    alert('Patient not found. Please refresh the page and try again.');
+    return;
+  }
   
   const gapEntry = patient.preventiveGaps?.find(g => g.intervention === intervention);
   if (!gapEntry || !gapEntry.proofAttachments || gapEntry.proofAttachments.length === 0) {
@@ -692,9 +850,9 @@ window.viewProofAttachments = function(patientId, intervention) {
 };
 
 // Function to download attachment
-window.downloadAttachment = function(attachmentId, fileName) {
+window.downloadAttachment = async function(attachmentId, fileName) {
   const { patients } = getPatientsWithFallback();
-  const patient = patients.find(p => p.preventiveGaps?.some(g => 
+  const patient = patients.find(p => p.preventiveGaps?.some(g =>
     g.proofAttachments?.some(a => a.id == attachmentId)
   ));
   
@@ -714,34 +872,33 @@ window.downloadAttachment = function(attachmentId, fileName) {
 };
 
 // Function to delete attachment
-window.deleteAttachment = function(patientId, intervention, attachmentId) {
+window.deleteAttachment = async function(patientId, intervention, attachmentId) {
   if (!confirm('Are you sure you want to delete this attachment?')) return;
-  
-  const { patients, storageKey } = getPatientsWithFallback();
-  const patient = patients.find(p => p.id === patientId);
-  if (!patient) return;
-  
+
+  const patient = await resolvePatientForGapSave(patientId);
+  if (!patient) {
+    alert('Patient not found. Please refresh the page and try again.');
+    return;
+  }
+
   const gapEntry = patient.preventiveGaps?.find(g => g.intervention === intervention);
   if (!gapEntry || !gapEntry.proofAttachments) return;
-  
+
   gapEntry.proofAttachments = gapEntry.proofAttachments.filter(a => a.id != attachmentId);
-  localStorage.setItem(storageKey, JSON.stringify(patients));
-  
-  // Refresh the main gaps display
+  await persistPatientPreventiveGaps(patient);
+
   const urlParams = new URLSearchParams(window.location.search);
-  const elementId = urlParams.get("id") ? "gaps-section" : "preventive-gaps-list";
-  displayGaps(patientId, elementId);
-  
-  // Trigger custom event for real-time sync
+  const elementId = urlParams.get('id') ? 'gaps-section' : 'preventive-gaps-list';
+  await displayGaps(patientId, elementId);
+
   window.dispatchEvent(new CustomEvent('preventiveGapsUpdated', {
     detail: { patientId, intervention, action: 'attachmentDeleted', attachmentId }
   }));
-  
-  // Refresh the modal
+
   const modal = document.querySelector('.modal');
   if (modal) {
     modal.remove();
-    viewProofAttachments(patientId, intervention);
+    await viewProofAttachments(patientId, intervention);
   }
 };
 
