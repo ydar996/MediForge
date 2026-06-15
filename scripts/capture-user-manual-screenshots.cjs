@@ -205,24 +205,39 @@ async function main() {
   try {
     await page.waitForSelector('button[onclick*="viewPatient"]', { timeout: 25000 });
     await Promise.all([
-      page.waitForNavigation({ waitUntil: 'networkidle2', timeout: 60000 }).catch(() => {}),
+      page.waitForNavigation({ waitUntil: 'domcontentloaded', timeout: 90000 }).catch(() => {}),
       page.click('button[onclick*="viewPatient"]'),
     ]);
     await delay(2500);
     await shot(page, '04-patient-details.png');
 
-    const patientId = new URL(page.url()).searchParams.get('id');
+    const patientId =
+      new URL(page.url()).searchParams.get('id') || process.env.MANUAL_PATIENT_ID || '';
     if (patientId) {
       const visitDate = new Date().toISOString().slice(0, 10);
-      await page.goto(
-        `${BASE}/clinical-note?patientId=${encodeURIComponent(patientId)}&visitDate=${visitDate}`,
-        { waitUntil: 'networkidle2', timeout: 60000 }
+      await goto(
+        page,
+        `${BASE}/clinical-note?patientId=${encodeURIComponent(patientId)}&visitDate=${visitDate}`
       );
       await delay(3000);
       await shot(page, '05-clinical-note.png');
     }
   } catch (e) {
     console.log('  (could not open patient chart:', e.message, ')');
+    const fallbackId = process.env.MANUAL_PATIENT_ID;
+    if (fallbackId && !fs.existsSync(path.join(OUT_DIR, '05-clinical-note.png'))) {
+      try {
+        const visitDate = new Date().toISOString().slice(0, 10);
+        await goto(
+          page,
+          `${BASE}/clinical-note?patientId=${encodeURIComponent(fallbackId)}&visitDate=${visitDate}`
+        );
+        await delay(3000);
+        await shot(page, '05-clinical-note.png');
+      } catch (e2) {
+        console.log('  (clinical note fallback skipped:', e2.message, ')');
+      }
+    }
   }
 
   for (const [file, route] of [
