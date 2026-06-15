@@ -484,6 +484,11 @@ async function initializePrescriptionForm() {
   }
   
   console.log('Prescription form initialized successfully');
+  if (typeof window.loadCanadianFormulary === 'function') {
+    window.loadCanadianFormulary()
+      .then((n) => console.log('Canadian DPD formulary ready:', n, 'products'))
+      .catch((err) => console.warn('Canadian formulary unavailable, using fallback list:', err.message));
+  }
 }
 
 // Load prescription data for editing
@@ -955,10 +960,13 @@ function addMedication() {
       <label for="med-name-${medicationCounter}">Medication Name <span class="required">*</span></label>
       <div style="position: relative;">
         <input type="text" id="med-name-${medicationCounter}" required 
-               placeholder="Start typing medication name..." 
+               placeholder="Search Canadian drug formulary (DPD)…" 
                oninput="searchDrugs(${medicationCounter})"
                onfocus="showDrugSuggestionsOnFocus(${medicationCounter})"
                autocomplete="off">
+        <input type="hidden" id="med-din-${medicationCounter}" value="">
+        <input type="hidden" id="med-ccdd-${medicationCounter}" value="">
+        <input type="hidden" id="med-generic-${medicationCounter}" value="">
         <div id="drug-suggestions-${medicationCounter}" class="drug-suggestions"></div>
       </div>
     </div>
@@ -1089,58 +1097,96 @@ function removeMedication(medicationId) {
   }
 }
 
-// Search drugs in database
+// Search drugs in database (Canadian DPD formulary when loaded, else fallback list)
+function escapeDrugHtml(text) {
+  return String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function findDrugMatches(searchTerm, limit = 15) {
+  if (typeof window.searchCanadianDrugs === 'function' &&
+      typeof window.isCanadianFormularyReady === 'function' &&
+      window.isCanadianFormularyReady()) {
+    return window.searchCanadianDrugs(searchTerm, limit);
+  }
+  const term = (searchTerm || '').toLowerCase();
+  return DRUG_DATABASE.filter(drug =>
+    drug.name.toLowerCase().includes(term) ||
+    (drug.generic || '').toLowerCase().includes(term)
+  ).slice(0, limit);
+}
+
+function getDefaultDrugSuggestions(limit = 20) {
+  if (typeof window.getCanadianFormularySuggestions === 'function' &&
+      typeof window.isCanadianFormularyReady === 'function' &&
+      window.isCanadianFormularyReady()) {
+    return window.getCanadianFormularySuggestions(limit);
+  }
+  return (Array.isArray(DRUG_DATABASE) ? DRUG_DATABASE.slice() : [])
+    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
+    .slice(0, limit);
+}
+
+function renderDrugSuggestions(medicationId, matches) {
+  const suggestionsDiv = document.getElementById(`drug-suggestions-${medicationId}`);
+  if (!suggestionsDiv) return;
+
+  suggestionsDiv._drugMatches = matches;
+  suggestionsDiv.innerHTML = matches.map((drug, idx) => {
+    const label = drug.din ? `${drug.name} (DIN ${drug.din})` : drug.name;
+    const subParts = [drug.strength, drug.form];
+    if (drug.generic && drug.generic.toLowerCase() !== (drug.name || '').toLowerCase()) {
+      subParts.push(drug.generic);
+    }
+    if (drug.ccdd) subParts.push('CCDD ' + drug.ccdd);
+    return `
+    <div class="drug-suggestion" data-drug-idx="${idx}">
+      <div class="drug-name">${escapeDrugHtml(label)}</div>
+      <div class="drug-strength">${escapeDrugHtml(subParts.filter(Boolean).join(' | '))}</div>
+    </div>`;
+  }).join('') + `
+    <div class="drug-suggestion" style="background:#f8f9fa; font-weight:600;" data-custom-med="1">➕ Add custom medication…</div>
+  `;
+
+  suggestionsDiv.querySelectorAll('[data-drug-idx]').forEach((el) => {
+    el.addEventListener('click', () => {
+      const idx = parseInt(el.getAttribute('data-drug-idx'), 10);
+      selectDrugFromMatch(medicationId, suggestionsDiv._drugMatches[idx]);
+    });
+  });
+  const customBtn = suggestionsDiv.querySelector('[data-custom-med]');
+  if (customBtn) {
+    customBtn.addEventListener('click', () => openCustomMedicationModal(medicationId));
+  }
+
+  suggestionsDiv.style.maxHeight = suggestionsDiv.style.maxHeight || '240px';
+  suggestionsDiv.style.overflowY = suggestionsDiv.style.overflowY || 'auto';
+  suggestionsDiv.style.display = 'block';
+}
+
 function searchDrugs(medicationId) {
-  console.log(`🔍 searchDrugs called for medication ${medicationId}`);
-  
   const nameInput = document.getElementById(`med-name-${medicationId}`);
   const suggestionsDiv = document.getElementById(`drug-suggestions-${medicationId}`);
-  
-  console.log(`🔍 Name input found:`, !!nameInput);
-  console.log(`🔍 Suggestions div found:`, !!suggestionsDiv);
-  
-  if (!nameInput || !suggestionsDiv) {
-    console.error(`❌ Missing elements for medication ${medicationId}`);
-    return;
-  }
-  
-  const searchTerm = nameInput.value.toLowerCase();
-  console.log(`🔍 Search term: "${searchTerm}"`);
-  
+
+  if (!nameInput || !suggestionsDiv) return;
+
+  const searchTerm = nameInput.value.trim();
   if (searchTerm.length < 2) {
     suggestionsDiv.style.display = 'none';
     return;
   }
-  
-  console.log(`🔍 DRUG_DATABASE available:`, !!DRUG_DATABASE, `Length:`, DRUG_DATABASE.length);
-  
-  const matches = DRUG_DATABASE.filter(drug => 
-    drug.name.toLowerCase().includes(searchTerm) || 
-    drug.generic.toLowerCase().includes(searchTerm)
-  ).slice(0, 10);
-  
-  console.log(`🔍 Found ${matches.length} matches`);
-  
+
+  const matches = findDrugMatches(searchTerm, 15);
   if (matches.length === 0) {
     suggestionsDiv.style.display = 'none';
     return;
   }
-  
-  suggestionsDiv.innerHTML = matches.map(drug => `
-    <div class="drug-suggestion" onclick="selectDrug(${medicationId}, '${drug.name}', '${drug.strength}', '${drug.form}', '${drug.category}')">
-      <div class="drug-name">${drug.name}</div>
-      <div class="drug-strength">${drug.strength} | ${drug.form} | ${drug.category}</div>
-    </div>
-  `).join('') + `
-    <div class="drug-suggestion" style="background:#f8f9fa; font-weight:600;" onclick="openCustomMedicationModal(${medicationId})">➕ Add custom medication…</div>
-  `;
-  // Ensure scrollable dropdown
-  suggestionsDiv.style.maxHeight = suggestionsDiv.style.maxHeight || '240px';
-  suggestionsDiv.style.overflowY = suggestionsDiv.style.overflowY || 'auto';
-  suggestionsDiv.style.display = 'block';
-  console.log(`✅ Suggestions displayed for medication ${medicationId}`);
-  
-  // Hide suggestions when clicking outside
+
+  renderDrugSuggestions(medicationId, matches);
+
   setTimeout(() => {
     document.addEventListener('click', function hideSuggestions(e) {
       if (!e.target.closest(`#medication-${medicationId}`)) {
@@ -1244,32 +1290,15 @@ window.openCustomDiagnosisModal=openCustomDiagnosisModal;
 window.closeCustomDiagnosisModal=closeCustomDiagnosisModal;
 window.saveCustomDiagnosis=saveCustomDiagnosis;
 window.selectDiagnosis=selectDiagnosis;
-// Show initial suggestions when input gains focus (no typing required)
 function showDrugSuggestionsOnFocus(medicationId) {
   const suggestionsDiv = document.getElementById(`drug-suggestions-${medicationId}`);
   if (!suggestionsDiv) return;
-  // Take top N alphabetically by name
-  const TOP_N = 20;
-  const list = (Array.isArray(DRUG_DATABASE) ? DRUG_DATABASE.slice() : [])
-    .sort((a, b) => (a.name || '').localeCompare(b.name || ''))
-    .slice(0, TOP_N);
+  const list = getDefaultDrugSuggestions(20);
   if (list.length === 0) {
     suggestionsDiv.style.display = 'none';
     return;
   }
-  suggestionsDiv.innerHTML = list.map(drug => `
-    <div class="drug-suggestion" onclick="selectDrug(${medicationId}, '${drug.name}', '${drug.strength}', '${drug.form}', '${drug.category}')">
-      <div class="drug-name">${drug.name}</div>
-      <div class="drug-strength">${drug.strength} | ${drug.form} | ${drug.category}</div>
-    </div>
-  `).join('') + `
-    <div class="drug-suggestion" style="background:#f8f9fa; font-weight:600;" onclick="openCustomMedicationModal(${medicationId})">➕ Add custom medication…</div>
-  `;
-  // Ensure scrollable dropdown
-  suggestionsDiv.style.maxHeight = suggestionsDiv.style.maxHeight || '240px';
-  suggestionsDiv.style.overflowY = suggestionsDiv.style.overflowY || 'auto';
-  suggestionsDiv.style.display = 'block';
-  // Hide on outside click
+  renderDrugSuggestions(medicationId, list);
   setTimeout(() => {
     document.addEventListener('click', function hideSuggestions(e) {
       if (!e.target.closest(`#medication-${medicationId}`)) {
@@ -1280,20 +1309,57 @@ function showDrugSuggestionsOnFocus(medicationId) {
   }, 0);
 }
 
-// Select drug from suggestions
-function selectDrug(medicationId, name, strength, form, category) {
-  document.getElementById(`med-name-${medicationId}`).value = name;
-  document.getElementById(`med-strength-${medicationId}`).value = strength.split(',')[0].trim();
-  document.getElementById(`med-form-${medicationId}`).value = form;
+function selectDrugFromMatch(medicationId, drug) {
+  if (!drug) return;
+  document.getElementById(`med-name-${medicationId}`).value = drug.name;
+  const strength = (drug.strength || '').split(',')[0].trim();
+  document.getElementById(`med-strength-${medicationId}`).value = strength;
+  const formSelect = document.getElementById(`med-form-${medicationId}`);
+  if (formSelect && drug.form) {
+    const formVal = drug.form;
+    let matched = false;
+    for (const opt of formSelect.options) {
+      if (opt.value && formVal.toLowerCase().includes(opt.value.toLowerCase())) {
+        formSelect.value = opt.value;
+        matched = true;
+        break;
+      }
+    }
+    if (!matched) formSelect.value = formVal;
+  }
+  const routeSelect = document.getElementById(`med-route-${medicationId}`);
+  if (routeSelect && drug.route) {
+    for (const opt of routeSelect.options) {
+      if (opt.value && drug.route.toLowerCase().includes(opt.value.toLowerCase())) {
+        routeSelect.value = opt.value;
+        break;
+      }
+    }
+  }
+  const dinEl = document.getElementById(`med-din-${medicationId}`);
+  const ccddEl = document.getElementById(`med-ccdd-${medicationId}`);
+  const genericEl = document.getElementById(`med-generic-${medicationId}`);
+  if (dinEl) dinEl.value = drug.din || '';
+  if (ccddEl) ccddEl.value = drug.ccdd || '';
+  if (genericEl) genericEl.value = drug.generic || drug.name || '';
   document.getElementById(`drug-suggestions-${medicationId}`).style.display = 'none';
   const strengthSug = document.getElementById(`strength-suggestions-${medicationId}`);
   if (strengthSug) strengthSug.style.display = 'none';
-  
-  // Check for interactions and allergies
   checkDrugInteractions(medicationId);
   checkAllergies(medicationId);
-  
-  console.log(`Drug selected: ${name} for medication ${medicationId}`);
+}
+
+// Select drug from suggestions (legacy onclick API)
+function selectDrug(medicationId, name, strength, form, category) {
+  selectDrugFromMatch(medicationId, {
+    name,
+    generic: name,
+    strength,
+    form,
+    category,
+    din: '',
+    ccdd: ''
+  });
 }
 
 // Strength suggestions
@@ -1706,6 +1772,9 @@ function collectPrescriptionData() {
     const medication = {
       id: i,
       name: nameField.value,
+      generic: document.getElementById(`med-generic-${i}`)?.value || nameField.value,
+      din: document.getElementById(`med-din-${i}`)?.value || '',
+      ccdd: document.getElementById(`med-ccdd-${i}`)?.value || '',
       dosage: `${document.getElementById(`med-strength-${i}`).value} ${document.getElementById(`med-form-${i}`).value}`.trim(),
       strength: document.getElementById(`med-strength-${i}`).value,
       form: document.getElementById(`med-form-${i}`).value,
