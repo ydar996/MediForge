@@ -1,6 +1,6 @@
 # Bulk patient import guide
 
-**Last updated:** June 16, 2026  
+**Last updated:** June 17, 2026  
 **Audience:** Clinic administrators migrating from paper charts or another EMR  
 **Page:** Dashboard → **Patient Management** → **Bulk Import Patients (CSV/Excel)** (`/bulk-patient-import`)
 
@@ -46,13 +46,24 @@ Duplicate IDs in the file or database are skipped for that row; other rows conti
 
 ## Semi-structured spreadsheets
 
-Column headers are matched flexibly. Examples that work:
+Use **Map my columns** on the import page when your file came from another system (not our template).
 
-- `Surname`, `Given Name`, `DOB`, `PHN`, `Chart No`, `File Number`
+Column headers are also matched automatically in **Template import** mode. Examples that work:
+
+- `Surname`, `Given Name`, `Age (DOB)` like `63 (1962-11-27)`, `PHN`, `Health Ins. #`, `Chart No`, `Record ID`
 - Medications in one cell: `Metformin 500mg; Lisinopril 10mg`
 - Allergies: `Penicillin; Latex`
 
-Tab-separated paste is supported when using **Parse pasted CSV**.
+In **Map my columns** mode, any column you do not map to a standard field can be sent to **patient Notes** so nothing is lost.
+
+---
+
+## Patient IDs — keep or replace
+
+| Checkbox | What happens |
+|----------|----------------|
+| **Keep existing Patient IDs** (on) | Uses numbers from your file (e.g. `1234`) when the column is mapped to Patient ID |
+| **Unchecked** | Everyone gets a new org number (e.g. `MFA-SC0001`). The old file number is saved in **Notes** for reference |
 
 ---
 

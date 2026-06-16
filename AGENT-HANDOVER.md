@@ -1,32 +1,70 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 16, 2026  
+**Last updated:** June 17, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
 ---
 
+## Rule #1 — Talk to the owner in plain English (always)
+
+The project owner is **not** a developer. **Every** reply to them — questions, plans, explanations, status updates, technical topics — must use the **simplest layman's terms** first.
+
+| Do | Don't |
+|----|-------|
+| Explain like talking to a smart friend who doesn't work in tech | Lead with jargon (JSONB, migration, RLS, idempotent, schema) |
+| Say what it means for the clinic in everyday words | Assume they know git, SQL, Netlify, or the terminal |
+| Use a short analogy when a concept is new | Dump acronyms without a one-sentence plain meaning |
+| Do the work yourself when you can | Hand back long DIY checklists unless they asked |
+
+Technical detail belongs in code comments and docs for developers — **not** as the first thing in chat with the owner. See also **`docs/MEDIFORGE-PRODUCT-RULES.md`** §6 and **`docs/PROJECT-OVERVIEW.md`** → “Talking to the project owner”.
+
+---
+
 ## How to keep this document alive
 
-Every agent that makes meaningful changes **must** update this file before finishing:
+Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing** — not only when the owner asks.
 
-1. Set **Last updated** to today’s date.
-2. Add a short entry under **Session log** (what changed, why, what the owner must do next).
-3. If Netlify sites were created, update **`NETLIFY-SITE-IDS.txt`** with real site IDs.
-4. If Supabase setup steps changed, update **`GO-LIVE-GUIDE.md`** and **`docs/PROJECT-OVERVIEW.md`**.
-5. Do **not** paste secrets (passwords, service role keys, Netlify tokens) into any doc.
+### Always update (every session with code or config changes)
+
+1. **`AGENT-HANDOVER.md` (this file)**
+   - Set **Last updated** to today’s date.
+   - Add a short **Session log** entry: what changed, why, what the owner should do next.
+2. **`docs/DOCUMENTATION-INDEX.md`**
+   - Add or update a row for any new or renamed doc under `docs/` or top-level `*.md`.
+   - Bump **Last updated** if you changed the index.
+3. **`docs/PROJECT-OVERVIEW.md`**
+   - Update when architecture, key files, auth flow, or major modules change.
+
+### Update when the change is user-facing (staff will see it)
+
+4. **`docs/USER-MANUAL.md`** and **`user-manual.html`** — keep both in sync (same steps, plain language).
+5. **`docs/user-manual/HOW-TO-UPDATE-MANUAL.md`** — note new screenshot slot numbers if UI changed.
+6. **Feature guide** — add or update a focused doc when helpful (e.g. `docs/PATIENT-BULK-IMPORT-GUIDE.md`).
+
+### Update when deployment or environment changes
+
+7. **`NETLIFY-SITE-IDS.txt`** — if sites were created or IDs changed.
+8. **`GO-LIVE-GUIDE.md`** — if first-time setup steps changed.
+9. **`DEPLOYMENT-PIPELINE.md`** or **`PROMOTE-RELEASE-WALKTHROUGH.md`** — if promotion or env rules changed.
+
+### Rules
+
+- Do **not** paste secrets (passwords, service role keys, Netlify tokens) into any doc.
+- Do **not** finish a session with shipped code and stale handover/docs — the next agent and the owner depend on them.
+- If you only answered a question with **no** code or config changes, doc updates are optional.
 
 ---
 
 ## Communication with the user (mandatory)
 
-**Always use the simplest layman's terms.** The project owner is not a developer. Do not assume they know git, SQL, Netlify, or terminal commands unless you explain them in one plain sentence.
+This repeats **Rule #1** so agents do not miss it mid-document.
 
-- Say **what** changed, **why** it matters, and **what they should do next** — like explaining to a smart friend who does not work in tech.
-- **Never** give jargon-first answers (e.g. “run the idempotent migration packet”) without a plain-English version first.
+- **Always** use the simplest layman's terms — including when explaining feasibility, database design, imports, or “how would this work?”
+- Say **what** changed, **why** it matters for the clinic, and **what they should do next**.
+- **Never** give jargon-first answers. If a technical word is unavoidable, define it in one plain sentence immediately after.
 - When you can **do the work yourself** (deploy, commit, run checks, capture screenshots), **do it** — do not hand back a long DIY checklist unless they asked to do it themselves.
 - Keep answers **short and direct**. Use numbered steps for anything they must click or type.
-- Technical detail belongs in code comments or docs — not in every chat reply.
 - For **user manual screenshots**: point them to **`docs/user-manual/GET-THE-PICTURES.md`** (Snipping Tool method first; automatic script second).
 
 ---
@@ -299,6 +337,23 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Dashboard button under **Patient Management**.
 - Deployed dev → staging → production (this session).
 
+### June 17, 2026 — Bulk import: map columns mode
+
+- **`/bulk-patient-import`** — **Map my columns** mode: match foreign spreadsheet headers, extras → patient Notes.
+- Smarter parsing: `Age (DOB)` like `63 (1962-11-27)`, `Health Ins. #`, `Health Card Type`, `Record ID`.
+- **Keep existing Patient IDs** optional; when off, new org numbers assigned and old file ID stored in Notes.
+
+### June 17, 2026 — Rule #1 plain language (reinforced)
+
+- Added **Rule #1 — Talk to the owner in plain English** at the top of this handover (before other sections).
+- **`docs/PROJECT-OVERVIEW.md`** — new “Talking to the project owner” section.
+- **`docs/MEDIFORGE-PRODUCT-RULES.md`** — new §6 Communication with the project owner.
+
+### June 17, 2026 — Mandatory documentation upkeep (spelled out)
+
+- Expanded **§ How to keep this document alive** with explicit checklist: handover, documentation index, project overview, user manual (md + html), feature guides, deployment docs.
+- Synced **`DEPLOYMENT-PIPELINE.md`**, **`docs/DOCUMENTATION-INDEX.md`**, and **`START-HERE.md`** to reference the same rule.
+
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. Update this session log before you finish.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed.

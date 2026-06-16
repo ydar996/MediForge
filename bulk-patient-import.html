@@ -180,6 +180,54 @@
       color: #1b4f9c;
       font-weight: 600;
     }
+    .mode-options label {
+      display: block;
+      margin: 8px 0;
+      cursor: pointer;
+      line-height: 1.45;
+    }
+    .mode-options input { margin-right: 8px; }
+    #import-mapping-section { display: none; }
+    table.mapping-table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+      margin-top: 12px;
+    }
+    table.mapping-table th {
+      background: #f0f0f0;
+      padding: 8px;
+      text-align: left;
+    }
+    table.mapping-table td {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      vertical-align: middle;
+    }
+    table.mapping-table select {
+      width: 100%;
+      max-width: 280px;
+      padding: 6px;
+      font-size: 13px;
+    }
+    .sample-cell {
+      color: #666;
+      font-size: 12px;
+      max-width: 200px;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      white-space: nowrap;
+    }
+    #import-apply-mapping-btn {
+      margin-top: 14px;
+      padding: 10px 20px;
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
   </style>
 </head>
 <body>
@@ -194,16 +242,30 @@
     </div>
 
     <div class="info-box">
-      <strong>Preferred template:</strong> Use the downloadable CSV (open in Excel, fill rows, save as CSV or upload .xlsx).<br>
-      <strong>Patient IDs:</strong> If your clinic already uses file numbers, put them in the <em>Patient ID</em> column and enable <em>Keep existing Patient IDs</em> below. Leave blank to use your organization’s auto-numbering (e.g. MFA-SC0001).<br>
-      <strong>Semi-structured files:</strong> Column headers are matched flexibly (e.g. “Surname”, “PHN”, “DOB”). Medications and allergies can be semicolon-separated in one cell.
+      <strong>Template import:</strong> Use our downloadable CSV when your columns match (or are close).<br>
+      <strong>Map my columns:</strong> For exports from another system — match each of your column names to MediForge fields. Extra columns can be saved in patient Notes.<br>
+      <strong>Patient IDs:</strong> Check <em>Keep existing Patient IDs</em> to use numbers from your file (e.g. 1234). Uncheck to give everyone new org numbers (e.g. MFA-SC0001). Old file numbers can still be saved in Notes when you use new numbers.
     </div>
 
     <div class="panel options">
-      <h2>Import options</h2>
+      <h2>How are you importing?</h2>
+      <div class="mode-options">
+        <label>
+          <input type="radio" name="import-mode" id="mode-template" value="template" checked>
+          <strong>Template import</strong> — I used (or am close to) the MediForge template
+        </label>
+        <label>
+          <input type="radio" name="import-mode" id="mode-map" value="map">
+          <strong>Map my columns</strong> — My spreadsheet came from another system (recommended for Dr Larry–style exports)
+        </label>
+      </div>
+    </div>
+
+    <div class="panel options">
+      <h2>Patient ID option</h2>
       <label>
         <input type="checkbox" id="opt-keep-patient-ids" checked>
-        <span><strong>Keep existing Patient IDs</strong> from the file when provided (recommended for migrating legacy charts). Uncheck to always auto-assign new org numbers.</span>
+        <span><strong>Keep existing Patient IDs</strong> from the file when provided. Uncheck to assign new org numbers to everyone; any file ID is copied into Notes for reference.</span>
       </label>
     </div>
 
@@ -218,8 +280,26 @@
       <button type="button" id="import-parse-paste-btn" style="margin-top: 8px; padding: 8px 16px;">Parse pasted CSV</button>
     </div>
 
+    <div class="panel" id="import-mapping-section">
+      <h2>2. Match your columns</h2>
+      <p style="margin: 0 0 8px; color: #555; font-size: 14px;">We guessed where each column should go. Change any row that looks wrong. Unmatched columns default to <strong>Add to patient Notes</strong>.</p>
+      <div class="preview-table-wrap" style="max-height: 420px;">
+        <table class="mapping-table">
+          <thead>
+            <tr>
+              <th>Your column</th>
+              <th>Sample value</th>
+              <th>Maps to</th>
+            </tr>
+          </thead>
+          <tbody id="import-mapping-body"></tbody>
+        </table>
+      </div>
+      <button type="button" id="import-apply-mapping-btn">Continue to preview</button>
+    </div>
+
     <div class="panel" id="import-preview-section" style="display: none;">
-      <h2>2. Preview</h2>
+      <h2 id="import-preview-heading">2. Preview</h2>
       <div id="import-parse-errors"></div>
       <p id="import-preview-summary"></p>
       <div class="preview-table-wrap">
@@ -250,7 +330,7 @@
   <script src="js/supabase-patients.js?v=20260429180000"></script>
   <script src="js/patients.js?v=20260131"></script>
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
-  <script src="js/bulk-patient-import.js?v=20260616120000"></script>
+  <script src="js/bulk-patient-import.js?v=20260617140000"></script>
   <script src="js/logout-button.js"></script>
   <script src="js/session-timeout.js?v=20260131"></script>
 </body>

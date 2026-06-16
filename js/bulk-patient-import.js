@@ -1,34 +1,80 @@
 /**
  * MediForge bulk patient import — CSV and Excel (.xlsx).
- * Maps flexible / semi-structured headers to registration demographics.
- * Supabase-first save with localStorage cache; empty fields allowed (edit later).
+ * Template mode: flexible header matching. Map mode: user maps columns + extras → Notes.
  */
 (function () {
   'use strict';
 
   const IMPORT_PLACEHOLDER_DOB = '1900-01-01';
+  const MAP_SKIP = '__skip__';
+  const MAP_NOTES = '__notes__';
+
+  const FIELD_LABELS = {
+    patientId: 'Patient ID / chart number',
+    firstName: 'First name',
+    middleName: 'Middle name',
+    lastName: 'Last name',
+    dob: 'Date of birth',
+    gender: 'Gender / sex',
+    maritalStatus: 'Marital status',
+    race: 'Race / ethnicity',
+    email: 'Email',
+    phone: 'Phone',
+    phoneCountryCode: 'Phone country code',
+    addressLine1: 'Street address',
+    addressLine2: 'Address line 2',
+    city: 'City',
+    state: 'Province / state',
+    country: 'Country',
+    postalCode: 'Postal / ZIP code',
+    emergencyFirstName: 'Emergency contact first name',
+    emergencyLastName: 'Emergency contact last name',
+    emergencyRelationship: 'Emergency contact relationship',
+    emergencyPhone: 'Emergency contact phone',
+    emergencyEmail: 'Emergency contact email',
+    emergencyAddressLine1: 'Emergency contact address',
+    emergencyCity: 'Emergency contact city',
+    emergencyState: 'Emergency contact province/state',
+    emergencyCountry: 'Emergency contact country',
+    hasDiabetes: 'Has diabetes',
+    paymentSource: 'Primary payer / payment source',
+    province: 'Health card province',
+    healthCardNumber: 'Health card number (PHN)',
+    healthCardVersion: 'Health card version code',
+    insuranceName: 'Insurance company',
+    insuranceMemberNumber: 'Insurance member number',
+    insurancePolicyGroupNumber: 'Insurance policy / group number',
+    wcbClaimNumber: 'WCB / workers comp claim number',
+    preferredPaymentMethod: 'Preferred payment method',
+    medicalHistory: 'Medical history',
+    medications: 'Medications',
+    allergies: 'Allergies',
+    immunizations: 'Immunizations',
+    diagnoses: 'Diagnoses',
+    notes: 'Notes / comments'
+  };
 
   const HEADER_ALIASES = {
     patientId: [
-      'patient id', 'patientid', 'patient_id', 'id', 'mrn', 'file number',
+      'record id', 'patient id', 'patientid', 'patient_id', 'mrn', 'file number',
       'file no', 'chart number', 'chart no', 'medical record number', 'record number'
     ],
     firstName: ['first name', 'firstname', 'first', 'given name', 'fname'],
     middleName: ['middle name', 'middlename', 'middle', 'mname'],
     lastName: ['last name', 'lastname', 'last', 'surname', 'family name', 'lname'],
-    dob: ['dob', 'date of birth', 'dateofbirth', 'birth date', 'birthdate', 'birthday'],
+    dob: ['age dob', 'age (dob)', 'dob', 'date of birth', 'dateofbirth', 'birth date', 'birthdate', 'birthday'],
     gender: ['gender', 'sex'],
     maritalStatus: ['marital status', 'maritalstatus', 'marital'],
     race: ['race', 'ethnicity'],
     email: ['email', 'e-mail', 'email address'],
-    phone: ['phone', 'telephone', 'mobile', 'cell', 'phone number'],
+    phone: ['phone h preferred', 'phone(h) preferred', 'phone', 'telephone', 'mobile', 'cell', 'phone number'],
     phoneCountryCode: ['phone country code', 'phone country', 'country code'],
     addressLine1: ['address line 1', 'addressline1', 'address', 'street', 'street address'],
     addressLine2: ['address line 2', 'addressline2', 'address 2', 'unit', 'apt'],
     city: ['city', 'town'],
     state: ['state', 'province', 'state/province', 'region', 'state province'],
     country: ['country', 'nation'],
-    postalCode: ['postal code', 'postalcode', 'zip', 'zip code', 'postcode'],
+    postalCode: ['postal code', 'postalcode', 'postal', 'zip', 'zip code', 'postcode'],
     emergencyFirstName: [
       'emergency contact first name', 'emergency first name', 'ec first name',
       'next of kin first name', 'nok first name'
@@ -49,8 +95,11 @@
       'primary payer', 'payment source', 'payer', 'insurance type', 'coverage type'
     ],
     province: ['province (health card)', 'health card province', 'card province'],
-    healthCardNumber: ['health card number', 'phn', 'health card', 'ohip', 'ramq', 'msp number'],
-    healthCardVersion: ['health card version', 'version code', 'card version'],
+    healthCardNumber: [
+      'health ins', 'health ins #', 'health insurance', 'health insurance number',
+      'health card number', 'phn', 'ohip', 'ramq', 'msp number'
+    ],
+    healthCardVersion: ['health card type', 'card type', 'health card version', 'version code', 'card version'],
     insuranceName: ['insurance company', 'insurance name', 'insurer', 'plan name'],
     insuranceMemberNumber: ['insurance member number', 'member number', 'certificate number', 'policy member'],
     insurancePolicyGroupNumber: ['insurance policy group', 'policy group', 'group number', 'policy number'],
@@ -74,32 +123,110 @@
       .trim();
   }
 
+  function scoreHeaderMatch(normHeader, alias, field) {
+    if (!normHeader || !alias) return 0;
+    if (normHeader === alias) return 1000;
+
+    if (field === 'healthCardNumber') {
+      if (/type|version|renew|effective|physician|mrp|enrollment/.test(normHeader)) return 0;
+      if (/health ins|phn|ohip|ramq|msp/.test(normHeader)) return 920;
+      if (normHeader.indexOf('health card') !== -1 && normHeader.indexOf('type') === -1) return 500;
+    }
+    if (field === 'healthCardVersion') {
+      if (/health card type|card type|version code/.test(normHeader)) return 920;
+      if (/number|#|health ins/.test(normHeader) && normHeader.indexOf('version') === -1) return 0;
+    }
+    if (field === 'patientId') {
+      if (normHeader === 'record id' || normHeader === 'record number') return 950;
+      if (normHeader === 'id') return 120;
+    }
+    if (field === 'dob') {
+      if (/age.*dob|dob.*age/.test(normHeader)) return 930;
+    }
+    if (field === 'state') {
+      if (normHeader === 'province' && normHeader.indexOf('health') === -1) return 880;
+    }
+    if (field === 'province') {
+      if (normHeader === 'province') return 0;
+      if (normHeader.indexOf('health') !== -1) return 850;
+    }
+    if (field === 'postalCode' && normHeader === 'postal') return 900;
+    if (field === 'phone' && normHeader.indexOf('phone') !== -1) return 750;
+
+    if (normHeader.indexOf(alias) !== -1 && alias.length >= 3) {
+      return 300 + alias.length;
+    }
+    if (alias.indexOf(normHeader) !== -1 && normHeader.length >= 3) {
+      return 200 + normHeader.length;
+    }
+    return 0;
+  }
+
   function mapHeaders(headers) {
-    const mapping = {};
     const normalized = headers.map(normalizeHeaderKey);
+    const candidates = [];
     Object.keys(HEADER_ALIASES).forEach(function (field) {
-      const aliases = HEADER_ALIASES[field];
-      normalized.forEach(function (h, idx) {
-        if (!h || mapping[field] !== undefined) return;
-        if (aliases.indexOf(h) !== -1 || h === field.replace(/([A-Z])/g, ' $1').trim().toLowerCase()) {
-          mapping[field] = idx;
-        }
+      HEADER_ALIASES[field].forEach(function (alias) {
+        normalized.forEach(function (h, idx) {
+          const score = scoreHeaderMatch(h, alias, field);
+          if (score > 0) candidates.push({ field: field, idx: idx, score: score });
+        });
       });
     });
-    normalized.forEach(function (h, idx) {
-      if (!h) return;
-      Object.keys(HEADER_ALIASES).forEach(function (field) {
-        if (mapping[field] !== undefined) return;
-        aliasesLoop: for (let i = 0; i < HEADER_ALIASES[field].length; i++) {
-          const alias = HEADER_ALIASES[field][i];
-          if (h.indexOf(alias) !== -1 || alias.indexOf(h) !== -1) {
-            mapping[field] = idx;
-            break aliasesLoop;
-          }
-        }
-      });
+    candidates.sort(function (a, b) { return b.score - a.score; });
+    const fieldUsed = {};
+    const colUsed = {};
+    const mapping = {};
+    candidates.forEach(function (c) {
+      if (fieldUsed[c.field] !== undefined || colUsed[c.idx] !== undefined) return;
+      fieldUsed[c.field] = c.idx;
+      colUsed[c.idx] = c.field;
+      mapping[c.field] = c.idx;
     });
     return mapping;
+  }
+
+  function suggestColumnMappings(headers, defaultUnmappedToNotes) {
+    const headerMap = mapHeaders(headers);
+    const colToField = {};
+    Object.keys(headerMap).forEach(function (field) {
+      colToField[headerMap[field]] = field;
+    });
+    return headers.map(function (h, idx) {
+      if (colToField[idx]) return colToField[idx];
+      return defaultUnmappedToNotes ? MAP_NOTES : MAP_SKIP;
+    });
+  }
+
+  function buildParseConfig(headers, columnMappings) {
+    const headerMap = {};
+    const notesColumns = [];
+    const usedFields = {};
+    columnMappings.forEach(function (target, colIdx) {
+      if (target === MAP_SKIP) return;
+      if (target === MAP_NOTES) {
+        notesColumns.push(colIdx);
+        return;
+      }
+      if (usedFields[target]) {
+        notesColumns.push(colIdx);
+        return;
+      }
+      usedFields[target] = true;
+      headerMap[target] = colIdx;
+    });
+    return { headerMap: headerMap, notesColumns: notesColumns, headers: headers };
+  }
+
+  function collectNotesFromColumns(rawRow, headers, notesColumns) {
+    const parts = [];
+    notesColumns.forEach(function (colIdx) {
+      const val = cellVal(rawRow, colIdx);
+      if (!val) return;
+      const label = headers[colIdx] || ('Column ' + (colIdx + 1));
+      parts.push(label + ': ' + val);
+    });
+    return parts.join('; ');
   }
 
   function cellVal(row, idx) {
@@ -122,6 +249,8 @@
     if (raw instanceof Date && !isNaN(raw.getTime())) return formatDateIso(raw);
     const s = String(raw).trim();
     if (!s) return '';
+    const parenIso = s.match(/\((\d{4}-\d{2}-\d{2})\)/);
+    if (parenIso) return parenIso[1];
     if (/^\d{4}-\d{2}-\d{2}$/.test(s)) return s;
     const mdy = s.match(/^(\d{1,2})[\/\-](\d{1,2})[\/\-](\d{2,4})$/);
     if (mdy) {
@@ -148,7 +277,7 @@
 
   function normalizePaymentSource(val) {
     const s = String(val || '').trim().toLowerCase();
-    if (!s) return 'self_pay';
+    if (!s) return '';
     if (s.indexOf('provincial') !== -1 || s.indexOf('ohip') !== -1 || s.indexOf('ramq') !== -1 || s.indexOf('msp') !== -1) {
       return 'provincial';
     }
@@ -156,7 +285,7 @@
     if (s.indexOf('wcb') !== -1 || s.indexOf('workers') !== -1) return 'wcb';
     if (s.indexOf('self') !== -1 || s.indexOf('cash') !== -1 || s.indexOf('uninsured') !== -1) return 'self_pay';
     if (['provincial', 'private_insurance', 'self_pay', 'wcb'].indexOf(s) !== -1) return s;
-    return 'self_pay';
+    return '';
   }
 
   function normalizeGender(val) {
@@ -170,7 +299,7 @@
   function parseSimpleClinicalList(raw, kind) {
     if (!raw || !String(raw).trim()) return [];
     const parts = String(raw).split(/[;\n|]+/).map(function (p) { return p.trim(); }).filter(Boolean);
-    return parts.map(function (text, i) {
+    return parts.map(function (text) {
       if (kind === 'medications') {
         return { name: text, dosage: '', route: '', status: 'Active', source: 'import' };
       }
@@ -187,8 +316,10 @@
     });
   }
 
-  function rowToPatient(rawRow, headerMap, rowNum) {
+  function rowToPatient(rawRow, headerMap, rowNum, parseConfig) {
     const warnings = [];
+    const headers = (parseConfig && parseConfig.headers) || [];
+    const notesColumns = (parseConfig && parseConfig.notesColumns) || [];
     const get = function (field) { return cellVal(rawRow, headerMap[field]); };
 
     const firstName = get('firstName');
@@ -206,6 +337,26 @@
     }
 
     const patientIdRaw = get('patientId');
+    let paymentSource = normalizePaymentSource(get('paymentSource'));
+    const healthCardNumber = get('healthCardNumber');
+    if (!paymentSource && healthCardNumber) paymentSource = 'provincial';
+    if (!paymentSource) paymentSource = 'self_pay';
+
+    let country = get('country');
+    const stateVal = get('state');
+    if (!country && (stateVal === 'ON' || stateVal === 'BC' || stateVal === 'AB' || stateVal === 'QC')) {
+      country = 'Canada';
+    }
+
+    const noteParts = [];
+    const mappedNotes = get('notes');
+    if (mappedNotes) noteParts.push(mappedNotes);
+    const extraNotes = collectNotesFromColumns(rawRow, headers, notesColumns);
+    if (extraNotes) noteParts.push('From import file: ' + extraNotes);
+    if (healthCardNumber) noteParts.push('PHN: ' + healthCardNumber);
+    const hcv = get('healthCardVersion');
+    if (hcv) noteParts.push('Health card version: ' + hcv);
+
     const patient = {
       id: patientIdRaw || null,
       customPatientId: patientIdRaw || null,
@@ -222,8 +373,8 @@
       addressLine1: get('addressLine1'),
       addressLine2: get('addressLine2'),
       city: get('city'),
-      state: get('state'),
-      country: get('country'),
+      state: stateVal,
+      country: country,
       postalCode: get('postalCode'),
       emergencyFirstName: get('emergencyFirstName'),
       emergencyLastName: get('emergencyLastName'),
@@ -235,11 +386,11 @@
       emergencyState: get('emergencyState'),
       emergencyCountry: get('emergencyCountry'),
       hasDiabetes: parseBool(get('hasDiabetes')),
-      paymentSource: normalizePaymentSource(get('paymentSource')),
-      province: get('province') || get('state'),
-      healthCardNumber: get('healthCardNumber'),
-      healthCardVersion: get('healthCardVersion'),
-      phn: get('healthCardNumber'),
+      paymentSource: paymentSource,
+      province: get('province') || stateVal,
+      healthCardNumber: healthCardNumber,
+      healthCardVersion: hcv,
+      phn: healthCardNumber,
       insuranceName: get('insuranceName'),
       insuranceMemberNumber: get('insuranceMemberNumber'),
       insurancePolicyGroupNumber: get('insurancePolicyGroupNumber'),
@@ -254,7 +405,7 @@
       preventiveGaps: [],
       prescriptions: [],
       encounters: [],
-      importNotes: get('notes'),
+      importNotes: noteParts.join(' | '),
       warnings: warnings,
       rowNum: rowNum
     };
@@ -321,6 +472,9 @@
   function buildSupabaseRow(patient, orgId) {
     const incomplete = (patient.warnings || []).join('; ');
     const noteParts = [];
+    if (patient.importLegacyId) {
+      noteParts.push('Former chart number from import file: ' + patient.importLegacyId);
+    }
     if (patient.importNotes) noteParts.push(patient.importNotes);
     if (incomplete) noteParts.push('Bulk import — review: ' + incomplete);
     const notes = noteParts.length ? noteParts.join(' | ') : null;
@@ -451,8 +605,12 @@
       patient.id = raw;
       return { patient: patient };
     }
+    if (raw) {
+      patient.importLegacyId = raw;
+    }
     const newId = allocator();
     patient.id = newId;
+    patient.customPatientId = null;
     usedInFile.add(newId);
     return { patient: patient };
   }
@@ -479,15 +637,20 @@
     return { supabaseUuid: supabaseUuid };
   }
 
-  function parseWorkbook(data) {
-    const headerMap = mapHeaders(data.headers);
+  function parseWorkbook(data, parseConfig) {
+    const headerMap = parseConfig ? parseConfig.headerMap : mapHeaders(data.headers);
+    const config = parseConfig || {
+      headerMap: headerMap,
+      notesColumns: [],
+      headers: data.headers
+    };
     const parsed = [];
     const errors = [];
     data.rows.forEach(function (row, idx) {
       const rowNum = idx + 2;
       const allEmpty = row.every(function (c) { return !String(c || '').trim(); });
       if (allEmpty) return;
-      const result = rowToPatient(row, headerMap, rowNum);
+      const result = rowToPatient(row, config.headerMap, rowNum, config);
       if (result.error) {
         errors.push(result);
       } else {
@@ -497,25 +660,122 @@
     if (!parsed.length && errors.length) {
       throw new Error(errors[0].error || 'No valid rows found');
     }
-    return { parsed: parsed, errors: errors, headerMap: headerMap };
+    return { parsed: parsed, errors: errors, headerMap: config.headerMap, parseConfig: config };
   }
 
   const state = {
+    rawData: null,
+    columnMappings: [],
+    importMode: 'template',
     parsed: [],
     errors: [],
     fileName: ''
   };
 
+  function getImportMode() {
+    const mapRadio = document.getElementById('mode-map');
+    return mapRadio && mapRadio.checked ? 'map' : 'template';
+  }
+
+  function buildMappingSelectOptions(selected) {
+    let html = '<option value="' + MAP_SKIP + '">— Skip —</option>';
+    html += '<option value="' + MAP_NOTES + '"' + (selected === MAP_NOTES ? ' selected' : '') + '>Add to patient Notes</option>';
+    Object.keys(FIELD_LABELS).forEach(function (key) {
+      html += '<option value="' + key + '"' + (selected === key ? ' selected' : '') + '>' +
+        escapeHtml(FIELD_LABELS[key]) + '</option>';
+    });
+    return html;
+  }
+
+  function renderMappingUI() {
+    const tbody = document.getElementById('import-mapping-body');
+    if (!tbody || !state.rawData) return;
+    tbody.innerHTML = '';
+    const sampleRow = state.rawData.rows.find(function (row) {
+      return row.some(function (c) { return String(c || '').trim(); });
+    }) || [];
+
+    state.columnMappings = suggestColumnMappings(state.rawData.headers, true);
+
+    state.rawData.headers.forEach(function (header, idx) {
+      const tr = document.createElement('tr');
+      const select = document.createElement('select');
+      select.dataset.colIdx = String(idx);
+      select.innerHTML = buildMappingSelectOptions(state.columnMappings[idx]);
+      select.value = state.columnMappings[idx];
+      select.addEventListener('change', function () {
+        state.columnMappings[idx] = select.value;
+      });
+      const sampleTd = document.createElement('td');
+      sampleTd.className = 'sample-cell';
+      sampleTd.textContent = cellVal(sampleRow, idx) || '—';
+      sampleTd.title = cellVal(sampleRow, idx);
+      tr.innerHTML = '<td>' + escapeHtml(header) + '</td>';
+      tr.appendChild(sampleTd);
+      const mapTd = document.createElement('td');
+      mapTd.appendChild(select);
+      tr.appendChild(mapTd);
+      tbody.appendChild(tr);
+    });
+
+    document.getElementById('import-mapping-section').style.display = 'block';
+    document.getElementById('import-preview-section').style.display = 'none';
+    const heading = document.getElementById('import-preview-heading');
+    if (heading) heading.textContent = '3. Preview';
+  }
+
+  function readMappingFromUI() {
+    const tbody = document.getElementById('import-mapping-body');
+    if (!tbody) return state.columnMappings;
+    tbody.querySelectorAll('select[data-col-idx]').forEach(function (sel) {
+      const idx = parseInt(sel.dataset.colIdx, 10);
+      state.columnMappings[idx] = sel.value;
+    });
+    return state.columnMappings;
+  }
+
+  function applyParseAndPreview() {
+    if (!state.rawData) return;
+    const mode = getImportMode();
+    let parseConfig;
+    if (mode === 'map') {
+      readMappingFromUI();
+      parseConfig = buildParseConfig(state.rawData.headers, state.columnMappings);
+    } else {
+      parseConfig = buildParseConfig(
+        state.rawData.headers,
+        suggestColumnMappings(state.rawData.headers, false)
+      );
+    }
+    const result = parseWorkbook(state.rawData, parseConfig);
+    state.parsed = result.parsed;
+    state.errors = result.errors;
+    renderPreview();
+    document.getElementById('import-preview-section').style.display = 'block';
+    if (mode === 'map') {
+      document.getElementById('import-mapping-section').style.display = 'block';
+    }
+  }
+
   function renderPreview() {
     const tbody = document.getElementById('import-preview-body');
     const errEl = document.getElementById('import-parse-errors');
+    const keepExisting = document.getElementById('opt-keep-patient-ids') &&
+      document.getElementById('opt-keep-patient-ids').checked;
     if (!tbody) return;
     tbody.innerHTML = '';
     state.parsed.forEach(function (item) {
       const p = item.patient;
       const tr = document.createElement('tr');
       const warn = (item.warnings || []).join('; ') || '—';
-      const idDisplay = p.customPatientId || p.id || '(auto on import)';
+      let idDisplay;
+      if (keepExisting) {
+        idDisplay = p.customPatientId || p.id || '(auto on import)';
+      } else if (p.customPatientId || p.id) {
+        idDisplay = '(new number — file had ' + (p.customPatientId || p.id) + ')';
+      } else {
+        idDisplay = '(new number on import)';
+      }
       tr.innerHTML =
         '<td>' + item.rowNum + '</td>' +
         '<td>' + escapeHtml(idDisplay) + '</td>' +
@@ -553,9 +813,24 @@
       .replace(/"/g, '&quot;');
   }
 
+  async function handleRawData(data, fileName) {
+    state.rawData = data;
+    state.fileName = fileName || '';
+    state.importMode = getImportMode();
+    if (state.importMode === 'map') {
+      renderMappingUI();
+      const heading = document.getElementById('import-preview-heading');
+      if (heading) heading.textContent = '3. Preview';
+    } else {
+      document.getElementById('import-mapping-section').style.display = 'none';
+      const heading = document.getElementById('import-preview-heading');
+      if (heading) heading.textContent = '2. Preview';
+      applyParseAndPreview();
+    }
+  }
+
   async function handleFile(file) {
     if (!file) return;
-    state.fileName = file.name;
     const name = file.name.toLowerCase();
     let data;
     if (name.endsWith('.xlsx') || name.endsWith('.xls')) {
@@ -565,11 +840,7 @@
       const text = await file.text();
       data = parseCsvText(text);
     }
-    const result = parseWorkbook(data);
-    state.parsed = result.parsed;
-    state.errors = result.errors;
-    renderPreview();
-    document.getElementById('import-preview-section').style.display = 'block';
+    await handleRawData(data, file.name);
   }
 
   async function runImport() {
@@ -582,7 +853,10 @@
       alert('No patients to import. Upload a file first.');
       return;
     }
-    if (!confirm('Import ' + state.parsed.length + ' patient(s) into your organization? Empty fields can be completed later in the patient chart.')) {
+    const idMsg = keepExisting
+      ? 'Patient IDs from the file will be kept when provided.'
+      : 'Everyone will get a new org patient number. Old file numbers go into Notes.';
+    if (!confirm('Import ' + state.parsed.length + ' patient(s)?\n\n' + idMsg + '\n\nEmpty fields can be completed later in the patient chart.')) {
       return;
     }
 
@@ -640,6 +914,27 @@
     const fileInput = document.getElementById('import-file');
     const pasteArea = document.getElementById('import-paste');
     const parsePasteBtn = document.getElementById('import-parse-paste-btn');
+    const applyMappingBtn = document.getElementById('import-apply-mapping-btn');
+    const keepIdsCheckbox = document.getElementById('opt-keep-patient-ids');
+
+    ['mode-template', 'mode-map'].forEach(function (id) {
+      const el = document.getElementById(id);
+      if (el) {
+        el.addEventListener('change', function () {
+          if (state.rawData) {
+            handleRawData(state.rawData, state.fileName).catch(function (err) {
+              alert('Could not refresh: ' + err.message);
+            });
+          }
+        });
+      }
+    });
+
+    if (keepIdsCheckbox) {
+      keepIdsCheckbox.addEventListener('change', function () {
+        if (state.parsed.length) renderPreview();
+      });
+    }
 
     if (fileInput) {
       fileInput.addEventListener('change', function (e) {
@@ -656,15 +951,22 @@
             alert('Paste CSV text first.');
             return;
           }
-          state.fileName = 'pasted-data.csv';
           const data = parseCsvText(text);
-          const result = parseWorkbook(data);
-          state.parsed = result.parsed;
-          state.errors = result.errors;
-          renderPreview();
-          document.getElementById('import-preview-section').style.display = 'block';
+          handleRawData(data, 'pasted-data.csv').catch(function (err) {
+            alert('Could not parse pasted data: ' + err.message);
+          });
         } catch (err) {
           alert('Could not parse pasted data: ' + err.message);
+        }
+      });
+    }
+
+    if (applyMappingBtn) {
+      applyMappingBtn.addEventListener('click', function () {
+        try {
+          applyParseAndPreview();
+        } catch (err) {
+          alert('Could not build preview: ' + err.message);
         }
       });
     }
@@ -676,6 +978,8 @@
   window.MediForgeBulkPatientImport = {
     parseCsvText: parseCsvText,
     parseWorkbook: parseWorkbook,
+    mapHeaders: mapHeaders,
+    suggestColumnMappings: suggestColumnMappings,
     init: initBulkPatientImport
   };
 

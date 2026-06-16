@@ -2,7 +2,19 @@
 
 Technical reference for developers and AI agents. For operational handover, see **`AGENT-HANDOVER.md`**. For first deploy, see **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 16, 2026
+**Last updated:** June 17, 2026
+
+---
+
+## Talking to the project owner
+
+The owner is **not** a developer. **Every** agent reply to them must use the **simplest layman's terms** — questions, plans, status, and technical topics included.
+
+- Explain what something means for the **clinic**, not how the code is wired.
+- Avoid leading with jargon; if a technical word is needed, give a one-sentence plain-English meaning right after.
+- Do the work (deploy, commit, checks) when possible instead of long DIY checklists.
+
+Full rule: **`AGENT-HANDOVER.md`** → **Rule #1** and **Communication with the user**.
 
 ---
 

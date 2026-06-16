@@ -18,6 +18,10 @@
     self_pay: ['selfPayPayerNote']
   };
 
+  function isPatientIntakeForm() {
+    return !!document.getElementById('patient-intake-form');
+  }
+
   const LEGACY_PANELS = {
     Insurance: ['insuranceFields'],
     Cash: ['selfPayPayerNote']
@@ -57,6 +61,10 @@
       const panel = document.getElementById(id);
       if (panel) panel.style.display = 'none';
     });
+    const docPanel = document.getElementById('patientDocumentUploads');
+    if (docPanel && isPatientIntakeForm()) {
+      docPanel.style.display = 'none';
+    }
   }
 
   function showPanels(ids) {
@@ -76,6 +84,15 @@
 
     const panels = PANELS_BY_SOURCE[source] || LEGACY_PANELS[raw] || [];
     showPanels(panels);
+
+    const docPanel = document.getElementById('patientDocumentUploads');
+    if (docPanel) {
+      if (isPatientIntakeForm()) {
+        if (source) docPanel.style.display = 'block';
+      } else {
+        docPanel.style.display = 'block';
+      }
+    }
 
     const allRequired = new Set(Object.values(REQUIRED_BY_SOURCE).flat());
     allRequired.forEach((id) => setFieldRequired(id, false));

@@ -318,6 +318,27 @@
       emergencyCountrySelect.value = resolved;
       handleCountryChange("emergencyCountry", "emergencyState", "emergencyPhone", { citySelectId: "emergencyCity" });
     }
+    applyDefaultPaymentSourceForIntake(resolved, state);
+  }
+
+  /** Canadian clinics: pre-select provincial payer so health card fields are visible on load. */
+  function applyDefaultPaymentSourceForIntake(country, state) {
+    if (!document.getElementById("patient-intake-form")) return;
+    const paymentSelect = document.getElementById("paymentSource");
+    if (!paymentSelect || paymentSelect.value) return;
+    const c = String(country || "").trim().toLowerCase();
+    if (c !== "canada" && c !== "ca") return;
+    paymentSelect.value = "provincial";
+    const provinceSelect = document.getElementById("patientProvince");
+    if (provinceSelect && state) {
+      const code = String(state).trim().toUpperCase();
+      if (provinceSelect.querySelector(`option[value="${code}"]`)) {
+        provinceSelect.value = code;
+      }
+    }
+    if (typeof window.MediForgePaymentSourceFields !== "undefined") {
+      window.MediForgePaymentSourceFields.update(paymentSelect);
+    }
   }
 
   function syncTableState(tableId) {

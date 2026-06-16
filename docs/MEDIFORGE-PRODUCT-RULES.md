@@ -2,7 +2,7 @@
 
 These rules define how MediForge differs from the legacy codebase it was forked from. Agents and developers must follow them for all new work.
 
-**Last updated:** June 11, 2026
+**Last updated:** June 17, 2026
 
 ---
 
@@ -79,7 +79,19 @@ Placeholder values in `js/supabase-env.js` must be replaced before production us
 
 ---
 
-## 6. Deployments
+## 6. Communication with the project owner
+
+AI agents and anyone writing **to the project owner** (not internal dev docs) must:
+
+- Use the **simplest layman's terms** in **every** conversation — including feasibility, imports, database design, and “how would this work?”
+- Lead with what it means for the clinic; put technical detail in code comments or developer docs.
+- Do the work when possible; don't dump long technical checklists unless the owner asked to do it themselves.
+
+See **`AGENT-HANDOVER.md`** → **Rule #1**.
+
+---
+
+## 7. Deployments
 
 Same as **`AGENT-HANDOVER.md`**: explicit approval, dev first, one batched deploy with detailed message.
 
@@ -89,4 +101,5 @@ Same as **`AGENT-HANDOVER.md`**: explicit approval, dev first, one batched deplo
 
 | Date | Change |
 |------|--------|
+| 2026-06-17 | §6 Communication with project owner — simplest layman's terms always |
 | 2026-06-11 | Initial rules document at MediForge fork |
