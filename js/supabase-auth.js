@@ -23,6 +23,31 @@ async function kickoffPhysicianVerificationClock(profileData) {
   }
 }
 
+/** Build localStorage session from public.users row (keeps phone + license in sync). */
+function buildUserSessionFromProfile(profileData, authUser) {
+  const org = profileData.organizations;
+  return {
+    authUserId: authUser?.id || profileData.auth_user_id,
+    email: authUser?.email || profileData.email,
+    firstName: profileData.first_name,
+    lastName: profileData.last_name,
+    username: profileData.username,
+    gender: profileData.gender,
+    role: profileData.role,
+    org: org?.name || 'Platform',
+    organizationId: profileData.organization_id,
+    phone: profileData.phone || '',
+    medicalLicenseNumber: profileData.license_number || profileData.medical_license_number || '',
+    orgAddressLine1: org?.address_line1 || '',
+    orgAddressLine2: org?.address_line2 || '',
+    orgCity: org?.city || '',
+    orgState: org?.state || '',
+    orgCountry: org?.country || '',
+    orgPhone: org?.phone || '',
+    afterHoursPhone: org?.after_hours_phone || ''
+  };
+}
+
 /**
  * Log in a user with Supabase Auth
  * @param {string} email - User's email (format: username@temp.ehrapp.local)
@@ -151,17 +176,9 @@ async function loginWithSupabase(email, password) {
                 .single();
               
               if (!profileError && fullProfile) {
-                // Build user session
                 const userSession = {
+                  ...buildUserSessionFromProfile(fullProfile, tempAuthData.user),
                   id: fullProfile.id,
-                  authUserId: tempAuthData.user.id,
-                  username: fullProfile.username,
-                  email: fullProfile.email,
-                  role: fullProfile.role,
-                  firstName: fullProfile.first_name,
-                  lastName: fullProfile.last_name,
-                  org: fullProfile.organizations?.name || 'Platform',
-                  organizationId: fullProfile.organization_id,
                   passwordResetRequired: true
                 };
                 
@@ -303,27 +320,7 @@ async function loginWithSupabase(email, password) {
 
     console.log('User profile loaded:', profileData);
 
-    // Store session data in localStorage (for backward compatibility)
-    const userSession = {
-      authUserId: data.user.id,
-      email: data.user.email,
-      firstName: profileData.first_name,
-      lastName: profileData.last_name,
-      username: profileData.username,
-      gender: profileData.gender,
-      role: profileData.role,
-      org: profileData.organizations?.name || 'Platform',
-      organizationId: profileData.organization_id,
-      medicalLicenseNumber: profileData.license_number || profileData.medical_license_number,
-      // Organization data
-      orgAddressLine1: profileData.organizations?.address_line1 || '',
-      orgAddressLine2: profileData.organizations?.address_line2 || '',
-      orgCity: profileData.organizations?.city || '',
-      orgState: profileData.organizations?.state || '',
-      orgCountry: profileData.organizations?.country || '',
-      orgPhone: profileData.organizations?.phone || '',
-      afterHoursPhone: profileData.organizations?.after_hours_phone || ''
-    };
+    const userSession = buildUserSessionFromProfile(profileData, data.user);
 
     // Check if password reset is required (after getting profile data)
     if (profileData.password_reset_required) {
@@ -536,19 +533,7 @@ async function checkAuthentication() {
       return { authenticated: false };
     }
 
-    // Rebuild localStorage session
-    const userSessionData = {
-      authUserId: session.user.id,
-      email: session.user.email,
-      firstName: profileData.first_name,
-      lastName: profileData.last_name,
-      username: profileData.username,
-      gender: profileData.gender,
-      role: profileData.role,
-      org: profileData.organizations.name,
-      organizationId: profileData.organization_id,
-      medicalLicenseNumber: profileData.license_number || profileData.medical_license_number
-    };
+    const userSessionData = buildUserSessionFromProfile(profileData, session.user);
 
     localStorage.setItem('user', JSON.stringify(userSessionData));
 

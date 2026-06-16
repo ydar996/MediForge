@@ -17,6 +17,52 @@ function getDataKey(key) {
 // Expose getDataKey globally
 window.getDataKey = getDataKey;
 
+function todayIsoDate() {
+  return new Date().toISOString().slice(0, 10);
+}
+
+function getPracticeEnrolmentFromForm() {
+  const dateJoinedEl = document.getElementById('dateJoinedPractice');
+  return {
+    enrolledPhysician: document.getElementById('enrolledPhysician')?.value?.trim() || '',
+    enrolmentStatus: document.getElementById('enrolmentStatus')?.value?.trim() || '',
+    showEmailOnConsults: document.getElementById('showEmailOnConsults')?.checked || false,
+    dateJoinedPractice: dateJoinedEl?.value?.trim() || todayIsoDate(),
+    healthCardEffectiveDate: document.getElementById('healthCardEffectiveDate')?.value?.trim() || '',
+    assignedPhysicianMrp: document.getElementById('assignedPhysicianMrp')?.value?.trim() || ''
+  };
+}
+
+function mapPracticeEnrolmentToSupabase(fields) {
+  if (!fields) return {};
+  return {
+    enrolled_physician: fields.enrolledPhysician || null,
+    enrolment_status: fields.enrolmentStatus || null,
+    show_email_on_consults: !!fields.showEmailOnConsults,
+    date_joined_practice: fields.dateJoinedPractice || null,
+    health_card_effective_date: fields.healthCardEffectiveDate || null,
+    assigned_physician_mrp: fields.assignedPhysicianMrp || null
+  };
+}
+
+function mapPracticeEnrolmentFromSupabase(patient) {
+  if (!patient) return {};
+  const dateJoined = patient.dateJoinedPractice || patient.date_joined_practice || '';
+  const createdFallback = patient.createdDate || patient.created_at;
+  const dateJoinedResolved = dateJoined || (createdFallback ? String(createdFallback).slice(0, 10) : '');
+  return {
+    enrolledPhysician: patient.enrolledPhysician || patient.enrolled_physician || '',
+    enrolmentStatus: patient.enrolmentStatus || patient.enrolment_status || '',
+    showEmailOnConsults: !!(patient.showEmailOnConsults ?? patient.show_email_on_consults),
+    dateJoinedPractice: dateJoinedResolved,
+    healthCardEffectiveDate: patient.healthCardEffectiveDate || patient.health_card_effective_date || '',
+    assignedPhysicianMrp: patient.assignedPhysicianMrp || patient.assigned_physician_mrp || ''
+  };
+}
+
+window.getPracticeEnrolmentFromForm = getPracticeEnrolmentFromForm;
+window.mapPracticeEnrolmentFromSupabase = mapPracticeEnrolmentFromSupabase;
+
 // Helper: true if string looks like a UUID (never return these to user)
 function isUuidLike(s) {
   return s && typeof s === 'string' && /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(s.trim());
@@ -3652,6 +3698,7 @@ async function loadPatients(page = 1) {
             emergencyCountry: emergencyCountry,
             createdDate: patient.created_at,
             updatedDate: patient.updated_at,
+            ...mapPracticeEnrolmentFromSupabase(patient),
             // Add default fields
             visits: [],
             immunizations: [],
@@ -4693,6 +4740,7 @@ if (addPatientForm) {
         allergies: tempAllergies,
         immunizations: tempImmunizations
       };
+      Object.assign(patient, getPracticeEnrolmentFromForm());
       
       // HYBRID ARCHITECTURE: Supabase-first, localStorage fallback
       // This ensures consistent behavior across ALL devices (mobile, tablet, desktop)
@@ -4761,7 +4809,8 @@ if (addPatientForm) {
         insurance_name: patient.insuranceName || null,
         insurance_policy_number: patient.insurancePolicyNumber || null,
         insurance_member_number: patient.insuranceMemberNumber || null,
-        organization_id: orgId
+        organization_id: orgId,
+        ...mapPracticeEnrolmentToSupabase(patient)
       };
       
       // HYBRID ARCHITECTURE: Supabase-first with localStorage fallback
@@ -5191,6 +5240,10 @@ if (editPatientForm) {
       insurancePolicyGroupNumber: document.getElementById("insurancePolicyGroupNumber").value || "",
       insuranceMemberNumber: document.getElementById("insuranceMemberNumber").value || ""
     };
+    Object.assign(updated, getPracticeEnrolmentFromForm());
+    if (!document.getElementById('dateJoinedPractice')?.value?.trim()) {
+      updated.dateJoinedPractice = patient.dateJoinedPractice || patient.date_joined_practice || todayIsoDate();
+    }
 
     if (typeof window.MediForgePatientCardUploads?.readRegistrationCards === 'function') {
       try {
@@ -5293,7 +5346,8 @@ if (editPatientForm) {
             payment_source: updated.paymentSource || patient.paymentSource || 'Self Pay',
             insurance_name: updated.insuranceName || patient.insuranceName || null,
             insurance_policy_number: updated.insurancePolicyGroupNumber || patient.insurancePolicyGroupNumber || null,
-            insurance_member_number: updated.insuranceMemberNumber || patient.insuranceMemberNumber || null
+            insurance_member_number: updated.insuranceMemberNumber || patient.insuranceMemberNumber || null,
+            ...mapPracticeEnrolmentToSupabase(updated)
           };
           
           console.log('🔍 [EDIT-PATIENT] Updating Supabase with:', {
@@ -5353,6 +5407,7 @@ if (editPatientForm) {
             patient.emergencyPhoneCountryCode = data.emergency_phone_country_code || patient.emergencyPhoneCountryCode;
             patient.maritalStatus = data.marital_status || patient.maritalStatus;
             patient.paymentSource = data.payment_source || patient.paymentSource;
+            Object.assign(patient, mapPracticeEnrolmentFromSupabase(data));
 
             if (typeof window.MediForgePayerEngine !== 'undefined' && window.MediForgePayerEngine.savePayerProfile && data?.id) {
               try {
@@ -17489,6 +17544,14 @@ async function loadEditForm() {
   setValue("insuranceName", patient.insuranceName);
   setValue("insurancePolicyGroupNumber", patient.insurancePolicyGroupNumber);
   setValue("insuranceMemberNumber", patient.insuranceMemberNumber);
+
+  const practiceFields = mapPracticeEnrolmentFromSupabase(patient);
+  setValue("enrolledPhysician", practiceFields.enrolledPhysician);
+  setValue("enrolmentStatus", practiceFields.enrolmentStatus);
+  setValue("assignedPhysicianMrp", practiceFields.assignedPhysicianMrp);
+  setValue("dateJoinedPractice", practiceFields.dateJoinedPractice);
+  setValue("healthCardEffectiveDate", practiceFields.healthCardEffectiveDate);
+  setChecked("showEmailOnConsults", practiceFields.showEmailOnConsults);
 
   if (typeof window.MediForgePaymentSourceFields !== "undefined") {
     window.MediForgePaymentSourceFields.update(document.getElementById("paymentSource"));

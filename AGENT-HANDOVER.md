@@ -360,6 +360,14 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Expanded **§ How to keep this document alive** with explicit checklist: handover, documentation index, project overview, user manual (md + html), feature guides, deployment docs.
 - Synced **`DEPLOYMENT-PIPELINE.md`**, **`docs/DOCUMENTATION-INDEX.md`**, and **`START-HERE.md`** to reference the same rule.
 
+### June 17, 2026 — Patient practice fields + profile persistence (dev deploy)
+
+- **Six optional patient fields:** Enrolled Physician, Status Enrolment, Show Email on Consults, Date Joined Practice, Health Insurance Card Effective Date, Assigned Physician MRP — on add/edit patient forms and bulk import.
+- **Date Joined Practice:** auto-set on new registration; existing patients backfilled from registration date via migration.
+- **Profile fix:** medical license and personal phone now persist through registration, login, and edit profile.
+- **Migration:** `supabase/migrations/20260616140000_patient_enrolment_practice_fields.sql` — **must be run in dev Supabase SQL Editor** before new fields save to the database.
+- Pushed to **`dev`** → https://mediforge-dev.netlify.app
+
 ---
 
 **Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed.

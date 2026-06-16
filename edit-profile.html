@@ -622,7 +622,7 @@
       isLoadingProfile = true;
       
       try {
-        const user = JSON.parse(localStorage.getItem("user") || '{}');
+        let user = JSON.parse(localStorage.getItem("user") || '{}');
         if (!user || !user.username) {
           console.log('No user found, redirecting to login');
           window.location.href = '/login';
@@ -634,9 +634,42 @@
         const userFromArray = users.find(u => u.username === user.username);
         if (userFromArray) {
           // Merge data from users array with current user data
-          const mergedUser = { ...user, ...userFromArray };
-          localStorage.setItem("user", JSON.stringify(mergedUser));
+          user = { ...user, ...userFromArray };
+          localStorage.setItem("user", JSON.stringify(user));
           console.log('✅ Merged user data from users array');
+        }
+
+        // Refresh phone and license from Supabase (source of truth)
+        try {
+          let supabase = window.supabaseClient;
+          let attempts = 0;
+          while (!supabase && attempts < 50) {
+            await new Promise(resolve => setTimeout(resolve, 100));
+            supabase = window.supabaseClient;
+            attempts++;
+          }
+          if (supabase && user.username) {
+            const { data: dbUser, error: dbUserError } = await supabase
+              .from('users')
+              .select('phone, license_number, first_name, last_name, gender, role')
+              .eq('username', user.username)
+              .maybeSingle();
+            if (!dbUserError && dbUser) {
+              user = {
+                ...user,
+                phone: dbUser.phone || user.phone || '',
+                medicalLicenseNumber: dbUser.license_number || user.medicalLicenseNumber || user.license_number || '',
+                firstName: dbUser.first_name || user.firstName,
+                lastName: dbUser.last_name || user.lastName,
+                gender: dbUser.gender || user.gender,
+                role: dbUser.role || user.role
+              };
+              localStorage.setItem('user', JSON.stringify(user));
+              console.log('✅ Loaded phone and license from Supabase');
+            }
+          }
+        } catch (profileFetchError) {
+          console.warn('Could not refresh profile from Supabase:', profileFetchError);
         }
         
         // Show approval section for Admins and Doctors
@@ -651,7 +684,8 @@
         document.getElementById('username').value = user.username || '';
         document.getElementById('gender').value = user.gender || '';
         document.getElementById('role').value = user.role || '';
-        document.getElementById('medicalLicenseNumber').value = user.medicalLicenseNumber || '';
+        document.getElementById('medicalLicenseNumber').value =
+          user.medicalLicenseNumber || user.license_number || user.medical_license_number || '';
         document.getElementById('org').value = user.org || user.organization || '';
         
         // Load personal phone number
@@ -1407,7 +1441,8 @@
               'last_name': profileData.lastName,
               'gender': profileData.gender,
               'role': profileData.role,
-              'phone': profileData.phone
+              'phone': profileData.phone,
+              'license_number': profileData.medicalLicenseNumber
             };
             
             // Remove undefined/null values

@@ -726,6 +726,23 @@
       if ('afterHoursPhone' in sanitized && sanitized.afterHoursPhone) sanitized.afterHoursPhone = '[hidden]';
       return sanitized;
     };
+
+    function getOrgScopedUsersKey(orgName) {
+      return orgName ? `${orgName}_users` : 'users';
+    }
+
+    function cacheRegisteredUserToLocalStorage(userData, orgName) {
+      const orgKey = getOrgScopedUsersKey(orgName);
+      const users = JSON.parse(localStorage.getItem(orgKey) || '[]');
+      users.push(userData);
+      localStorage.setItem(orgKey, JSON.stringify(users));
+      if (orgKey !== 'users') {
+        const legacyUsers = JSON.parse(localStorage.getItem('users') || '[]');
+        legacyUsers.push(userData);
+        localStorage.setItem('users', JSON.stringify(legacyUsers));
+      }
+      trace('[OK] User data cached to localStorage after Supabase success', scrubUser(userData));
+    }
     trace('[REG] Registration script loaded - version 20251021130000');
     
     // Password hashing function - mobile compatible
@@ -1634,7 +1651,7 @@
                 gender: document.getElementById('admin-gender').value,
                 role: 'Admin',
                 organizationId: organizationId, // Now properly set from Supabase insert result
-                medicalLicenseNumber: '',
+                medicalLicenseNumber: formData.medicalLicenseNumber,
                 phone: adminPhoneFull
               });
               
@@ -1774,6 +1791,7 @@
                   passwordType: 'sha256',
                   gender: document.getElementById('admin-gender').value,
                   role: 'Admin',
+                  medicalLicenseNumber: formData.medicalLicenseNumber,
                   phone: adminPhoneFull,
                   org: orgData.name,
                   organization: orgData.name,
@@ -1782,10 +1800,7 @@
                   createdAt: new Date().toISOString()
                 };
                 
-                // Save to localStorage as cache
-                const users = JSON.parse(localStorage.getItem('users') || '[]');
-                users.push(userData);
-                localStorage.setItem('users', JSON.stringify(users));
+                cacheRegisteredUserToLocalStorage(userData, orgData.name);
                 
                 // Save organization to localStorage as cache
                 // Supabase write: supabaseClient.insert() completed above
@@ -2332,10 +2347,7 @@
           createdAt: new Date().toISOString()
         };
         
-        const users = JSON.parse(localStorage.getItem('users') || '[]');
-        users.push(userData);
-        localStorage.setItem('users', JSON.stringify(users));
-        trace('[OK] User data cached to localStorage after Supabase success', scrubUser(userData));
+        cacheRegisteredUserToLocalStorage(userData, orgName);
       
       // Show success step with appropriate message
       if (supabaseSuccess) {
@@ -2430,7 +2442,7 @@
   <script src="js/public-auth-rpc.js?v=20260416120000"></script>
   <script src="js/registration-trace.js?v=20260611180000"></script>
   <script src="js/supabase-auth-registration.js?v=20260612100000"></script>
-  <script src="js/supabase-auth.js?v=20260612100000"></script>  <!-- Required for registerWithSupabase -->
+  <script src="js/supabase-auth.js?v=20260616120000"></script>  <!-- Required for registerWithSupabase -->
   <script src="js/legal-agreements.js?v=20250118000000"></script>  <!-- Legal agreements management -->
   <script src="js/registration-monitor.js?v=20250118000000"></script>  <!-- Registration monitoring -->
   <script src="js/registration-preflight.js?v=20260611160000"></script>  <!-- Preflight checks -->

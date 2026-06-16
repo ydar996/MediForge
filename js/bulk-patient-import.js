@@ -51,7 +51,13 @@
     allergies: 'Allergies',
     immunizations: 'Immunizations',
     diagnoses: 'Diagnoses',
-    notes: 'Notes / comments'
+    notes: 'Notes / comments',
+    enrolledPhysician: 'Enrolled Physician',
+    enrolmentStatus: 'Status Enrolment',
+    showEmailOnConsults: 'Show Email on Consults',
+    dateJoinedPractice: 'Date Joined Practice',
+    healthCardEffectiveDate: 'Health Insurance Card Effective Date',
+    assignedPhysicianMrp: 'Assigned Physician MRP'
   };
 
   const HEADER_ALIASES = {
@@ -110,7 +116,26 @@
     allergies: ['allergies', 'allergy', 'drug allergies'],
     immunizations: ['immunizations', 'vaccines', 'vaccinations'],
     diagnoses: ['diagnoses', 'diagnosis', 'active diagnoses', 'problems'],
-    notes: ['notes', 'comments', 'remarks', 'import notes']
+    notes: ['notes', 'comments', 'remarks', 'import notes'],
+    enrolledPhysician: [
+      'enrolled physician', 'enrollment physician', 'enrolment physician', 'enrolling physician'
+    ],
+    enrolmentStatus: [
+      'status enrolment', 'enrolment status', 'enrollment status', 'patient status', 'enrollment status'
+    ],
+    showEmailOnConsults: [
+      'show email on consults', 'eorder email consent', 'show email on consult', 'email on consults'
+    ],
+    dateJoinedPractice: [
+      'date joined practice', 'date joined', 'joined practice', 'practice join date'
+    ],
+    healthCardEffectiveDate: [
+      'health insurance card effective date', 'health card effective date', 'effective date',
+      'card effective date', 'insurance effective date'
+    ],
+    assignedPhysicianMrp: [
+      'assigned physician mrp', 'physician mrp', 'mrp', 'most responsible physician', 'physician/mrp'
+    ]
   };
 
   function normalizeHeaderKey(raw) {
@@ -128,7 +153,7 @@
     if (normHeader === alias) return 1000;
 
     if (field === 'healthCardNumber') {
-      if (/type|version|renew|effective|physician|mrp|enrollment/.test(normHeader)) return 0;
+      if (/type|version|renew|effective|physician|mrp|enrollment|enrolment|joined|consent|email/.test(normHeader)) return 0;
       if (/health ins|phn|ohip|ramq|msp/.test(normHeader)) return 920;
       if (normHeader.indexOf('health card') !== -1 && normHeader.indexOf('type') === -1) return 500;
     }
@@ -142,6 +167,24 @@
     }
     if (field === 'dob') {
       if (/age.*dob|dob.*age/.test(normHeader)) return 930;
+    }
+    if (field === 'dateJoinedPractice') {
+      if (/date joined|joined practice/.test(normHeader)) return 940;
+    }
+    if (field === 'healthCardEffectiveDate') {
+      if (/effective date|card effective/.test(normHeader)) return 930;
+    }
+    if (field === 'assignedPhysicianMrp') {
+      if (/mrp|most responsible/.test(normHeader)) return 900;
+    }
+    if (field === 'enrolledPhysician') {
+      if (/enroll.*physician|enrol.*physician/.test(normHeader)) return 900;
+    }
+    if (field === 'enrolmentStatus') {
+      if (/enrol.*status|enrollment status|patient status/.test(normHeader)) return 880;
+    }
+    if (field === 'showEmailOnConsults') {
+      if (/show email|email.*consult|eorder email/.test(normHeader)) return 900;
     }
     if (field === 'state') {
       if (normHeader === 'province' && normHeader.indexOf('health') === -1) return 880;
@@ -407,7 +450,13 @@
       encounters: [],
       importNotes: noteParts.join(' | '),
       warnings: warnings,
-      rowNum: rowNum
+      rowNum: rowNum,
+      enrolledPhysician: get('enrolledPhysician'),
+      enrolmentStatus: get('enrolmentStatus'),
+      showEmailOnConsults: parseBool(get('showEmailOnConsults')),
+      dateJoinedPractice: parseFlexibleDate(get('dateJoinedPractice')) || formatDateIso(new Date()),
+      healthCardEffectiveDate: parseFlexibleDate(get('healthCardEffectiveDate')),
+      assignedPhysicianMrp: get('assignedPhysicianMrp')
     };
 
     if (!patient.gender) warnings.push('missing gender');
@@ -515,7 +564,13 @@
       insurance_policy_number: patient.insurancePolicyGroupNumber || null,
       notes: notes,
       organization_id: orgId,
-      status: 'active'
+      status: 'active',
+      enrolled_physician: patient.enrolledPhysician || null,
+      enrolment_status: patient.enrolmentStatus || null,
+      show_email_on_consults: !!patient.showEmailOnConsults,
+      date_joined_practice: patient.dateJoinedPractice || formatDateIso(new Date()),
+      health_card_effective_date: patient.healthCardEffectiveDate || null,
+      assigned_physician_mrp: patient.assignedPhysicianMrp || null
     };
   }
 
