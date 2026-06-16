@@ -337,6 +337,12 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Dashboard button under **Patient Management**.
 - Deployed dev → staging → production (this session).
 
+### June 17, 2026 — Promote bulk import + intake fixes to staging and production
+
+- Merged `dev` → `staging` → `main` (commit `c32debe`).
+- Deployed **mediforge-staging** and **mediforge** (production).
+- **Live:** https://mediforge-staging.netlify.app and https://mediforge.netlify.app
+
 ### June 17, 2026 — Bulk import: map columns mode
 
 - **`/bulk-patient-import`** — **Map my columns** mode: match foreign spreadsheet headers, extras → patient Notes.
