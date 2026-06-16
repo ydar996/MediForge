@@ -1,0 +1,13 @@
+const res = await fetch('https://mediforge-dev.netlify.app/js/supabase-env.js');
+const text = await res.text();
+const urlMatch = text.match(/url:\s*"([^"]*)"/);
+const keyMatch = text.match(/anonKey:\s*"([^"]*)"/);
+const url = urlMatch?.[1] || '';
+const key = keyMatch?.[1] || '';
+console.log('url length:', url.length);
+console.log('url starts with https:', url.startsWith('https://'));
+console.log('url contains asterisk:', url.includes('*'));
+console.log('url ends with:', url.slice(-12));
+console.log('key length:', key.length);
+console.log('key starts with sb_publishable:', key.startsWith('sb_publishable_'));
+console.log('valid url parse:', (() => { try { new URL(url); return true; } catch { return false; } })());

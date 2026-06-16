@@ -289,6 +289,18 @@ function dashboardAttrTitle(s) {
   return String(s).replace(/&/g, '&amp;').replace(/"/g, '&quot;').replace(/</g, '&lt;');
 }
 
+function dashboardFormatBillingCode(test, type) {
+  if (window.MediForgeLabCodes) {
+    return window.MediForgeLabCodes.formatDisplayCodePlain(test, type || 'lab');
+  }
+  return test && test.cpt != null ? String(test.cpt).trim() : '';
+}
+
+function dashboardBillingCodeShortLabel() {
+  if (window.MediForgeLabCodes && window.MediForgeLabCodes.getMode() === 'Canada') return 'OHIP';
+  return 'CPT';
+}
+
 /**
  * Dashboard test cards only: shorten multi-CPT (e.g. Hep B panel) and long multi-part specimen;
  * full text in title tooltip; reports / order detail show everything.
@@ -298,11 +310,13 @@ function dashboardTestCptSpecimenHtml(test) {
   const out = [];
   if (test.cpt != null && String(test.cpt).trim() !== '') {
     const cptPlain = String(test.cpt).trim();
-    const cptPieces = cptPlain.split(/[/,\n\r]+/).map(function (p) { return p.trim(); }).filter(Boolean);
+    const displayPlain = dashboardFormatBillingCode(test, 'lab') || cptPlain;
+    const cptPieces = displayPlain.split(/[/,\n\r]+/).map(function (p) { return p.trim(); }).filter(Boolean);
+    const codeLabel = dashboardBillingCodeShortLabel();
     const cptLine = cptPieces.length <= 1
-      ? 'CPT: ' + dashboardEscSmallHtml(cptPlain)
-      : 'CPT: ' + dashboardEscSmallHtml(cptPieces[0]) + ' <span style="opacity:.85;">(+' + (cptPieces.length - 1) + ' more)</span>';
-    out.push('<br><small style="color: #6c757d;" title="' + dashboardAttrTitle(cptPlain) + '">' + cptLine + '</small>');
+      ? codeLabel + ': ' + dashboardEscSmallHtml(displayPlain)
+      : codeLabel + ': ' + dashboardEscSmallHtml(cptPieces[0]) + ' <span style="opacity:.85;">(+' + (cptPieces.length - 1) + ' more)</span>';
+    out.push('<br><small style="color: #6c757d;" title="' + dashboardAttrTitle(displayPlain) + '">' + cptLine + '</small>');
   }
   if (test.specimen != null && String(test.specimen).trim() !== '') {
     const specPlain = String(test.specimen).trim();
@@ -2499,7 +2513,7 @@ function generateFallbackOrderHTML(order, patient, user, visitDate, orderedByLin
         tableRows += `
           <tr>
             <td style="border: 1px solid #ddd; padding: 12px;">${row.name}</td>
-            <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${row.cpt || 'N/A'}</td>
+            <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${dashboardFormatBillingCode(row, 'lab') || 'N/A'}</td>
             <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${row.specimen || 'N/A'}</td>
             <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${row.container || 'N/A'}</td>
             <td style="border: 1px solid #ddd; padding: 12px; text-align: center;">${row.transport || 'N/A'}</td>
@@ -2552,7 +2566,7 @@ function generateFallbackOrderHTML(order, patient, user, visitDate, orderedByLin
       <thead>
         <tr style="background-color: #4CAF50; color: white;">
           <th style="border: 1px solid #ddd; padding: 12px; text-align: left;">Test Name</th>
-          <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">CPT Code(s)</th>
+          <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">${typeof mfBillingCodeHeader === 'function' ? mfBillingCodeHeader('lab') : 'CPT Code(s)'}</th>
           <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Specimen Type/Volume</th>
           <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Container</th>
           <th style="border: 1px solid #ddd; padding: 12px; text-align: center;">Transport/Stability</th>

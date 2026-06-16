@@ -357,8 +357,17 @@
     <!-- Global Settings -->
     <div class="settings-section">
       <h2>Global Billing Settings</h2>
+
+      <label><strong>Billing System:</strong></label>
+      <select id="billing-mode" onchange="saveBillingMode()">
+        <option value="Canada">Canada — Provincial (OHIP, MSP, RAMQ, AHCIP)</option>
+        <option value="USA">USA — Insurance (CPT / ICD-10-CM / 837P)</option>
+      </select>
+      <p style="color: #666; font-size: 13px; margin-top: 5px;">
+        Switches fee codes, payer lists, claim formats, and checkout labels. Existing invoices keep their original billing context.
+      </p>
       
-      <label><strong>Default Currency:</strong></label>
+      <label style="margin-top: 16px;"><strong>Default Currency:</strong></label>
       <select id="default-currency" onchange="saveDefaultCurrency()">
         <optgroup label="East Africa">
           <option value="KES">🇰🇪 Kenyan Shilling (KSh)</option>
@@ -407,8 +416,11 @@
           <option value="KMF">🇰🇲 Comorian Franc (CF)</option>
           <option value="CVE">🇨🇻 Cape Verdean Escudo (CVE)</option>
         </optgroup>
-        <optgroup label="International">
+        <optgroup label="North America">
+          <option value="CAD">🇨🇦 Canadian Dollar (C$)</option>
           <option value="USD">🇺🇸 US Dollar ($)</option>
+        </optgroup>
+        <optgroup label="International">
           <option value="EUR">🇪🇺 Euro (€)</option>
           <option value="GBP">🇬🇧 British Pound (£)</option>
         </optgroup>
@@ -540,6 +552,8 @@
   </div>
 
   <script src="js/pricing.js?v=20260328120000"></script>
+  <script src="js/billing-mode-manager.js?v=20260617180000"></script>
+  <script src="js/billing-service-browser.js?v=20260617180000"></script>
   <script>
 
     // Check user role
@@ -558,6 +572,7 @@
       // Default: ALL USERS can configure (no restriction)
       
       loadSettings();
+      loadBillingModeSetting();
       populateCurrencySelectors();
       loadCustomCategories();
       displayCustomCategoriesList();
@@ -594,6 +609,26 @@
       if (savedTaxRate) {
         document.getElementById('default-tax-rate').value = savedTaxRate;
       }
+    }
+
+    async function loadBillingModeSetting() {
+      const select = document.getElementById('billing-mode');
+      if (!select || !window.MediForgeBillingMode) return;
+      const mode = await window.MediForgeBillingMode.getBillingMode();
+      select.value = mode === 'USA' ? 'USA' : 'Canada';
+      if (window.MediForgeBillingService) {
+        await window.MediForgeBillingService.init(mode);
+      }
+    }
+
+    async function saveBillingMode() {
+      const select = document.getElementById('billing-mode');
+      if (!select || !window.MediForgeBillingMode) return;
+      const mode = await window.MediForgeBillingMode.setBillingMode(select.value);
+      const currency = mode === 'USA' ? 'USD' : 'CAD';
+      document.getElementById('default-currency').value = currency;
+      saveDefaultCurrency();
+      alert('Billing system set to ' + mode + '. Fee codes, labels, and currency default updated.');
     }
 
     function syncServicesWithDefaultCurrency() {

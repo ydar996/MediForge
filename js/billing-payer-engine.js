@@ -26,7 +26,8 @@
 
   function detectPrimaryPayer(patient, cfg) {
     const prov = (patient.province || patient.state || cfg.defaultProvince || 'ON').toUpperCase();
-    const src = patient.paymentSource || patient.payment_source || 'provincial';
+    let src = patient.paymentSource || patient.payment_source || 'provincial';
+    if (String(src).toLowerCase() === 'self pay') src = 'self_pay';
 
     if (src === 'Insurance' || src === 'private_insurance') {
       return { type: 'private', payerId: patient.privateInsurerId || patient.insuranceName || 'PRIVATE' };
@@ -34,7 +35,7 @@
     if (src === 'wcb' || String(src).toLowerCase().includes('workers')) {
       return { type: 'wcb', payerId: 'WCB', payerName: 'Workers compensation', claimNumber: patient.wcbClaimNumber };
     }
-    if (src === 'Cash' || src === 'cash' || src === 'self_pay') {
+    if (src === 'Cash' || src === 'cash' || src === 'self_pay' || src === 'Self Pay' || src === 'self pay') {
       return { type: 'patient_pay', payerId: 'PATIENT' };
     }
     const code = PROVINCE_PAYER_MAP[prov];
@@ -75,8 +76,9 @@
       currency,
       primaryPayer: payer,
       payerSplit: split,
-      amountDue: split.patientDue > 0 ? split.patientDue : total,
+      amountDue: roundMoney(split.patientDue),
       payerAmountPending: split.payerCovered,
+      billingModel: payer.type === 'patient_pay' ? 'patient_pay' : 'payer_led',
       notes: appendNote(invoiceData.notes, payer, split)
     };
   }

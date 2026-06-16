@@ -2864,10 +2864,22 @@
     }
 
     function getMedicationOrderFormDatabase() {
-      if (Array.isArray(window.DRUG_DATABASE) && window.DRUG_DATABASE.length) {
-        return window.DRUG_DATABASE;
+      return Array.isArray(window.DRUG_DATABASE) ? window.DRUG_DATABASE : [];
+    }
+
+    function searchMedicationOrderMatches(query, limit = 20) {
+      const q = (query || '').trim();
+      if (q.length >= 2 &&
+          typeof window.searchCanadianDrugs === 'function' &&
+          typeof window.isCanadianFormularyReady === 'function' &&
+          window.isCanadianFormularyReady()) {
+        return window.searchCanadianDrugs(q, limit);
       }
-      return [];
+      const qLower = q.toLowerCase();
+      return getMedicationOrderFormDatabase().filter((drug) =>
+        (drug.name || '').toLowerCase().includes(qLower) ||
+        (drug.generic || '').toLowerCase().includes(qLower)
+      ).slice(0, limit);
     }
 
     function getMedicationOrderRoutes() {
@@ -2955,11 +2967,14 @@
       const dosageSuggestions = document.getElementById(dosageSuggestionsId);
       if (!nameInput || !nameSuggestions || !dosageInput || !dosageSuggestions) return;
 
-      const db = getMedicationOrderFormDatabase();
-
       const updateDosage = (drugName) => {
-        const match = db.find(d => (d.name || '').toLowerCase() === (drugName || '').toLowerCase());
-        const strengths = match?.strength ? match.strength.split(',').map(s => s.trim()).filter(Boolean) : [];
+        let strengths = [];
+        const lookup = typeof window.lookupDrugByName === 'function'
+          ? window.lookupDrugByName(drugName)
+          : getMedicationOrderFormDatabase().find((d) => (d.name || '').toLowerCase() === (drugName || '').toLowerCase());
+        if (lookup?.strength) {
+          strengths = lookup.strength.split(',').map((s) => s.trim()).filter(Boolean);
+        }
         const items = strengths.map(s => ({ value: s, label: s }));
         renderSuggestions(
           dosageSuggestions,
@@ -2974,11 +2989,8 @@
       };
 
       const renderNameSuggestions = () => {
-        const query = nameInput.value.trim().toLowerCase();
-        const matches = db.filter(drug =>
-          (drug.name || '').toLowerCase().includes(query) ||
-          (drug.generic || '').toLowerCase().includes(query)
-        ).slice(0, 20);
+        const query = nameInput.value.trim();
+        const matches = searchMedicationOrderMatches(query, 20);
         const items = matches.map(drug => ({
           value: drug.name,
           label: drug.name,

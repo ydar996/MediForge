@@ -17,6 +17,25 @@ function getDataKey(key) {
 // Expose getDataKey globally
 window.getDataKey = getDataKey;
 
+/** Mode-aware lab/imaging code for order tables (OHIP in Canada, CPT in USA). */
+function mfFormatBillingCode(row, type) {
+  if (typeof window !== 'undefined' && window.MediForgeLabCodes) {
+    return window.MediForgeLabCodes.formatDisplayCodePlain(row, type || 'lab');
+  }
+  const cpt = row && (row.cpt || row.code);
+  return cpt || 'N/A';
+}
+
+function mfBillingCodeHeader(type) {
+  if (typeof window !== 'undefined' && window.MediForgeLabCodes) {
+    return window.MediForgeLabCodes.getColumnLabel(type || 'lab');
+  }
+  return type === 'imaging' ? 'CPT Code' : 'CPT Code(s)';
+}
+
+window.mfFormatBillingCode = mfFormatBillingCode;
+window.mfBillingCodeHeader = mfBillingCodeHeader;
+
 function todayIsoDate() {
   return new Date().toISOString().slice(0, 10);
 }
@@ -2144,458 +2163,1611 @@ let tempAllergies = [];
 let tempImmunizations = [];
 
 // Lab tests array for clinical-note.html
+// MEDIFORGE_CATALOG:LAB_START — auto-synced by npm run build:diagnostic-catalog
 const LAB_TESTS = [
-  {
-    name: "Antistreptolysin O (ASO); titer",
-    category: "Medical Microbiology / Serology",
-    cpt: "86060",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "ASO titer for detection of recent streptococcal infection. Normal: <200 IU/mL (adults), <170 IU/mL (children). Elevated titers indicate recent Group A streptococcal infection."
-  },
-  {
-    name: "Complete Blood Count (CBC)",
-    category: "Haematology",
-    cpt: "85025",
-    specimen: "Whole blood / 3 mL",
-    container: "Lavender (EDTA) tube",
-    transport: "Room temperature / Stable 48 hours",
-    notes: "Includes differential and platelets."
-  },
-  {
-    name: "Basic Metabolic Panel (BMP)",
-    category: "Clinical Chemistry",
-    cpt: "80048",
-    specimen: "Serum / 1 mL",
-    container: "Serum separator tube (SST) or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Includes glucose, electrolytes, BUN, creatinine, calcium."
-  },
-  {
-    name: "Comprehensive Metabolic Panel (CMP)",
-    category: "Clinical Chemistry",
-    cpt: "80053",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Includes BMP plus liver function tests (ALT, AST, etc.)."
-  },
-  {
-    name: "Lipid Panel",
-    category: "Clinical Chemistry",
-    cpt: "80061",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Fasting preferred. Measures cholesterol, HDL, LDL, triglycerides."
-  },
-  {
-    name: "Thyroid Stimulating Hormone (TSH)",
-    category: "Clinical Chemistry",
-    cpt: "84443",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Reflex to Free T4 if abnormal (additional code if reflexed)."
-  },
-  {
-    name: "Glycated Hemoglobin (HbA1c)",
-    category: "Clinical Chemistry",
-    cpt: "83036",
-    specimen: "Whole blood / 1 mL",
-    container: "Lavender (EDTA) tube",
-    transport: "Room temperature / Stable 7 days",
-    notes: "For diabetes monitoring."
-  },
-  {
-    name: "Urinalysis (UA)",
-    category: "Clinical Chemistry",
-    cpt: "81001",
-    specimen: "Urine / 10 mL",
-    container: "Sterile urine container",
-    transport: "Refrigerated / Stable 72 hours",
-    notes: "Complete UA; reflex to microscopic if indicated."
-  },
-  {
-    name: "C-Reactive Protein (CRP)",
-    category: "Clinical Chemistry",
-    cpt: "86140",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "For inflammation assessment."
-  },
-  {
-    name: "Vitamin D Level (25(OH)D)",
-    category: "Clinical Chemistry",
-    cpt: "82306",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Total 25-hydroxyvitamin D immunoassay."
-  },
-  {
-    name: "Prothrombin Time with INR (PT/INR)",
-    category: "Haematology",
-    cpt: "85610",
-    specimen: "Plasma / 2.7 mL",
-    container: "Light blue (citrate) tube (full draw required)",
-    transport: "Room temperature / Stable 24 hours",
-    notes: "For coagulation monitoring."
-  },
-  {
-    name: "Prostate-Specific Antigen (PSA)",
-    category: "Clinical Chemistry",
-    cpt: "84153",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 5 days",
-    notes: "For males; screening for prostate issues."
-  },
-  {
-    name: "Hormonal Profile (Panel)",
-    category: "Clinical Chemistry",
-    cpt: "84146/84403/83001/83002/82670/84144",
-    specimen: "Serum / 3-5 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Panel includes Prolactin, Testosterone (Total), FSH, LH, Estrogen (E2), and Progesterone. Prefer morning collection for testosterone.",
-    panelTests: [
-      "Prolactin",
-      "Testosterone (Total)",
-      "Follicle Stimulating Hormone (FSH)",
-      "Luteinizing Hormone (LH)",
-      "Estrogen (E2)",
-      "Progesterone"
-    ]
-  },
-  {
-    name: "Prolactin",
-    category: "Clinical Chemistry",
-    cpt: "84146",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Reference ranges vary by sex and pregnancy status."
-  },
-  {
-    name: "Testosterone (Total)",
-    category: "Clinical Chemistry",
-    cpt: "84403",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Prefer morning draw. Reference ranges vary by sex and age."
-  },
-  {
-    name: "Follicle Stimulating Hormone (FSH)",
-    category: "Clinical Chemistry",
-    cpt: "83001",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Reference ranges vary by sex and menstrual phase."
-  },
-  {
-    name: "Luteinizing Hormone (LH)",
-    category: "Clinical Chemistry",
-    cpt: "83002",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Reference ranges vary by sex and menstrual phase."
-  },
-  {
-    name: "Estrogen (E2)",
-    category: "Clinical Chemistry",
-    cpt: "82670",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Reference ranges vary by sex, menstrual phase, and reproductive status."
-  },
-  {
-    name: "Progesterone",
-    category: "Clinical Chemistry",
-    cpt: "84144",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Reference ranges vary by menstrual phase or pregnancy."
-  },
-  {
-    name: "Random Blood Sugar (RBS)",
-    category: "Clinical Chemistry",
-    cpt: "82947",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 24 hours",
-    notes: "No fasting required. Random glucose level."
-  },
-  {
-    name: "Fasting Blood Sugar (FBS)",
-    category: "Clinical Chemistry",
-    cpt: "82947",
-    specimen: "Serum / 1 mL",
-    container: "Gray-top (fluoride/oxalate) tube or SST",
-    transport: "Refrigerated / Stable 24 hours",
-    notes: "Fasting required (8-12 hours). Also known as Fasting Blood Glucose."
-  },
-  {
-    name: "2-Hour Postprandial Glucose",
-    category: "Clinical Chemistry",
-    cpt: "82950",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 24 hours",
-    notes: "Blood drawn 2 hours after meal. Normal <140 mg/dL (<7.8 mmol/L). Used for diabetes screening and monitoring."
-  },
-  {
-    name: "Urine MCS (Urine Culture and Sensitivity)",
-    category: "Medical Microbiology / Serology",
-    cpt: "87086",
-    specimen: "Urine / 10-20 mL (midstream clean catch)",
-    container: "Sterile urine container",
-    transport: "Refrigerated / Must be cultured within 2 hours or preserved",
-    notes: "Culture for bacterial identification and antibiotic susceptibility testing. Midstream clean catch preferred. Colony count ≥10^5 CFU/mL indicates significant bacteriuria."
-  },
-  {
-    name: "Stool MCS (Stool Culture and Sensitivity)",
-    category: "Medical Microbiology / Serology",
-    cpt: "87045/87046/87427",
-    specimen: "Stool / 5-10 g",
-    container: "Sterile stool container",
-    transport: "Refrigerated / Transport within 2 hours or use transport medium",
-    notes: "Culture for enteric pathogens with sensitivity testing as indicated. Includes qualitative pathogen reporting."
-  },
-  {
-    name: "High Vaginal Swab (HVS)",
-    category: "Medical Microbiology / Serology",
-    cpt: "87070/87481/87661/81513",
-    specimen: "High vaginal swab",
-    container: "Sterile swab with transport medium",
-    transport: "Room temperature / Transport within 2 hours",
-    notes: "Qualitative reporting for flora/pathogens; consider NAAT panel when indicated."
-  },
-  {
-    name: "Blood Group (ABO and Rh Factor)",
-    category: "Haematology",
-    cpt: "86900",
-    specimen: "Whole blood / 2 mL",
-    container: "Lavender (EDTA) tube or red-top tube",
-    transport: "Room temperature / Stable 7 days",
-    notes: "ABO blood group and Rh (D) antigen typing."
-  },
-  {
-    name: "Hemoglobin Genotype",
-    category: "Haematology",
-    cpt: "83020",
-    specimen: "Whole blood / 3 mL",
-    container: "Lavender (EDTA) tube",
-    transport: "Room temperature / Stable 7 days",
-    notes: "Hemoglobin electrophoresis for genotype (AA, AS, SS, SC, etc.)."
-  },
-  {
-    name: "Packed Cell Volume (PCV / Hematocrit)",
-    category: "Haematology",
-    cpt: "85014",
-    specimen: "Whole blood / 2 mL",
-    container: "Lavender (EDTA) tube",
-    transport: "Room temperature / Stable 24 hours",
-    notes: "Hematocrit measurement. Often included in CBC."
-  },
-  {
-    name: "Hemoglobin Concentration (HB)",
-    category: "Haematology",
-    cpt: "85018",
-    specimen: "Whole blood / 2 mL",
-    container: "Lavender (EDTA) tube",
-    transport: "Room temperature / Stable 24 hours",
-    notes: "Hemoglobin level measurement. Often included in CBC."
-  },
-  {
-    name: "Erythrocyte Sedimentation Rate (ESR)",
-    category: "Haematology",
-    cpt: "85651",
-    specimen: "Whole blood / 2 mL",
-    container: "Lavender (EDTA) tube or black-top (sodium citrate) tube",
-    transport: "Room temperature / Must be tested within 4 hours",
-    notes: "Westergren method preferred. Indicates inflammation."
-  },
-  {
-    name: "Widal Test (Typhoid Fever Serology)",
-    category: "Medical Microbiology / Serology",
-    cpt: "86780",
-    specimen: "Serum / 2 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Agglutination test for Salmonella typhi and paratyphi antibodies."
-  },
-  {
-    name: "Malaria Parasite (Blood Film for MP)",
-    category: "Haematology",
-    cpt: "87207",
-    specimen: "Whole blood / 2 mL",
-    container: "Lavender (EDTA) tube",
-    transport: "Room temperature / Must be tested within 6 hours",
-    notes: "Thick and thin blood films for malaria parasite detection."
-  },
-  {
-    name: "Pregnancy Test (hCG)",
-    category: "Medical Microbiology / Serology",
-    cpt: "84703",
-    specimen: "Urine / 10 mL or Serum / 1 mL",
-    container: "Sterile urine container or SST",
-    transport: "Room temperature (urine) / Refrigerated (serum) / Stable 7 days",
-    notes: "Qualitative hCG test. Urine or serum. Can detect pregnancy early."
-  },
-  {
-    name: "VDRL (Syphilis Screening)",
-    category: "Medical Microbiology / Serology",
-    cpt: "86592",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Venereal Disease Research Laboratory test for syphilis screening."
-  },
-  {
-    name: "HIV Screening (HIV 1 & 2 Antibodies)",
-    category: "Medical Microbiology / Serology",
-    cpt: "86703",
-    specimen: "Serum / 2 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "HIV-1/HIV-2 antibody screen. Requires consent and counseling."
-  },
-  {
-    name: "Hepatitis B Surface Antigen (HBsAg)",
-    category: "Medical Microbiology / Serology",
-    cpt: "87340",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "HBsAg screening. Can be ordered alone or as part of Hepatitis B Profile."
-  },
-  {
-    name: "Hepatitis B Profile",
-    category: "Medical Microbiology / Serology",
-    cpt: "87340/86706/87350/86707/86704",
-    specimen: "Serum / 2-3 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Panel includes HBsAg, HBsAb, HBeAg, HBeAb, HBcAb. HBsAg can be ordered separately.",
-    panelTests: [
-      "HBsAg (Hepatitis B Surface Antigen)",
-      "HBsAb (Hepatitis B Surface Antibody)",
-      "HBeAg (Hepatitis B e Antigen)",
-      "HBeAb (Hepatitis B e Antibody)",
-      "HBcAb (Hepatitis B Core Antibody)"
-    ]
-  },
-  {
-    name: "Hepatitis C Virus Antibody (Anti-HCV)",
-    category: "Medical Microbiology / Serology",
-    cpt: "86803",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "HCV antibody screening test. Reflex to HCV RNA if positive."
-  },
-  {
-    name: "Tuberculosis Screening (TB)",
-    category: "Medical Microbiology / Serology",
-    cpt: "87555",
-    specimen: "Sputum / 3-5 mL or Whole blood / 2 mL",
-    container: "Sterile sputum container or Lavender (EDTA) tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Sputum AFB smear/culture or GeneXpert MTB/RIF. Blood test for IGRA available."
-  },
-  {
-    name: "Helicobacter pylori Test",
-    category: "Medical Microbiology / Serology",
-    cpt: "87338",
-    specimen: "Serum / 1 mL or Stool / 1 g or Breath sample",
-    container: "SST (serum) or Stool container or Breath test kit",
-    transport: "Refrigerated / Stable 7 days (serum/stool) or Room temp (breath)",
-    notes: "Serology, stool antigen, or urea breath test for H. pylori detection."
-  },
-  {
-    name: "Calcium Lab Test",
-    category: "Clinical Chemistry",
-    cpt: "82310",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Total serum calcium. May include ionized calcium if indicated."
-  },
-  {
-    name: "Liver Function Test (LFT)",
-    category: "Clinical Chemistry",
-    cpt: "80076",
-    specimen: "Serum / 2 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Includes AST, ALT, Alkaline Phosphatase, Total Bilirubin, Conjugate Bilirubin, Unconjugate Bilirubin, Total Protein, Albumin, Globulin."
-  },
-  {
-    name: "Electrolytes, Urea, and Creatinine (EUC) Test",
-    category: "Clinical Chemistry",
-    cpt: "80051",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "Includes Sodium, Potassium, Chloride, Bicarbonate, Urea, and Creatinine."
-  },
-  {
-    name: "Uric Acid Test",
-    category: "Clinical Chemistry",
-    cpt: "84520",
-    specimen: "Serum / 1 mL",
-    container: "SST or red-top tube",
-    transport: "Refrigerated / Stable 7 days",
-    notes: "For gout monitoring and kidney function assessment."
-  },
-  {
-    name: "Clotting Profile (Coagulation Panel)",
-    category: "Haematology",
-    cpt: "85610/85730",
-    specimen: "Plasma / 2.7 mL per tube (citrated plasma); serum if additional tests",
-    container: "Light blue-top (sodium citrate) tube; red-top for serum",
-    transport: "Room temperature / Stable 24 hours; frozen for extended storage",
-    notes: "Assesses blood clotting factors for bleeding or thrombotic disorders. Often includes PT/INR and aPTT; comprehensive profiles may add Thrombin Time or D-Dimer."
-  },
-  {
-    name: "Sputum MCS (Microscopy, Culture, and Sensitivity)",
-    category: "Medical Microbiology / Serology",
-    cpt: "87070/87205",
-    specimen: "Sputum / 2 mL (early morning deep cough sample)",
-    container: "Sterile container",
-    transport: "Room temperature; refrigerate if delayed / Stable 24-48 hours",
-    notes: "Cultures sputum for bacteria with Gram stain and sensitivity if positive. For diagnosing lower respiratory infections like pneumonia."
-  },
-  {
-    name: "Blood Culture",
-    category: "Medical Microbiology / Serology",
-    cpt: "87040",
-    specimen: "Whole blood / 8-10 mL per bottle (adult); 1-4 mL pediatric",
-    container: "Aerobic and anaerobic blood culture bottles",
-    transport: "Room temperature / Stable 24 hours",
-    notes: "Cultures blood for aerobic and anaerobic bacteria to detect bacteremia or septicemia. If positive, additional ID and susceptibility testing."
-  },
-  {
-    name: "Blood Film (Peripheral Blood Smear)",
-    category: "Haematology",
-    cpt: "85007/85008",
-    specimen: "Whole blood / 3 mL or prepared slides",
-    container: "Lavender-top (EDTA) tube",
-    transport: "Refrigerated / Stable 24-48 hours",
-    notes: "Examines blood cell morphology for abnormalities like anemia or infections. Manual review for atypical findings."
-  }
+{
+  name: "Activated Partial Thromboplastin Time (APTT)",
+  category: "Haematology",
+  cpt: "85730",
+  specimen: "Plasma / 2.7 mL",
+  container: "Light blue (citrate) tube",
+  transport: "Room temperature / 4 hours",
+  notes: "Intrinsic pathway coagulation."
+},
+{
+  name: "Antibody Screen (Indirect Coombs)",
+  category: "Haematology",
+  cpt: "86850",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 7 days",
+  notes: "Pre-transfusion antibody screen."
+},
+{
+  name: "Blood Film (Peripheral Blood Smear)",
+  category: "Haematology",
+  cpt: "85007/85008",
+  specimen: "Whole blood / 3 mL or prepared slides",
+  container: "Lavender-top (EDTA) tube",
+  transport: "Refrigerated / Stable 24-48 hours",
+  notes: "Examines blood cell morphology for abnormalities like anemia or infections. Manual review for atypical findings."
+},
+{
+  name: "Blood Group (ABO and Rh Factor)",
+  category: "Haematology",
+  cpt: "86900",
+  specimen: "Whole blood / 2 mL",
+  container: "Lavender (EDTA) tube or red-top tube",
+  transport: "Room temperature / Stable 7 days",
+  notes: "ABO blood group and Rh (D) antigen typing."
+},
+{
+  name: "Clotting Profile (Coagulation Panel)",
+  category: "Haematology",
+  cpt: "85610/85730",
+  specimen: "Plasma / 2.7 mL per tube (citrated plasma); serum if additional tests",
+  container: "Light blue-top (sodium citrate) tube; red-top for serum",
+  transport: "Room temperature / Stable 24 hours; frozen for extended storage",
+  notes: "Assesses blood clotting factors for bleeding or thrombotic disorders. Often includes PT/INR and aPTT; comprehensive profiles may add Thrombin Time or D-Dimer."
+},
+{
+  name: "Complete Blood Count (CBC)",
+  category: "Haematology",
+  cpt: "85025",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Stable 48 hours",
+  notes: "Includes differential and platelets."
+},
+{
+  name: "D-Dimer",
+  category: "Haematology",
+  cpt: "85379",
+  specimen: "Plasma / 2.7 mL",
+  container: "Light blue (citrate) tube",
+  transport: "Room temperature / 4 hours",
+  notes: "VTE rule-out in appropriate pretest probability."
+},
+{
+  name: "Erythrocyte Sedimentation Rate (ESR)",
+  category: "Haematology",
+  cpt: "85652",
+  specimen: "Whole blood / 2 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 24 hours",
+  notes: "Inflammation marker."
+},
+{
+  name: "Fibrinogen",
+  category: "Haematology",
+  cpt: "85385",
+  specimen: "Plasma / 2.7 mL",
+  container: "Light blue (citrate) tube",
+  transport: "Room temperature / 4 hours",
+  notes: "Coagulation factor assessment."
+},
+{
+  name: "Flow Cytometry Immunophenotyping",
+  category: "Haematology",
+  cpt: "88184",
+  specimen: "Whole blood / 5 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Same day",
+  notes: "Leukemia / lymphoma workup."
+},
+{
+  name: "G6PD Qualitative",
+  category: "Haematology",
+  cpt: "82955",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 7 days",
+  notes: "Hemolysis risk screening."
+},
+{
+  name: "Hemoglobin Concentration (HB)",
+  category: "Haematology",
+  cpt: "85018",
+  specimen: "Whole blood / 2 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Stable 24 hours",
+  notes: "Hemoglobin level measurement. Often included in CBC."
+},
+{
+  name: "Hemoglobin Electrophoresis",
+  category: "Haematology",
+  cpt: "83020",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 7 days",
+  notes: "Thalassemia / hemoglobinopathy."
+},
+{
+  name: "Hemoglobin Genotype",
+  category: "Haematology",
+  cpt: "83020",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Stable 7 days",
+  notes: "Hemoglobin electrophoresis for genotype (AA, AS, SS, SC, etc.)."
+},
+{
+  name: "Malaria Parasite (Blood Film for MP)",
+  category: "Haematology",
+  cpt: "87207",
+  specimen: "Whole blood / 2 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Must be tested within 6 hours",
+  notes: "Thick and thin blood films for malaria parasite detection."
+},
+{
+  name: "Packed Cell Volume (PCV / Hematocrit)",
+  category: "Haematology",
+  cpt: "85014",
+  specimen: "Whole blood / 2 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Stable 24 hours",
+  notes: "Hematocrit measurement. Often included in CBC."
+},
+{
+  name: "Prothrombin Time with INR (PT/INR)",
+  category: "Haematology",
+  cpt: "85610",
+  specimen: "Plasma / 2.7 mL",
+  container: "Light blue (citrate) tube (full draw required)",
+  transport: "Room temperature / Stable 24 hours",
+  notes: "For coagulation monitoring."
+},
+{
+  name: "Reticulocyte Count",
+  category: "Haematology",
+  cpt: "85045",
+  specimen: "Whole blood / 2 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 24 hours",
+  notes: "Marrow response to anemia."
+},
+{
+  name: "Type and Screen",
+  category: "Haematology",
+  cpt: "86901",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 3 days",
+  notes: "ABO/Rh and antibody screen for surgery."
+},
+{
+  name: "AFB Culture and Smear",
+  category: "Medical Microbiology / Serology",
+  cpt: "87116",
+  specimen: "Sputum / induced",
+  container: "Sterile container",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Tuberculosis culture."
+},
+{
+  name: "Antistreptolysin O (ASO); titer",
+  category: "Medical Microbiology / Serology",
+  cpt: "86060",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "ASO titer for detection of recent streptococcal infection. Normal: <200 IU/mL (adults), <170 IU/mL (children). Elevated titers indicate recent Group A streptococcal infection."
+},
+{
+  name: "Blood Culture",
+  category: "Medical Microbiology / Serology",
+  cpt: "87040",
+  specimen: "Whole blood / 8-10 mL per bottle (adult); 1-4 mL pediatric",
+  container: "Aerobic and anaerobic blood culture bottles",
+  transport: "Room temperature / Stable 24 hours",
+  notes: "Cultures blood for aerobic and anaerobic bacteria to detect bacteremia or septicemia. If positive, additional ID and susceptibility testing."
+},
+{
+  name: "Blood Culture (Aerobic/Anaerobic)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87040",
+  specimen: "Whole blood / 20 mL",
+  container: "Blood culture bottles",
+  transport: "Room temperature / Immediate",
+  notes: "Sepsis workup."
+},
+{
+  name: "Fungal Culture",
+  category: "Medical Microbiology / Serology",
+  cpt: "87106",
+  specimen: "Tissue / fluid / swab",
+  container: "Sterile container",
+  transport: "Room temperature",
+  notes: "Deep fungal infection."
+},
+{
+  name: "Group A Streptococcus, Rapid Antigen",
+  category: "Medical Microbiology / Serology",
+  cpt: "87880",
+  specimen: "Throat swab",
+  container: "Swab with transport medium",
+  transport: "Room temperature / Same day",
+  notes: "Rapid strep throat test."
+},
+{
+  name: "Helicobacter pylori Stool Antigen",
+  category: "Medical Microbiology / Serology",
+  cpt: "87338",
+  specimen: "Stool",
+  container: "Stool container",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Active H. pylori infection."
+},
+{
+  name: "Helicobacter pylori Test",
+  category: "Medical Microbiology / Serology",
+  cpt: "87338",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Serology or stool antigen per lab method."
+},
+{
+  name: "Helicobacter pylori, Urea Breath Test",
+  category: "Medical Microbiology / Serology",
+  cpt: "78267",
+  specimen: "Breath sample",
+  container: "Breath collection kit",
+  transport: "Room temperature / Same day",
+  notes: "Non-invasive H. pylori detection."
+},
+{
+  name: "Hepatitis A IgM Antibody",
+  category: "Medical Microbiology / Serology",
+  cpt: "86708",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Acute hepatitis A."
+},
+{
+  name: "Hepatitis B Core Antibody (Anti-HBc)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86704",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Past or current HBV infection."
+},
+{
+  name: "Hepatitis B Profile",
+  category: "Medical Microbiology / Serology",
+  cpt: "87340/86706/87350/86707/86704",
+  specimen: "Serum / 2-3 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Panel includes HBsAg, HBsAb, HBeAg, HBeAb, HBcAb. HBsAg can be ordered separately.",
+  panelTests: ["HBsAg (Hepatitis B Surface Antigen)","HBsAb (Hepatitis B Surface Antibody)","HBeAg (Hepatitis B e Antigen)","HBeAb (Hepatitis B e Antibody)","HBcAb (Hepatitis B Core Antibody)"]
+},
+{
+  name: "Hepatitis B Surface Antibody (Anti-HBs)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86706",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Immunity after vaccination or recovery."
+},
+{
+  name: "Hepatitis B Surface Antigen (HBsAg)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87340",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "HBsAg screening. Can be ordered alone or as part of Hepatitis B Profile."
+},
+{
+  name: "Hepatitis C Virus Antibody (Anti-HCV)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86803",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "HCV antibody screening test. Reflex to HCV RNA if positive."
+},
+{
+  name: "High Vaginal Swab (HVS)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87070/87481/87661/81513",
+  specimen: "High vaginal swab",
+  container: "Sterile swab with transport medium",
+  transport: "Room temperature / Transport within 2 hours",
+  notes: "Qualitative reporting for flora/pathogens; consider NAAT panel when indicated."
+},
+{
+  name: "HIV Ag/Ab Combination Assay",
+  category: "Medical Microbiology / Serology",
+  cpt: "87389",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Fourth-generation HIV screen."
+},
+{
+  name: "HIV Screening (HIV 1 & 2 Antibodies)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86703",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "HIV-1/HIV-2 antibody screen. Requires consent and counseling."
+},
+{
+  name: "Lyme Disease Antibody",
+  category: "Medical Microbiology / Serology",
+  cpt: "86618",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Two-tier testing if positive."
+},
+{
+  name: "Mononucleosis Screen (Monospot)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86328",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "EBV heterophile antibodies."
+},
+{
+  name: "Ova and Parasites, Stool",
+  category: "Medical Microbiology / Serology",
+  cpt: "87177",
+  specimen: "Stool",
+  container: "Sterile stool container with preservative",
+  transport: "Room temperature / Per lab",
+  notes: "Parasite examination."
+},
+{
+  name: "Pregnancy Test (hCG)",
+  category: "Medical Microbiology / Serology",
+  cpt: "84703",
+  specimen: "Urine / 10 mL or Serum / 1 mL",
+  container: "Sterile urine container or SST",
+  transport: "Room temperature (urine) / Refrigerated (serum) / Stable 7 days",
+  notes: "Qualitative hCG test. Urine or serum. Can detect pregnancy early."
+},
+{
+  name: "Quantiferon-TB Gold (IGRA)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86480",
+  specimen: "Whole blood / 4 mL",
+  container: "Specialty QFT tubes",
+  transport: "Room temperature / Same day",
+  notes: "Latent TB infection screening."
+},
+{
+  name: "RPR (Syphilis Screen)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86592",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Rapid plasma reagin; reflex confirmatory if positive."
+},
+{
+  name: "Sputum MCS (Microscopy, Culture, and Sensitivity)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87070/87205",
+  specimen: "Sputum / 2 mL (early morning deep cough sample)",
+  container: "Sterile container",
+  transport: "Room temperature; refrigerate if delayed / Stable 24-48 hours",
+  notes: "Cultures sputum for bacteria with Gram stain and sensitivity if positive. For diagnosing lower respiratory infections like pneumonia."
+},
+{
+  name: "Stool MCS (Stool Culture and Sensitivity)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87045/87046/87427",
+  specimen: "Stool / 5-10 g",
+  container: "Sterile stool container",
+  transport: "Refrigerated / Transport within 2 hours or use transport medium",
+  notes: "Culture for enteric pathogens with sensitivity testing as indicated. Includes qualitative pathogen reporting."
+},
+{
+  name: "Throat Culture",
+  category: "Medical Microbiology / Serology",
+  cpt: "87070",
+  specimen: "Throat swab",
+  container: "Swab with transport medium",
+  transport: "Room temperature / 2 hours",
+  notes: "Bacterial culture throat."
+},
+{
+  name: "Tuberculosis Screening (TB)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87555",
+  specimen: "Sputum / induced",
+  container: "Sterile container",
+  transport: "Refrigerated / Same day",
+  notes: "AFB smear/culture or NAAT per protocol."
+},
+{
+  name: "Urine Culture",
+  category: "Medical Microbiology / Serology",
+  cpt: "87086",
+  specimen: "Midstream urine / 10 mL",
+  container: "Sterile urine cup",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "UTI diagnosis."
+},
+{
+  name: "Urine MCS (Urine Culture and Sensitivity)",
+  category: "Medical Microbiology / Serology",
+  cpt: "87086",
+  specimen: "Urine / 10-20 mL (midstream clean catch)",
+  container: "Sterile urine container",
+  transport: "Refrigerated / Must be cultured within 2 hours or preserved",
+  notes: "Culture for bacterial identification and antibiotic susceptibility testing. Midstream clean catch preferred. Colony count ≥10^5 CFU/mL indicates significant bacteriuria."
+},
+{
+  name: "VDRL (Syphilis Screening)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86592",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Venereal Disease Research Laboratory test for syphilis screening."
+},
+{
+  name: "Widal Test (Typhoid Fever Serology)",
+  category: "Medical Microbiology / Serology",
+  cpt: "86780",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Agglutination test for Salmonella typhi and paratyphi antibodies."
+},
+{
+  name: "Wound Culture",
+  category: "Medical Microbiology / Serology",
+  cpt: "87075",
+  specimen: "Wound swab / aspirate",
+  container: "Sterile container",
+  transport: "Room temperature / 2 hours",
+  notes: "Culture with sensitivity as indicated."
+},
+{
+  name: "BRCA1/BRCA2 Sequencing",
+  category: "Molecular / PCR",
+  cpt: "81211",
+  specimen: "Whole blood / 5 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature",
+  notes: "Hereditary breast/ovarian cancer."
+},
+{
+  name: "Cell-Free DNA NIPT (Prenatal Screen)",
+  category: "Molecular / PCR",
+  cpt: "81420",
+  specimen: "Maternal blood / 10 mL",
+  container: "Cell-free DNA tube",
+  transport: "Room temperature",
+  notes: "Non-invasive prenatal testing."
+},
+{
+  name: "CFTR Carrier Screen",
+  category: "Molecular / PCR",
+  cpt: "81220",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature",
+  notes: "Cystic fibrosis carrier testing."
+},
+{
+  name: "Chlamydia trachomatis, NAAT",
+  category: "Molecular / PCR",
+  cpt: "87491",
+  specimen: "Urine or swab",
+  container: "NAAT transport tube",
+  transport: "Room temperature / Per lab",
+  notes: "Nucleic acid amplification test."
+},
+{
+  name: "Clostridioides difficile Toxin",
+  category: "Molecular / PCR",
+  cpt: "87324",
+  specimen: "Stool",
+  container: "Sterile stool container",
+  transport: "Refrigerated / Same day",
+  notes: "C. difficile diagnosis."
+},
+{
+  name: "CMV DNA, Quantitative (PCR)",
+  category: "Molecular / PCR",
+  cpt: "87497",
+  specimen: "Plasma / 2 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Transplant monitoring."
+},
+{
+  name: "Factor V Leiden Mutation",
+  category: "Molecular / PCR",
+  cpt: "81241",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 7 days",
+  notes: "Inherited thrombophilia."
+},
+{
+  name: "Fragile X Syndrome Analysis",
+  category: "Molecular / PCR",
+  cpt: "81243",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature",
+  notes: "FMR1 repeat expansion."
+},
+{
+  name: "Hepatitis B DNA, Quantitative (PCR)",
+  category: "Molecular / PCR",
+  cpt: "87516",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "HBV viral load."
+},
+{
+  name: "Hepatitis C RNA, Quantitative (PCR)",
+  category: "Molecular / PCR",
+  cpt: "87522",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "HCV viral load monitoring."
+},
+{
+  name: "Herpes Simplex Virus PCR",
+  category: "Molecular / PCR",
+  cpt: "87529",
+  specimen: "Lesion swab / CSF",
+  container: "Viral transport medium",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "HSV 1/2 detection."
+},
+{
+  name: "HLA-B*5701",
+  category: "Molecular / PCR",
+  cpt: "81349",
+  specimen: "Whole blood / 5 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature",
+  notes: "Abacavir hypersensitivity risk."
+},
+{
+  name: "HPV DNA, High-Risk",
+  category: "Molecular / PCR",
+  cpt: "87624",
+  specimen: "Cervical sample",
+  container: "Liquid-based cytology vial",
+  transport: "Room temperature / Per lab",
+  notes: "Co-testing or reflex from Pap."
+},
+{
+  name: "Influenza A/B PCR",
+  category: "Molecular / PCR",
+  cpt: "87428",
+  specimen: "Nasopharyngeal swab",
+  container: "Viral transport medium",
+  transport: "Refrigerated / Same day",
+  notes: "Respiratory virus panel component."
+},
+{
+  name: "Neisseria gonorrhoeae, NAAT",
+  category: "Molecular / PCR",
+  cpt: "87591",
+  specimen: "Urine or swab",
+  container: "NAAT transport tube",
+  transport: "Room temperature / Per lab",
+  notes: "Nucleic acid amplification test."
+},
+{
+  name: "Pharmacogenomics Panel (CYP2C19)",
+  category: "Molecular / PCR",
+  cpt: "81225",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature",
+  notes: "Clopidogrel / PPI metabolism."
+},
+{
+  name: "Prothrombin G20210A Mutation",
+  category: "Molecular / PCR",
+  cpt: "81240",
+  specimen: "Whole blood / 3 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 7 days",
+  notes: "Inherited thrombophilia."
+},
+{
+  name: "Respiratory Pathogen Panel (PCR)",
+  category: "Molecular / PCR",
+  cpt: "87633",
+  specimen: "Nasopharyngeal swab",
+  container: "Viral transport medium",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Multiplex respiratory panel."
+},
+{
+  name: "RSV PCR",
+  category: "Molecular / PCR",
+  cpt: "87636",
+  specimen: "Nasopharyngeal swab",
+  container: "Viral transport medium",
+  transport: "Refrigerated / Same day",
+  notes: "Respiratory syncytial virus."
+},
+{
+  name: "SARS-CoV-2 PCR",
+  category: "Molecular / PCR",
+  cpt: "87635",
+  specimen: "Nasopharyngeal swab",
+  container: "Viral transport medium",
+  transport: "Refrigerated / Same day",
+  notes: "COVID-19 molecular test."
+},
+{
+  name: "STI Panel (Chlamydia/Gonorrhea/Trichomonas)",
+  category: "Molecular / PCR",
+  cpt: "87491/87591/87661",
+  specimen: "Urine or swab",
+  container: "NAAT transport",
+  transport: "Room temperature",
+  notes: "Combined STI NAAT panel."
+},
+{
+  name: "Anti-CCP Antibody",
+  category: "Immunology / Autoimmune",
+  cpt: "86200",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Rheumatoid arthritis specificity."
+},
+{
+  name: "Anti-dsDNA Antibody",
+  category: "Immunology / Autoimmune",
+  cpt: "86225",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "SLE monitoring."
+},
+{
+  name: "Antinuclear Antibody (ANA)",
+  category: "Immunology / Autoimmune",
+  cpt: "86038",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Autoimmune screening; reflex pattern if positive."
+},
+{
+  name: "Celiac Disease Panel (tTG IgA)",
+  category: "Immunology / Autoimmune",
+  cpt: "86376",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Tissue transglutaminase antibodies."
+},
+{
+  name: "Complement C3",
+  category: "Immunology / Autoimmune",
+  cpt: "86160",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Immune complex disease."
+},
+{
+  name: "Complement C4",
+  category: "Immunology / Autoimmune",
+  cpt: "86161",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Immune complex disease."
+},
+{
+  name: "HLA-B27 Antigen",
+  category: "Immunology / Autoimmune",
+  cpt: "83881",
+  specimen: "Whole blood / 5 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / 48 hours",
+  notes: "Spondyloarthropathy association."
+},
+{
+  name: "Rheumatoid Factor (RF)",
+  category: "Immunology / Autoimmune",
+  cpt: "86431",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Rheumatoid arthritis screening."
+},
+{
+  name: "Specific IgE, Allergen Panel",
+  category: "Immunology / Autoimmune",
+  cpt: "86003",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Allergen-specific IgE; select panel or single allergen."
+},
+{
+  name: "Thyroglobulin Antibody",
+  category: "Immunology / Autoimmune",
+  cpt: "86800",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Autoimmune thyroid disease."
+},
+{
+  name: "17-Hydroxyprogesterone",
+  category: "Endocrinology",
+  cpt: "83498",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "CAH screening."
+},
+{
+  name: "Anti-Müllerian Hormone (AMH)",
+  category: "Endocrinology",
+  cpt: "82166",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Ovarian reserve assessment."
+},
+{
+  name: "C-Peptide",
+  category: "Endocrinology",
+  cpt: "84681",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Endogenous insulin secretion."
+},
+{
+  name: "Cortisol, AM Serum",
+  category: "Endocrinology",
+  cpt: "82533",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Draw before 9 AM when possible."
+},
+{
+  name: "DHEA-Sulfate",
+  category: "Endocrinology",
+  cpt: "82627",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Adrenal androgen."
+},
+{
+  name: "Free Thyroxine (Free T4)",
+  category: "Endocrinology",
+  cpt: "84439",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Thyroid function; often reflexed from abnormal TSH."
+},
+{
+  name: "Insulin, Fasting",
+  category: "Endocrinology",
+  cpt: "83527",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Insulin resistance assessment."
+},
+{
+  name: "Parathyroid Hormone (PTH), Intact",
+  category: "Endocrinology",
+  cpt: "83970",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Calcium metabolism."
+},
+{
+  name: "Reverse T3",
+  category: "Endocrinology",
+  cpt: "84482",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Thyroid conversion assessment."
+},
+{
+  name: "Sex Hormone Binding Globulin (SHBG)",
+  category: "Endocrinology",
+  cpt: "84270",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Androgen status."
+},
+{
+  name: "Testosterone, Free and Total",
+  category: "Endocrinology",
+  cpt: "84402",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Includes SHBG-derived free T."
+},
+{
+  name: "Thyroid Panel (TSH + Free T4)",
+  category: "Endocrinology",
+  cpt: "84443/84439",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Combined thyroid screening panel.",
+  panelTests: ["Thyroid Stimulating Hormone (TSH)","Free Thyroxine (Free T4)"]
+},
+{
+  name: "Triiodothyronine (T3), Total",
+  category: "Endocrinology",
+  cpt: "84480",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Thyroid hormone assessment."
+},
+{
+  name: "AFP (Alpha-Fetoprotein)",
+  category: "Tumor Markers",
+  cpt: "82105",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Liver and germ cell tumors."
+},
+{
+  name: "CA-125",
+  category: "Tumor Markers",
+  cpt: "86304",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Ovarian cancer monitoring."
+},
+{
+  name: "CEA (Carcinoembryonic Antigen)",
+  category: "Tumor Markers",
+  cpt: "82378",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Colorectal and other malignancy monitoring."
+},
+{
+  name: "2-Hour Postprandial Glucose",
+  category: "Clinical Chemistry",
+  cpt: "82950",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 24 hours",
+  notes: "Blood drawn 2 hours after meal. Normal <140 mg/dL (<7.8 mmol/L). Used for diabetes screening and monitoring."
+},
+{
+  name: "Albumin",
+  category: "Clinical Chemistry",
+  cpt: "82040",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Nutritional and liver synthetic function."
+},
+{
+  name: "Ammonia",
+  category: "Clinical Chemistry",
+  cpt: "82140",
+  specimen: "Plasma / 1 mL",
+  container: "Green-top (heparin) on ice",
+  transport: "On ice / Immediate",
+  notes: "Hepatic encephalopathy workup."
+},
+{
+  name: "Amylase",
+  category: "Clinical Chemistry",
+  cpt: "82150",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Pancreatitis assessment."
+},
+{
+  name: "Basic Metabolic Panel (BMP)",
+  category: "Clinical Chemistry",
+  cpt: "80048",
+  specimen: "Serum / 1 mL",
+  container: "Serum separator tube (SST) or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Includes glucose, electrolytes, BUN, creatinine, calcium."
+},
+{
+  name: "Bilirubin, Direct",
+  category: "Clinical Chemistry",
+  cpt: "82248",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Conjugated bilirubin."
+},
+{
+  name: "Blood Urea Nitrogen (BUN)",
+  category: "Clinical Chemistry",
+  cpt: "84525",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Renal function marker."
+},
+{
+  name: "BNP (B-Type Natriuretic Peptide)",
+  category: "Clinical Chemistry",
+  cpt: "83880",
+  specimen: "Plasma / 1 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Heart failure assessment."
+},
+{
+  name: "C-Reactive Protein (CRP)",
+  category: "Clinical Chemistry",
+  cpt: "86140",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "For inflammation assessment."
+},
+{
+  name: "Calcium Lab Test",
+  category: "Clinical Chemistry",
+  cpt: "82310",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Total calcium."
+},
+{
+  name: "CK-MB",
+  category: "Clinical Chemistry",
+  cpt: "82553",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Myocardial injury marker."
+},
+{
+  name: "Comprehensive Metabolic Panel (CMP)",
+  category: "Clinical Chemistry",
+  cpt: "80053",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Includes BMP plus liver function tests (ALT, AST, etc.)."
+},
+{
+  name: "Copper, Serum",
+  category: "Clinical Chemistry",
+  cpt: "82525",
+  specimen: "Serum / 2 mL",
+  container: "Royal blue trace element tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Trace mineral."
+},
+{
+  name: "Creatine Kinase (CK)",
+  category: "Clinical Chemistry",
+  cpt: "82550",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Muscle injury / statin monitoring."
+},
+{
+  name: "Creatinine (Serum)",
+  category: "Clinical Chemistry",
+  cpt: "82565",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Renal function; eGFR calculated."
+},
+{
+  name: "Direct LDL Cholesterol",
+  category: "Clinical Chemistry",
+  cpt: "83721",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Calculated or direct LDL."
+},
+{
+  name: "Electrolytes Panel",
+  category: "Clinical Chemistry",
+  cpt: "80051",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Sodium, potassium, chloride, CO2."
+},
+{
+  name: "Electrolytes, Urea, and Creatinine (EUC) Test",
+  category: "Clinical Chemistry",
+  cpt: "80051",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Includes Sodium, Potassium, Chloride, Bicarbonate, Urea, and Creatinine."
+},
+{
+  name: "Estrogen (E2)",
+  category: "Clinical Chemistry",
+  cpt: "82670",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Reference ranges vary by sex, menstrual phase, and reproductive status."
+},
+{
+  name: "Fasting Blood Sugar (FBS)",
+  category: "Clinical Chemistry",
+  cpt: "82947",
+  specimen: "Serum / 1 mL",
+  container: "Gray-top (fluoride/oxalate) tube or SST",
+  transport: "Refrigerated / Stable 24 hours",
+  notes: "Fasting required (8-12 hours). Also known as Fasting Blood Glucose."
+},
+{
+  name: "Fecal Calprotectin",
+  category: "Clinical Chemistry",
+  cpt: "83993",
+  specimen: "Stool",
+  container: "Stool collection kit",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "IBD vs IBS differentiation."
+},
+{
+  name: "Ferritin",
+  category: "Clinical Chemistry",
+  cpt: "82728",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Iron stores; acute phase reactant."
+},
+{
+  name: "Folate (Folic Acid)",
+  category: "Clinical Chemistry",
+  cpt: "82746",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Serum folate."
+},
+{
+  name: "Follicle Stimulating Hormone (FSH)",
+  category: "Clinical Chemistry",
+  cpt: "83001",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Reference ranges vary by sex and menstrual phase."
+},
+{
+  name: "Gamma Glutamyl Transferase (GGT)",
+  category: "Clinical Chemistry",
+  cpt: "82977",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Hepatobiliary enzyme."
+},
+{
+  name: "Glycated Hemoglobin (HbA1c)",
+  category: "Clinical Chemistry",
+  cpt: "83036",
+  specimen: "Whole blood / 1 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Room temperature / Stable 7 days",
+  notes: "For diabetes monitoring."
+},
+{
+  name: "High-Sensitivity C-Reactive Protein (hs-CRP)",
+  category: "Clinical Chemistry",
+  cpt: "86141",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Cardiovascular risk marker."
+},
+{
+  name: "Homocysteine",
+  category: "Clinical Chemistry",
+  cpt: "83090",
+  specimen: "Plasma / 2 mL",
+  container: "Green-top (heparin) on ice",
+  transport: "On ice / Separate immediately",
+  notes: "B12/folate deficiency, CV risk."
+},
+{
+  name: "Hormonal Profile (Panel)",
+  category: "Clinical Chemistry",
+  cpt: "84146/84403/83001/83002/82670/84144",
+  specimen: "Serum / 3-5 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Panel includes Prolactin, Testosterone (Total), FSH, LH, Estrogen (E2), and Progesterone. Prefer morning collection for testosterone.",
+  panelTests: ["Prolactin","Testosterone (Total)","Follicle Stimulating Hormone (FSH)","Luteinizing Hormone (LH)","Estrogen (E2)","Progesterone"]
+},
+{
+  name: "Immunofixation Electrophoresis",
+  category: "Clinical Chemistry",
+  cpt: "84166",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Monoclonal protein typing."
+},
+{
+  name: "Ionized Calcium",
+  category: "Clinical Chemistry",
+  cpt: "82330",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Active calcium fraction."
+},
+{
+  name: "Iron Studies Panel",
+  category: "Clinical Chemistry",
+  cpt: "83540/83550/82728",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Iron, TIBC, ferritin.",
+  panelTests: ["Iron, Serum","Total Iron Binding Capacity (TIBC)","Ferritin"]
+},
+{
+  name: "Iron, Serum",
+  category: "Clinical Chemistry",
+  cpt: "83540",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Serum iron level."
+},
+{
+  name: "Lactate Dehydrogenase (LDH)",
+  category: "Clinical Chemistry",
+  cpt: "83615",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Tissue injury marker."
+},
+{
+  name: "Lactate, Blood",
+  category: "Clinical Chemistry",
+  cpt: "83605",
+  specimen: "Plasma / 1 mL",
+  container: "Gray-top (fluoride) tube on ice",
+  transport: "On ice / Immediate",
+  notes: "Sepsis and tissue hypoxia."
+},
+{
+  name: "Lipase",
+  category: "Clinical Chemistry",
+  cpt: "83690",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Pancreatitis; preferred over amylase."
+},
+{
+  name: "Lipid Panel",
+  category: "Clinical Chemistry",
+  cpt: "80061",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Fasting preferred. Measures cholesterol, HDL, LDL, triglycerides."
+},
+{
+  name: "Liver Function Test (LFT)",
+  category: "Clinical Chemistry",
+  cpt: "80076",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "ALT, AST, ALP, bilirubin, albumin."
+},
+{
+  name: "Luteinizing Hormone (LH)",
+  category: "Clinical Chemistry",
+  cpt: "83002",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Reference ranges vary by sex and menstrual phase."
+},
+{
+  name: "Magnesium",
+  category: "Clinical Chemistry",
+  cpt: "83735",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Electrolyte / metabolic panel add-on."
+},
+{
+  name: "Methylmalonic Acid (MMA)",
+  category: "Clinical Chemistry",
+  cpt: "83921",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Functional B12 deficiency."
+},
+{
+  name: "Microalbumin, Urine",
+  category: "Clinical Chemistry",
+  cpt: "82043",
+  specimen: "Urine / 10 mL",
+  container: "Sterile urine container",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Diabetic nephropathy screening."
+},
+{
+  name: "Myoglobin",
+  category: "Clinical Chemistry",
+  cpt: "83874",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Rhabdomyolysis marker."
+},
+{
+  name: "Oral Glucose Tolerance Test (OGTT, 2-hour)",
+  category: "Clinical Chemistry",
+  cpt: "82951",
+  specimen: "Plasma / 1 mL",
+  container: "Gray-top (fluoride) tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "75g glucose load; diabetes diagnosis."
+},
+{
+  name: "Osmolality, Serum",
+  category: "Clinical Chemistry",
+  cpt: "83930",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Hyponatremia workup."
+},
+{
+  name: "Phosphorus",
+  category: "Clinical Chemistry",
+  cpt: "84100",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Mineral metabolism."
+},
+{
+  name: "Procalcitonin",
+  category: "Clinical Chemistry",
+  cpt: "84145",
+  specimen: "Plasma / 1 mL",
+  container: "Lavender (EDTA) tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Bacterial sepsis marker."
+},
+{
+  name: "Progesterone",
+  category: "Clinical Chemistry",
+  cpt: "84144",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Reference ranges vary by menstrual phase or pregnancy."
+},
+{
+  name: "Prolactin",
+  category: "Clinical Chemistry",
+  cpt: "84146",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Reference ranges vary by sex and pregnancy status."
+},
+{
+  name: "Prostate-Specific Antigen (PSA)",
+  category: "Clinical Chemistry",
+  cpt: "84153",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 5 days",
+  notes: "For males; screening for prostate issues."
+},
+{
+  name: "Protein Electrophoresis, Serum",
+  category: "Clinical Chemistry",
+  cpt: "84165",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "M-spike / myeloma screen."
+},
+{
+  name: "PSA, Free",
+  category: "Clinical Chemistry",
+  cpt: "84154",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Prostate cancer risk stratification with total PSA."
+},
+{
+  name: "Random Blood Sugar (RBS)",
+  category: "Clinical Chemistry",
+  cpt: "82947",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 24 hours",
+  notes: "No fasting required. Random glucose level."
+},
+{
+  name: "Testosterone (Total)",
+  category: "Clinical Chemistry",
+  cpt: "84403",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Prefer morning draw. Reference ranges vary by sex and age."
+},
+{
+  name: "Thyroid Stimulating Hormone (TSH)",
+  category: "Clinical Chemistry",
+  cpt: "84443",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Reflex to Free T4 if abnormal (additional code if reflexed)."
+},
+{
+  name: "Total Iron Binding Capacity (TIBC)",
+  category: "Clinical Chemistry",
+  cpt: "83550",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Iron studies panel component."
+},
+{
+  name: "Total Protein",
+  category: "Clinical Chemistry",
+  cpt: "84155",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Total serum protein."
+},
+{
+  name: "Troponin I, High Sensitivity",
+  category: "Clinical Chemistry",
+  cpt: "84484",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Acute coronary syndrome rule-in/out."
+},
+{
+  name: "Uric Acid Test",
+  category: "Clinical Chemistry",
+  cpt: "84520",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "For gout monitoring and kidney function assessment."
+},
+{
+  name: "Urinalysis (UA)",
+  category: "Clinical Chemistry",
+  cpt: "81001",
+  specimen: "Urine / 10 mL",
+  container: "Sterile urine container",
+  transport: "Refrigerated / Stable 72 hours",
+  notes: "Complete UA; reflex to microscopic if indicated."
+},
+{
+  name: "Urine Albumin/Creatinine Ratio",
+  category: "Clinical Chemistry",
+  cpt: "82043/82565",
+  specimen: "Random urine / 10 mL",
+  container: "Urine cup",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Diabetic nephropathy screen."
+},
+{
+  name: "Urine Protein, 24-Hour",
+  category: "Clinical Chemistry",
+  cpt: "84156",
+  specimen: "Urine / 24h collection",
+  container: "24-hour urine container",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Quantitative proteinuria."
+},
+{
+  name: "Vitamin B12",
+  category: "Clinical Chemistry",
+  cpt: "82607",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Cobalamin level."
+},
+{
+  name: "Vitamin D Level (25(OH)D)",
+  category: "Clinical Chemistry",
+  cpt: "82306",
+  specimen: "Serum / 1 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Total 25-hydroxyvitamin D immunoassay."
+},
+{
+  name: "Zinc, Serum",
+  category: "Clinical Chemistry",
+  cpt: "84630",
+  specimen: "Serum / 2 mL",
+  container: "Royal blue trace element tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Trace mineral."
+},
+{
+  name: "Fecal Immunochemical Test (FIT)",
+  category: "Anatomic Pathology / Cytology",
+  cpt: "82270",
+  specimen: "Stool",
+  container: "FIT collection kit",
+  transport: "Room temperature / Per kit",
+  notes: "Colorectal cancer screening."
+},
+{
+  name: "Fine Needle Aspiration Cytology",
+  category: "Anatomic Pathology / Cytology",
+  cpt: "88173",
+  specimen: "FNA sample",
+  container: "CytoFix or saline",
+  transport: "Room temperature / Immediate",
+  notes: "Thyroid / lymph node FNA."
+},
+{
+  name: "Karyotype, Peripheral Blood",
+  category: "Anatomic Pathology / Cytology",
+  cpt: "88230",
+  specimen: "Whole blood / 5 mL",
+  container: "Sodium heparin green-top",
+  transport: "Room temperature / Same day",
+  notes: "Chromosomal analysis."
+},
+{
+  name: "Pap Smear (Cervical Cytology)",
+  category: "Anatomic Pathology / Cytology",
+  cpt: "88142",
+  specimen: "Cervical sample",
+  container: "Liquid-based cytology vial",
+  transport: "Room temperature / Per lab",
+  notes: "Cervical cancer screening."
+},
+{
+  name: "Semen Analysis",
+  category: "Anatomic Pathology / Cytology",
+  cpt: "89320",
+  specimen: "Semen",
+  container: "Sterile specimen container",
+  transport: "Body temperature / Within 1 hour",
+  notes: "Fertility assessment; abstinence 2-5 days."
+},
+{
+  name: "Urine Cytology",
+  category: "Anatomic Pathology / Cytology",
+  cpt: "88112",
+  specimen: "Urine / 50 mL",
+  container: "Urine cup",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Bladder cancer surveillance."
+},
+{
+  name: "Digoxin Level",
+  category: "Toxicology",
+  cpt: "80162",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Therapeutic drug monitoring."
+},
+{
+  name: "Ethanol Level, Blood",
+  category: "Toxicology",
+  cpt: "80320",
+  specimen: "Serum / 2 mL",
+  container: "Gray-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Forensic / clinical intoxication."
+},
+{
+  name: "Lead Level, Blood",
+  category: "Toxicology",
+  cpt: "83655",
+  specimen: "Whole blood / 2 mL",
+  container: "Royal blue trace element tube",
+  transport: "Room temperature / Per lab",
+  notes: "Pediatric and occupational screening."
+},
+{
+  name: "Lithium Level",
+  category: "Toxicology",
+  cpt: "80178",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Therapeutic drug monitoring."
+},
+{
+  name: "Valproic Acid Level",
+  category: "Toxicology",
+  cpt: "80164",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Therapeutic drug monitoring."
+},
+{
+  name: "Vancomycin Trough Level",
+  category: "Toxicology",
+  cpt: "80202",
+  specimen: "Serum / 2 mL",
+  container: "SST or red-top tube",
+  transport: "Refrigerated / Stable 7 days",
+  notes: "Pre-dose level."
+}
 ];
+// MEDIFORGE_CATALOG:LAB_END
 
 // Sort LAB_TESTS by category (per Excel), then alphabetically by name within category
-const LAB_CATEGORY_ORDER = ['Haematology', 'Medical Microbiology / Serology', 'Clinical Chemistry'];
+const LAB_CATEGORY_ORDER = [
+  'Haematology',
+  'Medical Microbiology / Serology',
+  'Molecular / PCR',
+  'Immunology / Autoimmune',
+  'Endocrinology',
+  'Tumor Markers',
+  'Clinical Chemistry',
+  'Anatomic Pathology / Cytology',
+  'Toxicology'
+];
 LAB_TESTS.sort((a, b) => {
   const catA = LAB_CATEGORY_ORDER.indexOf(a.category || '') >= 0 ? LAB_CATEGORY_ORDER.indexOf(a.category) : 999;
   const catB = LAB_CATEGORY_ORDER.indexOf(b.category || '') >= 0 ? LAB_CATEGORY_ORDER.indexOf(b.category) : 999;
@@ -2605,7 +3777,322 @@ LAB_TESTS.sort((a, b) => {
   return nameA.localeCompare(nameB);
 });
 
-const IMAGING_TESTS = [{'name': 'Chest X-ray', 'cpt': '71046', 'modality': 'X-ray', 'preparation': 'Remove upper body clothing and jewelry; wear gown.', 'contrast': 'No', 'notes': 'PA and lateral views; for respiratory symptoms or screening.'}, {'name': 'Abdominal X-ray', 'cpt': '74019', 'modality': 'X-ray', 'preparation': 'Remove clothing over abdomen; may need to hold breath.', 'contrast': 'No', 'notes': '2 views (supine/upright); for GI issues like obstruction.'}, {'name': 'Extremity X-ray', 'cpt': '73562', 'modality': 'X-ray', 'preparation': 'Remove clothing/jewelry from affected limb; immobilize as needed.', 'contrast': 'No', 'notes': 'Example for knee (3 views); specify body part in order.'}, {'name': 'Mammography', 'cpt': '77067', 'modality': 'Mammography', 'preparation': 'No deodorant, powder, powder; wear two-piece clothing; bring priors.', 'contrast': 'No', 'notes': 'Bilateral screening; for breast cancer detection.'}, {'name': 'Bone Density Scan', 'cpt': '77080', 'modality': 'DEXA', 'preparation': 'Avoid calcium supplements 24 hours prior; no recent barium exams.', 'contrast': 'No', 'notes': 'Axial skeleton; for osteoporosis risk assessment.'}, {'name': 'Abdominal Ultrasound', 'cpt': '76700', 'modality': 'Ultrasound', 'preparation': 'NPO 6-8 hours prior; drink water if needed for bladder.', 'contrast': 'No', 'notes': 'Complete exam; for organ evaluation like liver/kidneys.'}, {'name': 'Pelvic Ultrasound', 'cpt': '76856', 'modality': 'Ultrasound', 'preparation': 'Drink 32 oz water 1 hour prior for full bladder; may undress.', 'contrast': 'No', 'notes': 'Transabdominal; add transvaginal if indicated (CPT 76830).'}, {'name': 'Thyroid Ultrasound', 'cpt': '76536', 'modality': 'Ultrasound', 'preparation': 'None specific; expose neck area.', 'contrast': 'No', 'notes': 'Soft tissue neck; for nodules or enlargement.'}, {'name': 'Head CT (Noncontrast)', 'cpt': '70450', 'modality': 'CT', 'preparation': 'None; remove headwear/jewelry.', 'contrast': 'No', 'notes': 'For acute neurological issues; avoid if pregnant.'}, {'name': 'Abdomen/Pelvis CT', 'cpt': '74177', 'modality': 'CT', 'preparation': 'NPO 4 hours; arrive early for oral contrast if ordered.', 'contrast': 'Yes (IV/Oral)', 'notes': 'With contrast; for detailed abdominal evaluation.'}, {'name': 'Brain MRI', 'cpt': '70553', 'modality': 'MRI', 'preparation': 'Screen for metal implants/claustrophobia; remove metal objects.', 'contrast': 'Yes (IV Optional)', 'notes': 'With and without contrast; for brain pathology.'}, {'name': 'Lumbar Spine MRI', 'cpt': '72148', 'modality': 'MRI', 'preparation': 'Screen for contraindications; may take 30-60 min.', 'contrast': 'No', 'notes': 'Without contrast; for disc/nerve issues.'}];
+// MEDIFORGE_CATALOG:IMG_START — auto-synced by npm run build:diagnostic-catalog
+const IMAGING_TESTS = [
+{
+  name: "Chest X-ray",
+  cpt: "71046",
+  modality: "X-ray",
+  preparation: "Remove upper body clothing and jewelry; wear gown.",
+  contrast: "No",
+  notes: "PA and lateral views; for respiratory symptoms or screening."
+},
+{
+  name: "Abdominal X-ray",
+  cpt: "74019",
+  modality: "X-ray",
+  preparation: "Remove clothing over abdomen; may need to hold breath.",
+  contrast: "No",
+  notes: "2 views (supine/upright); for GI issues like obstruction."
+},
+{
+  name: "Extremity X-ray",
+  cpt: "73562",
+  modality: "X-ray",
+  preparation: "Remove clothing/jewelry from affected limb; immobilize as needed.",
+  contrast: "No",
+  notes: "Example for knee (3 views); specify body part in order."
+},
+{
+  name: "Mammography",
+  cpt: "77067",
+  modality: "Mammography",
+  preparation: "No deodorant, powder, powder; wear two-piece clothing; bring priors.",
+  contrast: "No",
+  notes: "Bilateral screening; for breast cancer detection."
+},
+{
+  name: "Bone Density Scan",
+  cpt: "77080",
+  modality: "DEXA",
+  preparation: "Avoid calcium supplements 24 hours prior; no recent barium exams.",
+  contrast: "No",
+  notes: "Axial skeleton; for osteoporosis risk assessment."
+},
+{
+  name: "Abdominal Ultrasound",
+  cpt: "76700",
+  modality: "Ultrasound",
+  preparation: "NPO 6-8 hours prior; drink water if needed for bladder.",
+  contrast: "No",
+  notes: "Complete exam; for organ evaluation like liver/kidneys."
+},
+{
+  name: "Pelvic Ultrasound",
+  cpt: "76856",
+  modality: "Ultrasound",
+  preparation: "Drink 32 oz water 1 hour prior for full bladder; may undress.",
+  contrast: "No",
+  notes: "Transabdominal; add transvaginal if indicated (CPT 76830)."
+},
+{
+  name: "Thyroid Ultrasound",
+  cpt: "76536",
+  modality: "Ultrasound",
+  preparation: "None specific; expose neck area.",
+  contrast: "No",
+  notes: "Soft tissue neck; for nodules or enlargement."
+},
+{
+  name: "Head CT (Noncontrast)",
+  cpt: "70450",
+  modality: "CT",
+  preparation: "None; remove headwear/jewelry.",
+  contrast: "No",
+  notes: "For acute neurological issues; avoid if pregnant."
+},
+{
+  name: "Abdomen/Pelvis CT",
+  cpt: "74177",
+  modality: "CT",
+  preparation: "NPO 4 hours; arrive early for oral contrast if ordered.",
+  contrast: "Yes (IV/Oral)",
+  notes: "With contrast; for detailed abdominal evaluation."
+},
+{
+  name: "Brain MRI",
+  cpt: "70553",
+  modality: "MRI",
+  preparation: "Screen for metal implants/claustrophobia; remove metal objects.",
+  contrast: "Yes (IV Optional)",
+  notes: "With and without contrast; for brain pathology."
+},
+{
+  name: "Lumbar Spine MRI",
+  cpt: "72148",
+  modality: "MRI",
+  preparation: "Screen for contraindications; may take 30-60 min.",
+  contrast: "No",
+  notes: "Without contrast; for disc/nerve issues."
+},
+{
+  name: "Chest CT (Noncontrast)",
+  cpt: "71250",
+  modality: "CT",
+  preparation: "Remove metal from chest; fasting not required.",
+  contrast: "No",
+  notes: "Pulmonary nodule, emphysema, interstitial disease."
+},
+{
+  name: "CT Head (Noncontrast)",
+  cpt: "70450",
+  modality: "CT",
+  preparation: "Remove jewelry; lie still.",
+  contrast: "No",
+  notes: "Headache, trauma, stroke rule-out."
+},
+{
+  name: "CT Head with Contrast",
+  cpt: "70460",
+  modality: "CT",
+  preparation: "NPO 4 hours; check renal function and allergies.",
+  contrast: "IV iodinated",
+  notes: "Mass, infection, vascular lesion."
+},
+{
+  name: "CT Abdomen/Pelvis with Contrast",
+  cpt: "74177",
+  modality: "CT",
+  preparation: "NPO 4 hours; oral contrast per protocol.",
+  contrast: "IV + oral",
+  notes: "Abdominal pain, malignancy staging."
+},
+{
+  name: "CT Pulmonary Angiography (CTPA)",
+  cpt: "71275",
+  modality: "CT",
+  preparation: "IV access; assess renal function.",
+  contrast: "IV iodinated",
+  notes: "Pulmonary embolism protocol."
+},
+{
+  name: "MRI Brain without Contrast",
+  cpt: "70551",
+  modality: "MRI",
+  preparation: "MRI safety screening; remove metal.",
+  contrast: "No",
+  notes: "Headache, seizures, demyelinating disease."
+},
+{
+  name: "MRI Brain with Contrast",
+  cpt: "70552",
+  modality: "MRI",
+  preparation: "MRI safety screening; renal function if gadolinium.",
+  contrast: "Gadolinium IV",
+  notes: "Tumor, infection, vascular malformation."
+},
+{
+  name: "MRI Lumbar Spine without Contrast",
+  cpt: "72148",
+  modality: "MRI",
+  preparation: "MRI safety screening.",
+  contrast: "No",
+  notes: "Radiculopathy, cord compression."
+},
+{
+  name: "MRI Cervical Spine without Contrast",
+  cpt: "72141",
+  modality: "MRI",
+  preparation: "MRI safety screening.",
+  contrast: "No",
+  notes: "Neck pain, myelopathy."
+},
+{
+  name: "Knee X-ray (3 views)",
+  cpt: "73562",
+  modality: "X-ray",
+  preparation: "Remove clothing from knee.",
+  contrast: "No",
+  notes: "Trauma, arthritis assessment."
+},
+{
+  name: "Hand X-ray (2 views)",
+  cpt: "73120",
+  modality: "X-ray",
+  preparation: "Remove rings and jewelry.",
+  contrast: "No",
+  notes: "Trauma, arthritis."
+},
+{
+  name: "Lumbar Spine X-ray (2-3 views)",
+  cpt: "72100",
+  modality: "X-ray",
+  preparation: "Remove metal from lumbar area.",
+  contrast: "No",
+  notes: "Low back pain screening."
+},
+{
+  name: "Pelvis X-ray",
+  cpt: "72170",
+  modality: "X-ray",
+  preparation: "Remove metal from pelvis.",
+  contrast: "No",
+  notes: "Hip/pelvis trauma or arthritis."
+},
+{
+  name: "Renal Ultrasound",
+  cpt: "76770",
+  modality: "Ultrasound",
+  preparation: "Hydration; may need full bladder for some views.",
+  contrast: "No",
+  notes: "Renal colic, hydronephrosis, cysts."
+},
+{
+  name: "Obstetric Ultrasound (First Trimester)",
+  cpt: "76801",
+  modality: "Ultrasound",
+  preparation: "Full bladder early pregnancy if transabdominal.",
+  contrast: "No",
+  notes: "Dating, viability, ectopic rule-out."
+},
+{
+  name: "Obstetric Ultrasound (Anatomy Scan)",
+  cpt: "76805",
+  modality: "Ultrasound",
+  preparation: "Per obstetric protocol ~18-22 weeks.",
+  contrast: "No",
+  notes: "Fetal anatomy survey."
+},
+{
+  name: "Carotid Doppler Ultrasound",
+  cpt: "93880",
+  modality: "Ultrasound",
+  preparation: "Open collar; no neck jewelry.",
+  contrast: "No",
+  notes: "Stroke risk, bruit evaluation."
+},
+{
+  name: "Venous Doppler Lower Extremity",
+  cpt: "93970",
+  modality: "Ultrasound",
+  preparation: "Expose legs; compression stockings removed.",
+  contrast: "No",
+  notes: "DVT rule-out bilateral."
+},
+{
+  name: "Echocardiogram (Transthoracic)",
+  cpt: "93306",
+  modality: "Echocardiography",
+  preparation: "No special prep; gown provided.",
+  contrast: "No",
+  notes: "Cardiac structure and function."
+},
+{
+  name: "Electrocardiogram (ECG/EKG)",
+  cpt: "93000",
+  modality: "ECG",
+  preparation: "Expose chest; lie still.",
+  contrast: "No",
+  notes: "12-lead resting ECG."
+},
+{
+  name: "Exercise Stress Test",
+  cpt: "93015",
+  modality: "Cardiac stress",
+  preparation: "Light meal 2 hours prior; comfortable shoes.",
+  contrast: "No",
+  notes: "Treadmill ECG stress."
+},
+{
+  name: "Myocardial Perfusion Imaging (Nuclear Stress)",
+  cpt: "78452",
+  modality: "Nuclear medicine",
+  preparation: "NPO 4 hours; caffeine restrictions per lab.",
+  contrast: "Radiopharmaceutical",
+  notes: "Ischemia evaluation."
+},
+{
+  name: "Bone Scan (Whole Body)",
+  cpt: "78306",
+  modality: "Nuclear medicine",
+  preparation: "Hydration; pregnancy test if applicable.",
+  contrast: "Radiopharmaceutical",
+  notes: "Metastatic survey, occult fracture."
+},
+{
+  name: "PET/CT Whole Body",
+  cpt: "78816",
+  modality: "PET/CT",
+  preparation: "Fasting 6 hours; glucose per protocol.",
+  contrast: "FDG radiotracer",
+  notes: "Oncology staging/restaging."
+},
+{
+  name: "Upper GI Series (Barium Swallow)",
+  cpt: "74246",
+  modality: "Fluoroscopy",
+  preparation: "NPO 8 hours.",
+  contrast: "Oral barium",
+  notes: "Dysphagia, reflux symptoms."
+},
+{
+  name: "Screening Mammography (Bilateral)",
+  cpt: "77067",
+  modality: "Mammography",
+  preparation: "No deodorant or powder.",
+  contrast: "No",
+  notes: "Breast cancer screening."
+},
+{
+  name: "Diagnostic Mammography",
+  cpt: "77065",
+  modality: "Mammography",
+  preparation: "No deodorant; bring priors.",
+  contrast: "No",
+  notes: "Unilateral diagnostic views."
+}
+];
+// MEDIFORGE_CATALOG:IMG_END
 
 // Expose globally for order pages - MUST be after both arrays are declared
 /** Get category for a lab test by name (for result display). */
@@ -8331,7 +9818,7 @@ window.generateLabOrderHTML = function generateLabOrderHTML(
       tableRows += `
           <tr>
             <td class="order-td-left" style="border: 1px solid #ddd; padding: 12px;">${row.name}</td>
-            <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.cpt || 'N/A'}</td>
+            <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${mfFormatBillingCode(row, 'lab')}</td>
             <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.specimen || 'N/A'}</td>
             <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.container || 'N/A'}</td>
             <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.transport || 'N/A'}</td>
@@ -8370,7 +9857,7 @@ window.generateLabOrderHTML = function generateLabOrderHTML(
       <thead>
         <tr style="background-color: #4CAF50; color: white;">
           <th class="order-th-left" style="border: 1px solid #ddd; padding: 12px;">Test Name</th>
-          <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">CPT Code(s)</th>
+          <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">${mfBillingCodeHeader('lab')}</th>
           <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">Specimen Type/Volume</th>
           <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">Container</th>
           <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">Transport/Stability</th>
@@ -8421,7 +9908,7 @@ function generateImagingOrderHTML(order, patient, user, visitDate, orderedByLine
       tableRows += `
           <tr>
             <td class="order-td-left" style="border: 1px solid #ddd; padding: 12px;">${row.name}</td>
-            <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.cpt || 'N/A'}</td>
+            <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${mfFormatBillingCode(row, 'lab')}</td>
             <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.modality || 'N/A'}</td>
             <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.preparation || 'N/A'}</td>
             <td class="order-td-center" style="border: 1px solid #ddd; padding: 12px;">${row.contrast || 'N/A'}</td>
@@ -8460,7 +9947,7 @@ function generateImagingOrderHTML(order, patient, user, visitDate, orderedByLine
       <thead>
         <tr style="background-color: #4CAF50; color: white;">
           <th class="order-th-left" style="border: 1px solid #ddd; padding: 12px;">Test Name</th>
-          <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">CPT Code</th>
+          <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">${mfBillingCodeHeader('imaging')}</th>
           <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">Modality</th>
           <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">Patient Preparation</th>
           <th class="order-th-center" style="border: 1px solid #ddd; padding: 12px;">Contrast Required</th>
@@ -8531,7 +10018,7 @@ function generateLabOrderPDF(order, patient, user, visitDate) {
         tableRows += `
           <tr>
             <td style="border: 1px solid #000; padding: 8px;">${row.name}</td>
-            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${row.cpt || 'N/A'}</td>
+            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${mfFormatBillingCode(row, 'lab')}</td>
             <td style="border: 1px solid #000; padding: 8px;">${row.specimen || 'N/A'}</td>
             <td style="border: 1px solid #000; padding: 8px;">${row.container || 'N/A'}</td>
             <td style="border: 1px solid #000; padding: 8px;">${row.transport || 'N/A'}</td>
@@ -8670,7 +10157,7 @@ function generateLabOrderPDF(order, patient, user, visitDate) {
           <thead>
             <tr>
               <th>Test Name</th>
-              <th>CPT Code</th>
+              <th>${mfBillingCodeHeader('lab')}</th>
               <th>Specimen Type/Volume</th>
               <th>Container</th>
               <th>Transport/Stability</th>
@@ -8744,7 +10231,7 @@ function generateImagingOrderPDF(order, patient, user, visitDate) {
         tableRows += `
           <tr>
             <td style="border: 1px solid #000; padding: 8px;">${row.name}</td>
-            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${row.cpt || 'N/A'}</td>
+            <td style="border: 1px solid #000; padding: 8px; text-align: center;">${mfFormatBillingCode(row, 'lab')}</td>
             <td style="border: 1px solid #000; padding: 8px;">${row.modality || 'N/A'}</td>
             <td style="border: 1px solid #000; padding: 8px;">${row.preparation || 'N/A'}</td>
             <td style="border: 1px solid #000; padding: 8px;">${row.contrast || 'N/A'}</td>
@@ -8883,7 +10370,7 @@ function generateImagingOrderPDF(order, patient, user, visitDate) {
           <thead>
             <tr>
               <th>Study Name</th>
-              <th>CPT Code</th>
+              <th>${mfBillingCodeHeader('lab')}</th>
               <th>Modality</th>
               <th>Patient Preparation</th>
               <th>Contrast Required</th>

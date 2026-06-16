@@ -2106,13 +2106,23 @@ window.showMedicationDropdown = function() {
   const dropdown = document.getElementById('medication-dropdown');
   const input = document.getElementById('med-name');
   if (!dropdown || !input) return;
-  
-  const allMeds = getAllMedications();
-  const filter = input.value.toLowerCase();
-  const filtered = allMeds.filter(m => 
-    m.name.toLowerCase().includes(filter) || 
-    (m.generic && m.generic.toLowerCase().includes(filter))
-  );
+
+  const filter = (input.value || '').trim();
+  const filterLower = filter.toLowerCase();
+  let filtered = [];
+
+  if (filterLower.length >= 2 &&
+      typeof window.searchCanadianDrugs === 'function' &&
+      typeof window.isCanadianFormularyReady === 'function' &&
+      window.isCanadianFormularyReady()) {
+    filtered = window.searchCanadianDrugs(filter, 50);
+  } else {
+    const allMeds = getAllMedications();
+    filtered = allMeds.filter((m) =>
+      (m.name || '').toLowerCase().includes(filterLower) ||
+      (m.generic && m.generic.toLowerCase().includes(filterLower))
+    );
+  }
   
   dropdown.innerHTML = filtered.slice(0, 50).map(med => {
     const displayName = `${med.name}${med.generic && med.generic !== med.name ? ` (${med.generic})` : ''}`;

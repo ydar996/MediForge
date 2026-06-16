@@ -50,8 +50,9 @@ Before finishing any session with code changes, agents **must**:
 1. `git add` relevant files (never secrets: `.env`, service role keys, `supabase-credentials*.txt`).
 2. `git commit` with a clear message.
 3. `git push origin <branch>` (usually `dev` first, not `main`).
-4. Deploy only with **explicit owner approval** (“Yes, deploy” / “I approve”).
-5. Confirm: `git status` clean and remote matches.
+4. **Update project documentation** — see **`AGENT-HANDOVER.md`** § “How to keep this document alive” (handover session log, `docs/DOCUMENTATION-INDEX.md`, `docs/PROJECT-OVERVIEW.md`, and `USER-MANUAL.md` / `user-manual.html` when user-facing).
+5. Deploy only with **explicit owner approval** (“Yes, deploy” / “I approve”).
+6. Confirm: `git status` clean and remote matches.
 
 ### Owner habit (after dev/staging sites exist)
 

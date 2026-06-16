@@ -13,9 +13,11 @@
 
   const SEARCH_LIMIT = 25;
   const BROWSE_OTC_LIMIT = 60;
+  const BROWSE_FORMULARY_LIMIT = 40;
 
   let activeIds = { ...DEFAULT_IDS };
   let searchIndex = null;
+  let formularyLoadTriggered = false;
 
   function escapeHtml(value) {
     return String(value || "")
@@ -41,6 +43,49 @@
     return `${(drug.name || "").trim().toLowerCase()}|${(drug.generic || "").trim().toLowerCase()}`;
   }
 
+  function normalizeFormularyDrug(entry) {
+    return {
+      name: entry.name || entry.brand || "",
+      generic: entry.generic || entry.name || "",
+      strength: entry.strength || "",
+      form: entry.form || "",
+      category: entry.category || "Health Canada DPD",
+      din: entry.din || "",
+      interactions: entry.interactions || [],
+      contraindications: entry.contraindications || []
+    };
+  }
+
+  function isFormularyReady() {
+    return typeof global.isCanadianFormularyReady === "function" && global.isCanadianFormularyReady();
+  }
+
+  function ensureFormularyLoading() {
+    if (typeof global.loadCanadianFormulary !== "function") return Promise.resolve();
+    if (!formularyLoadTriggered) {
+      formularyLoadTriggered = true;
+      return global.loadCanadianFormulary().catch(() => {});
+    }
+    return Promise.resolve();
+  }
+
+  function searchFormulary(query, limit) {
+    if (!isFormularyReady() || typeof global.searchCanadianDrugs !== "function") return null;
+    return global.searchCanadianDrugs(query, limit).map(normalizeFormularyDrug);
+  }
+
+  function mergeDrugLists(primary, secondary) {
+    const seen = new Set();
+    const merged = [];
+    primary.concat(secondary || []).forEach((drug) => {
+      const key = drugKey(drug);
+      if (seen.has(key)) return;
+      seen.add(key);
+      merged.push(drug);
+    });
+    return merged;
+  }
+
   function getOtcList() {
     return Array.isArray(global.COMMON_OTC_MEDICATIONS_CA)
       ? global.COMMON_OTC_MEDICATIONS_CA.map(normalizeDrug)
@@ -48,20 +93,8 @@
   }
 
   function getPatientReportedMedicationPool() {
-    const seen = new Set();
-    const pool = [];
-    const otc = getOtcList();
-    const clinical = Array.isArray(global.DRUG_DATABASE)
-      ? global.DRUG_DATABASE.map(normalizeDrug)
-      : [];
-
-    otc.concat(clinical).forEach((drug) => {
-      const key = drugKey(drug);
-      if (seen.has(key)) return;
-      seen.add(key);
-      pool.push(drug);
-    });
-    return pool;
+    // Patient-reported browse: OTC shortcuts only. Search uses Health Canada DPD formulary.
+    return getOtcList();
   }
 
   function buildSearchIndex() {
@@ -266,6 +299,12 @@
 
     enableManualDosage();
 
+    const formularyMatches = searchFormulary(query, SEARCH_LIMIT);
+    if (formularyMatches) {
+      showMedicationSuggestions(formularyMatches, query);
+      return;
+    }
+
     const matches = getSearchIndex().filter((item) =>
       item.nameLower.includes(queryLower) ||
       item.genericLower.includes(queryLower) ||
@@ -273,12 +312,31 @@
     ).slice(0, SEARCH_LIMIT).map((item) => item.drug);
 
     showMedicationSuggestions(matches, query);
+
+    if (!isFormularyReady()) {
+      ensureFormularyLoading().then(() => {
+        const currentQuery = (el(activeIds.medName) || {}).value;
+        if (!currentQuery || currentQuery.trim() !== query) return;
+        const retry = searchFormulary(query, SEARCH_LIMIT);
+        if (retry) showMedicationSuggestions(retry, query);
+      });
+    }
   }
 
   function showAllMedications() {
     const otc = getOtcList().slice(0, BROWSE_OTC_LIMIT);
     const input = el(activeIds.medName);
-    showMedicationSuggestions(otc, input ? input.value.trim() : "");
+    let browseList = otc;
+
+    if (isFormularyReady() && typeof global.getCanadianFormularySuggestions === "function") {
+      const formularyBrowse = global.getCanadianFormularySuggestions(BROWSE_FORMULARY_LIMIT)
+        .map(normalizeFormularyDrug);
+      browseList = mergeDrugLists(otc, formularyBrowse);
+    } else {
+      ensureFormularyLoading();
+    }
+
+    showMedicationSuggestions(browseList, input ? input.value.trim() : "");
   }
 
   function searchDosages() {

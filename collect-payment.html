@@ -81,8 +81,17 @@
 </head>
 <body>
   <div class="payment-container">
-    <h1>&#128176; Collect Payment</h1>
+    <h1 id="page-title">&#128176; Billing &amp; Payment</h1>
     
+    <div id="payer-led-banner" style="display:none;background:#e8f4fd;border:1px solid #90caf9;border-radius:8px;padding:16px 20px;margin-bottom:20px;">
+      <h2 style="margin:0 0 8px 0;font-size:18px;color:#1565c0;">Government / Insurance billing</h2>
+      <p id="payer-led-summary" style="margin:0;color:#333;line-height:1.5;"></p>
+      <button id="payer-confirm-btn" type="button" onclick="confirmPayerBilling()" style="display:none;margin-top:14px;padding:12px 24px;background:#1565c0;color:white;border:none;border-radius:6px;font-size:16px;cursor:pointer;">
+        Confirm — bill payer &amp; continue
+      </button>
+    </div>
+    
+    <div id="patient-payment-section">
     <div class="invoice-summary">
       <h2 style="margin-top: 0;">Invoice Details</h2>
       <p><strong>Invoice #:</strong> <span id="invoice-number"></span></p>
@@ -103,8 +112,8 @@
     </div>
     <div id="payer-split-info" style="display:none;background:#e8f4fd;padding:12px 16px;border-radius:8px;margin:12px 0;font-size:14px;color:#1565c0;"></div>
 
-    <h2>Select Payment Method</h2>
-    <p style="color:#555;margin-bottom:12px;">Flexible patient payments — cash and bank options are always available for private-pay and copays.</p>
+    <h2 id="payment-methods-heading">Collect patient copay / self-pay</h2>
+    <p id="payment-methods-hint" style="color:#555;margin-bottom:12px;">For insured visits, collect only the patient portion (copay or coinsurance). Full charges are billed to the government or insurer.</p>
     <div class="payment-methods">
       <button class="payment-method-btn" data-method="cash" onclick="selectPaymentMethod('cash', event)">
         <div style="font-size: 50px; margin-bottom: 8px;">&#128176;</div>
@@ -255,6 +264,7 @@
         Cancel
       </button>
     </div>
+    </div>
   </div>
 
   <!-- Supabase CDN Library -->
@@ -269,10 +279,11 @@
   <!-- General helpers -->
   <script src="js/main.js?v=202510220113090113091309"></script>
   
-  <!-- Billing payer engine (Canadian provincial + flexible payments) -->
-  <script src="js/billing-payer-engine.js"></script>
   <!-- Billing functionality -->
   <script src="js/billing.js?v=286"></script>
+  <script src="js/billing-mode-manager.js?v=20260617180000"></script>
+  <script src="js/billing-payer-engine.js"></script>
+  <script src="js/payer-workflow.js?v=20260617180000"></script>
   <script src="js/billing-payer-hooks.js"></script>
   <script src="js/gl.js?v=1"></script>
   <script src="js/pharmacy-manager.js"></script>
@@ -280,6 +291,7 @@
   <script src="js/cash-register.js"></script>
   
   <!-- Lab Order Billing -->
+  <script src="js/lab-code-resolver.js?v=20260617180000"></script>
   <script src="js/lab-order-billing.js"></script>
   
   <!-- Lab order serial formatting (short display format) -->
@@ -361,6 +373,7 @@
         }
         
         displayInvoiceInfo();
+        applyPayerLedLayout();
         console.log('🔧 TRACE: Invoice loaded successfully:', currentInvoice.invoiceNumber);
       } catch (error) {
         console.error('❌ Error loading invoice:', error);
@@ -402,6 +415,67 @@
       const today = new Date().toISOString().split('T')[0];
       document.getElementById('bank-date').value = today;
       document.getElementById('check-date').value = today;
+    }
+
+    function applyPayerLedLayout() {
+      const banner = document.getElementById('payer-led-banner');
+      const patientSection = document.getElementById('patient-payment-section');
+      const confirmBtn = document.getElementById('payer-confirm-btn');
+      const wf = window.MediForgePayerWorkflow;
+      if (!currentInvoice || !banner || !patientSection) return;
+
+      const payerLed = wf?.isPayerLedInvoice?.(currentInvoice);
+      const needsPayment = wf?.requiresUpfrontPatientPayment?.(currentInvoice) !== false;
+      const due = parseFloat(currentInvoice.amountDue) || 0;
+      const formatCurrencyFn = window.formatCurrency || function (a, c) { return c + ' ' + Number(a).toFixed(2); };
+      const payerName = wf?.payerDisplayName?.(currentInvoice) || 'Payer';
+      const pending = currentInvoice.payerAmountPending || currentInvoice.payerSplit?.payerCovered || 0;
+
+      if (payerLed && due <= 0) {
+        banner.style.display = 'block';
+        document.getElementById('payer-led-summary').innerHTML =
+          '<strong>Total service:</strong> ' + formatCurrencyFn(currentInvoice.total, currentInvoice.currency) +
+          ' &nbsp;|&nbsp; <strong>Billed to ' + payerName + ':</strong> ' + formatCurrencyFn(pending || currentInvoice.total, currentInvoice.currency) +
+          ' &nbsp;|&nbsp; <strong>Patient due now:</strong> ' + formatCurrencyFn(0, currentInvoice.currency);
+        patientSection.style.display = 'none';
+        if (confirmBtn) confirmBtn.style.display = 'inline-block';
+        document.getElementById('page-title').textContent = '🏥 Bill to payer';
+        return;
+      }
+
+      if (payerLed && pending > 0) {
+        banner.style.display = 'block';
+        document.getElementById('payer-led-summary').innerHTML =
+          'Primary billing is to <strong>' + payerName + '</strong> (' + formatCurrencyFn(pending, currentInvoice.currency) + ' pending claim). ' +
+          'Collect only the patient portion below.';
+        if (confirmBtn) confirmBtn.style.display = 'none';
+      } else {
+        banner.style.display = 'none';
+      }
+      patientSection.style.display = needsPayment && due > 0 ? 'block' : (due <= 0 ? 'none' : 'block');
+    }
+
+    async function confirmPayerBilling() {
+      if (!currentInvoice) return;
+      if (typeof window.patchInvoice === 'function') {
+        await window.patchInvoice(currentInvoice.id, { status: 'claim_pending', amountDue: 0 });
+      }
+      const urlParams = new URLSearchParams(window.location.search);
+      const labOrderId = urlParams.get('labOrderId');
+      if (labOrderId && window.supabaseClient) {
+        try {
+          await window.supabaseClient.from('orders').update({
+            payment_status: 'billed_to_payer',
+            updated_at: new Date().toISOString()
+          }).eq('id', labOrderId);
+        } catch (e) { console.warn('Lab order status update:', e); }
+      }
+      alert('Claim queued to payer. No patient payment required.');
+      if (labOrderId) {
+        window.location.href = '/lab-scientist-dashboard';
+      } else {
+        window.location.href = '/billing-dashboard';
+      }
     }
     
     function displayInvoiceDescription() {

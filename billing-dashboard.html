@@ -118,52 +118,58 @@
       <p class="stat-value" id="stat-total-revenue">$0.00</p>
       <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details & filters</p>
     </div>
-    <div class="stat-card" onclick="viewOutstandingInvoices()" style="background: linear-gradient(135deg, #2196F3, #1976D2); cursor: pointer;" title="Click to view outstanding invoices">
-      <h3>Outstanding Balance</h3>
+    <div class="stat-card" onclick="viewPendingClaims()" style="background: linear-gradient(135deg, #1565C0, #0D47A1); cursor: pointer;" title="Invoices billed to government or insurance">
+      <h3>Pending payer claims</h3>
+      <p class="stat-value" id="stat-claim-pending">0</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Government / insurance AR</p>
+    </div>
+    <div class="stat-card" onclick="viewPayerPending()" style="background: linear-gradient(135deg, #5C6BC0, #3949AB); cursor: pointer;" title="Amount awaiting insurer remittance">
+      <h3>Payer amount pending</h3>
+      <p class="stat-value" id="stat-payer-pending">$0.00</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Not yet remitted</p>
+    </div>
+    <div class="stat-card" onclick="viewOutstandingInvoices()" style="background: linear-gradient(135deg, #2196F3, #1976D2); cursor: pointer;" title="Patient copays and self-pay balances">
+      <h3>Patient balance due</h3>
       <p class="stat-value" id="stat-outstanding">$0.00</p>
-      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Copays &amp; self-pay only</p>
     </div>
     <div class="stat-card" onclick="viewPendingInvoices()" style="background: linear-gradient(135deg, #FF9800, #F57C00); cursor: pointer;" title="Click to view pending invoices">
-      <h3>Pending Invoices</h3>
+      <h3>Pending invoices</h3>
       <p class="stat-value" id="stat-pending">0</p>
       <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
     </div>
-    <div class="stat-card" onclick="viewCashRegister()" style="background: linear-gradient(135deg, #9C27B0, #7B1FA2); cursor: pointer;" title="Click to view cash register">
-      <h3>Cash on Hand</h3>
+    <div class="stat-card" onclick="viewCashRegister()" style="background: linear-gradient(135deg, #78909C, #546E7A); cursor: pointer;" title="Cash drawer — copays and self-pay">
+      <h3>Cash on hand</h3>
       <p class="stat-value" id="stat-cash">$0.00</p>
-      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details</p>
-    </div>
-    <div class="stat-card" onclick="viewTotalCashReceived()" style="background: linear-gradient(135deg, #009688, #00796B); cursor: pointer;" title="Click to view total cash received with filters">
-      <h3>Total Cash Received</h3>
-      <p class="stat-value" id="stat-total-cash">$0.00</p>
-      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">👆 Click for details & filters</p>
+      <p style="font-size: 12px; margin-top: 10px; opacity: 0.8;">Copay / self-pay drawer</p>
     </div>
   </div>
 
   <!-- Quick Actions -->
   <div class="section">
     <h2>Quick Actions</h2>
+    <p style="color:#555;margin-top:0;">Canada / US clinics bill government or insurance first. Use check-in for insured visits; cash checkout is for self-pay and copays.</p>
     <div class="quick-actions">
+      <button onclick="window.location.href='billing-check-in'" style="background: #008753; font-weight: bold;">
+        🏥 Check-in &amp; bill to payer
+      </button>
+      <button onclick="window.location.href='invoices'" style="background: #1565C0;">
+        📋 Claims &amp; invoices
+      </button>
       <button onclick="window.location.href='configure-services'" style="background: #FF9800;">
-        ⚙️ Configure Services
-      </button>
-      <button onclick="window.location.href='billing-check-in'" style="background: #008753;">
-        🏥 Check-in &amp; Copay
+        ⚙️ Configure services
       </button>
       <button onclick="window.location.href='quick-checkout'">
-        ⚡ Quick Checkout
-      </button>
-      <button onclick="window.location.href='quick-checkout'">
-        📄 Create Invoice
+        💵 Self-pay checkout
       </button>
       <button onclick="window.location.href='payments'">
-        💳 Record Payment
+        💳 Record copay / payment
       </button>
-      <button onclick="window.location.href='cash-register'">
-        🏪 Cash Register
+      <button onclick="window.location.href='billing-reports'" style="background: #9C27B0;">
+        📊 Reports &amp; remittance
       </button>
-      <button onclick="window.location.href='invoices'" style="background: #2196F3;">
-        📋 View All Invoices
+      <button onclick="window.location.href='cash-register'" style="background: #78909C;">
+        🏪 Cash register
       </button>
       <button id="view-all-payments-btn" onclick="window.location.href='all-payments'" style="background: #607D8B;">
         💳 View All Payments
@@ -229,7 +235,9 @@
   
   <!-- Billing functionality -->
   <script src="js/billing.js?v=289"></script>
+  <script src="js/billing-mode-manager.js?v=20260617180000"></script>
   <script src="js/billing-payer-engine.js"></script>
+  <script src="js/payer-workflow.js?v=20260617180000"></script>
   <script src="js/billing-payer-hooks.js"></script>
   <script src="js/pricing.js?v=1"></script>
   <script src="js/payments.js?v=1"></script>
@@ -318,8 +326,11 @@
         forceDataRefresh();
       }
       
-      // Auto-open cash register if needed
-      if (typeof initializeCashRegister === 'function') {
+      // Cash register only for orgs still using drawer workflow (not auto-open in payer-led mode)
+      const payerLed = window.MediForgePayerWorkflow?.isPayerLedMarket
+        ? await window.MediForgePayerWorkflow.isPayerLedMarket()
+        : true;
+      if (!payerLed && typeof initializeCashRegister === 'function') {
         initializeCashRegister();
       }
       
@@ -385,10 +396,12 @@
       // Pending invoices count - ALL pending invoices (not just today's)
       document.getElementById('stat-pending').textContent = allTimeStats.pendingInvoices;
       
-      // Total cash received - ALL cash payments ever (all-time, not just cash on hand)
-      document.getElementById('stat-total-cash').textContent = formatCurrency(allTimeStats.cashAmount, defaultCurrency);
+      const claimEl = document.getElementById('stat-claim-pending');
+      if (claimEl) claimEl.textContent = allTimeStats.claimPendingInvoices || 0;
+      const payerEl = document.getElementById('stat-payer-pending');
+      if (payerEl) payerEl.textContent = formatCurrency(allTimeStats.payerPending || 0, defaultCurrency);
       
-      // Cash on hand - MUST match cash register's expected balance
+      // Cash on hand — copay / self-pay drawer
       let cashOnHand = 0;
       const currentSession = getCurrentCashSession();
       
@@ -574,6 +587,14 @@
 
     function viewPendingInvoices() {
       window.location.href = '/invoices?filter=pending';
+    }
+
+    function viewPendingClaims() {
+      window.location.href = '/invoices?filter=claim_pending';
+    }
+
+    function viewPayerPending() {
+      window.location.href = '/invoices?filter=claim_pending';
     }
 
     function viewCashRegister() {

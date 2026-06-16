@@ -59,6 +59,7 @@ const ASSETS_TO_CACHE = [
   "/js/icd11.js",
   "/js/icd-selector.js",
   "/js/common-otc-medications-ca.js",
+  "/js/canadian-formulary-search.js",
   "/js/patient-reported-medication-search.js",
   "/js/prescriptions.js",
   "/js/table-alignment-fix.js",

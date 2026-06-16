@@ -311,6 +311,8 @@ window.createInvoice = async function(invoiceData) {
     
     const invoiceNumber = await generateInvoiceNumber();
     
+    const defaultCur = typeof window.getDefaultCurrency === 'function' ? window.getDefaultCurrency() : 'CAD';
+
     const invoice = {
       id: Date.now().toString(),
       invoiceNumber: invoiceNumber,
@@ -319,7 +321,7 @@ window.createInvoice = async function(invoiceData) {
       date: invoiceData.date || new Date().toISOString().split('T')[0],
       dueDate: invoiceData.dueDate || null,
       services: invoiceData.services || [],
-      currency: invoiceData.currency || 'USD',
+      currency: invoiceData.currency || defaultCur,
       subtotal: 0,
       taxRate: invoiceData.taxRate || 0,
       taxAmount: 0,
@@ -328,22 +330,38 @@ window.createInvoice = async function(invoiceData) {
       total: 0,
       amountPaid: 0,
       amountDue: 0,
-      status: 'pending', // pending, paid, partial, overdue, cancelled
+      status: 'pending', // pending, paid, partial, overdue, cancelled, claim_pending
       paymentMethod: invoiceData.paymentMethod || '',
       notes: invoiceData.notes || '',
       encounterId: invoiceData.encounterId || null,
-      labOrderId: invoiceData.labOrderId || null, // Link to lab order if applicable
+      labOrderId: invoiceData.labOrderId || null,
+      primaryPayer: invoiceData.primaryPayer || null,
+      payerSplit: invoiceData.payerSplit || null,
+      payerAmountPending: invoiceData.payerAmountPending || 0,
+      billingMode: invoiceData.billingMode || invoiceData.billingModeAtCapture || null,
+      billingModel: invoiceData.billingModel || null,
       createdBy: getCurrentUsername(),
       createdAt: new Date().toISOString(),
       lastModified: new Date().toISOString(),
-      payments: [] // Array of payment references
+      payments: []
     };
     
     // Calculate totals
     invoice.subtotal = calculateSubtotal(invoice.services);
     invoice.taxAmount = invoice.subtotal * (invoice.taxRate / 100);
     invoice.total = invoice.subtotal + invoice.taxAmount - invoice.discountAmount;
-    invoice.amountDue = invoice.total;
+
+    const enrichedDue = invoiceData.amountDue;
+    if (enrichedDue !== undefined && enrichedDue !== null && !isNaN(parseFloat(enrichedDue))) {
+      invoice.amountDue = Math.max(0, parseFloat(enrichedDue));
+    } else {
+      invoice.amountDue = invoice.total;
+    }
+
+    const payerType = invoice.primaryPayer?.type;
+    if (payerType && payerType !== 'patient_pay' && invoice.amountDue <= 0) {
+      invoice.status = 'claim_pending';
+    }
     
     if (Array.isArray(invoices)) {
       invoices.push(invoice);
@@ -1802,6 +1820,20 @@ function getDataKey(key) {
 
 // ==================== BILLING STATISTICS ====================
 
+// Patch invoice fields after create (payer metadata, status)
+window.patchInvoice = async function (invoiceId, patch) {
+  const invoices = await getAllInvoices();
+  const idx = invoices.findIndex((i) => String(i.id) === String(invoiceId));
+  if (idx < 0) return null;
+  invoices[idx] = {
+    ...invoices[idx],
+    ...patch,
+    lastModified: new Date().toISOString()
+  };
+  saveInvoices(invoices);
+  return invoices[idx];
+};
+
 // Get billing stats (updated to be async)
 window.getBillingStats = async function(startDate, endDate) {
   const invoices = await getAllInvoices();
@@ -1835,9 +1867,18 @@ window.getBillingStats = async function(startDate, endDate) {
     totalInvoices: filteredInvoices.length,
     totalRevenue: filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.total || 0), 0),
     totalPaid: filteredPayments.reduce((sum, pay) => pay.status === 'completed' ? sum + parseFloat(pay.amount || 0) : sum, 0),
-    totalOutstanding: filteredInvoices.reduce((sum, inv) => sum + parseFloat(inv.amountDue || 0), 0),
+    totalOutstanding: filteredInvoices.reduce((sum, inv) => {
+      if (inv.status === 'paid' || inv.status === 'cancelled' || inv.status === 'claim_pending') return sum;
+      return sum + parseFloat(inv.amountDue || 0);
+    }, 0),
+    payerPending: filteredInvoices.reduce((sum, inv) => {
+      if (inv.status === 'cancelled' || inv.status === 'paid') return sum;
+      const p = parseFloat(inv.payerAmountPending) || (inv.payerSplit ? parseFloat(inv.payerSplit.payerCovered) : 0);
+      return sum + (p > 0 ? p : 0);
+    }, 0),
     paidInvoices: filteredInvoices.filter(inv => inv.status === 'paid').length,
-    pendingInvoices: filteredInvoices.filter(inv => inv.status === 'pending').length,
+    pendingInvoices: filteredInvoices.filter(inv => inv.status === 'pending' || inv.status === 'claim_pending').length,
+    claimPendingInvoices: filteredInvoices.filter(inv => inv.status === 'claim_pending').length,
     overdueInvoices: filteredInvoices.filter(inv => inv.status === 'overdue').length,
     partialInvoices: filteredInvoices.filter(inv => inv.status === 'partial').length,
     cashPayments: filteredPayments.filter(pay => getPaymentMethod(pay) === 'cash' && pay.status === 'completed').length,

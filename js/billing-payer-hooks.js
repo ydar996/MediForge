@@ -49,20 +49,33 @@
     global.createInvoice = async function (invoiceData) {
       try {
         const patient = await loadPatientForInvoice(invoiceData.patientId);
-        const enriched = await global.MediForgePayerEngine.enrichInvoice(invoiceData, patient);
+        let billingMode = null;
+        if (global.MediForgeBillingMode?.getBillingMode) {
+          billingMode = await global.MediForgeBillingMode.getBillingMode();
+        }
+        const enriched = await global.MediForgePayerEngine.enrichInvoice(
+          { ...invoiceData, billingMode },
+          patient
+        );
         const invoice = await origCreate(enriched);
-        if (invoice && global.MediForgePayerEngine.queueClaimDraft) {
-          const claim = await global.MediForgePayerEngine.queueClaimDraft(invoice, patient, enriched.services);
+        if (!invoice) return invoice;
+
+        const merged = await global.MediForgePayerWorkflow?.finalizePayerLedInvoice?.(invoice, patient, {
+          billingMode
+        }) || invoice;
+
+        if (merged && global.MediForgePayerEngine.queueClaimDraft) {
+          const claim = await global.MediForgePayerEngine.queueClaimDraft(merged, patient, enriched.services);
           if (claim && global.MediForgeIntegrationWorkflow?.submitClaimForInvoice) {
             await global.MediForgeIntegrationWorkflow.submitClaimForInvoice(
-              invoice,
+              merged,
               patient,
               enriched.services,
               { organizationId: await global.resolveOrganizationId?.() }
             );
           }
         }
-        return invoice;
+        return merged;
       } catch (e) {
         console.warn('[billing-payer-hooks] enrich failed, using original:', e.message);
         return origCreate(invoiceData);

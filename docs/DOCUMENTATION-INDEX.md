@@ -2,7 +2,7 @@
 
 Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVER.md`**. **Owners:** start with **`START-HERE.md`** or **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 16, 2026
+**Last updated:** June 17, 2026
 
 ---
 
@@ -117,4 +117,11 @@ Use when debugging specific subsystems. May reference orgs or IDs that **do not 
 
 ## Maintaining this index
 
-When you add a new top-level `.md` doc or a new file under `docs/`, add a row here and mention it in **`AGENT-HANDOVER.md`** session log.
+**Mandatory for agents** (see **`AGENT-HANDOVER.md`** § “How to keep this document alive”):
+
+When you add or change features, docs, or deployment steps in a session:
+
+1. Add or update a row in **this file** for any new or renamed doc.
+2. Add a **Session log** entry in **`AGENT-HANDOVER.md`**.
+3. Update **`docs/PROJECT-OVERVIEW.md`** when architecture or key modules change.
+4. Update **`docs/USER-MANUAL.md`** and **`user-manual.html`** together when clinic staff will see the change.

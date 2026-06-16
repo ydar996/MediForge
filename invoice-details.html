@@ -29,6 +29,8 @@
   
   <!-- Patient utilities (for getPatientIdentifier) -->
   <script src="js/patient-id-normalizer.js"></script>
+  <script src="js/billing-mode-manager.js?v=20260617180000"></script>
+  <script src="js/lab-code-resolver.js?v=20260617180000"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
   <script src="js/patient-identity.js?v=20260427160000"></script>
   
@@ -325,10 +327,14 @@
           if (selectedItems.length > 0) {
             currentInvoice.services = selectedItems.map(item => {
               const name = item.name || item;
-              const code = item.cpt || item.code || null;
+              const displayCode = typeof mfFormatBillingCode === 'function'
+                ? mfFormatBillingCode(item, 'lab')
+                : (item.cpt || item.code || null);
               return {
-                name: code ? `${name} (${code})` : name,
-                code: code || null,
+                name: displayCode ? `${name} (${displayCode})` : name,
+                code: displayCode || null,
+                cpt: item.cpt || null,
+                feeCode: item.feeCode || item.ohipFeeCode || null,
                 quantity: 1,
                 price: null,
                 total: null

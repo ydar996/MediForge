@@ -92,6 +92,25 @@ function collapseSelectedItemsForBilling(selectedItems) {
   return out.length ? out : selectedItems;
 }
 
+function enrichLabBillingService(service, testName, cptCode, province) {
+  const base = {
+    ...service,
+    cpt: cptCode,
+    name: service.name || testName,
+    province: province || service.province
+  };
+  if (typeof window !== 'undefined' && window.MediForgeLabCodes) {
+    return window.MediForgeLabCodes.enrichClaimServiceLine(base);
+  }
+  return base;
+}
+
+function extractCptFromServiceCode(code) {
+  const raw = String(code || '').trim();
+  const match = raw.match(/^LAB\s*-\s*(.+)$/i);
+  return match ? match[1].trim() : null;
+}
+
 // Map CPT code to service code (LAB - <CPT Code>)
 function mapCptToServiceCode(cptCode) {
   if (!cptCode) return null;
@@ -433,6 +452,11 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
       afterCollapseNames: selectedItems.map(function (t) { return (t && t.name) || t; })
     });
     
+    const patientProvince = patient.province || patient.state || 'ON';
+    if (window.MediForgeLabCodes?.setProvince) {
+      window.MediForgeLabCodes.setProvince(patientProvince);
+    }
+
     // Map tests to services and calculate total
     const services = [];
     let totalAmount = 0;
@@ -452,14 +476,14 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
         );
         
         if (serviceByName) {
-          services.push({
+          services.push(enrichLabBillingService({
             id: serviceByName.id,
             code: serviceByName.code,
             name: serviceByName.name,
             quantity: 1,
             price: serviceByName.price,
             total: serviceByName.price
-          });
+          }, testName, serviceByName.cpt || extractCptFromServiceCode(serviceByName.code), patientProvince));
           totalAmount += serviceByName.price;
         } else {
           // Default price if not found
@@ -478,7 +502,7 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
       
       const serviceData = getServicePriceByCpt(cptCode);
       if (serviceData) {
-        services.push({
+        services.push(enrichLabBillingService({
           id: serviceData.id,
           code: serviceData.code,
           name: serviceData.name || testName,
@@ -486,19 +510,19 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
           price: serviceData.price,
           total: serviceData.price,
           taxable: serviceData.taxable
-        });
+        }, testName, cptCode, patientProvince));
         totalAmount += serviceData.price;
       } else {
         // Default price if CPT not found in catalog
         console.warn(`Service not found for CPT ${cptCode}, using default price`);
-        services.push({
+        services.push(enrichLabBillingService({
           id: `LAB-${Date.now()}-${Math.random()}`,
           code: mapCptToServiceCode(cptCode),
           name: testName,
           quantity: 1,
           price: 50,
           total: 50
-        });
+        }, testName, cptCode, patientProvince));
         totalAmount += 50;
       }
     }
@@ -553,9 +577,14 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
     }
     
     // Link invoice to lab order(s) — all orders in group get same invoice_id
+    const payerCleared =
+      typeof window.MediForgePayerWorkflow?.isPayerClearedForService === 'function' &&
+      window.MediForgePayerWorkflow.isPayerClearedForService(invoice);
+    const paymentStatus = payerCleared ? 'billed_to_payer' : 'pending';
+
     const updatePayload = {
       invoice_id: invoice.id,
-      payment_status: 'pending',
+      payment_status: paymentStatus,
       updated_at: new Date().toISOString()
     };
     const { error: updateError } = isGroup
@@ -565,8 +594,18 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
     if (updateError) {
       console.error('Error linking invoice to lab order(s):', updateError);
     }
-    
-    window.location.href = `/collect-payment?invoiceId=${invoice.id}&labOrderId=${orderIds[0]}`;
+
+    const route =
+      typeof window.MediForgePayerWorkflow?.resolvePostInvoiceRoute === 'function'
+        ? await window.MediForgePayerWorkflow.resolvePostInvoiceRoute(invoice, patient)
+        : null;
+
+    if (route?.skipCollectPayment) {
+      if (route.message) alert(route.message);
+      window.location.href = route.redirect || '/lab-scientist-dashboard';
+    } else {
+      window.location.href = `/collect-payment?invoiceId=${invoice.id}&labOrderId=${orderIds[0]}`;
+    }
     
     cleanupLock();
     return invoice;
@@ -595,23 +634,39 @@ window.isLabOrderPaymentConfirmed = async function(orderId) {
     }
     
     // Check payment status
-    if (order.payment_status === 'paid' || order.payment_status === 'confirmed') {
+    if (order.payment_status === 'paid' || order.payment_status === 'confirmed' || order.payment_status === 'billed_to_payer') {
       return true;
     }
     
     // Check invoice payment status
     if (order.invoice_id) {
       const invoice = await window.getInvoiceById(order.invoice_id);
-      if (invoice && (invoice.status === 'paid' || invoice.amountPaid >= invoice.total)) {
-        // Update this order and any other orders sharing this invoice (retroactive group)
-        await supabase
-          .from('orders')
-          .update({
-            payment_status: 'paid',
-            updated_at: new Date().toISOString()
-          })
-          .eq('invoice_id', order.invoice_id);
-        return true;
+      if (invoice) {
+        if (
+          invoice.status === 'paid' ||
+          invoice.status === 'claim_pending' ||
+          (typeof window.MediForgePayerWorkflow?.isPayerClearedForService === 'function' &&
+            window.MediForgePayerWorkflow.isPayerClearedForService(invoice))
+        ) {
+          await supabase
+            .from('orders')
+            .update({
+              payment_status: invoice.status === 'paid' ? 'paid' : 'billed_to_payer',
+              updated_at: new Date().toISOString()
+            })
+            .eq('invoice_id', order.invoice_id);
+          return true;
+        }
+        if (invoice.amountPaid >= invoice.total) {
+          await supabase
+            .from('orders')
+            .update({
+              payment_status: 'paid',
+              updated_at: new Date().toISOString()
+            })
+            .eq('invoice_id', order.invoice_id);
+          return true;
+        }
       }
     }
     

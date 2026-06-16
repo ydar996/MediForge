@@ -368,6 +368,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Migration:** `supabase/migrations/20260616140000_patient_enrolment_practice_fields.sql` — **must be run in dev Supabase SQL Editor** before new fields save to the database.
 - Pushed to **`dev`** → https://mediforge-dev.netlify.app
 
+### June 17, 2026 — Promote practice fields + profile fix to staging and production
+
+- **`fd2ef4d`** on `dev`, `staging`, and `main` (dashboard: bulk import after Setup Patient Portal).
+- **Staging:** https://mediforge-staging.netlify.app
+- **Production:** https://mediforge.netlify.app
+- **Owner:** Run migration `20260616140000_patient_enrolment_practice_fields.sql` on **staging** and **production** Supabase if not done yet (dev first).
+
 ---
 
 **Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed.
