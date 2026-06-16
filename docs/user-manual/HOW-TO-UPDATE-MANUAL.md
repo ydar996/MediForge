@@ -67,3 +67,4 @@ Use **dev or staging** (not production) for screenshots. Log in first in Chrome 
 | Clinical note (SOAP) | `05-clinical-note.png` |
 | Prescriptions (DIN formulary) | `19-prescription.png` |
 | Preventive care gaps | `20-preventive-gaps.png` |
+| Bulk patient import (CSV/Excel) | `21-bulk-patient-import.png` *(not captured yet)* |

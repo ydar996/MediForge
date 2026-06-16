@@ -2,7 +2,7 @@
 
 Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVER.md`**. **Owners:** start with **`START-HERE.md`** or **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 11, 2026
+**Last updated:** June 16, 2026
 
 ---
 
@@ -69,6 +69,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[PLATFORM-ADMIN-GUIDE.md](../PLATFORM-ADMIN-GUIDE.md)** | Platform administration |
 | **[INPATIENT-SETUP-GUIDE.md](../INPATIENT-SETUP-GUIDE.md)** | In-patient module |
 | **[HOW-TO-USE-OFFLINE-CAPABILITIES.md](../HOW-TO-USE-OFFLINE-CAPABILITIES.md)** | Offline mode |
+| **[docs/PATIENT-BULK-IMPORT-GUIDE.md](PATIENT-BULK-IMPORT-GUIDE.md)** | CSV/Excel mass patient registration |
 | **[docs/PHARMACY-INVENTORY-TESTING-GUIDE.md](PHARMACY-INVENTORY-TESTING-GUIDE.md)** | Pharmacy inventory |
 | **[PRESCRIPTION-SYSTEM-STATUS.md](../PRESCRIPTION-SYSTEM-STATUS.md)** | Prescriptions |
 | **[PATIENT-PORTAL-STATUS.md](../PATIENT-PORTAL-STATUS.md)** | Patient portal |

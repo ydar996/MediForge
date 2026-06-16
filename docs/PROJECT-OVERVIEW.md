@@ -2,7 +2,7 @@
 
 Technical reference for developers and AI agents. For operational handover, see **`AGENT-HANDOVER.md`**. For first deploy, see **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 11, 2026
+**Last updated:** June 16, 2026
 
 ---
 
@@ -168,7 +168,7 @@ Requires `supabase link` and a configured project. Not required for initial go-l
 
 | Area | Entry pages / modules |
 |------|------------------------|
-| Patients | `patients.html`, `js/patients.js`, `js/supabase-patients.js` |
+| Patients | `patients.html`, `js/patients.js`, `js/supabase-patients.js`, `bulk-patient-import.html`, `js/bulk-patient-import.js` |
 | Clinical notes | `clinical-note.html`, `patient-encounters.html` |
 | Appointments | `appointments.html`, `js/appointments.js` |
 | Billing | `billing-dashboard.html`, `js/billing.js` |

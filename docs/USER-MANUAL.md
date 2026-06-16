@@ -6,7 +6,7 @@
 
 **Also available as a web page with pictures:** open `user-manual.html` on your site (e.g. `https://mediforge.netlify.app/user-manual`).
 
-**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, **Health Canada prescription drug search**, **preventive care gaps** with proof attachments, manual medication entry, and **patient self-intake**.
+**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, **Health Canada prescription drug search**, **preventive care gaps** with proof attachments, manual medication entry, **patient self-intake**, and **bulk patient import** (CSV/Excel).
 
 ---
 
@@ -110,6 +110,7 @@ After login you see the **Dashboard**—your home screen with buttons for each a
 | Button | What it does |
 |--------|----------------|
 | **Manage Patients** | Patient list and charts |
+| **Bulk Import Patients (CSV/Excel)** | Import many patients from a spreadsheet (Dashboard → Patient Management) |
 | **Review Patient Intake** | Approve online patient forms |
 | **Manage Appointments** | Book and edit visits |
 | **Billing & Payments** | Invoices, checkout, cash register |
@@ -148,6 +149,15 @@ After login you see the **Dashboard**—your home screen with buttons for each a
 ![Add patient](user-manual/images/14-add-patient.png)
 
 ![Manual medication entry](user-manual/images/15-manual-medication.png)
+
+### Bulk import (many patients from Excel or CSV)
+
+1. Dashboard → **Patient Management** → **Bulk Import Patients (CSV/Excel)**.
+2. Download the template, fill patient rows in Excel, save as CSV or upload `.xlsx`.
+3. Use **Patient ID** column for existing chart numbers if migrating; leave blank for auto-numbering.
+4. Preview rows, then **Import patients**. Empty fields can be completed later in **Edit Patient**.
+
+See **`docs/PATIENT-BULK-IMPORT-GUIDE.md`** for column details.
 
 ---
 

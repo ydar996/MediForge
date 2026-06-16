@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Bulk Import Patients — MediForge</title>
+  <link rel="stylesheet" href="css/styles.css?v=219">
+  <link rel="stylesheet" href="css/logout-button.css">
+  <style>
+    :root {
+      --primary-green: #008753;
+      --dark-green: #006b42;
+      --charcoal: #36454F;
+    }
+    body {
+      background: linear-gradient(135deg, #FFFFF0 0%, #F5F5DC 50%, #FAFAFA 100%);
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      padding: 20px;
+      min-height: 100vh;
+    }
+    .container {
+      max-width: 1100px;
+      margin: 0 auto;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 4px 20px rgba(0, 135, 83, 0.12);
+      padding: 28px 32px 40px;
+    }
+    h1 {
+      color: var(--primary-green);
+      text-align: center;
+      margin: 0 0 8px;
+      font-size: 2rem;
+    }
+    .subtitle {
+      text-align: center;
+      color: #555;
+      margin-bottom: 28px;
+      line-height: 1.5;
+    }
+    .nav-row {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-bottom: 24px;
+    }
+    .nav-row button, .nav-row a.btn {
+      background: linear-gradient(135deg, var(--primary-green), var(--dark-green));
+      color: white;
+      border: none;
+      padding: 10px 18px;
+      border-radius: 8px;
+      cursor: pointer;
+      font-weight: 600;
+      text-decoration: none;
+      font-size: 14px;
+    }
+    .nav-row a.btn-secondary {
+      background: linear-gradient(135deg, #1b4f9c, #123468);
+    }
+    .info-box {
+      background: #e8f5e9;
+      border: 1px solid #c8e6c9;
+      border-radius: 8px;
+      padding: 16px 18px;
+      margin-bottom: 24px;
+      color: #2e5d32;
+      line-height: 1.55;
+      font-size: 14px;
+    }
+    .panel {
+      border: 1px solid #e0e0e0;
+      border-radius: 10px;
+      padding: 20px;
+      margin-bottom: 24px;
+    }
+    .panel h2 {
+      margin: 0 0 12px;
+      color: var(--charcoal);
+      font-size: 1.15rem;
+    }
+    .options label {
+      display: flex;
+      align-items: flex-start;
+      gap: 10px;
+      margin: 10px 0;
+      cursor: pointer;
+      line-height: 1.45;
+    }
+    .options input { margin-top: 4px; }
+    #import-paste {
+      width: 100%;
+      min-height: 120px;
+      font-family: Consolas, monospace;
+      font-size: 13px;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 6px;
+      box-sizing: border-box;
+    }
+    .file-row {
+      margin-top: 12px;
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+    }
+    .preview-table-wrap {
+      overflow-x: auto;
+      max-height: 360px;
+      border: 1px solid #eee;
+      border-radius: 8px;
+    }
+    table.import-preview {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 13px;
+    }
+    table.import-preview th {
+      background: var(--primary-green);
+      color: white;
+      padding: 10px 8px;
+      text-align: left;
+      position: sticky;
+      top: 0;
+    }
+    table.import-preview td {
+      padding: 8px;
+      border-bottom: 1px solid #eee;
+      vertical-align: top;
+    }
+    table.import-preview tr:nth-child(even) { background: #f9f9f9; }
+    .warn-cell { color: #b36b00; font-size: 12px; max-width: 220px; }
+    #import-parse-errors {
+      display: none;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      padding: 12px;
+      border-radius: 8px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    #import-preview-summary {
+      font-weight: 600;
+      margin-bottom: 10px;
+      color: var(--charcoal);
+    }
+    #import-run-btn {
+      background: var(--primary-green);
+      color: white;
+      border: none;
+      padding: 14px 28px;
+      font-size: 16px;
+      font-weight: 700;
+      border-radius: 8px;
+      cursor: pointer;
+      margin-top: 16px;
+    }
+    #import-run-btn:disabled {
+      background: #aaa;
+      cursor: not-allowed;
+    }
+    #import-progress {
+      display: none;
+      margin-top: 12px;
+      font-weight: 600;
+      color: var(--primary-green);
+    }
+    #import-log {
+      margin-top: 12px;
+      max-height: 200px;
+      overflow-y: auto;
+      font-size: 13px;
+      font-family: Consolas, monospace;
+    }
+    .log-ok { color: #006b42; padding: 2px 0; }
+    .log-err { color: #c62828; padding: 2px 0; }
+    .template-link {
+      color: #1b4f9c;
+      font-weight: 600;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Bulk Import Patients</h1>
+    <p class="subtitle">Upload a CSV or Excel file to register many patients at once. Only <strong>first name</strong> or <strong>last name</strong> is required per row — leave other fields empty and complete them later in the patient chart.</p>
+
+    <div class="nav-row">
+      <button type="button" onclick="window.location.href='/dashboard'">← Dashboard</button>
+      <a class="btn btn-secondary" href="/patients">Manage Patients</a>
+      <a class="btn btn-secondary" href="data/patient-bulk-import-template.csv" download="patient-bulk-import-template.csv">Download Excel/CSV template</a>
+    </div>
+
+    <div class="info-box">
+      <strong>Preferred template:</strong> Use the downloadable CSV (open in Excel, fill rows, save as CSV or upload .xlsx).<br>
+      <strong>Patient IDs:</strong> If your clinic already uses file numbers, put them in the <em>Patient ID</em> column and enable <em>Keep existing Patient IDs</em> below. Leave blank to use your organization’s auto-numbering (e.g. MFA-SC0001).<br>
+      <strong>Semi-structured files:</strong> Column headers are matched flexibly (e.g. “Surname”, “PHN”, “DOB”). Medications and allergies can be semicolon-separated in one cell.
+    </div>
+
+    <div class="panel options">
+      <h2>Import options</h2>
+      <label>
+        <input type="checkbox" id="opt-keep-patient-ids" checked>
+        <span><strong>Keep existing Patient IDs</strong> from the file when provided (recommended for migrating legacy charts). Uncheck to always auto-assign new org numbers.</span>
+      </label>
+    </div>
+
+    <div class="panel">
+      <h2>1. Upload or paste data</h2>
+      <p style="margin: 0 0 10px; color: #555; font-size: 14px;">Accepted: <code>.csv</code>, <code>.txt</code>, <code>.xlsx</code>, <code>.xls</code> (first worksheet, row 1 = headers)</p>
+      <div class="file-row">
+        <input type="file" id="import-file" accept=".csv,.txt,.xlsx,.xls">
+      </div>
+      <p style="margin: 16px 0 8px; font-weight: 600;">Or paste CSV:</p>
+      <textarea id="import-paste" placeholder="Paste CSV with header row here…"></textarea>
+      <button type="button" id="import-parse-paste-btn" style="margin-top: 8px; padding: 8px 16px;">Parse pasted CSV</button>
+    </div>
+
+    <div class="panel" id="import-preview-section" style="display: none;">
+      <h2>2. Preview</h2>
+      <div id="import-parse-errors"></div>
+      <p id="import-preview-summary"></p>
+      <div class="preview-table-wrap">
+        <table class="import-preview">
+          <thead>
+            <tr>
+              <th>Row</th>
+              <th>Patient ID</th>
+              <th>Name</th>
+              <th>DOB</th>
+              <th>Warnings (editable later)</th>
+              <th>Status</th>
+            </tr>
+          </thead>
+          <tbody id="import-preview-body"></tbody>
+        </table>
+      </div>
+      <button type="button" id="import-run-btn" disabled>Import patients</button>
+      <div id="import-progress"></div>
+      <div id="import-log"></div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20260615140000"></script>
+  <script src="js/main.js?v=20251112030500"></script>
+  <script src="js/mediforge-org-patient-id.js?v=20260429180000"></script>
+  <script src="js/supabase-patients.js?v=20260429180000"></script>
+  <script src="js/patients.js?v=20260131"></script>
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+  <script src="js/bulk-patient-import.js?v=20260616120000"></script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js?v=20260131"></script>
+</body>
+</html>

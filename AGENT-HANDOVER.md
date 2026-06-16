@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 13, 2026  
+**Last updated:** June 16, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -69,11 +69,14 @@ Key files:
 
 | File | Role |
 |------|------|
-| `js/supabase-env.js` | Browser Supabase URL + publishable key (placeholders until go-live) |
-| `js/supabase-client.js` | Shared client; no hardcoded production credentials |
+| `js/supabase-env.js` | Browser Supabase URL + publishable key (Netlify build inject; may be partial if URL masked at build) |
+| `js/supabase-client.js` | Shared client; loads `get-supabase-browser-config` when static config invalid |
+| `netlify/functions/get-supabase-browser-config.js` | Runtime Supabase URL + publishable key for browser |
+| `scripts/resolve-supabase-url.cjs` | Build/function helper: `SUPABASE_PROJECT_REF` → `https://{ref}.supabase.co` |
 | `js/universal-data-loader.js` | Loads org data from Supabase into localStorage |
 | `js/billing.js` | `getDefaultCurrency()` → CAD fallback |
 | `js/register-handler.js` | Org registration; creates org if new |
+| `js/bulk-patient-import.js` | CSV/Excel bulk patient import (`/bulk-patient-import`) |
 | `netlify/functions/secure-supabase.js` | Privileged RPC / admin operations |
 | `supabase/migrations/` | ~100 SQL migrations (schema history) |
 
@@ -142,13 +145,15 @@ Do **not** rely on manual `netlify deploy` for routine releases — it desyncs G
 Site IDs: **`NETLIFY-SITE-IDS.txt`**.  
 Promotion: `dev` → `staging` → `main` via PR. Full setup: **`DEPLOYMENT-PIPELINE.md`**.
 
-**Current git state (June 12, 2026):**
+**Current git state (June 16, 2026):**
 
 - GitHub: https://github.com/ydar996/MediForge
-- **`main`** — live production; pushed and deployed
-- **`dev` / `staging` branches** — create per **`DEPLOYMENT-PIPELINE.md`** § one-time setup
-- Production Netlify site ID: `06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a`
-- Dev/staging Netlify sites — **not created yet** (URLs reserved in `NETLIFY-SITE-IDS.txt`)
+- Branches **`dev`**, **`staging`**, **`main`** — aligned after promotions; push `dev` first for new work
+- **Netlify site IDs** — see **`NETLIFY-SITE-IDS.txt`** (dev, staging, production all live)
+- **Supabase per site:** Dev, Staging, and Prod each have their own project; set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and **`SUPABASE_PROJECT_REF`** (build inject when URL is masked)
+- Production: https://mediforge.netlify.app — site ID `06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a`
+- Dev: https://mediforge-dev.netlify.app — site ID `d15040f5-830c-49fc-bd54-10165abcc5e8`
+- Staging: https://mediforge-staging.netlify.app — site ID `a0626083-1c07-436e-84a3-ca8555ca632e`
 
 ---
 
@@ -279,6 +284,20 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Added **`docs/user-manual/GET-THE-PICTURES.md`** — plain steps for manual screenshots (Snipping Tool) or automatic capture.
 - Strengthened **Communication with the user** in this file: simplest layman's terms always; point to GET-THE-PICTURES for manual images.
 - **Owner next steps:** Save PNGs into `docs/user-manual/images/` (see GET-THE-PICTURES.md), then deploy so `/user-manual` shows pictures on production.
+
+### June 14–15, 2026 — Preventive gaps, user manual screenshots, login config fix
+
+- **Preventive care gaps:** Mark Addressed + proof attachments (`js/preventive.js`, Supabase `unstructured_records`).
+- **User manual:** Sections 8–9 (prescriptions, preventive gaps); screenshots `05`, `19`, `20`.
+- **Login regression:** Netlify build was writing masked `SUPABASE_URL` (`****************e.co`) into `js/supabase-env.js` on redeploy. Fixed with `SUPABASE_PROJECT_REF` + `scripts/resolve-supabase-url.cjs` + `get-supabase-browser-config` + login wait for async client (`6d05572`). Promoted dev → staging → production.
+- **Netlify env:** Each site needs `SUPABASE_PROJECT_REF` (dev `hhxsmenuphzfxvgwxvut`, staging `imfgrcbpjvoerfhhckiy`, prod `fyhtdkotlyyqyrjabojw`).
+
+### June 16, 2026 — Bulk patient import
+
+- **`/bulk-patient-import`** — CSV/Excel mass registration with flexible headers, optional legacy Patient IDs, preview, Supabase-first save.
+- Template: **`data/patient-bulk-import-template.csv`**; guide: **`docs/PATIENT-BULK-IMPORT-GUIDE.md`**.
+- Dashboard button under **Patient Management**.
+- Deployed dev → staging → production (this session).
 
 ---
 
