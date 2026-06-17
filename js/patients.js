@@ -8275,7 +8275,7 @@ async function displayGeneratedOrders(patient) {
   if (patient.visits && Array.isArray(patient.visits)) {
     patient.visits.forEach(visit => {
       // If on clinical-note page, only show orders for current visit
-      if (currentVisitDate && visit.date !== currentVisitDate) {
+      if (currentVisitDate && !visitSummaryDatesMatch(visit.date, currentVisitDate)) {
         return; // Skip visits that don't match current visit date
       }
       
@@ -8287,8 +8287,9 @@ async function displayGeneratedOrders(patient) {
           }
           
           // Filter out invalid orders (no items selected and no "no items" checkbox)
-          const hasItems = order.selectedItems && order.selectedItems.length > 0;
-          const noItemsChecked = order.noItemsChecked;
+          const orderItems = visitSummaryParseOrderItems(order);
+          const hasItems = orderItems.length > 0;
+          const noItemsChecked = order.noItemsChecked || order.no_items_checked;
           if (!hasItems && !noItemsChecked) {
             return; // Skip invalid orders
           }
@@ -8315,8 +8316,11 @@ async function displayGeneratedOrders(patient) {
   // Also filter by current visit date if on clinical-note page
   supabaseOrders.forEach(supabaseOrder => {
     // If on clinical-note page, only show orders for current visit
-    if (currentVisitDate && supabaseOrder.visitDate !== currentVisitDate) {
-      return; // Skip orders that don't match current visit date
+    if (currentVisitDate) {
+      const orderVisit = supabaseOrder.visitDate || supabaseOrder.visit_date;
+      if (orderVisit && !visitSummaryDatesMatch(orderVisit, currentVisitDate)) {
+        return; // Skip orders tied to a different visit
+      }
     }
     
     const serialNum = supabaseOrder.serialNumber || supabaseOrder.serial_number || '';
@@ -19318,8 +19322,15 @@ function visitSummaryFindVisit(patient, visitDate) {
 
 function visitSummaryMergeLocalStoragePatient(patient, patientId) {
   try {
-    const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
-    const localPatient = patients.find((p) =>
+    const storageKeys = [getDataKey('patients'), 'patients'];
+    const seenPatients = [];
+    storageKeys.forEach((key) => {
+      try {
+        const list = JSON.parse(localStorage.getItem(key) || '[]');
+        if (Array.isArray(list)) seenPatients.push(...list);
+      } catch (_) { /* ignore */ }
+    });
+    const localPatient = seenPatients.find((p) =>
       p &&
       (p.id === patientId ||
         p.patient_id === patientId ||
@@ -19357,43 +19368,69 @@ function visitSummaryParseOrderItems(order) {
   return Array.isArray(items) ? items : [];
 }
 
+function visitSummaryMapSupabaseOrder(order) {
+  return {
+    id: order.id,
+    type: order.type,
+    serialNumber: order.serial_number,
+    serial_number: order.serial_number,
+    selectedItems: order.selected_items || [],
+    selected_items: order.selected_items || [],
+    noItemsChecked: order.no_items_checked || false,
+    status: order.status || 'Generated',
+    timestamp: order.timestamp || order.created_at,
+    visitDate: order.visit_date,
+    visit_date: order.visit_date,
+    created_at: order.created_at
+  };
+}
+
+function visitSummaryOrderMatchesVisit(order, ymd) {
+  const explicitVisit = order.visitDate || order.visit_date;
+  if (explicitVisit) return visitSummaryDatesMatch(explicitVisit, ymd);
+  return false;
+}
+
 async function collectOrdersForPatientVisit(patient, visitDate) {
   const patientId = patient?.id;
   if (!patientId) return [];
 
   const ymd = visitSummaryToYmd(visitDate) || visitDate;
-  let supabaseOrders = [];
+  const supabaseOrders = [];
+  const supabaseSeen = new Set();
+
+  function addSupabaseOrder(order) {
+    if (!order?.id || supabaseSeen.has(order.id)) return;
+    supabaseSeen.add(order.id);
+    supabaseOrders.push(visitSummaryMapSupabaseOrder(order));
+  }
 
   if (window.supabaseClient) {
     try {
       const isLegacyId = patientId && !String(patientId).includes('-') && String(patientId).length < 36;
       const queryPatientId = isLegacyId ? (patient._supabaseUuid || patientId) : patientId;
       const idsToTry = [...new Set([queryPatientId, patientId, patient.patient_id, patient._supabaseUuid].filter(Boolean))];
+      const datesToTry = [...new Set([ymd, visitDate].filter(Boolean))];
 
       for (const qid of idsToTry) {
+        for (const d of datesToTry) {
+          const { data, error } = await window.supabaseClient
+            .from('orders')
+            .select('*')
+            .eq('patient_id', qid)
+            .eq('visit_date', d)
+            .is('deleted_at', null)
+            .order('created_at', { ascending: false });
+          if (!error && data?.length) data.forEach(addSupabaseOrder);
+        }
+
         const { data, error } = await window.supabaseClient
           .from('orders')
           .select('*')
           .eq('patient_id', qid)
           .is('deleted_at', null)
           .order('created_at', { ascending: false });
-        if (!error && data?.length) {
-          supabaseOrders = data.map((order) => ({
-            id: order.id,
-            type: order.type,
-            serialNumber: order.serial_number,
-            serial_number: order.serial_number,
-            selectedItems: order.selected_items || [],
-            selected_items: order.selected_items || [],
-            noItemsChecked: order.no_items_checked || false,
-            status: order.status || 'Generated',
-            timestamp: order.timestamp || order.created_at,
-            visitDate: order.visit_date,
-            visit_date: order.visit_date,
-            created_at: order.created_at
-          }));
-          break;
-        }
+        if (!error && data?.length) data.forEach(addSupabaseOrder);
       }
     } catch (e) {
       console.warn('collectOrdersForPatientVisit supabase:', e);
@@ -19421,16 +19458,10 @@ async function collectOrdersForPatientVisit(patient, visitDate) {
   });
 
   supabaseOrders.forEach((order) => {
-    const explicitVisit = order.visitDate || order.visit_date;
-    if (explicitVisit && !visitSummaryDatesMatch(explicitVisit, ymd)) return;
-    if (!explicitVisit) {
-      const created = order.created_at || order.timestamp;
-      if (created && !visitSummaryDatesMatch(created, ymd)) return;
-    }
-    pushOrder(order);
+    if (visitSummaryOrderMatchesVisit(order, ymd)) pushOrder(order);
   });
 
-  const finalOrders = [];
+  let finalOrders = [];
   const seenSerial = new Set();
   allOrders.forEach((order) => {
     const serial = order.serialNumber || order.serial_number || '';
@@ -19441,6 +19472,21 @@ async function collectOrdersForPatientVisit(patient, visitDate) {
       finalOrders.push(order);
     }
   });
+
+  if (!finalOrders.length && supabaseOrders.length) {
+    supabaseOrders.forEach(pushOrder);
+    finalOrders = [];
+    seenSerial.clear();
+    allOrders.forEach((order) => {
+      const serial = order.serialNumber || order.serial_number || '';
+      if (serial && !seenSerial.has(serial)) {
+        seenSerial.add(serial);
+        finalOrders.push(order);
+      } else if (!serial) {
+        finalOrders.push(order);
+      }
+    });
+  }
 
   return finalOrders;
 }
@@ -19553,6 +19599,32 @@ async function collectUpcomingAppointmentsForPatient(patient, visitDate) {
     .slice(0, 5);
 }
 
+async function visitSummaryLoadFollowUpFromEncounter(patient, visitDate) {
+  if (!window.supabaseClient) return '';
+  const ymd = visitSummaryToYmd(visitDate) || visitDate;
+  const idsToTry = [...new Set([
+    patient?._supabaseUuid,
+    patient?.id,
+    patient?.patient_id
+  ].filter(Boolean))];
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const orgId = user.organizationId || user.organization_id;
+
+  for (const pid of idsToTry) {
+    try {
+      let query = window.supabaseClient
+        .from('patient_encounters')
+        .select('soap_plan_followup')
+        .eq('patient_id', pid)
+        .eq('visit_date', ymd);
+      if (orgId) query = query.eq('organization_id', orgId);
+      const { data, error } = await query.maybeSingle();
+      if (!error && data?.soap_plan_followup) return data.soap_plan_followup;
+    } catch (_) { /* ignore */ }
+  }
+  return '';
+}
+
 /**
  * Single source of truth for office visit summary data (clinical note + discharge summary).
  */
@@ -19576,6 +19648,13 @@ window.collectOfficeVisitChartData = async function collectOfficeVisitChartData(
   const soap = visit.soap || {};
   const subjective = soap.subjective || {};
   const plan = soap.plan || {};
+  if (!plan.followUp && !plan.follow_up && !plan.followup) {
+    const encounterFollowUp = await visitSummaryLoadFollowUpFromEncounter(patient, ymd);
+    if (encounterFollowUp) {
+      plan.followup = encounterFollowUp;
+      plan.followUp = encounterFollowUp;
+    }
+  }
 
   const [orders, prescriptions, upcomingAppointments] = await Promise.all([
     collectOrdersForPatientVisit(patient, ymd),

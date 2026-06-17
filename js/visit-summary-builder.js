@@ -54,6 +54,19 @@
     return !!(a && b && a === b);
   }
 
+  function resolveFollowUpPlan(plan, clinicalNote) {
+    const p = plan || {};
+    const fromPlan = p.followUp || p.follow_up || p.followup || p.patientEducation || p.education || '';
+    if (fromPlan) return fromPlan;
+    if (!clinicalNote) return '';
+    let soap = clinicalNote.soap_data;
+    if (typeof soap === 'string') {
+      try { soap = JSON.parse(soap); } catch (_) { soap = null; }
+    }
+    const cp = soap?.plan || {};
+    return cp.followUp || cp.follow_up || cp.followup || cp.patientEducation || cp.education || '';
+  }
+
   function parseOrderItems(order) {
     let items = order.selected_items != null ? order.selected_items : order.selectedItems;
     if (typeof items === 'string') {
@@ -411,8 +424,8 @@
         chiefComplaint: subjective.chiefComplaint || subjective.cc || clinicalNote?.chief_complaint || '',
         visitOverview: [
           subjective.hpi || subjective.historyOfPresentIllness || '',
-          plan.treatmentPlan || plan.treatment || '',
-          plan.followUp || plan.follow_up || ''
+          plan.treatmentPlan || plan.treatment || plan.treatments || '',
+          plan.followUp || plan.follow_up || plan.followup || ''
         ].filter(Boolean).join('\n\n'),
         vitals: normalizeVitals(chart.vitals).map((v) => ({
           temperature: v.temperature || v.temp,
@@ -442,7 +455,7 @@
           diagnoses: Array.isArray(r.diagnoses) ? r.diagnoses.join(', ') : (r.diagnoses || r.diagnosis || r.reason || ''),
           status: r.status || 'sent'
         })),
-        followUpPlan: plan.followUp || plan.follow_up || plan.patientEducation || '',
+        followUpPlan: resolveFollowUpPlan(plan, clinicalNote),
         upcomingAppointments: (chart.upcomingAppointments || []).map((a) => ({
           date: a.appointment_date || a.date,
           time: a.appointment_time || a.time,
@@ -522,8 +535,8 @@
       chiefComplaint: subjective.chiefComplaint || subjective.cc || clinicalNote?.chief_complaint || '',
       visitOverview: [
         subjective.hpi || subjective.historyOfPresentIllness || '',
-        plan.treatmentPlan || plan.treatment || '',
-        plan.followUp || plan.follow_up || ''
+        plan.treatmentPlan || plan.treatment || plan.treatments || '',
+        plan.followUp || plan.follow_up || plan.followup || ''
       ].filter(Boolean).join('\n\n'),
       vitals: visitVitals.map((v) => ({
         temperature: v.temperature || v.temp,
@@ -553,7 +566,7 @@
         diagnoses: r.diagnoses || r.diagnosis || r.reason || '',
         status: r.status || 'sent'
       })),
-      followUpPlan: plan.followUp || plan.follow_up || plan.patientEducation || '',
+      followUpPlan: resolveFollowUpPlan(plan, clinicalNote),
       upcomingAppointments: upcomingAppointments.map((a) => ({
         date: a.appointment_date || a.date,
         time: a.appointment_time || a.time,
