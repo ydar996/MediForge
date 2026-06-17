@@ -687,11 +687,34 @@ window.getGlobalAuditLog = async function(filters = {}) {
     
     // Try to fetch audit logs from Supabase audit_logs table (if it exists)
     try {
-      const { data: supabaseAuditLogs, error: auditLogsError } = await window.supabaseClient
-        .from('audit_logs')
-        .select('*')
-        .order('timestamp', { ascending: false });
-      
+      let supabaseAuditLogs = null;
+      let auditLogsError = null;
+
+      // Prefer secure proxy (service role) — direct SELECT is blocked by RLS unless JWT
+      // matches legacy hardcoded platform-admin emails in create_audit_logs_table.sql.
+      if (typeof window.secureSupabaseSelect === 'function') {
+        try {
+          supabaseAuditLogs = await window.secureSupabaseSelect('audit_logs', {
+            select: '*',
+            order: { column: 'timestamp', ascending: false },
+            limit: 5000
+          });
+        } catch (proxyErr) {
+          auditLogsError = proxyErr;
+          console.warn('⚠️ getGlobalAuditLog: secureSupabaseSelect failed, trying direct query:', proxyErr.message);
+        }
+      }
+
+      if (!supabaseAuditLogs && window.supabaseClient) {
+        const res = await window.supabaseClient
+          .from('audit_logs')
+          .select('*')
+          .order('timestamp', { ascending: false })
+          .limit(5000);
+        supabaseAuditLogs = res.data;
+        auditLogsError = res.error;
+      }
+
       if (!auditLogsError && supabaseAuditLogs && supabaseAuditLogs.length > 0) {
         console.log(`📋 getGlobalAuditLog: Found ${supabaseAuditLogs.length} audit log entries in Supabase`);
         console.log(`📋 Organizations in Supabase audit logs:`, [...new Set(supabaseAuditLogs.map(log => log.organization_name || 'Unknown'))]);
