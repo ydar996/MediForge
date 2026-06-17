@@ -19303,9 +19303,13 @@ function generateDischargeSummary() {
     return;
   }
   
-  // Open discharge summary page in new window
-  const dischargeUrl = `discharge-summary?patientId=${patientId}&visitDate=${visitDate}`;
-  window.open(dischargeUrl, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
+  // Open visit summary (office visits) or inpatient discharge summary
+  const admissionId = urlParams.get("admissionId");
+  if (admissionId) {
+    window.open(`discharge-summary?admissionId=${encodeURIComponent(admissionId)}&patientId=${encodeURIComponent(patientId)}`, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
+  } else {
+    window.open(`visit-summary?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(visitDate)}`, '_blank', 'width=1000,height=800,scrollbars=yes,resizable=yes');
+  }
 }
 
 // Open prescription form from clinical note or patient details

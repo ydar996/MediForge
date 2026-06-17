@@ -156,7 +156,7 @@ window.openPrescriptionForm = function() {
               <div id="prescription-diagnosis-container" style="position: relative;">
                 <input type="text" id="prescription-diagnosis" required placeholder="Search for diagnosis or condition..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
               </div>
-              <small style="color: #666;">Search and select from ICD-11 or enter custom diagnosis</small>
+              <small style="color: #666;">Choose an existing diagnosis above when available, or search ICD below to add a new one. New diagnoses are saved to the patient chart when the prescription is saved or sent.</small>
             </div>
           </div>
 
@@ -318,6 +318,10 @@ async function loadPatientDataForPrescription(patientId) {
         `Patient: ${patient.firstName} ${patient.lastName} (${patient.id})`;
       
       console.log('Patient data loaded for prescription:', patient.firstName, patient.lastName);
+
+      if (typeof window.populatePrescriptionDiagnosisPicker === 'function') {
+        window.populatePrescriptionDiagnosisPicker(patient);
+      }
     } else {
       console.error('Patient not found for prescription:', patientId);
     }
@@ -548,7 +552,7 @@ function initializePrescriptionDiagnosisSelector() {
   console.log('Creating ICD selector for prescription diagnosis field...');
   
   if (typeof createIcdSelector === 'function') {
-    createIcdSelector('prescription-diagnosis', false, 'diagnosis');
+    createIcdSelector('prescription-diagnosis', false, 'prescription-diagnosis');
     console.log('ICD selector created successfully for prescription diagnosis');
   } else {
     console.log('createIcdSelector function not available for prescription diagnosis');

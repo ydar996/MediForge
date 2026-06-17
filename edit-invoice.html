@@ -64,6 +64,11 @@
 </head>
 <body>
   <div class="edit-container">
+    <p style="margin:0 0 16px 0;">
+      <button type="button" onclick="cancelEdit()" style="background:#666;color:white;border:none;padding:10px 18px;border-radius:6px;cursor:pointer;font-size:14px;">
+        &#8592; Back
+      </button>
+    </p>
     <h1>&#128424; Edit Invoice</h1>
     
     <div style="background: #fff3cd; padding: 15px; border-radius: 6px; margin-bottom: 20px; border-left: 4px solid #ffc107;">
@@ -172,6 +177,7 @@
   <script src="js/main.js"></script>
   <script src="js/pricing.js"></script>
   <script src="js/billing.js?v=1"></script>
+  <script src="js/encounter-billing.js"></script>
   <script>
     let currentInvoice = null;
     let editedServices = [];
@@ -437,10 +443,19 @@
       }
     }
 
-    function cancelEdit() {
-      if (confirm('Discard changes and return to invoice details?')) {
-        window.location.href = `/invoice-details?id=${currentInvoice.id}`;
+    async function cancelEdit() {
+      const returnTarget = typeof window.resolveInvoiceReturnUrl === 'function'
+        ? window.resolveInvoiceReturnUrl(`/invoice-details?id=${currentInvoice?.id || ''}`)
+        : `/invoice-details?id=${currentInvoice?.id || ''}`;
+      const returnUrl = new URLSearchParams(window.location.search).get('returnUrl');
+      const msg = returnUrl
+        ? 'Discard changes and return to where you started?'
+        : 'Discard changes and return to invoice details?';
+      if (!confirm(msg)) return;
+      if (returnUrl && currentInvoice?.id && typeof window.discardPendingInvoiceIfUntouched === 'function') {
+        await window.discardPendingInvoiceIfUntouched(currentInvoice.id);
       }
+      window.location.href = returnTarget;
     }
   </script>
 

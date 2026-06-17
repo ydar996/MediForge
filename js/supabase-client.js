@@ -122,6 +122,15 @@ function initializeSupabaseClient() {
       // Also store in window for global access
       window.supabaseClient = supabaseClient;
       
+      function persistSupabaseSession(session) {
+        if (!session) return;
+        localStorage.setItem('supabase_session', JSON.stringify({
+          access_token: session.access_token,
+          refresh_token: session.refresh_token,
+          expires_at: session.expires_at
+        }));
+      }
+
       try {
         const storedSessionRaw = localStorage.getItem('supabase_session');
         if (storedSessionRaw) {
@@ -132,37 +141,40 @@ function initializeSupabaseClient() {
                 access_token: storedSession.access_token,
                 refresh_token: storedSession.refresh_token
               })
-              .then(({ data, error }) => {
+              .then(async ({ data, error }) => {
                 if (error || !data?.session) {
-                  warnVerbose('Stored Supabase session could not be restored. Clearing cached session.');
-                  localStorage.removeItem('supabase_session');
-                } else if (data.session) {
-                  localStorage.setItem('supabase_session', JSON.stringify({
-                    access_token: data.session.access_token,
-                    refresh_token: data.session.refresh_token,
-                    expires_at: data.session.expires_at
-                  }));
+                  const { data: current } = await supabaseClient.auth.getSession();
+                  if (current?.session) {
+                    persistSupabaseSession(current.session);
+                  } else {
+                    warnVerbose('Stored Supabase session could not be restored from cache.');
+                  }
+                } else {
+                  persistSupabaseSession(data.session);
                 }
               })
-              .catch(err => {
-                warnVerbose('Failed to restore Supabase session. Clearing cached session.', err);
-                localStorage.removeItem('supabase_session');
+              .catch(async (err) => {
+                warnVerbose('Failed to restore Supabase session from cache.', err);
+                try {
+                  const { data: current } = await supabaseClient.auth.getSession();
+                  if (current?.session) {
+                    persistSupabaseSession(current.session);
+                  }
+                } catch (e) {
+                  /* ignore */
+                }
               });
           }
         }
       } catch (sessionError) {
-        warnVerbose('Unable to parse stored Supabase session. Clearing cached session.', sessionError);
-        localStorage.removeItem('supabase_session');
+        warnVerbose('Unable to parse stored Supabase session.', sessionError);
       }
 
       supabaseClient.auth.onAuthStateChange((event, session) => {
         if (session) {
-          localStorage.setItem('supabase_session', JSON.stringify({
-            access_token: session.access_token,
-            refresh_token: session.refresh_token,
-            expires_at: session.expires_at
-          }));
-        } else {
+          persistSupabaseSession(session);
+        } else if (event === 'SIGNED_OUT') {
+          // Only clear on explicit sign-out — not on INITIAL_SESSION races during page load
           localStorage.removeItem('supabase_session');
         }
 

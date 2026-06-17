@@ -749,6 +749,8 @@ async function loadPatientData(patientId) {
   }
   
   console.log('Patient data loaded:', currentPrescription.patient);
+
+  populatePrescriptionDiagnosisPicker(patient);
 }
 
 // Load prescriber data
@@ -1136,6 +1138,130 @@ function searchDrugs(medicationId) {
 }
 
 // Diagnosis suggestions and custom modal
+function parsePrescriptionJsonField(val, fallback = []) {
+  if (Array.isArray(val)) return val;
+  if (!val || val === 'null') return fallback;
+  try {
+    return JSON.parse(val);
+  } catch (_) {
+    return fallback;
+  }
+}
+
+function normalizeDiagnosisKey(text) {
+  return String(text || '').trim().toLowerCase().replace(/\s+/g, ' ');
+}
+
+function addPatientDiagnosisOption(map, label, meta = {}) {
+  const trimmed = String(label || '').trim();
+  const key = normalizeDiagnosisKey(trimmed);
+  if (!key || key.length < 2) return;
+  if (!map.has(key)) {
+    map.set(key, { label: trimmed, ...meta });
+  }
+}
+
+/** Collect unique diagnoses from the patient's full chart (problem list, visits, prior Rx, etc.). */
+function collectPatientDiagnosisOptions(patient) {
+  if (!patient) return [];
+  const map = new Map();
+
+  parsePrescriptionJsonField(patient.diagnoses, []).forEach((entry) => {
+    const text = entry && entry.diagnosis ? entry.diagnosis : (typeof entry === 'string' ? entry : '');
+    addPatientDiagnosisOption(map, text, { source: 'Problem list', date: entry.date || '' });
+  });
+
+  (patient.prescriptions || []).forEach((rx) => {
+    if (rx && rx.diagnosis) {
+      addPatientDiagnosisOption(map, rx.diagnosis, { source: 'Prior prescription', date: rx.date || '' });
+    }
+  });
+
+  (patient.visits || []).forEach((visit) => {
+    const assessment = (visit.soap && visit.soap.assessment) || {};
+    if (assessment.status) {
+      addPatientDiagnosisOption(map, assessment.status, { source: 'Visit note', date: visit.date || '' });
+    }
+    if (assessment.differential) {
+      String(assessment.differential)
+        .split(/[\n;,]+/)
+        .map((s) => s.trim())
+        .filter(Boolean)
+        .forEach((part) => {
+          addPatientDiagnosisOption(map, part, { source: 'Visit assessment', date: visit.date || '' });
+        });
+    }
+  });
+
+  parsePrescriptionJsonField(patient.chronic_conditions || patient.conditions, []).forEach((entry) => {
+    const text = entry && (entry.name || entry.diagnosis) ? (entry.name || entry.diagnosis) : (typeof entry === 'string' ? entry : '');
+    addPatientDiagnosisOption(map, text, { source: 'Chronic condition' });
+  });
+
+  return Array.from(map.values()).sort((a, b) => a.label.localeCompare(b.label));
+}
+
+function ensurePrescriptionDiagnosisExistingSelect() {
+  let select = document.getElementById('prescription-diagnosis-existing');
+  if (select) return select;
+
+  const container = document.getElementById('prescription-diagnosis-container');
+  if (!container) return null;
+
+  const formGroup = container.closest('.form-group') || container.parentElement;
+  if (!formGroup) return null;
+
+  const label = document.createElement('label');
+  label.setAttribute('for', 'prescription-diagnosis-existing');
+  label.textContent = 'Existing patient diagnoses';
+  label.style.cssText = 'display:block;margin-bottom:5px;font-weight:600;';
+
+  select = document.createElement('select');
+  select.id = 'prescription-diagnosis-existing';
+  select.style.cssText = 'width:100%;padding:10px;border:1px solid #ddd;border-radius:4px;font-size:14px;margin-bottom:8px;';
+  select.innerHTML = '<option value="">Select an existing diagnosis for this patient…</option>';
+  select.addEventListener('change', function onExistingDiagnosisPick() {
+    if (!this.value) return;
+    const input = document.getElementById('prescription-diagnosis') || document.getElementById('diagnosis');
+    if (input) {
+      input.value = this.value;
+      input.dispatchEvent(new Event('input', { bubbles: true }));
+    }
+  });
+
+  formGroup.insertBefore(label, container);
+  formGroup.insertBefore(select, container);
+  return select;
+}
+
+function populatePrescriptionDiagnosisPicker(patient) {
+  const select = ensurePrescriptionDiagnosisExistingSelect();
+  if (!select) return;
+
+  const options = collectPatientDiagnosisOptions(patient);
+  select.innerHTML = '<option value="">Select an existing diagnosis for this patient…</option>';
+
+  if (!options.length) {
+    const empty = document.createElement('option');
+    empty.value = '';
+    empty.disabled = true;
+    empty.textContent = 'No diagnoses on file yet — search ICD below to add one';
+    select.appendChild(empty);
+    return;
+  }
+
+  options.forEach((opt) => {
+    const el = document.createElement('option');
+    el.value = opt.label;
+    const meta = [opt.source, opt.date].filter(Boolean).join(' · ');
+    el.textContent = meta ? `${opt.label} (${meta})` : opt.label;
+    select.appendChild(el);
+  });
+}
+
+window.collectPatientDiagnosisOptions = collectPatientDiagnosisOptions;
+window.populatePrescriptionDiagnosisPicker = populatePrescriptionDiagnosisPicker;
+
 function getCustomDiagnoses() {
   try { return JSON.parse(localStorage.getItem('customDiagnoses') || '[]'); } catch (_) { return []; }
 }
@@ -2057,6 +2183,66 @@ async function savePrescription() {
 }
 
 // Merge prescription diagnosis and medications into the patient chart (problem list + med list).
+async function persistPrescriptionClinicalDataFromRx() {
+  if (!currentPrescription || !currentPrescription.patient) return { diagnosisAdded: null, medicationsAdded: [] };
+
+  let patient = null;
+  if (typeof window.resolvePatientByIdentifier === 'function') {
+    patient = await window.resolvePatientByIdentifier(currentPrescription.patient.id);
+  }
+  if (!patient) return { diagnosisAdded: null, medicationsAdded: [] };
+
+  const { diagnosisAdded, medicationsAdded } = mergePrescriptionClinicalDataIntoPatient(patient, currentPrescription);
+
+  let patients = [];
+  try {
+    if (typeof window.loadPatientsWithSupabasePriority === 'function') {
+      patients = await window.loadPatientsWithSupabasePriority();
+    } else {
+      patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+    }
+  } catch (_) {
+    patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+  }
+
+  const idx = patients.findIndex((p) =>
+    p.id === patient.id ||
+    p._supabaseUuid === patient._supabaseUuid ||
+    (patient.patient_id && p.patient_id === patient.patient_id)
+  );
+  if (idx >= 0) {
+    patients[idx] = patient;
+  } else {
+    patients.push(patient);
+  }
+
+  localStorage.setItem(getDataKey('patients'), JSON.stringify(patients));
+
+  if (typeof window.savePatientToSupabase === 'function') {
+    try {
+      await window.savePatientToSupabase(patient);
+    } catch (err) {
+      console.warn('Chart sync after prescription failed:', err);
+    }
+  }
+
+  const patientIdParam = currentPrescription.patient.id;
+  if (diagnosisAdded) {
+    window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+      detail: { patientId: patientIdParam, action: 'diagnosisAdded', data: diagnosisAdded }
+    }));
+  }
+  if (medicationsAdded.length) {
+    window.dispatchEvent(new CustomEvent('patientDataUpdated', {
+      detail: { patientId: patientIdParam, action: 'medicationAdded', data: medicationsAdded }
+    }));
+  }
+
+  populatePrescriptionDiagnosisPicker(patient);
+
+  return { diagnosisAdded, medicationsAdded };
+}
+
 function mergePrescriptionClinicalDataIntoPatient(patient, prescription) {
   const chartDate = prescription.date || new Date().toISOString().split('T')[0];
   let diagnosisAdded = null;
@@ -2336,6 +2522,7 @@ async function sendPrescriptionToPharmacy() {
   }
 
   collectPrescriptionData();
+  await persistPrescriptionClinicalDataFromRx();
   await syncPrescriptionToSupabaseTable();
 
   let externalMessage = '';

@@ -6369,118 +6369,54 @@
 
     // Generate invoice from clinical note
     async function generateInvoiceFromNote() {
-      // Get URL parameters - clinical-note.html uses 'patientId' not 'id'
       const urlParams = new URLSearchParams(window.location.search);
-      const patientId = urlParams.get('patientId'); // Changed from 'id' to 'patientId'
+      const patientId = urlParams.get('patientId');
       const visitDate = urlParams.get('visitDate');
-      const encounterId = visitDate; // Use visit date as encounter ID
-      
+      const returnUrl = window.location.pathname + window.location.search;
+
       console.log('Generate invoice clicked. PatientId:', patientId, 'VisitDate:', visitDate);
-      
+
       if (!patientId) {
         alert('Patient ID not found. Cannot generate invoice.');
         return;
       }
-      
-      // Get patient data
-      // Supabase-first: Load patients from Supabase, fallback to localStorage
-      let patients = [];
-      try {
-        if (typeof window.loadPatientsWithSupabasePriority === 'function') {
-          patients = await window.loadPatientsWithSupabasePriority();
-        } else {
-          const _supabaseCheck = window.loadPatientsWithSupabasePriority; patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
-        }
-      } catch (error) {
-        patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
-      }
-      
-      // CRITICAL FIX: Use resolvePatientByIdentifier to handle MEC0006 format IDs
+
       const patient = await window.resolvePatientByIdentifier(patientId);
-      
       if (!patient) {
         alert('Patient not found.');
         return;
       }
-      
-      // Determine if this is first visit or follow-up
+
       const visits = patient.visits || [];
-      const isFirstVisit = visits.length <= 1; // Current visit is first (or only)
-      
-      // Get appropriate service from catalog
-      const serviceCode = isFirstVisit ? 'CONS-001' : 'CONS-003'; // General vs Follow-up
-      
-      // Check if getPricingCatalog is available
-      if (typeof window.getPricingCatalog !== 'function') {
-        alert('Pricing catalog system is not loaded. Please refresh the page and try again.');
-        console.error('getPricingCatalog is not available');
-        return;
-      }
-      
-      const catalog = window.getPricingCatalog();
-      const consultService = catalog.find(s => s.code === serviceCode);
-      
-      if (!consultService) {
-        alert('Consultation service not found in pricing catalog. Please configure services first.');
-        return;
-      }
-      
-      // Check if billing functions are available
-      if (typeof window.getDefaultCurrency !== 'function' || typeof window.getDefaultTaxRate !== 'function' || typeof window.createInvoice !== 'function' || typeof window.formatCurrency !== 'function') {
+      const isFirstVisit = visits.length <= 1;
+      const serviceCode = isFirstVisit ? 'CONS-001' : 'CONS-003';
+      const visit = visits.find((v) => v.date === visitDate) || null;
+
+      if (typeof window.createInvoiceFromEncounter !== 'function') {
         alert('Billing system is not fully loaded. Please refresh the page and try again.');
-        console.error('Billing functions not available:', {
-          getDefaultCurrency: typeof window.getDefaultCurrency,
-          getDefaultTaxRate: typeof window.getDefaultTaxRate,
-          createInvoice: typeof window.createInvoice,
-          formatCurrency: typeof window.formatCurrency
-        });
         return;
       }
-      
-      const defaultCurrency = window.getDefaultCurrency();
-      const defaultTaxRate = window.getDefaultTaxRate();
-      
-      // Create invoice
-      const invoiceData = {
-        patientId: patient.id,
-        patientName: `${patient.firstName} ${patient.lastName}`,
-        services: [{
-          id: consultService.id,
-          code: consultService.code,
-          name: consultService.name,
-          quantity: 1,
-          price: consultService.price,
-          total: consultService.price
-        }],
-        currency: defaultCurrency,
-        taxRate: defaultTaxRate,
-        discountAmount: 0,
-        discountReason: '',
-        encounterId: encounterId,
-        notes: `Generated from clinical note - ${isFirstVisit ? 'Initial consultation' : 'Follow-up visit'}`
-      };
-      
-      // Use async/await since createInvoice is async
-      window.createInvoice(invoiceData).then(invoice => {
+
+      try {
+        const invoice = await window.createInvoiceFromEncounter(patient, visitDate, serviceCode, visit);
         if (!invoice || !invoice.invoiceNumber) {
           alert('Failed to create invoice. Please try again.');
-          console.error('Invoice creation returned:', invoice);
           return;
         }
-        
-        const confirmMessage = `Invoice ${invoice.invoiceNumber} created successfully!\n\nService: ${consultService.name}\nAmount: ${window.formatCurrency(invoice.total, invoice.currency)}\n\nWould you like to:\n- Add more services/edit invoice? Click OK\n- Collect payment now? Click Cancel`;
-        
-        if (confirm(confirmMessage)) {
-          // Edit invoice - redirect to edit page
-          window.location.href = `/edit-invoice?id=${invoice.id}`;
-        } else {
-          // Collect payment - redirect to payment page
-          window.location.href = `/collect-payment?invoiceId=${invoice.id}`;
+
+        if (typeof window.navigateAfterEncounterInvoice === 'function') {
+          await window.navigateAfterEncounterInvoice(invoice, patient, { returnUrl });
+          return;
         }
-      }).catch(error => {
+
+        const dest = window.appendInvoiceReturnUrl
+          ? window.appendInvoiceReturnUrl(`/collect-payment?invoiceId=${invoice.id}`, returnUrl)
+          : `/collect-payment?invoiceId=${invoice.id}`;
+        window.location.href = dest;
+      } catch (error) {
         console.error('Error creating invoice:', error);
         alert('Error creating invoice: ' + (error.message || 'Unknown error'));
-      });
+      }
     }
     
     // Function to download clinical note as image
@@ -7059,6 +6995,11 @@
   <script src="js/patient-identity.js?v=20260427160000"></script>  <!-- Loads clinical note logic -->
   <script src="js/pricing.js"></script>  <!-- Pricing catalog - must load before billing.js -->
   <script src="js/billing.js?v=1"></script>  <!-- Billing system -->
+  <script src="js/billing-mode-manager.js?v=20260617180000"></script>
+  <script src="js/billing-payer-engine.js"></script>
+  <script src="js/payer-workflow.js?v=20260617180000"></script>
+  <script src="js/billing-payer-hooks.js"></script>
+  <script src="js/encounter-billing.js"></script>
   <script src="js/prescriptions.js?v=20260508-patch-406"></script>  <!-- Prescription system with DRUG_DATABASE -->
   <script src="js/prescription-modal.js"></script>  <!-- Prescription modal/page opening functionality -->
   

@@ -405,6 +405,7 @@
       <button class="tab-btn" onclick="switchTab('sent')">📤 Sent</button>
       <button class="tab-btn" onclick="switchTab('tasks')">✅ Tasks</button>
       <button class="tab-btn" onclick="switchTab('notifications')">🔔 Notifications</button>
+      <button class="tab-btn" onclick="switchTab('portal')">🏥 Patient Portal</button>
     </div>
 
     <div class="messages-content">
@@ -433,11 +434,16 @@
   <script src="js/patient-id-normalizer.js"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
   <script src="js/messages.js?v=2"></script>
+  <script src="js/patient-portal.js"></script>
   <script>
     let currentTab = 'inbox';
     let currentMessages = { received: [], sent: [] };
     let currentNotifications = [];
     let selectedMessageId = null;
+    let portalThreads = [];
+    let portalResultRequests = [];
+    let portalAppointmentRequests = [];
+    let selectedPortalPatientId = null;
 
     // Initialize page
     window.addEventListener('load', async function() {
@@ -532,19 +538,208 @@
       currentTab = tab;
       document.querySelectorAll('.tab-btn').forEach(btn => btn.classList.remove('active'));
       
-      // Find and activate the correct tab button
       const tabButtons = document.querySelectorAll('.tab-btn');
       tabButtons.forEach(btn => {
         const btnText = btn.textContent.trim();
         if ((tab === 'inbox' && btnText.includes('Inbox')) ||
             (tab === 'sent' && btnText.includes('Sent')) ||
             (tab === 'tasks' && btnText.includes('Tasks')) ||
-            (tab === 'notifications' && btnText.includes('Notifications'))) {
+            (tab === 'notifications' && btnText.includes('Notifications')) ||
+            (tab === 'portal' && btnText.includes('Patient Portal'))) {
           btn.classList.add('active');
         }
       });
-      
-      displayMessages();
+
+      if (tab === 'portal') {
+        loadPortalTab();
+      } else {
+        displayMessages();
+      }
+    }
+
+    function getStaffOrgId() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return user.organizationId || user.organization_id;
+    }
+
+    async function loadPortalTab() {
+      const orgId = getStaffOrgId();
+      if (!orgId || !window.MediForgePatientPortal) {
+        document.getElementById('messages-list').innerHTML = '<div class="empty-state"><p>Organization not found</p></div>';
+        return;
+      }
+      portalThreads = await window.MediForgePatientPortal.loadStaffPortalThreads(orgId);
+      portalResultRequests = await window.MediForgePatientPortal.loadOrdersAwaitingPublish(orgId);
+      portalAppointmentRequests = await window.MediForgePatientPortal.loadStaffAppointmentRequests(orgId);
+      displayPortalTab();
+    }
+
+    function groupPortalThreads(messages) {
+      const byPatient = {};
+      (messages || []).forEach((m) => {
+        const pid = m.patient_id;
+        if (!byPatient[pid]) byPatient[pid] = { patientId: pid, patient: m.patients, messages: [], unread: 0 };
+        byPatient[pid].messages.push(m);
+        if (m.from_patient && !m.is_read_by_staff) byPatient[pid].unread += 1;
+      });
+      return Object.values(byPatient).sort((a, b) => {
+        const ta = a.messages[a.messages.length - 1]?.created_at || '';
+        const tb = b.messages[b.messages.length - 1]?.created_at || '';
+        return tb.localeCompare(ta);
+      });
+    }
+
+    function displayPortalTab() {
+      const listDiv = document.getElementById('messages-list');
+      const detailDiv = document.getElementById('message-detail');
+      const groups = groupPortalThreads(portalThreads);
+
+      let requestsHtml = '';
+      if (portalAppointmentRequests.length) {
+        requestsHtml += `<div class="category-section"><div class="category-title">📅 Appointment requests</div>` +
+          portalAppointmentRequests.map((r) => {
+            const p = r.patients || {};
+            const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Patient';
+            const appt = r.appointments || {};
+            const apptWhen = appt.appointment_date
+              ? `${appt.appointment_date}${appt.appointment_time ? ' ' + appt.appointment_time : ''}`
+              : '—';
+            const reqAt = r.created_at ? new Date(r.created_at).toLocaleString() : '';
+            const isCancel = r.request_type === 'cancel';
+            const detail = isCancel
+              ? `Reason: ${escapeHtml(r.reason || '—')}`
+              : `Preferred: ${escapeHtml(r.preferred_date || '—')} at ${escapeHtml(r.preferred_time || '—')}${r.reschedule_notes ? ' — ' + escapeHtml(r.reschedule_notes) : ''}`;
+            return `<div class="message-item unread" style="cursor:default">
+              <div class="message-subject">${escapeHtml(name)} — ${isCancel ? 'Cancel' : 'Reschedule'} request</div>
+              <div class="message-meta">Current appt: ${escapeHtml(apptWhen)} · ${escapeHtml(reqAt)}</div>
+              <div class="message-preview">${detail}</div>
+              <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
+                <button class="action-btn btn-mark-addressed" onclick="actionAppointmentRequest('${r.id}','actioned')">Mark actioned</button>
+                <button class="action-btn btn-archive" onclick="actionAppointmentRequest('${r.id}','declined')">Decline</button>
+                <a class="action-btn btn-reply" href="appointments" style="text-decoration:none;display:inline-block">Open appointments</a>
+              </div>
+            </div>`;
+          }).join('') + '</div>';
+      }
+      if (portalResultRequests.length) {
+        requestsHtml += `<div class="category-section"><div class="category-title">📋 Result publish requests</div>` +
+          portalResultRequests.map((o) => {
+            const p = o.patients || {};
+            const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Patient';
+            const reqAt = o.portal_results_request_at ? new Date(o.portal_results_request_at).toLocaleString() : '';
+            return `<div class="message-item" style="cursor:default">
+              <div class="message-subject">${escapeHtml(name)} — ${o.type === 'imaging' ? 'Imaging' : 'Lab'}</div>
+              <div class="message-meta">Requested ${escapeHtml(reqAt)}</div>
+              <button class="action-btn btn-mark-addressed" style="margin-top:10px" onclick="publishPortalResults('${o.id}')">Publish for patient</button>
+            </div>`;
+          }).join('') + '</div>';
+      }
+
+      if (!groups.length && !portalResultRequests.length && !portalAppointmentRequests.length) {
+        listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">💬</div><p>No patient portal messages yet</p></div>';
+        detailDiv.innerHTML = '<div class="empty-state"><p>Patients can message your clinic from their portal</p></div>';
+        return;
+      }
+
+      listDiv.innerHTML = requestsHtml + (groups.length ? '<div class="category-section"><div class="category-title">💬 Conversations</div>' +
+        groups.map((g) => {
+          const p = g.patient || {};
+          const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Patient';
+          const last = g.messages[g.messages.length - 1];
+          const preview = (last?.body || '').substring(0, 80);
+          const unread = g.unread > 0 ? ` <span class="message-badge badge-urgent">${g.unread}</span>` : '';
+          const sel = selectedPortalPatientId === g.patientId ? ' selected' : '';
+          return `<div class="message-item${sel}${g.unread ? ' unread' : ''}" data-portal-patient="${g.patientId}" onclick="selectPortalPatient('${g.patientId}')">
+            <div class="message-subject">${escapeHtml(name)}${unread}</div>
+            <div class="message-preview">${escapeHtml(preview)}</div>
+          </div>`;
+        }).join('') + '</div>' : '');
+
+      if (selectedPortalPatientId) {
+        renderPortalConversation(selectedPortalPatientId);
+      } else if (groups.length) {
+        selectPortalPatient(groups[0].patientId);
+      } else {
+        detailDiv.innerHTML = '<div class="empty-state"><p>Select a conversation</p></div>';
+      }
+    }
+
+    async function selectPortalPatient(patientId) {
+      selectedPortalPatientId = patientId;
+      document.querySelectorAll('.message-item[data-portal-patient]').forEach((el) => {
+        el.classList.toggle('selected', el.dataset.portalPatient === patientId);
+      });
+      await renderPortalConversation(patientId);
+      const unreadIds = portalThreads.filter((m) => m.patient_id === patientId && m.from_patient && !m.is_read_by_staff).map((m) => m.id);
+      if (unreadIds.length) {
+        await window.MediForgePatientPortal.staffMarkPortalMessagesRead(unreadIds);
+        portalThreads.forEach((m) => { if (unreadIds.includes(m.id)) m.is_read_by_staff = true; });
+      }
+    }
+
+    function renderPortalConversation(patientId) {
+      const detailDiv = document.getElementById('message-detail');
+      const thread = portalThreads.filter((m) => m.patient_id === patientId).sort((a, b) => a.created_at.localeCompare(b.created_at));
+      const p = thread[0]?.patients || {};
+      const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Patient';
+
+      detailDiv.innerHTML = `
+        <div class="message-detail-header">
+          <div class="message-detail-subject">${escapeHtml(name)}</div>
+          <div class="message-detail-meta">Patient portal messaging</div>
+        </div>
+        <div id="portal-thread-messages" style="max-height:400px;overflow-y:auto;margin-bottom:16px">
+          ${thread.map((m) => {
+            const who = m.from_patient ? 'Patient' : 'Clinic';
+            const t = new Date(m.created_at).toLocaleString();
+            return `<div style="margin-bottom:12px;padding:12px;background:${m.from_patient ? '#e8f5e9' : '#e3f2fd'};border-radius:8px">
+              <strong>${who}</strong> <span style="font-size:12px;color:#666">${t}</span><br>${escapeHtml(m.body)}
+            </div>`;
+          }).join('')}
+        </div>
+        <div class="form-group">
+          <label>Reply to patient</label>
+          <textarea id="portal-reply-body" placeholder="Type your reply…"></textarea>
+        </div>
+        <button class="action-btn btn-reply" onclick="sendPortalStaffReply('${patientId}')">Send reply</button>
+      `;
+      const box = document.getElementById('portal-thread-messages');
+      if (box) box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendPortalStaffReply(patientId) {
+      const body = (document.getElementById('portal-reply-body')?.value || '').trim();
+      if (!body) return;
+      const orgId = getStaffOrgId();
+      try {
+        await window.MediForgePatientPortal.staffReplyToPatient(patientId, orgId, body);
+        await loadPortalTab();
+        selectedPortalPatientId = patientId;
+        displayPortalTab();
+      } catch (e) {
+        alert('Could not send reply: ' + (e.message || e));
+      }
+    }
+
+    async function publishPortalResults(orderId) {
+      if (!confirm('Publish these results for the patient to view in their portal?')) return;
+      try {
+        await window.MediForgePatientPortal.staffPublishOrderResults(orderId);
+        await loadPortalTab();
+      } catch (e) {
+        alert('Could not publish: ' + (e.message || e));
+      }
+    }
+
+    async function actionAppointmentRequest(requestId, status) {
+      const label = status === 'declined' ? 'decline' : 'mark as actioned';
+      if (!confirm(`${label.charAt(0).toUpperCase() + label.slice(1)} this appointment request?`)) return;
+      try {
+        await window.MediForgePatientPortal.staffMarkAppointmentRequestActioned(requestId, status);
+        await loadPortalTab();
+      } catch (e) {
+        alert('Could not update request: ' + (e.message || e));
+      }
     }
 
     // Display messages based on current tab
@@ -567,6 +762,9 @@
             selectNotification(nid);
           });
         });
+        return;
+      } else if (currentTab === 'portal') {
+        loadPortalTab();
         return;
       }
 

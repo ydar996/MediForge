@@ -4780,6 +4780,10 @@
   <script src="js/patient-identity.js?v=20260427160000"></script>  <!-- Loads clinical note logic -->
   <script src="js/billing.js?v=1"></script>  <!-- Billing system -->
   <script src="js/pricing.js?v=1"></script>  <!-- Pricing catalog -->
+  <script src="js/billing-mode-manager.js?v=20260617180000"></script>
+  <script src="js/billing-payer-engine.js"></script>
+  <script src="js/payer-workflow.js?v=20260617180000"></script>
+  <script src="js/billing-payer-hooks.js"></script>
   <script src="js/encounter-billing.js?v=1"></script>  <!-- Bill from encounter -->
   <script src="js/logout-button.js"></script>
   <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
@@ -4932,29 +4936,49 @@
     setPrescriptionButtonVisibility();
     document.addEventListener('DOMContentLoaded', setPrescriptionButtonVisibility);
 
-    // Bill Visit - delegated click for encounter billing
+    // Bill Visit — same encounter billing + Canada payer flow as clinical-note Generate Invoice
     document.addEventListener('click', async function(e) {
       const btn = e.target.closest('.btn-bill-visit');
       if (!btn || typeof createInvoiceFromEncounter !== 'function') return;
       const patientId = btn.getAttribute('data-patient-id');
       const visitDate = btn.getAttribute('data-visit-date');
       if (!patientId || !visitDate) return;
-      const patient = window.currentPatientData || (typeof window.resolvePatientByIdentifier === 'function' && (await window.resolvePatientByIdentifier(patientId)));
+
+      const returnUrl = window.location.pathname + window.location.search;
+
+      const patient = window.currentPatientData || (typeof window.resolvePatientByIdentifier === 'function'
+        ? await window.resolvePatientByIdentifier(patientId)
+        : null);
       if (!patient) {
         alert('Patient not found. Please refresh the page.');
         return;
       }
+
+      const visits = patient.visits || [];
+      const isFirstVisit = visits.length <= 1;
+      const serviceCode = isFirstVisit ? 'CONS-001' : 'CONS-003';
+      const visit = visits.find((v) => v.date === visitDate) || null;
+
       btn.disabled = true;
       btn.textContent = 'Creating...';
       try {
-        const invoice = await createInvoiceFromEncounter(patient, visitDate);
-        if (invoice) {
-          window.location.href = `collect-payment?invoiceId=${encodeURIComponent(invoice.id)}`;
-        } else {
+        const invoice = await createInvoiceFromEncounter(patient, visitDate, serviceCode, visit);
+        if (!invoice || !invoice.invoiceNumber) {
           alert('Could not create invoice.');
           btn.disabled = false;
           btn.textContent = 'Bill Visit';
+          return;
         }
+
+        if (typeof window.navigateAfterEncounterInvoice === 'function') {
+          await window.navigateAfterEncounterInvoice(invoice, patient, { returnUrl });
+          return;
+        }
+
+        const dest = window.appendInvoiceReturnUrl
+          ? window.appendInvoiceReturnUrl(`collect-payment?invoiceId=${encodeURIComponent(invoice.id)}`, returnUrl)
+          : `collect-payment?invoiceId=${encodeURIComponent(invoice.id)}`;
+        window.location.href = dest;
       } catch (err) {
         console.error('Bill visit error:', err);
         alert('Error creating invoice: ' + (err.message || err));

@@ -1,0 +1,118 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Messages - Patient Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    :root { --green: #008751; --green-dark: #006B3F; --beige: #F5F5DC; }
+    body { font-family: system-ui, sans-serif; background: var(--beige); margin: 0; }
+    .header { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; padding: 20px; }
+    .nav-bar { background: #fff; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 10px; box-shadow: 0 2px 5px rgba(0,0,0,.06); }
+    .nav-bar a { color: var(--green); text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+    .nav-bar a.active { background: var(--green); color: #fff; }
+    .container { max-width: 800px; margin: 20px auto; padding: 0 16px; }
+    .chat-box { background: #fff; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,.08); display: flex; flex-direction: column; min-height: 480px; }
+    .chat-messages { flex: 1; padding: 20px; overflow-y: auto; max-height: 420px; }
+    .msg { margin-bottom: 14px; max-width: 85%; padding: 12px 16px; border-radius: 12px; line-height: 1.45; }
+    .msg.patient { background: #e8f5e9; margin-left: auto; border-bottom-right-radius: 4px; }
+    .msg.staff { background: #e3f2fd; margin-right: auto; border-bottom-left-radius: 4px; }
+    .msg time { display: block; font-size: 11px; color: #666; margin-top: 6px; }
+    .chat-compose { border-top: 1px solid #eee; padding: 16px; display: flex; gap: 10px; }
+    .chat-compose textarea { flex: 1; min-height: 56px; padding: 12px; border: 1px solid #ccc; border-radius: 8px; font-family: inherit; resize: vertical; }
+    .chat-compose button { background: var(--green); color: #fff; border: none; padding: 12px 20px; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .hint { color: #555; font-size: 14px; margin-bottom: 12px; }
+  </style>
+</head>
+<body>
+  <div class="header"><h1>💬 Messages</h1><p>Chat with your clinic team</p></div>
+  <div class="nav-bar">
+    <a href="patient-dashboard">Dashboard</a>
+    <a href="patient-profile">Profile</a>
+    <a href="patient-appointments">Appointments</a>
+    <a href="patient-medications">Medications</a>
+    <a href="patient-results">Results</a>
+    <a href="patient-messages" class="active">Messages</a>
+    <a href="patient-summary">Summary</a>
+    <a href="#" onclick="logout();return false;" style="margin-left:auto;color:#c33;">Logout</a>
+  </div>
+  <div class="container">
+    <p class="hint">Send a message to your doctor or clinic staff. Replies appear here — check back or leave this page open.</p>
+    <div class="chat-box">
+      <div id="chatMessages" class="chat-messages"><p>Loading…</p></div>
+      <div class="chat-compose">
+        <textarea id="messageInput" placeholder="Type your message…" maxlength="2000"></textarea>
+        <button type="button" id="sendBtn" onclick="sendMessage()">Send</button>
+      </div>
+    </div>
+  </div>
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-auth.js"></script>
+  <script src="js/patient-data-loader.js"></script>
+  <script src="js/patient-portal.js"></script>
+  <script>
+    window.ensurePatientAccess();
+    let pollTimer = null;
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    async function renderMessages() {
+      const box = document.getElementById('chatMessages');
+      const msgs = await window.MediForgePatientPortal.loadPortalMessages();
+      if (!msgs.length) {
+        box.innerHTML = '<p style="color:#888;text-align:center;">No messages yet. Say hello to your care team.</p>';
+        return;
+      }
+      box.innerHTML = msgs.map((m) => {
+        const cls = m.from_patient ? 'patient' : 'staff';
+        const label = m.from_patient ? 'You' : 'Clinic';
+        const t = new Date(m.created_at).toLocaleString();
+        return `<div class="msg ${cls}"><strong>${label}</strong><br>${esc(m.body)}<time>${t}</time></div>`;
+      }).join('');
+      box.scrollTop = box.scrollHeight;
+    }
+
+    async function sendMessage() {
+      const input = document.getElementById('messageInput');
+      const text = (input.value || '').trim();
+      if (!text) return;
+      const btn = document.getElementById('sendBtn');
+      btn.disabled = true;
+      try {
+        await window.MediForgePatientPortal.sendPortalMessage(text);
+        input.value = '';
+        await renderMessages();
+      } catch (e) {
+        alert('Could not send: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function logout() {
+      if (confirm('Log out?')) {
+        localStorage.removeItem('user');
+        window.location.href = '/patient-login';
+      }
+    }
+
+    document.getElementById('messageInput').addEventListener('keydown', (e) => {
+      if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendMessage(); }
+    });
+
+    window.addEventListener('load', () => {
+      renderMessages();
+      pollTimer = setInterval(renderMessages, 8000);
+    });
+    window.addEventListener('beforeunload', () => clearInterval(pollTimer));
+  </script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>

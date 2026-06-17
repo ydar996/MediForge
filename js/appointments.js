@@ -1881,9 +1881,10 @@ async function loadAvailableSlots() {
   }
 }
 
-// Add appointment
+// Add appointment (skip on add-appointment.html — that page has its own submit handler)
 const addForm = document.getElementById("add-appointment-form");
-if (addForm) {
+const addAppointmentPage = /add-appointment/i.test(window.location.pathname || '');
+if (addForm && !addAppointmentPage) {
   const dateInput = document.getElementById("date");
   if (dateInput) {
     dateInput.addEventListener("change", loadAvailableSlots);
@@ -1994,9 +1995,13 @@ if (addForm) {
     //   if (slotTime <= now) { alert("Cannot book past times on the current day."); return; }
     // }
 
-    // Duplicate guard (local)
+    // Duplicate guard (local) — allow retry when a prior save never reached the cloud
     const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
-    const hasExisting = appointments.some(appt => appt.date === selectedDate && appt.patientName === displayName);
+    const hasExisting = appointments.some(appt => {
+      if (appt.date !== selectedDate || appt.patientName !== displayName) return false;
+      if (appt._pendingCloudSync || appt._cloudSyncFailed) return false;
+      return true;
+    });
     if (hasExisting) { alert("Patient already booked on this date. Only one appointment per day."); return; }
 
     // Supabase-first insert to avoid false errors later
@@ -2185,6 +2190,11 @@ if (addForm) {
       window.location.href = "/appointments";
     }
   });
+} else if (addForm && addAppointmentPage) {
+  const dateInput = document.getElementById("date");
+  if (dateInput) {
+    dateInput.addEventListener("change", loadAvailableSlots);
+  }
 }
 
 // --- Schedule Calendar Functions ---
@@ -3153,6 +3163,14 @@ window.generateInvoiceFromAppointment = async function(appointmentId, patientIdO
   
   // Find patient by ID or name - handle both Supabase format and localStorage format
   let patient = null;
+
+  const lookupKey = appointment.patientId || patientIdOrName;
+  if (lookupKey && typeof window.resolvePatientByIdentifier === 'function') {
+    patient = await window.resolvePatientByIdentifier(lookupKey);
+    if (patient) {
+      console.log('✅ [INVOICE] Found patient via resolvePatientByIdentifier:', lookupKey);
+    }
+  }
   
   // Debug: Log first patient structure to understand format
   if (patients.length > 0) {
@@ -3257,14 +3275,48 @@ window.generateInvoiceFromAppointment = async function(appointmentId, patientIdO
       return;
     }
   }
-  
-  // Redirect to quick-checkout with patient and appointment type pre-filled
-  // This allows the user to manually create the invoice and ensures it's linked to the appointment
-  const patientId = patient.id || patient.patient_id;
-  const appointmentTypeParam = encodeURIComponent(appointmentType || appointment.appointment_type || 'General Consultation');
-  const appointmentIdParam = encodeURIComponent(appointmentId);
-  
-  window.location.href = `/quick-checkout?patientId=${patientId}&appointmentType=${appointmentTypeParam}&appointmentId=${appointmentIdParam}`;
+
+  const returnUrl = typeof window.buildInvoiceLaunchReturnUrl === 'function'
+    ? window.buildInvoiceLaunchReturnUrl()
+    : window.location.pathname + (window.location.search || '');
+  const visitDate = appointment.date || appointment.appointmentDate;
+  const apptType = appointmentType || appointment.appointment_type || appointment.appointmentType || appointment.type || '';
+  const serviceCode = typeof window.resolveServiceCodeForAppointmentType === 'function'
+    ? window.resolveServiceCodeForAppointmentType(apptType)
+    : 'CONS-001';
+
+  if (typeof window.createInvoiceFromEncounter !== 'function') {
+    alert('Billing system is not fully loaded. Please refresh the page and try again.');
+    return;
+  }
+
+  try {
+    const encounter = {
+      id: appointmentId,
+      visitDate,
+      date: visitDate,
+      appointmentId,
+      appointmentType: apptType
+    };
+    const invoice = await window.createInvoiceFromEncounter(patient, visitDate, serviceCode, encounter);
+    if (!invoice || !invoice.invoiceNumber) {
+      alert('Failed to create invoice. Please try again.');
+      return;
+    }
+
+    if (typeof window.navigateAfterEncounterInvoice === 'function') {
+      await window.navigateAfterEncounterInvoice(invoice, patient, { returnUrl });
+      return;
+    }
+
+    const dest = window.appendInvoiceReturnUrl
+      ? window.appendInvoiceReturnUrl(`/collect-payment?invoiceId=${invoice.id}`, returnUrl)
+      : `/collect-payment?invoiceId=${invoice.id}`;
+    window.location.href = dest;
+  } catch (error) {
+    console.error('Error creating invoice from appointment:', error);
+    alert('Error creating invoice: ' + (error.message || 'Unknown error'));
+  }
 };
 
 function shouldInitAppointmentsModule() {
@@ -3278,6 +3330,15 @@ function shouldInitAppointmentsModule() {
 
 window.addEventListener('load', async function appointmentsModuleOnLoad() {
   if (!shouldInitAppointmentsModule()) return;
+
+  if (typeof window.ensureStaffSession === 'function') {
+    await window.ensureStaffSession({ redirectOnFailure: false });
+  }
+  const staffUser = JSON.parse(localStorage.getItem('user') || '{}');
+  if (!staffUser.username && !staffUser.email) {
+    window.location.href = '/login';
+    return;
+  }
 
   loadAppointments();
   setupPatientSearch(); // add-appointment.html

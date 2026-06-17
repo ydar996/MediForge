@@ -64,6 +64,17 @@
   <script src="js/universal-sync-status.js?v=202510220113070113071307"></script>  <!-- Universal sync status indicator -->
   <script>
     window.addEventListener('load', async function() {
+      if (typeof window.ensureStaffSession === 'function') {
+        try {
+          const session = await window.ensureStaffSession();
+          if (!session.ok || !session.orgId) {
+            console.warn('Staff session incomplete on load:', session.reason);
+          }
+        } catch (e) {
+          console.warn('ensureStaffSession failed:', e);
+        }
+      }
+
       // Remove any minimum date restriction to allow past dates
       const dateInput = document.getElementById('date');
       if (dateInput) {
@@ -160,25 +171,32 @@
     // Function to sync appointment to Supabase (same as desktop)
     async function syncAppointmentToSupabase(appointment) {
       try {
-        // Use window.supabaseClient (global from js/supabase-client.js)
         const supabaseClient = window.supabaseClient;
         if (!supabaseClient) {
           console.warn('⚠️ Supabase client not available');
           return { success: false, error: 'Supabase client not available' };
         }
-        
-        // Resolve organization_id properly (CRITICAL - must be UUID)
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-        let orgId = appointment.organization_id || user.organizationId || user.organization_id;
-        
-        if (!orgId && user.org) {
-          const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
-          const orgData = organizations[user.org];
-          if (orgData && orgData.id) {
-            orgId = orgData.id;
+
+        if (typeof window.ensureStaffSession === 'function') {
+          const session = await window.ensureStaffSession();
+          if (!session.orgId) {
+            return { success: false, error: 'Cannot determine organization ID' };
           }
         }
-        
+
+        let orgId = appointment.organization_id;
+        if (!orgId && typeof window.resolveOrganizationId === 'function') {
+          orgId = await window.resolveOrganizationId();
+        }
+        if (!orgId) {
+          const user = JSON.parse(localStorage.getItem("user") || "{}");
+          orgId = user.organizationId || user.organization_id;
+          if (!orgId && user.org) {
+            const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+            orgId = organizations[user.org]?.id;
+          }
+        }
+
         if (!orgId) {
           console.error('❌ CRITICAL: Cannot determine organization ID');
           return { success: false, error: 'Cannot determine organization ID' };
@@ -285,6 +303,33 @@
     const addAppointmentForm = document.getElementById("add-appointment-form");
     addAppointmentForm.addEventListener("submit", async function(e) {
       e.preventDefault();
+
+      if (typeof window.ensureStaffSession === 'function') {
+        const session = await window.ensureStaffSession();
+        if (!session.orgId) {
+          alert('Your session could not be verified. Please log in again, then retry saving the appointment.');
+          window.location.href = '/login';
+          return;
+        }
+      }
+
+      // Duplicate guard — allow retry when a prior attempt only saved locally
+      const patientNameForDup = document.getElementById("patientName")?.value?.trim();
+      const dupDate = document.getElementById("date")?.value;
+      if (patientNameForDup && dupDate) {
+        const appointmentsKey = getDataKey("appointments");
+        const existing = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
+        const blocked = existing.some(appt => {
+          if (appt.date !== dupDate || appt.patientName !== patientNameForDup) return false;
+          if (appt._pendingCloudSync || appt._cloudSyncFailed) return false;
+          return true;
+        });
+        if (blocked) {
+          alert('Patient already booked on this date. Only one appointment per day.');
+          return;
+        }
+      }
+
       // Get doctor name from dropdown or custom input
       const doctorSelect = document.getElementById("doctor");
       const doctorCustom = document.getElementById("doctorCustom");
@@ -473,6 +518,11 @@
       // can have appointments in the same slot and retroactive past-time appointments don't collide
       const uniqueSuffix = (patientId + '_' + appointmentDate + '_' + appointmentTime).replace(/[:-\s]/g, '');
       const appointmentId = uniqueSuffix.length <= 100 ? uniqueSuffix : uniqueSuffix.substring(0, 96) + '_' + Date.now().toString(36);
+      const userForAppt = JSON.parse(localStorage.getItem("user") || "{}");
+      let orgIdForAppt = userForAppt.organizationId || userForAppt.organization_id;
+      if (!orgIdForAppt && typeof window.resolveOrganizationId === 'function') {
+        orgIdForAppt = await window.resolveOrganizationId();
+      }
       const appointment = {
         id: appointmentId,
         patientId: patientId,
@@ -487,7 +537,7 @@
         status: 'scheduled',
         duration: 30,
         created_at: new Date().toISOString(),
-        organization_id: JSON.parse(localStorage.getItem("user") || "{}").organizationId
+        organization_id: orgIdForAppt
       };
       
       // Debug logging to verify appointment type is set correctly
@@ -539,12 +589,19 @@
         // Supabase succeeded - save to localStorage as cache
         supabaseSuccess = true;
         let appointments = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
-        const isDuplicate = appointments.some(a => a.id === appointment.id);
-        if (!isDuplicate) {
+        appointment._pendingCloudSync = false;
+        appointment._cloudSyncFailed = false;
+        const pendingIdx = appointments.findIndex(a =>
+          a.date === appointment.date &&
+          a.patientName === appointment.patientName &&
+          (a._pendingCloudSync || a._cloudSyncFailed)
+        );
+        if (pendingIdx >= 0) {
+          appointments[pendingIdx] = appointment;
+        } else if (!appointments.some(a => a.id === appointment.id)) {
           appointments.push(appointment);
-          localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
-          console.log('✅ Appointment cached to localStorage after Supabase success');
         }
+        localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
         const user = JSON.parse(localStorage.getItem("user") || "{}");
         let orgIdForNotif = appointment.organization_id || user.organizationId || user.organization_id;
         if (!orgIdForNotif && user.org) {
@@ -564,14 +621,22 @@
         // Supabase failed - log the actual error for debugging
         console.error('❌ CRITICAL: Supabase save failed:', syncResult.error, syncResult.errorDetails);
         
-        // Fallback to localStorage
+        // Fallback to localStorage (mark as pending cloud sync so user can retry)
         let appointments = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
-        const isDuplicate = appointments.some(a => a.id === appointment.id);
-        if (!isDuplicate) {
+        appointment._pendingCloudSync = true;
+        appointment._cloudSyncFailed = true;
+        const pendingIdx = appointments.findIndex(a =>
+          a.date === appointment.date &&
+          a.patientName === appointment.patientName &&
+          (a._pendingCloudSync || a._cloudSyncFailed)
+        );
+        if (pendingIdx >= 0) {
+          appointments[pendingIdx] = appointment;
+        } else if (!appointments.some(a => a.id === appointment.id)) {
           appointments.push(appointment);
-          localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
-          console.log('✅ Appointment saved to localStorage (fallback)');
         }
+        localStorage.setItem(appointmentsKey, JSON.stringify(appointments));
+        console.log('✅ Appointment saved to localStorage (fallback, pending cloud sync)');
         
         // Show error message to user
         syncStatus.style.borderColor = '#dc3545';

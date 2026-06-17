@@ -53,6 +53,58 @@
       outline: none;
       border-color: #008751;
     }
+    .patient-search-combobox {
+      position: relative;
+      margin-bottom: 15px;
+    }
+    .patient-search-combobox input {
+      margin-bottom: 0;
+    }
+    .patient-search-dropdown {
+      display: none;
+      position: absolute;
+      left: 0;
+      right: 0;
+      top: calc(100% + 4px);
+      max-height: 320px;
+      overflow-y: auto;
+      background: #fff;
+      border: 2px solid #008751;
+      border-radius: 6px;
+      box-shadow: 0 8px 24px rgba(0, 0, 0, 0.12);
+      z-index: 100;
+    }
+    .patient-search-dropdown.open {
+      display: block;
+    }
+    .patient-search-option {
+      padding: 10px 14px;
+      cursor: pointer;
+      border-bottom: 1px solid #eee;
+      font-size: 14px;
+      line-height: 1.4;
+    }
+    .patient-search-option:hover,
+    .patient-search-option:focus {
+      background: #e8f5e9;
+      outline: none;
+    }
+    .patient-search-option .option-meta {
+      color: #666;
+      font-size: 12px;
+      margin-top: 2px;
+    }
+    .patient-search-dropdown-status {
+      padding: 12px 14px;
+      color: #666;
+      font-size: 13px;
+      font-style: italic;
+      text-align: center;
+    }
+    .patient-search-dropdown-status.error {
+      color: #d32f2f;
+      font-style: normal;
+    }
     .patient-results {
       margin-top: 20px;
     }
@@ -205,6 +257,7 @@
       <br><br>
       <strong>What this does:</strong>
       <ul>
+        <li>Click the search box to browse all patients in a scrollable list, or type to filter</li>
         <li>Searches for patients by name or patient ID</li>
         <li>Shows which patients already have portal access</li>
         <li>Creates portal login credentials (username & temporary password)</li>
@@ -216,12 +269,19 @@
 
     <div class="search-section">
       <h2>Search for Patient</h2>
-      <input 
-        type="text" 
-        id="patient-search" 
-        placeholder="Search by patient name or patient ID (e.g., MEC0006)..."
-        onkeyup="handleSearchInput(event)"
-      >
+      <div class="patient-search-combobox">
+        <input 
+          type="text" 
+          id="patient-search" 
+          placeholder="Click to browse patients, or type to filter by name or patient ID..."
+          autocomplete="off"
+          role="combobox"
+          aria-expanded="false"
+          aria-controls="patient-search-dropdown"
+          aria-autocomplete="list"
+        >
+        <div id="patient-search-dropdown" class="patient-search-dropdown" role="listbox"></div>
+      </div>
       <div id="patient-results" class="patient-results"></div>
     </div>
 
@@ -268,17 +328,283 @@
         window.location.href = '/patient-dashboard';
         return;
       }
+      setupPatientSearchCombobox();
     });
 
     let searchTimeout;
     let allPatientsWithPortalStatus = [];
+    let selectedPatientUuid = null;
+    let lastSelectedLabel = '';
+
+    const PATIENT_PICKER_PAGE_SIZE = 50;
+    const patientPicker = {
+      items: [],
+      offset: 0,
+      hasMore: true,
+      loading: false,
+      filter: '',
+      open: false
+    };
+
+    function getOrgUuid() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgId = user.organizationId || user.organization_id;
+      return orgId && String(orgId).includes('-') ? orgId : null;
+    }
+
+    function patientDisplayId(patient) {
+      if (typeof window.patientMrnDisplay === 'function') {
+        return window.patientMrnDisplay(patient);
+      }
+      return patient.patient_id || patient.id || 'N/A';
+    }
+
+    function patientOptionLabel(patient) {
+      const name = `${patient.first_name || ''} ${patient.last_name || ''}`.trim();
+      const id = patientDisplayId(patient);
+      const dob = patient.date_of_birth
+        ? new Date(patient.date_of_birth).toLocaleDateString()
+        : 'N/A';
+      const portal = patient.portal?.hasPortal ? ' · Portal: yes' : '';
+      return { name, id, dob, portal };
+    }
+
+    function setDropdownOpen(open) {
+      patientPicker.open = open;
+      const dropdown = document.getElementById('patient-search-dropdown');
+      const input = document.getElementById('patient-search');
+      dropdown.classList.toggle('open', open);
+      input.setAttribute('aria-expanded', open ? 'true' : 'false');
+    }
+
+    async function attachPortalStatus(patients) {
+      if (!patients.length || !window.supabaseClient) {
+        return patients.map(p => ({ ...p, portal: { hasPortal: false } }));
+      }
+      const patientIds = patients.map(p => p.id);
+      const { data: usersWithPortal, error } = await window.supabaseClient
+        .from('users')
+        .select('patient_id, username, password_reset_required')
+        .in('patient_id', patientIds)
+        .eq('role', 'Patient');
+
+      if (error && error.code !== 'PGRST116') {
+        log(`⚠️ Error checking portal status: ${error.message}`, 'warning');
+      }
+
+      const portalMap = new Map();
+      (usersWithPortal || []).forEach(user => {
+        portalMap.set(user.patient_id, {
+          hasPortal: true,
+          username: user.username,
+          passwordResetRequired: user.password_reset_required
+        });
+      });
+
+      return patients.map(patient => ({
+        ...patient,
+        portal: portalMap.get(patient.id) || { hasPortal: false }
+      }));
+    }
+
+    async function fetchPatientPickerPage({ reset = false } = {}) {
+      if (!window.supabaseClient) {
+        throw new Error('Supabase client not initialized');
+      }
+      if (patientPicker.loading) return;
+      if (!reset && !patientPicker.hasMore) return;
+
+      patientPicker.loading = true;
+      if (reset) {
+        patientPicker.offset = 0;
+        patientPicker.hasMore = true;
+        patientPicker.items = [];
+      }
+
+      renderPatientDropdown();
+
+      const orgId = getOrgUuid();
+      const from = patientPicker.offset;
+      const to = from + PATIENT_PICKER_PAGE_SIZE - 1;
+      const filter = patientPicker.filter.trim();
+
+      let query = window.supabaseClient
+        .from('patients')
+        .select('*')
+        .order('last_name', { ascending: true })
+        .order('first_name', { ascending: true })
+        .range(from, to);
+
+      if (orgId) {
+        query = query.eq('organization_id', orgId);
+      }
+      if (filter) {
+        const esc = filter.replace(/'/g, "''");
+        query = query.or(
+          `first_name.ilike.%${esc}%,last_name.ilike.%${esc}%,patient_id.ilike.%${esc}%`
+        );
+      }
+
+      const { data: patients, error } = await query;
+      if (error) throw error;
+
+      const batch = await attachPortalStatus(patients || []);
+      patientPicker.items = reset ? batch : patientPicker.items.concat(batch);
+      patientPicker.offset += batch.length;
+      patientPicker.hasMore = batch.length === PATIENT_PICKER_PAGE_SIZE;
+      patientPicker.loading = false;
+      renderPatientDropdown();
+    }
+
+    function renderPatientDropdown() {
+      const dropdown = document.getElementById('patient-search-dropdown');
+      dropdown.innerHTML = '';
+
+      if (patientPicker.loading && patientPicker.items.length === 0) {
+        dropdown.innerHTML = '<div class="patient-search-dropdown-status">Loading patients…</div>';
+        return;
+      }
+
+      if (!patientPicker.loading && patientPicker.items.length === 0) {
+        dropdown.innerHTML = '<div class="patient-search-dropdown-status">No patients found.</div>';
+        return;
+      }
+
+      patientPicker.items.forEach(patient => {
+        const { name, id, dob, portal } = patientOptionLabel(patient);
+        const option = document.createElement('button');
+        option.type = 'button';
+        option.className = 'patient-search-option';
+        option.setAttribute('role', 'option');
+        option.innerHTML =
+          `<strong>${escapeHtml(name)}</strong>` +
+          `<div class="option-meta">${escapeHtml(id)} · DOB: ${escapeHtml(dob)}${escapeHtml(portal)}</div>`;
+        option.addEventListener('click', () => selectPatientFromDropdown(patient));
+        dropdown.appendChild(option);
+      });
+
+      if (patientPicker.loading) {
+        const status = document.createElement('div');
+        status.className = 'patient-search-dropdown-status';
+        status.textContent = 'Loading more…';
+        dropdown.appendChild(status);
+      } else if (patientPicker.hasMore) {
+        const status = document.createElement('div');
+        status.className = 'patient-search-dropdown-status';
+        status.textContent = 'Scroll for more patients';
+        dropdown.appendChild(status);
+      }
+    }
+
+    async function openPatientDropdown() {
+      syncFilterFromInput();
+      setDropdownOpen(true);
+      const needsReload = patientPicker.items.length === 0 || patientPicker.filter !== patientPicker._lastFetchedFilter;
+      if (needsReload && !patientPicker.loading) {
+        try {
+          patientPicker._lastFetchedFilter = patientPicker.filter;
+          await fetchPatientPickerPage({ reset: true });
+        } catch (error) {
+          document.getElementById('patient-search-dropdown').innerHTML =
+            `<div class="patient-search-dropdown-status error">${escapeHtml(error.message)}</div>`;
+          log(`❌ Error loading patients: ${error.message}`, 'error');
+        }
+      } else {
+        renderPatientDropdown();
+      }
+    }
+
+    async function refreshPatientPicker() {
+      syncFilterFromInput();
+      try {
+        patientPicker._lastFetchedFilter = patientPicker.filter;
+        await fetchPatientPickerPage({ reset: true });
+      } catch (error) {
+        log(`❌ Error refreshing patient list: ${error.message}`, 'error');
+      }
+    }
+
+    async function selectPatientFromDropdown(patient) {
+      const label = patientOptionLabel(patient);
+      lastSelectedLabel = `${label.name} (${label.id})`;
+      document.getElementById('patient-search').value = lastSelectedLabel;
+      selectedPatientUuid = patient.id;
+      setDropdownOpen(false);
+
+      allPatientsWithPortalStatus = [patient];
+      const deduplicated = deduplicatePatients([patient], patient.patient_id || '');
+      displayPatients(deduplicated);
+    }
+
+    async function reloadSelectedPatientCard() {
+      if (!selectedPatientUuid || !window.supabaseClient) return;
+      const { data: patient, error } = await window.supabaseClient
+        .from('patients')
+        .select('*')
+        .eq('id', selectedPatientUuid)
+        .maybeSingle();
+      if (error || !patient) return;
+      const [withPortal] = await attachPortalStatus([patient]);
+      await selectPatientFromDropdown(withPortal);
+    }
+
+    function setupPatientSearchCombobox() {
+      const input = document.getElementById('patient-search');
+      const dropdown = document.getElementById('patient-search-dropdown');
+
+      input.addEventListener('focus', openPatientDropdown);
+      input.addEventListener('click', openPatientDropdown);
+
+      input.addEventListener('input', function() {
+        if (selectedPatientUuid && input.value !== lastSelectedLabel) {
+          selectedPatientUuid = null;
+          lastSelectedLabel = '';
+        }
+        clearTimeout(searchTimeout);
+        searchTimeout = setTimeout(async () => {
+          syncFilterFromInput();
+          setDropdownOpen(true);
+          await refreshPatientPicker();
+        }, 250);
+      });
+
+      input.addEventListener('keydown', async function(event) {
+        if (event.key === 'Escape') {
+          setDropdownOpen(false);
+        }
+        if (event.key === 'Enter') {
+          event.preventDefault();
+          if (patientPicker.items.length === 1) {
+            await selectPatientFromDropdown(patientPicker.items[0]);
+          }
+        }
+      });
+
+      dropdown.addEventListener('scroll', async function() {
+        if (patientPicker.loading || !patientPicker.hasMore) return;
+        const nearBottom = dropdown.scrollTop + dropdown.clientHeight >= dropdown.scrollHeight - 48;
+        if (nearBottom) {
+          try {
+            await fetchPatientPickerPage();
+          } catch (error) {
+            log(`❌ Error loading more patients: ${error.message}`, 'error');
+          }
+        }
+      });
+
+      document.addEventListener('click', function(event) {
+        if (!event.target.closest('.patient-search-combobox')) {
+          setDropdownOpen(false);
+        }
+      });
+    }
 
     function log(message, type = 'info') {
       const logDiv = document.getElementById('log');
       logDiv.style.display = 'block';
       const timestamp = new Date().toLocaleTimeString();
-      const className = type === 'error' ? 'error' : 
-                       type === 'success' ? 'success' : 
+      const className = type === 'error' ? 'error' :
+                       type === 'success' ? 'success' :
                        type === 'warning' ? 'warning' : 'info-text';
       logDiv.innerHTML += `<span class="${className}">[${timestamp}] ${message}</span>\n`;
       logDiv.scrollTop = logDiv.scrollHeight;
@@ -290,87 +616,20 @@
       document.getElementById('log').style.display = 'none';
     }
 
-    async function handleSearchInput(event) {
-      if (event.key === 'Enter') {
-        await searchPatients();
-        return;
-      }
-
-      // Debounce search
-      clearTimeout(searchTimeout);
-      const searchTerm = event.target.value.trim();
-      
-      if (searchTerm.length < 2) {
-        document.getElementById('patient-results').innerHTML = '';
-        allPatientsWithPortalStatus = [];
-        return;
-      }
-
-      searchTimeout = setTimeout(async () => {
-        await searchPatients();
-      }, 500);
+    function escapeHtml(text) {
+      return String(text || '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;');
     }
 
-    async function searchPatients() {
-      const searchTerm = document.getElementById('patient-search').value.trim();
-      
-      if (!searchTerm) {
-        document.getElementById('patient-results').innerHTML = '';
-        return;
-      }
-
-      if (!window.supabaseClient) {
-        log('❌ Supabase client not initialized', 'error');
-        return;
-      }
-
-      try {
-        log(`🔍 Searching for patients: "${searchTerm}"...`, 'info');
-        
-        // Get current user's organization
-        const user = JSON.parse(localStorage.getItem("user") || "{}");
-        const orgId = user.organizationId || user.organization_id || user.org;
-
-        // Search patients
-        let query = window.supabaseClient
-          .from('patients')
-          .select('*')
-          .or(`first_name.ilike.%${searchTerm}%,last_name.ilike.%${searchTerm}%,patient_id.ilike.%${searchTerm}%`)
-          .limit(50);
-
-        if (orgId && orgId.includes('-')) {
-          // Only filter by org if it's a UUID (not a name)
-          query = query.eq('organization_id', orgId);
-        }
-
-        const { data: patients, error } = await query;
-
-        if (error) {
-          log(`❌ Error searching patients: ${error.message}`, 'error');
-          return;
-        }
-
-        if (!patients || patients.length === 0) {
-          document.getElementById('patient-results').innerHTML = 
-            '<div class="info">No patients found matching your search.</div>';
-          return;
-        }
-
-        log(`✅ Found ${patients.length} patient(s)`, 'success');
-
-        // Check which patients have portal access
-        await loadPortalStatus(patients);
-        
-        // Deduplicate: same person (name + DOB) can exist as multiple records (e.g. MEC0006, MEC0028, MEC0032)
-        const deduplicated = deduplicatePatients(allPatientsWithPortalStatus, searchTerm);
-        if (deduplicated.length < allPatientsWithPortalStatus.length) {
-          log(`ℹ️ Consolidated ${allPatientsWithPortalStatus.length - deduplicated.length} duplicate record(s) – same person, different IDs`, 'info');
-        }
-        displayPatients(deduplicated);
-
-      } catch (error) {
-        log(`❌ Error: ${error.message}`, 'error');
-        console.error('Search error:', error);
+    function syncFilterFromInput() {
+      const val = document.getElementById('patient-search').value.trim();
+      if (!val || (selectedPatientUuid && val === lastSelectedLabel)) {
+        patientPicker.filter = '';
+      } else {
+        patientPicker.filter = val;
       }
     }
 
@@ -419,51 +678,6 @@
         result.push(canonical);
       }
       return result;
-    }
-
-    async function loadPortalStatus(patients) {
-      if (!window.supabaseClient) return;
-
-      try {
-        // Get all patient IDs
-        const patientIds = patients.map(p => p.id);
-
-        // Check which ones have portal access
-        const { data: usersWithPortal, error } = await window.supabaseClient
-          .from('users')
-          .select('patient_id, username, password_reset_required')
-          .in('patient_id', patientIds)
-          .eq('role', 'Patient');
-
-        if (error && error.code !== 'PGRST116') {
-          log(`⚠️ Error checking portal status: ${error.message}`, 'warning');
-        }
-
-        const portalMap = new Map();
-        if (usersWithPortal) {
-          usersWithPortal.forEach(user => {
-            portalMap.set(user.patient_id, {
-              hasPortal: true,
-              username: user.username,
-              passwordResetRequired: user.password_reset_required
-            });
-          });
-        }
-
-        // Combine patient data with portal status
-        allPatientsWithPortalStatus = patients.map(patient => ({
-          ...patient,
-          portal: portalMap.get(patient.id) || { hasPortal: false }
-        }));
-
-      } catch (error) {
-        log(`⚠️ Error loading portal status: ${error.message}`, 'warning');
-        // Continue with patient data even if portal status fails
-        allPatientsWithPortalStatus = patients.map(patient => ({
-          ...patient,
-          portal: { hasPortal: false }
-        }));
-      }
     }
 
     function displayPatients(patients) {
@@ -689,7 +903,7 @@
         log('ℹ️ Send these credentials to the patient via email or SMS.', 'info');
 
         // Refresh patient list
-        await searchPatients();
+        await reloadSelectedPatientCard();
 
       } catch (error) {
         log(`❌ Error: ${error.message}`, 'error');
@@ -749,7 +963,7 @@
         log('⚠️ Patient will need to reset password via "Forgot Password" or contact support.', 'warning');
 
         // Refresh patient list
-        await searchPatients();
+        await reloadSelectedPatientCard();
 
       } catch (error) {
         log(`❌ Error: ${error.message}`, 'error');

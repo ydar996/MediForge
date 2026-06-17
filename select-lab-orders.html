@@ -239,6 +239,12 @@
       border-image: linear-gradient(135deg, var(--primary-green), var(--kente-gold), var(--warm-orange)) 1;
       box-shadow: 0 4px 16px rgba(0, 135, 83, 0.15);
     }
+
+    .bulk-actions.bulk-actions-above-table {
+      margin-top: 0;
+      margin-bottom: 12px;
+      padding: 14px 16px;
+    }
     
     .bulk-actions h3 {
       margin-top: 0;
@@ -346,6 +352,19 @@
         <strong>Select All Tests</strong>
       </label>
     </div>
+
+    <div class="bulk-actions bulk-actions-above-table" id="bulk-actions-top">
+      <h3>Bulk Actions</h3>
+      <p style="margin: 0 0 10px 0; font-size: 13px; color: var(--charcoal);">Select tests below, then use one button to create <strong>one lab order</strong> with all selected tests. (Using the per-row &quot;Send to Lab Scientist&quot; creates one order per row.)</p>
+      <div class="bulk-buttons">
+        <button class="btn-bulk bulk-send-lab-btn" onclick="sendAllToLabScientist()" disabled title="Creates one order with all selected tests">
+          🧪 Send Selected to Lab Scientist (one order)
+        </button>
+        <button class="btn-bulk bulk-send-external-btn" onclick="sendAllToExternalLab()" disabled title="Creates one order with all selected tests">
+          📤 Send Selected to Outside Lab (one order)
+        </button>
+      </div>
+    </div>
     
     <table class="lab-tests-table">
       <thead>
@@ -364,14 +383,14 @@
       </tbody>
     </table>
     
-    <div class="bulk-actions">
+    <div class="bulk-actions" id="bulk-actions-bottom">
       <h3>Bulk Actions</h3>
       <p style="margin: 0 0 10px 0; font-size: 13px; color: var(--charcoal);">Select tests above, then use one button below to create <strong>one lab order</strong> with all selected tests. (Using the per-row &quot;Send to Lab Scientist&quot; creates one order per row.)</p>
       <div class="bulk-buttons">
-        <button class="btn-bulk" id="bulk-send-lab-btn" onclick="sendAllToLabScientist()" disabled title="Creates one order with all selected tests">
+        <button class="btn-bulk bulk-send-lab-btn" onclick="sendAllToLabScientist()" disabled title="Creates one order with all selected tests">
           🧪 Send Selected to Lab Scientist (one order)
         </button>
-        <button class="btn-bulk" id="bulk-send-external-btn" onclick="sendAllToExternalLab()" disabled title="Creates one order with all selected tests">
+        <button class="btn-bulk bulk-send-external-btn" onclick="sendAllToExternalLab()" disabled title="Creates one order with all selected tests">
           📤 Send Selected to Outside Lab (one order)
         </button>
       </div>
@@ -590,15 +609,23 @@
         if (!inHouseLabEnabled) {
           const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
           const orgData = organizations[organizationId] || organizations[Object.keys(organizations)[0]];
-          if (orgData && orgData.settings && orgData.settings.in_house_laboratory) {
+          if (orgData && orgData.settings) {
             inHouseLabEnabled = orgData.settings.in_house_laboratory === true;
           }
         }
         
         console.log('In-house lab enabled:', inHouseLabEnabled);
+        applyInHouseLabVisibility();
       } catch (error) {
         console.error('Error checking in-house lab setting:', error);
+        applyInHouseLabVisibility();
       }
+    }
+
+    function applyInHouseLabVisibility() {
+      document.querySelectorAll('.bulk-send-lab-btn, .btn-send-lab').forEach((el) => {
+        el.style.display = inHouseLabEnabled ? '' : 'none';
+      });
     }
     
     function loadLabTests() {
@@ -641,6 +668,7 @@
         
         tbody.appendChild(row);
       });
+      applyInHouseLabVisibility();
       updateBulkButtons();
     }
     
@@ -679,8 +707,12 @@
     function updateBulkButtons() {
       const hasSelection = selectedTests.size > 0;
       const ready = organizationId && window.supabaseClient;
-      document.getElementById('bulk-send-lab-btn').disabled = !hasSelection || !inHouseLabEnabled || !ready;
-      document.getElementById('bulk-send-external-btn').disabled = !hasSelection || !ready;
+      document.querySelectorAll('.bulk-send-lab-btn').forEach((btn) => {
+        btn.disabled = !hasSelection || !inHouseLabEnabled || !ready;
+      });
+      document.querySelectorAll('.bulk-send-external-btn').forEach((btn) => {
+        btn.disabled = !hasSelection || !ready;
+      });
     }
     
     async function sendTestToLabScientist(index) {

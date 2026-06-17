@@ -69,11 +69,13 @@ window.createInvoiceFromEncounter = async function(patient, visitDate, serviceId
     const encounterId = `${patient.id || patient.patient_id}-${visitDate}`;
     const patientName = [patient.firstName, patient.middleName, patient.lastName].filter(Boolean).join(' ') ||
       patient.patientName || patient.name || 'Unknown';
+    const apptType = encounter?.appointmentType || '';
+    const apptId = encounter?.appointmentId || encounter?.id;
     invoiceData = {
-      patientId: patient.id || patient.patient_id,
+      patientId: patient.patient_id || patient.patientNumber || patient.id || patient._supabaseUuid,
       patientName,
       date: visitDate,
-      encounterId,
+      encounterId: apptId || encounterId,
       services: [{
         id: service.id,
         code: service.code,
@@ -84,7 +86,9 @@ window.createInvoiceFromEncounter = async function(patient, visitDate, serviceId
         total: parseFloat(service.price) || 0,
         taxable: service.taxable !== false
       }],
-      notes: `Encounter ${visitDate} - ${service.name}`
+      notes: apptId
+        ? (apptType ? `Invoice for ${apptType} appointment` : 'Invoice for appointment')
+        : `Encounter ${visitDate} - ${service.name}`
     };
   }
 
@@ -119,4 +123,89 @@ window.createInvoiceFromEncounter = async function(patient, visitDate, serviceId
   }
 
   return invoice;
+};
+
+function buildInvoiceLaunchReturnUrl() {
+  return window.location.pathname + (window.location.search || '');
+}
+
+function resolveServiceCodeForAppointmentType(appointmentType) {
+  const t = String(appointmentType || '').toLowerCase();
+  if (t.includes('follow')) return 'CONS-003';
+  if (t.includes('specialist')) return 'CONS-002';
+  return 'CONS-001';
+}
+
+function resolveInvoiceReturnUrl(fallback) {
+  const raw = new URLSearchParams(window.location.search).get('returnUrl');
+  if (!raw) {
+    if (fallback) return fallback;
+    try {
+      if (document.referrer && document.referrer.includes(window.location.hostname)) {
+        const ref = new URL(document.referrer);
+        if (ref.pathname && !ref.pathname.includes('collect-payment') && !ref.pathname.includes('invoice-details')) {
+          return ref.pathname + ref.search;
+        }
+      }
+    } catch (_) { /* ignore */ }
+    return null;
+  }
+  try {
+    const decoded = decodeURIComponent(raw);
+    return decoded.startsWith('/') || decoded.startsWith('http') ? decoded : '/' + decoded;
+  } catch (_) {
+    return raw.startsWith('/') ? raw : '/' + raw;
+  }
+}
+
+function appendInvoiceReturnUrl(path, returnUrl) {
+  if (!returnUrl) return path;
+  const sep = path.includes('?') ? '&' : '?';
+  return path + sep + 'returnUrl=' + encodeURIComponent(returnUrl);
+}
+
+async function discardPendingInvoiceIfUntouched(invoiceId) {
+  if (!invoiceId || typeof window.getInvoiceById !== 'function') return false;
+  const inv = await window.getInvoiceById(invoiceId);
+  if (!inv) return false;
+  if ((parseFloat(inv.amountPaid) || 0) > 0) return false;
+  if (inv.status !== 'pending' && inv.status !== 'claim_pending') return false;
+  if (typeof window.cancelInvoice === 'function') {
+    await window.cancelInvoice(invoiceId, 'Discarded before payment or billing confirmation');
+    return true;
+  }
+  return false;
+}
+
+window.buildInvoiceLaunchReturnUrl = buildInvoiceLaunchReturnUrl;
+window.resolveServiceCodeForAppointmentType = resolveServiceCodeForAppointmentType;
+window.resolveInvoiceReturnUrl = resolveInvoiceReturnUrl;
+window.appendInvoiceReturnUrl = appendInvoiceReturnUrl;
+window.discardPendingInvoiceIfUntouched = discardPendingInvoiceIfUntouched;
+
+window.discardPendingInvoiceAndReturn = async function discardPendingInvoiceAndReturn(fallback) {
+  const params = new URLSearchParams(window.location.search);
+  const invoiceId = params.get('invoiceId') || params.get('id');
+  if (invoiceId) await discardPendingInvoiceIfUntouched(invoiceId);
+  const target = resolveInvoiceReturnUrl(fallback || '/billing-dashboard');
+  window.location.href = target || '/billing-dashboard';
+};
+
+/** Route after encounter invoice: payer-led (Canada) or patient pay, preserving launch context. */
+window.navigateAfterEncounterInvoice = async function navigateAfterEncounterInvoice(invoice, patient, options) {
+  if (!invoice?.id) return;
+  const returnUrl = options.returnUrl || buildInvoiceLaunchReturnUrl();
+  const route = window.MediForgePayerWorkflow
+    ? await window.MediForgePayerWorkflow.resolvePostInvoiceRoute(invoice, patient)
+    : null;
+
+  if (route?.skipCollectPayment) {
+    if (route.message) alert(route.message);
+    window.location.href = resolveInvoiceReturnUrl(returnUrl) || returnUrl;
+    return;
+  }
+
+  let dest = `/collect-payment?invoiceId=${invoice.id}`;
+  dest = appendInvoiceReturnUrl(dest, returnUrl);
+  window.location.href = dest;
 };

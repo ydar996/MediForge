@@ -44,7 +44,8 @@
       results: merged,
       status: 'completed',
       lab_status: 'completed',
-      completed_at: new Date().toISOString()
+      completed_at: new Date().toISOString(),
+      portal_results_status: 'awaiting_review'
     }).eq('id', orderId);
 
     if (chartResults.critical && typeof global.showErrorNotification === 'function') {

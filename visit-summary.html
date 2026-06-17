@@ -1,0 +1,112 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visit Summary - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    :root { --green: #008751; --green-dark: #006B3F; --beige: #F5F5DC; }
+    body { font-family: system-ui, sans-serif; background: var(--beige); margin: 0; padding: 20px; }
+    .wrap { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 12px; border: 2px solid var(--green); padding: 28px; box-shadow: 0 6px 24px rgba(0,0,0,0.08); }
+    h1 { color: var(--green); margin-top: 0; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 20px; }
+    .btn { padding: 10px 18px; border: none; border-radius: 8px; font-weight: 600; cursor: pointer; text-decoration: none; display: inline-block; }
+    .btn-primary { background: var(--green); color: #fff; }
+    .btn-secondary { background: #eee; color: #333; }
+    .btn-print { background: #DAA520; color: #fff; }
+    .patient-banner { background: var(--beige); padding: 14px; border-radius: 8px; margin-bottom: 20px; }
+    .summary-block { margin-bottom: 18px; padding-bottom: 14px; border-bottom: 1px solid #eee; }
+    .summary-block h3 { color: var(--green-dark); margin: 0 0 8px; font-size: 1rem; }
+    .muted { color: #777; font-style: italic; }
+    .portal-note { background: #e8f5e9; padding: 10px 14px; border-radius: 8px; font-size: 0.9rem; margin-bottom: 16px; }
+    @media print { .toolbar, .portal-note { display: none; } .wrap { border: none; box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <div class="toolbar no-print">
+      <button type="button" class="btn btn-secondary" onclick="goBack()">← Back to clinical note</button>
+      <button type="button" class="btn btn-print" onclick="window.print()">🖨️ Print / PDF</button>
+      <button type="button" class="btn btn-primary" onclick="saveSummary()">💾 Save &amp; publish to patient portal</button>
+    </div>
+    <h1>📄 Visit Summary</h1>
+    <div class="portal-note no-print">A copy is saved to the patient portal automatically so patients can review visit details even before notes are finalized.</div>
+    <div id="patient-banner" class="patient-banner">Loading…</div>
+    <div id="summary-content"><p>Building visit summary…</p></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/universal-data-loader.js"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/patient-identity.js"></script>
+  <script src="js/patients.js"></script>
+  <script src="js/visit-summary-builder.js"></script>
+  <script>
+    let patientId = null;
+    let visitDate = null;
+    let organizationId = null;
+    let snapshot = null;
+    let legacyPatientId = null;
+
+    async function init() {
+      const params = new URLSearchParams(window.location.search);
+      patientId = params.get('patientId');
+      visitDate = params.get('visitDate');
+      if (!patientId || !visitDate) {
+        alert('Missing patient or visit date.');
+        window.close();
+        return;
+      }
+
+      if (typeof window.resolveOrganizationId === 'function') {
+        organizationId = await window.resolveOrganizationId();
+      } else {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        organizationId = user.organizationId || user.organization_id;
+      }
+
+      try {
+        const built = await window.VisitSummaryBuilder.buildOfficeVisitSummary(patientId, visitDate, organizationId);
+        snapshot = built.snapshot;
+        legacyPatientId = built.legacyId || patientId;
+
+        document.getElementById('patient-banner').innerHTML = `
+          <strong>${snapshot.patient.name}</strong> · ID ${snapshot.patient.patientId || patientId}<br>
+          <strong>Visit:</strong> ${window.VisitSummaryBuilder.formatDate(visitDate)}
+        `;
+        document.getElementById('summary-content').innerHTML = window.VisitSummaryBuilder.renderSnapshotHtml(snapshot);
+
+        await saveSummary(true);
+      } catch (e) {
+        console.error(e);
+        document.getElementById('summary-content').innerHTML = `<p style="color:#c33">Could not build summary: ${e.message || e}</p>`;
+      }
+    }
+
+    async function saveSummary(silent) {
+      if (!snapshot || !organizationId) return;
+      try {
+        await window.VisitSummaryBuilder.saveOfficeVisitSummary(
+          legacyPatientId || patientId,
+          visitDate,
+          organizationId,
+          snapshot
+        );
+        if (!silent) alert('Visit summary saved and published to the patient portal.');
+      } catch (e) {
+        if (!silent) alert('Save failed: ' + (e.message || e));
+        else console.warn('Auto-save visit summary:', e);
+      }
+    }
+
+    function goBack() {
+      window.location.href = `clinical-note?patientId=${encodeURIComponent(patientId)}&visitDate=${encodeURIComponent(visitDate)}`;
+    }
+
+    window.addEventListener('load', init);
+  </script>
+</body>
+</html>

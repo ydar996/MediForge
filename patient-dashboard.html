@@ -348,13 +348,17 @@
           <div class="icon"><i class="fa-solid fa-flask" aria-hidden="true"></i></div>
           <div class="title">Lab & Imaging</div>
         </a>
+        <a href="patient-visit-summaries" class="nav-card">
+          <div class="icon"><i class="fa-solid fa-file-lines" aria-hidden="true"></i></div>
+          <div class="title">Visit Summaries</div>
+        </a>
         <a href="patient-summary" class="nav-card">
           <div class="icon"><i class="fa-solid fa-file-medical" aria-hidden="true"></i></div>
           <div class="title">Medical Summary</div>
         </a>
-        <a href="messages" class="nav-card">
-          <div class="icon"><i class="fa-solid fa-bell" aria-hidden="true"></i></div>
-          <div class="title">Notifications</div>
+        <a href="patient-messages" class="nav-card">
+          <div class="icon"><i class="fa-solid fa-comments" aria-hidden="true"></i></div>
+          <div class="title">Messages</div>
         </a>
       </div>
     </div>
@@ -383,6 +387,7 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
   <script src="js/patient-data-loader.js"></script>
+  <script src="js/patient-portal.js"></script>
   
   <script>
     // Ensure patient is authenticated
@@ -429,12 +434,15 @@
         // Display active medications
         const medsList = document.getElementById('activeMedicationsList');
         if (summary.activeMedications.length > 0) {
-          medsList.innerHTML = summary.activeMedications.slice(0, 3).map(med => {
+          medsList.innerHTML = summary.activeMedications.slice(0, 3).map(rx => {
+            const portal = window.MediForgePatientPortal.getPrescriptionPortalStatus(rx);
+            const meds = window.MediForgePatientPortal.flattenPrescriptionMeds(rx);
+            const names = meds.map(m => m.name).filter(Boolean).join(', ') || 'Prescription';
             return `
               <div class="list-item">
                 <div class="item-info">
-                  <div class="item-title">${med.medication || med.name || 'Medication'}</div>
-                  <div class="item-details">${med.dosage || ''} ${med.frequency || ''} | ${med.instructions || ''}</div>
+                  <div class="item-title">${names}</div>
+                  <div class="item-details">${portal.label}</div>
                 </div>
               </div>
             `;

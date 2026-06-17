@@ -42,11 +42,25 @@ window.getPatientDemographics = async function() {
       throw new Error('Database connection not available');
     }
 
-    const { data, error } = await window.supabaseClient
+    const patientIds = await resolvePortalPatientIds(patientId);
+    const uuid = patientIds.find((id) => id.includes('-') && id.length === 36) || patientId;
+
+    let { data, error } = await window.supabaseClient
       .from('patients')
       .select('*')
-      .eq('id', patientId)
-      .single();
+      .eq('id', uuid)
+      .maybeSingle();
+
+    if (!data && !error) {
+      const legacyId = patientIds.find((id) => id !== uuid) || patientId;
+      const fallback = await window.supabaseClient
+        .from('patients')
+        .select('*')
+        .eq('patient_id', legacyId)
+        .maybeSingle();
+      data = fallback.data;
+      error = fallback.error;
+    }
 
     if (error) {
       console.error('Error fetching patient demographics:', error);
@@ -85,10 +99,13 @@ window.getPatientAppointments = async function(filters = {}) {
       throw new Error('Database connection not available');
     }
 
+    const patientIds = await resolvePortalPatientIds(patientId);
+    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+
     let query = window.supabaseClient
       .from('appointments')
       .select('*')
-      .eq('patient_id', patientId)
+      .or(orFilter)
       .order('appointment_date', { ascending: false });
 
     if (filters.startDate) {
@@ -126,7 +143,41 @@ window.getPatientAppointments = async function(filters = {}) {
 };
 
 /**
- * Get patient medications/prescriptions
+ * Resolve portal patient UUID + legacy MRN for prescription/order queries.
+ */
+async function resolvePortalPatientIds(patientId) {
+  const ids = new Set([String(patientId)]);
+  if (window.supabaseClient && patientId) {
+    const { data } = await window.supabaseClient
+      .from('patients')
+      .select('id, patient_id')
+      .or(`id.eq.${patientId},patient_id.eq.${patientId}`)
+      .maybeSingle();
+    if (data) {
+      if (data.id) ids.add(String(data.id));
+      if (data.patient_id) ids.add(String(data.patient_id));
+    }
+  }
+  return Array.from(ids);
+}
+
+function transformPrescriptionRowsForPortal(data) {
+  if (!Array.isArray(data)) return [];
+  return data.map((rx) => ({
+    ...rx,
+    medications: (() => {
+      const meds = rx.medications;
+      if (Array.isArray(meds)) return meds;
+      if (typeof meds === 'string') {
+        try { return JSON.parse(meds); } catch (_) { return []; }
+      }
+      return [];
+    })()
+  }));
+}
+
+/**
+ * Get patient medications/prescriptions (full prescription records, including pending/signed).
  * @returns {Promise<Array>}
  */
 window.getPatientMedications = async function() {
@@ -137,50 +188,107 @@ window.getPatientMedications = async function() {
       throw new Error('Database connection not available');
     }
 
-    // Try to get from prescriptions table
+    const patientIds = await resolvePortalPatientIds(patientId);
+    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+
     let { data, error } = await window.supabaseClient
       .from('prescriptions')
       .select('*')
-      .eq('patient_id', patientId)
-      .order('prescription_date', { ascending: false });  // Use 'prescription_date' not 'prescribed_date'
+      .or(orFilter)
+      .order('created_at', { ascending: false });
 
-    // If prescriptions table doesn't exist or has schema issues, try localStorage
+    if ((!data || data.length === 0) && !error) {
+      const uuid = patientIds.find((id) => id.includes('-') && id.length === 36) || patientId;
+      const { data: patientData } = await window.supabaseClient
+        .from('patients')
+        .select('prescriptions, medications')
+        .eq('id', uuid)
+        .maybeSingle();
+      if (patientData?.prescriptions) {
+        data = parsePortalJsonField(patientData.prescriptions);
+      } else if (patientData?.medications) {
+        data = parsePortalJsonField(patientData.medications);
+      }
+    }
+
     if (error) {
-      if (error.code === '42P01') {
-        console.log('Prescriptions table not found, checking localStorage');
+      if (error.code === '42P01' || error.code === '42703') {
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const orgName = user.org || 'Default';
         const prescriptions = JSON.parse(localStorage.getItem(`${orgName}_prescriptions`) || '[]');
-        data = prescriptions.filter(p => p.patientId === patientId || p.patient_id === patientId);
-      } else if (error.code === '42703') {
-        // Column doesn't exist - try with different column name or fallback to localStorage
-        console.log('Column error in prescriptions table, checking localStorage');
-        const user = JSON.parse(localStorage.getItem('user') || '{}');
-        const orgName = user.org || 'Default';
-        const prescriptions = JSON.parse(localStorage.getItem(`${orgName}_prescriptions`) || '[]');
-        data = prescriptions.filter(p => p.patientId === patientId || p.patient_id === patientId);
+        data = prescriptions.filter((p) =>
+          patientIds.some((id) => p.patientId === id || p.patient_id === id)
+        );
       } else {
-        console.error('Error fetching patient medications:', error);
-        // Return empty array instead of throwing to allow dashboard to load
-        console.warn('Returning empty medications array due to error');
+        console.warn('Returning empty medications array due to error:', error);
         return [];
       }
     }
 
-    // Log access
     if (typeof logAuditEvent === 'function') {
-      logAuditEvent('patient_portal_accessed', {
-        patientId: patientId,
-        section: 'medications'
-      });
+      logAuditEvent('patient_portal_accessed', { patientId, section: 'medications' });
     }
 
-    return data || [];
+    return transformPrescriptionRowsForPortal(data || []);
   } catch (error) {
     console.error('getPatientMedications error:', error);
     throw error;
   }
 };
+
+function parsePortalJsonField(field) {
+  if (!field) return [];
+  if (Array.isArray(field)) return field.filter((item) => item != null && item !== '');
+  if (typeof field === 'string') {
+    const trimmed = field.trim();
+    if (!trimmed || trimmed === '[]' || trimmed === 'null') return [];
+    try {
+      const p = JSON.parse(trimmed);
+      return Array.isArray(p) ? p.filter((item) => item != null && item !== '') : [];
+    } catch (_) {
+      return trimmed ? [trimmed] : [];
+    }
+  }
+  return [];
+}
+
+function buildPortalMedicalHistory(demographics) {
+  return parsePortalJsonField(demographics?.medical_history);
+}
+
+function buildPortalConditions(demographics) {
+  const diagnoses = parsePortalJsonField(demographics?.diagnoses);
+  const chronic = parsePortalJsonField(demographics?.chronic_conditions);
+  const legacy = parsePortalJsonField(demographics?.conditions);
+  const seen = new Set();
+  const merged = [];
+
+  function conditionKey(entry) {
+    if (typeof entry === 'string') return entry.trim().toLowerCase();
+    if (!entry || typeof entry !== 'object') return '';
+    return String(
+      entry.diagnosis || entry.name || entry.description || entry.condition || ''
+    ).trim().toLowerCase();
+  }
+
+  function add(entry) {
+    const key = conditionKey(entry);
+    if (!key || seen.has(key)) return;
+    seen.add(key);
+    merged.push(typeof entry === 'string' ? { diagnosis: entry, status: 'Active' } : entry);
+  }
+
+  diagnoses.forEach(add);
+  chronic.forEach(add);
+  legacy.forEach(add);
+  return merged;
+}
+
+window.parsePortalJsonField = parsePortalJsonField;
+window.buildPortalMedicalHistory = buildPortalMedicalHistory;
+window.buildPortalConditions = buildPortalConditions;
+
+window.getPatientPrescriptions = window.getPatientMedications;
 
 /**
  * Get patient lab and imaging results
@@ -194,11 +302,14 @@ window.getPatientResults = async function() {
       throw new Error('Database connection not available');
     }
 
-    // Try to get from orders table
+    // Try to get from orders table (UUID + legacy patient_id)
+    const patientIds = await resolvePortalPatientIds(patientId);
+    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+
     let { data, error } = await window.supabaseClient
       .from('orders')
       .select('*')
-      .eq('patient_id', patientId)
+      .or(orFilter)
       .in('type', ['lab', 'imaging'])
       .order('created_at', { ascending: false });
 
@@ -229,6 +340,37 @@ window.getPatientResults = async function() {
   } catch (error) {
     console.error('getPatientResults error:', error);
     throw error;
+  }
+};
+
+/**
+ * Visit summaries published to the patient portal (office visits).
+ * @returns {Promise<Array>}
+ */
+window.getPatientVisitSummaries = async function() {
+  try {
+    const patientId = ensurePatientAuth();
+    if (!window.supabaseClient) return [];
+
+    const patientIds = await resolvePortalPatientIds(patientId);
+    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+
+    const { data, error } = await window.supabaseClient
+      .from('discharge_summaries')
+      .select('id, visit_date, summary_generated_at, visit_snapshot, chief_complaint, discharging_physician')
+      .or(orFilter)
+      .eq('summary_type', 'office_visit')
+      .eq('portal_visible', true)
+      .order('visit_date', { ascending: false });
+
+    if (error) {
+      console.warn('getPatientVisitSummaries:', error.message);
+      return [];
+    }
+    return data || [];
+  } catch (error) {
+    console.error('getPatientVisitSummaries error:', error);
+    return [];
   }
 };
 
@@ -291,38 +433,16 @@ window.getPatientSummary = async function(requestedPatientId = null) {
       results = [];
     }
     
-    // Helper function to safely parse JSON fields from Supabase
-    const parseJSONField = (field) => {
-      if (!field) return [];
-      if (Array.isArray(field)) return field;
-      if (typeof field === 'string') {
-        try {
-          const parsed = JSON.parse(field);
-          return Array.isArray(parsed) ? parsed : [];
-        } catch (e) {
-          console.warn('Error parsing JSON field:', e);
-          return [];
-        }
-      }
-      return [];
-    };
-
-    // Parse medical history/conditions
-    let conditions = parseJSONField(demographics.medical_history) || 
-                     parseJSONField(demographics.conditions) || 
-                     parseJSONField(demographics.diagnoses) || 
-                     [];
+    // Clinical sections — same sources as EMR (patient-details problem list + past medical history)
+    const medicalHistory = buildPortalMedicalHistory(demographics);
+    const conditions = buildPortalConditions(demographics);
+    const allergies = parsePortalJsonField(demographics.allergies);
     
-    // Log for debugging
-    console.log('📋 Medical conditions found:', conditions.length, conditions);
-    console.log('📋 Demographics fields:', {
-      medical_history: demographics.medical_history,
-      conditions: demographics.conditions,
-      diagnoses: demographics.diagnoses
+    console.log('📋 Portal clinical data:', {
+      medicalHistory: medicalHistory.length,
+      conditions: conditions.length,
+      allergies: allergies.length
     });
-
-    // Parse allergies
-    const allergies = parseJSONField(demographics.allergies) || [];
 
     // Helper function to calculate age from date of birth
     const calculateAge = (dob) => {
@@ -359,9 +479,10 @@ window.getPatientSummary = async function(requestedPatientId = null) {
         upcomingAppointments: appointments.filter(a => 
           new Date(a.appointment_date) >= new Date()
         ).length,
-      activeMedications: medications.filter(m => {
+      activeMedications: medications.filter((m) => {
         const status = (m.status || '').toLowerCase();
-        return status === 'active' || status === 'current' || status === 'signed' || !m.status || status === '';
+        const pharmacy = (m.pharmacy_status || '').toLowerCase();
+        return status !== 'cancelled' && status !== 'discontinued' && pharmacy !== 'cancelled';
       }).length,
         recentResults: results.filter(r => {
           const resultDate = new Date(r.created_at || r.date || Date.now());
@@ -370,15 +491,13 @@ window.getPatientSummary = async function(requestedPatientId = null) {
         }).length
       },
       recentAppointments: appointments.slice(0, 5),
-      activeMedications: medications.filter(m => {
+      activeMedications: medications.filter((m) => {
         const status = (m.status || '').toLowerCase();
-        const isActive = status === 'active' || status === 'current' || status === 'signed' || !m.status || status === '';
-        if (!isActive) {
-          console.log('💊 Medication filtered out:', m.medication || m.name, 'status:', m.status);
-        }
-        return isActive;
-      }).slice(0, 10), // Show up to 10 active medications
+        const pharmacy = (m.pharmacy_status || '').toLowerCase();
+        return status !== 'cancelled' && status !== 'discontinued' && pharmacy !== 'cancelled';
+      }).slice(0, 10),
       recentResults: results.slice(0, 5),
+      medicalHistory: medicalHistory,
       conditions: conditions,
       allergies: allergies
     };

@@ -1,0 +1,110 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visit Summaries - Patient Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    :root { --green: #008751; --green-dark: #006B3F; --beige: #F5F5DC; }
+    body { font-family: system-ui, sans-serif; background: var(--beige); margin: 0; }
+    .header { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; padding: 20px; }
+    .nav-bar { background: #fff; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .nav-bar a { color: var(--green); text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+    .nav-bar a.active { background: var(--green); color: #fff; }
+    .container { max-width: 900px; margin: 20px auto; padding: 0 16px; }
+    .card { background: #fff; border-radius: 12px; padding: 20px; margin-bottom: 14px; box-shadow: 0 4px 14px rgba(0,0,0,0.06); cursor: pointer; border-left: 4px solid var(--green); }
+    .card:hover { background: #f9fff9; }
+    .card h3 { margin: 0 0 6px; color: var(--green-dark); }
+    .card p { margin: 0; color: #666; font-size: 0.9rem; }
+    .modal { display: none; position: fixed; inset: 0; background: rgba(0,0,0,0.45); z-index: 100; padding: 20px; overflow-y: auto; }
+    .modal.open { display: block; }
+    .modal-inner { max-width: 800px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 24px; }
+    .summary-block { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+    .summary-block h3 { color: var(--green-dark); margin: 0 0 8px; font-size: 1rem; }
+    .muted { color: #777; font-style: italic; }
+    .close-btn { float: right; background: #eee; border: none; padding: 8px 14px; border-radius: 6px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="header"><h1>📄 Visit Summaries</h1><p>Summaries from your clinic visits</p></div>
+  <div class="nav-bar">
+    <a href="patient-dashboard">Dashboard</a>
+    <a href="patient-profile">Profile</a>
+    <a href="patient-appointments">Appointments</a>
+    <a href="patient-medications">Medications</a>
+    <a href="patient-results">Results</a>
+    <a href="patient-visit-summaries" class="active">Visit Summaries</a>
+    <a href="patient-messages">Messages</a>
+    <a href="patient-summary">Summary</a>
+    <a href="#" onclick="logout();return false;" style="margin-left:auto;color:#c33;">Logout</a>
+  </div>
+  <div class="container">
+    <div id="list"><p>Loading…</p></div>
+  </div>
+  <div id="viewModal" class="modal">
+    <div class="modal-inner">
+      <button type="button" class="close-btn" onclick="closeModal()">Close</button>
+      <div id="modalBody"></div>
+    </div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-auth.js"></script>
+  <script src="js/patient-data-loader.js"></script>
+  <script src="js/visit-summary-builder.js"></script>
+  <script>
+    window.ensurePatientAccess();
+
+    function formatDate(d) {
+      if (!d) return '—';
+      return new Date(d).toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    async function load() {
+      const list = document.getElementById('list');
+      const summaries = await window.getPatientVisitSummaries();
+      if (!summaries.length) {
+        list.innerHTML = '<p class="muted">No visit summaries yet. Your clinic will publish a summary after your visit.</p>';
+        return;
+      }
+      list.innerHTML = summaries.map((s, i) => {
+        const snap = s.visit_snapshot || {};
+        const cc = s.chief_complaint || snap.chiefComplaint || 'Office visit';
+        const provider = s.discharging_physician || snap.provider || 'Your care team';
+        return `<div class="card" data-idx="${i}">
+          <h3>${formatDate(s.visit_date)}</h3>
+          <p>${cc} · ${provider}</p>
+        </div>`;
+      }).join('');
+      window._visitSummaries = summaries;
+      list.querySelectorAll('.card').forEach((el) => {
+        el.addEventListener('click', () => openSummary(Number(el.dataset.idx)));
+      });
+    }
+
+    function openSummary(idx) {
+      const s = window._visitSummaries[idx];
+      const snap = s.visit_snapshot || {};
+      document.getElementById('modalBody').innerHTML = window.VisitSummaryBuilder.renderSnapshotHtml(snap);
+      document.getElementById('viewModal').classList.add('open');
+    }
+
+    function closeModal() {
+      document.getElementById('viewModal').classList.remove('open');
+    }
+
+    function logout() {
+      if (confirm('Log out?')) {
+        localStorage.removeItem('user');
+        window.location.href = '/patient-login';
+      }
+    }
+
+    window.addEventListener('load', load);
+  </script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>

@@ -174,6 +174,135 @@ window.resolveOrganizationId = async function() {
   return null;
 };
 
+/**
+ * Restore Supabase auth from localStorage and refresh the staff user profile (org ID, etc.).
+ * Call on page load before cloud saves. Does not redirect unless redirectOnFailure is true.
+ * @returns {Promise<{ok: boolean, orgId?: string|null, reason?: string, user?: object}>}
+ */
+window.ensureStaffSession = async function ensureStaffSession(options = {}) {
+  const { redirectOnFailure = false } = options;
+  const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+  if (!storedUser.username && !storedUser.email) {
+    if (redirectOnFailure) {
+      window.location.href = '/login';
+    }
+    return { ok: false, reason: 'no_user' };
+  }
+
+  if (typeof window.waitForSupabaseClient === 'function') {
+    try {
+      await window.waitForSupabaseClient();
+    } catch (e) {
+      /* client may still initialize */
+    }
+  }
+
+  const sb = window.supabaseClient;
+  if (sb?.auth) {
+    let session = null;
+    try {
+      const { data: sessionData } = await sb.auth.getSession();
+      session = sessionData?.session || null;
+    } catch (e) {
+      /* continue to restore attempt */
+    }
+
+    if (!session) {
+      const raw = localStorage.getItem('supabase_session');
+      if (raw) {
+        try {
+          const stored = JSON.parse(raw);
+          if (stored.refresh_token) {
+            const { data, error } = await sb.auth.refreshSession({ refresh_token: stored.refresh_token });
+            if (!error && data?.session) {
+              session = data.session;
+            }
+          }
+          if (!session && stored.access_token && stored.refresh_token) {
+            const { data, error } = await sb.auth.setSession({
+              access_token: stored.access_token,
+              refresh_token: stored.refresh_token
+            });
+            if (!error && data?.session) {
+              session = data.session;
+            }
+          }
+        } catch (e) {
+          console.warn('Could not restore Supabase session:', e);
+        }
+      }
+    }
+
+    if (session) {
+      localStorage.setItem('supabase_session', JSON.stringify({
+        access_token: session.access_token,
+        refresh_token: session.refresh_token,
+        expires_at: session.expires_at
+      }));
+    } else if (redirectOnFailure) {
+      localStorage.removeItem('user');
+      localStorage.removeItem('supabase_session');
+      window.location.href = '/login?reason=session_expired';
+      return { ok: false, reason: 'no_supabase_session' };
+    }
+  }
+
+  let orgId = typeof window.resolveOrganizationId === 'function'
+    ? await window.resolveOrganizationId()
+    : null;
+
+  if (!orgId && typeof window.restoreUserContextFromSupabase === 'function') {
+    await window.restoreUserContextFromSupabase();
+    orgId = typeof window.resolveOrganizationId === 'function'
+      ? await window.resolveOrganizationId()
+      : null;
+  }
+
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  localStorage.setItem('lastActivity', Date.now().toString());
+
+  const ok = !!(user.username || user.email);
+  return { ok, orgId, user, reason: ok ? undefined : 'no_user' };
+};
+
+/**
+ * Re-validate session on every full page navigation (including browser back).
+ */
+(function staffSessionNavigationGuard() {
+  function isPublicAuthPage() {
+    const path = (window.location.pathname || '').toLowerCase();
+    return path.includes('/login') ||
+      path.includes('/register') ||
+      path.includes('/platform-login') ||
+      path === '/' ||
+      path.endsWith('/index.html');
+  }
+
+  async function restoreOnNavigation() {
+    if (isPublicAuthPage()) return;
+    const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
+    if (!storedUser.username && !storedUser.email) return;
+    if (typeof window.ensureStaffSession !== 'function') return;
+    try {
+      await window.ensureStaffSession({ redirectOnFailure: false });
+    } catch (err) {
+      console.warn('Session restore on navigation failed:', err);
+    }
+  }
+
+  window.addEventListener('pageshow', function() {
+    void restoreOnNavigation();
+  });
+
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', function() {
+      void restoreOnNavigation();
+    });
+  } else {
+    void restoreOnNavigation();
+  }
+})();
+
 /** True when s is a Supabase organization row UUID (not a human-readable org name). */
 window.isOrganizationUuid = function (s) {
   return (

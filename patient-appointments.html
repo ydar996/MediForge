@@ -210,6 +210,76 @@
       margin: 20px;
       border-left: 4px solid #c33;
     }
+    .appt-actions {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      margin-top: 16px;
+      padding-top: 14px;
+      border-top: 1px solid #eee;
+    }
+    .appt-btn {
+      padding: 9px 16px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+      font-size: 0.9rem;
+    }
+    .appt-btn-cancel { background: #ffebee; color: #c62828; }
+    .appt-btn-reschedule { background: #e3f2fd; color: #1565c0; }
+    .appt-btn:disabled { opacity: 0.6; cursor: default; }
+    .request-pending {
+      display: inline-block;
+      margin-top: 10px;
+      padding: 6px 12px;
+      border-radius: 6px;
+      background: #fff3e0;
+      color: #e65100;
+      font-size: 0.85rem;
+      font-weight: 600;
+    }
+    .modal-overlay {
+      display: none;
+      position: fixed;
+      inset: 0;
+      background: rgba(0,0,0,0.45);
+      z-index: 1000;
+      align-items: center;
+      justify-content: center;
+      padding: 16px;
+    }
+    .modal-overlay.open { display: flex; }
+    .modal-card {
+      background: #fff;
+      border-radius: 12px;
+      max-width: 480px;
+      width: 100%;
+      padding: 24px;
+      box-shadow: 0 8px 32px rgba(0,0,0,0.2);
+    }
+    .modal-card h3 { color: var(--nigerian-green); margin-bottom: 8px; }
+    .modal-card p { color: #666; font-size: 0.9rem; margin-bottom: 16px; }
+    .modal-card label { display: block; font-weight: 600; margin: 12px 0 6px; color: #333; }
+    .modal-card input, .modal-card textarea, .modal-card select {
+      width: 100%;
+      padding: 10px;
+      border: 1px solid #ccc;
+      border-radius: 8px;
+      font-family: inherit;
+      box-sizing: border-box;
+    }
+    .modal-card textarea { min-height: 90px; resize: vertical; }
+    .modal-actions { display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; }
+    .modal-actions button {
+      padding: 10px 18px;
+      border: none;
+      border-radius: 8px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .modal-submit { background: var(--nigerian-green); color: #fff; }
+    .modal-close { background: #eee; color: #333; }
   </style>
   <script src="js/ui-title-case.js?v=20260612170000" defer></script>
 </head>
@@ -225,6 +295,7 @@
     <a href="patient-appointments" class="active">&#128197; Appointments</a>
     <a href="patient-medications">&#128138; Medications</a>
     <a href="patient-results">&#128200; Results</a>
+    <a href="patient-messages">&#128172; Messages</a>
     <a href="patient-summary">&#128196; Summary</a>
     <a href="#" onclick="logout(); return false;" style="margin-left: auto; color: #c33;">&#128682; Logout</a>
   </div>
@@ -258,14 +329,185 @@
     </div>
   </div>
 
+  <div id="cancelModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3>Request cancellation</h3>
+      <p id="cancelModalApptSummary"></p>
+      <label for="cancelReason">Reason for cancellation</label>
+      <textarea id="cancelReason" placeholder="Please tell us why you need to cancel…" maxlength="1000"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="modal-close" onclick="closeCancelModal()">Close</button>
+        <button type="button" class="modal-submit" id="cancelSubmitBtn" onclick="submitCancelRequest()">Send request to clinic</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="rescheduleModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3>Request reschedule</h3>
+      <p id="rescheduleModalApptSummary"></p>
+      <label for="preferredDate">Preferred date</label>
+      <input type="date" id="preferredDate">
+      <label for="preferredTime">Preferred time</label>
+      <input type="time" id="preferredTime" step="900">
+      <label for="rescheduleNotes">Additional notes (optional)</label>
+      <textarea id="rescheduleNotes" placeholder="Any preferences or constraints for staff…" maxlength="500"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="modal-close" onclick="closeRescheduleModal()">Close</button>
+        <button type="button" class="modal-submit" id="rescheduleSubmitBtn" onclick="submitRescheduleRequest()">Send request to clinic</button>
+      </div>
+    </div>
+  </div>
+
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
   <script src="js/patient-data-loader.js"></script>
+  <script src="js/patient-portal.js"></script>
   <script src="js/security.js"></script>
   
   <script>
     window.ensurePatientAccess();
+
+    let allAppointments = [];
+    let pendingRequests = [];
+    let activeCancelApptId = null;
+    let activeRescheduleApptId = null;
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function formatApptSummary(appointment) {
+      const apptDate = new Date(appointment.appointment_date || appointment.date);
+      const time = appointment.appointment_time || appointment.time || '';
+      const doctor = appointment.doctor_name || appointment.doctor || appointment.physician || 'your provider';
+      return `${apptDate.toLocaleDateString('en-US', { weekday: 'long', month: 'long', day: 'numeric', year: 'numeric' })}${time ? ' at ' + time : ''} with ${doctor}`;
+    }
+
+    function requestsForAppointment(appointmentId) {
+      return pendingRequests.filter((r) => r.appointment_id === appointmentId);
+    }
+
+    function openCancelModal(appointmentId) {
+      const appt = allAppointments.find((a) => a.id === appointmentId);
+      if (!appt) return;
+      activeCancelApptId = appointmentId;
+      document.getElementById('cancelModalApptSummary').textContent = formatApptSummary(appt);
+      document.getElementById('cancelReason').value = '';
+      document.getElementById('cancelModal').classList.add('open');
+    }
+
+    function closeCancelModal() {
+      activeCancelApptId = null;
+      document.getElementById('cancelModal').classList.remove('open');
+    }
+
+    function openRescheduleModal(appointmentId) {
+      const appt = allAppointments.find((a) => a.id === appointmentId);
+      if (!appt) return;
+      activeRescheduleApptId = appointmentId;
+      document.getElementById('rescheduleModalApptSummary').textContent = formatApptSummary(appt);
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('preferredDate').min = new Date().toISOString().split('T')[0];
+      document.getElementById('preferredDate').value = tomorrow.toISOString().split('T')[0];
+      document.getElementById('preferredTime').value = '09:00';
+      document.getElementById('rescheduleNotes').value = '';
+      document.getElementById('rescheduleModal').classList.add('open');
+    }
+
+    function closeRescheduleModal() {
+      activeRescheduleApptId = null;
+      document.getElementById('rescheduleModal').classList.remove('open');
+    }
+
+    async function submitCancelRequest() {
+      const reason = (document.getElementById('cancelReason').value || '').trim();
+      if (!reason) {
+        alert('Please enter a reason for cancellation.');
+        return;
+      }
+      const btn = document.getElementById('cancelSubmitBtn');
+      btn.disabled = true;
+      try {
+        await window.MediForgePatientPortal.requestAppointmentCancellation(activeCancelApptId, reason);
+        closeCancelModal();
+        alert('Cancellation request sent. Clinic staff will contact you shortly.');
+        await loadAppointments();
+      } catch (e) {
+        alert('Could not send request: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    async function submitRescheduleRequest() {
+      const preferredDate = document.getElementById('preferredDate').value;
+      const preferredTime = document.getElementById('preferredTime').value;
+      const notes = (document.getElementById('rescheduleNotes').value || '').trim();
+      if (!preferredDate || !preferredTime) {
+        alert('Please choose a preferred date and time.');
+        return;
+      }
+      const btn = document.getElementById('rescheduleSubmitBtn');
+      btn.disabled = true;
+      try {
+        const timeLabel = new Date(`1970-01-01T${preferredTime}`).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+        await window.MediForgePatientPortal.requestAppointmentReschedule(
+          activeRescheduleApptId,
+          preferredDate,
+          timeLabel,
+          notes || null
+        );
+        closeRescheduleModal();
+        alert('Reschedule request sent. Clinic staff will contact you to confirm.');
+        await loadAppointments();
+      } catch (e) {
+        alert('Could not send request: ' + (e.message || e));
+      } finally {
+        btn.disabled = false;
+      }
+    }
+
+    function renderActionButtons(appointment) {
+      const portal = window.MediForgePatientPortal;
+      if (!portal?.isAppointmentUpcoming(appointment)) return '';
+
+      const reqs = requestsForAppointment(appointment.id);
+      const pendingCancel = reqs.find((r) => r.request_type === 'cancel');
+      const pendingReschedule = reqs.find((r) => r.request_type === 'reschedule');
+
+      let badges = '';
+      if (pendingCancel) {
+        badges += '<div class="request-pending">Cancellation request pending — clinic notified</div>';
+      }
+      if (pendingReschedule) {
+        const pref = pendingReschedule.preferred_date
+          ? ` (preferred ${pendingReschedule.preferred_date}${pendingReschedule.preferred_time ? ' at ' + pendingReschedule.preferred_time : ''})`
+          : '';
+        badges += `<div class="request-pending">Reschedule request pending${esc(pref)} — clinic notified</div>`;
+      }
+
+      if (pendingCancel && pendingReschedule) {
+        return badges;
+      }
+
+      let buttons = '<div class="appt-actions">';
+      if (!pendingCancel) {
+        buttons += `<button type="button" class="appt-btn appt-btn-cancel" onclick="openCancelModal('${appointment.id}')">Request cancellation</button>`;
+      }
+      if (!pendingReschedule) {
+        buttons += `<button type="button" class="appt-btn appt-btn-reschedule" onclick="openRescheduleModal('${appointment.id}')">Request reschedule</button>`;
+      }
+      buttons += '</div>';
+      return badges + buttons;
+    }
     
     async function loadAppointments() {
       const loading = document.getElementById('loading');
@@ -273,14 +515,18 @@
       const content = document.getElementById('content');
       
       try {
-        const appointments = await window.getPatientAppointments();
+        const [appointments, requests] = await Promise.all([
+          window.getPatientAppointments(),
+          window.MediForgePatientPortal.loadPatientAppointmentRequests()
+        ]);
+        allAppointments = appointments;
+        pendingRequests = requests;
         
         // Calculate stats
         const total = appointments.length;
-        const upcoming = appointments.filter(a => {
-          const apptDate = new Date(a.appointment_date || a.date);
-          return apptDate >= new Date() && (a.status === 'scheduled' || a.status === 'confirmed' || !a.status);
-        }).length;
+        const upcoming = appointments.filter((a) =>
+          window.MediForgePatientPortal.isAppointmentUpcoming(a)
+        ).length;
         const completed = appointments.filter(a => a.status === 'completed' || a.status === 'done').length;
         
         document.getElementById('totalAppointments').textContent = total;
@@ -300,7 +546,7 @@
         } else {
           listContainer.innerHTML = appointments.map(appointment => {
             const apptDate = new Date(appointment.appointment_date || appointment.date || Date.now());
-            const isUpcoming = apptDate >= new Date();
+            const isUpcoming = window.MediForgePatientPortal.isAppointmentUpcoming(appointment);
             const status = appointment.status || (isUpcoming ? 'upcoming' : 'completed');
             
             let statusClass = 'status-completed';
@@ -351,6 +597,7 @@
                     </div>
                   ` : ''}
                 </div>
+                ${renderActionButtons(appointment)}
               </div>
             `;
           }).join('');
@@ -375,6 +622,13 @@
     }
     
     window.addEventListener('load', loadAppointments);
+
+    document.getElementById('cancelModal').addEventListener('click', (e) => {
+      if (e.target.id === 'cancelModal') closeCancelModal();
+    });
+    document.getElementById('rescheduleModal').addEventListener('click', (e) => {
+      if (e.target.id === 'rescheduleModal') closeRescheduleModal();
+    });
   </script>
 
   <script src="js/logout-button.js"></script>

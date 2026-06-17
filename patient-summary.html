@@ -319,6 +319,7 @@
     <a href="patient-appointments">Appointments</a>
     <a href="patient-medications">Medications</a>
     <a href="patient-results">Results</a>
+    <a href="patient-messages">Messages</a>
     <a href="patient-summary" class="active">Summary</a>
   </div>
 
@@ -335,6 +336,7 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
   <script src="js/patient-data-loader.js"></script>
+  <script src="js/patient-portal.js"></script>
   <script src="js/patient-id-normalizer.js?v=1"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
   
@@ -510,6 +512,7 @@
           </div>
 
           ${generateAllergiesSection(summary.allergies)}
+          ${generateMedicalHistorySection(summary.medicalHistory)}
           ${generateConditionsSection(summary.conditions)}
           ${generateMedicationsSection(summary.activeMedications)}
           ${generateAppointmentsSection(summary.recentAppointments)}
@@ -574,13 +577,62 @@
       `;
     }
     
+    function generateMedicalHistorySection(history) {
+      if (!history || !Array.isArray(history) || history.length === 0) {
+        return `
+          <div class="summary-section">
+            <h2>Past Medical History</h2>
+            <div class="no-data">No past medical history recorded.</div>
+          </div>
+        `;
+      }
+
+      const rowsHTML = history.map((entry) => {
+        let event = 'Unknown';
+        if (typeof entry === 'string') {
+          event = entry;
+        } else if (typeof entry === 'object') {
+          event = entry.event || entry.name || entry.diagnosis || entry.description || 'Unknown';
+        }
+        const date = typeof entry === 'object'
+          ? (entry.date || entry.event_date || entry.start_date)
+          : null;
+        const notes = typeof entry === 'object' ? (entry.notes || '') : '';
+        return `
+          <tr>
+            <td>${date ? formatDisplayDate(date) : 'Not specified'}</td>
+            <td><strong>${event}</strong></td>
+            <td>${notes || '—'}</td>
+          </tr>
+        `;
+      }).join('');
+
+      return `
+        <div class="summary-section">
+          <h2>Past Medical History</h2>
+          <table class="summary-table">
+            <thead>
+              <tr>
+                <th>Date</th>
+                <th>Event</th>
+                <th>Notes</th>
+              </tr>
+            </thead>
+            <tbody>
+              ${rowsHTML}
+            </tbody>
+          </table>
+        </div>
+      `;
+    }
+
     function generateConditionsSection(conditions) {
       // Ensure conditions is always an array
       if (!conditions || !Array.isArray(conditions) || conditions.length === 0) {
         return `
           <div class="summary-section">
-            <h2>Medical Conditions</h2>
-            <div class="no-data">No medical conditions recorded.</div>
+            <h2>Diagnoses &amp; Problem List</h2>
+            <div class="no-data">No diagnoses or problem-list items recorded.</div>
           </div>
         `;
       }
@@ -591,16 +643,15 @@
         if (typeof condition === 'string') {
           name = condition;
         } else if (typeof condition === 'object') {
-          // Check event field first (for medical_history), then diagnosis (for diagnoses)
-          name = condition.event || 
-                 condition.diagnosis || 
-                 condition.name || 
-                 condition.description || 
-                 condition.condition || 
+          name = condition.diagnosis ||
+                 condition.name ||
+                 condition.description ||
+                 condition.condition ||
                  condition.disease ||
                  condition.medicalCondition ||
                  condition.diagnosisName ||
                  (condition.icd11_code ? `Diagnosis (${condition.icd11_code})` : null) ||
+                 condition.event ||
                  'Unknown';
         }
         
@@ -625,11 +676,11 @@
       
       return `
         <div class="summary-section">
-          <h2>Medical Conditions</h2>
+          <h2>Diagnoses &amp; Problem List</h2>
           <table class="summary-table">
             <thead>
               <tr>
-                <th>Condition</th>
+                <th>Diagnosis</th>
                 <th>Date Diagnosed</th>
                 <th>Status</th>
               </tr>
@@ -653,12 +704,17 @@
         `;
       }
       
-      const medsHTML = medications.map(med => {
-        const name = med.medication || med.name || 'Unknown';
-        const dosage = med.dosage || 'Not specified';
-        const frequency = med.frequency || 'Not specified';
-        const instructions = med.instructions || 'Not specified';
-        const date = med.prescribed_date || med.date || med.startDate;
+      const medsHTML = medications.map((rx) => {
+        const portal = window.MediForgePatientPortal;
+        const flat = portal ? portal.flattenPrescriptionMeds(rx) : [];
+        const primary = flat[0] || {};
+        const name = flat.length > 1
+          ? flat.map((m) => m.name).filter(Boolean).join(', ')
+          : (primary.name || rx.medication || rx.name || 'Unknown');
+        const dosage = primary.dosage || rx.dosage || 'Not specified';
+        const frequency = primary.frequency || rx.frequency || 'Not specified';
+        const instructions = primary.instructions || rx.instructions || 'Not specified';
+        const date = rx.prescription_date || rx.created_at || rx.prescribed_date || rx.date;
         return `
           <tr>
             <td>${name}</td>

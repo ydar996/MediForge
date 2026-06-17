@@ -2039,6 +2039,7 @@
   // Expose functions globally
   window.loadPatientsWithSupabasePriority = loadPatientsWithSupabasePriority;
   window.loadAppointmentsWithSupabasePriority = loadAppointmentsWithSupabasePriority;
+  window.restoreUserContextFromSupabase = restoreUserContextFromSupabase;
   window.getPatientById = getPatientById;
   window.getPatientNameById = getPatientNameById;
   window.clearDataCache = clearDataCache;
@@ -2077,6 +2078,14 @@
     if (!user || !user.username) {
       udlLog('📋 No user logged in - skipping auto-sync');
       return;
+    }
+
+    if (typeof window.ensureStaffSession === 'function') {
+      try {
+        await window.ensureStaffSession();
+      } catch (sessionErr) {
+        console.warn('Session restore on load failed:', sessionErr);
+      }
     }
     
     // Sync organization addresses first (quick operation)

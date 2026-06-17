@@ -125,10 +125,12 @@
       color: #2e7d32;
     }
     
-    .status-discontinued {
-      background: #ffebee;
-      color: #c62828;
-    }
+    .status-pending { background: #e3f2fd; color: #1565c0; }
+    .status-due { background: #fff3e0; color: #e65100; }
+    .status-filled { background: #e8f5e9; color: #2e7d32; }
+    .status-cancelled { background: #f5f5f5; color: #757575; }
+    .rx-meds { margin-top: 12px; padding-left: 12px; border-left: 3px solid var(--nigerian-green); }
+    .pickup-btn { margin-top: 12px; padding: 8px 16px; border: none; border-radius: 6px; cursor: pointer; font-weight: 600; background: var(--nigerian-green); color: #fff; }
     
     .medication-details {
       display: grid;
@@ -207,6 +209,7 @@
     <a href="patient-appointments">&#128197; Appointments</a>
     <a href="patient-medications" class="active">&#128138; Medications</a>
     <a href="patient-results">&#128200; Results</a>
+    <a href="patient-messages">&#128172; Messages</a>
     <a href="patient-summary">&#128196; Summary</a>
     <a href="#" onclick="logout(); return false;" style="margin-left: auto; color: #c33;">&#128682; Logout</a>
   </div>
@@ -229,10 +232,34 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
   <script src="js/patient-data-loader.js"></script>
+  <script src="js/patient-portal.js"></script>
   <script src="js/security.js"></script>
   
   <script>
     window.ensurePatientAccess();
+    
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function statusClassFor(key) {
+      if (key === 'filled') return 'status-filled';
+      if (key === 'due') return 'status-due';
+      if (key === 'pending') return 'status-pending';
+      if (key === 'cancelled') return 'status-cancelled';
+      return 'status-active';
+    }
+
+    async function markPickup(rxId, status) {
+      try {
+        await window.MediForgePatientPortal.markPrescriptionPickup(rxId, status);
+        await loadMedications();
+      } catch (e) {
+        alert('Could not update: ' + (e.message || e));
+      }
+    }
     
     async function loadMedications() {
       const loading = document.getElementById('loading');
@@ -252,64 +279,35 @@
             </div>
           `;
         } else {
-          listContainer.innerHTML = medications.map(med => {
-            const name = med.medication_name || med.name || med.drug_name || 'Unknown Medication';
-            const status = med.status || 'active';
-            const dosage = med.dosage || med.dose || 'Not specified';
-            const frequency = med.frequency || med.how_often || 'Not specified';
-            const route = med.route || med.route_of_administration || 'Not specified';
-            const startDate = med.start_date || med.prescribed_date || med.date;
-            const endDate = med.end_date || med.discontinued_date;
-            const doctor = med.prescribing_doctor || med.doctor || med.physician || 'Not specified';
-            const instructions = med.instructions || med.directions || med.note || '';
-            
-            const statusClass = status === 'active' || status === 'current' ? 'status-active' : 'status-discontinued';
-            const statusText = status === 'active' || status === 'current' ? 'Active' : 'Discontinued';
-            
+          listContainer.innerHTML = medications.map((rx) => {
+            const portal = window.MediForgePatientPortal.getPrescriptionPortalStatus(rx);
+            const meds = window.MediForgePatientPortal.flattenPrescriptionMeds(rx);
+            const rxDate = rx.prescription_date || rx.created_at || rx.date;
+            const doctor = rx.created_by || rx.prescriber_id || rx.prescribing_doctor || 'Your doctor';
+            const rxNum = rx.prescription_number || rx.id?.substring?.(0, 8) || '';
+            const medsHtml = meds.map((m) =>
+              `<li><strong>${esc(m.name)}</strong>${m.dosage ? ' — ' + esc(m.dosage) : ''}${m.frequency ? ', ' + esc(m.frequency) : ''}</li>`
+            ).join('') || '<li>Medication details on file</li>';
+            let pickupHtml = '';
+            if (portal.canMarkPickup && rx.id) {
+              if (portal.key === 'due') {
+                pickupHtml = `<button type="button" class="pickup-btn" onclick="markPickup('${rx.id}','picked_up')">I picked this up</button>`;
+              } else if (portal.key === 'filled') {
+                pickupHtml = `<button type="button" class="pickup-btn" style="background:#666" onclick="markPickup('${rx.id}','due_for_pickup')">Mark as still due for pick up</button>`;
+              }
+            }
             return `
               <div class="medication-item">
                 <div class="medication-header">
-                  <div class="medication-name">${name}</div>
-                  <span class="medication-status ${statusClass}">${statusText}</span>
+                  <div>
+                    <div class="medication-name">Prescription ${rxNum ? '#' + esc(rxNum) : ''}</div>
+                    <div style="color:#666;font-size:0.9rem;margin-top:4px;">${rxDate ? new Date(rxDate).toLocaleDateString() : ''} · ${esc(doctor)}</div>
+                  </div>
+                  <span class="medication-status ${statusClassFor(portal.key)}">${esc(portal.label)}</span>
                 </div>
-                <div class="medication-details">
-                  <div class="detail-item">
-                    <label>&#128138; Dosage</label>
-                    <span class="value">${dosage}</span>
-                  </div>
-                  <div class="detail-item">
-                    <label><i class="fa-solid fa-circle-check" aria-hidden="true"></i> Frequency</label>
-                    <span class="value">${frequency}</span>
-                  </div>
-                  <div class="detail-item">
-                    <label>&#128207; Route</label>
-                    <span class="value">${route}</span>
-                  </div>
-                  <div class="detail-item">
-                    <label>&#127973; Prescribed By</label>
-                    <span class="value">${doctor}</span>
-                  </div>
-                  ${startDate ? `
-                    <div class="detail-item">
-                      <label>&#128197; Start Date</label>
-                      <span class="value">${new Date(startDate).toLocaleDateString()}</span>
-                    </div>
-                  ` : ''}
-                  ${endDate ? `
-                    <div class="detail-item">
-                      <label>&#128197; End Date</label>
-                      <span class="value">${new Date(endDate).toLocaleDateString()}</span>
-                    </div>
-                  ` : ''}
-                </div>
-                ${instructions ? `
-                  <div class="instructions">
-                    <label>&#128221; Instructions</label>
-                    <div class="value">${instructions}</div>
-                  </div>
-                ` : ''}
-              </div>
-            `;
+                <ul class="rx-meds">${medsHtml}</ul>
+                ${pickupHtml}
+              </div>`;
           }).join('');
         }
         

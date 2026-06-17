@@ -36,6 +36,7 @@ function buildUserSessionFromProfile(profileData, authUser) {
     role: profileData.role,
     org: org?.name || 'Platform',
     organizationId: profileData.organization_id,
+    organization_id: profileData.organization_id,
     phone: profileData.phone || '',
     medicalLicenseNumber: profileData.license_number || profileData.medical_license_number || '',
     orgAddressLine1: org?.address_line1 || '',

@@ -1238,7 +1238,7 @@
                   <div id="prescription-diagnosis-container" style="position: relative;">
                     <input type="text" id="prescription-diagnosis" required placeholder="Search for diagnosis or condition..." style="width: 100%; padding: 10px; border: 1px solid #ddd; border-radius: 4px; font-size: 14px;">
                   </div>
-                  <small style="color: #666;">Search and select from ICD-11 or enter custom diagnosis</small>
+                  <small style="color: #666;">Choose an existing diagnosis above when available, or search ICD below to add a new one. New diagnoses are saved to the patient chart when the prescription is saved or sent.</small>
                 </div>
               </div>
 
@@ -1334,24 +1334,18 @@
     // Load patient data for prescription (EXACT COPY from clinical-note.html)
     async function loadPatientDataForPrescription(patientId) {
       try {
-        // Use the global getPatientsData function which uses Supabase-first pattern
-        const patients = await getPatientsData();
-        console.log('Found patients for prescription:', patients.length);
-        
-        // Find the specific patient
-        let patient = patients.find(p => p.id === patientId);
-        
-        if (!patient) {
-          patient = patients.find(p => p.id === parseInt(patientId));
+        let patient = null;
+        if (typeof window.resolvePatientByIdentifier === 'function') {
+          patient = await window.resolvePatientByIdentifier(patientId);
         }
         if (!patient) {
-          patient = patients.find(p => p.id.toString() === patientId);
-        }
-        if (!patient) {
-          patient = patients.find(p => p.id == patientId);
-        }
-        if (!patient) {
-          patient = patients.find(p => p.patient_id === patientId);
+          const patients = await getPatientsData();
+          console.log('Found patients for prescription:', patients.length);
+          patient = patients.find(p => p.id === patientId) ||
+                    patients.find(p => p.id === parseInt(patientId)) ||
+                    patients.find(p => p.id.toString() === patientId) ||
+                    patients.find(p => p.id == patientId) ||
+                    patients.find(p => p.patient_id === patientId);
         }
         
         if (patient) {
@@ -1374,6 +1368,10 @@
             `Patient: ${patient.firstName} ${patient.lastName} (${patient.id})`;
           
           console.log('Patient data loaded for prescription:', patient.firstName, patient.lastName);
+
+          if (typeof window.populatePrescriptionDiagnosisPicker === 'function') {
+            window.populatePrescriptionDiagnosisPicker(patient);
+          }
         } else {
           console.error('Patient not found for prescription:', patientId);
         }

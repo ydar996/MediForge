@@ -216,6 +216,7 @@
     <a href="patient-appointments">📅 Appointments</a>
     <a href="patient-medications">💊 Medications</a>
     <a href="patient-results">🧪 Results</a>
+    <a href="patient-messages">💬 Messages</a>
     <a href="patient-summary">📋 Summary</a>
     <a href="#" onclick="logout(); return false;" style="margin-left: auto; color: #c33;">🚪 Logout</a>
   </div>
@@ -293,7 +294,11 @@
               <div class="value" id="allergies"></div>
             </div>
             <div class="info-item">
-              <label>Medical Conditions</label>
+              <label>Past Medical History</label>
+              <div class="value" id="medicalHistory"></div>
+            </div>
+            <div class="info-item">
+              <label>Diagnoses &amp; Problem List</label>
               <div class="value" id="conditions"></div>
             </div>
           </div>
@@ -448,25 +453,42 @@
           document.getElementById('allergies').textContent = 'None recorded';
         }
         
-        // Format medical conditions
-        let conditionsData = demographics.conditions || demographics.medical_history || demographics.chronic_conditions;
-        if (typeof conditionsData === 'string') {
-          try {
-            conditionsData = JSON.parse(conditionsData);
-          } catch (e) {
-            // If parsing fails, treat as plain text
-            conditionsData = conditionsData;
-          }
+        // Past medical history (EMR medical_history — separate from problem list)
+        const medicalHistory = window.buildPortalMedicalHistory
+          ? window.buildPortalMedicalHistory(demographics)
+          : [];
+        if (medicalHistory.length > 0) {
+          const historyHTML = medicalHistory.map((entry) => {
+            const event = typeof entry === 'string'
+              ? entry
+              : (entry.event || entry.name || entry.diagnosis || 'Unknown');
+            const date = typeof entry === 'object' && entry.date
+              ? new Date(entry.date).toLocaleDateString()
+              : '';
+            const prefix = date ? `${date}: ` : '';
+            return `• ${prefix}${event}`;
+          }).join('<br>');
+          document.getElementById('medicalHistory').innerHTML = historyHTML;
+        } else {
+          document.getElementById('medicalHistory').textContent = 'None recorded';
         }
+
+        // Diagnoses & problem list (EMR diagnoses + chronic_conditions)
+        const conditionsData = window.buildPortalConditions
+          ? window.buildPortalConditions(demographics)
+          : [];
         
-        if (Array.isArray(conditionsData) && conditionsData.length > 0) {
-          const conditionsHTML = conditionsData.map(condition => {
-            const conditionName = typeof condition === 'string' ? condition : (condition.name || condition.diagnosis || condition.description || 'Unknown');
-            return `• ${conditionName}`;
+        if (conditionsData.length > 0) {
+          const conditionsHTML = conditionsData.map((condition) => {
+            const conditionName = typeof condition === 'string'
+              ? condition
+              : (condition.diagnosis || condition.name || condition.description || 'Unknown');
+            const status = typeof condition === 'object' && condition.status
+              ? ` (${condition.status})`
+              : '';
+            return `• ${conditionName}${status}`;
           }).join('<br>');
           document.getElementById('conditions').innerHTML = conditionsHTML;
-        } else if (conditionsData && !Array.isArray(conditionsData) && conditionsData !== '[]') {
-          document.getElementById('conditions').textContent = conditionsData;
         } else {
           document.getElementById('conditions').textContent = 'None recorded';
         }

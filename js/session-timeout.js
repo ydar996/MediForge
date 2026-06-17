@@ -15,6 +15,8 @@
   let warningShown = false;
   let finalWarningShown = false;
   let sessionCheckInterval = null;
+  let sessionTimeoutInitialized = false;
+  let sessionGuardReady = false;
   let warningTimeout = null;
   let logoutTimeout = null;
   let countdownInterval = null;
@@ -94,8 +96,9 @@
     }
   }
 
-  // Initialize session timeout tracking
-  function initializeSessionTimeout() {
+  // Initialize session timeout tracking (once per page load, after session restore)
+  async function initializeSessionTimeout() {
+    if (sessionTimeoutInitialized) return;
     // Skip on login/register pages
     const currentPage = window.location.pathname.split('/').pop() || 'index.html';
     const pageWithoutExtension = currentPage.replace('.html', '');
@@ -129,14 +132,20 @@
 
     schedulePhysicianVerificationAccessGate();
 
-    // Restore last activity time from storage
-    const savedActivity = localStorage.getItem('lastActivity');
-    if (savedActivity) {
-      lastActivityTime = parseInt(savedActivity, 10);
-    } else {
-      lastActivityTime = Date.now();
-      localStorage.setItem('lastActivity', lastActivityTime.toString());
+    // Restore Supabase session before starting inactivity clock (prevents false logouts on navigation)
+    if (typeof window.ensureStaffSession === 'function') {
+      try {
+        await window.ensureStaffSession({ redirectOnFailure: false });
+      } catch (err) {
+        debugLog('ensureStaffSession on init:', err);
+      }
     }
+    sessionGuardReady = true;
+    sessionTimeoutInitialized = true;
+
+    // Each page navigation is user activity — prevents stale lastActivity from prior page
+    lastActivityTime = Date.now();
+    localStorage.setItem('lastActivity', lastActivityTime.toString());
 
     // Track user activity
     trackUserActivity();
@@ -195,6 +204,8 @@
 
   // Check if session has expired
   function checkSessionTimeout() {
+    if (!sessionGuardReady) return;
+
     const timeSinceActivity = Date.now() - lastActivityTime;
     const timeUntilLogout = SESSION_TIMEOUT_MS - timeSinceActivity;
     const timeUntilWarning = SESSION_TIMEOUT_MS - WARNING_TIME_MS - timeSinceActivity;
@@ -560,6 +571,24 @@
 
   // Handle session expired - save work and logout
   async function handleSessionExpired() {
+    // Try to refresh session before forcing logout (avoids false logouts on navigation)
+    if (typeof window.ensureStaffSession === 'function') {
+      try {
+        const restored = await window.ensureStaffSession({ redirectOnFailure: false });
+        if (restored.ok && restored.orgId) {
+          updateActivity();
+          hideWarning();
+          hideFinalWarning();
+          finalWarningShown = false;
+          warningShown = false;
+          debugLog('Session restored after timeout check — staying logged in');
+          return;
+        }
+      } catch (refreshErr) {
+        debugLog('Session refresh before logout failed:', refreshErr);
+      }
+    }
+
     // Clear intervals/timeouts
     if (sessionCheckInterval) {
       clearInterval(sessionCheckInterval);
@@ -798,15 +827,24 @@
     }, 500);
   }
 
-  // Initialize when DOM is ready
-  if (document.readyState === 'loading') {
-    document.addEventListener('DOMContentLoaded', initializeSessionTimeout);
-  } else {
-    initializeSessionTimeout();
+  function bootSessionTimeout() {
+    void initializeSessionTimeout();
   }
 
-  // Also initialize after a short delay for dynamically loaded pages
-  setTimeout(initializeSessionTimeout, 500);
+  // Initialize when DOM is ready (once)
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', bootSessionTimeout);
+  } else {
+    bootSessionTimeout();
+  }
+
+  // Browser back/forward — treat as activity and refresh auth tokens
+  window.addEventListener('pageshow', function() {
+    updateActivity();
+    if (typeof window.ensureStaffSession === 'function') {
+      void window.ensureStaffSession({ redirectOnFailure: false });
+    }
+  });
 
   // Export functions for manual control if needed
   window.sessionTimeoutManager = {

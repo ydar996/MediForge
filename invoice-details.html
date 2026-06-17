@@ -26,6 +26,7 @@
   
   <!-- Billing functionality -->
   <script src="js/billing.js?v=288"></script>
+  <script src="js/encounter-billing.js"></script>
   
   <!-- Patient utilities (for getPatientIdentifier) -->
   <script src="js/patient-id-normalizer.js"></script>
@@ -100,7 +101,7 @@
   <div style="max-width: 900px; margin: 0 auto;">
     <div class="invoice-action-buttons">
       <button onclick="window.location.href='invoices'" class="invoice-action-btn">&#8592; Back to Invoices</button>
-      <button onclick="if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) { window.history.back(); } else { window.location.href='/lab-scientist-dashboard'; }" class="invoice-action-btn" title="Return to the page you came from, or Lab Scientist Dashboard">&#8592; Back to previous page</button>
+      <button onclick="goBackFromInvoice()" class="invoice-action-btn" title="Return to where you opened this invoice from">&#8592; Back to previous page</button>
       <button onclick="printInvoice()" class="invoice-action-btn">&#128424; Print</button>
       <button onclick="recordPaymentFor()" id="pay-btn" class="invoice-action-btn">&#128176; Record Payment</button>
       <button onclick="deleteInvoiceConfirm()" id="delete-btn" class="invoice-action-btn">&#128465; Delete Invoice</button>
@@ -172,6 +173,22 @@
 
   <script>
     let currentInvoice = null;
+
+    function goBackFromInvoice() {
+      const orderId = new URLSearchParams(window.location.search).get('orderId');
+      if (typeof window.resolveInvoiceReturnUrl === 'function') {
+        const target = window.resolveInvoiceReturnUrl(orderId ? '/lab-scientist-dashboard' : '/billing-dashboard');
+        if (target) {
+          window.location.href = target;
+          return;
+        }
+      }
+      if (document.referrer && document.referrer.indexOf(window.location.hostname) !== -1) {
+        window.history.back();
+        return;
+      }
+      window.location.href = orderId ? '/lab-scientist-dashboard' : '/billing-dashboard';
+    }
 
     window.addEventListener('load', async function() {
       const urlParams = new URLSearchParams(window.location.search);

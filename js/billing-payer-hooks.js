@@ -17,9 +17,18 @@
 
   async function loadPatientForInvoice(patientId) {
     if (!patientId) return {};
+    if (typeof global.resolvePatientByIdentifier === 'function') {
+      const resolved = await global.resolvePatientByIdentifier(patientId);
+      if (resolved) return normalizePatient(resolved);
+    }
     if (typeof global.loadPatientsWithSupabasePriority === 'function') {
       const patients = await global.loadPatientsWithSupabasePriority();
-      const p = patients.find((x) => x.id === patientId);
+      const p = patients.find((x) =>
+        x.id === patientId ||
+        x.patient_id === patientId ||
+        x.patientNumber === patientId ||
+        x._supabaseUuid === patientId
+      );
       if (p) return normalizePatient(p);
     }
     const patients = JSON.parse(localStorage.getItem(global.getDataKey?.('patients') || 'patients') || '[]');
