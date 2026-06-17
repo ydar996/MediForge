@@ -280,8 +280,21 @@ document.addEventListener('DOMContentLoaded', function() {
           console.log('✅ Session token generated');
         }
         
-        // CRITICAL: Check if user has signed legal agreements
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
+        const userRole = String(userData.role || '').toLowerCase();
+
+        // Patient accounts use the self-service portal — never staff legal agreements
+        if (userRole === 'patient') {
+          hideLoginVerifyingOverlay();
+          if (result.passwordResetRequired || userData.passwordResetRequired) {
+            window.location.href = '/patient-change-password?firstLogin=true';
+            return;
+          }
+          window.location.href = '/patient-dashboard';
+          return;
+        }
+
+        // CRITICAL: Check if user has signed legal agreements (staff / clinic users only)
         let userId = userData.id; // Prefer users table ID
         
         // If we don't have users table ID, try to get it from Supabase using authUserId

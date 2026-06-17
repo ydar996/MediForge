@@ -62,6 +62,17 @@ window.getPatientDemographics = async function() {
       error = fallback.error;
     }
 
+    // Last resort: match linked patients.id from users.patient_id (portal session UUID)
+    if (!data && !error && uuid) {
+      const byUserLink = await window.supabaseClient
+        .from('patients')
+        .select('*')
+        .eq('id', patientId)
+        .maybeSingle();
+      data = byUserLink.data;
+      error = byUserLink.error;
+    }
+
     if (error) {
       console.error('Error fetching patient demographics:', error);
       throw new Error('Failed to load patient information');
@@ -402,13 +413,19 @@ window.getPatientSummary = async function(requestedPatientId = null) {
     const isStaffAccess = !!(requestedPatientId || window.currentPatientIdForSummary);
     
     // Get recent appointments - use staff-friendly version if staff access
-    const appointments = isStaffAccess
-      ? await window.getPatientAppointmentsForStaff(patientId, { 
-          startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
-        })
-      : await window.getPatientAppointments({ 
-          startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
-        });
+    let appointments = [];
+    try {
+      appointments = isStaffAccess
+        ? await window.getPatientAppointmentsForStaff(patientId, { 
+            startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
+          })
+        : await window.getPatientAppointments({ 
+            startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
+          });
+    } catch (apptError) {
+      console.warn('Failed to load appointments, continuing with empty array:', apptError);
+      appointments = [];
+    }
     
     // Get medications (handle errors gracefully) - use staff-friendly version if staff access
     let medications = [];

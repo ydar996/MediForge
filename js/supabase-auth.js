@@ -27,6 +27,7 @@ async function kickoffPhysicianVerificationClock(profileData) {
 function buildUserSessionFromProfile(profileData, authUser) {
   const org = profileData.organizations;
   return {
+    id: profileData.id,
     authUserId: authUser?.id || profileData.auth_user_id,
     email: authUser?.email || profileData.email,
     firstName: profileData.first_name,
@@ -34,6 +35,8 @@ function buildUserSessionFromProfile(profileData, authUser) {
     username: profileData.username,
     gender: profileData.gender,
     role: profileData.role,
+    patientId: profileData.patient_id || null,
+    patient_id: profileData.patient_id || null,
     org: org?.name || 'Platform',
     organizationId: profileData.organization_id,
     organization_id: profileData.organization_id,

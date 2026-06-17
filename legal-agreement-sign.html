@@ -425,13 +425,26 @@
     }
     
     function logout() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const isPatient = isPatientPortalUser(user);
       localStorage.removeItem('user');
       localStorage.removeItem('supabase_session');
-      window.location.href = '/login';
+      window.location.href = isPatient ? '/patient-login' : '/login';
     }
     
+    function isPatientPortalUser(user) {
+      return String(user?.role || '').toLowerCase() === 'patient';
+    }
+
     // Load agreement content on page load
     document.addEventListener('DOMContentLoaded', function() {
+      try {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        if (isPatientPortalUser(user)) {
+          window.location.replace('/patient-dashboard');
+          return;
+        }
+      } catch (_) { /* continue to staff agreement flow */ }
       loadAgreementContent();
     });
   </script>
