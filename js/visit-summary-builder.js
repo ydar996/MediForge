@@ -34,11 +34,160 @@
     return [];
   }
 
+  function toYmd(val) {
+    if (!val) return '';
+    const s = String(val).trim();
+    if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+    const d = new Date(s);
+    if (!isNaN(d.getTime())) {
+      const y = d.getFullYear();
+      const m = String(d.getMonth() + 1).padStart(2, '0');
+      const day = String(d.getDate()).padStart(2, '0');
+      return `${y}-${m}-${day}`;
+    }
+    return s.slice(0, 10);
+  }
+
   function matchVisitDate(left, right) {
-    if (!left || !right) return false;
-    const a = String(left).slice(0, 10);
-    const b = String(right).slice(0, 10);
-    return a === b;
+    const a = toYmd(left);
+    const b = toYmd(right);
+    return !!(a && b && a === b);
+  }
+
+  function parseOrderItems(order) {
+    let items = order.selected_items != null ? order.selected_items : order.selectedItems;
+    if (typeof items === 'string') {
+      try {
+        items = JSON.parse(items);
+      } catch (_) {
+        items = [];
+      }
+    }
+    return Array.isArray(items) ? items : [];
+  }
+
+  function orderItemLabel(item) {
+    if (item == null) return '';
+    if (typeof item === 'string') return item.trim();
+    return String(item.name || item.test || item.label || '').trim();
+  }
+
+  async function resolveAllPatientIds(patientId, patient) {
+    const ids = new Set([String(patientId)]);
+    if (patient) {
+      ['id', '_supabaseUuid', 'patient_id', 'patientNumber'].forEach((key) => {
+        if (patient[key]) ids.add(String(patient[key]));
+      });
+    }
+    if (global.supabaseClient && patientId) {
+      const { data } = await global.supabaseClient
+        .from('patients')
+        .select('id, patient_id')
+        .or(`id.eq.${patientId},patient_id.eq.${patientId}`)
+        .maybeSingle();
+      if (data) {
+        if (data.id) ids.add(String(data.id));
+        if (data.patient_id) ids.add(String(data.patient_id));
+      }
+    }
+    return Array.from(ids);
+  }
+
+  function patientIdMatches(recordPatientId, patientIds) {
+    if (!recordPatientId) return false;
+    const pid = String(recordPatientId);
+    return patientIds.some((id) => String(id) === pid);
+  }
+
+  function mergeLocalStorageVisitOrders(patient, patientId, visitDate) {
+    try {
+      const storageKey = typeof global.getDataKey === 'function'
+        ? global.getDataKey('patients')
+        : 'patients';
+      const patients = JSON.parse(global.localStorage?.getItem(storageKey) || '[]');
+      const localPatient = patients.find((p) =>
+        p &&
+        (p.id === patientId ||
+          p.patient_id === patientId ||
+          p._supabaseUuid === patientId ||
+          (patient && (p.id === patient.id || p.patient_id === patient.patient_id)))
+      );
+      if (!localPatient?.visits) return;
+      const localVisit = localPatient.visits.find((v) => matchVisitDate(v.date, visitDate));
+      if (!localVisit?.orders?.length) return;
+      if (!patient.visits) patient.visits = [];
+      let targetVisit = patient.visits.find((v) => matchVisitDate(v.date, visitDate));
+      if (!targetVisit) {
+        patient.visits.push({ ...localVisit, date: toYmd(localVisit.date) || visitDate });
+      } else {
+        targetVisit.orders = localVisit.orders;
+      }
+    } catch (_) {
+      /* ignore localStorage merge errors */
+    }
+  }
+
+  function collectVisitOrders(patient, visitDate) {
+    const orders = [];
+    const seen = new Set();
+    (patient.visits || []).forEach((visit) => {
+      if (!matchVisitDate(visit.date, visitDate)) return;
+      (visit.orders || []).forEach((order) => {
+        if (order.deleted_at || order.deletedAt) return;
+        const items = parseOrderItems(order);
+        const noItemsChecked = order.noItemsChecked || order.no_items_checked;
+        if (!items.length && !noItemsChecked) return;
+        const serial = order.serialNumber || order.serial_number || '';
+        const ts = order.timestamp || order.created_at || '';
+        const key = `${serial}_${ts}`;
+        if (seen.has(key)) return;
+        seen.add(key);
+        orders.push({
+          type: order.type || 'lab',
+          selected_items: items,
+          status: order.status || order.lab_status || 'ordered',
+          serial_number: serial,
+          visit_date: visit.date,
+          created_at: ts
+        });
+      });
+    });
+    return orders;
+  }
+
+  function prescriptionMatchesVisit(rx, visitDate) {
+    const dates = [
+      rx.visitDate,
+      rx.visit_date,
+      rx.date,
+      rx.encounterDate,
+      rx.prescription_date,
+      rx.signature_date,
+      rx.signatureDate,
+      rx.created_at,
+      rx.createdAt
+    ];
+    return dates.some((d) => matchVisitDate(d, visitDate));
+  }
+
+  function medicationsFromPrescription(rx) {
+    const meds = parseField(rx.medications, []);
+    return meds.map((m) => ({
+      name: m.name || m.drugName || m.medication || 'Medication',
+      dosage: m.dosage || m.strength || '',
+      frequency: m.frequency || m.directions || '',
+      status: rx.status || rx.pharmacy_status || 'pending'
+    }));
+  }
+
+  function dedupeOrders(orders) {
+    const seen = new Set();
+    return orders.filter((o) => {
+      const key = `${o.serial_number || ''}_${toYmd(o.visit_date || o.created_at)}_${o.type || ''}`;
+      if (seen.has(key)) return false;
+      seen.add(key);
+      return true;
+    });
   }
 
   async function resolvePatient(patientId) {
@@ -73,47 +222,159 @@
   }
 
   async function loadOrdersForVisit(patientIds, visitDate, orgId) {
-    if (!global.supabaseClient) return [];
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
-    let query = global.supabaseClient.from('orders').select('*').or(orFilter);
-    if (orgId) query = query.eq('organization_id', orgId);
-    const { data } = await query.order('created_at', { ascending: false });
-    return (data || []).filter((o) => {
-      if (o.deleted_at) return false;
-      const vd = o.visit_date || o.created_at;
-      return matchVisitDate(vd, visitDate);
-    });
+    const matched = [];
+    const seen = new Set();
+
+    function addOrder(order) {
+      if (!order || order.deleted_at) return;
+      const vd = order.visit_date || order.visitDate || order.created_at;
+      if (!matchVisitDate(vd, visitDate)) return;
+      const serial = order.serial_number || order.serialNumber || '';
+      const key = `${serial}_${toYmd(vd)}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      matched.push(order);
+    }
+
+    if (global.supabaseClient) {
+      const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+      let query = global.supabaseClient.from('orders').select('*').or(orFilter).is('deleted_at', null);
+      if (orgId) query = query.eq('organization_id', orgId);
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (!error && data?.length) {
+        data.forEach(addOrder);
+      }
+      if (!matched.length) {
+        let fallback = global.supabaseClient.from('orders').select('*').or(orFilter).is('deleted_at', null);
+        const { data: allData, error: allErr } = await fallback.order('created_at', { ascending: false });
+        if (!allErr && allData?.length) allData.forEach(addOrder);
+      }
+    }
+
+    return matched;
   }
 
-  async function loadPrescriptionsForVisit(patientIds, visitDate, orgId) {
-    if (!global.supabaseClient) return [];
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
-    let query = global.supabaseClient.from('prescriptions').select('*').or(orFilter);
-    if (orgId) query = query.eq('organization_id', orgId);
-    const { data } = await query.order('created_at', { ascending: false });
-    return (data || []).filter((rx) => {
-      const d = rx.prescription_date || rx.visit_date || rx.created_at;
-      return matchVisitDate(d, visitDate);
-    });
+  async function loadPrescriptionsForVisit(patientIds, visitDate, orgId, patient) {
+    const prescriptions = [];
+    const seen = new Set();
+
+    function addPrescription(rx) {
+      if (!rx) return;
+      const id = rx.id || rx._supabaseId || JSON.stringify(rx.medications);
+      if (seen.has(id)) return;
+      if (!prescriptionMatchesVisit(rx, visitDate)) return;
+      seen.add(id);
+      prescriptions.push(rx);
+    }
+
+    if (global.supabaseClient) {
+      const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+      let query = global.supabaseClient.from('prescriptions').select('*').or(orFilter);
+      if (orgId) query = query.eq('organization_id', orgId);
+      const { data, error } = await query.order('created_at', { ascending: false });
+      if (!error && data?.length) {
+        data.forEach((rx) => {
+          addPrescription({
+            ...rx,
+            medications: parseField(rx.medications, [])
+          });
+        });
+      }
+      if (!prescriptions.length) {
+        const { data: allData, error: allErr } = await global.supabaseClient
+          .from('prescriptions')
+          .select('*')
+          .or(orFilter)
+          .order('created_at', { ascending: false });
+        if (!allErr && allData?.length) {
+          allData.forEach((rx) => {
+            addPrescription({
+              ...rx,
+              medications: parseField(rx.medications, [])
+            });
+          });
+        }
+      }
+    }
+
+    let patientPrescriptions = patient?.prescriptions || [];
+    if (typeof global.refreshPatientPrescriptionsFromSupabase === 'function' && patient) {
+      try {
+        const refreshed = await global.refreshPatientPrescriptionsFromSupabase(
+          patient.patient_id || patient.id || patientIds[0],
+          patient
+        );
+        if (Array.isArray(refreshed)) patientPrescriptions = refreshed;
+      } catch (e) {
+        console.warn('Visit summary: could not refresh prescriptions', e);
+      }
+    }
+    patientPrescriptions.forEach(addPrescription);
+
+    return prescriptions;
   }
 
   async function loadUpcomingAppointments(patientIds, orgId) {
-    if (!global.supabaseClient) return [];
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
-    const today = new Date().toISOString().slice(0, 10);
-    let query = global.supabaseClient
-      .from('appointments')
-      .select('*')
-      .or(orFilter)
-      .gte('appointment_date', today)
-      .order('appointment_date', { ascending: true })
-      .limit(5);
-    if (orgId) query = query.eq('organization_id', orgId);
-    const { data } = await query;
-    return (data || []).filter((a) => {
-      const st = String(a.status || '').toLowerCase();
-      return !['cancelled', 'canceled', 'completed', 'done'].includes(st);
-    });
+    const today = toYmd(new Date());
+    const upcoming = [];
+    const seen = new Set();
+
+    function addAppointment(appt) {
+      if (!appt) return;
+      const pid = appt.patient_id || appt.patientId;
+      if (!patientIdMatches(pid, patientIds)) return;
+      const st = String(appt.status || '').toLowerCase();
+      if (['cancelled', 'canceled', 'completed', 'done'].includes(st)) return;
+      const date = toYmd(appt.appointment_date || appt.date);
+      if (!date || date < today) return;
+      const key = appt.id || `${pid}_${date}_${appt.appointment_time || appt.time || ''}`;
+      if (seen.has(key)) return;
+      seen.add(key);
+      upcoming.push(appt);
+    }
+
+    if (global.supabaseClient) {
+      const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+      let query = global.supabaseClient
+        .from('appointments')
+        .select('*')
+        .or(orFilter)
+        .gte('appointment_date', today)
+        .order('appointment_date', { ascending: true })
+        .limit(10);
+      if (orgId) query = query.eq('organization_id', orgId);
+      const { data, error } = await query;
+      if (!error && data?.length) data.forEach(addAppointment);
+
+      if (!upcoming.length) {
+        const { data: allData, error: allErr } = await global.supabaseClient
+          .from('appointments')
+          .select('*')
+          .or(orFilter)
+          .gte('appointment_date', today)
+          .order('appointment_date', { ascending: true })
+          .limit(10);
+        if (!allErr && allData?.length) allData.forEach(addAppointment);
+      }
+    }
+
+    if (!upcoming.length && typeof global.loadAppointmentsWithSupabasePriority === 'function') {
+      try {
+        const all = await global.loadAppointmentsWithSupabasePriority();
+        (all || []).forEach(addAppointment);
+      } catch (e) {
+        console.warn('Visit summary: appointments fallback failed', e);
+      }
+    }
+
+    return upcoming
+      .sort((a, b) => {
+        const da = toYmd(a.appointment_date || a.date);
+        const db = toYmd(b.appointment_date || b.date);
+        if (da !== db) return da.localeCompare(db);
+        return String(a.appointment_time || a.time || '').localeCompare(String(b.appointment_time || b.time || ''));
+      })
+      .slice(0, 5);
   }
 
   async function buildOfficeVisitSummary(patientId, visitDate, organizationId) {
@@ -122,24 +383,26 @@
 
     const patientUuid = patient.id || patient._supabaseUuid;
     const legacyId = patient.patient_id || patientId;
-    const patientIds = [...new Set([String(patientUuid), String(legacyId), String(patientId)].filter(Boolean))];
+    const patientIds = await resolveAllPatientIds(patientId, patient);
+    const normalizedVisitDate = toYmd(visitDate) || visitDate;
 
     if (typeof global.loadClinicalNoteDataFromSupabase === 'function') {
-      await global.loadClinicalNoteDataFromSupabase(patient, visitDate);
+      await global.loadClinicalNoteDataFromSupabase(patient, normalizedVisitDate);
     }
     if (typeof global.loadClinicalNoteSOAPFromSupabase === 'function') {
-      await global.loadClinicalNoteSOAPFromSupabase(patient, visitDate);
+      await global.loadClinicalNoteSOAPFromSupabase(patient, normalizedVisitDate);
     }
+    mergeLocalStorageVisitOrders(patient, patientId, normalizedVisitDate);
 
-    const visit = (patient.visits || []).find((v) => matchVisitDate(v.date, visitDate)) || { date: visitDate, soap: {} };
+    const visit = (patient.visits || []).find((v) => matchVisitDate(v.date, normalizedVisitDate)) || { date: normalizedVisitDate, soap: {} };
     const soap = visit.soap || {};
     const subjective = soap.subjective || {};
     const plan = soap.plan || {};
 
-    const clinicalNote = await loadVisitFromClinicalNotes(patientUuid, visitDate, organizationId);
+    const clinicalNote = await loadVisitFromClinicalNotes(patientUuid, normalizedVisitDate, organizationId);
 
     const vitalsRaw = visit.vitals || visit.vitalSigns || patient.vitals || [];
-    const visitVitals = normalizeVitals(vitalsRaw).filter((v) => matchVisitDate(v.date || v.recorded_at, visitDate));
+    const visitVitals = normalizeVitals(vitalsRaw).filter((v) => matchVisitDate(v.date || v.recorded_at, normalizedVisitDate));
     if (!visitVitals.length && normalizeVitals(vitalsRaw).length === 1) {
       visitVitals.push(normalizeVitals(vitalsRaw)[0]);
     }
@@ -148,11 +411,14 @@
     const diagnosesFromPatient = parseField(patient.diagnoses, []);
     const diagnoses = diagnosesFromVisit.length ? diagnosesFromVisit : diagnosesFromPatient.slice(0, 10);
 
-    const [orders, prescriptions, upcomingAppointments] = await Promise.all([
-      loadOrdersForVisit(patientIds, visitDate, organizationId),
-      loadPrescriptionsForVisit(patientIds, visitDate, organizationId),
+    const [supabaseOrders, prescriptions, upcomingAppointments] = await Promise.all([
+      loadOrdersForVisit(patientIds, normalizedVisitDate, organizationId),
+      loadPrescriptionsForVisit(patientIds, normalizedVisitDate, organizationId, patient),
       loadUpcomingAppointments(patientIds, organizationId)
     ]);
+
+    const visitOrders = collectVisitOrders(patient, normalizedVisitDate);
+    const orders = dedupeOrders([...supabaseOrders, ...visitOrders]);
 
     const referrals = parseField(visit.referrals, []);
     if (!referrals.length && plan.referrals) {
@@ -161,15 +427,7 @@
 
     const medications = [];
     prescriptions.forEach((rx) => {
-      const meds = parseField(rx.medications, []);
-      meds.forEach((m) => {
-        medications.push({
-          name: m.name || m.drugName || m.medication || 'Medication',
-          dosage: m.dosage || m.strength || '',
-          frequency: m.frequency || m.directions || '',
-          status: rx.status || 'pending'
-        });
-      });
+      medicationsFromPrescription(rx).forEach((m) => medications.push(m));
     });
 
     const providerName = clinicalNote?.provider_name
@@ -178,7 +436,7 @@
       || (JSON.parse(global.localStorage?.getItem('user') || '{}').username);
 
     const snapshot = {
-      visitDate,
+      visitDate: normalizedVisitDate,
       generatedAt: new Date().toISOString(),
       patient: {
         name: patient.name || `${patient.first_name || patient.firstName || ''} ${patient.last_name || patient.lastName || ''}`.trim(),
@@ -205,14 +463,14 @@
       })),
       diagnoses: diagnoses.map((d) => ({
         name: typeof d === 'string' ? d : (d.diagnosis || d.name || d.event || 'Diagnosis'),
-        date: d.date || visitDate,
+        date: d.date || normalizedVisitDate,
         notes: d.notes || ''
       })),
       orders: orders.map((o) => ({
         type: o.type || 'lab',
-        items: (o.selected_items || []).map((i) => i.name || i.test || i).filter(Boolean),
+        items: parseOrderItems(o).map(orderItemLabel).filter(Boolean),
         status: o.status || o.lab_status || 'ordered',
-        serialNumber: o.serial_number
+        serialNumber: o.serial_number || o.serialNumber
       })),
       prescriptions: medications,
       referrals: referrals.map((r) => ({
@@ -222,9 +480,9 @@
       })),
       followUpPlan: plan.followUp || plan.follow_up || plan.patientEducation || '',
       upcomingAppointments: upcomingAppointments.map((a) => ({
-        date: a.appointment_date,
-        time: a.appointment_time,
-        doctor: a.doctor || a.doctor_name,
+        date: a.appointment_date || a.date,
+        time: a.appointment_time || a.time,
+        doctor: a.doctor || a.doctor_name || a.patient_name,
         reason: a.reason || a.appointment_type
       }))
     };
