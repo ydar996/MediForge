@@ -19292,6 +19292,324 @@ async function loadEditForm() {
   });
 }
 
+function visitSummaryToYmd(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const d = new Date(s);
+  if (!isNaN(d.getTime())) {
+    return d.getFullYear() + '-' + String(d.getMonth() + 1).padStart(2, '0') + '-' + String(d.getDate()).padStart(2, '0');
+  }
+  return s.slice(0, 10);
+}
+
+function visitSummaryDatesMatch(left, right) {
+  const a = visitSummaryToYmd(left);
+  const b = visitSummaryToYmd(right);
+  return !!(a && b && a === b);
+}
+
+function visitSummaryFindVisit(patient, visitDate) {
+  const ymd = visitSummaryToYmd(visitDate) || visitDate;
+  return (patient.visits || []).find((v) =>
+    v.date === visitDate || visitSummaryToYmd(v.date) === ymd || v.date === ymd
+  ) || null;
+}
+
+function visitSummaryMergeLocalStoragePatient(patient, patientId) {
+  try {
+    const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+    const localPatient = patients.find((p) =>
+      p &&
+      (p.id === patientId ||
+        p.patient_id === patientId ||
+        p._supabaseUuid === patientId ||
+        (patient && (p.id === patient.id || p.patient_id === patient.patient_id || p._supabaseUuid === patient._supabaseUuid)))
+    );
+    if (!localPatient?.visits?.length) return patient;
+    if (!patient.visits) patient.visits = [];
+    localPatient.visits.forEach((localVisit) => {
+      const match = visitSummaryFindVisit(patient, localVisit.date);
+      if (match) {
+        if (localVisit.orders?.length) match.orders = localVisit.orders;
+        if (localVisit.referrals?.length) match.referrals = localVisit.referrals;
+        if (localVisit.soap) match.soap = { ...(match.soap || {}), ...localVisit.soap };
+        if (localVisit.diagnoses?.length) match.diagnoses = localVisit.diagnoses;
+        if (localVisit.vitals?.length) match.vitals = localVisit.vitals;
+      } else {
+        patient.visits.push(localVisit);
+      }
+    });
+    if (localPatient.prescriptions?.length) {
+      patient.prescriptions = localPatient.prescriptions;
+    }
+  } catch (e) {
+    console.warn('visitSummaryMergeLocalStoragePatient:', e);
+  }
+  return patient;
+}
+
+function visitSummaryParseOrderItems(order) {
+  let items = order.selected_items != null ? order.selected_items : order.selectedItems;
+  if (typeof items === 'string') {
+    try { items = JSON.parse(items); } catch (_) { items = []; }
+  }
+  return Array.isArray(items) ? items : [];
+}
+
+async function collectOrdersForPatientVisit(patient, visitDate) {
+  const patientId = patient?.id;
+  if (!patientId) return [];
+
+  const ymd = visitSummaryToYmd(visitDate) || visitDate;
+  let supabaseOrders = [];
+
+  if (window.supabaseClient) {
+    try {
+      const isLegacyId = patientId && !String(patientId).includes('-') && String(patientId).length < 36;
+      const queryPatientId = isLegacyId ? (patient._supabaseUuid || patientId) : patientId;
+      const idsToTry = [...new Set([queryPatientId, patientId, patient.patient_id, patient._supabaseUuid].filter(Boolean))];
+
+      for (const qid of idsToTry) {
+        const { data, error } = await window.supabaseClient
+          .from('orders')
+          .select('*')
+          .eq('patient_id', qid)
+          .is('deleted_at', null)
+          .order('created_at', { ascending: false });
+        if (!error && data?.length) {
+          supabaseOrders = data.map((order) => ({
+            id: order.id,
+            type: order.type,
+            serialNumber: order.serial_number,
+            serial_number: order.serial_number,
+            selectedItems: order.selected_items || [],
+            selected_items: order.selected_items || [],
+            noItemsChecked: order.no_items_checked || false,
+            status: order.status || 'Generated',
+            timestamp: order.timestamp || order.created_at,
+            visitDate: order.visit_date,
+            visit_date: order.visit_date,
+            created_at: order.created_at
+          }));
+          break;
+        }
+      }
+    } catch (e) {
+      console.warn('collectOrdersForPatientVisit supabase:', e);
+    }
+  }
+
+  const allOrders = [];
+  const seen = new Set();
+
+  function pushOrder(order) {
+    if (!order || order.deleted_at || order.deletedAt) return;
+    const items = visitSummaryParseOrderItems(order);
+    if (!items.length && !(order.noItemsChecked || order.no_items_checked)) return;
+    const serial = order.serialNumber || order.serial_number || '';
+    const ts = order.timestamp || order.created_at || '';
+    const key = `${serial}_${ts}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    allOrders.push(order);
+  }
+
+  (patient.visits || []).forEach((visit) => {
+    if (!visitSummaryDatesMatch(visit.date, ymd)) return;
+    (visit.orders || []).forEach(pushOrder);
+  });
+
+  supabaseOrders.forEach((order) => {
+    const explicitVisit = order.visitDate || order.visit_date;
+    if (explicitVisit && !visitSummaryDatesMatch(explicitVisit, ymd)) return;
+    if (!explicitVisit) {
+      const created = order.created_at || order.timestamp;
+      if (created && !visitSummaryDatesMatch(created, ymd)) return;
+    }
+    pushOrder(order);
+  });
+
+  const finalOrders = [];
+  const seenSerial = new Set();
+  allOrders.forEach((order) => {
+    const serial = order.serialNumber || order.serial_number || '';
+    if (serial && !seenSerial.has(serial)) {
+      seenSerial.add(serial);
+      finalOrders.push(order);
+    } else if (!serial) {
+      finalOrders.push(order);
+    }
+  });
+
+  return finalOrders;
+}
+
+async function collectPrescriptionsForPatientVisit(patient, patientId, visitDate) {
+  const ymd = visitSummaryToYmd(visitDate) || visitDate;
+  let list = patient.prescriptions || [];
+
+  try {
+    if (typeof window.refreshPatientPrescriptionsFromSupabase === 'function') {
+      list = await window.refreshPatientPrescriptionsFromSupabase(patientId, patient);
+    } else if (typeof fetchPrescriptionsFromSupabaseForPatient === 'function') {
+      const fromDb = await fetchPrescriptionsFromSupabaseForPatient(patientId, patient);
+      if (fromDb?.length) {
+        list = typeof mergePrescriptionsFromSupabase === 'function'
+          ? mergePrescriptionsFromSupabase(list, fromDb)
+          : fromDb;
+      }
+    }
+  } catch (e) {
+    console.warn('collectPrescriptionsForPatientVisit refresh:', e);
+  }
+
+  function rxMatchesVisit(rx) {
+    const dates = [
+      rx.visitDate, rx.visit_date, rx.date, rx.encounterDate,
+      rx.prescription_date, rx.signature_date, rx.signatureDate,
+      rx.created_at, rx.createdAt
+    ];
+    return dates.some((d) => visitSummaryDatesMatch(d, ymd));
+  }
+
+  const forVisit = (list || []).filter(rxMatchesVisit);
+  return forVisit.length ? forVisit : (list || []);
+}
+
+function collectReferralsForPatientVisit(patient, visitDate) {
+  const ymd = visitSummaryToYmd(visitDate) || visitDate;
+  if (typeof migrateExistingReferrals === 'function') migrateExistingReferrals(patient);
+  const allReferrals = [];
+
+  (patient.visits || []).forEach((visit) => {
+    if (!visitSummaryDatesMatch(visit.date, ymd)) return;
+    const visitReferrals = visit.referrals || [];
+    const soapReferrals = (visit.soap && visit.soap.plan && visit.soap.plan.referrals) ? visit.soap.plan.referrals : [];
+    visitReferrals.forEach((r) => allReferrals.push({ ...r, visitDate: visit.date }));
+    soapReferrals.forEach((r) => {
+      const dup = allReferrals.some((e) => e.specialistId === r.specialistId && e.timestamp === r.timestamp);
+      if (!dup) allReferrals.push({ ...r, visitDate: visit.date, status: r.status || 'Generated' });
+    });
+  });
+
+  return allReferrals;
+}
+
+async function collectUpcomingAppointmentsForPatient(patient, visitDate) {
+  const today = visitSummaryToYmd(new Date());
+  const ids = new Set([
+    String(patient.id || ''),
+    String(patient._supabaseUuid || ''),
+    String(patient.patient_id || '')
+  ].filter(Boolean));
+
+  const upcoming = [];
+  const seen = new Set();
+
+  function consider(appt) {
+    if (!appt) return;
+    const pid = String(appt.patient_id || appt.patientId || '');
+    if (![...ids].some((id) => id && pid === id)) return;
+    const st = String(appt.status || '').toLowerCase();
+    if (['cancelled', 'canceled', 'completed', 'done'].includes(st)) return;
+    const date = visitSummaryToYmd(appt.appointment_date || appt.date);
+    if (!date || date < today) return;
+    const key = appt.id || `${pid}_${date}_${appt.appointment_time || appt.time || ''}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    upcoming.push(appt);
+  }
+
+  if (window.supabaseClient) {
+    const orFilter = [...ids].map((id) => `patient_id.eq.${id}`).join(',');
+    try {
+      const { data } = await window.supabaseClient
+        .from('appointments')
+        .select('*')
+        .or(orFilter)
+        .gte('appointment_date', today)
+        .order('appointment_date', { ascending: true })
+        .limit(15);
+      (data || []).forEach(consider);
+    } catch (e) {
+      console.warn('collectUpcomingAppointmentsForPatient:', e);
+    }
+  }
+
+  if (!upcoming.length && typeof window.loadAppointmentsWithSupabasePriority === 'function') {
+    try {
+      const all = await window.loadAppointmentsWithSupabasePriority();
+      (all || []).forEach(consider);
+    } catch (_) { /* ignore */ }
+  }
+
+  return upcoming
+    .sort((a, b) => {
+      const da = visitSummaryToYmd(a.appointment_date || a.date);
+      const db = visitSummaryToYmd(b.appointment_date || b.date);
+      return da.localeCompare(db);
+    })
+    .slice(0, 5);
+}
+
+/**
+ * Single source of truth for office visit summary data (clinical note + discharge summary).
+ */
+window.collectOfficeVisitChartData = async function collectOfficeVisitChartData(patientId, visitDate) {
+  const ymd = visitSummaryToYmd(visitDate) || visitDate;
+  let patient = null;
+  if (typeof window.resolvePatientByIdentifier === 'function') {
+    patient = await window.resolvePatientByIdentifier(patientId);
+  }
+  if (!patient) throw new Error('Patient not found');
+
+  if (typeof loadClinicalNoteDataFromSupabase === 'function') {
+    await loadClinicalNoteDataFromSupabase(patient, ymd);
+  }
+  if (typeof loadClinicalNoteSOAPFromSupabase === 'function') {
+    await loadClinicalNoteSOAPFromSupabase(patient, ymd);
+  }
+  patient = visitSummaryMergeLocalStoragePatient(patient, patientId);
+
+  const visit = visitSummaryFindVisit(patient, ymd) || { date: ymd, soap: {} };
+  const soap = visit.soap || {};
+  const subjective = soap.subjective || {};
+  const plan = soap.plan || {};
+
+  const [orders, prescriptions, upcomingAppointments] = await Promise.all([
+    collectOrdersForPatientVisit(patient, ymd),
+    collectPrescriptionsForPatientVisit(patient, patientId, ymd),
+    collectUpcomingAppointmentsForPatient(patient, ymd)
+  ]);
+
+  const referrals = collectReferralsForPatientVisit(patient, ymd);
+
+  let vitalsRaw = visit.vitals || visit.vitalSigns || [];
+  if (!vitalsRaw?.length && patient.vitals?.length) {
+    vitalsRaw = patient.vitals.filter((v) => visitSummaryDatesMatch(v.date || v.recorded_at, ymd));
+  }
+  if (!vitalsRaw?.length && patient.vitals?.length === 1) vitalsRaw = patient.vitals;
+
+  const diagnosesFromVisit = Array.isArray(visit.diagnoses) ? visit.diagnoses : [];
+  const diagnosesFromPatient = Array.isArray(patient.diagnoses) ? patient.diagnoses : [];
+  const diagnoses = diagnosesFromVisit.length ? diagnosesFromVisit : diagnosesFromPatient;
+
+  return {
+    patient,
+    visit,
+    soap,
+    subjective,
+    plan,
+    orders,
+    prescriptions,
+    referrals,
+    upcomingAppointments,
+    vitals: vitalsRaw,
+    diagnoses
+  };
+};
+
 // Generate discharge summary for clinical note
 function generateDischargeSummary() {
   const urlParams = new URLSearchParams(window.location.search);

@@ -378,13 +378,88 @@
   }
 
   async function buildOfficeVisitSummary(patientId, visitDate, organizationId) {
+    const normalizedVisitDate = toYmd(visitDate) || visitDate;
+
+    if (typeof global.collectOfficeVisitChartData === 'function') {
+      const chart = await global.collectOfficeVisitChartData(patientId, normalizedVisitDate);
+      const patient = chart.patient;
+      const legacyId = patient.patient_id || patientId;
+      const patientUuid = patient.id || patient._supabaseUuid;
+      const subjective = chart.subjective || {};
+      const plan = chart.plan || {};
+      const clinicalNote = await loadVisitFromClinicalNotes(patientUuid, normalizedVisitDate, organizationId);
+
+      const medications = [];
+      (chart.prescriptions || []).forEach((rx) => {
+        medicationsFromPrescription(rx).forEach((m) => medications.push(m));
+      });
+
+      const providerName = clinicalNote?.provider_name
+        || chart.visit?.provider
+        || plan.provider
+        || (JSON.parse(global.localStorage?.getItem('user') || '{}').username);
+
+      const snapshot = {
+        visitDate: normalizedVisitDate,
+        generatedAt: new Date().toISOString(),
+        patient: {
+          name: patient.name || `${patient.first_name || patient.firstName || ''} ${patient.last_name || patient.lastName || ''}`.trim(),
+          patientId: legacyId,
+          dob: patient.date_of_birth || patient.dateOfBirth || patient.dob
+        },
+        provider: providerName || 'Your care team',
+        chiefComplaint: subjective.chiefComplaint || subjective.cc || clinicalNote?.chief_complaint || '',
+        visitOverview: [
+          subjective.hpi || subjective.historyOfPresentIllness || '',
+          plan.treatmentPlan || plan.treatment || '',
+          plan.followUp || plan.follow_up || ''
+        ].filter(Boolean).join('\n\n'),
+        vitals: normalizeVitals(chart.vitals).map((v) => ({
+          temperature: v.temperature || v.temp,
+          heartRate: v.heartRate || v.heart_rate || v.pulse,
+          bloodPressure: v.bloodPressure || (v.systolic && v.diastolic ? `${v.systolic}/${v.diastolic}` : null),
+          respiratoryRate: v.respiratoryRate || v.respiratory_rate,
+          oxygenSaturation: v.oxygenSaturation || v.o2_sat || v.spo2,
+          height: v.height,
+          weight: v.weight,
+          bmi: v.bmi,
+          painLevel: v.painLevel || v.pain_level
+        })),
+        diagnoses: (chart.diagnoses || []).map((d) => ({
+          name: typeof d === 'string' ? d : (d.diagnosis || d.name || d.event || 'Diagnosis'),
+          date: d.date || normalizedVisitDate,
+          notes: d.notes || ''
+        })),
+        orders: (chart.orders || []).map((o) => ({
+          type: o.type || 'lab',
+          items: parseOrderItems(o).map(orderItemLabel).filter(Boolean),
+          status: o.status || o.lab_status || 'ordered',
+          serialNumber: o.serial_number || o.serialNumber
+        })),
+        prescriptions: medications,
+        referrals: (chart.referrals || []).map((r) => ({
+          specialist: r.specialistName || r.specialist || r.provider || r.to || 'Specialist',
+          diagnoses: Array.isArray(r.diagnoses) ? r.diagnoses.join(', ') : (r.diagnoses || r.diagnosis || r.reason || ''),
+          status: r.status || 'sent'
+        })),
+        followUpPlan: plan.followUp || plan.follow_up || plan.patientEducation || '',
+        upcomingAppointments: (chart.upcomingAppointments || []).map((a) => ({
+          date: a.appointment_date || a.date,
+          time: a.appointment_time || a.time,
+          doctor: a.doctor || a.doctor_name,
+          reason: a.reason || a.appointment_type
+        }))
+      };
+
+      return { patient, patientUuid, legacyId, snapshot };
+    }
+
     const patient = await resolvePatient(patientId);
     if (!patient) throw new Error('Patient not found');
 
     const patientUuid = patient.id || patient._supabaseUuid;
     const legacyId = patient.patient_id || patientId;
     const patientIds = await resolveAllPatientIds(patientId, patient);
-    const normalizedVisitDate = toYmd(visitDate) || visitDate;
 
     if (typeof global.loadClinicalNoteDataFromSupabase === 'function') {
       await global.loadClinicalNoteDataFromSupabase(patient, normalizedVisitDate);
