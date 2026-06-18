@@ -639,6 +639,37 @@
     `;
   }
 
+  function visitIsConcluded(visit) {
+    if (!visit) return false;
+    if (visit.checkOutTime || visit.check_out_time) return true;
+    if (String(visit.status || '').toLowerCase() === 'completed') return true;
+    if (visit.soap && visit.soap.locked) return true;
+    return false;
+  }
+
+  async function publishOfficeVisitSummaryToPortal(patientId, visitDate, organizationId) {
+    if (!patientId || !visitDate || !organizationId) return null;
+    if (!global.supabaseClient) return null;
+    const normalizedDate = toYmd(visitDate) || visitDate;
+    const built = await buildOfficeVisitSummary(patientId, normalizedDate, organizationId);
+    return saveOfficeVisitSummary(
+      built.legacyId || patientId,
+      normalizedDate,
+      organizationId,
+      built.snapshot
+    );
+  }
+
+  async function maybePublishVisitSummaryToPortal(patientId, visitDate, visit, organizationId) {
+    if (!visitIsConcluded(visit)) return null;
+    try {
+      return await publishOfficeVisitSummaryToPortal(patientId, visitDate, organizationId);
+    } catch (e) {
+      console.warn('maybePublishVisitSummaryToPortal:', e);
+      return null;
+    }
+  }
+
   async function saveOfficeVisitSummary(patientId, visitDate, organizationId, snapshot, options) {
     if (!global.supabaseClient) throw new Error('Database not available');
     const user = JSON.parse(global.localStorage.getItem('user') || '{}');
@@ -693,6 +724,9 @@
     buildOfficeVisitSummary,
     renderSnapshotHtml,
     saveOfficeVisitSummary,
+    publishOfficeVisitSummaryToPortal,
+    maybePublishVisitSummaryToPortal,
+    visitIsConcluded,
     formatDate
   };
 })(typeof window !== 'undefined' ? window : global);

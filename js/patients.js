@@ -14986,6 +14986,8 @@ async function loadClinicalNote() {
 
   // Set up auto-save for all form fields
   setupAutoSave();
+
+  maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit);
   
   // Re-enable auto-save after form is loaded
   setTimeout(() => {
@@ -16487,6 +16489,8 @@ async function lockClinicalNote() {
   
   // Save to localStorage as cache/fallback
   localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
+
+  maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit);
   
   // Display electronic signature
   displayElectronicSignature(user.username, visit.soap.lockedAt, visit.soap.signature, visit.soap.auditTrail);
@@ -19695,6 +19699,20 @@ window.collectOfficeVisitChartData = async function collectOfficeVisitChartData(
     diagnoses
   };
 };
+
+async function maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit) {
+  if (!window.VisitSummaryBuilder?.maybePublishVisitSummaryToPortal) return;
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  const orgId = user.organizationId || user.organization_id;
+  if (!orgId || !visitDate) return;
+  const pid = patient?.patient_id || patient?.id;
+  if (!pid) return;
+  try {
+    await window.VisitSummaryBuilder.maybePublishVisitSummaryToPortal(pid, visitDate, visit, orgId);
+  } catch (e) {
+    console.warn('maybeAutoPublishVisitSummaryToPortal:', e);
+  }
+}
 
 // Generate discharge summary for clinical note
 function generateDischargeSummary() {

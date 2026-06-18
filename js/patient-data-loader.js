@@ -493,7 +493,50 @@ window.getPatientVisitSummaries = async function() {
       console.warn('getPatientVisitSummaries:', error.message);
       return [];
     }
-    return data || [];
+
+    const summaries = data || [];
+    const coveredDates = new Set(summaries.map((s) => portalDateYmd(s.visit_date)));
+
+    let appointments = [];
+    try {
+      appointments = await window.getPatientAppointments();
+    } catch (e) {
+      console.warn('getPatientVisitSummaries appointments fallback:', e);
+    }
+
+    appointments.forEach((appt) => {
+      const concluded = appt.checked_out_at || appt.check_out_time || appt.checkOutTime
+        || String(appt.status || '').toLowerCase() === 'completed';
+      if (!concluded) return;
+
+      const visitDate = portalDateYmd(appt.appointment_date || appt.date);
+      if (!visitDate || coveredDates.has(visitDate)) return;
+
+      const provider = appt.doctor || appt.doctor_name || 'Your care team';
+      const cc = appt.reason || appt.appointment_type || 'Office visit';
+      summaries.push({
+        id: 'appt-' + appt.id,
+        visit_date: visitDate,
+        chief_complaint: cc,
+        discharging_physician: provider,
+        visit_snapshot: {
+          visitDate,
+          provider,
+          chiefComplaint: cc,
+          vitals: [],
+          diagnoses: [],
+          orders: [],
+          prescriptions: [],
+          referrals: [],
+          followUpPlan: '',
+          upcomingAppointments: []
+        }
+      });
+      coveredDates.add(visitDate);
+    });
+
+    summaries.sort((a, b) => String(b.visit_date).localeCompare(String(a.visit_date)));
+    return summaries;
   } catch (error) {
     console.error('getPatientVisitSummaries error:', error);
     return [];

@@ -730,6 +730,50 @@ function calculateTimeSpan(checkIn, checkOut) {
   return `${Math.round(duration)} minutes`;
 }
 
+async function loadVisitSummaryPublishDeps() {
+  if (window.VisitSummaryBuilder?.publishOfficeVisitSummaryToPortal) return;
+  const deps = [
+    'js/patient-identity.js',
+    'js/utils.js',
+    'js/patients.js',
+    'js/visit-summary-builder.js'
+  ];
+  for (const href of deps) {
+    const base = href.split('/').pop().split('?')[0];
+    if ([...document.scripts].some((s) => s.src.includes(base))) continue;
+    await new Promise((resolve, reject) => {
+      const el = document.createElement('script');
+      el.src = href;
+      el.onload = resolve;
+      el.onerror = () => reject(new Error('Failed to load ' + href));
+      document.head.appendChild(el);
+    });
+  }
+}
+
+async function publishVisitSummaryAfterConclusion(appointment) {
+  try {
+    const patientId = appointment.patientId || appointment.patient_id;
+    const visitDate = appointment.date || appointment.appointment_date;
+    if (!patientId || !visitDate) return;
+
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    let orgId = user.organizationId || user.organization_id;
+    if (!orgId && typeof window.resolveOrganizationId === 'function') {
+      orgId = await window.resolveOrganizationId();
+    }
+    if (!orgId) return;
+
+    await loadVisitSummaryPublishDeps();
+    if (typeof window.VisitSummaryBuilder?.publishOfficeVisitSummaryToPortal !== 'function') return;
+
+    await window.VisitSummaryBuilder.publishOfficeVisitSummaryToPortal(patientId, visitDate, orgId);
+    console.log('✅ Visit summary published to patient portal');
+  } catch (e) {
+    console.warn('publishVisitSummaryAfterConclusion:', e);
+  }
+}
+
 // Check-in for appointment
 window.checkIn = async function(id) {
   try {
@@ -770,11 +814,15 @@ window.checkOut = async function(id) {
   const index = appointments.findIndex(a => a.id === id);
   if (index !== -1) {
     appointments[index].checkOutTime = Date.now();
+    appointments[index].status = 'completed';
     localStorage.setItem(getDataKey("appointments"), JSON.stringify(appointments));
       console.log('✅ Check-out time saved to localStorage:', new Date(appointments[index].checkOutTime).toLocaleString());
     
     // Sync to Supabase
     await syncAppointmentUpdateToSupabase(appointments[index]);
+
+    // Publish visit summary to patient portal immediately
+    publishVisitSummaryAfterConclusion(appointments[index]);
       
       // Clear cache to force fresh load
       if (typeof window.clearAppointmentsCache === 'function') {
