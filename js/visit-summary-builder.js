@@ -208,6 +208,14 @@
   }
 
   async function resolvePatient(patientId) {
+    if (typeof global.resolvePortalPatientForSummary === 'function') {
+      try {
+        const portalPatient = await global.resolvePortalPatientForSummary(patientId);
+        if (portalPatient) return portalPatient;
+      } catch (e) {
+        console.warn('resolvePatient portal:', e.message || e);
+      }
+    }
     if (typeof global.resolvePatientByIdentifier === 'function') {
       return global.resolvePatientByIdentifier(patientId);
     }

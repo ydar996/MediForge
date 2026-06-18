@@ -821,7 +821,8 @@ window.checkOut = async function(id) {
     // Sync to Supabase
     await syncAppointmentUpdateToSupabase(appointments[index]);
 
-    // Visit summary is published from the clinical note when chart content is ready — not at check-out.
+    // Publish to patient portal when chart content is ready (never empty shells).
+    publishVisitSummaryAfterConclusion(appointments[index]);
       
       // Clear cache to force fresh load
       if (typeof window.clearAppointmentsCache === 'function') {

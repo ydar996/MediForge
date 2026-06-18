@@ -97,6 +97,75 @@ window.getPatientDemographics = async function() {
   }
 };
 
+function normalizePortalPatientRecord(row) {
+  if (!row) return null;
+  return {
+    ...row,
+    firstName: row.first_name || row.firstName,
+    lastName: row.last_name || row.lastName,
+    dateOfBirth: row.date_of_birth || row.dateOfBirth || row.dob,
+    _supabaseUuid: row.id,
+    visits: parsePortalJsonField(row.visits, []),
+    vitals: parsePortalJsonField(row.vitals, []),
+    diagnoses: parsePortalJsonField(row.diagnoses, []),
+    prescriptions: parsePortalJsonField(row.prescriptions, []),
+    medications: parsePortalJsonField(row.medications, [])
+  };
+}
+
+/**
+ * Resolve patient chart for visit-summary builder (patient portal session).
+ */
+window.resolvePortalPatientForSummary = async function() {
+  const row = await window.getPatientDemographics();
+  return normalizePortalPatientRecord(row);
+};
+
+async function resolvePortalOrganizationId(patientRow) {
+  if (patientRow?.organization_id) return patientRow.organization_id;
+  const user = JSON.parse(localStorage.getItem('user') || '{}');
+  return user.organizationId || user.organization_id || null;
+}
+
+function appointmentIsConcluded(appt) {
+  return !!(appt.checked_out_at || appt.check_out_time || appt.checkOutTime
+    || String(appt.status || '').toLowerCase() === 'completed');
+}
+
+async function buildLivePortalVisitSummaries(patientId, patientIds, appointments) {
+  if (!window.VisitSummaryBuilder?.buildOfficeVisitSummary) return [];
+
+  const patientRow = await window.resolvePortalPatientForSummary();
+  const orgId = await resolvePortalOrganizationId(patientRow);
+  const buildId = patientRow?.id || patientIds.find((id) => id.includes('-') && id.length === 36) || patientId;
+
+  const dateToAppt = new Map();
+  (appointments || []).forEach((appt) => {
+    if (!appointmentIsConcluded(appt)) return;
+    const ymd = portalDateYmd(appt.appointment_date || appt.date);
+    if (ymd) dateToAppt.set(ymd, appt);
+  });
+
+  const summaries = [];
+  for (const [visitDate, appt] of dateToAppt) {
+    try {
+      const built = await window.VisitSummaryBuilder.buildOfficeVisitSummary(buildId, visitDate, orgId);
+      const snap = built.snapshot;
+      if (!window.VisitSummaryBuilder.isVisitSummaryReadyForPortal(snap, {})) continue;
+      summaries.push(enrichPortalVisitSummaryTiming({
+        id: `live-${visitDate}`,
+        visit_date: visitDate,
+        chief_complaint: snap.chiefComplaint || appt.reason || appt.appointment_type,
+        discharging_physician: snap.provider || appt.doctor || appt.doctor_name,
+        visit_snapshot: snap
+      }, appt));
+    } catch (e) {
+      console.warn('buildLivePortalVisitSummaries:', visitDate, e.message || e);
+    }
+  }
+  return summaries;
+}
+
 /**
  * Get patient appointments
  * @param {Object} filters - Optional filters (startDate, endDate, status)
@@ -555,6 +624,19 @@ window.getPatientVisitSummaries = async function() {
 
     const patientIds = await resolvePortalPatientIds(patientId);
 
+    let appointments = [];
+    try {
+      appointments = await window.getPatientAppointments();
+    } catch (e) {
+      console.warn('getPatientVisitSummaries appointments:', e);
+    }
+
+    // Primary: build live from chart data the patient can read (same source as clinic view).
+    const liveSummaries = await buildLivePortalVisitSummaries(patientId, patientIds, appointments);
+    const byDate = new Map();
+    liveSummaries.forEach((s) => byDate.set(portalDateYmd(s.visit_date), s));
+
+    // Fallback: stored copies (e.g. locked notes published by staff).
     const { data, error } = await window.supabaseClient
       .from('discharge_summaries')
       .select('id, visit_date, summary_generated_at, visit_snapshot, chief_complaint, discharging_physician')
@@ -563,30 +645,17 @@ window.getPatientVisitSummaries = async function() {
       .eq('portal_visible', true)
       .order('visit_date', { ascending: false });
 
-    if (error) {
-      console.warn('getPatientVisitSummaries:', error.message);
-      return [];
-    }
-
-    const summaries = (data || [])
-      .map((row) => enrichPortalVisitSummaryTiming(row, null))
-      .filter((row) => {
-        if (!window.VisitSummaryBuilder?.isVisitSummaryReadyForPortal) return true;
-        return window.VisitSummaryBuilder.isVisitSummaryReadyForPortal(row.visit_snapshot || {}, {});
+    if (!error && data?.length) {
+      data.forEach((row) => {
+        const ymd = portalDateYmd(row.visit_date);
+        if (!ymd || byDate.has(ymd)) return;
+        if (!window.VisitSummaryBuilder?.isVisitSummaryReadyForPortal(row.visit_snapshot || {}, {})) return;
+        const appt = findPortalAppointmentForDate(appointments, ymd);
+        byDate.set(ymd, enrichPortalVisitSummaryTiming(row, appt));
       });
-
-    let appointments = [];
-    try {
-      appointments = await window.getPatientAppointments();
-    } catch (e) {
-      console.warn('getPatientVisitSummaries appointments fallback:', e);
     }
 
-    summaries.forEach((summary, idx) => {
-      const appt = findPortalAppointmentForDate(appointments, summary.visit_date);
-      if (appt) summaries[idx] = enrichPortalVisitSummaryTiming(summary, appt);
-    });
-
+    const summaries = Array.from(byDate.values());
     summaries.sort((a, b) => portalVisitSummarySortKey(b).localeCompare(portalVisitSummarySortKey(a)));
     return summaries;
   } catch (error) {
