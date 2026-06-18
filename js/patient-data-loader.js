@@ -111,32 +111,51 @@ window.getPatientAppointments = async function(filters = {}) {
     }
 
     const patientIds = await resolvePortalPatientIds(patientId);
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
+    if (!patientIds.length) {
+      throw new Error('Patient identity could not be resolved');
+    }
 
     let query = window.supabaseClient
       .from('appointments')
       .select('*')
-      .or(orFilter)
+      .in('patient_id', patientIds)
       .order('appointment_date', { ascending: false });
 
     if (filters.startDate) {
-      query = query.gte('appointment_date', filters.startDate);
+      query = query.gte('appointment_date', portalDateYmd(filters.startDate));
     }
 
     if (filters.endDate) {
-      query = query.lte('appointment_date', filters.endDate);
+      query = query.lte('appointment_date', portalDateYmd(filters.endDate));
     }
 
     if (filters.status) {
       query = query.eq('status', filters.status);
     }
 
-    const { data, error } = await query;
+    let { data, error } = await query;
+
+    // Retry without date filter if DATE vs ISO timestamp caused a bad request
+    if (error && (filters.startDate || filters.endDate)) {
+      console.warn('Appointment date filter failed, retrying without date filter:', error.message);
+      let retry = window.supabaseClient
+        .from('appointments')
+        .select('*')
+        .in('patient_id', patientIds)
+        .order('appointment_date', { ascending: false });
+      if (filters.status) retry = retry.eq('status', filters.status);
+      const retryResult = await retry;
+      data = retryResult.data;
+      error = retryResult.error;
+    }
 
     if (error) {
       console.error('Error fetching patient appointments:', error);
-      throw new Error('Failed to load appointments');
+      const detail = error.message || error.code || 'unknown';
+      throw new Error(`Failed to load appointments (${detail})`);
     }
+
+    const rows = (data || []).filter((a) => a.deleted !== true);
 
     // Log access
     if (typeof logAuditEvent === 'function') {
@@ -146,7 +165,7 @@ window.getPatientAppointments = async function(filters = {}) {
       });
     }
 
-    return data || [];
+    return rows;
   } catch (error) {
     console.error('getPatientAppointments error:', error);
     throw error;
@@ -158,18 +177,37 @@ window.getPatientAppointments = async function(filters = {}) {
  */
 async function resolvePortalPatientIds(patientId) {
   const ids = new Set([String(patientId)]);
-  if (window.supabaseClient && patientId) {
-    const { data } = await window.supabaseClient
+  if (!window.supabaseClient || !patientId) return Array.from(ids);
+
+  try {
+    let data = null;
+    const byId = await window.supabaseClient
       .from('patients')
       .select('id, patient_id')
-      .or(`id.eq.${patientId},patient_id.eq.${patientId}`)
+      .eq('id', patientId)
       .maybeSingle();
+    data = byId.data;
+    if (!data) {
+      const byMrn = await window.supabaseClient
+        .from('patients')
+        .select('id, patient_id')
+        .eq('patient_id', patientId)
+        .maybeSingle();
+      data = byMrn.data;
+    }
     if (data) {
       if (data.id) ids.add(String(data.id));
       if (data.patient_id) ids.add(String(data.patient_id));
     }
+  } catch (e) {
+    console.warn('resolvePortalPatientIds:', e);
   }
   return Array.from(ids);
+}
+
+function portalDateYmd(val) {
+  if (!val) return '';
+  return String(val).trim().slice(0, 10);
 }
 
 function transformPrescriptionRowsForPortal(data) {
@@ -200,12 +238,11 @@ window.getPatientMedications = async function() {
     }
 
     const patientIds = await resolvePortalPatientIds(patientId);
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
 
     let { data, error } = await window.supabaseClient
       .from('prescriptions')
       .select('*')
-      .or(orFilter)
+      .in('patient_id', patientIds)
       .order('created_at', { ascending: false });
 
     if ((!data || data.length === 0) && !error) {
@@ -315,12 +352,11 @@ window.getPatientResults = async function() {
 
     // Try to get from orders table (UUID + legacy patient_id)
     const patientIds = await resolvePortalPatientIds(patientId);
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
 
     let { data, error } = await window.supabaseClient
       .from('orders')
       .select('*')
-      .or(orFilter)
+      .in('patient_id', patientIds)
       .in('type', ['lab', 'imaging'])
       .order('created_at', { ascending: false });
 
@@ -364,12 +400,11 @@ window.getPatientVisitSummaries = async function() {
     if (!window.supabaseClient) return [];
 
     const patientIds = await resolvePortalPatientIds(patientId);
-    const orFilter = patientIds.map((id) => `patient_id.eq.${id}`).join(',');
 
     const { data, error } = await window.supabaseClient
       .from('discharge_summaries')
       .select('id, visit_date, summary_generated_at, visit_snapshot, chief_complaint, discharging_physician')
-      .or(orFilter)
+      .in('patient_id', patientIds)
       .eq('summary_type', 'office_visit')
       .eq('portal_visible', true)
       .order('visit_date', { ascending: false });
@@ -420,8 +455,8 @@ window.getPatientSummary = async function(requestedPatientId = null) {
         ? await window.getPatientAppointmentsForStaff(patientId, { 
             startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
           })
-        : await window.getPatientAppointments({ 
-            startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
+        : await window.getPatientAppointments({
+            startDate: portalDateYmd(new Date(Date.now() - 365 * 24 * 60 * 60 * 1000))
           });
     } catch (apptError) {
       const msg = window.MediForgePatientPortal?.formatPortalError(apptError) || apptError.message || 'Failed to load appointments';
