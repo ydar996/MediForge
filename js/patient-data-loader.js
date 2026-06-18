@@ -568,8 +568,12 @@ window.getPatientVisitSummaries = async function() {
       return [];
     }
 
-    const summaries = (data || []).map((row) => enrichPortalVisitSummaryTiming(row, null));
-    const coveredDates = new Set(summaries.map((s) => portalDateYmd(s.visit_date)));
+    const summaries = (data || [])
+      .map((row) => enrichPortalVisitSummaryTiming(row, null))
+      .filter((row) => {
+        if (!window.VisitSummaryBuilder?.isVisitSummaryReadyForPortal) return true;
+        return window.VisitSummaryBuilder.isVisitSummaryReadyForPortal(row.visit_snapshot || {}, {});
+      });
 
     let appointments = [];
     try {
@@ -581,37 +585,6 @@ window.getPatientVisitSummaries = async function() {
     summaries.forEach((summary, idx) => {
       const appt = findPortalAppointmentForDate(appointments, summary.visit_date);
       if (appt) summaries[idx] = enrichPortalVisitSummaryTiming(summary, appt);
-    });
-
-    appointments.forEach((appt) => {
-      const concluded = appt.checked_out_at || appt.check_out_time || appt.checkOutTime
-        || String(appt.status || '').toLowerCase() === 'completed';
-      if (!concluded) return;
-
-      const visitDate = portalDateYmd(appt.appointment_date || appt.date);
-      if (!visitDate || coveredDates.has(visitDate)) return;
-
-      const provider = appt.doctor || appt.doctor_name || 'Your care team';
-      const cc = appt.reason || appt.appointment_type || 'Office visit';
-      summaries.push(enrichPortalVisitSummaryTiming({
-        id: 'appt-' + appt.id,
-        visit_date: visitDate,
-        chief_complaint: cc,
-        discharging_physician: provider,
-        visit_snapshot: {
-          visitDate,
-          provider,
-          chiefComplaint: cc,
-          vitals: [],
-          diagnoses: [],
-          orders: [],
-          prescriptions: [],
-          referrals: [],
-          followUpPlan: '',
-          upcomingAppointments: []
-        }
-      }, appt));
-      coveredDates.add(visitDate);
     });
 
     summaries.sort((a, b) => portalVisitSummarySortKey(b).localeCompare(portalVisitSummarySortKey(a)));

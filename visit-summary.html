@@ -32,7 +32,7 @@
       <button type="button" class="btn btn-primary" onclick="saveSummary()">💾 Save &amp; publish to patient portal</button>
     </div>
     <h1>📄 Visit Summary</h1>
-    <div class="portal-note no-print">A copy is saved to the patient portal automatically so patients can review visit details even before notes are finalized.</div>
+    <div class="portal-note no-print">Patients only see this summary after vitals, notes, orders, prescriptions, or other clinical content is documented — or after the note is locked.</div>
     <div id="patient-banner" class="patient-banner">Loading…</div>
     <div id="summary-content"><p>Building visit summary…</p></div>
   </div>
@@ -89,13 +89,21 @@
     async function saveSummary(silent) {
       if (!snapshot || !organizationId) return;
       try {
+        const ready = window.VisitSummaryBuilder.isVisitSummaryReadyForPortal(snapshot, {});
         await window.VisitSummaryBuilder.saveOfficeVisitSummary(
           legacyPatientId || patientId,
           visitDate,
           organizationId,
-          snapshot
+          snapshot,
+          { portalVisible: ready }
         );
-        if (!silent) alert('Visit summary saved and published to the patient portal.');
+        if (!silent) {
+          if (ready) {
+            alert('Visit summary saved and published to the patient portal.');
+          } else {
+            alert('Visit summary saved for staff review. It will appear in the patient portal once clinical content is documented.');
+          }
+        }
       } catch (e) {
         if (!silent) alert('Save failed: ' + (e.message || e));
         else console.warn('Auto-save visit summary:', e);

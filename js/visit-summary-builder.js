@@ -654,23 +654,51 @@
     return false;
   }
 
-  async function publishOfficeVisitSummaryToPortal(patientId, visitDate, organizationId) {
+  function hasMeaningfulText(val) {
+    if (val == null) return false;
+    const s = String(val).trim();
+    return s.length > 0 && s !== '—';
+  }
+
+  /**
+   * Patient portal must not show empty shells — only real chart content or a locked note.
+   */
+  function isVisitSummaryReadyForPortal(snapshot, options) {
+    if (!snapshot) return false;
+    if (options?.noteLocked) return true;
+
+    const s = snapshot;
+    if (hasMeaningfulText(s.visitOverview)) return true;
+    if (hasMeaningfulText(s.followUpPlan)) return true;
+    if ((s.vitals || []).length > 0) return true;
+    if ((s.diagnoses || []).length > 0) return true;
+    if ((s.orders || []).length > 0) return true;
+    if ((s.prescriptions || []).length > 0) return true;
+    if ((s.referrals || []).length > 0) return true;
+
+    return false;
+  }
+
+  async function publishOfficeVisitSummaryToPortal(patientId, visitDate, organizationId, options) {
     if (!patientId || !visitDate || !organizationId) return null;
     if (!global.supabaseClient) return null;
     const normalizedDate = toYmd(visitDate) || visitDate;
     const built = await buildOfficeVisitSummary(patientId, normalizedDate, organizationId);
+    const publishOpts = options || {};
+    const portalVisible = isVisitSummaryReadyForPortal(built.snapshot, publishOpts);
     return saveOfficeVisitSummary(
       built.legacyId || patientId,
       normalizedDate,
       organizationId,
-      built.snapshot
+      built.snapshot,
+      { ...publishOpts, portalVisible }
     );
   }
 
   async function maybePublishVisitSummaryToPortal(patientId, visitDate, visit, organizationId) {
-    if (!visitIsConcluded(visit)) return null;
+    const noteLocked = !!(visit && visit.soap && visit.soap.locked);
     try {
-      return await publishOfficeVisitSummaryToPortal(patientId, visitDate, organizationId);
+      return await publishOfficeVisitSummaryToPortal(patientId, visitDate, organizationId, { noteLocked });
     } catch (e) {
       console.warn('maybePublishVisitSummaryToPortal:', e);
       return null;
@@ -679,13 +707,17 @@
 
   async function saveOfficeVisitSummary(patientId, visitDate, organizationId, snapshot, options) {
     if (!global.supabaseClient) throw new Error('Database not available');
+    const opts = options || {};
+    const portalVisible = opts.portalVisible != null
+      ? !!opts.portalVisible
+      : isVisitSummaryReadyForPortal(snapshot, opts);
     const user = JSON.parse(global.localStorage.getItem('user') || '{}');
     const payload = {
       organization_id: organizationId,
       patient_id: String(patientId),
       visit_date: visitDate,
       summary_type: 'office_visit',
-      portal_visible: true,
+      portal_visible: portalVisible,
       admission_id: null,
       discharge_date: new Date().toISOString(),
       chief_complaint: snapshot.chiefComplaint || null,
@@ -734,6 +766,7 @@
     publishOfficeVisitSummaryToPortal,
     maybePublishVisitSummaryToPortal,
     visitIsConcluded,
+    isVisitSummaryReadyForPortal,
     formatDate
   };
 })(typeof window !== 'undefined' ? window : global);

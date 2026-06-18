@@ -19716,22 +19716,21 @@ function portalVisitIsConcluded(visit) {
 
 async function refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit) {
   if (!window.VisitSummaryBuilder?.publishOfficeVisitSummaryToPortal) return;
-  if (!portalVisitIsConcluded(visit)) return;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const orgId = user.organizationId || user.organization_id;
   if (!orgId || !visitDate || !patient) return;
   const pid = patient.patient_id || patient.id;
   if (!pid) return;
+  const noteLocked = !!(visit && visit.soap && visit.soap.locked);
   try {
-    await window.VisitSummaryBuilder.publishOfficeVisitSummaryToPortal(pid, visitDate, orgId);
-    console.log('✅ Patient portal visit summary refreshed');
+    await window.VisitSummaryBuilder.publishOfficeVisitSummaryToPortal(pid, visitDate, orgId, { noteLocked });
+    console.log('✅ Patient portal visit summary synced (visible only when ready)');
   } catch (e) {
     console.warn('refreshPortalVisitSummaryIfConcluded:', e);
   }
 }
 
 function schedulePortalVisitSummaryRefresh(patient, visitDate, visit) {
-  if (!portalVisitIsConcluded(visit)) return;
   clearTimeout(_portalVisitSummaryRefreshTimer);
   _portalVisitSummaryRefreshTimer = setTimeout(() => {
     refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit);
