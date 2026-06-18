@@ -135,7 +135,13 @@
         const cc = summary.chief_complaint || snap.chiefComplaint || 'Office visit';
         subtitle.textContent = `${formatDate(summary.visit_date)} — ${cc}`;
 
-        content.innerHTML = buildBanner(summary) + window.VisitSummaryBuilder.renderSnapshotHtml(snap);
+        const sparse = !(snap.vitals?.length || snap.orders?.length || snap.prescriptions?.length
+          || snap.diagnoses?.length || snap.referrals?.length || snap.visitOverview);
+        const sparseNote = sparse
+          ? '<p class="muted" style="margin-bottom:16px;">Some sections may still be empty if your provider is finishing documentation. The summary updates automatically as your chart is completed.</p>'
+          : '';
+
+        content.innerHTML = buildBanner(summary) + sparseNote + window.VisitSummaryBuilder.renderSnapshotHtml(snap);
         loading.style.display = 'none';
         content.style.display = 'block';
         document.title = `Visit Summary — ${formatDate(summary.visit_date)}`;

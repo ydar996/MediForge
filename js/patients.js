@@ -14009,6 +14009,7 @@ async function loadClinicalNote() {
   patient.medications = ensureArray(patient.medications, []);
   patient.visits = ensureArray(patient.visits, []);
   patient.prescriptions = ensureArray(patient.prescriptions, []);
+  syncAppointmentsToVisits(patient);
   let visit = (patient.visits || []).find(v => v.date === visitDate);
   
   // CRITICAL DATA RECOVERY: If current visit has empty SOAP data, check multiple sources
@@ -14987,7 +14988,7 @@ async function loadClinicalNote() {
   // Set up auto-save for all form fields
   setupAutoSave();
 
-  maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit);
+  refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit);
   
   // Re-enable auto-save after form is loaded
   setTimeout(() => {
@@ -16490,7 +16491,7 @@ async function lockClinicalNote() {
   // Save to localStorage as cache/fallback
   localStorage.setItem(getDataKey("patients"), JSON.stringify(patients));
 
-  maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit);
+  refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit);
   
   // Display electronic signature
   displayElectronicSignature(user.username, visit.soap.lockedAt, visit.soap.signature, visit.soap.auditTrail);
@@ -17940,6 +17941,8 @@ function autoSaveClinicalNote() {
       window.dispatchEvent(new CustomEvent('patientDataUpdated', {
         detail: { patientId, action: 'clinicalNoteUpdated', data: { visitDate } }
       }));
+      
+      schedulePortalVisitSummaryRefresh(patient, visitDate, visit);
       
       console.log("Clinical note auto-saved to localStorage and Supabase");
     }, 100); // 100ms debounce for localStorage writes
@@ -19700,18 +19703,43 @@ window.collectOfficeVisitChartData = async function collectOfficeVisitChartData(
   };
 };
 
-async function maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit) {
-  if (!window.VisitSummaryBuilder?.maybePublishVisitSummaryToPortal) return;
+let _portalVisitSummaryRefreshTimer = null;
+
+function portalVisitIsConcluded(visit) {
+  if (!visit) return false;
+  if (window.VisitSummaryBuilder?.visitIsConcluded?.(visit)) return true;
+  if (visit.checkOutTime || visit.check_out_time) return true;
+  if (String(visit.status || '').toLowerCase() === 'completed') return true;
+  if (visit.soap?.locked) return true;
+  return false;
+}
+
+async function refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit) {
+  if (!window.VisitSummaryBuilder?.publishOfficeVisitSummaryToPortal) return;
+  if (!portalVisitIsConcluded(visit)) return;
   const user = JSON.parse(localStorage.getItem('user') || '{}');
   const orgId = user.organizationId || user.organization_id;
-  if (!orgId || !visitDate) return;
-  const pid = patient?.patient_id || patient?.id;
+  if (!orgId || !visitDate || !patient) return;
+  const pid = patient.patient_id || patient.id;
   if (!pid) return;
   try {
-    await window.VisitSummaryBuilder.maybePublishVisitSummaryToPortal(pid, visitDate, visit, orgId);
+    await window.VisitSummaryBuilder.publishOfficeVisitSummaryToPortal(pid, visitDate, orgId);
+    console.log('✅ Patient portal visit summary refreshed');
   } catch (e) {
-    console.warn('maybeAutoPublishVisitSummaryToPortal:', e);
+    console.warn('refreshPortalVisitSummaryIfConcluded:', e);
   }
+}
+
+function schedulePortalVisitSummaryRefresh(patient, visitDate, visit) {
+  if (!portalVisitIsConcluded(visit)) return;
+  clearTimeout(_portalVisitSummaryRefreshTimer);
+  _portalVisitSummaryRefreshTimer = setTimeout(() => {
+    refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit);
+  }, 2500);
+}
+
+async function maybeAutoPublishVisitSummaryToPortal(patient, visitDate, visit) {
+  await refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit);
 }
 
 // Generate discharge summary for clinical note
