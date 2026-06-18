@@ -1,0 +1,161 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Visit Summary Detail - Patient Portal</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    :root { --green: #008751; --green-dark: #006B3F; --beige: #F5F5DC; }
+    body { font-family: system-ui, sans-serif; background: var(--beige); margin: 0; }
+    .header { background: linear-gradient(135deg, var(--green), var(--green-dark)); color: #fff; padding: 20px; }
+    .nav-bar { background: #fff; padding: 12px 20px; display: flex; flex-wrap: wrap; gap: 10px; }
+    .nav-bar a { color: var(--green); text-decoration: none; padding: 8px 14px; border-radius: 6px; font-weight: 600; }
+    .container { max-width: 900px; margin: 20px auto; padding: 0 16px 40px; }
+    .toolbar { display: flex; flex-wrap: wrap; gap: 10px; margin-bottom: 16px; }
+    .btn {
+      display: inline-block; padding: 10px 18px; border-radius: 8px; font-weight: 600;
+      text-decoration: none; border: none; cursor: pointer; font-size: 0.95rem;
+    }
+    .btn-secondary { background: #fff; color: var(--green); border: 2px solid var(--green); }
+    .btn-print { background: #DAA520; color: #fff; }
+    .panel {
+      background: #fff; border-radius: 12px; padding: 24px;
+      box-shadow: 0 4px 14px rgba(0,0,0,0.06); border: 1px solid #e8e8e8;
+    }
+    .summary-block { margin-bottom: 16px; padding-bottom: 12px; border-bottom: 1px solid #eee; }
+    .summary-block h3 { color: var(--green-dark); margin: 0 0 8px; font-size: 1rem; }
+    .muted { color: #777; font-style: italic; }
+    .error { color: #c33; padding: 16px; background: #fff5f5; border-radius: 8px; }
+    .visit-banner {
+      background: #eef8f1; border-left: 4px solid var(--green);
+      padding: 14px 16px; border-radius: 8px; margin-bottom: 20px; line-height: 1.6;
+    }
+    .visit-banner strong { color: var(--green-dark); }
+    @media print { .toolbar, .nav-bar, .header { display: none; } .panel { border: none; box-shadow: none; } }
+  </style>
+</head>
+<body>
+  <div class="header">
+    <h1>📄 Visit Summary</h1>
+    <p id="pageSubtitle">Loading visit details…</p>
+  </div>
+  <div class="nav-bar">
+    <a href="patient-visit-summaries">← All visit summaries</a>
+    <a href="patient-dashboard">Dashboard</a>
+    <a href="#" onclick="logout();return false;" style="margin-left:auto;color:#c33;">Logout</a>
+  </div>
+  <div class="container">
+    <div class="toolbar no-print">
+      <a class="btn btn-secondary" href="patient-visit-summaries">← Back to list</a>
+      <button type="button" class="btn btn-print" onclick="window.print()">Print / Save as PDF</button>
+    </div>
+    <div id="loading" class="muted">Loading summary…</div>
+    <div id="error" class="error" style="display:none;"></div>
+    <div id="content" class="panel" style="display:none;"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js"></script>
+  <script src="js/patient-auth.js"></script>
+  <script src="js/patient-data-loader.js?v=20260621210000-visit-detail-page"></script>
+  <script src="js/visit-summary-builder.js?v=20260621210000-visit-detail-page"></script>
+  <script>
+    window.ensurePatientAccess();
+
+    function esc(s) {
+      const d = document.createElement('div');
+      d.textContent = s || '';
+      return d.innerHTML;
+    }
+
+    function formatDate(d) {
+      if (!d) return '—';
+      const dt = new Date(d);
+      if (Number.isNaN(dt.getTime())) return String(d).slice(0, 10);
+      return dt.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' });
+    }
+
+    function buildBanner(summary) {
+      const snap = summary.visit_snapshot || {};
+      const lines = [];
+      lines.push(`<p><strong>Visit date:</strong> ${formatDate(summary.visit_date || snap.visitDate)}</p>`);
+
+      const scheduled = summary.visit_time || snap.visitTime;
+      if (scheduled) {
+        const t = window.portalFormatVisitTime ? window.portalFormatVisitTime(scheduled) : scheduled;
+        lines.push(`<p><strong>Scheduled time:</strong> ${t}</p>`);
+      }
+      const checkedIn = summary.checked_in_at || snap.checkedInAt;
+      if (checkedIn) {
+        const t = window.portalFormatVisitDateTime ? window.portalFormatVisitDateTime(checkedIn) : checkedIn;
+        lines.push(`<p><strong>Checked in:</strong> ${t}</p>`);
+      }
+      const ended = summary.checked_out_at || snap.checkedOutAt;
+      if (ended) {
+        const t = window.portalFormatVisitDateTime ? window.portalFormatVisitDateTime(ended) : ended;
+        lines.push(`<p><strong>Visit ended:</strong> ${t}</p>`);
+      }
+
+      const cc = summary.chief_complaint || snap.chiefComplaint;
+      const provider = summary.discharging_physician || snap.provider;
+      if (cc) lines.push(`<p><strong>Reason for visit:</strong> ${esc(cc)}</p>`);
+      if (provider) lines.push(`<p><strong>Provider:</strong> ${esc(provider)}</p>`);
+
+      return `<div class="visit-banner">${lines.join('')}</div>`;
+    }
+
+    async function loadDetail() {
+      const params = new URLSearchParams(window.location.search);
+      const visitDate = params.get('visitDate');
+      const summaryId = params.get('id');
+      const loading = document.getElementById('loading');
+      const error = document.getElementById('error');
+      const content = document.getElementById('content');
+      const subtitle = document.getElementById('pageSubtitle');
+
+      if (!visitDate) {
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = 'Missing visit date. Please return to the visit summaries list.';
+        return;
+      }
+
+      try {
+        const summary = await window.getPatientVisitSummaryDetail(visitDate, summaryId);
+        if (!summary) {
+          loading.style.display = 'none';
+          error.style.display = 'block';
+          error.textContent = 'Visit summary not found. It may not be available yet.';
+          return;
+        }
+
+        const snap = summary.visit_snapshot || {};
+        const cc = summary.chief_complaint || snap.chiefComplaint || 'Office visit';
+        subtitle.textContent = `${formatDate(summary.visit_date)} — ${cc}`;
+
+        content.innerHTML = buildBanner(summary) + window.VisitSummaryBuilder.renderSnapshotHtml(snap);
+        loading.style.display = 'none';
+        content.style.display = 'block';
+        document.title = `Visit Summary — ${formatDate(summary.visit_date)}`;
+      } catch (e) {
+        console.error(e);
+        loading.style.display = 'none';
+        error.style.display = 'block';
+        error.textContent = 'Could not load this visit summary. Please try again.';
+      }
+    }
+
+    function logout() {
+      if (confirm('Log out?')) {
+        localStorage.removeItem('user');
+        window.location.href = '/patient-login';
+      }
+    }
+
+    window.addEventListener('load', loadDetail);
+  </script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>

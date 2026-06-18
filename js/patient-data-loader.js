@@ -470,6 +470,80 @@ window.getPatientResults = async function() {
   }
 };
 
+function portalFormatTime(val) {
+  if (!val) return '';
+  const s = String(val).trim();
+  if (/^\d{1,2}:\d{2}/.test(s)) {
+    const [h, m] = s.split(':').map(Number);
+    if (!Number.isNaN(h) && !Number.isNaN(m)) {
+      const d = new Date();
+      d.setHours(h, m, 0, 0);
+      return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+    }
+    return s.slice(0, 5);
+  }
+  const d = new Date(val);
+  if (!Number.isNaN(d.getTime())) {
+    return d.toLocaleTimeString('en-US', { hour: 'numeric', minute: '2-digit' });
+  }
+  return '';
+}
+
+function portalFormatDateTime(val) {
+  if (!val) return '';
+  const d = new Date(val);
+  if (Number.isNaN(d.getTime())) return String(val);
+  return d.toLocaleString('en-US', {
+    year: 'numeric',
+    month: 'long',
+    day: 'numeric',
+    hour: 'numeric',
+    minute: '2-digit'
+  });
+}
+
+function findPortalAppointmentForDate(appointments, visitDate) {
+  const ymd = portalDateYmd(visitDate);
+  if (!ymd) return null;
+  return (appointments || []).find((a) => portalDateYmd(a.appointment_date || a.date) === ymd) || null;
+}
+
+function enrichPortalVisitSummaryTiming(summary, appt) {
+  if (!summary) return summary;
+  const enriched = { ...summary };
+  const snap = { ...(enriched.visit_snapshot || {}) };
+
+  if (appt) {
+    enriched.visit_time = appt.appointment_time || appt.time || enriched.visit_time || null;
+    enriched.checked_in_at = appt.checked_in_at || appt.checkInTime || enriched.checked_in_at || null;
+    enriched.checked_out_at = appt.checked_out_at || appt.checkOutTime || enriched.checked_out_at || null;
+    enriched.appointment_type = appt.appointment_type || appt.appointmentType || enriched.appointment_type || null;
+    if (!enriched.chief_complaint && (appt.reason || appt.appointment_type)) {
+      enriched.chief_complaint = appt.reason || appt.appointment_type;
+    }
+  }
+
+  if (enriched.summary_generated_at && !enriched.checked_out_at) {
+    enriched.summary_published_at = enriched.summary_generated_at;
+  }
+
+  snap.visitTime = enriched.visit_time ? portalFormatTime(enriched.visit_time) : '';
+  snap.checkedInAt = enriched.checked_in_at ? portalFormatDateTime(enriched.checked_in_at) : '';
+  snap.checkedOutAt = enriched.checked_out_at ? portalFormatDateTime(enriched.checked_out_at) : '';
+  enriched.visit_snapshot = snap;
+  return enriched;
+}
+
+function portalVisitSummarySortKey(summary) {
+  const date = portalDateYmd(summary.visit_date) || '';
+  const time = summary.visit_time || summary.visit_snapshot?.visitTime || '00:00';
+  const ended = summary.checked_out_at || summary.summary_generated_at || '';
+  return `${date}T${time} ${ended}`;
+}
+
+window.portalFormatVisitTime = portalFormatTime;
+window.portalFormatVisitDateTime = portalFormatDateTime;
+
 /**
  * Visit summaries published to the patient portal (office visits).
  * @returns {Promise<Array>}
@@ -494,7 +568,7 @@ window.getPatientVisitSummaries = async function() {
       return [];
     }
 
-    const summaries = data || [];
+    const summaries = (data || []).map((row) => enrichPortalVisitSummaryTiming(row, null));
     const coveredDates = new Set(summaries.map((s) => portalDateYmd(s.visit_date)));
 
     let appointments = [];
@@ -503,6 +577,11 @@ window.getPatientVisitSummaries = async function() {
     } catch (e) {
       console.warn('getPatientVisitSummaries appointments fallback:', e);
     }
+
+    summaries.forEach((summary, idx) => {
+      const appt = findPortalAppointmentForDate(appointments, summary.visit_date);
+      if (appt) summaries[idx] = enrichPortalVisitSummaryTiming(summary, appt);
+    });
 
     appointments.forEach((appt) => {
       const concluded = appt.checked_out_at || appt.check_out_time || appt.checkOutTime
@@ -514,7 +593,7 @@ window.getPatientVisitSummaries = async function() {
 
       const provider = appt.doctor || appt.doctor_name || 'Your care team';
       const cc = appt.reason || appt.appointment_type || 'Office visit';
-      summaries.push({
+      summaries.push(enrichPortalVisitSummaryTiming({
         id: 'appt-' + appt.id,
         visit_date: visitDate,
         chief_complaint: cc,
@@ -531,16 +610,35 @@ window.getPatientVisitSummaries = async function() {
           followUpPlan: '',
           upcomingAppointments: []
         }
-      });
+      }, appt));
       coveredDates.add(visitDate);
     });
 
-    summaries.sort((a, b) => String(b.visit_date).localeCompare(String(a.visit_date)));
+    summaries.sort((a, b) => portalVisitSummarySortKey(b).localeCompare(portalVisitSummarySortKey(a)));
     return summaries;
   } catch (error) {
     console.error('getPatientVisitSummaries error:', error);
     return [];
   }
+};
+
+/**
+ * Single visit summary for patient portal detail page.
+ * @param {string} visitDate - YYYY-MM-DD
+ * @param {string} [summaryId] - discharge_summaries id or appt-* fallback id
+ * @returns {Promise<Object|null>}
+ */
+window.getPatientVisitSummaryDetail = async function(visitDate, summaryId) {
+  const summaries = await window.getPatientVisitSummaries();
+  const ymd = portalDateYmd(visitDate);
+  if (summaryId) {
+    const byId = summaries.find((s) => String(s.id) === String(summaryId));
+    if (byId) return byId;
+  }
+  if (ymd) {
+    return summaries.find((s) => portalDateYmd(s.visit_date) === ymd) || null;
+  }
+  return null;
 };
 
 /**

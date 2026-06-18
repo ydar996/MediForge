@@ -4,6 +4,10 @@
 (function (global) {
   'use strict';
 
+  function esc(s) {
+    return String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
+  }
+
   function parseField(val, fallback) {
     if (Array.isArray(val)) return val;
     if (!val) return fallback;
@@ -624,6 +628,9 @@
     return `
       <div class="summary-block">
         <p><strong>Visit date:</strong> ${formatDate(s.visitDate)}</p>
+        ${s.visitTime ? `<p><strong>Scheduled time:</strong> ${esc(s.visitTime)}</p>` : ''}
+        ${s.checkedInAt ? `<p><strong>Checked in:</strong> ${esc(s.checkedInAt)}</p>` : ''}
+        ${s.checkedOutAt ? `<p><strong>Visit ended:</strong> ${esc(s.checkedOutAt)}</p>` : ''}
         <p><strong>Provider:</strong> ${s.provider || '—'}</p>
         ${s.chiefComplaint ? `<p><strong>Chief complaint:</strong> ${s.chiefComplaint}</p>` : ''}
       </div>
