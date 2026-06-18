@@ -1643,7 +1643,7 @@
   { code: "XM2SN5", title: "Edoxaban" },
   { code: "XM7RF5", title: "Difluoromethyldopa" },
   { code: "5C51.5Z", title: "Disorders of fructose metabolism, unspecified" },
-  { code: "XM2EK8", title: "4,4ââ‚¬â„¢-Diaminodiphenyl methane" },
+  { code: "XM2EK8", title: "4,4'-Diaminodiphenyl methane" },
   { code: "AA91", title: "Chronic suppurative otitis media" },
   { code: "XE933", title: "Drug-related incident" },
   { code: "XM4UE1", title: "Ethacridine lactate" },

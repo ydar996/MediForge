@@ -11,7 +11,7 @@ const SKIP_DIRS = new Set(['node_modules', '.git', 'js/vendor', 'tests']);
 /** Large generated ICD code databases — icd10ca excluded (stable build output). */
 const MOJIBAKE_SKIP = new Set(['js/icd10ca.js']);
 
-/** Legacy double-encoding sequences that should not appear in cleaned UTF-8 text. */
+/** Legacy double-encoding / mojibake icon sequences (UTF-8 read as Latin-1). */
 const MOJIBAKE_PATTERNS = [
   { pattern: /Â®/g, label: 'double-encoded registered mark (Â®)' },
   { pattern: /Â²/g, label: 'double-encoded superscript two (Â²)' },
@@ -19,7 +19,11 @@ const MOJIBAKE_PATTERNS = [
   { pattern: /â€“/g, label: 'mis-encoded en dash (â€“)' },
   { pattern: /Ã©/g, label: 'mis-encoded e-acute (Ã©)' },
   { pattern: /Ã­/g, label: 'mis-encoded i-acute (Ã­)' },
-  { pattern: /Ã³/g, label: 'mis-encoded o-acute (Ã³)' }
+  { pattern: /Ã³/g, label: 'mis-encoded o-acute (Ã³)' },
+  { pattern: /âš[\u00a0\u008f]?/g, label: 'mis-encoded warning icon (âš )' },
+  { pattern: /â„¹\u008f?/g, label: 'mis-encoded info icon (â„¹)' },
+  { pattern: /âŒ/g, label: 'mis-encoded cross mark (âŒ)' },
+  { pattern: /â†[\u0090\u008c]?/g, label: 'mis-encoded arrow (â†)' }
 ];
 
 function walk(dir, out = []) {

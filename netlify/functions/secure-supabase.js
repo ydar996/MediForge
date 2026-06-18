@@ -6,6 +6,8 @@
  *  - SUPABASE_SERVICE_ROLE_KEY
  */
 
+const { normalizePatientRecord } = require('../../js/registration-field-case.js');
+
 const ALLOWED_RPCS = new Set([
   'get_patient_intake_submissions',
   'approve_patient_intake_submission',
@@ -835,7 +837,7 @@ exports.handler = async function handler(event) {
         const nextNumber = (maxNumber + 1).toString().padStart(4, '0');
         const patientIdentifier = `${prefix}${nextNumber}`;
 
-        const payload = submission.patient_payload || {};
+        const payload = normalizePatientRecord(submission.patient_payload || {});
         const emergencyAddress = buildEmergencyAddress(payload);
         const emergencyEmail = payload.emergencyEmail || null;
 

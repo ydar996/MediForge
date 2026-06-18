@@ -271,6 +271,9 @@ async function getPatientById(patientId) {
 
 // Create new patient
 async function createPatient(patientData) {
+  if (typeof window.MediForgeRegistrationCase !== 'undefined') {
+    patientData = window.MediForgeRegistrationCase.normalizePatientRecord({ ...patientData });
+  }
   const orgId = await getCurrentOrgId();
   if (!orgId) {
     console.error('❌ [PATIENTS] Cannot create patient - no organization');

@@ -6228,6 +6228,10 @@ if (addPatientForm) {
         immunizations: tempImmunizations
       };
       Object.assign(patient, getPracticeEnrolmentFromForm());
+
+      if (window.MediForgeRegistrationCase) {
+        Object.assign(patient, window.MediForgeRegistrationCase.normalizePatientRecord(patient));
+      }
       
       // HYBRID ARCHITECTURE: Supabase-first, localStorage fallback
       // This ensures consistent behavior across ALL devices (mobile, tablet, desktop)
@@ -6728,6 +6732,9 @@ if (editPatientForm) {
       insuranceMemberNumber: document.getElementById("insuranceMemberNumber").value || ""
     };
     Object.assign(updated, getPracticeEnrolmentFromForm());
+    if (window.MediForgeRegistrationCase) {
+      Object.assign(updated, window.MediForgeRegistrationCase.normalizePatientRecord(updated));
+    }
     if (!document.getElementById('dateJoinedPractice')?.value?.trim()) {
       updated.dateJoinedPractice = patient.dateJoinedPractice || patient.date_joined_practice || todayIsoDate();
     }
@@ -21381,7 +21388,7 @@ function generatePrescriptionViewContent(prescription) {
         <p style="color: #666; font-size: 13px;"><strong>Record ID:</strong> ${prescription.id}</p>
         <p><strong>Date:</strong> ${formatDate(prescription.date)}</p>
         <p><strong>Diagnosis/Indication:</strong> ${prescription.diagnosis}</p>
-        <p><strong>Status:</strong> <span style="background: ${prescription.status === 'signed' ? '#d4edda' : '#fff3cd'}; color: ${prescription.status === 'signed' ? '#155724' : '#856404'}; padding: 4px 8px; border-radius: 12px; font-size: 12px;">${prescription.status === 'signed' ? '✓ Signed' : '📝 Draft'}</span></p>
+        <p><strong>Status:</strong> <span style="background: ${prescription.status === 'signed' ? '#d4edda' : '#fff3cd'}; color: ${prescription.status === 'signed' ? '#155724' : '#856404'}; padding: 4px 8px; border-radius: 12px; font-size: 12px;">${prescription.status === 'signed' ? '<i class="fa-solid fa-circle-check" aria-hidden="true"></i> Signed' : '📝 Draft'}</span></p>
       </div>
       
       <div style="margin-bottom: 30px;">

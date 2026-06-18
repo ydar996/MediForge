@@ -1020,7 +1020,7 @@
     const allergies = typeof tempAllergies !== "undefined" ? tempAllergies : window.tempAllergies || [];
     const immunizations = typeof tempImmunizations !== "undefined" ? tempImmunizations : window.tempImmunizations || [];
 
-    return sanitizeValue({
+    const payload = sanitizeValue({
       firstName: form.elements["firstName"].value.trim(),
       middleName: form.elements["middleName"].value.trim(),
       lastName: form.elements["lastName"].value.trim(),
@@ -1062,6 +1062,10 @@
       allergies,
       immunizations
     });
+
+    return typeof window.MediForgeRegistrationCase !== 'undefined'
+      ? window.MediForgeRegistrationCase.normalizePatientRecord(payload)
+      : payload;
   }
 
   function queueSubmission(payload) {

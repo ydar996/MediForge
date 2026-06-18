@@ -464,7 +464,11 @@
     if (!patient.addressLine1) warnings.push('missing address');
     if (!patient.phone) warnings.push('missing phone');
 
-    return { patient: patient, warnings: warnings, rowNum: rowNum };
+    const normalizedPatient = (typeof window !== 'undefined' && window.MediForgeRegistrationCase)
+      ? window.MediForgeRegistrationCase.normalizePatientRecord(patient)
+      : patient;
+
+    return { patient: normalizedPatient, warnings: warnings, rowNum: rowNum };
   }
 
   function parseCsvText(text) {

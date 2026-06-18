@@ -599,6 +599,9 @@ async function registerWithSupabase(userData) {
   const deviceType = /Mobi|Android/i.test(navigator.userAgent) ? 'mobile' : 'desktop';
   
   try {
+    if (typeof MediForgeRegistrationCase !== 'undefined') {
+      userData = MediForgeRegistrationCase.normalizeUserRecord({ ...userData });
+    }
     console.log(`🔍 [TRACE-${traceId}] registerWithSupabase START`, {
       username: userData.username,
       organizationId: userData.organizationId,
