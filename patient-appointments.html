@@ -280,6 +280,21 @@
     }
     .modal-submit { background: var(--nigerian-green); color: #fff; }
     .modal-close { background: #eee; color: #333; }
+    .request-new-bar {
+      display: flex;
+      justify-content: flex-end;
+      margin-bottom: 16px;
+    }
+    .request-new-btn {
+      background: var(--nigerian-green);
+      color: #fff;
+      border: none;
+      border-radius: 8px;
+      padding: 12px 20px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .request-new-btn:hover { background: var(--nigerian-green-dark); }
   </style>
   <script src="js/ui-title-case.js?v=20260612170000" defer></script>
 </head>
@@ -308,6 +323,9 @@
     <div id="error" class="error" style="display: none;"></div>
     
     <div id="content" style="display: none;">
+      <div class="request-new-bar">
+        <button type="button" class="request-new-btn" onclick="openNewAppointmentModal()">Request new appointment</button>
+      </div>
       <div class="stats-grid">
         <div class="stat-card">
           <h3>Total Appointments</h3>
@@ -355,6 +373,25 @@
       <div class="modal-actions">
         <button type="button" class="modal-close" onclick="closeRescheduleModal()">Close</button>
         <button type="button" class="modal-submit" id="rescheduleSubmitBtn" onclick="submitRescheduleRequest()">Send request to clinic</button>
+      </div>
+    </div>
+  </div>
+
+  <div id="newApptModal" class="modal-overlay" role="dialog" aria-modal="true">
+    <div class="modal-card">
+      <h3>Request new appointment</h3>
+      <p>Your clinic will review this request and contact you to confirm a time.</p>
+      <label for="newApptReason">Reason for visit</label>
+      <input type="text" id="newApptReason" maxlength="200" placeholder="e.g. Follow-up, annual physical, new concern">
+      <label for="newApptDate">Preferred date</label>
+      <input type="date" id="newApptDate">
+      <label for="newApptTime">Preferred time</label>
+      <input type="time" id="newApptTime" step="900">
+      <label for="newApptNotes">Additional notes (optional)</label>
+      <textarea id="newApptNotes" placeholder="Any preferences or constraints…" maxlength="500"></textarea>
+      <div class="modal-actions">
+        <button type="button" class="modal-close" onclick="closeNewAppointmentModal()">Close</button>
+        <button type="button" class="modal-submit" id="newApptSubmitBtn" onclick="submitNewAppointmentRequest()">Send request to clinic</button>
       </div>
     </div>
   </div>
@@ -422,6 +459,58 @@
     function closeRescheduleModal() {
       activeRescheduleApptId = null;
       document.getElementById('rescheduleModal').classList.remove('open');
+    }
+
+    function openNewAppointmentModal() {
+      const tomorrow = new Date();
+      tomorrow.setDate(tomorrow.getDate() + 1);
+      document.getElementById('newApptDate').min = new Date().toISOString().split('T')[0];
+      document.getElementById('newApptDate').value = tomorrow.toISOString().split('T')[0];
+      document.getElementById('newApptTime').value = '09:00';
+      document.getElementById('newApptReason').value = '';
+      document.getElementById('newApptNotes').value = '';
+      document.getElementById('newApptModal').classList.add('open');
+    }
+
+    function closeNewAppointmentModal() {
+      document.getElementById('newApptModal').classList.remove('open');
+    }
+
+    async function submitNewAppointmentRequest() {
+      const reason = (document.getElementById('newApptReason').value || '').trim();
+      const preferredDate = document.getElementById('newApptDate').value;
+      const preferredTime = document.getElementById('newApptTime').value;
+      const notes = (document.getElementById('newApptNotes').value || '').trim();
+      if (!reason) {
+        alert('Please enter a reason for your visit.');
+        return;
+      }
+      if (!preferredDate || !preferredTime) {
+        alert('Please choose a preferred date and time.');
+        return;
+      }
+      const btn = document.getElementById('newApptSubmitBtn');
+      btn.disabled = true;
+      try {
+        const timeLabel = new Date(`1970-01-01T${preferredTime}`).toLocaleTimeString('en-US', {
+          hour: 'numeric',
+          minute: '2-digit'
+        });
+        await window.MediForgePatientPortal.requestNewAppointment(
+          preferredDate,
+          timeLabel,
+          reason,
+          notes || null
+        );
+        closeNewAppointmentModal();
+        alert('Appointment request sent. Clinic staff will contact you to confirm.');
+        await loadAppointments();
+      } catch (e) {
+        const msg = window.MediForgePatientPortal?.formatPortalError(e) || e.message || e;
+        alert('Could not send request: ' + msg);
+      } finally {
+        btn.disabled = false;
+      }
     }
 
     async function submitCancelRequest() {
@@ -521,6 +610,13 @@
         ]);
         allAppointments = appointments;
         pendingRequests = requests;
+
+        const pendingNew = pendingRequests.find((r) => r.request_type === 'new');
+        const newBtn = document.querySelector('.request-new-btn');
+        if (newBtn) {
+          newBtn.disabled = !!pendingNew;
+          newBtn.textContent = pendingNew ? 'New appointment request pending' : 'Request new appointment';
+        }
         
         // Calculate stats
         const total = appointments.length;
@@ -535,16 +631,23 @@
         
         // Render appointments
         const listContainer = document.getElementById('appointmentsList');
+        let pendingNewHtml = '';
+        if (pendingNew) {
+          const pref = pendingNew.preferred_date
+            ? `${pendingNew.preferred_date}${pendingNew.preferred_time ? ' at ' + pendingNew.preferred_time : ''}`
+            : '';
+          pendingNewHtml = `<div class="request-pending" style="margin-bottom:16px">New appointment request pending${pref ? ' — preferred ' + esc(pref) : ''}. Clinic staff will contact you.</div>`;
+        }
         
         if (appointments.length === 0) {
-          listContainer.innerHTML = `
+          listContainer.innerHTML = pendingNewHtml + `
             <div class="empty-state">
               <h3>No appointments found</h3>
-              <p>You don't have any appointments recorded yet.</p>
+              <p>You don't have any appointments recorded yet. Use "Request new appointment" above to ask your clinic to schedule one.</p>
             </div>
           `;
         } else {
-          listContainer.innerHTML = appointments.map(appointment => {
+          listContainer.innerHTML = pendingNewHtml + appointments.map(appointment => {
             const apptDate = new Date(appointment.appointment_date || appointment.date || Date.now());
             const isUpcoming = window.MediForgePatientPortal.isAppointmentUpcoming(appointment);
             const status = appointment.status || (isUpcoming ? 'upcoming' : 'completed');

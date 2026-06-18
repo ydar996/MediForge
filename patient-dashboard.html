@@ -98,6 +98,19 @@
       background: var(--nigerian-white);
       color: var(--nigerian-green);
     }
+
+    .portal-warning-banner {
+      max-width: 1200px;
+      margin: 16px auto 0;
+      padding: 14px 18px;
+      background: #fff3cd;
+      border: 1px solid #ffc107;
+      border-radius: 8px;
+      color: #664d03;
+      font-size: 0.95rem;
+    }
+    .portal-warning-banner strong { display: block; margin-bottom: 6px; }
+    .portal-warning-banner ul { margin: 6px 0 0 18px; }
     
     .btn-secondary {
       background: transparent;
@@ -302,6 +315,7 @@
   </div>
 
   <div class="container">
+    <div id="portalWarnings" class="portal-warning-banner" style="display:none;"></div>
     <!-- Stats Grid -->
     <div class="stats-grid" id="statsGrid">
       <div class="stat-card">
@@ -398,6 +412,16 @@
       try {
         // Get patient summary
         const summary = await window.getPatientSummary();
+
+        const warnEl = document.getElementById('portalWarnings');
+        if (summary.loadWarnings?.length) {
+          warnEl.style.display = 'block';
+          warnEl.innerHTML = '<strong>Some information could not be loaded</strong><ul>'
+            + summary.loadWarnings.map((w) => `<li><strong>${w.section}:</strong> ${w.message}</li>`).join('')
+            + '</ul><p style="margin-top:8px;font-size:0.85rem">If this persists, contact your clinic — they may need to complete the patient portal database setup.</p>';
+        } else {
+          warnEl.style.display = 'none';
+        }
         
         // Update welcome text
         document.getElementById('welcomeText').textContent = `Welcome, ${summary.patient.name}!`;

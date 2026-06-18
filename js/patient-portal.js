@@ -261,6 +261,62 @@
     return data;
   }
 
+  async function requestNewAppointment(preferredDate, preferredTime, reason, notes) {
+    if (!global.supabaseClient) throw new Error('Not connected');
+    const { data, error } = await global.supabaseClient.rpc('portal_patient_request_new_appointment', {
+      p_preferred_date: preferredDate,
+      p_preferred_time: preferredTime,
+      p_reason: reason,
+      p_notes: notes || null
+    });
+    if (error) throw error;
+    return data;
+  }
+
+  function formatPortalError(error) {
+    if (!error) return 'Unknown error';
+    const msg = error.message || String(error);
+    if (msg.includes('portal_messages') && msg.includes('does not exist')) {
+      return 'Patient portal database is not set up yet. Ask your clinic to run the portal SQL migrations.';
+    }
+    if (msg.includes('portal_appointment_requests') && msg.includes('does not exist')) {
+      return 'Appointment requests are not enabled yet. Ask your clinic to run the portal SQL migrations.';
+    }
+    if (msg.includes('permission denied') || msg.includes('42501') || msg.includes('PGRST301')) {
+      return 'Access denied — your portal account may not be linked correctly. Contact your clinic.';
+    }
+    if (msg.includes('Patient session required')) {
+      return 'Please sign out and sign in again at the patient login page.';
+    }
+    return msg;
+  }
+
+  async function diagnosePortalAccess() {
+    const issues = [];
+    const patient = global.getCurrentPatient?.();
+    if (!patient?.patientId) {
+      issues.push({ section: 'auth', message: 'Not signed in as a patient.' });
+      return issues;
+    }
+    if (!global.supabaseClient) {
+      issues.push({ section: 'connection', message: 'Database connection not available.' });
+      return issues;
+    }
+    const checks = [
+      { section: 'appointments', fn: () => global.getPatientAppointments({ startDate: new Date().toISOString().split('T')[0] }) },
+      { section: 'orders', fn: () => global.getPatientResults() },
+      { section: 'messages', fn: () => loadPortalMessages() }
+    ];
+    for (const check of checks) {
+      try {
+        await check.fn();
+      } catch (e) {
+        issues.push({ section: check.section, message: formatPortalError(e) });
+      }
+    }
+    return issues;
+  }
+
   async function loadStaffAppointmentRequests(organizationId) {
     if (!global.supabaseClient || !organizationId) return [];
     const { data, error } = await global.supabaseClient
@@ -321,8 +377,11 @@
     loadPatientAppointmentRequests,
     requestAppointmentCancellation,
     requestAppointmentReschedule,
+    requestNewAppointment,
     loadStaffAppointmentRequests,
     staffMarkAppointmentRequestActioned,
-    isAppointmentUpcoming
+    isAppointmentUpcoming,
+    formatPortalError,
+    diagnosePortalAccess
   };
 })(typeof window !== 'undefined' ? window : global);

@@ -601,17 +601,21 @@
             const p = r.patients || {};
             const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Patient';
             const appt = r.appointments || {};
+            const isCancel = r.request_type === 'cancel';
+            const isNew = r.request_type === 'new';
+            const typeLabel = isNew ? 'New appointment' : (isCancel ? 'Cancel' : 'Reschedule');
             const apptWhen = appt.appointment_date
               ? `${appt.appointment_date}${appt.appointment_time ? ' ' + appt.appointment_time : ''}`
               : '—';
             const reqAt = r.created_at ? new Date(r.created_at).toLocaleString() : '';
-            const isCancel = r.request_type === 'cancel';
-            const detail = isCancel
-              ? `Reason: ${escapeHtml(r.reason || '—')}`
-              : `Preferred: ${escapeHtml(r.preferred_date || '—')} at ${escapeHtml(r.preferred_time || '—')}${r.reschedule_notes ? ' — ' + escapeHtml(r.reschedule_notes) : ''}`;
+            const detail = isNew
+              ? `Reason: ${escapeHtml(r.reason || '—')}. Preferred: ${escapeHtml(r.preferred_date || '—')} at ${escapeHtml(r.preferred_time || '—')}${r.reschedule_notes ? ' — ' + escapeHtml(r.reschedule_notes) : ''}`
+              : (isCancel
+                ? `Reason: ${escapeHtml(r.reason || '—')}`
+                : `Preferred: ${escapeHtml(r.preferred_date || '—')} at ${escapeHtml(r.preferred_time || '—')}${r.reschedule_notes ? ' — ' + escapeHtml(r.reschedule_notes) : ''}`);
             return `<div class="message-item unread" style="cursor:default">
-              <div class="message-subject">${escapeHtml(name)} — ${isCancel ? 'Cancel' : 'Reschedule'} request</div>
-              <div class="message-meta">Current appt: ${escapeHtml(apptWhen)} · ${escapeHtml(reqAt)}</div>
+              <div class="message-subject">${escapeHtml(name)} — ${typeLabel} request</div>
+              <div class="message-meta">${isNew ? '' : 'Current appt: ' + escapeHtml(apptWhen) + ' · '}${escapeHtml(reqAt)}</div>
               <div class="message-preview">${detail}</div>
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
                 <button class="action-btn btn-mark-addressed" onclick="actionAppointmentRequest('${r.id}','actioned')">Mark actioned</button>

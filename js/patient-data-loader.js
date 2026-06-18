@@ -414,6 +414,7 @@ window.getPatientSummary = async function(requestedPatientId = null) {
     
     // Get recent appointments - use staff-friendly version if staff access
     let appointments = [];
+    const loadWarnings = [];
     try {
       appointments = isStaffAccess
         ? await window.getPatientAppointmentsForStaff(patientId, { 
@@ -423,7 +424,9 @@ window.getPatientSummary = async function(requestedPatientId = null) {
             startDate: new Date(Date.now() - 365 * 24 * 60 * 60 * 1000).toISOString() // Last year
           });
     } catch (apptError) {
-      console.warn('Failed to load appointments, continuing with empty array:', apptError);
+      const msg = window.MediForgePatientPortal?.formatPortalError(apptError) || apptError.message || 'Failed to load appointments';
+      console.warn('Failed to load appointments:', apptError);
+      loadWarnings.push({ section: 'appointments', message: msg });
       appointments = [];
     }
     
@@ -435,7 +438,9 @@ window.getPatientSummary = async function(requestedPatientId = null) {
         : await window.getPatientMedications();
       console.log('💊 Medications loaded:', medications.length, medications);
     } catch (medError) {
-      console.warn('Failed to load medications, continuing with empty array:', medError);
+      const msg = window.MediForgePatientPortal?.formatPortalError(medError) || medError.message || 'Failed to load medications';
+      console.warn('Failed to load medications:', medError);
+      loadWarnings.push({ section: 'medications', message: msg });
       medications = [];
     }
     
@@ -446,7 +451,9 @@ window.getPatientSummary = async function(requestedPatientId = null) {
         ? await window.getPatientResultsForStaff(patientId)
         : await window.getPatientResults();
     } catch (resultsError) {
-      console.warn('Failed to load results, continuing with empty array:', resultsError);
+      const msg = window.MediForgePatientPortal?.formatPortalError(resultsError) || resultsError.message || 'Failed to load lab orders';
+      console.warn('Failed to load results:', resultsError);
+      loadWarnings.push({ section: 'lab orders', message: msg });
       results = [];
     }
     
@@ -516,7 +523,8 @@ window.getPatientSummary = async function(requestedPatientId = null) {
       recentResults: results.slice(0, 5),
       medicalHistory: medicalHistory,
       conditions: conditions,
-      allergies: allergies
+      allergies: allergies,
+      loadWarnings: loadWarnings
     };
 
     // Log access
