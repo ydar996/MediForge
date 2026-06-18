@@ -8,11 +8,16 @@
   ]);
 
   const PRESERVED_PHRASES = [
+    'MediForge',
     'Interac e-Transfer',
     'OHIP / RAMQ / MSP / etc.',
     'Declined to Disclose',
     'Two or More Races'
   ];
+
+  function fixBrandSpelling(text) {
+    return String(text).replace(/\bMediforge\b/g, 'MediForge');
+  }
 
   const SKIP_SELECTORS = [
     '[data-skip-title-case]',
@@ -61,6 +66,7 @@
     if (!match) return token;
 
     const [, prefix, core, suffix] = match;
+    if (/[a-z][A-Z]/.test(core)) return token;
     const lower = core.toLowerCase();
     const useLower = !isFirst && !isLast && SMALL_WORDS.has(lower.replace(/\.$/, ''));
     const formatted = useLower
@@ -89,14 +95,14 @@
     }
 
     const words = trimmed.split(/\s+/);
-    return words.map((word, index) => {
+    return fixBrandSpelling(words.map((word, index) => {
       if (word.includes('/')) {
         return word.split('/').map((part, partIndex) => (
           formatToken(part, index === 0 && partIndex === 0, index === words.length - 1)
         )).join('/');
       }
       return formatToken(word, index === 0, index === words.length - 1);
-    }).join(' ');
+    }).join(' '));
   }
 
   function applyToTextNode(el, property) {

@@ -8,7 +8,7 @@ import { fileURLToPath } from 'url';
 
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const root = path.join(__dirname, '..');
-const tag = '<script src="js/ui-title-case.js?v=20260612170000" defer></script>';
+const tag = '<script src="js/ui-title-case.js?v=20260616120000" defer></script>';
 
 function walk(dir, files = []) {
   for (const entry of fs.readdirSync(dir, { withFileTypes: true })) {
