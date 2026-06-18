@@ -89,6 +89,7 @@
       preSelectDateAndTime(); // Function to pre-select date and time from URL
       loadAvailableSlots(); // Load available time slots
       await loadDoctors(); // Load existing doctors into dropdown - await to ensure it completes
+      preSelectDoctor(); // Pre-select doctor from URL when booking from schedule grid
       await loadAppointmentTypes(); // Load appointment types from billing services
       
       // Pre-select appointment type from URL parameter
@@ -1022,6 +1023,32 @@
       }
     }
     
+    // Pre-select doctor from URL (schedule by-provider grid passes &doctor=)
+    function preSelectDoctor() {
+      const doctorParam = new URLSearchParams(window.location.search).get('doctor');
+      if (!doctorParam) return;
+
+      const doctorSelect = document.getElementById('doctor');
+      const doctorCustom = document.getElementById('doctorCustom');
+      if (!doctorSelect) return;
+
+      const normalized = doctorParam.replace(/^dr\.?\s*/i, '').trim().toLowerCase();
+      for (const option of doctorSelect.options) {
+        if (!option.value || option.value === 'other') continue;
+        const optNorm = option.value.replace(/^dr\.?\s*/i, '').trim().toLowerCase();
+        if (optNorm === normalized || optNorm.includes(normalized) || normalized.includes(optNorm)) {
+          doctorSelect.value = option.value;
+          return;
+        }
+      }
+
+      doctorSelect.value = 'other';
+      if (doctorCustom) {
+        doctorCustom.style.display = 'block';
+        doctorCustom.value = doctorParam.replace(/^dr\.?\s*/i, '').trim();
+      }
+    }
+
     // Function to pre-select date and time from URL parameters
     function preSelectDateAndTime() {
       const urlParams = new URLSearchParams(window.location.search);

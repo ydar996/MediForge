@@ -2200,6 +2200,93 @@ if (addForm && !addAppointmentPage) {
 // --- Schedule Calendar Functions ---
 
 let currentDate = new Date();  // Start with today's date
+let scheduleDailyProviderFilter = 'all';
+
+function scheduleEscapeHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
+}
+
+function getAppointmentDoctorKey(appt) {
+  const raw = (appt && (appt.doctor || appt.doctor_name || '')).toString().trim();
+  if (!raw) return '';
+  return raw.replace(/^dr\.?\s*/i, '').trim().toLowerCase();
+}
+
+function formatProviderDisplayName(name) {
+  if (!name || name === 'Unassigned') return 'Unassigned';
+  const stripped = String(name).replace(/^dr\.?\s*/i, '').trim();
+  return stripped ? `Dr. ${stripped}` : 'Unassigned';
+}
+
+function appointmentMatchesProvider(appt, providerKey) {
+  const apptKey = getAppointmentDoctorKey(appt);
+  if (providerKey === '__unassigned__') return !apptKey;
+  if (!providerKey) return false;
+  if (!apptKey) return false;
+  return apptKey === providerKey || apptKey.includes(providerKey) || providerKey.includes(apptKey);
+}
+
+async function getScheduleProviders(forDate) {
+  const doctors = await loadDoctors();
+  const keys = new Map();
+
+  doctors.forEach((name) => {
+    const key = getAppointmentDoctorKey({ doctor: name });
+    if (key) keys.set(key, name);
+  });
+
+  const grouped = getAppointmentsByDate();
+  const appts = forDate
+    ? (grouped[formatDate(forDate)] || [])
+    : Object.values(grouped).flat();
+
+  appts.forEach((appt) => {
+    const key = getAppointmentDoctorKey(appt);
+    if (!key) {
+      keys.set('__unassigned__', 'Unassigned');
+      return;
+    }
+    if (!keys.has(key)) {
+      const raw = (appt.doctor || appt.doctor_name || '').toString().trim();
+      keys.set(key, raw.replace(/^dr\.?\s*/i, '').trim() || raw);
+    }
+  });
+
+  const providers = [];
+  for (const [key, label] of keys) {
+    if (key === '__unassigned__') continue;
+    providers.push({ key, label });
+  }
+  providers.sort((a, b) => a.label.localeCompare(b.label));
+  if (keys.has('__unassigned__')) {
+    providers.push({ key: '__unassigned__', label: 'Unassigned' });
+  }
+  return providers;
+}
+
+function getAppointmentsForSlotAndProvider(appts, slot, providerKey) {
+  return appts.filter((appt) => appt.time === slot && appointmentMatchesProvider(appt, providerKey));
+}
+
+async function renderSchedulePatientLink(appt) {
+  const patientId = await appointmentDisplayPatientIdForLink(appt)
+    || (appt.patientId || appt.patient_id || await getPatientIdByName(appt.patientName));
+  const name = scheduleEscapeHtml(appt.patientName || 'Unknown Patient');
+  if (patientId) {
+    return `<a href="patient-details?id=${encodeURIComponent(patientId)}">${name}</a>`;
+  }
+  return name;
+}
+
+function setDailyProviderFilter(value) {
+  scheduleDailyProviderFilter = value || 'all';
+  showView('daily');
+}
+window.setDailyProviderFilter = setDailyProviderFilter;
 
 // Group appointments by date for easy lookup
 function getAppointmentsByDate() {
@@ -2373,23 +2460,127 @@ async function generateDailyView(date) {
   const dateStr = formatDate(date);
   const appts = grouped[dateStr] || [];
   const allSlots = getAllSlots();
+  const providers = await getScheduleProviders(date);
+
   let html = `<h3>Daily Schedule for ${date.toDateString()}</h3>`;
   html += '<button onclick="changeDate(-1, \'daily\')">Previous Day</button> ';
   html += '<button onclick="changeDate(1, \'daily\')">Next Day</button>';
-  html += '<table><thead><tr><th>Slot</th><th>Status</th></tr></thead><tbody>';
-  for (const slot of allSlots) {
-    const appt = appts.find(a => a.time === slot);
-    let status = 'Free';
-    if (appt) {
-      const patientId = await appointmentDisplayPatientIdForLink(appt) || (appt.patientId || appt.patient_id || await getPatientIdByName(appt.patientName));
-      status = `<a href="patient-details?id=${patientId}">${appt.patientName}</a>`;
+
+  html += `<div style="margin: 15px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
+    <label for="daily-provider-filter" style="font-weight: 600;">Provider:</label>
+    <select id="daily-provider-filter" onchange="setDailyProviderFilter(this.value)" style="padding: 8px 12px; border-radius: 4px; border: 1px solid #ccc; min-width: 200px;">
+      <option value="all"${scheduleDailyProviderFilter === 'all' ? ' selected' : ''}>All providers</option>`;
+  providers.forEach((provider) => {
+    const selected = scheduleDailyProviderFilter === provider.key ? ' selected' : '';
+    html += `<option value="${scheduleEscapeHtml(provider.key)}"${selected}>${scheduleEscapeHtml(formatProviderDisplayName(provider.label))}</option>`;
+  });
+  html += `</select>
+    <span style="color: #666; font-size: 14px;">${appts.length} appointment(s) this day</span>
+  </div>`;
+
+  if (scheduleDailyProviderFilter === 'all') {
+    html += '<table><thead><tr><th>Time</th><th>Provider</th><th>Patient</th><th>Status</th></tr></thead><tbody>';
+    const sorted = [...appts].sort((a, b) => (a.time || '').localeCompare(b.time || ''));
+    if (sorted.length === 0) {
+      html += `<tr><td colspan="4" style="text-align:center;color:#666;">No appointments scheduled. Use <strong>By Provider</strong> to book by doctor and time slot.</td></tr>`;
     } else {
-      // Make "Free" slots clickable links to add-appointment.html with pre-selected date and time
-      status = `<a href="add-appointment?date=${dateStr}&time=${slot}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">Free</a>`;
+      for (const appt of sorted) {
+        const patientLink = await renderSchedulePatientLink(appt);
+        const status = scheduleEscapeHtml(appt.status || 'scheduled');
+        html += `<tr>
+          <td>${scheduleEscapeHtml(appt.time || '—')}</td>
+          <td>${scheduleEscapeHtml(formatProviderDisplayName(appt.doctor || appt.doctor_name || 'Unassigned'))}</td>
+          <td>${patientLink}</td>
+          <td style="text-transform: capitalize;">${status}</td>
+        </tr>`;
+      }
     }
-    html += `<tr><td>${slot}</td><td>${status}</td></tr>`;
+    html += '</tbody></table>';
+  } else {
+    const provider = providers.find((p) => p.key === scheduleDailyProviderFilter);
+    const providerLabel = provider ? formatProviderDisplayName(provider.label) : 'Provider';
+    html += `<p style="color:#555;margin-bottom:10px;">Showing slots for <strong>${scheduleEscapeHtml(providerLabel)}</strong></p>`;
+    html += '<table><thead><tr><th>Slot</th><th>Patient</th><th>Status</th></tr></thead><tbody>';
+    for (const slot of allSlots) {
+      const slotAppts = getAppointmentsForSlotAndProvider(appts, slot, scheduleDailyProviderFilter);
+      let status = 'Free';
+      if (slotAppts.length > 0) {
+        const parts = [];
+        for (const appt of slotAppts) {
+          parts.push(await renderSchedulePatientLink(appt));
+        }
+        status = parts.join('<br>');
+      } else {
+        const doctorParam = provider && provider.key !== '__unassigned__'
+          ? `&doctor=${encodeURIComponent(provider.label)}`
+          : '';
+        status = `<a href="add-appointment?date=${dateStr}&time=${slot}${doctorParam}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">Free</a>`;
+      }
+      html += `<tr><td>${slot}</td><td>${status}</td><td style="text-transform: capitalize;">${slotAppts.length ? scheduleEscapeHtml(slotAppts[0].status || 'scheduled') : '—'}</td></tr>`;
+    }
+    html += '</tbody></table>';
   }
-  html += '</tbody></table>';
+  return html;
+}
+
+// Generate daily grid with one column per provider/resource
+async function generateDailyByProviderView(date) {
+  const grouped = getAppointmentsByDate();
+  const dateStr = formatDate(date);
+  const appts = grouped[dateStr] || [];
+  const providers = await getScheduleProviders(date);
+  const allSlots = getAllSlots();
+
+  let html = `<h3>Daily Schedule by Provider — ${date.toDateString()}</h3>`;
+  html += '<button onclick="changeDate(-1, \'byProvider\')">Previous Day</button> ';
+  html += '<button onclick="changeDate(1, \'byProvider\')">Next Day</button>';
+
+  html += '<div style="margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px;">';
+  providers.forEach((provider) => {
+    const count = appts.filter((a) => appointmentMatchesProvider(a, provider.key)).length;
+    html += `<span style="background:#e7f1ff;padding:6px 12px;border-radius:6px;font-size:13px;"><strong>${scheduleEscapeHtml(formatProviderDisplayName(provider.label))}</strong>: ${count}</span>`;
+  });
+  html += `<span style="background:#f0f0f0;padding:6px 12px;border-radius:6px;font-size:13px;"><strong>Total</strong>: ${appts.length}</span>`;
+  html += '</div>';
+
+  if (providers.length === 0) {
+    html += '<p>No providers found. Register doctors in staff settings or assign a provider when booking appointments.</p>';
+    return html;
+  }
+
+  html += '<div style="overflow-x: auto;"><table style="width: 100%; border-collapse: collapse;"><thead><tr>';
+  html += '<th style="padding: 10px; border: 1px solid #dee2e6; background: #007bff; color: white; text-align: left;">Time</th>';
+  providers.forEach((provider) => {
+    html += `<th style="padding: 10px; border: 1px solid #dee2e6; background: #007bff; color: white; text-align: left; min-width: 140px;">${scheduleEscapeHtml(formatProviderDisplayName(provider.label))}</th>`;
+  });
+  html += '</tr></thead><tbody>';
+
+  for (const slot of allSlots) {
+    html += `<tr><td style="padding: 8px; border: 1px solid #dee2e6; font-weight: 600; white-space: nowrap;">${slot}</td>`;
+    for (const provider of providers) {
+      const slotAppts = getAppointmentsForSlotAndProvider(appts, slot, provider.key);
+      html += '<td style="padding: 8px; border: 1px solid #dee2e6; vertical-align: top;">';
+      if (slotAppts.length === 0) {
+        const doctorParam = provider.key !== '__unassigned__'
+          ? `&doctor=${encodeURIComponent(provider.label)}`
+          : '';
+        html += `<a href="add-appointment?date=${dateStr}&time=${slot}${doctorParam}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">Free</a>`;
+      } else {
+        for (const appt of slotAppts) {
+          const patientLink = await renderSchedulePatientLink(appt);
+          const typeLabel = appt.appointment_type || appt.appointmentType || appt.visitType || '';
+          html += `<div style="margin-bottom: 6px; padding: 6px; background: #f8f9fa; border-radius: 4px;">${patientLink}`;
+          if (typeLabel) {
+            html += `<div style="font-size: 11px; color: #666; margin-top: 2px;">${scheduleEscapeHtml(typeLabel)}</div>`;
+          }
+          html += '</div>';
+        }
+      }
+      html += '</td>';
+    }
+    html += '</tr>';
+  }
+  html += '</tbody></table></div>';
   return html;
 }
 
@@ -2484,6 +2675,8 @@ async function showView(view) {
   if (container) {
     if (view === 'daily') {
       container.innerHTML = await generateDailyView(currentDate);
+    } else if (view === 'byProvider') {
+      container.innerHTML = await generateDailyByProviderView(currentDate);
     } else if (view === 'weekly') {
       generateWeeklyView(currentDate).then(html => {
         container.innerHTML = html;
@@ -2508,16 +2701,27 @@ function changeDate(offset, view) {
   showView(view);
 }
 
+function navigateScheduleDate(dateStr, view) {
+  currentDate = new Date(`${dateStr}T12:00:00`);
+  showView(view);
+  if (typeof window.showViewWithActive === 'function') {
+    window.showViewWithActive(view);
+  }
+}
+window.navigateScheduleDate = navigateScheduleDate;
+
 // Show daily details for a specific date
-function showDailyDetails(dateStr) {
+async function showDailyDetails(dateStr) {
   const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
   const dayAppointments = appointments.filter(apt => apt.date === dateStr);
+  const providers = await getScheduleProviders(new Date(dateStr + 'T12:00:00'));
   
   // Calculate slot information
   const allSlots = getAllSlots();
-  const totalSlots = allSlots.length;
+  const doctorCount = await getDoctorCount();
+  const totalSlots = allSlots.length * Math.max(1, doctorCount);
   const occupiedSlots = dayAppointments.length;
-  const freeSlots = totalSlots - occupiedSlots;
+  const freeSlots = Math.max(0, totalSlots - occupiedSlots);
   
   // Sort appointments by time
   dayAppointments.sort((a, b) => {
@@ -2553,15 +2757,33 @@ function showDailyDetails(dateStr) {
             <p>All ${totalSlots} slots are available for this day!</p>
             <p style="font-size: 14px; color: #888;">You can schedule appointments in any of the available time slots.</p>
           </div>` :
-          `<div style="margin-bottom: 20px;">
+          `<div style="margin-bottom: 24px;">
+            <h3 style="color: #007bff; margin-bottom: 12px;">By Provider</h3>
+            <div style="display: grid; gap: 12px;">
+              ${providers.map((provider) => {
+                const providerAppts = dayAppointments.filter((a) => appointmentMatchesProvider(a, provider.key));
+                if (providerAppts.length === 0) return '';
+                return `<div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 16px; background: #fff;">
+                  <h4 style="margin: 0 0 10px 0; color: #333;">${scheduleEscapeHtml(formatProviderDisplayName(provider.label))} <span style="font-weight: normal; color: #666;">(${providerAppts.length})</span></h4>
+                  <ul style="margin: 0; padding-left: 20px;">
+                    ${providerAppts.sort((a, b) => (a.time || '').localeCompare(b.time || '')).map((apt) =>
+                      `<li style="margin-bottom: 6px;"><strong>${scheduleEscapeHtml(apt.time || '—')}</strong> — ${scheduleEscapeHtml(apt.patientName)}${apt.appointment_type ? ` <span style="color:#666;">(${scheduleEscapeHtml(apt.appointment_type)})</span>` : ''}</li>`
+                    ).join('')}
+                  </ul>
+                </div>`;
+              }).join('')}
+            </div>
+          </div>
+          <div style="margin-bottom: 20px;">
             <h3 style="color: #007bff; margin-bottom: 15px;">📋 ${dayAppointments.length} Appointment(s) Scheduled</h3>
             <div style="display: grid; gap: 15px;">
               ${dayAppointments.map(apt => `
                 <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; background-color: #f8f9fa;">
                   <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                     <div>
-                      <h4 style="margin: 0 0 5px 0; color: #333;">${apt.patientName}</h4>
-                      <p style="margin: 0; color: #666; font-size: 14px;">Patient ID: ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(apt.patientId) : apt.patientId}</p>
+                      <h4 style="margin: 0 0 5px 0; color: #333;">${scheduleEscapeHtml(apt.patientName)}</h4>
+                      <p style="margin: 0; color: #666; font-size: 14px;">Patient ID: ${typeof window.patientMrnDisplay === 'function' ? scheduleEscapeHtml(window.patientMrnDisplay(apt.patientId)) : scheduleEscapeHtml(apt.patientId)}</p>
+                      <p style="margin: 4px 0 0 0; color: #555; font-size: 14px;">Provider: <strong>${scheduleEscapeHtml(formatProviderDisplayName(apt.doctor || apt.doctor_name || 'Unassigned'))}</strong></p>
                     </div>
                     <div style="text-align: right;">
                       <span style="background: #007bff; color: white; padding: 4px 8px; border-radius: 4px; font-size: 12px; font-weight: bold;">${apt.time || 'No time set'}</span>
@@ -2585,6 +2807,7 @@ function showDailyDetails(dateStr) {
         
         <div style="text-align: center; margin-top: 20px; padding-top: 20px; border-top: 1px solid #dee2e6;">
           <button onclick="closeDailyDetails()" style="background: #6c757d; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">Close</button>
+          <button onclick="closeDailyDetails(); navigateScheduleDate('${dateStr}', 'byProvider');" style="background: #007bff; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer; margin-right: 10px;">By Provider View</button>
           <button onclick="window.location.href='/add-appointment?date=${dateStr}'" style="background: #28a745; color: white; border: none; padding: 10px 20px; border-radius: 5px; cursor: pointer;">Add Appointment</button>
         </div>
       </div>
