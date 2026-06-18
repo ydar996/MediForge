@@ -110,15 +110,15 @@ window.getPatientAppointments = async function(filters = {}) {
       throw new Error('Database connection not available');
     }
 
-    const patientIds = await resolvePortalPatientIds(patientId);
-    if (!patientIds.length) {
-      throw new Error('Patient identity could not be resolved');
+    const patientUuid = await resolvePortalPatientUuid(patientId);
+    if (!patientUuid) {
+      throw new Error('Patient UUID could not be resolved for appointments');
     }
 
     let query = window.supabaseClient
       .from('appointments')
       .select('*')
-      .in('patient_id', patientIds)
+      .eq('patient_id', patientUuid)
       .order('appointment_date', { ascending: false });
 
     if (filters.startDate) {
@@ -141,7 +141,7 @@ window.getPatientAppointments = async function(filters = {}) {
       let retry = window.supabaseClient
         .from('appointments')
         .select('*')
-        .in('patient_id', patientIds)
+        .eq('patient_id', patientUuid)
         .order('appointment_date', { ascending: false });
       if (filters.status) retry = retry.eq('status', filters.status);
       const retryResult = await retry;
@@ -203,6 +203,17 @@ async function resolvePortalPatientIds(patientId) {
     console.warn('resolvePortalPatientIds:', e);
   }
   return Array.from(ids);
+}
+
+function portalIsUuidLike(id) {
+  const s = String(id || '');
+  return s.includes('-') && s.length === 36;
+}
+
+/** appointments.patient_id is UUID (FK to patients.id) — not legacy MRN. */
+async function resolvePortalPatientUuid(patientId) {
+  const ids = await resolvePortalPatientIds(patientId);
+  return ids.find(portalIsUuidLike) || null;
 }
 
 function portalDateYmd(val) {
