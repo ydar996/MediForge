@@ -953,12 +953,12 @@
         const user = JSON.parse(localStorage.getItem('user') || '{}');
         const userId = user.id || user.user_id || user.username || 'unknown';
         
-        // Get current order and results
+        // Get current order and results (lab or imaging)
         const { data: order, error: fetchError } = await supabase
           .from('orders')
-          .select('results')
+          .select('results, type')
           .eq('id', orderId)
-          .eq('type', 'lab')
+          .in('type', ['lab', 'imaging'])
           .single();
         
         if (fetchError || !order) {
@@ -983,17 +983,18 @@
         results[testName].reviewed_at = new Date().toISOString();
         results[testName].reviewed_by = userId;
         
-        // Update order in Supabase
+        // Update order in Supabase — publish reviewed results to patient portal
         const { error: updateError } = await supabase
           .from('orders')
           .update({
             results: results,
             provider_reviewed_at: new Date().toISOString(),
-            portal_results_status: 'reviewed',
+            portal_results_status: 'published',
+            portal_results_published_at: new Date().toISOString(),
             updated_at: new Date().toISOString()
           })
           .eq('id', orderId)
-          .eq('type', 'lab');
+          .in('type', ['lab', 'imaging']);
         
         if (updateError) {
           throw updateError;

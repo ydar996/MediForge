@@ -636,6 +636,7 @@ window.updatePrescriptionStatus = async function(prescriptionId, newStatus, note
     if (newStatus === 'filled' || newStatus === 'completed') {
       updateData.filled_at = new Date().toISOString();
       updateData.filled_by_user_id = user.id || user.user_id;
+      updateData.patient_pickup_status = 'due_for_pickup';
     }
     if (newStatus === 'rejected') {
       updateData.rejected_at = new Date().toISOString();

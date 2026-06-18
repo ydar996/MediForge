@@ -678,6 +678,10 @@ async function loadFilledPrescriptions() {
       const medRaw = prescription.medications;
       const medications = Array.isArray(medRaw) ? medRaw : (typeof medRaw === 'string' ? JSON.parse(medRaw || '[]') : []);
       const filledDate = prescription.filled_at ? new Date(prescription.filled_at).toLocaleString() : 'N/A';
+      const patientPickup = String(prescription.patient_pickup_status || '').toLowerCase();
+      const pickupBadge = patientPickup === 'picked_up'
+        ? `<span class="status-badge" style="background:#17a2b8;color:#fff;margin-left:6px;">Patient picked up${prescription.patient_pickup_at ? ' · ' + new Date(prescription.patient_pickup_at).toLocaleString() : ''}</span>`
+        : (patientPickup === 'due_for_pickup' ? '<span class="status-badge" style="background:#ffc107;color:#333;margin-left:6px;">Awaiting patient pickup</span>' : '');
       const idDisplay = pharmacyPrescriptionMnemonicLabel(prescription);
       const prescriberBadge = prescription.prescriber_type === 'pharmacist'
         ? '<span class="status-badge" style="background:#6f42c1;color:#fff;margin-left:6px;">Prescribed by pharmacist</span>' : '';
@@ -692,7 +696,7 @@ async function loadFilledPrescriptions() {
                 Diagnosis: ${prescription.diagnosis || 'N/A'}
               </div>
             </div>
-            <span class="status-badge status-filled">Filled</span>${prescriberBadge}
+            <span class="status-badge status-filled">Filled</span>${prescriberBadge}${pickupBadge}
           </div>
           
           <div class="medications-list">

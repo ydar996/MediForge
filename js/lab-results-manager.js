@@ -1089,6 +1089,12 @@ window.markLabOrderCompleted = async function(orderId) {
   try {
     const supabase = await getLabSupabaseClient();
     const user = JSON.parse(localStorage.getItem('user') || '{}');
+
+    const { data: existingOrder } = await supabase
+      .from('orders')
+      .select('portal_results_published_at, provider_reviewed_at')
+      .eq('id', orderId)
+      .maybeSingle();
     
     const updateData = {
       status: 'completed',
@@ -1097,6 +1103,9 @@ window.markLabOrderCompleted = async function(orderId) {
       completed_by: user.id || user.user_id || user.username,
       lab_status: 'completed'
     };
+    if (!existingOrder?.portal_results_published_at && !existingOrder?.provider_reviewed_at) {
+      updateData.portal_results_status = 'awaiting_review';
+    }
     
     const { error } = await supabase
       .from('orders')
@@ -1137,7 +1146,7 @@ window.saveLabResults = async function(orderId, testName, resultsData) {
     // Get current order
     const { data: order, error: fetchError } = await supabase
       .from('orders')
-      .select('results')
+      .select('results, portal_results_published_at, provider_reviewed_at')
       .eq('id', orderId)
       .single();
     
@@ -1248,6 +1257,9 @@ window.saveLabResults = async function(orderId, testName, resultsData) {
       lab_status: labStatus,
       updated_at: new Date().toISOString()
     };
+    if (!order.portal_results_published_at && !order.provider_reviewed_at) {
+      updateData.portal_results_status = 'awaiting_review';
+    }
     
     // Set completed_at if all tests are completed
     if (allCompleted) {

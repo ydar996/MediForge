@@ -18,49 +18,114 @@
     return fallback;
   }
 
-  function getOrderPortalStatus(order) {
-    if (!order) return { key: 'not_started', label: 'Not yet done', tone: 'muted' };
+  const RESULT_FIELD_METADATA = new Set([
+    'status', 'entered_at', 'entered_by', 'auditTrail', 'AuditTrail',
+    'completed_at', 'completed_by', 'started_at', 'started_by',
+    'reviewed_at', 'reviewed_by', 'doctor_note', 'doctor_note_by', 'doctor_note_updated_at',
+    'file_name', 'file_data', 'file_type', 'file_size', '_attachments', '_interop'
+  ]);
 
+  function parseOrderResultsObject(order) {
+    const raw = order?.results;
+    if (!raw) return {};
+    if (typeof raw === 'string') {
+      try { return JSON.parse(raw); } catch (_) { return {}; }
+    }
+    return typeof raw === 'object' && raw !== null ? raw : {};
+  }
+
+  function resultFieldHasValue(val) {
+    if (val == null) return false;
+    if (typeof val === 'object') {
+      if (val.value != null && String(val.value).trim() !== '' && String(val.value).trim() !== 'Not Tested') return true;
+      if (val.result != null && String(val.result).trim() !== '' && String(val.result).trim() !== 'Not Tested') return true;
+      return false;
+    }
+    const s = String(val).trim();
+    return s !== '' && s !== 'Not Tested';
+  }
+
+  function testHasLabResultData(testObj) {
+    if (!testObj || typeof testObj !== 'object') return false;
+    if (testObj.file_name && testObj.file_data) return true;
+    if (String(testObj.status || '').toLowerCase() === 'completed') return true;
+    if (testObj.notes && String(testObj.notes).trim()) return true;
+    return Object.entries(testObj).some(([k, v]) => {
+      if (RESULT_FIELD_METADATA.has(k)) return false;
+      return resultFieldHasValue(v);
+    });
+  }
+
+  function orderLabResultsReceived(order) {
+    const results = parseOrderResultsObject(order);
+    const keys = Object.keys(results).filter((k) => !k.startsWith('_'));
+    if (keys.some((k) => testHasLabResultData(results[k]))) return true;
+
+    const labStatus = String(order.lab_status || '').toLowerCase();
+    const status = String(order.status || '').toLowerCase();
+    if (order.completed_at && (labStatus.includes('complete') || status.includes('complete'))) {
+      return true;
+    }
+    return false;
+  }
+
+  function orderHasResultPayload(order) {
+    return orderLabResultsReceived(order);
+  }
+
+  function portalOrderResultsAreVisible(order) {
+    if (!order) return false;
     const explicit = (order.portal_results_status || '').toLowerCase();
-    if (explicit === 'published' || order.portal_results_published_at) {
-      return { key: 'published', label: 'Results available to view', tone: 'success', canView: true };
-    }
-    if (explicit === 'reviewed' || order.portal_results_request_at) {
-      if (order.portal_results_request_at && !order.portal_results_published_at) {
-        return {
-          key: 'request_pending',
-          label: 'Request sent — awaiting practice to publish results',
-          tone: 'info',
-          canRequest: false
-        };
-      }
-      return {
-        key: 'reviewed',
-        label: 'Reviewed by your provider',
-        tone: 'info',
-        canRequest: true
-      };
-    }
-    if (explicit === 'awaiting_review') {
-      return { key: 'awaiting_review', label: 'Test completed — awaiting provider review', tone: 'warning' };
+    if (explicit === 'published' || order.portal_results_published_at) return true;
+    if (order.provider_reviewed_at) return true;
+    return false;
+  }
+
+  function getOrderPortalStatus(order) {
+    if (!order) {
+      return { key: 'unknown', label: 'Unknown', tone: 'muted', canView: false, canViewOrder: false };
     }
 
-    const labStatus = String(order.lab_status || order.status || '').toLowerCase();
-    const hasResultData = parseJsonField(order.results, []).length > 0;
-    const completed = labStatus.includes('complete') || order.completed_at || hasResultData;
-
-    if (order.provider_reviewed_at) {
+    if (portalOrderResultsAreVisible(order)) {
       return {
-        key: 'reviewed',
-        label: 'Reviewed by your provider',
-        tone: 'info',
-        canRequest: !order.portal_results_request_at
+        key: 'results_available',
+        label: 'Reviewed — results available',
+        tone: 'success',
+        canView: true,
+        canViewOrder: true,
+        subtext: 'Your provider has reviewed these results. You can open them below.'
       };
     }
-    if (completed) {
-      return { key: 'awaiting_review', label: 'Test completed — awaiting provider review', tone: 'warning' };
+
+    if (orderLabResultsReceived(order)) {
+      return {
+        key: 'awaiting_provider_review',
+        label: 'Test Completed: Awaiting Provider Review',
+        tone: 'warning',
+        canView: false,
+        canViewOrder: true,
+        subtext: 'Results have been received from the lab or imaging centre. Your provider will review and release them to you.'
+      };
     }
-    return { key: 'not_started', label: 'Not yet done', tone: 'muted' };
+
+    return {
+      key: 'order_sent',
+      label: 'Order Sent',
+      tone: 'info',
+      canView: false,
+      canViewOrder: true,
+      subtext: 'Your order has been sent to the laboratory or imaging centre. You can print a copy of the order below.'
+    };
+  }
+
+  function sanitizeOrderForPatientPortal(order) {
+    if (!order) return order;
+    const status = getOrderPortalStatus(order);
+    if (status.canView) return order;
+    const safe = { ...order };
+    delete safe.results;
+    safe._portalResultsHeld = true;
+    return safe;
   }
 
   function getPrescriptionPortalStatus(rx) {
@@ -68,8 +133,16 @@
     const pharmacy = String(rx.pharmacy_status || rx.pharmacyStatus || '').toLowerCase();
     const pickup = String(rx.patient_pickup_status || '').toLowerCase();
 
-    if (pickup === 'picked_up' || pharmacy === 'filled' || pharmacy === 'external') {
-      return { key: 'filled', label: 'Filled / picked up', tone: 'success', canMarkPickup: pickup !== 'picked_up' };
+    if (pickup === 'picked_up') {
+      return {
+        key: 'filled',
+        label: rx.patient_pickup_at ? 'Picked up (reported by you)' : 'Picked up',
+        tone: 'success',
+        canMarkPickup: true
+      };
+    }
+    if (pharmacy === 'filled' || pharmacy === 'external') {
+      return { key: 'filled', label: 'Filled / picked up', tone: 'success', canMarkPickup: true };
     }
     if (status === 'signed' || status === 'sent' || pharmacy === 'pending' || pharmacy === 'in-process' || status === 'pending') {
       return { key: 'due', label: 'Due for pick up', tone: 'warning', canMarkPickup: true };
@@ -145,13 +218,21 @@
     if (error) throw error;
   }
 
-  async function markPrescriptionPickup(prescriptionId, status) {
+  async function markPrescriptionPickup(prescriptionRef, status) {
     if (!global.supabaseClient) throw new Error('Not connected');
+    const ref = String(prescriptionRef || '').trim();
+    if (!ref) throw new Error('Prescription reference missing');
     const { error } = await global.supabaseClient.rpc('portal_patient_mark_pickup', {
-      p_prescription_id: prescriptionId,
+      p_prescription_ref: ref,
       p_status: status
     });
     if (error) throw error;
+    if (typeof global.logAuditEvent === 'function') {
+      global.logAuditEvent('patient_prescription_pickup_reported', {
+        prescriptionRef: ref,
+        status
+      });
+    }
   }
 
   async function loadStaffPortalThreads(organizationId) {
@@ -362,6 +443,8 @@
   global.MediForgePatientPortal = {
     parseJsonField,
     getOrderPortalStatus,
+    portalOrderResultsAreVisible,
+    sanitizeOrderForPatientPortal,
     getPrescriptionPortalStatus,
     flattenPrescriptionMeds,
     resolvePatientUuidForPortal,

@@ -232,7 +232,7 @@
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
   <script src="js/patient-data-loader.js"></script>
-  <script src="js/patient-portal.js"></script>
+  <script src="js/patient-portal.js?v=20260618170000-pickup-fix"></script>
   <script src="js/security.js"></script>
   
   <script>
@@ -289,13 +289,18 @@
               `<li><strong>${esc(m.name)}</strong>${m.dosage ? ' — ' + esc(m.dosage) : ''}${m.frequency ? ', ' + esc(m.frequency) : ''}</li>`
             ).join('') || '<li>Medication details on file</li>';
             let pickupHtml = '';
-            if (portal.canMarkPickup && rx.id) {
+            const pickupRef = rx.portalPickupRef || rx.portalPickupId || rx._supabaseId || rx.id;
+            if (portal.canMarkPickup && pickupRef) {
+              const safeRef = String(pickupRef).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
               if (portal.key === 'due') {
-                pickupHtml = `<button type="button" class="pickup-btn" onclick="markPickup('${rx.id}','picked_up')">I picked this up</button>`;
+                pickupHtml = `<button type="button" class="pickup-btn" onclick="markPickup('${safeRef}','picked_up')">I picked this up</button>`;
               } else if (portal.key === 'filled') {
-                pickupHtml = `<button type="button" class="pickup-btn" style="background:#666" onclick="markPickup('${rx.id}','due_for_pickup')">Mark as still due for pick up</button>`;
+                pickupHtml = `<button type="button" class="pickup-btn" style="background:#666" onclick="markPickup('${safeRef}','due_for_pickup')">Mark as still due for pick up</button>`;
               }
             }
+            const pickupNote = rx.patient_pickup_at
+              ? `<p style="margin-top:10px;color:#2e7d32;font-size:0.9rem;">Picked up: ${new Date(rx.patient_pickup_at).toLocaleString()}</p>`
+              : '';
             return `
               <div class="medication-item">
                 <div class="medication-header">
@@ -307,6 +312,7 @@
                 </div>
                 <ul class="rx-meds">${medsHtml}</ul>
                 ${pickupHtml}
+                ${pickupNote}
               </div>`;
           }).join('');
         }

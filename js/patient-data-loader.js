@@ -221,10 +221,72 @@ function portalDateYmd(val) {
   return String(val).trim().slice(0, 10);
 }
 
+function portalIsUuidPrescriptionId(id) {
+  if (id == null) return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[1-5][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/i.test(String(id).trim());
+}
+
+function resolvePortalPrescriptionPickupRef(rx) {
+  if (!rx) return '';
+  if (portalIsUuidPrescriptionId(rx.portalPickupId)) return rx.portalPickupId;
+  if (portalIsUuidPrescriptionId(rx._supabaseId)) return rx._supabaseId;
+  if (portalIsUuidPrescriptionId(rx.id)) return rx.id;
+  if (rx.prescription_number) return String(rx.prescription_number).trim();
+  if (rx.prescriptionNumber) return String(rx.prescriptionNumber).trim();
+  return rx.id != null ? String(rx.id).trim() : '';
+}
+
+async function enrichPortalPrescriptions(rows, patientIds) {
+  if (!Array.isArray(rows) || rows.length === 0 || !global.supabaseClient) {
+    return rows || [];
+  }
+
+  const needsLink = rows.some((rx) => !portalIsUuidPrescriptionId(rx.id) && !portalIsUuidPrescriptionId(rx._supabaseId));
+  let tableRows = [];
+  if (needsLink) {
+    const { data } = await global.supabaseClient
+      .from('prescriptions')
+      .select('id, prescription_number, source_prescription_id, patient_id')
+      .in('patient_id', patientIds);
+    tableRows = data || [];
+  }
+
+  return rows.map((rx) => {
+    const enriched = { ...rx };
+    if (portalIsUuidPrescriptionId(enriched.id)) {
+      enriched.portalPickupId = enriched.id;
+      enriched.portalPickupRef = enriched.id;
+      return enriched;
+    }
+    if (portalIsUuidPrescriptionId(enriched._supabaseId)) {
+      enriched.portalPickupId = enriched._supabaseId;
+      enriched.portalPickupRef = enriched._supabaseId;
+      return enriched;
+    }
+
+    const legacyId = enriched.id != null ? String(enriched.id).trim() : '';
+    const rxNum = enriched.prescription_number || enriched.prescriptionNumber || '';
+    const match = tableRows.find((t) =>
+      (legacyId && String(t.source_prescription_id || '') === legacyId)
+      || (rxNum && t.prescription_number === rxNum)
+      || (legacyId && String(t.id) === legacyId)
+    );
+    if (match) {
+      enriched._supabaseId = match.id;
+      enriched.portalPickupId = match.id;
+      enriched.portalPickupRef = match.id;
+    } else {
+      enriched.portalPickupRef = resolvePortalPrescriptionPickupRef(enriched);
+    }
+    return enriched;
+  });
+}
+
 function transformPrescriptionRowsForPortal(data) {
   if (!Array.isArray(data)) return [];
   return data.map((rx) => ({
     ...rx,
+    portalPickupRef: resolvePortalPrescriptionPickupRef(rx),
     medications: (() => {
       const meds = rx.medications;
       if (Array.isArray(meds)) return meds;
@@ -288,7 +350,10 @@ window.getPatientMedications = async function() {
       logAuditEvent('patient_portal_accessed', { patientId, section: 'medications' });
     }
 
-    return transformPrescriptionRowsForPortal(data || []);
+    return enrichPortalPrescriptions(
+      transformPrescriptionRowsForPortal(data || []),
+      patientIds
+    );
   } catch (error) {
     console.error('getPatientMedications error:', error);
     throw error;
@@ -394,7 +459,11 @@ window.getPatientResults = async function() {
       });
     }
 
-    return data || [];
+    const rows = data || [];
+    if (window.MediForgePatientPortal?.sanitizeOrderForPatientPortal) {
+      return rows.map((order) => window.MediForgePatientPortal.sanitizeOrderForPatientPortal(order));
+    }
+    return rows;
   } catch (error) {
     console.error('getPatientResults error:', error);
     throw error;

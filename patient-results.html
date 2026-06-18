@@ -241,6 +241,9 @@
       color: #fff;
     }
     .portal-action-btn:disabled { background: #aaa; cursor: default; }
+    .portal-action-btn.secondary { background: #fff; color: var(--nigerian-green); border: 2px solid var(--nigerian-green); margin-right: 8px; }
+    .portal-subtext { color: #666; font-size: 0.9rem; margin-top: 6px; max-width: 520px; }
+    .portal-actions { display: flex; flex-wrap: wrap; gap: 8px; margin-top: 14px; }
     .item-pending { color: #888; font-style: italic; }
   </style>
   <script src="js/ui-title-case.js?v=20260616120000" defer></script>
@@ -285,8 +288,9 @@
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
-  <script src="js/patient-data-loader.js"></script>
-  <script src="js/patient-portal.js"></script>
+  <script src="js/patient-data-loader.js?v=20260618180000-order-status"></script>
+  <script src="js/patient-portal.js?v=20260618180000-order-status"></script>
+  <script src="js/patient-portal-orders.js?v=20260618180000-order-status"></script>
   <script src="js/security.js"></script>
   
   <script>
@@ -305,15 +309,37 @@
       return tone || 'muted';
     }
 
-    async function requestResults(orderId, btn) {
-      if (!orderId) return;
-      btn.disabled = true;
+    function parsePortalItems(order) {
+      const raw = order.selected_items || order.items;
+      if (Array.isArray(raw)) return raw;
+      if (typeof raw === 'string') {
+        try { return JSON.parse(raw); } catch (_) { return []; }
+      }
+      return [];
+    }
+
+    async function viewOrderCopy(orderId) {
+      const order = allResults.find((r) => r.id === orderId);
+      if (!order) return;
       try {
-        await window.MediForgePatientPortal.requestResultPublication(orderId);
-        await loadResults();
+        let full = order;
+        if (order.id && window.MediForgePatientPortalOrders?.fetchPortalOrderById) {
+          const fetched = await window.MediForgePatientPortalOrders.fetchPortalOrderById(order.id);
+          if (fetched) full = fetched;
+        }
+        await window.MediForgePatientPortalOrders.openOrderCopy(full);
       } catch (e) {
-        alert('Could not send request: ' + (e.message || e));
-        btn.disabled = false;
+        alert('Could not open order: ' + (e.message || e));
+      }
+    }
+
+    async function viewReviewedResults(orderId) {
+      const order = allResults.find((r) => r.id === orderId);
+      if (!order) return;
+      try {
+        await window.MediForgePatientPortalOrders.openReviewedResults(order);
+      } catch (e) {
+        alert('Could not open results: ' + (e.message || e));
       }
     }
     
@@ -354,19 +380,26 @@
         if (serialNumber && serialNumber !== 'N/A' && typeof window.formatLabOrderSerial === 'function') {
           serialNumber = window.formatLabOrderSerial(serialNumber, result.id, result);
         }
-        const items = result.selected_items || result.items || [];
-        const resultsData = result.results || [];
+        const items = parsePortalItems(result);
         const portal = window.MediForgePatientPortal.getOrderPortalStatus(result);
-        const showValues = portal.canView;
         
         const typeIcon = type === 'imaging' ? '\uD83D\uDD2C' : '\uD83E\uDDEA';
         const typeLabel = type === 'imaging' ? 'Imaging Study' : 'Lab Test';
 
-        let actionHtml = '';
-        if (portal.canRequest && result.id) {
-          actionHtml = `<button type="button" class="portal-action-btn" onclick="requestResults('${result.id}', this)">Request to view results</button>`;
-        } else if (portal.key === 'request_pending') {
-          actionHtml = `<button type="button" class="portal-action-btn" disabled>Request sent — waiting for clinic</button>`;
+        let actionHtml = '<div class="portal-actions">';
+        if (result.id && portal.canViewOrder !== false) {
+          actionHtml += `<button type="button" class="portal-action-btn secondary" onclick="viewOrderCopy('${result.id}')">Print / view order copy</button>`;
+          if (portal.canView) {
+            actionHtml += `<button type="button" class="portal-action-btn" onclick="viewReviewedResults('${result.id}')">View reviewed results</button>`;
+          }
+        }
+        actionHtml += '</div>';
+
+        let footerNote = '';
+        if (portal.key === 'awaiting_provider_review') {
+          footerNote = '<p class="item-pending" style="margin-top:12px;">Result values and provider comments are hidden until your doctor marks this order as reviewed.</p>';
+        } else if (portal.key === 'order_sent') {
+          footerNote = '<p class="item-pending" style="margin-top:12px;">When results return from the lab or imaging centre, status will update here. Your provider will release reviewed results to you.</p>';
         }
         
         return `
@@ -375,6 +408,7 @@
               <div>
                 <div class="result-type">${typeIcon} ${typeLabel}</div>
                 <span class="portal-status ${statusToneClass(portal.tone)}">${esc(portal.label)}</span>
+                ${portal.subtext ? `<p class="portal-subtext">${esc(portal.subtext)}</p>` : ''}
               </div>
               <div class="result-date">
                 ${date.toLocaleDateString('en-US', { year: 'numeric', month: 'long', day: 'numeric' })}
@@ -393,47 +427,7 @@
               ` : ''}
             </div>
             ${actionHtml}
-            ${showValues && items.length > 0 ? `
-              <div class="result-values">
-                <table>
-                  <thead>
-                    <tr>
-                      <th>Test</th>
-                      <th>Result</th>
-                      <th>Reference Range</th>
-                    </tr>
-                  </thead>
-                  <tbody>
-                    ${items.map(item => {
-                      const itemName = item.name || item.test || item.item || 'Unknown';
-                      const itemResult = item.result || item.value || '—';
-                      const itemRange = item.reference_range || item.range || 'N/A';
-                      return `
-                        <tr>
-                          <td>${esc(itemName)}</td>
-                          <td><strong>${esc(String(itemResult))}</strong></td>
-                          <td>${esc(itemRange)}</td>
-                        </tr>`;
-                    }).join('')}
-                  </tbody>
-                </table>
-              </div>
-            ` : ''}
-            ${showValues && resultsData.length > 0 ? `
-              <div class="result-values" style="margin-top: 15px;">
-                <label style="display: block; margin-bottom: 10px; color: var(--nigerian-green); font-weight: 600;">Results</label>
-                <div style="display: flex; flex-direction: column; gap: 8px;">
-                  ${resultsData.map((r, idx) => `
-                    <div style="padding: 10px; background: white; border-radius: 6px; border-left: 3px solid var(--nigerian-green);">
-                      ${esc(r.filename || r.name || `Result ${idx + 1}`)}
-                    </div>
-                  `).join('')}
-                </div>
-              </div>
-            ` : ''}
-            ${!showValues && portal.key === 'not_started' && items.length > 0 ? `
-              <p class="item-pending" style="margin-top:12px;">Tests ordered — not yet completed at the lab or imaging centre.</p>
-            ` : ''}
+            ${footerNote}
           </div>
         `;
       }).join('');
