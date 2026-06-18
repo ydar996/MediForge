@@ -122,12 +122,14 @@
           const snap = s.visit_snapshot || {};
           const cc = s.chief_complaint || snap.chiefComplaint || 'Office visit';
           const provider = s.discharging_physician || snap.provider || 'Your care team';
-          const type = s.appointment_type ? `${esc(s.appointment_type)} · ` : '';
+          const apptType = (s.appointment_type || '').trim();
+          const showType = apptType && apptType.toLowerCase() !== String(cc).trim().toLowerCase();
+          const reasonLine = showType ? `${esc(apptType)} · ${esc(cc)}` : esc(cc);
           return `<article class="card">
             <div class="card-main">
               <h3>${esc(formatDate(s.visit_date))}</h3>
               <div class="visit-time-row">${buildTimeMarkers(s)}</div>
-              <p>${type}${esc(cc)} · ${esc(provider)}</p>
+              <p>${reasonLine} · ${esc(provider)}</p>
             </div>
             <div class="card-actions">
               <a class="detail-btn" href="${esc(detailUrl(s))}">View detail</a>

@@ -306,14 +306,14 @@ function resolvePortalPrescriptionPickupRef(rx) {
 }
 
 async function enrichPortalPrescriptions(rows, patientIds) {
-  if (!Array.isArray(rows) || rows.length === 0 || !global.supabaseClient) {
+  if (!Array.isArray(rows) || rows.length === 0 || !window.supabaseClient) {
     return rows || [];
   }
 
   const needsLink = rows.some((rx) => !portalIsUuidPrescriptionId(rx.id) && !portalIsUuidPrescriptionId(rx._supabaseId));
   let tableRows = [];
   if (needsLink) {
-    const { data } = await global.supabaseClient
+    const { data } = await window.supabaseClient
       .from('prescriptions')
       .select('id, prescription_number, source_prescription_id, patient_id')
       .in('patient_id', patientIds);
@@ -577,6 +577,45 @@ function findPortalAppointmentForDate(appointments, visitDate) {
   return (appointments || []).find((a) => portalDateYmd(a.appointment_date || a.date) === ymd) || null;
 }
 
+function portalMapUpcomingAppointments(appointments) {
+  const today = portalDateYmd(new Date());
+  const seen = new Set();
+  const upcoming = [];
+
+  (appointments || []).forEach((a) => {
+    if (a.deleted === true) return;
+    const st = String(a.status || '').toLowerCase();
+    if (['cancelled', 'canceled', 'completed', 'done'].includes(st)) return;
+    const date = portalDateYmd(a.appointment_date || a.date);
+    if (!date || date < today) return;
+    const key = a.id || `${date}_${a.appointment_time || a.time || ''}`;
+    if (seen.has(key)) return;
+    seen.add(key);
+    upcoming.push({
+      date: a.appointment_date || a.date,
+      time: a.appointment_time || a.time,
+      doctor: a.doctor || a.doctor_name || a.provider,
+      reason: a.reason || a.purpose || a.appointment_type
+    });
+  });
+
+  upcoming.sort((a, b) => {
+    const da = portalDateYmd(a.date);
+    const db = portalDateYmd(b.date);
+    if (da !== db) return da.localeCompare(db);
+    return String(a.time || '').localeCompare(String(b.time || ''));
+  });
+
+  return upcoming.slice(0, 5);
+}
+
+function enrichPortalUpcomingAppointments(summary, appointments) {
+  if (!summary) return summary;
+  const snap = { ...(summary.visit_snapshot || {}) };
+  snap.upcomingAppointments = portalMapUpcomingAppointments(appointments);
+  return { ...summary, visit_snapshot: snap };
+}
+
 function enrichPortalVisitSummaryTiming(summary, appt) {
   if (!summary) return summary;
   const enriched = { ...summary };
@@ -655,7 +694,8 @@ window.getPatientVisitSummaries = async function() {
       });
     }
 
-    const summaries = Array.from(byDate.values());
+    const summaries = Array.from(byDate.values())
+      .map((s) => enrichPortalUpcomingAppointments(s, appointments));
     summaries.sort((a, b) => portalVisitSummarySortKey(b).localeCompare(portalVisitSummarySortKey(a)));
     return summaries;
   } catch (error) {

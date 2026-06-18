@@ -590,9 +590,10 @@
     return { patient, patientUuid, legacyId, snapshot };
   }
 
-  function renderSnapshotHtml(snapshot) {
+  function renderSnapshotHtml(snapshot, options) {
     if (!snapshot) return '<p>No summary available.</p>';
     const s = snapshot;
+    const skipVisitHeader = options && options.skipVisitHeader;
 
     const vitalsHtml = (s.vitals || []).length
       ? `<ul>${s.vitals.map((v) => {
@@ -633,7 +634,7 @@
       ? `<ul>${s.upcomingAppointments.map((a) => `<li>${formatDate(a.date)}${a.time ? ` at ${a.time}` : ''} — ${a.doctor || 'Provider'}${a.reason ? ` (${a.reason})` : ''}</li>`).join('')}</ul>`
       : '<p class="muted">No upcoming appointments scheduled.</p>';
 
-    return `
+    const visitHeaderHtml = skipVisitHeader ? '' : `
       <div class="summary-block">
         <p><strong>Visit date:</strong> ${formatDate(s.visitDate)}</p>
         ${s.visitTime ? `<p><strong>Scheduled time:</strong> ${esc(s.visitTime)}</p>` : ''}
@@ -641,7 +642,10 @@
         ${s.checkedOutAt ? `<p><strong>Visit ended:</strong> ${esc(s.checkedOutAt)}</p>` : ''}
         <p><strong>Provider:</strong> ${s.provider || '—'}</p>
         ${s.chiefComplaint ? `<p><strong>Chief complaint:</strong> ${s.chiefComplaint}</p>` : ''}
-      </div>
+      </div>`;
+
+    return `
+      ${visitHeaderHtml}
       ${s.visitOverview ? `<div class="summary-block"><h3>Visit overview</h3><p>${s.visitOverview.replace(/\n/g, '<br>')}</p></div>` : ''}
       <div class="summary-block"><h3>Vital signs</h3>${vitalsHtml}</div>
       <div class="summary-block"><h3>Diagnoses / problem list</h3>${dxHtml}</div>
