@@ -1,6 +1,8 @@
 ﻿-- RUN THIS in Supabase SQL Editor (dev, staging, production) — patient portal complete setup.
 -- Paste entire file and run once per environment. Safe to re-run (uses IF NOT EXISTS / DROP POLICY IF EXISTS).
 
+-- Fix legacy misnamed policy from earlier partial runs
+DROP POLICY IF EXISTS portal_messages_patient_staff_select ON portal_messages;
 
 -- ========== supabase/migrations/20260617120000_patient_portal_messaging_orders.sql ==========
 
@@ -55,7 +57,8 @@ CREATE POLICY portal_messages_patient_insert ON portal_messages
   );
 
 DROP POLICY IF EXISTS portal_messages_staff_select ON portal_messages;
-CREATE POLICY portal_messages_patient_staff_select ON portal_messages
+DROP POLICY IF EXISTS portal_messages_patient_staff_select ON portal_messages;
+CREATE POLICY portal_messages_staff_select ON portal_messages
   FOR SELECT USING (
     organization_id IN (
       SELECT u.organization_id FROM users u WHERE u.auth_user_id = auth.uid()

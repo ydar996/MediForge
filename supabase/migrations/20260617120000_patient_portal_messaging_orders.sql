@@ -49,7 +49,8 @@ CREATE POLICY portal_messages_patient_insert ON portal_messages
   );
 
 DROP POLICY IF EXISTS portal_messages_staff_select ON portal_messages;
-CREATE POLICY portal_messages_patient_staff_select ON portal_messages
+DROP POLICY IF EXISTS portal_messages_patient_staff_select ON portal_messages;
+CREATE POLICY portal_messages_staff_select ON portal_messages
   FOR SELECT USING (
     organization_id IN (
       SELECT u.organization_id FROM users u WHERE u.auth_user_id = auth.uid()
