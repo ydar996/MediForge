@@ -288,9 +288,9 @@
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/patient-auth.js"></script>
-  <script src="js/patient-data-loader.js?v=20260618180000-order-status"></script>
-  <script src="js/patient-portal.js?v=20260618180000-order-status"></script>
-  <script src="js/patient-portal-orders.js?v=20260618180000-order-status"></script>
+  <script src="js/patient-data-loader.js?v=20260618200000-order-copy-fix"></script>
+  <script src="js/patient-portal.js?v=20260618200000-order-copy-fix"></script>
+  <script src="js/patient-portal-orders.js?v=20260618200000-order-copy-fix"></script>
   <script src="js/security.js"></script>
   
   <script>
@@ -318,12 +318,20 @@
       return [];
     }
 
+    function findOrderById(orderId) {
+      const key = String(orderId);
+      return allResults.find((r) => r != null && String(r.id) === key);
+    }
+
     async function viewOrderCopy(orderId) {
-      const order = allResults.find((r) => r.id === orderId);
-      if (!order) return;
+      const order = findOrderById(orderId);
+      if (!order) {
+        alert('Could not find this order. Please refresh the page and try again.');
+        return;
+      }
       try {
         let full = order;
-        if (order.id && window.MediForgePatientPortalOrders?.fetchPortalOrderById) {
+        if (order.id != null && window.MediForgePatientPortalOrders?.fetchPortalOrderById) {
           const fetched = await window.MediForgePatientPortalOrders.fetchPortalOrderById(order.id);
           if (fetched) full = fetched;
         }
@@ -334,13 +342,31 @@
     }
 
     async function viewReviewedResults(orderId) {
-      const order = allResults.find((r) => r.id === orderId);
-      if (!order) return;
+      const order = findOrderById(orderId);
+      if (!order) {
+        alert('Could not find this order. Please refresh the page and try again.');
+        return;
+      }
       try {
         await window.MediForgePatientPortalOrders.openReviewedResults(order);
       } catch (e) {
         alert('Could not open results: ' + (e.message || e));
       }
+    }
+
+    function bindResultListActions() {
+      const list = document.getElementById('resultsList');
+      if (!list || list.dataset.actionsBound === '1') return;
+      list.dataset.actionsBound = '1';
+      list.addEventListener('click', (e) => {
+        const btn = e.target.closest('[data-portal-action]');
+        if (!btn) return;
+        e.preventDefault();
+        const orderId = btn.getAttribute('data-order-id');
+        const action = btn.getAttribute('data-portal-action');
+        if (action === 'order-copy') viewOrderCopy(orderId);
+        else if (action === 'reviewed-results') viewReviewedResults(orderId);
+      });
     }
     
     function filterResults(type) {
@@ -387,10 +413,11 @@
         const typeLabel = type === 'imaging' ? 'Imaging Study' : 'Lab Test';
 
         let actionHtml = '<div class="portal-actions">';
-        if (result.id && portal.canViewOrder !== false) {
-          actionHtml += `<button type="button" class="portal-action-btn secondary" onclick="viewOrderCopy('${result.id}')">Print / view order copy</button>`;
+        if (result.id != null && portal.canViewOrder !== false) {
+          const orderIdAttr = esc(String(result.id));
+          actionHtml += `<button type="button" class="portal-action-btn secondary" data-portal-action="order-copy" data-order-id="${orderIdAttr}">Print / view order copy</button>`;
           if (portal.canView) {
-            actionHtml += `<button type="button" class="portal-action-btn" onclick="viewReviewedResults('${result.id}')">View reviewed results</button>`;
+            actionHtml += `<button type="button" class="portal-action-btn" data-portal-action="reviewed-results" data-order-id="${orderIdAttr}">View reviewed results</button>`;
           }
         }
         actionHtml += '</div>';
@@ -431,6 +458,7 @@
           </div>
         `;
       }).join('');
+      bindResultListActions();
     }
     
     async function loadResults() {

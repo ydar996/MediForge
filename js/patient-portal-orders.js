@@ -207,7 +207,7 @@ ${body}
   }
 
   async function fetchPortalOrderById(orderId) {
-    if (!orderId || !global.supabaseClient) return null;
+    if (orderId == null || orderId === '' || !global.supabaseClient) return null;
     const { data, error } = await global.supabaseClient
       .from('orders')
       .select('*')
