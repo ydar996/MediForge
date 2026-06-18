@@ -389,6 +389,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **URLs:** Dev https://mediforge-dev.netlify.app · Staging https://mediforge-staging.netlify.app · Prod https://mediforge.netlify.app
 - **Owner next steps:** Hard-refresh portal after deploy; run three portal SQL files on staging/prod Supabase; smoke-test Results + Medications on dev.
 
+### June 18, 2026 (later) — Visit summaries auto-publish (dev → staging → production)
+
+- **Commit `2174d2d`** — Patient portal **Visit Summaries** no longer empty after concluded visits.
+- **Auto-publish** when staff **checks out** an appointment, **locks** a clinical note, or opens a concluded visit note (backfill).
+- **Portal fallback** lists completed/checked-out appointments even before a full summary row exists.
+- **Owner next steps:** Hard-refresh `/patient-visit-summaries`; for existing patients with missing summaries, open their clinical note once or re-check-out; ensure `20260617140000_office_visit_summaries.sql` ran on each Supabase environment.
+
 ---
 
 **Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed.
