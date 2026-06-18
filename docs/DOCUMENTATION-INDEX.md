@@ -2,7 +2,7 @@
 
 Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVER.md`**. **Owners:** start with **`START-HERE.md`** or **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 17, 2026
+**Last updated:** June 18, 2026
 
 ---
 
@@ -73,6 +73,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/PHARMACY-INVENTORY-TESTING-GUIDE.md](PHARMACY-INVENTORY-TESTING-GUIDE.md)** | Pharmacy inventory |
 | **[PRESCRIPTION-SYSTEM-STATUS.md](../PRESCRIPTION-SYSTEM-STATUS.md)** | Prescriptions |
 | **[PATIENT-PORTAL-STATUS.md](../PATIENT-PORTAL-STATUS.md)** | Patient portal |
+| **[docs/PATIENT-PORTAL-ORDER-RESULTS.md](PATIENT-PORTAL-ORDER-RESULTS.md)** | Portal lab/imaging order status and results release |
 
 ---
 

@@ -1,6 +1,6 @@
 # MediForge deployment handover
 
-**Last updated:** June 12, 2026
+**Last updated:** June 18, 2026
 
 > **Primary handover:** **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living document — read and update every session).  
 > **Pipeline (dev → staging → prod + git sync):** **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)**  
@@ -121,5 +121,7 @@ Regression scenarios: **[CRITICAL-WORKFLOWS.md](CRITICAL-WORKFLOWS.md)**
 ---
 
 ## Session notes
+
+**June 18, 2026:** Portal order review workflow, prescription pickup fix, and order-sent status deployed (`9135454`) to dev, staging, and production. Production via `deploy-with-message.ps1`; dev/staging via GitHub CD. Owner: run SQL migrations `20260618160000`, `20260618170000`, `20260618180000` on staging + prod Supabase.
 
 **June 12, 2026:** Production live; GitHub connected; deployment pipeline documented (`DEPLOYMENT-PIPELINE.md`); mandatory git sync rules added to agent handover. Dev/staging sites and branches still to be created.

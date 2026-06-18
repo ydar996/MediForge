@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 17, 2026  
+**Last updated:** June 18, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -374,6 +374,20 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Staging:** https://mediforge-staging.netlify.app
 - **Production:** https://mediforge.netlify.app
 - **Owner:** Run migration `20260616140000_patient_enrolment_practice_fields.sql` on **staging** and **production** Supabase if not done yet (dev first).
+
+### June 18, 2026 — Schedule by provider + patient portal lab/results/pickup (dev → staging → production)
+
+- **Commit `9135454`** on `dev`, `staging`, and `main` (includes prior `bf9ff49` schedule-by-provider on all branches).
+- **Schedule:** Per-provider daily grid on `/schedule` (By Provider button + provider filter on Daily View).
+- **Patient portal — Results (`/patient-results`):**
+  - Status **Order Sent** when order goes to external lab/imaging (no in-house lab assumption).
+  - **Test Completed: Awaiting Provider Review** when results are back but doctor has not reviewed.
+  - **Reviewed — results available** after doctor marks reviewed; patient can open results + provider comments.
+  - **Print / view order copy** for lab and imaging requisitions anytime.
+- **Patient portal — Medications:** **I picked this up** fixed (legacy `RX…` ids, not only UUID); records `patient_pickup_at`; clinic notified via portal message; pharmacy Filled tab shows pickup status.
+- **SQL migrations (owner ran on dev Supabase):** `20260618160000`, `20260618170000`, `20260618180000` — run same three on **staging** and **production** Supabase if not done yet.
+- **URLs:** Dev https://mediforge-dev.netlify.app · Staging https://mediforge-staging.netlify.app · Prod https://mediforge.netlify.app
+- **Owner next steps:** Hard-refresh portal after deploy; run three portal SQL files on staging/prod Supabase; smoke-test Results + Medications on dev.
 
 ---
 
