@@ -13703,6 +13703,7 @@ async function loadClinicalNote() {
   
   if (isSameNote && !isNavigatingBack) {
     console.warn("[PERSISTENCE] Form already loaded for this patient/visit, skipping to preserve user input");
+    ensurePortalVisitSummarySyncedFromUrl().catch(() => {});
     return;
   }
   
@@ -13710,6 +13711,7 @@ async function loadClinicalNote() {
   // BUT: If navigating back, always reload to get latest data
   if (!isNavigatingBack && window._lastSaveTimestamp && (Date.now() - window._lastSaveTimestamp < 3000)) {
     console.warn(`[PERSISTENCE] Skipping form reload - data was just saved ${Date.now() - window._lastSaveTimestamp}ms ago`);
+    ensurePortalVisitSummarySyncedFromUrl().catch(() => {});
     return;
   }
   
@@ -14011,6 +14013,7 @@ async function loadClinicalNote() {
   patient.prescriptions = ensureArray(patient.prescriptions, []);
   syncAppointmentsToVisits(patient);
   let visit = (patient.visits || []).find(v => v.date === visitDate);
+  ensurePortalVisitSummarySyncedFromUrl().catch(() => {});
   
   // CRITICAL DATA RECOVERY: If current visit has empty SOAP data, check multiple sources
   // 1. Check other visits in localStorage
@@ -15007,6 +15010,10 @@ async function loadClinicalNote() {
     // Only show referrals for the current visit
     const urlParams = new URLSearchParams(window.location.search);
     const currentVisitDate = urlParams.get("visitDate");
+    const visitForSync = (patient.visits || []).find((v) => v.date === currentVisitDate);
+    if (visitForSync && currentVisitDate) {
+      schedulePortalVisitSummaryRefresh(patient, currentVisitDate, visitForSync);
+    }
     displayGeneratedReferrals(patient, currentVisitDate);
   }, 0);
 
@@ -15743,6 +15750,9 @@ async function syncOrderToSupabase(orderData, patient, visit) {
         status: data?.[0]?.status,
         type: orderData.type
       });
+      if (orderData.visitDate && orderData.patientId) {
+        refreshPortalVisitSummaryForPatient(orderData.patientId, orderData.visitDate).catch(() => {});
+      }
     }
   } catch (error) {
     console.error('❌ Error in syncOrderToSupabase:', error);
@@ -19704,6 +19714,33 @@ window.collectOfficeVisitChartData = async function collectOfficeVisitChartData(
 };
 
 let _portalVisitSummaryRefreshTimer = null;
+
+async function refreshPortalVisitSummaryForPatient(patientIdentifier, visitDate) {
+  if (!window.VisitSummaryBuilder?.publishOfficeVisitSummaryToPortal) return;
+  if (!patientIdentifier || !visitDate) return;
+
+  let patient = null;
+  if (typeof window.resolvePatientByIdentifier === 'function') {
+    patient = await window.resolvePatientByIdentifier(patientIdentifier);
+  }
+  if (!patient) return;
+
+  syncAppointmentsToVisits(patient);
+  const ymd = typeof visitSummaryToYmd === 'function' ? visitSummaryToYmd(visitDate) : visitDate;
+  const visit = (patient.visits || []).find((v) =>
+    v.date === visitDate || (typeof visitSummaryToYmd === 'function' && visitSummaryToYmd(v.date) === ymd)
+  ) || { date: visitDate };
+  await refreshPortalVisitSummaryIfConcluded(patient, visitDate, visit);
+}
+
+async function ensurePortalVisitSummarySyncedFromUrl() {
+  const urlParams = new URLSearchParams(window.location.search);
+  const patientIdentifier = urlParams.get('patientId') || urlParams.get('id');
+  const visitDate = urlParams.get('visitDate');
+  await refreshPortalVisitSummaryForPatient(patientIdentifier, visitDate);
+}
+
+window.ensurePortalVisitSummarySyncedFromUrl = ensurePortalVisitSummarySyncedFromUrl;
 
 function portalVisitIsConcluded(visit) {
   if (!visit) return false;
