@@ -287,7 +287,22 @@ async function resolvePortalPatientUuid(patientId) {
 
 function portalDateYmd(val) {
   if (!val) return '';
-  return String(val).trim().slice(0, 10);
+  if (val instanceof Date && !Number.isNaN(val.getTime())) {
+    const y = val.getFullYear();
+    const m = String(val.getMonth() + 1).padStart(2, '0');
+    const d = String(val.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  const s = String(val).trim();
+  if (/^\d{4}-\d{2}-\d{2}/.test(s)) return s.slice(0, 10);
+  const parsed = new Date(s);
+  if (!Number.isNaN(parsed.getTime())) {
+    const y = parsed.getFullYear();
+    const m = String(parsed.getMonth() + 1).padStart(2, '0');
+    const d = String(parsed.getDate()).padStart(2, '0');
+    return `${y}-${m}-${d}`;
+  }
+  return s.slice(0, 10);
 }
 
 function portalIsUuidPrescriptionId(id) {
@@ -584,9 +599,13 @@ function portalMapUpcomingAppointments(appointments) {
 
   (appointments || []).forEach((a) => {
     if (a.deleted === true) return;
-    const st = String(a.status || '').toLowerCase();
-    if (['cancelled', 'canceled', 'completed', 'done'].includes(st)) return;
-    const date = portalDateYmd(a.appointment_date || a.date);
+    if (window.MediForgePatientPortal?.isAppointmentUpcoming) {
+      if (!window.MediForgePatientPortal.isAppointmentUpcoming(a)) return;
+    } else {
+      const st = String(a.status || '').toLowerCase();
+      if (['cancelled', 'canceled', 'completed', 'done', 'no-show', 'noshow'].includes(st)) return;
+    }
+    const date = portalDateYmd(a.appointment_date || a.date || a.appointmentDate);
     if (!date || date < today) return;
     const key = a.id || `${date}_${a.appointment_time || a.time || ''}`;
     if (seen.has(key)) return;

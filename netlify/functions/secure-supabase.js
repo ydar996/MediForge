@@ -840,6 +840,8 @@ exports.handler = async function handler(event) {
         const payload = normalizePatientRecord(submission.patient_payload || {});
         const emergencyAddress = buildEmergencyAddress(payload);
         const emergencyEmail = payload.emergencyEmail || null;
+        const todayYmd = new Date().toISOString().slice(0, 10);
+        const dateJoinedPractice = (payload.dateJoinedPractice && String(payload.dateJoinedPractice).slice(0, 10)) || todayYmd;
 
         const insertPayload = [{
           patient_id: patientIdentifier,
@@ -869,6 +871,7 @@ exports.handler = async function handler(event) {
           allergies: payload.allergies || [],
           medications: payload.medications || [],
           immunizations: payload.immunizations || [],
+          date_joined_practice: dateJoinedPractice,
           created_by: p_reviewer_name || 'Intake Approval',
           created_at: new Date().toISOString()
         }];
