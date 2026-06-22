@@ -101,7 +101,7 @@
       cpt: panelCpt || resolvedCpt,
       ohipFeeCode: fee,
       provincialFeeCode: fee,
-      displayCode: fee || panelCpt || resolvedCpt || labCode || '—',
+      displayCode: fee === 'PRIVATE' ? 'Private pay' : (fee || panelCpt || resolvedCpt || labCode || '—'),
       claimFeeCode: fee,
       cptReference: panelCpt || resolvedCpt,
       codeSystem: fee ? codeSystem : 'CPT (unmapped)',
@@ -171,6 +171,11 @@
     return r.displayCode || 'N/A';
   }
 
+  function formatFeeDisplay(fee) {
+    if (fee === 'PRIVATE') return 'Private pay';
+    return fee;
+  }
+
   function formatDisplayCodePlain(item, type, province) {
     const obj = typeof item === 'object' && item ? item : { cpt: item };
     const r = resolveLabCode({
@@ -182,7 +187,7 @@
       province: province || obj.province || inferProvince(),
       type: type || 'lab'
     });
-    return r.displayCode || 'N/A';
+    return formatFeeDisplay(r.displayCode) || 'N/A';
   }
 
   function enrichClaimServiceLine(line) {

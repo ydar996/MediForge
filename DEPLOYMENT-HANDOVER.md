@@ -1,6 +1,6 @@
 # MediForge deployment handover
 
-**Last updated:** June 18, 2026
+**Last updated:** June 22, 2026
 
 > **Primary handover:** **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living document — read and update every session).  
 > **Pipeline (dev → staging → prod + git sync):** **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)**  

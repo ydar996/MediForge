@@ -406,6 +406,31 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **URLs:** Dev https://mediforge-dev.netlify.app · Staging https://mediforge-staging.netlify.app · Prod https://mediforge.netlify.app
 - **Owner next steps:** Hard-refresh after deploy; from a clinical note open **Order Labs** or **Order Imaging** and try search + optional note; no Supabase scripts for this feature.
 
+### June 22, 2026 (later) — Ontario lab & imaging fee codes fixed (L-codes + proper imaging codes) (dev → staging → production)
+
+- **Problem the owner spotted:** Almost all imaging studies showed the same code **G004**; dozens of lab tests showed **G482** (physician venipuncture — wrong schedule). Codes came from category placeholders in `scripts/build-diagnostic-catalog.mjs`, not Ontario fee schedules.
+- **Fix — imaging:** `config/ohip-imaging-fee-crosswalk.json` — CPT → proper OHIP professional codes (X-, G-, J- per study type). **G004 removed** from imaging map.
+- **Fix — labs:** `config/ohip-lab-fee-crosswalk.json` + `scripts/ohip-lab-fee-crosswalk-data.mjs` — **168 CPTs + 11 panels** → Ontario **Laboratory Services L-codes** (Schedule 22, licensed lab appendix, 2026 SOB-LS bulletins). **99 distinct L-codes**; **0** lab rows on G482. Quantiferon-TB shows **Private pay** (not OHIP-insured at community labs).
+- **Build:** `npm run build:diagnostic-catalog` regenerates `ohip-cpt-crosswalk-reference.json`, `lab-code-map-canada.json`, and syncs `js/patients.js` / `js/pricing.js`. Tests: `tests/billing/generate-lab-code-map.test.js`.
+- **No SQL required** — config/JS only.
+- **Owner next steps:** Hard-refresh (Ctrl+F5) on Order Labs / Order Imaging; spot-check CBC **L393**, TSH **L341**, chest X-ray **X091**, ECG **G313**.
+
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed.
+## Billing fee codes — agent checklist (learned June 2026)
+
+When adding or expanding **lab** or **imaging** catalog tests, agents **must not** rely on category default codes (e.g. `G482`, `J307`, `G004`). Those are placeholders and will show wrong codes to clinicians.
+
+| Step | Action |
+|------|--------|
+| 1 | Map each new CPT to the **correct schedule**: labs → Ontario **L-codes** (`config/ohip-lab-fee-crosswalk.json`); imaging → OHIP physician codes (`config/ohip-imaging-fee-crosswalk.json`). |
+| 2 | Run `npm run build:diagnostic-catalog` and `npm run check:lab-codes`. |
+| 3 | **Sanity-check diversity:** if >3 unrelated tests share one fee code, investigate before shipping. |
+| 4 | Run `node --test tests/billing/generate-lab-code-map.test.js`. |
+| 5 | Mark uninsured tests (e.g. Quantiferon) as `PRIVATE` in crosswalk — do not invent L-codes. |
+
+**Owner handover hints that help agents:** (a) “Fee codes must match Ontario lab L-codes / imaging OHIP schedule, not one code for everything.” (b) “After catalog expansion, verify fee code column shows distinct codes per test.” (c) Point agents at this checklist and the two crosswalk JSON files.
+
+---
+
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed. **When touching lab/imaging catalogs:** follow **Billing fee codes — agent checklist** above.

@@ -76,6 +76,10 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/PATIENT-PORTAL-ORDER-RESULTS.md](PATIENT-PORTAL-ORDER-RESULTS.md)** | Portal lab/imaging order status and results release |
 | **`js/diagnostic-order-picker.js`** | Shared lab/imaging order UI (search, category filter, per-test notes) |
 | **`config/diagnostic-imaging-catalog.json`** | Platform imaging study catalog (synced into `js/patients.js`) |
+| **`config/diagnostic-lab-catalog.json`** | Platform lab test catalog (synced into `js/patients.js`) |
+| **`config/ohip-imaging-fee-crosswalk.json`** | CPT → OHIP imaging fee codes (X/G/J); edit then `npm run build:diagnostic-catalog` |
+| **`config/ohip-lab-fee-crosswalk.json`** | CPT → Ontario Laboratory Services L-codes; source: `scripts/ohip-lab-fee-crosswalk-data.mjs` |
+| **`config/lab-code-map-canada.json`** | Auto-generated multi-province fee map (ON/BC/AB/QC) |
 
 ---
 
@@ -112,6 +116,8 @@ Use when debugging specific subsystems. May reference orgs or IDs that **do not 
 | Command | Purpose |
 |---------|---------|
 | `npm run check` | Pre-deploy HTML/JS guards |
+| `npm run build:diagnostic-catalog` | Rebuild lab/imaging catalogs + OHIP crosswalks + `lab-code-map-canada.json` |
+| `npm run check:lab-codes` | Verify `lab-code-map-canada.json` matches catalog |
 | `npm run inject:supabase-env` | Build supabase-env.js from env vars |
 | `npm run manual:screenshots` | Capture user manual screenshots |
 | `.\scripts\export-database-schema.ps1` | Export DB schema for new Supabase project |

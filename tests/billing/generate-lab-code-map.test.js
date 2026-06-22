@@ -22,13 +22,17 @@ describe('generate-lab-code-map', () => {
     const map = buildLabCodeMapCanada({ repoRoot });
     assert.equal(map.unmappedCount, 0, `unmapped: ${JSON.stringify(map.unmapped)}`);
     assert.ok(map.byLabCode['LAB - 85025']);
-    assert.equal(map.byLabCode['LAB - 85025'], 'G200');
+    assert.equal(map.byLabCode['LAB - 85025'], 'L393');
+    assert.equal(map.byLabCode['LAB - 84443'], 'L341');
+    assert.equal(map.byLabCode['LAB - 87040'], 'L624');
     assert.ok(map.byPanelCpt['84146/84403/83001/83002/82670/84144']);
   });
 
   it('includes imaging CPT mappings', () => {
     const map = buildLabCodeMapCanada({ repoRoot });
-    assert.equal(map.imagingByCpt['71046'], 'G004');
+    assert.equal(map.imagingByCpt['71046'], 'X091');
+    assert.equal(map.imagingByCpt['93000'], 'G313');
+    assert.equal(map.imagingByCpt['93306'], 'G571');
     const imaging = extractImagingFromPatients(repoRoot);
     assert.ok(imaging.length >= 35);
   });

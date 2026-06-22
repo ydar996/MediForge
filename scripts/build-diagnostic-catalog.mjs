@@ -275,19 +275,21 @@ function sortImaging(imaging) {
   });
 }
 
-const CATEGORY_OHIP_DEFAULT = {
-  Haematology: 'G200',
-  'Clinical Chemistry': 'J307',
-  'Medical Microbiology / Serology': 'G482',
-  'Immunology / Autoimmune': 'G482',
-  Endocrinology: 'G330',
-  'Molecular / PCR': 'G482',
-  'Anatomic Pathology / Cytology': 'G847',
-  'Tumor Markers': 'G320',
-  Toxicology: 'J304'
-};
+function loadOhipImagingCrosswalk() {
+  const file = path.join(repoRoot, 'config', 'ohip-imaging-fee-crosswalk.json');
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return data.byCpt || {};
+}
 
-const IMAGING_OHIP_DEFAULT = 'G004';
+function loadOhipLabCrosswalk() {
+  const file = path.join(repoRoot, 'config', 'ohip-lab-fee-crosswalk.json');
+  const data = JSON.parse(fs.readFileSync(file, 'utf8'));
+  return {
+    byCpt: data.byCpt || {},
+    panels: data.panels || [],
+    privatePay: new Set(data.privatePayByCpt || [])
+  };
+}
 
 function extractExistingLabs(patientsSrc) {
   const m = patientsSrc.match(/\/\/ MEDIFORGE_CATALOG:LAB_START[\s\S]*?const LAB_TESTS = (\[[\s\S]*?\n\]);/);
@@ -430,28 +432,71 @@ ${lines}
 function expandOhipReference(labs, imaging, refPath) {
   const ref = JSON.parse(fs.readFileSync(refPath, 'utf8'));
   const byCpt = { ...(ref.byCpt || {}) };
-  const panels = [...(ref.panels || [])];
-  const imagingByCpt = { ...(ref.imagingByCpt || {}) };
+  const panels = [];
+  const labCrosswalk = loadOhipLabCrosswalk();
+  const imagingCrosswalk = loadOhipImagingCrosswalk();
+  const imagingByCpt = { ...imagingCrosswalk, ...(ref.imagingByCpt || {}) };
 
+  for (const [cpt, code] of Object.entries(labCrosswalk.byCpt)) {
+    if (!String(cpt).includes('/')) byCpt[cpt] = code;
+  }
+
+  const panelByKey = new Map(
+    labCrosswalk.panels.map((p) => [String(p.cpt).replace(/\s+/g, ''), p])
+  );
   for (const lab of labs) {
-    const cpt = lab.cpt;
+    const cpt = String(lab.cpt || '');
+    const key = cpt.replace(/\s+/g, '');
     if (cpt.includes('/')) {
-      const key = cpt.replace(/\s+/g, '');
-      if (!panels.some((p) => p.cpt.replace(/\s+/g, '') === key)) {
-        panels.push({ cpt: key, ohip: CATEGORY_OHIP_DEFAULT[lab.category] || 'G482', name: lab.name });
+      const mapped = panelByKey.get(key);
+      const code = mapped?.ohip || mapped?.code || labCrosswalk.byCpt[key];
+      if (code) {
+        panels.push({ cpt: key, ohip: code, name: lab.name });
+      } else if (!labCrosswalk.privatePay.has(key)) {
+        console.warn(`build-diagnostic-catalog: missing OHIP lab code for panel ${key} (${lab.name})`);
       }
-    } else if (!byCpt[cpt]) {
-      byCpt[cpt] = CATEGORY_OHIP_DEFAULT[lab.category] || 'J307';
+    } else {
+      const code = labCrosswalk.byCpt[cpt];
+      if (code) byCpt[cpt] = code;
+      else if (!labCrosswalk.privatePay.has(cpt)) {
+        console.warn(`build-diagnostic-catalog: missing OHIP lab code for CPT ${cpt} (${lab.name})`);
+      }
     }
   }
+
   for (const img of imaging) {
-    if (!imagingByCpt[img.cpt]) imagingByCpt[img.cpt] = IMAGING_OHIP_DEFAULT;
+    const key = String(img.cpt || '').replace(/\s+/g, '');
+    if (imagingCrosswalk[key]) imagingByCpt[key] = imagingCrosswalk[key];
+    else if (!imagingByCpt[key]) {
+      console.warn(`build-diagnostic-catalog: missing OHIP imaging code for CPT ${key} (${img.name})`);
+    }
   }
 
   ref.byCpt = byCpt;
   ref.panels = panels;
   ref.imagingByCpt = imagingByCpt;
-  ref.version = ref.version || '2026.06.2';
+  ref.byTestName = {};
+  for (const lab of labs) {
+    const cpt = String(lab.cpt || '');
+    const key = cpt.replace(/\s+/g, '');
+    let code = null;
+    if (cpt.includes('/')) {
+      const mapped = panelByKey.get(key);
+      code = mapped?.ohip || mapped?.code || labCrosswalk.byCpt[key];
+    } else {
+      code = labCrosswalk.byCpt[cpt];
+    }
+    if (code) {
+      const norm = lab.name
+        .toLowerCase()
+        .replace(/\([^)]*\)/g, ' ')
+        .replace(/[^a-z0-9]+/g, ' ')
+        .replace(/\s+/g, ' ')
+        .trim();
+      if (norm) ref.byTestName[norm] = code;
+    }
+  }
+  ref.version = ref.version || '2026.06.3';
   fs.writeFileSync(refPath, JSON.stringify(ref, null, 2) + '\n', 'utf8');
 }
 
