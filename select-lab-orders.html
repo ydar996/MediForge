@@ -317,6 +317,65 @@
       color: var(--charcoal);
       box-shadow: 0 2px 6px rgba(255, 140, 0, 0.3);
     }
+
+    .order-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+    }
+
+    .order-toolbar label {
+      font-weight: 700;
+      color: var(--charcoal);
+      font-size: 14px;
+    }
+
+    .order-search-input {
+      flex: 1 1 220px;
+      min-width: 200px;
+      padding: 10px 12px;
+      border: 2px solid rgba(0, 135, 83, 0.35);
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    .order-category-select {
+      flex: 0 1 220px;
+      min-width: 180px;
+      padding: 10px 12px;
+      border: 2px solid rgba(0, 135, 83, 0.35);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .order-result-count {
+      font-size: 13px;
+      color: var(--charcoal);
+      font-weight: 600;
+    }
+
+    .order-note-input {
+      width: 100%;
+      min-width: 140px;
+      padding: 8px 10px;
+      border: 1px solid rgba(0, 135, 83, 0.35);
+      border-radius: 6px;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 36px;
+      max-height: 80px;
+    }
+
+    .order-note-input::placeholder {
+      color: #888;
+    }
   </style>
   
   <!-- Supabase CDN Library -->
@@ -333,6 +392,7 @@
   <script src="js/billing-mode-manager.js?v=20260617180000"></script>
   <script src="js/lab-code-resolver.js?v=20260617180000"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/diagnostic-order-picker.js?v=20260622160000"></script>
   <script src="js/patient-identity.js?v=20260427160000"></script>
   <script src="js/ui-title-case.js?v=20260616120000" defer></script>
 </head>
@@ -366,6 +426,16 @@
       </div>
     </div>
     
+    <div class="order-toolbar">
+      <label for="lab-search-input">Search tests</label>
+      <input type="search" id="lab-search-input" class="order-search-input" placeholder="Type test name, category, or fee code…" autocomplete="off">
+      <label for="lab-category-filter">Category</label>
+      <select id="lab-category-filter" class="order-category-select" aria-label="Filter by category">
+        <option value="all">All categories</option>
+      </select>
+      <span id="lab-result-count" class="order-result-count"></span>
+    </div>
+    
     <table class="lab-tests-table">
       <thead>
         <tr>
@@ -374,6 +444,7 @@
           <th style="width: 100px;" data-billing-code-label data-billing-code-type="lab">Fee Code(s) (OHIP)</th>
           <th style="min-width: 150px;">Specimen Type/Volume</th>
           <th style="min-width: 150px;">Container</th>
+          <th style="min-width: 160px;">Ordering note (optional)</th>
           <th style="width: 120px;">Status</th>
           <th style="min-width: 280px; width: auto;">Actions</th>
         </tr>
@@ -432,6 +503,7 @@
     let inHouseLabEnabled = false;
     let selectedTests = new Set();
     let labTests = [];
+    let labOrderPicker = null;
     
     // Initialize page
     window.addEventListener('load', async () => {
@@ -629,47 +701,49 @@
     }
     
     function loadLabTests() {
-      // Get LAB_TESTS from patients.js (already loaded, sorted by category)
       labTests = window.LAB_TESTS || [];
-      
-      const tbody = document.getElementById('lab-tests-tbody');
-      tbody.innerHTML = '';
-      
-      let lastCategory = null;
-      labTests.forEach((test, index) => {
-        const category = test.category || 'Other';
-        if (category !== lastCategory) {
-          lastCategory = category;
-          const headerRow = document.createElement('tr');
-          headerRow.className = 'category-header-row';
-          headerRow.innerHTML = `<td colspan="7" class="category-header">${category}</td>`;
-          tbody.appendChild(headerRow);
+      labOrderPicker = new DiagnosticOrderPicker({
+        tests: labTests,
+        tbodyId: 'lab-tests-tbody',
+        type: 'lab',
+        searchInputId: 'lab-search-input',
+        categorySelectId: 'lab-category-filter',
+        resultCountId: 'lab-result-count',
+        getCategory: function (t) { return t.category || 'Other'; },
+        renderRow: function (test, index) {
+          const testId = 'test_' + index;
+          const billing = typeof mfFormatBillingCode === 'function' ? mfFormatBillingCode(test, 'lab') : (test.cpt || 'N/A');
+          const sendLabBtn = inHouseLabEnabled
+            ? '<button class="btn-send-lab" onclick="sendTestToLabScientist(' + index + ')">Send to Lab Scientist</button>'
+            : '';
+          return (
+            '<td><input type="checkbox" class="test-checkbox" id="' + testId + '" data-test-index="' + index + '" onchange="toggleTestSelection(' + index + ')"></td>' +
+            '<td><strong>' + test.name + '</strong></td>' +
+            '<td>' + billing + '</td>' +
+            '<td>' + (test.specimen || 'N/A') + '</td>' +
+            '<td>' + (test.container || 'N/A') + '</td>' +
+            '<td><textarea class="order-note-input" id="order-note-' + index + '" rows="1" placeholder="e.g. fasting, right arm, urgent…" aria-label="Ordering note for ' + test.name.replace(/"/g, '') + '"></textarea></td>' +
+            '<td><span class="status-badge status-pending" id="status_' + index + '">Pending</span></td>' +
+            '<td class="action-buttons" id="actions_' + index + '">' + sendLabBtn +
+            '<button class="btn-send-out" onclick="sendTestToExternalLab(' + index + ')">Send Out</button></td>'
+          );
         }
-        
-        const row = document.createElement('tr');
-        const testId = `test_${index}`;
-        
-        row.innerHTML = `
-          <td>
-            <input type="checkbox" class="test-checkbox" id="${testId}" 
-                   data-test-index="${index}" 
-                   onchange="toggleTestSelection(${index})">
-          </td>
-          <td><strong>${test.name}</strong></td>
-          <td>${typeof mfFormatBillingCode === 'function' ? mfFormatBillingCode(test, 'lab') : (test.cpt || 'N/A')}</td>
-          <td>${test.specimen || 'N/A'}</td>
-          <td>${test.container || 'N/A'}</td>
-          <td><span class="status-badge status-pending" id="status_${index}">Pending</span></td>
-          <td class="action-buttons" id="actions_${index}">
-            ${inHouseLabEnabled ? `<button class="btn-send-lab" onclick="sendTestToLabScientist(${index})">Send to Lab Scientist</button>` : ''}
-            <button class="btn-send-out" onclick="sendTestToExternalLab(${index})">Send Out</button>
-          </td>
-        `;
-        
-        tbody.appendChild(row);
       });
+      labOrderPicker.bind();
       applyInHouseLabVisibility();
       updateBulkButtons();
+    }
+
+    function buildLabOrderItem(index) {
+      const test = labTests[index];
+      if (!test) return null;
+      if (typeof window.mfBuildOrderItemWithNote === 'function') {
+        return window.mfBuildOrderItemWithNote(test, index);
+      }
+      const item = { name: test.name, cpt: test.cpt || test.code };
+      const noteEl = document.getElementById('order-note-' + index);
+      if (noteEl && noteEl.value.trim()) item.doctorNote = noteEl.value.trim();
+      return item;
     }
     
     function toggleAllTests() {
@@ -795,14 +869,14 @@
       const indices = Array.from(selectedTests).sort((a, b) => a - b);
       const seen = new Set();
       for (const index of indices) {
-        const test = labTests[index];
-        if (!test) continue;
-        const name = (test.name || '').trim();
-        const cpt = (test.cpt || test.code || '').trim();
+        const item = buildLabOrderItem(index);
+        if (!item) continue;
+        const name = (item.name || '').trim();
+        const cpt = (item.cpt || item.code || '').trim();
         const key = name + '|' + cpt;
         if (seen.has(key)) continue;
         seen.add(key);
-        selectedItems.push({ name: test.name, cpt: test.cpt || test.code });
+        selectedItems.push(item);
       }
       const finalItems = selectedItems;
       
@@ -931,8 +1005,8 @@
           serialNumber = `LAB-${patientId}-${timestamp}-${randomSuffix}`;
         }
         
-        // Store test as-is (panel name or single test) so selected_items matches what was ordered
-        const selectedItems = [{ name: test.name, cpt: test.cpt || test.code }];
+        // Store test with optional doctor note
+        const selectedItems = [buildLabOrderItem(index)].filter(Boolean);
         
         // Create order data
         const orderData = {

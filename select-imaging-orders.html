@@ -262,6 +262,74 @@
       color: var(--charcoal);
       box-shadow: 0 2px 6px rgba(255, 140, 0, 0.3);
     }
+
+    .order-toolbar {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 12px;
+      align-items: center;
+      margin-bottom: 16px;
+      padding: 16px;
+      background: linear-gradient(135deg, var(--nigerian-white), var(--ivory));
+      border-radius: 8px;
+      border: 2px solid var(--primary-green);
+    }
+
+    .order-toolbar label {
+      font-weight: 700;
+      color: var(--charcoal);
+      font-size: 14px;
+    }
+
+    .order-search-input {
+      flex: 1 1 220px;
+      min-width: 200px;
+      padding: 10px 12px;
+      border: 2px solid rgba(0, 135, 83, 0.35);
+      border-radius: 6px;
+      font-size: 15px;
+    }
+
+    .order-category-select {
+      flex: 0 1 220px;
+      min-width: 180px;
+      padding: 10px 12px;
+      border: 2px solid rgba(0, 135, 83, 0.35);
+      border-radius: 6px;
+      font-size: 14px;
+      font-weight: 600;
+    }
+
+    .order-result-count {
+      font-size: 13px;
+      color: var(--charcoal);
+      font-weight: 600;
+    }
+
+    .order-note-input {
+      width: 100%;
+      min-width: 140px;
+      padding: 8px 10px;
+      border: 1px solid rgba(0, 135, 83, 0.35);
+      border-radius: 6px;
+      font-size: 13px;
+      resize: vertical;
+      min-height: 36px;
+      max-height: 80px;
+    }
+
+    .imaging-tests-table .category-header-row td.category-header {
+      background: linear-gradient(135deg, var(--kente-gold) 0%, var(--dark-gold) 50%, var(--gold) 100%) !important;
+      color: var(--charcoal) !important;
+      font-weight: 800;
+      font-size: 15px;
+      padding: 16px;
+      border-top: 3px solid var(--primary-green) !important;
+      border-bottom: 2px solid var(--dark-gold) !important;
+      border-left: 6px solid var(--primary-green) !important;
+      text-transform: uppercase;
+      letter-spacing: 1px;
+    }
   </style>
   
   <!-- Supabase CDN Library -->
@@ -276,6 +344,7 @@
   <script src="js/billing-mode-manager.js?v=20260617180000"></script>
   <script src="js/lab-code-resolver.js?v=20260617180000"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
+  <script src="js/diagnostic-order-picker.js?v=20260622160000"></script>
   <script src="js/patient-identity.js?v=20260427160000"></script>
   <script src="js/ui-title-case.js?v=20260616120000" defer></script>
 </head>
@@ -296,6 +365,16 @@
       </label>
     </div>
     
+    <div class="order-toolbar">
+      <label for="imaging-search-input">Search studies</label>
+      <input type="search" id="imaging-search-input" class="order-search-input" placeholder="Type study name, category, or fee code…" autocomplete="off">
+      <label for="imaging-category-filter">Category</label>
+      <select id="imaging-category-filter" class="order-category-select" aria-label="Filter by category">
+        <option value="all">All categories</option>
+      </select>
+      <span id="imaging-result-count" class="order-result-count"></span>
+    </div>
+    
     <table class="imaging-tests-table">
       <thead>
         <tr>
@@ -304,6 +383,7 @@
           <th data-billing-code-label data-billing-code-type="imaging">Fee Code (OHIP)</th>
           <th>Modality</th>
           <th>Preparation</th>
+          <th style="min-width: 160px;">Ordering note (optional)</th>
           <th>Status</th>
           <th>Actions</th>
         </tr>
@@ -337,6 +417,7 @@
     let returnUrl = null;
     let selectedTests = new Set();
     let imagingTests = [];
+    let imagingOrderPicker = null;
     
     // Initialize page
     window.addEventListener('load', async () => {
@@ -490,34 +571,44 @@
     }
     
     function loadImagingTests() {
-      // Get IMAGING_TESTS from patients.js (already loaded)
       imagingTests = window.IMAGING_TESTS || [];
-      
-      const tbody = document.getElementById('imaging-tests-tbody');
-      tbody.innerHTML = '';
-      
-      imagingTests.forEach((test, index) => {
-        const row = document.createElement('tr');
-        const testId = `test_${index}`;
-        
-        row.innerHTML = `
-          <td>
-            <input type="checkbox" class="test-checkbox" id="${testId}" 
-                   data-test-index="${index}" 
-                   onchange="toggleTestSelection(${index})">
-          </td>
-          <td><strong>${test.name}</strong></td>
-          <td>${typeof mfFormatBillingCode === 'function' ? mfFormatBillingCode(test, 'imaging') : (test.cpt || 'N/A')}</td>
-          <td>${test.modality || 'N/A'}</td>
-          <td>${test.preparation || 'N/A'}</td>
-          <td><span class="status-badge status-pending" id="status_${index}">Pending</span></td>
-          <td class="action-buttons" id="actions_${index}">
-            <button class="btn-send-out" onclick="sendTestToExternalLab(${index})">Send Out</button>
-          </td>
-        `;
-        
-        tbody.appendChild(row);
+      imagingOrderPicker = new DiagnosticOrderPicker({
+        tests: imagingTests,
+        tbodyId: 'imaging-tests-tbody',
+        type: 'imaging',
+        searchInputId: 'imaging-search-input',
+        categorySelectId: 'imaging-category-filter',
+        resultCountId: 'imaging-result-count',
+        getCategory: function (t) { return t.category || t.modality || 'Other'; },
+        renderRow: function (test, index) {
+          const testId = 'test_' + index;
+          const billing = typeof mfFormatBillingCode === 'function' ? mfFormatBillingCode(test, 'imaging') : (test.cpt || 'N/A');
+          return (
+            '<td><input type="checkbox" class="test-checkbox" id="' + testId + '" data-test-index="' + index + '" onchange="toggleTestSelection(' + index + ')"></td>' +
+            '<td><strong>' + test.name + '</strong></td>' +
+            '<td>' + billing + '</td>' +
+            '<td>' + (test.modality || 'N/A') + '</td>' +
+            '<td>' + (test.preparation || 'N/A') + '</td>' +
+            '<td><textarea class="order-note-input" id="order-note-' + index + '" rows="1" placeholder="e.g. right knee, stat, clinical question…" aria-label="Ordering note for ' + test.name.replace(/"/g, '') + '"></textarea></td>' +
+            '<td><span class="status-badge status-pending" id="status_' + index + '">Pending</span></td>' +
+            '<td class="action-buttons" id="actions_' + index + '"><button class="btn-send-out" onclick="sendTestToExternalLab(' + index + ')">Send Out</button></td>'
+          );
+        }
       });
+      imagingOrderPicker.bind();
+      updateBulkButtons();
+    }
+
+    function buildImagingOrderItem(index) {
+      const test = imagingTests[index];
+      if (!test) return null;
+      if (typeof window.mfBuildOrderItemWithNote === 'function') {
+        return window.mfBuildOrderItemWithNote(test, index);
+      }
+      const item = Object.assign({}, test);
+      const noteEl = document.getElementById('order-note-' + index);
+      if (noteEl && noteEl.value.trim()) item.doctorNote = noteEl.value.trim();
+      return item;
     }
     
     function toggleAllTests() {
@@ -650,7 +741,7 @@
           patient_id: orderPatientId, // Use resolved UUID for orders table
           visit_date: visitDate,
           admission_id: admissionId || null,
-          selected_items: [test],
+          selected_items: [buildImagingOrderItem(index)].filter(Boolean),
           status: status,
           created_by: createdBy,
           organization_id: organizationId,

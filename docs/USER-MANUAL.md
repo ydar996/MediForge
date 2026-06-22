@@ -6,7 +6,7 @@
 
 **Also available as a web page with pictures:** open `user-manual.html` on your site (e.g. `https://mediforge.netlify.app/user-manual`).
 
-**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, **Health Canada prescription drug search**, **preventive care gaps** with proof attachments, manual medication entry, **patient self-intake**, and **bulk patient import** (CSV/Excel).
+**What’s new (June 2026):** Canadian registration and addresses, **Race** on patients, **ICD-10-CA** diagnosis search, **Health Canada prescription drug search**, **preventive care gaps** with proof attachments, manual medication entry, **patient self-intake**, **bulk patient import** (CSV/Excel), and **lab/imaging order search with categories and ordering notes**.
 
 ---
 
@@ -197,6 +197,18 @@ A **clinical note** is where you document a visit (Subjective, Objective, Assess
 **Bill a visit from the chart:** On the patient’s **Medical Visits** tab, use **Bill Visit** to create an invoice for that encounter (see [Billing](#12-billing-and-payments)).
 
 **Admit a patient (in-patient):** If in-patient care is enabled, you may see **Admit Patient** on the clinical note.
+
+### Lab and imaging orders
+
+From a clinical note you can order **lab tests** or **imaging studies** (X-ray, ultrasound, CT, etc.).
+
+1. Open the clinical note → **Order Labs** or **Order Imaging**.
+2. Use the **search box** to find a test quickly, or pick a **category** (e.g. Cardiology, X-Ray, Haematology).
+3. Check the tests you want. Optionally type an **ordering note** on each row (e.g. *right knee*, *fasting*, *stat*).
+4. Click **Send Out** (or **Send to Lab Scientist** for in-house lab if your clinic uses it). You can also select several tests and use **bulk send** for one combined lab order.
+5. Notes appear on the printed/PDF requisition with the order.
+
+**Tip:** No database setup is required for this feature — it works after the app is updated.
 
 ---
 

@@ -2,7 +2,7 @@
 
 Technical reference for developers and AI agents. For operational handover, see **`AGENT-HANDOVER.md`**. For first deploy, see **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 17, 2026
+**Last updated:** June 22, 2026
 
 ---
 
@@ -185,7 +185,7 @@ Requires `supabase link` and a configured project. Not required for initial go-l
 | Appointments | `appointments.html`, `js/appointments.js` |
 | Billing | `billing-dashboard.html`, `js/billing.js` |
 | Pharmacy | `pharmacy-dashboard.html`, `js/pharmacy-manager.js` |
-| Labs | `lab-order.html`, `lab-result-entry.html` |
+| Labs & imaging orders | `select-lab-orders.html`, `select-imaging-orders.html`, `lab-order.html`, `imaging-order.html`, `js/diagnostic-order-picker.js`, `config/diagnostic-imaging-catalog.json` |
 | In-patient | `inpatient-dashboard.html` |
 | Platform admin | `platform-dashboard.html`, `js/platform-admin.js` |
 | Security | `clinic-security-dashboard.html`, `security-monitoring.html` |

@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 18, 2026  
+**Last updated:** June 22, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -395,6 +395,16 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Auto-publish** when staff **checks out** an appointment, **locks** a clinical note, or opens a concluded visit note (backfill).
 - **Portal fallback** lists completed/checked-out appointments even before a full summary row exists.
 - **Owner next steps:** Hard-refresh `/patient-visit-summaries`; for existing patients with missing summaries, open their clinical note once or re-check-out; ensure `20260617140000_office_visit_summaries.sql` ran on each Supabase environment.
+
+### June 22, 2026 — Lab & imaging order picker: categories, search, notes, expanded imaging catalog (dev → staging → production)
+
+- **Imaging catalog:** 67 studies (was 39) — added Ontario requisition gaps (contrast echo, sinus/shoulder/elbow X-rays, combined abdomen+pelvis US, transvaginal pelvis, MSK ultrasound, arterial ABI, PFT, Holter, etc.) with **CPT/OHIP** codes via `npm run build:diagnostic-catalog`.
+- **Categories:** Imaging grouped like the paper form (Cardiology, X-Ray, Ultrasound, CT, MRI, Mammography, etc.). Lab orders already had category headers — unchanged data model.
+- **UI:** `select-lab-orders.html` and `select-imaging-orders.html` — **search bar**, **category filter**, **ordering note** per test (saved on the order and printed on requisitions). Shared module: **`js/diagnostic-order-picker.js`**.
+- **No SQL required** — doctor notes live inside existing `orders.selected_items` JSON.
+- **Docs:** `AGENT-HANDOVER.md`, `docs/DOCUMENTATION-INDEX.md`, `docs/PROJECT-OVERVIEW.md`, `docs/USER-MANUAL.md`, `user-manual.html`.
+- **URLs:** Dev https://mediforge-dev.netlify.app · Staging https://mediforge-staging.netlify.app · Prod https://mediforge.netlify.app
+- **Owner next steps:** Hard-refresh after deploy; from a clinical note open **Order Labs** or **Order Imaging** and try search + optional note; no Supabase scripts for this feature.
 
 ---
 

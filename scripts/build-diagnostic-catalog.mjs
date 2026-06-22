@@ -188,6 +188,93 @@ const ADDITIONAL_IMAGING = [
   { name: 'Diagnostic Mammography', cpt: '77065', modality: 'Mammography', preparation: 'No deodorant; bring priors.', contrast: 'No', notes: 'Unilateral diagnostic views.' }
 ];
 
+/** Ontario-style imaging requisition expansion (categories + missing studies). */
+const IMAGING_FORM_EXPANSION = [
+  { name: 'Contrast Echocardiogram', category: 'Cardiology', cpt: '93318', modality: 'Echocardiography', preparation: 'IV access; assess renal function if contrast used.', contrast: 'IV contrast', notes: 'Contrast-enhanced echo; specify indication (e.g. palpitations, murmur).' },
+  { name: 'Stress Echocardiogram', category: 'Cardiology', cpt: '93350', modality: 'Echocardiography', preparation: 'NPO 4 hours; comfortable shoes.', contrast: 'No', notes: 'Exercise or pharmacologic stress with echo imaging.' },
+  { name: 'Holter Monitor (24 hours)', category: 'Cardiology', cpt: '93224', modality: 'Cardiac monitoring', preparation: 'Avoid showering while wearing monitor if instructed.', contrast: 'No', notes: 'Ambulatory ECG monitoring for arrhythmia.' },
+  { name: 'Holter Monitor (48 hours)', category: 'Cardiology', cpt: '93225', modality: 'Cardiac monitoring', preparation: 'Avoid showering while wearing monitor if instructed.', contrast: 'No', notes: 'Extended ambulatory ECG monitoring.' },
+  { name: 'Pulmonary Function Test (Spirometry)', category: 'Cardiology', cpt: '94010', modality: 'Pulmonary function', preparation: 'No bronchodilator before test unless ordered; comfortable clothing.', contrast: 'No', notes: 'Pre/post bronchodilator spirometry when indicated.' },
+  { name: 'Full Pulmonary Function Test', category: 'Cardiology', cpt: '94726', modality: 'Pulmonary function', preparation: 'No heavy meal 2 hours prior; follow lab instructions.', contrast: 'No', notes: 'Complete PFT with lung volumes and diffusion as indicated.' },
+  { name: 'Sleep Study (Polysomnography)', category: 'Sleep Disorders', cpt: '95810', modality: 'Sleep study', preparation: 'Avoid caffeine/alcohol per lab; bring sleepwear.', contrast: 'No', notes: 'Overnight sleep study for OSA and related disorders.' },
+  { name: 'Myocardial Perfusion (Persantine)', category: 'Nuclear Cardiology', cpt: '78464', modality: 'Nuclear medicine', preparation: 'NPO 4 hours; caffeine restrictions per lab.', contrast: 'Radiopharmaceutical', notes: 'Pharmacologic stress perfusion imaging.' },
+  { name: 'Rest MUGA (Ventricular Function)', category: 'Nuclear Cardiology', cpt: '78472', modality: 'Nuclear medicine', preparation: 'No special prep; pregnancy test if applicable.', contrast: 'Radiopharmaceutical', notes: 'Resting ventricular function assessment.' },
+  { name: 'Sinuses X-ray', category: 'X-Ray', cpt: '70220', modality: 'X-ray', preparation: 'Remove jewelry from head/face.', contrast: 'No', notes: 'Paranasal sinuses; specify side if unilateral.' },
+  { name: 'Shoulder X-ray', category: 'X-Ray', cpt: '73030', modality: 'X-ray', preparation: 'Remove clothing/jewelry from shoulder.', contrast: 'No', notes: 'Specify right, left, or bilateral in ordering note.' },
+  { name: 'Elbow X-ray', category: 'X-Ray', cpt: '73080', modality: 'X-ray', preparation: 'Remove clothing/jewelry from elbow.', contrast: 'No', notes: 'Specify right, left, or bilateral in ordering note.' },
+  { name: 'Wrist X-ray', category: 'X-Ray', cpt: '73110', modality: 'X-ray', preparation: 'Remove watches, bracelets, and rings.', contrast: 'No', notes: 'Specify right, left, or bilateral in ordering note.' },
+  { name: 'Ankle X-ray', category: 'X-Ray', cpt: '73610', modality: 'X-ray', preparation: 'Remove footwear and jewelry.', contrast: 'No', notes: 'Specify right, left, or bilateral in ordering note.' },
+  { name: 'Hip X-ray', category: 'X-Ray', cpt: '73502', modality: 'X-ray', preparation: 'Remove metal from hip/pelvis area.', contrast: 'No', notes: 'Specify right, left, or bilateral in ordering note.' },
+  { name: 'Foot X-ray', category: 'X-Ray', cpt: '73630', modality: 'X-ray', preparation: 'Remove footwear.', contrast: 'No', notes: 'Specify right, left, or bilateral in ordering note.' },
+  { name: 'Cervical Spine X-ray', category: 'X-Ray', cpt: '72040', modality: 'X-ray', preparation: 'Remove necklaces and metal from neck.', contrast: 'No', notes: '2–3 views; neck pain or trauma.' },
+  { name: 'Thoracic Spine X-ray', category: 'X-Ray', cpt: '72070', modality: 'X-ray', preparation: 'Remove metal from thoracic spine.', contrast: 'No', notes: 'Mid-back pain or deformity.' },
+  { name: 'Abdomen + Pelvis Ultrasound', category: 'Ultrasound', cpt: '76700/76856', modality: 'Ultrasound', preparation: 'NPO 6–8 hours; full bladder for pelvic views if required.', contrast: 'No', notes: 'Combined abdominal and pelvic survey incl. reproductive organs.' },
+  { name: 'Female Pelvis Ultrasound (incl. Transvaginal)', category: 'Ultrasound', cpt: '76830', modality: 'Ultrasound', preparation: 'Empty bladder for transvaginal; follow lab protocol.', contrast: 'No', notes: 'Transabdominal and transvaginal pelvic evaluation.' },
+  { name: 'Male Pelvis Ultrasound', category: 'Ultrasound', cpt: '76857', modality: 'Ultrasound', preparation: 'Full bladder if transabdominal protocol.', contrast: 'No', notes: 'Prostate and pelvic organs; excludes transrectal.' },
+  { name: 'Bladder Ultrasound', category: 'Ultrasound', cpt: '76857', modality: 'Ultrasound', preparation: 'Full bladder unless post-void residual ordered.', contrast: 'No', notes: 'Bladder volume and post-void residual when indicated.' },
+  { name: 'Musculoskeletal Ultrasound - Shoulder', category: 'Ultrasound', cpt: '76881', modality: 'Ultrasound', preparation: 'Expose shoulder; specify side in note.', contrast: 'No', notes: 'Rotator cuff and soft tissue shoulder evaluation.' },
+  { name: 'Musculoskeletal Ultrasound - Knee', category: 'Ultrasound', cpt: '76882', modality: 'Ultrasound', preparation: 'Expose knee; specify side in note.', contrast: 'No', notes: 'Knee soft tissue and effusion assessment.' },
+  { name: 'Musculoskeletal Ultrasound - Ankle', category: 'Ultrasound', cpt: '76882', modality: 'Ultrasound', preparation: 'Expose ankle; specify side in note.', contrast: 'No', notes: 'Achilles tendon, plantar fascia, or ankle soft tissue.' },
+  { name: 'Arterial Doppler Lower Extremity (ABI)', category: 'Ultrasound', cpt: '93922', modality: 'Ultrasound', preparation: 'Expose legs; remove compression stockings.', contrast: 'No', notes: 'Ankle-brachial index and arterial flow; specify side.' },
+  { name: 'Venous Doppler Upper Extremity', category: 'Ultrasound', cpt: '93971', modality: 'Ultrasound', preparation: 'Expose arm; remove jewelry.', contrast: 'No', notes: 'Upper extremity DVT evaluation; specify side.' },
+  { name: 'Targeted Breast Ultrasound', category: "Mammography & Women's Imaging", cpt: '76641', modality: 'Ultrasound', preparation: 'No special prep; bring priors.', contrast: 'No', notes: 'Focal breast lesion evaluation; specify side.' }
+];
+
+const IMAGING_CATEGORY_ORDER = [
+  'Cardiology',
+  'Sleep Disorders',
+  'Nuclear Cardiology',
+  'X-Ray',
+  'Ultrasound',
+  "Mammography & Women's Imaging",
+  'Bone Mineral Density',
+  'CT',
+  'MRI',
+  'Nuclear Medicine',
+  'Fluoroscopy',
+  'Other'
+];
+
+function assignImagingCategory(test) {
+  if (test.category) return { ...test };
+  const n = (test.name || '').toLowerCase();
+  const m = (test.modality || '').toLowerCase();
+  let category = 'Other';
+  if (m === 'echocardiography' || m === 'ecg' || m.includes('cardiac stress') || m.includes('cardiac monitoring') || m.includes('pulmonary function')) {
+    category = 'Cardiology';
+  } else if (n.includes('sleep')) {
+    category = 'Sleep Disorders';
+  } else if (m === 'x-ray' || n.includes('x-ray')) {
+    category = 'X-Ray';
+  } else if (m === 'ct' || n.startsWith('ct')) {
+    category = 'CT';
+  } else if (m === 'mri') {
+    category = 'MRI';
+  } else if (m === 'mammography' || n.includes('mammograph') || n.includes('breast ultrasound')) {
+    category = "Mammography & Women's Imaging";
+  } else if (m === 'dexa' || n.includes('bone density')) {
+    category = 'Bone Mineral Density';
+  } else if (m === 'ultrasound' || n.includes('doppler')) {
+    category = 'Ultrasound';
+  } else if (n.includes('perfusion') && m.includes('nuclear')) {
+    category = 'Nuclear Cardiology';
+  } else if (m.includes('nuclear') || m === 'pet/ct') {
+    category = 'Nuclear Medicine';
+  } else if (m === 'fluoroscopy') {
+    category = 'Fluoroscopy';
+  }
+  return { ...test, category };
+}
+
+function sortImaging(imaging) {
+  return imaging.slice().sort((a, b) => {
+    const catA = IMAGING_CATEGORY_ORDER.indexOf(a.category || '') >= 0 ? IMAGING_CATEGORY_ORDER.indexOf(a.category) : 999;
+    const catB = IMAGING_CATEGORY_ORDER.indexOf(b.category || '') >= 0 ? IMAGING_CATEGORY_ORDER.indexOf(b.category) : 999;
+    if (catA !== catB) return catA - catB;
+    return (a.name || '').localeCompare(b.name || '');
+  });
+}
+
 const CATEGORY_OHIP_DEFAULT = {
   Haematology: 'G200',
   'Clinical Chemistry': 'J307',
@@ -291,6 +378,20 @@ const IMAGING_TESTS = ${toJsArray(imaging, 0)};
     src = src.replace(/const IMAGING_TESTS = \[[\s\S]*?\];/, imgBlock);
   }
 
+  const imgCatOrder = `const IMAGING_CATEGORY_ORDER = ${JSON.stringify(IMAGING_CATEGORY_ORDER, null, 2)};
+IMAGING_TESTS.sort((a, b) => {
+  const catA = IMAGING_CATEGORY_ORDER.indexOf(a.category || '') >= 0 ? IMAGING_CATEGORY_ORDER.indexOf(a.category) : 999;
+  const catB = IMAGING_CATEGORY_ORDER.indexOf(b.category || '') >= 0 ? IMAGING_CATEGORY_ORDER.indexOf(b.category) : 999;
+  if (catA !== catB) return catA - catB;
+  return (a.name || '').localeCompare(b.name || '');
+});`;
+
+  if (src.includes('const IMAGING_CATEGORY_ORDER =')) {
+    src = src.replace(/const IMAGING_CATEGORY_ORDER = \[[\s\S]*?\];\s*IMAGING_TESTS\.sort\([\s\S]*?\}\);/, imgCatOrder);
+  } else {
+    src = src.replace(/\/\/ MEDIFORGE_CATALOG:IMG_END/, `// MEDIFORGE_CATALOG:IMG_END\n\n${imgCatOrder}`);
+  }
+
   const catOrder = `const LAB_CATEGORY_ORDER = [
   'Haematology',
   'Medical Microbiology / Serology',
@@ -360,7 +461,9 @@ const existingLabs = extractExistingLabs(patientsSrc);
 const existingImg = extractExistingImaging(patientsSrc);
 
 const labs = mergeByName(existingLabs, ADDITIONAL_LABS.concat(COMMERCIAL_LABS));
-const imaging = mergeByName(existingImg, ADDITIONAL_IMAGING);
+const imaging = sortImaging(
+  mergeByName(existingImg, ADDITIONAL_IMAGING.concat(IMAGING_FORM_EXPANSION)).map(assignImagingCategory)
+);
 
 fs.writeFileSync(path.join(repoRoot, 'config', 'diagnostic-lab-catalog.json'), JSON.stringify({ version: '1.0', tests: sortLabs(labs) }, null, 2) + '\n');
 fs.writeFileSync(path.join(repoRoot, 'config', 'diagnostic-imaging-catalog.json'), JSON.stringify({ version: '1.0', studies: imaging }, null, 2) + '\n');
