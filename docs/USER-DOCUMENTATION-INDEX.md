@@ -1,11 +1,14 @@
 # MediForge user documentation index
 
-**Last updated:** June 2026
+**Last updated:** June 23, 2026
 
 ## Start here (all clinic staff)
 
 | Document | Format | Purpose |
 |----------|--------|---------|
+| **[MEDIFORGE-AT-A-GLANCE.md](MEDIFORGE-AT-A-GLANCE.md)** | Markdown | Short overview (internal) |
+| **[MEDIFORGE-CAPABILITIES-GUIDE.md](MEDIFORGE-CAPABILITIES-GUIDE.md)** | Markdown | **Full capabilities — most complete written guide** |
+| **[capabilities.html](../capabilities.html)** | Web page | **Share this URL with partners — pictures + icons** |
 | [USER-MANUAL.md](USER-MANUAL.md) | Markdown | Complete step-by-step manual |
 | [user-manual.html](../user-manual.html) | Web page | Same manual in the browser (with screenshot slots) |
 

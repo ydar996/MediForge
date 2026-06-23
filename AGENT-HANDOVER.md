@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 22, 2026  
+**Last updated:** June 23, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -433,4 +433,59 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed. **When touching lab/imaging catalogs:** follow **Billing fee codes — agent checklist** above.
+## OntarioMD readiness (June 2026)
+
+**Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
+
+**Current alignment:** ~35–45% vs OntarioMD certification spec (functional clinical strongest; provincial connectivity weakest).
+
+### STOP GATE — mandatory for all agents
+
+**Do not implement** OntarioMD sprint work (code, migrations, compliance docs body text, FHIR export UI, consent module, etc.) until the owner explicitly says:
+
+> **“Implement the Ontario-ready plan”**
+
+Documentation and planning (gap reports requested as docs-only) are OK before that phrase.
+
+### Today sprint (owner wants same-day, not 8 weeks)
+
+When approved, agents execute **Tier A** first (gap report, audit hardening, FHIR export, CPP summary, compliance pack, data residency doc), then **Tier B** if time (consent, i4C mapping, OHIP claim file draft). See plan doc for acceptance criteria.
+
+**Agent confidence with minimal owner supervision:**
+
+| Tier | Can agent deliver today? | Owner input |
+|------|--------------------------|-------------|
+| **A** (gap report, audit, FHIR export, CPP, compliance skeleton, residency doc) | **Yes — very high (85–95%)** | Review at end; no blockers |
+| **B** (consent, i4C map, claim file draft) | **Yes — high (75–85%)** if Tier A done | ~5 min on consent types |
+| **C** (live OLIS, HRM, PrescribeIT, ONE ID, MCEDT live, certification) | **No — not in agent control** | External partners |
+
+**Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
+
+### Session log
+
+### June 23, 2026 — OntarioMD readiness plan documented (implementation **blocked** pending owner go-ahead)
+
+- **Owner ask:** Improve OntarioMD alignment score; wants work **today**, not 8 weeks; minimal supervision; **do not implement yet**.
+- **Created:** `docs/ONTARIOMD-READINESS-PLAN.md` (tiers, confidence, acceptance criteria, STOP gate).
+- **Created:** `docs/compliance/README.md` (placeholder for PHIPA/breach/custody/DR/residency docs).
+- **Updated:** `AGENT-HANDOVER.md` (this section), `docs/DOCUMENTATION-INDEX.md`.
+- **Baseline score:** ~35–45%; same-day target ~45–55% after Tier A+B sprint.
+- **Owner next step:** Say **“Implement the Ontario-ready plan”** when ready to start. Optional: list 2–3 consent types for Tier B.
+
+### June 23, 2026 (later) — Plain-language features overview for non-technical readers
+
+- **Created:** `docs/MEDIFORGE-AT-A-GLANCE.md` — what MediForge does today in everyday language (not a how-to manual).
+- **Updated:** `docs/DOCUMENTATION-INDEX.md`, `docs/USER-DOCUMENTATION-INDEX.md`.
+- **Similar existing docs:** `MEDIFORGE-BROCHURE-CONTENT.md` (marketing tables), `key-features.html` / `brochure.html` (web), `USER-MANUAL.md` (step-by-step staff guide).
+
+### June 23, 2026 — Full capabilities guide + shareable webpage
+
+- **Created:** `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` — most complete written feature list (June 2026).
+- **Created:** `capabilities.html` — public shareable page with icons and **real app screenshots** from user manual.
+- **Share URL:** https://mediforge.netlify.app/capabilities (after deploy).
+- **vs brochure/key-features:** capabilities page is current; brochure is shorter marketing PDF; key-features is outdated vs 2026 build.
+- **Owner next step:** Deploy to dev/staging/prod when ready; share `/capabilities` link with partners.
+
+---
+
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed. **When touching lab/imaging catalogs:** follow **Billing fee codes — agent checklist** above. **OntarioMD:** read **`docs/ONTARIOMD-READINESS-PLAN.md`**; **do not implement** until owner approves.

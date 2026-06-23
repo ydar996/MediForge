@@ -2,7 +2,7 @@
 
 Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVER.md`**. **Owners:** start with **`START-HERE.md`** or **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 22, 2026
+**Last updated:** June 23, 2026
 
 ---
 
@@ -21,12 +21,17 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 
 | Document | Description |
 |----------|-------------|
-| **[docs/MEDIFORGE-PRODUCT-RULES.md](MEDIFORGE-PRODUCT-RULES.md)** | CAD default, org registration policy, branding |
+| **[docs/MEDIFORGE-AT-A-GLANCE.md](MEDIFORGE-AT-A-GLANCE.md)** | Short plain-language overview (internal) |
+| **[docs/MEDIFORGE-CAPABILITIES-GUIDE.md](MEDIFORGE-CAPABILITIES-GUIDE.md)** | **Full capabilities guide — companion to /capabilities page** |
+| **[capabilities.html](../capabilities.html)** | **Shareable public page with screenshots (mediforge.netlify.app/capabilities)** |
 | **[docs/PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md)** | Stack, folders, auth, billing, functions |
 | **[CRITICAL-WORKFLOWS.md](../CRITICAL-WORKFLOWS.md)** | Regression test scenarios |
 | **[HANDOVER-NOTE-HYBRID-ARCHITECTURE.md](../HANDOVER-NOTE-HYBRID-ARCHITECTURE.md)** | Supabase + localStorage design |
 | **[HYBRID-ARCHITECTURE-AUDIT.md](../HYBRID-ARCHITECTURE-AUDIT.md)** | Hybrid architecture audit |
 | **[ABSTRACTION-LAYER-EXPLAINED.md](../ABSTRACTION-LAYER-EXPLAINED.md)** | Data abstraction layer |
+| **[docs/ONTARIOMD-READINESS-PLAN.md](ONTARIOMD-READINESS-PLAN.md)** | **OntarioMD gap baseline, today sprint tiers, STOP gate — read before Ontario work** |
+| **`docs/compliance/`** | PHIPA/privacy/residency docs (populated during Ontario sprint) |
+| **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 
 ---
 
