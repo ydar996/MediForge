@@ -63,7 +63,7 @@
 | 2.1 | Map product to Ontario EMR Specifications (foundation, functional, EHR connectivity) | ✅ | Expanded `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` |
 | 2.2 | Contact OntarioMD (emr@ontariomd.com) for vendor path | ⬜ | Owner |
 | 2.3 | Select reference clinic site | ⬜ | Owner |
-| 2.4 | Stage 1–4 internal conformance self-assessment | ✅ | `/ontario-self-assessment` (Phases 0–6 rows) |
+| 2.4 | Stage 1–4 internal conformance self-assessment | ✅ | `/ontario-self-assessment` (Phases 0–8 rows) |
 | 2.5 | Stage 5 OntarioMD validation testing | ⬜ | 🚫 OntarioMD process |
 | 2.6 | Certification application submission | ⬜ | 🚫 OntarioMD process |
 | 2.7 | Maintain certification evidence binder (docs + screenshots) | ✅ | `/evidence-binder`, readiness + capabilities |

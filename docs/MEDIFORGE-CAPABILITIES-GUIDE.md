@@ -350,9 +350,9 @@ Built for Canadian practice:
 
 ---
 
-## 16a. Ontario EMR readiness (Phases 0–5 software, June 2026)
+## 16a. Ontario EMR readiness (Phases 0–8 software, June 2026)
 
-Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials. Documented readiness ~60–70%.
+Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT/HRM/DHDR still need partner credentials. Documented readiness ~70–80%.
 
 | Feature | Detail |
 |---------|--------|
@@ -361,6 +361,10 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | Self-assessment | `/ontario-self-assessment`: Stages 1–4 internal checklist |
 | Lab results queue | `/lab-results-queue`: ORU ingest and review (OLIS-ready) |
 | eRx queue | `/erx-queue`: PrescribeIT-ready transmit, cancel, renewal, dispense ingest |
+| Imaging results queue | `/imaging-results-queue`: DIR-ready report review desk |
+| External imaging orders | `/external-imaging-orders`: HL7/FHIR imaging order export |
+| HRM inbox | `/hrm-inbox`: hospital report HL7/FHIR ingest and review queue |
+| Provincial hub settings | `/provincial-hub-settings`: per-org HRM, DHDR, ConnectingOntario, SMART URLs |
 | Patient identifiers | `/patient-identifiers`: OHIP PHN registry |
 | HL7 lab order export | External lab orders: Export HL7 (ORM) per order |
 | CPP patient summary | `/cpp-patient-summary`: Ontario CPP-aligned summary from chart |
@@ -376,7 +380,8 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | Consent management (org) | `/consent-management` registry for administrators |
 | Interop gateway audit | Append-only `interop_messages`; all gateway actions logged |
 | PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
-| Investor letter | `/investor-letter` shareable update (sync with readiness report at 60–70%) |
+| Investor letter | `/investor-letter` shareable update (sync with readiness report at 70–80%) |
+| Provincial integration runbook | `docs/PROVINCIAL-INTEGRATION-RUNBOOK.md` |
 
 **Companion page:** keep `/capabilities` and this guide in sync (**`AGENT-HANDOVER.md`** Rule #3).
 
@@ -398,8 +403,8 @@ Separate login for MediForge platform owner:
 
 ## 18. Honest boundaries (what is not live for every clinic yet)
 
-- **Live provincial connections** (OLIS lab network, hospital report inbox, e-prescribing to all pharmacies, OHIP claim auto-submit): prepared in software; needs provincial credentials and agreements per clinic.
-- **OntarioMD certification**: Phases 0–5 software evidence complete; formal Stage 5 validation not started.
+- **Live provincial connections** (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR, ConnectingOntario production SSO): software desks built; needs provincial credentials and agreements per clinic.
+- **OntarioMD certification**: Phases 0–8 software evidence complete; formal Stage 5 validation not started.
 - Some modules (pharmacy, inpatient, in-house lab) are **optional**: each clinic turns on what it needs.
 
 ---

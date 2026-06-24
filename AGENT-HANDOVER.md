@@ -505,7 +505,12 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
 
-### June 2026: Owner confirmed HRM/DHDR migrations on all Supabase environments
+### June 2026: Rule #3 full Ontario companion sync audit (Phases 0–8)
+
+- **Owner ask:** Recheck `/ontario-readiness` and all connected docs against latest app (Phase 7–8, migrations applied).
+- **Fixed stale refs:** capabilities compare table, capabilities guide, at-a-glance, gap report executive summary, readiness report imaging/built/outstanding, self-assessment, traceability, readiness plan, compliance README, documentation index, ontario-readiness imaging rows.
+
+### June 2026: Fix investor letter header to Phases 0–8
 
 - **Owner:** `20260626100000_hrm_inbound_reports.sql` and `20260626110000_hrm_dhdr_consent_types.sql` applied on dev, staging, and production.
 - **Docs:** `PHASE-7-HRM-DHDR-COMPLETION.md`, `evidence-binder.html` updated.

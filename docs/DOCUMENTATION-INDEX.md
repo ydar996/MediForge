@@ -51,9 +51,12 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[erx-queue.html](../erx-queue.html)** | **Provincial eRx queue (PrescribeIT-ready)** |
 | **[docs/PHASE-5-PRESCRIBEIT-COMPLETION.md](PHASE-5-PRESCRIBEIT-COMPLETION.md)** | **Phase 5 software completion notes** |
 | **[docs/PHASE-6-IMAGING-DESK-COMPLETION.md](PHASE-6-IMAGING-DESK-COMPLETION.md)** | **Phase 6 imaging desk completion notes** |
+| **[docs/PHASE-7-HRM-DHDR-COMPLETION.md](PHASE-7-HRM-DHDR-COMPLETION.md)** | **Phase 7 HRM/DHDR completion notes** |
+| **[docs/PHASE-8-ENGINEERING-COMPLETION.md](PHASE-8-ENGINEERING-COMPLETION.md)** | **Phase 8 engineering completion notes** |
+| **[docs/PROVINCIAL-INTEGRATION-RUNBOOK.md](PROVINCIAL-INTEGRATION-RUNBOOK.md)** | **Provincial integration runbook** |
 | **[docs/TERMINOLOGY-MAPPING-STATUS.md](TERMINOLOGY-MAPPING-STATUS.md)** | LOINC/pCLOCD/CCDD mapping vs licensed datasets |
 | **[docs/compliance/ENCRYPTION-KEY-MANAGEMENT.md](../compliance/ENCRYPTION-KEY-MANAGEMENT.md)** | Encryption key operational runbook |
-| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phases 0–5 software complete) |
+| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phases 0–8 software complete) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 
 ---

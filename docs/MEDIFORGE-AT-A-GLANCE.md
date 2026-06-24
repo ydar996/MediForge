@@ -266,7 +266,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 | **Prescribing** | Health Canada drug search |
 | **Lab / imaging billing codes** | Ontario L-codes and OHIP imaging codes; maps for BC, AB, QC |
 | **USA mode** | CPT codes for labs/imaging where billing mode is set to USA |
-| **Ontario readiness (Phases 0–5 software)** | Gap report, compliance pack, MCEDT claims desk, OLIS lab desk, eRx queue, evidence binder, FHIR/CPP/consents, investor pages at `/ontario-readiness` and `/investor-letter` (~60–70% documented readiness) |
+| **Ontario readiness (Phases 0–8 software)** | Gap report, compliance pack, MCEDT claims desk, OLIS lab desk, eRx queue, imaging desk, HRM inbox, DHDR hooks, evidence binder, FHIR/CPP/consents, investor pages at `/ontario-readiness` and `/investor-letter` (~70–80% documented readiness) |
 
 ---
 
@@ -274,8 +274,8 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 
 Being honest helps set expectations:
 
-- **Live connections** to Ontario provincial systems (OLIS lab network, hospital report inbox, e-prescribing to pharmacies, OHIP claim submission): architecture exists; **live provincial credentials** are a next step, not yet flipped on for every clinic.
-- **OntarioMD certification**: Phases 0–5 software evidence is in the product and docs; formal certification (Stage 5) not started yet. Evidence binder and self-assessment pages live.
+- **Live connections** to Ontario provincial systems (OLIS, MCEDT, PrescribeIT, HRM, DHDR, ConnectingOntario production SSO): software desks are built; **live provincial credentials** are the remaining step.
+- **OntarioMD certification**: Phases 0–8 software evidence is in the product and docs; formal certification (Stage 5) not started yet. Evidence binder and self-assessment pages live.
 - Some brochure features depend on **clinic configuration** (pharmacy, inpatient, portal): not every clinic turns every module on.
 
 ---
@@ -316,4 +316,4 @@ This guide is the written companion to the shareable webpage. **Give people the 
 
 **MediForge**: secure clinic management in the browser, built for modern primary care and specialty practices.
 
-*Document version: June 2026. Reflects production feature set including Ontario EMR readiness Phases 0–5 (software), MCEDT claims desk, OLIS-ready lab desk, and PrescribeIT-ready eRx queue.*
+*Document version: June 2026. Reflects production feature set including Ontario EMR readiness Phases 0–8 (software), MCEDT claims desk, OLIS-ready lab desk, PrescribeIT-ready eRx queue, DIR-ready imaging desk, and HRM/DHDR provincial hub software.*

@@ -28,7 +28,7 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 
 | Pillar | ~% | Strongest | Weakest |
 |--------|-----|-----------|---------|
-| Foundational (HL7/FHIR, security, privacy) | 60–70% | Gateway audit, interop append-only logging, consent management, PHIPA pack | ONE ID, third-party audit, legal review |
+| Foundational (HL7/FHIR, security, privacy) | 70–80% | Gateway audit, interop append-only logging, consent management, PHIPA pack | ONE ID, third-party audit, legal review |
 | EHR connectivity (OLIS, HRM, PrescribeIT, etc.) | 5–15% | Interop libraries, gateway stubs | No live provincial pipes |
 | Functional clinical EMR | 75–85% | Charting, orders, portal, billing; CPP, i4C, consents live | Full OntarioMD functional conformance testing |
 | Certification process | 25–35% | Spec traceability, self-assessment, evidence binder (Phases 0–2) | OntarioMD application not started |
@@ -68,8 +68,8 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | DICOMweb / viewer | Partial | Client library; no embedded viewer |
-| ConnectingOntario / DI repository | Not live | Config stubs only |
-| Contextual launch from chart | Not started | Orders yes; no SMART-on-FHIR launch |
+| ConnectingOntario / DI repository | Partial (~35%) | Launch URL stub + provincial hub settings; production SSO blocked |
+| Contextual launch from chart | Partial (~35%) | ConnectingOntario + SMART-on-FHIR buttons on patient chart |
 
 ---
 
@@ -177,7 +177,8 @@ Internal readiness sprint delivered without provincial credentials:
 2. **MCEDT claims (live)** (~45% software; MOH credentials needed for upload)
 3. **OLIS labs** (~35–45%: lab desk software; Infoway onboarding for live pipe)
 4. **PrescribeIT** (~35%: eRx queue, cancel/renew/dispense; live vendor enrollment)
-5. **Imaging / DI** (~15%: orders + DICOMweb; DIR/PACS live)
+5. **Imaging / DI** (~45% software: imaging desk + CO/SMART stubs; DIR/PACS live blocked)
+6. **HRM / DHDR** (~40–45% software: inbox + query hooks; live provincial pipes blocked)
 
 **Next:** OntarioMD vendor contact and Stage 5 validation (owner action). Live PrescribeIT/OLIS/MCEDT/DIR/HRM/DHDR need clinic credentials.
 
@@ -207,12 +208,13 @@ Internal readiness sprint delivered without provincial credentials:
 - Organization consent management registry
 - Interop gateway audit on all integration actions
 - Clinical image and PDF viewer for chart documents
+- Lab results queue, claims queue, eRx queue, imaging desks, HRM inbox, provincial hub settings
 - Investor letter and readiness report pages
 
 ### Outstanding (Partner / Credential Gated)
 
-- Live OLIS, MCEDT, PrescribeIT connections
-- HRM, DHDR, ConnectingOntario
+- Live OLIS, MCEDT, PrescribeIT, HRM, DHDR connections
+- ConnectingOntario production viewer SSO
 - ONE ID authentication
 - OntarioMD certification & reference site
 - Licensed LOINC / pCLOCD / CCDD at scale
@@ -226,7 +228,7 @@ Internal readiness sprint delivered without provincial credentials:
 
 1. **De-risked clinical core:** Daily clinic workflows are largely built and deployed.
 2. **Prepared integration layer:** HL7, FHIR, DICOMweb, billing adapters exist as tested foundations.
-3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–5 software evidence is in repo.
+3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–8 software evidence is in repo.
 4. **Canada-first moat:** ICD-10-CA, Ontario fee codes, Health Canada formulary, PHN matching, CAD billing are in the product.
 
 ---

@@ -1,6 +1,6 @@
 # Ontario EMR Specification Traceability Matrix
 
-**Last updated:** June 2026 (Phases 0–6 software complete where possible)  
+**Last updated:** June 2026 (Phases 0–8 software complete where possible)  
 **Purpose:** Map MediForge capabilities to Ontario EMR specification categories for OntarioMD diligence and internal Stage 1–4 self-assessment.
 
 Legend: **Done** = implemented and testable in product · **Partial** = foundation or UI without live provincial pipe · **Blocked** = requires partner credentials or OntarioMD process · **N/A** = out of scope today
@@ -19,7 +19,7 @@ Legend: **Done** = implemented and testable in product · **Partial** = foundati
 | Results | Lab/imaging results in chart | Partial | ORU/DiagnosticReport ingest + chart banner |
 | Documents | Store and view clinical documents | Done | Patient documents, DICOMweb links |
 | Audit trail | Who accessed/changed what | Partial | Append-only audit_logs, gateway audit |
-| Consent | Structured consent capture | Done | `/patient-consents`, OLIS + eRx consent types |
+| Consent | Structured consent capture | Done | `/patient-consents`, OLIS, eRx, HRM, DHDR consent types |
 | CPP summary | Ontario-aligned patient summary | Done | `/cpp-patient-summary` |
 | FHIR export | Interoperable chart export | Done | FHIR R4 Bundle from chart |
 | HL7 ADT export | Demographics for HIE | Partial | `interoperability.js` + patient chart button |
@@ -70,6 +70,8 @@ Legend: **Done** = implemented and testable in product · **Partial** = foundati
 | OLIS Phase 4 tests | `tests/interop/phase4-olis.test.js` |
 | PrescribeIT Phase 5 tests | `tests/interop/phase5-prescribeit.test.js` |
 | Imaging Phase 6 tests | `tests/interop/phase6-imaging.test.js` |
+| HRM/DHDR Phase 7 tests | `tests/interop/phase7-hrm-dhdr.test.js` |
+| Engineering Phase 8 tests | `tests/interop/phase8-engineering.test.js` |
 | Phase 0–6 polish tests | `tests/interop/phases-0-6-polish.test.js` |
 | HL7 samples | `tests/samples/hl7/` |
 | Terminology mapping status | `docs/TERMINOLOGY-MAPPING-STATUS.md` |
@@ -87,6 +89,8 @@ Legend: **Done** = implemented and testable in product · **Partial** = foundati
 | Imaging results | `/imaging-results-queue` |
 | External imaging | `/external-imaging-orders` |
 | eRx | `/erx-queue` |
+| HRM inbox | `/hrm-inbox` |
+| Provincial hubs | `/provincial-hub-settings` |
 | Claims | `/claims-queue` |
 | Interop tests | `/interop-dashboard` |
 

@@ -24,7 +24,7 @@ When readiness scores or phase status change, update **all companion pairs** in 
 
 | Category | ~% in place | Strongest | Weakest |
 |----------|-------------|-----------|---------|
-| Foundational (HL7/FHIR, security, privacy) | 60–70% | Gateway audit, append-only interop, consent management | ONE ID, legal review, third-party audit |
+| Foundational (HL7/FHIR, security, privacy) | 70–80% | Gateway audit, append-only interop, consent management | ONE ID, legal review, third-party audit |
 | EHR connectivity (OLIS, HRM, PrescribeIT, etc.) | 5–15% | MCEDT/OLIS desk UI, HL7/FHIR libraries | No live provincial pipes |
 | Functional clinical | 75–85% | Charting, orders, portal; CPP, i4C, consents live | Full OntarioMD functional conformance |
 | Certification process | 25–35% | Evidence binder, self-assessment, traceability | OntarioMD Stage 5 not started |
@@ -45,7 +45,10 @@ When readiness scores or phase status change, update **all companion pairs** in 
 | Phase 3 MCEDT software | **Complete** (live MOH blocked) |
 | Phase 4 OLIS lab desk | **Partial** (live Infoway blocked) |
 | Phase 5 PrescribeIT software | **Partial** (eRx queue, cancel/renew/dispense; live Infoway blocked) |
-| Phase 6+ / live pipes | **Blocked** until owner approves |
+| Phase 6 imaging desk | **Partial** (results queue, external orders, CO/SMART stubs; live DIR blocked) |
+| Phase 7 HRM/DHDR software | **Partial** (inbox, query hooks, hub settings; live pipes blocked) |
+| Phase 8 engineering polish | **Partial** (runbook, load-test script, failure summary) |
+| OntarioMD Stage 5 / live pipes | **Blocked** until owner approves vendor path |
 
 See **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** for task-level status.
 
@@ -60,6 +63,8 @@ See **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** for task-level status.
 | Evidence binder | `/evidence-binder` |
 | Self-assessment | `/ontario-self-assessment` |
 | eRx queue | `/erx-queue` |
+| HRM inbox | `/hrm-inbox` |
+| Provincial hub settings | `/provincial-hub-settings` |
 | Gap report (this program) | `docs/ONTARIOMD-GAP-REPORT.md` |
 
 ---
