@@ -1,9 +1,9 @@
-# PHIPA Policy Pack Index
+﻿# PHIPA Policy Pack Index
 
 **Version:** Phase 1 (June 2026)  
 **Status:** Internal policy pack complete. **Legal review recommended** before OntarioMD certification submission.
 
-This index lists the formal PHIPA-aligned documentation that supports Ontario EMR readiness and investor diligence.
+This index lists the formal PHIPA-aligned documentation that supports Ontario EMR readiness and Strategic Partner diligence.
 
 | Document | Path | Purpose |
 |----------|------|---------|

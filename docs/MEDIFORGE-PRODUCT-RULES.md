@@ -1,4 +1,4 @@
-# MediForge product rules
+﻿# MediForge product rules
 
 These rules define how MediForge differs from the legacy codebase it was forked from. Agents and developers must follow them for all new work.
 
@@ -123,12 +123,12 @@ When you change the product, update related documentation **in the same session*
 
 | Change type | Also update |
 |-------------|-------------|
-| Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `investor-letter.html`, `evidence-binder.html`) | Written companion in `docs/` (see **`AGENT-HANDOVER.md`** Rule #3 table) |
-| Ontario readiness scores or phase status | Full companion set: readiness report, gap report, implementation plan, investor letter (html + md), ontario-readiness, capabilities (html + guide), evidence binder, at-a-glance |
+| Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `strategic-partner-letter.html`, `evidence-binder.html`) | Written companion in `docs/` (see **`AGENT-HANDOVER.md`** Rule #3 table) |
+| Ontario readiness scores or phase status | Full companion set: readiness report, gap report, implementation plan, Strategic Partner letter (html + md), ontario-readiness, capabilities (html + guide), evidence binder, at-a-glance |
 | Implementation plan task completed | `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` status column + matching `PHASE-*-COMPLETION.md` if applicable |
 | Staff-visible workflow | `USER-MANUAL.md` + `user-manual.html` |
 | Any code/config session | `AGENT-HANDOVER.md` session log, `DOCUMENTATION-INDEX.md` |
-| Promote to production | `npm run check` passes; Netlify deploy succeeded; spot-check live `/investor-letter` and `/ontario-readiness` match git |
+| Promote to production | `npm run check` passes; Netlify deploy succeeded; spot-check live `/strategic-partner-letter` and `/ontario-readiness` match git |
 
 **Minimum before you finish:** session log in handover, documentation index if docs changed, every companion pair your change touches, and live-site verification after production deploy.
 

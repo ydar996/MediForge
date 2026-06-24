@@ -1,4 +1,4 @@
-# Phase 6 Completion: Imaging Desk & ConnectingOntario Hooks (Software)
+﻿# Phase 6 Completion: Imaging Desk & ConnectingOntario Hooks (Software)
 
 **Date:** June 2026  
 **Plan reference:** `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` Phase 6
@@ -50,4 +50,4 @@ Phase 6 delivers the **software foundation** for Ontario DIR-style diagnostic im
 
 ---
 
-*Not a DIR certification claim. For investor summary see `/ontario-readiness` and `/investor-letter`.*
+*Not a DIR certification claim. For Strategic Partner summary see `/ontario-readiness` and `/strategic-partner-letter`.*

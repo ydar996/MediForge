@@ -1,7 +1,7 @@
-# MediForge at a Glance
+﻿# MediForge at a Glance
 
 **What this is:** A plain-language guide to everything MediForge can do **today** (June 2026).  
-**Who it’s for:** Anyone: clinic owners, doctors, nurses, reception, investors, partners, or family members who want to understand the product without reading technical manuals.
+**Who it’s for:** Anyone: clinic owners, doctors, nurses, reception, Strategic Partners, partners, or family members who want to understand the product without reading technical manuals.
 
 **Not the same as:**
 - **[USER-MANUAL.md](USER-MANUAL.md)**: step-by-step instructions for staff (“click here, then there”).
@@ -266,7 +266,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 | **Prescribing** | Health Canada drug search |
 | **Lab / imaging billing codes** | Ontario L-codes and OHIP imaging codes; maps for BC, AB, QC |
 | **USA mode** | CPT codes for labs/imaging where billing mode is set to USA |
-| **Ontario readiness (Phases 0–8 software)** | Gap report, compliance pack, MCEDT claims desk, OLIS lab desk, eRx queue, imaging desk, HRM inbox with chart filing, DHDR hooks, evidence binder, FHIR/CPP/consents, investor pages at `/ontario-readiness` and `/investor-letter` (~72–82% documented readiness) |
+| **Ontario readiness (Phases 0–8 software)** | Gap report, compliance pack, MCEDT claims desk, OLIS lab desk, eRx queue, imaging desk, HRM inbox with chart filing, DHDR hooks, evidence binder, FHIR/CPP/consents, Strategic Partner pages at `/ontario-readiness` and `/strategic-partner-letter` (~72–82% documented readiness) |
 
 ---
 

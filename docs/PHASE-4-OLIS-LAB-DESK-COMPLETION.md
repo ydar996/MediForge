@@ -1,4 +1,4 @@
-# Phase 4 Completion: OLIS Lab Desk (Software)
+﻿# Phase 4 Completion: OLIS Lab Desk (Software)
 
 **Date:** June 2026  
 **Plan reference:** `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` Phase 4
@@ -47,4 +47,4 @@ Phase 4 delivers the **software foundation** for Ontario OLIS-style lab connecti
 
 ---
 
-*Not an Infoway certification claim. For investor summary see `/ontario-readiness` and `/investor-letter`.*
+*Not an Infoway certification claim. For Strategic Partner summary see `/ontario-readiness` and `/strategic-partner-letter`.*

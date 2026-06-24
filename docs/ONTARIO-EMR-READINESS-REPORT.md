@@ -1,11 +1,11 @@
-# Ontario EMR Readiness Report
+﻿# Ontario EMR Readiness Report
 
 **Version:** June 2026 (Phases 0–8 software complete where possible)  
-**Audience:** Investors, partners, clinic leaders  
+**Audience:** Strategic Partners, partners, clinic leaders  
 **Shareable web version:** https://mediforge.netlify.app/ontario-readiness  
 **Implementation tasks:** See **`ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**
 
-This document is the written companion to the investor readiness webpage. Share the **URL** with external audiences, not this file path. **Keep this file in sync with `ontario-readiness.html`** (see **`AGENT-HANDOVER.md`** Rule #3).
+This document is the written companion to the Strategic Partner readiness webpage. Share the **URL** with external audiences, not this file path. **Keep this file in sync with `ontario-readiness.html`** (see **`AGENT-HANDOVER.md`** Rule #3).
 
 ---
 
@@ -150,7 +150,7 @@ Internal readiness sprint delivered without provincial credentials:
 | Clinical image viewer | `js/chart-image-viewer.js` |
 | Append-only interop_messages | `20260624100000_interop_messages_append_only.sql` |
 | PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
-| Investor letter | `/investor-letter` |
+| Strategic Partner letter | `/strategic-partner-letter` |
 
 **Owner action:** Run `20260624100000_interop_messages_append_only.sql` per environment if not done.
 
@@ -209,7 +209,7 @@ Internal readiness sprint delivered without provincial credentials:
 - Interop gateway audit on all integration actions
 - Clinical image and PDF viewer for chart documents
 - Lab results queue, claims queue, eRx queue, imaging desks, HRM inbox, provincial hub settings
-- Investor letter and readiness report pages
+- Strategic Partner letter and readiness report pages
 
 ### Outstanding (Partner / Credential Gated)
 
@@ -242,8 +242,8 @@ Internal readiness sprint delivered without provincial credentials:
 | **`ONTARIOMD-READINESS-PLAN.md`** | Agent sprint plan and STOP gate for Phase 1+ |
 | **`MEDIFORGE-INTEROPERABILITY-DOCS.md`** | Technical interop reference |
 | **`interoperability-gaps.md`** | Pre/post upgrade gap matrix |
-| **`/investor-letter`** | Shareable investor update letter |
-| **`/ontario-readiness`** | Investor shareable webpage (keep in sync with this doc) |
+| **`/strategic-partner-letter`** | Shareable Strategic Partner update letter |
+| **`/ontario-readiness`** | Strategic Partner shareable webpage (keep in sync with this doc) |
 | **`/capabilities`** | Full product capabilities showcase |
 
 ---

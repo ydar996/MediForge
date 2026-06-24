@@ -1,4 +1,4 @@
-# MediForge documentation index
+﻿# MediForge documentation index
 
 Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVER.md`**. **Owners:** start with **`START-HERE.md`** or **`GO-LIVE-GUIDE.md`**.
 
@@ -32,11 +32,11 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[HYBRID-ARCHITECTURE-AUDIT.md](../HYBRID-ARCHITECTURE-AUDIT.md)** | Hybrid architecture audit |
 | **[ABSTRACTION-LAYER-EXPLAINED.md](../ABSTRACTION-LAYER-EXPLAINED.md)** | Data abstraction layer |
 | **[docs/ONTARIOMD-READINESS-PLAN.md](ONTARIOMD-READINESS-PLAN.md)** | **OntarioMD gap baseline, today sprint tiers, STOP gate: read before Ontario work** |
-| **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written investor readiness report (keep in sync with /ontario-readiness)** |
+| **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written Strategic Partner readiness report (keep in sync with /ontario-readiness)** |
 | **[docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md](ONTARIO-EMR-IMPLEMENTATION-PLAN.md)** | **Full Ontario EMR task backlog with milestones (Phases 0–8)** |
-| **[ontario-readiness.html](../ontario-readiness.html)** | **Investor readiness webpage (mediforge.netlify.app/ontario-readiness)** |
-| **[investor-letter.html](../investor-letter.html)** | **Investor update letter (mediforge.netlify.app/investor-letter)** |
-| **[docs/investor/INVESTOR-LETTER-2026-06.md](investor/INVESTOR-LETTER-2026-06.md)** | **Written investor letter (keep in sync with /investor-letter and /ontario-readiness)** |
+| **[ontario-readiness.html](../ontario-readiness.html)** | **Strategic Partner readiness webpage (mediforge.netlify.app/ontario-readiness)** |
+| **[strategic-partner-letter.html](../strategic-partner-letter.html)** | **Strategic Partner update letter (mediforge.netlify.app/strategic-partner-letter)** |
+| **[docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md](strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md)** | **Written Strategic Partner letter (keep in sync with /strategic-partner-letter and /ontario-readiness)** |
 | **[docs/ONTARIO-EMR-SPEC-TRACEABILITY.md](ONTARIO-EMR-SPEC-TRACEABILITY.md)** | **Ontario EMR spec traceability matrix** |
 | **[docs/PHASE-1-CORE-STANDARDS-COMPLETION.md](PHASE-1-CORE-STANDARDS-COMPLETION.md)** | **Phase 1 completion evidence and task status** |
 | **[docs/PHASE-3-MCEDT-CLAIMS-COMPLETION.md](PHASE-3-MCEDT-CLAIMS-COMPLETION.md)** | **Phase 3 MCEDT claims completion evidence** |

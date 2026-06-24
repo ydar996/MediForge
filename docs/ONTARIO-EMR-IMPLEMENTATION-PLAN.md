@@ -1,4 +1,4 @@
-# Ontario EMR Implementation Plan
+﻿# Ontario EMR Implementation Plan
 
 **Created:** June 2026  
 **Source:** Owner Ontario EMR pre-configuration brief + internal readiness assessment (`ONTARIO-EMR-READINESS-REPORT.md`)  
@@ -25,7 +25,7 @@
 | 0.7 | Consent capture: DB + UI (portal, data sharing, research) | ✅ | `/patient-consents` + migration |
 | 0.8 | i4C-style indicator mapping from preventive gaps | ✅ | `js/i4c-indicator-map.js` |
 | 0.9 | OHIP claim file draft generator (export from billing drafts) | ✅ | `ohip-claim-export.js` + invoice button |
-| 0.10 | Investor/shareable readiness report page | ✅ | `/ontario-readiness` live |
+| 0.10 | Shareable readiness report page (Strategic Partner) | ✅ | `/ontario-readiness` live |
 | 0.11 | Written readiness report in repo | ✅ | `ONTARIO-EMR-READINESS-REPORT.md` |
 
 ---
@@ -204,7 +204,7 @@
 | HL7 / FHIR Canada guides | hl7.org + Canada Health Infoway |
 | PrescribeIT vendor specs | prescribeit.ca |
 | MediForge interop docs | `MEDIFORGE-INTEROPERABILITY-DOCS.md` |
-| Investor readiness page | https://mediforge.netlify.app/ontario-readiness |
+| Strategic Partner readiness page | https://mediforge.netlify.app/ontario-readiness |
 
 ---
 

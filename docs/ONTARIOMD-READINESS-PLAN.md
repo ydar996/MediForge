@@ -1,4 +1,4 @@
-# OntarioMD Readiness Plan: MediForge
+﻿# OntarioMD Readiness Plan: MediForge
 
 **Created:** June 23, 2026  
 **Last updated:** June 2026 (Phases 0–8 software)  
@@ -16,7 +16,7 @@ Until then: documentation upkeep and bug fixes only; no new Ontario implementati
 
 After approval: work on **`dev`** first; deploy only with owner approval per **`DEPLOYMENT-PIPELINE.md`**.
 
-When readiness scores or phase status change, update **all companion pairs** in the same session (**Rule #3**): `/ontario-readiness`, `/investor-letter`, `ONTARIO-EMR-READINESS-REPORT.md`, `ONTARIOMD-GAP-REPORT.md`, `INVESTOR-LETTER-2026-06.md`.
+When readiness scores or phase status change, update **all companion pairs** in the same session (**Rule #3**): `/ontario-readiness`, `/strategic-partner-letter`, `ONTARIO-EMR-READINESS-REPORT.md`, `ONTARIOMD-GAP-REPORT.md`, `STRATEGIC-PARTNER-LETTER-2026-06.md`.
 
 ---
 
@@ -59,7 +59,7 @@ See **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** for task-level status.
 | Deliverable | Location |
 |-------------|----------|
 | Readiness report | `/ontario-readiness` |
-| Investor letter | `/investor-letter` |
+| Strategic Partner letter | `/strategic-partner-letter` |
 | Evidence binder | `/evidence-binder` |
 | Self-assessment | `/ontario-self-assessment` |
 | eRx queue | `/erx-queue` |

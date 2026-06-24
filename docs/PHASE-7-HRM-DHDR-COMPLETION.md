@@ -1,4 +1,4 @@
-# Phase 7 Completion: Provincial Hubs (HRM, DHDR, ConnectingOntario)
+﻿# Phase 7 Completion: Provincial Hubs (HRM, DHDR, ConnectingOntario)
 
 **Date:** June 2026  
 **Plan reference:** `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` Phase 7
@@ -40,4 +40,4 @@ Phase 7 delivers the **software foundation** for Ontario provincial hub connecti
 
 ---
 
-*Not an Ontario Health certification claim. For investor summary see `/ontario-readiness` and `/investor-letter`.*
+*Not an Ontario Health certification claim. For Strategic Partner summary see `/ontario-readiness` and `/strategic-partner-letter`.*

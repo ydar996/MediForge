@@ -1,7 +1,7 @@
-# MediForge: Complete Capabilities Guide
+﻿# MediForge: Complete Capabilities Guide
 
 **Version:** June 2026  
-**Audience:** Partners, investors, clinic leaders, healthcare staff: anyone who wants the full picture in plain language.  
+**Audience:** Partners, Strategic Partners, clinic leaders, healthcare staff: anyone who wants the full picture in plain language.  
 **Shareable web version (with pictures):** https://mediforge.netlify.app/capabilities
 
 This document is the **detailed companion** to the capabilities webpage. Share the **URL** with external audiences: not this file path.
@@ -356,7 +356,7 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 
 | Feature | Detail |
 |---------|--------|
-| Investor readiness page | `/ontario-readiness`: pillar scores, roadmap, honest boundaries |
+| Strategic Partner readiness page | `/ontario-readiness`: pillar scores, roadmap, honest boundaries |
 | Evidence binder | `/evidence-binder`: diligence index for certification prep |
 | Self-assessment | `/ontario-self-assessment`: Stages 1–4 internal checklist |
 | Lab results queue | `/lab-results-queue`: ORU ingest and review (OLIS-ready) |
@@ -380,7 +380,7 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | Consent management (org) | `/consent-management` registry for administrators |
 | Interop gateway audit | Append-only `interop_messages`; all gateway actions logged |
 | PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
-| Investor letter | `/investor-letter` shareable update (sync with readiness report at 72–82%) |
+| Strategic Partner letter | `/strategic-partner-letter` shareable update (sync with readiness report at 72–82%) |
 | Provincial integration runbook | `docs/PROVINCIAL-INTEGRATION-RUNBOOK.md` |
 
 **Companion page:** keep `/capabilities` and this guide in sync (**`AGENT-HANDOVER.md`** Rule #3).

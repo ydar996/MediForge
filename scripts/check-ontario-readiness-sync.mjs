@@ -1,4 +1,4 @@
-#!/usr/bin/env node
+﻿#!/usr/bin/env node
 /**
  * Rule #3 enforcement: Ontario readiness companion pages must stay in sync.
  * Canonical source: ontario-readiness.html (overall score + phase scope).
@@ -21,10 +21,10 @@ const CANONICAL = {
 /** Each companion must include overall score and phase scope */
 const COMPANIONS = [
   'ontario-readiness.html',
-  'investor-letter.html',
+  'strategic-partner-letter.html',
   'capabilities.html',
   'docs/ONTARIO-EMR-READINESS-REPORT.md',
-  'docs/investor/INVESTOR-LETTER-2026-06.md',
+  'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
   'docs/MEDIFORGE-CAPABILITIES-GUIDE.md',
   'docs/MEDIFORGE-AT-A-GLANCE.md',
   'docs/ONTARIOMD-GAP-REPORT.md',
@@ -59,12 +59,24 @@ function hasCanonicalScore(text) {
 }
 
 const PHASE7_CHART_FILES = [
-  'investor-letter.html',
-  'docs/investor/INVESTOR-LETTER-2026-06.md',
+  'strategic-partner-letter.html',
+  'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
   'capabilities.html',
   'docs/MEDIFORGE-CAPABILITIES-GUIDE.md',
   'evidence-binder.html'
 ];
+
+/** Public Ontario pages must not use legacy "investor" wording (legacy URL redirects excepted in netlify.toml) */
+const NO_INVESTOR_TERMS_FILES = [
+  'ontario-readiness.html',
+  'strategic-partner-letter.html',
+  'capabilities.html',
+  'evidence-binder.html',
+  'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
+  'docs/ONTARIO-EMR-READINESS-REPORT.md'
+];
+
+const INVESTOR_WORD = /\binvestors?\b/i;
 
 const errors = [];
 
@@ -107,6 +119,14 @@ for (const rel of PHASE7_CHART_FILES) {
   if (!text) continue;
   if (!CANONICAL.phase7ChartFiling.test(text)) {
     errors.push(`${rel}: missing Phase 7 chart filing mention (File to chart / chart filing / auto-file)`);
+  }
+}
+
+for (const rel of NO_INVESTOR_TERMS_FILES) {
+  const text = read(rel);
+  if (!text) continue;
+  if (INVESTOR_WORD.test(text)) {
+    errors.push(`${rel}: contains legacy "investor" wording — use Strategic Partner`);
   }
 }
 

@@ -1,4 +1,4 @@
-# Phase 5 Completion: PrescribeIT / eRx Desk (Software)
+﻿# Phase 5 Completion: PrescribeIT / eRx Desk (Software)
 
 **Date:** June 2026  
 **Plan reference:** `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` Phase 5
@@ -47,4 +47,4 @@ Phase 5 delivers the **software foundation** for Ontario PrescribeIT-style e-pre
 
 ---
 
-*Not a PrescribeIT certification claim. For investor summary see `/ontario-readiness` and `/investor-letter`.*
+*Not a PrescribeIT certification claim. For Strategic Partner summary see `/ontario-readiness` and `/strategic-partner-letter`.*

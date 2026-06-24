@@ -1,8 +1,8 @@
-# OntarioMD Gap Report: MediForge
+﻿# OntarioMD Gap Report: MediForge
 
 **Version:** June 23, 2026  
 **Purpose:** Itemized gap analysis against Ontario EMR Specifications, provincial connectivity requirements, and OntarioMD certification expectations.  
-**Audience:** Product owner, engineering, compliance, investors, and OntarioMD readiness reviewers.  
+**Audience:** Product owner, engineering, compliance, Strategic Partners, and OntarioMD readiness reviewers.  
 **Related:** `ONTARIO-EMR-READINESS-REPORT.md`, `ONTARIOMD-READINESS-PLAN.md`, `ONTARIO-EMR-IMPLEMENTATION-PLAN.md`
 
 **Status legend:** **Done** | **Partial** | **Missing** | **Blocked** (partner credentials, OntarioMD process, or legal enrollment required)
@@ -80,7 +80,7 @@ These deliverables close documentation and evidence gaps without provincial cred
 | 0.7 | Consent capture (DB + UI) | **Partial** | `patient_consents` migration, `/patient-consents`, `js/patient-consent.js` |
 | 0.8 | i4C indicator mapping | **Partial** | `js/i4c-indicator-map.js` from preventive gaps |
 | 0.9 | OHIP claim file export | **Partial** | `js/ohip-claim-export.js`; not live MCEDT submit |
-| 0.10 | Investor readiness webpage | **Done** | `/ontario-readiness` synced with this report |
+| 0.10 | Strategic Partner readiness webpage | **Done** | `/ontario-readiness` synced with this report |
 | 0.11 | Written readiness report | **Done** | `ONTARIO-EMR-READINESS-REPORT.md` |
 
 **Phase 0–5 exit criteria (software):** met where possible (June 2026). Live provincial pipes and OntarioMD Stage 5 remain **Blocked**. Owner action: OntarioMD vendor contact, reference clinic, MOH/Infoway credentials.
@@ -457,7 +457,7 @@ These modules support daily clinic operations and align with Ontario EMR functio
 | Artifact | Status | Notes |
 |----------|--------|-------|
 | Capabilities showcase (`/capabilities`) | Done | Public evidence |
-| Investor readiness page (`/ontario-readiness`) | Done | Shareable URL |
+| Strategic Partner readiness page (`/ontario-readiness`) | Done | Shareable URL |
 | Written readiness report | Done | `ONTARIO-EMR-READINESS-REPORT.md` |
 | This gap report | Done | June 2026 |
 | Compliance policy pack | Partial | Phase 0 |
@@ -585,7 +585,7 @@ These modules support daily clinic operations and align with Ontario EMR functio
 
 | Path | Role |
 |------|------|
-| `docs/ONTARIO-EMR-READINESS-REPORT.md` | Investor-facing readiness summary |
+| `docs/ONTARIO-EMR-READINESS-REPORT.md` | Strategic Partner-facing readiness summary |
 | `docs/ONTARIOMD-READINESS-PLAN.md` | Sprint plan and STOP GATE |
 | `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` | Full phased backlog |
 | `lib/interop/` | HL7, FHIR, DICOM, adapters |

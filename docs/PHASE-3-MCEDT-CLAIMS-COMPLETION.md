@@ -1,4 +1,4 @@
-# Phase 3 Completion: MCEDT Claims (OHIP)
+﻿# Phase 3 Completion: MCEDT Claims (OHIP)
 
 **Date:** June 2026  
 **Plan reference:** `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` Phase 3
@@ -46,4 +46,4 @@ Phase 3 delivers the **software foundation** for Ontario OHIP claim submission v
 
 ---
 
-*Not an MOH certification claim. For investor summary see `/investor-letter` and `/ontario-readiness`.*
+*Not an MOH certification claim. For Strategic Partner summary see `/strategic-partner-letter` and `/ontario-readiness`.*

@@ -1,17 +1,17 @@
-# Investor Letter: MediForge Ontario EMR Progress
+# Strategic Partner Letter: MediForge Ontario EMR Progress
 
 **Date:** June 2026  
 **From:** Work Chop Inc.  
-**Shareable web version:** https://mediforge.netlify.app/investor-letter  
+**Shareable web version:** https://mediforge.netlify.app/strategic-partner-letter  
 **Companion (keep in sync):** [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Evidence Binder](https://mediforge.netlify.app/evidence-binder) · [Capabilities](https://mediforge.netlify.app/capabilities)
 
-**Written companion to `investor-letter.html`** (see `AGENT-HANDOVER.md` Rule #3).
+**Written companion to `strategic-partner-letter.html`** (see `AGENT-HANDOVER.md` Rule #3).
 
 ---
 
-Dear Investor,
+Dear Strategic Partner,
 
-Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 8**, and where we are headed next.
+Thank you for your continued interest in MediForge and for the partnership we are building together. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 8**, and where we are headed next as Founder and Strategic Partner.
 
 ## The short version
 
@@ -25,7 +25,7 @@ Through June 2026 we completed **Phases 0–8 in software** (everything we can d
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
 
-We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infoway connections remain industry gates every vendor must pass. Our gap is documented, bounded, and actively managed.
+We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infoway connections remain industry gates every vendor must pass. Our gap is documented, bounded, and actively managed together.
 
 ## What we delivered (Phases 0–8, software)
 
@@ -49,12 +49,13 @@ We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infowa
 
 Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT/DIR/HRM/DHDR pipes, OntarioMD Stage 5 validation, and third-party security audit.
 
-## Why this matters for investment
+## Why this matters for our partnership
 
 1. **De-risked clinical core:** Day-to-day clinic use is largely built.
 2. **Prepared integration layer:** HL7, FHIR, DICOMweb, MCEDT, OLIS, eRx, and imaging desks are implemented with tests and staff UI.
 3. **Evidence in the product:** Gap reports, compliance docs, self-assessment, and shareable pages are available for diligence today.
 4. **Canada-first:** ICD-10-CA, Ontario fee codes, Health Canada formulary, and CAD billing are in the product.
+5. **Shared roadmap:** The Founder and Strategic Partner advance provincial connectivity and certification on a working platform, not a concept.
 
 ## What comes next
 
@@ -84,4 +85,4 @@ Respectfully,
 
 ---
 
-*This letter is for investor and partner discussions. It is not a certification claim or an offer of securities.*
+*This letter is for Strategic Partner and diligence discussions. It is not a certification claim or an offer of securities.*

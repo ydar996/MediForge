@@ -1,4 +1,4 @@
-# MediForge deployment pipeline
+﻿# MediForge deployment pipeline
 
 **Purpose:** Safe path from your computer → GitHub → Netlify, with **dev** and **staging** before **production**.  
 **Modeled on:** EHR-Africa pipeline in `Documents\Ehr-Africa` (same three-branch pattern).
@@ -159,7 +159,7 @@ In each Supabase project → **Authentication → URL configuration**, add that 
 
 1. Confirm Netlify build **succeeded** (failed builds leave production on an old deploy even when GitHub `main` is updated).
 2. Run `npm run check` before deploy; em-dash and other checks block production builds.
-3. Spot-check live URLs match git: `/investor-letter`, `/ontario-readiness` (hard refresh). See **`AGENT-HANDOVER.md`** Rule #3.
+3. Spot-check live URLs match git: `/strategic-partner-letter`, `/ontario-readiness` (hard refresh). See **`AGENT-HANDOVER.md`** Rule #3.
 4. If Netlify auto-deploy failed, run CLI deploy per below, then confirm live site.
 
 **Do not** push to `main` for routine changes without verifying production afterward.

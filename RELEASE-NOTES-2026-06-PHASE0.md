@@ -1,6 +1,6 @@
-# MediForge Release Notes: Phase 0 Ontario EMR Readiness
+﻿# MediForge Release Notes: Phase 0 Ontario EMR Readiness
 
-> **Historical snapshot (June 23, 2026).** Documented readiness at promotion was ~50–60%. Current readiness is **~72–82%** (Phases 0–8 software). See `/ontario-readiness`, `docs/ONTARIO-EMR-READINESS-REPORT.md`, and `docs/investor/INVESTOR-LETTER-2026-06.md`.
+> **Historical snapshot (June 23, 2026).** Documented readiness at promotion was ~50–60%. Current readiness is **~72–82%** (Phases 0–8 software). See `/ontario-readiness`, `docs/ONTARIO-EMR-READINESS-REPORT.md`, and `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md`.
 
 **Promoted:** June 23, 2026  
 **Release train:** `dev` → `staging` → `main` (all at commit `ca34046`, then capabilities update)  
@@ -16,7 +16,7 @@
 
 ## Executive summary
 
-This release delivers **Phase 0 Ontario EMR internal readiness**: documentation, compliance pack, audit hardening, FHIR patient export, CPP-aligned summary, structured consent capture, i4C indicator mapping, OHIP claim file export, updated investor readiness page, and agent Rule #3 (documentation sync). **No live provincial pipes** (OLIS, MCEDT, PrescribeIT): those remain credential-gated.
+This release delivers **Phase 0 Ontario EMR internal readiness**: documentation, compliance pack, audit hardening, FHIR patient export, CPP-aligned summary, structured consent capture, i4C indicator mapping, OHIP claim file export, updated Strategic Partner readiness page, and agent Rule #3 (documentation sync). **No live provincial pipes** (OLIS, MCEDT, PrescribeIT): those remain credential-gated.
 
 **Documented Ontario readiness:** ~50–60% (up from ~35–45% at baseline; Phase 0 brought ~45–55%; Phase 1 ~50–60%).
 
@@ -39,7 +39,7 @@ This release delivers **Phase 0 Ontario EMR internal readiness**: documentation,
 |-----|---------|
 | `/cpp-patient-summary?patientId=…` | Ontario CPP-aligned patient summary |
 | `/patient-consents?patientId=…` | Structured consent capture (portal, sharing, research) |
-| `/ontario-readiness` | Investor readiness report (updated scores and Phase 0 callout) |
+| `/ontario-readiness` | Strategic Partner readiness report (updated scores and Phase 0 callout) |
 
 ---
 
@@ -126,7 +126,7 @@ Run in Supabase SQL Editor for **dev, staging, and production** (in that order):
 
 ## 9. Phase 1 (complete, June 2026)
 
-See `docs/PHASE-1-CORE-STANDARDS-COMPLETION.md` and `docs/investor/INVESTOR-LETTER-2026-06.md`. **Documented Ontario readiness:** ~50–60%.
+See `docs/PHASE-1-CORE-STANDARDS-COMPLETION.md` and `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md`. **Documented Ontario readiness:** ~50–60%.
 
 **Phase 2** (OntarioMD certification path): blocked until owner approves. See `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`.
 

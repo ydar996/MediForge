@@ -1,4 +1,4 @@
-# MediForge Agent Handover (living document)
+﻿# MediForge Agent Handover (living document)
 
 **Last updated:** June 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
@@ -50,14 +50,14 @@ Code, config, docs, and **live websites** ship together. **Every session that ch
 | Add a session log entry and bump **Last updated** in this file | Assume the owner will notice stale docs later |
 | Update **`docs/DOCUMENTATION-INDEX.md`** when you add or rename docs | Skip docs because "it's just a small fix" |
 | Update user manual (md + html) when staff-visible workflows change | Treat GitHub push as "deployed" without checking the live URL |
-| After promote to **production**: confirm `npm run check` passes, Netlify build succeeded, and live pages match git (spot-check `/investor-letter`, `/ontario-readiness`) | Push to `main` and assume production updated when Netlify build failed silently |
+| After promote to **production**: confirm `npm run check` passes, Netlify build succeeded, and live pages match git (spot-check `/strategic-partner-letter`, `/ontario-readiness`) | Push to `main` and assume production updated when Netlify build failed silently |
 
 **Ontario readiness companion set (all must match: same phases, same %, same "what's next"):**
 
 | Live page | Written companion |
 |-----------|-------------------|
 | `/ontario-readiness` | `docs/ONTARIO-EMR-READINESS-REPORT.md` |
-| `/investor-letter` | `docs/investor/INVESTOR-LETTER-2026-06.md` |
+| `/strategic-partner-letter` | `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md` |
 | `/capabilities` | `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` |
 | `/evidence-binder` | Phase completion docs in `docs/PHASE-*-COMPLETION.md` |
 | `/ontario-self-assessment` | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` (adapter rows) |
@@ -504,14 +504,14 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Phases 0–8 software are complete** (where possible without partner credentials). Do not start **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
 
-Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
+Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/strategic-partner-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
 
 ### June 2026: Rule #3 full Ontario companion sync audit (Phases 0–8)
 
 - **Owner ask:** Recheck `/ontario-readiness` and all connected docs against latest app (Phase 7–8, migrations applied).
 - **Fixed stale refs:** capabilities compare table, capabilities guide, at-a-glance, gap report executive summary, readiness report imaging/built/outstanding, self-assessment, traceability, readiness plan, compliance README, documentation index, ontario-readiness imaging rows.
 
-### June 2026: Fix investor letter header to Phases 0–8
+### June 2026: Fix Strategic Partner letter header to Phases 0–8
 
 - **Owner:** `20260626100000_hrm_inbound_reports.sql` and `20260626110000_hrm_dhdr_consent_types.sql` applied on dev, staging, and production.
 - **Docs:** `PHASE-7-HRM-DHDR-COMPLETION.md`, `evidence-binder.html` updated.
@@ -521,7 +521,7 @@ Documentation upkeep is required whenever readiness scores change: update **all 
 - **Owner ask:** Implement Phase 7 and 8 software we own; full Ontario doc sync; deploy.
 - **Phase 7:** `/hrm-inbox`, `/provincial-hub-settings`, HRM ingest + DHDR query, `hrm_query`/`dhdr_query` consents, gateway actions, chart DHDR button, migrations `20260626100000` + `20260626110000`.
 - **Phase 8:** provincial integration runbook, load-test script, failure summary by message type, phase7/8 interop tests.
-- **Docs:** Phase 7/8 completion docs, implementation plan, readiness/investor/capabilities/evidence binder; STOP GATE now OntarioMD Stage 5 only.
+- **Docs:** Phase 7/8 completion docs, implementation plan, readiness/strategic-partner-letter/capabilities/evidence binder; STOP GATE now OntarioMD Stage 5 only.
 
 ### Historical: Tier A/B same-day sprint (Phase 0, completed June 2026)
 
@@ -539,10 +539,17 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Strategic Partner terminology (replace investor language)
+
+- **Owner ask:** Replace all "investor" references with Strategic Partner across documentation; partnership tone.
+- **Renamed:** `/investor-letter` → `/strategic-partner-letter` (301 redirect from old URL); `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md`.
+- **Note:** No valuation, equity structure, or term sheet files exist in this repo; Ontario readiness companions updated.
+- **Guard:** `check-ontario-readiness-sync.mjs` now forbids stale scores and uses Strategic Partner paths.
+
 ### June 2026: Rule #3 enforcement — Ontario companion sync check + drift fix
 
-- **Owner ask:** Linked pages from ontario-readiness/investor-letter were out of sync; prevent recurrence.
-- **Fixed:** capabilities compare table (72–82%), HRM chart filing on capabilities/evidence-binder/investor letter, Phase 8 completion doc, readiness Phase 8 callout.
+- **Owner ask:** Linked pages from ontario-readiness/strategic-partner-letter were out of sync; prevent recurrence.
+- **Fixed:** capabilities compare table (72–82%), HRM chart filing on capabilities/evidence-binder/Strategic Partner letter, Phase 8 completion doc, readiness Phase 8 callout.
 - **Guard:** `scripts/check-ontario-readiness-sync.mjs` added to `npm run check`; `.cursor/rules/ontario-readiness-sync.mdc` (always apply).
 
 ### June 2026: Phase 0–8 gap closure — HRM chart filing, org hub gateway, polish — deploy dev → staging → production
@@ -570,7 +577,7 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Owner ask:** Finish Phase 0–5 polish (evidence, workflows, terminology mapping doc); implement Phase 6 software we own; full Ontario companion doc sync; deploy and verify live.
 - **Phase 6:** `/imaging-results-queue`, `/external-imaging-orders`, `imaging-results-workflow.js`, ConnectingOntario + SMART stubs, gateway actions, chart viewer WADO links, interop dashboard imaging panel, `phase6-imaging.test.js` (51 interop tests pass).
 - **Polish:** `TERMINOLOGY-MAPPING-STATUS.md`, `prescriptions.js` provincial eRx routing, fixed `generateLabHl7` in interop-client.
-- **Docs:** Phase 6 completion doc, implementation plan, gap report (DI ~45%), readiness/investor/capabilities/evidence binder, STOP GATE Phase 7+.
+- **Docs:** Phase 6 completion doc, implementation plan, gap report (DI ~45%), readiness/strategic-partner-letter/capabilities/evidence binder, STOP GATE Phase 7+.
 
 ### June 2026: Rule #3 strengthened — docs + live sites must stay in sync
 
@@ -583,7 +590,7 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 - **Owner ask:** Deploy Phase 5 PrescribeIT software; promote to staging and prod; sync all companion docs.
 - **Shipped:** `/erx-queue`, prescribeit_erx consent, rx cancel/renew/dispense, pharmacy directory, gateway actions, migration `20260625100000`, tests.
-- **Docs synced:** capabilities ↔ guide, readiness ↔ gap report ↔ investor letter, user manual, evidence binder, handover STOP GATE Phase 6+.
+- **Docs synced:** capabilities ↔ guide, readiness ↔ gap report ↔ Strategic Partner letter, user manual, evidence binder, handover STOP GATE Phase 6+.
 
 ### June 2026: Phase 5 PrescribeIT software + migrations marked complete
 
@@ -593,15 +600,15 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### June 2026: Rule #3 audit — remaining stale Ontario companion docs
 
-- **Owner ask:** What else was missed after investor letter fix?
+- **Owner ask:** What else was missed after Strategic Partner letter fix?
 - **Stale:** `ONTARIOMD-GAP-REPORT.md` (45–55%, Phase 0 only), `ONTARIOMD-READINESS-PLAN.md` (wrong STOP GATE), `compliance/README.md`, readiness report §6 evidence binder %, `ontario-readiness.html` Phase 0 “next” callout, `AGENT-HANDOVER.md` STOP GATE, implementation plan Phase 0 STOP GATE note.
 - **Fixed:** All above synced to 60–70% / Phases 0–4; gap report added to Rule #3 pairs; release notes marked historical.
 
-### June 2026: Rule #3 fix — investor letter synced to readiness report
+### June 2026: Rule #3 fix — Strategic Partner letter synced to readiness report
 
-- **Owner flagged:** `/investor-letter` still showed Phase 0–1 and 50–60% while `/ontario-readiness` showed 60–70% and Phases 0–4.
-- **Root cause:** Investor letter was not listed explicitly in Rule #3 companion pairs; polish sprints updated readiness/capabilities but skipped investor letter.
-- **Fixed:** `investor-letter.html` and `docs/investor/INVESTOR-LETTER-2026-06.md` synced to 60–70%, Phases 0–4; Rule #3 companion list updated; `MEDIFORGE-AT-A-GLANCE.md`, capabilities compare table, readiness report roadmap aligned.
+- **Owner flagged:** `/strategic-partner-letter` still showed Phase 0–1 and 50–60% while `/ontario-readiness` showed 60–70% and Phases 0–4.
+- **Root cause:** Strategic Partner letter was not listed explicitly in Rule #3 companion pairs; polish sprints updated readiness/capabilities but skipped Strategic Partner letter.
+- **Fixed:** `strategic-partner-letter.html` and `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md` synced to 60–70%, Phases 0–4; Rule #3 companion list updated; `MEDIFORGE-AT-A-GLANCE.md`, capabilities compare table, readiness report roadmap aligned.
 
 ### June 2026: Phases 1–4 polish sprint (owner-approved)
 
@@ -637,12 +644,12 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Fixed in this session:** `/ontario-readiness` + `ONTARIO-EMR-READINESS-REPORT.md` (prior commit `d9b3625`); `/capabilities` + `MEDIFORGE-CAPABILITIES-GUIDE.md`; `ONTARIOMD-GAP-REPORT.md`; `MEDIFORGE-AT-A-GLANCE.md`; `AGENT-HANDOVER.md` OntarioMD section and STOP GATE.
 - **Still outstanding:** `docs/USER-MANUAL.md` + `user-manual.html` (no consent management, FHIR export, or CPP summary sections yet).
 
-### June 2026: Phase 1 complete + investor letter
+### June 2026: Phase 1 complete + Strategic Partner letter
 
-- **Owner ask:** Finish Phase 1; investor letter; update all relevant pages and docs.
+- **Owner ask:** Finish Phase 1; Strategic Partner letter; update all relevant pages and docs.
 - **Phase 1 delivered:** Gateway audit logging, FHIR `exportPatientBundle`/`fhirSearchPatients`, consent management (`/consent-management`), chart image viewer module, `interop_messages` append-only migration, PHIPA policy pack index, Phase 1 completion doc, tests.
-- **Investor letter:** `/investor-letter` + `docs/investor/INVESTOR-LETTER-2026-06.md`.
-- **Docs synced:** implementation plan, investor letter, capabilities (partial: readiness pair missed until owner follow-up), handover, documentation index, compliance README.
+- **Strategic Partner letter:** `/strategic-partner-letter` + `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md`.
+- **Docs synced:** implementation plan, Strategic Partner letter, capabilities (partial: readiness pair missed until owner follow-up), handover, documentation index, compliance README.
 - **Owner SQL:** run `20260624100000_interop_messages_append_only.sql` per environment (if not done).
 - **Phase 2:** OntarioMD certification path (owner approval for vendor contact).
 
@@ -692,7 +699,7 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### June 23, 2026 (later): Ontario readiness report docs, em dash policy, app-wide punctuation fix
 
-- **Owner ask:** Keep written copy of investor readiness report; merge tasks into implementation plan; remove all em dashes from app (use colons); document rule so agents never need reminding.
+- **Owner ask:** Keep written copy of Strategic Partner readiness report; merge tasks into implementation plan; remove all em dashes from app (use colons); document rule so agents never need reminding.
 - **Created:** `docs/ONTARIO-EMR-READINESS-REPORT.md` (written report companion to `/ontario-readiness`).
 - **Created:** `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` (Phases 0–8 task backlog with status: Done / Partial / Not started / Blocked).
 - **Created:** `scripts/replace-em-dashes.mjs`, `scripts/check-no-em-dash.mjs`; added `check:no-em-dash` to `npm run check`.
@@ -725,4 +732,4 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–8 software complete where possible; **Stage 5** blocked until OntarioMD vendor path. Supabase migrations (interop, audit, consents, billing, eRx columns, HRM inbox, HRM/DHDR consent types) applied on all environments (owner confirmed). Investor materials (must stay in sync): `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–8 software complete where possible; **Stage 5** blocked until OntarioMD vendor path. Supabase migrations (interop, audit, consents, billing, eRx columns, HRM inbox, HRM/DHDR consent types) applied on all environments (owner confirmed). Strategic Partner materials (must stay in sync): `/strategic-partner-letter` ↔ `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.
