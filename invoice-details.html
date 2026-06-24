@@ -107,6 +107,8 @@
       <button onclick="deleteInvoiceConfirm()" id="delete-btn" class="invoice-action-btn">&#128465; Delete Invoice</button>
       <button onclick="editInvoice()" id="edit-btn" class="invoice-action-btn">&#128394; Edit Invoice</button>
       <button onclick="exportOhipClaimDraft()" id="ohip-export-btn" class="invoice-action-btn">&#128196; Export OHIP Claim Draft</button>
+      <button onclick="exportOhipClaimXml()" id="ohip-xml-btn" class="invoice-action-btn">&#128196; Export OHIP XML</button>
+      <button onclick="submitOhipClaim()" id="ohip-submit-btn" class="invoice-action-btn">&#128228; Queue OHIP Submit</button>
     </div>
 
     <div class="invoice-container" id="invoice-container">
@@ -700,8 +702,45 @@
         alert('Claim export module not loaded.');
       }
     }
+
+    async function exportOhipClaimXml() {
+      if (!currentInvoice) return alert('Invoice not loaded.');
+      const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+      const patient = patients.find((p) => String(p.id) === String(currentInvoice.patientId || currentInvoice.patient_id));
+      if (!patient) return alert('Patient not found.');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const provider = { billingNumber: user.billingNumber || user.ohipBillingNumber || '' };
+      const lines = currentInvoice.items || currentInvoice.lineItems || currentInvoice.services || [];
+      if (window.MediForgeOhipClaimExport?.exportInvoiceAsClaimXml) {
+        await window.MediForgeOhipClaimExport.exportInvoiceAsClaimXml(currentInvoice, patient, provider, lines);
+      } else {
+        alert('Claim export module not loaded.');
+      }
+    }
+
+    async function submitOhipClaim() {
+      if (!currentInvoice) return alert('Invoice not loaded.');
+      if (!window.MediForgeInteropClient) return alert('Interop client not loaded.');
+      const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+      const patient = patients.find((p) => String(p.id) === String(currentInvoice.patientId || currentInvoice.patient_id));
+      if (!patient) return alert('Patient not found.');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const provider = { billingNumber: user.billingNumber || user.ohipBillingNumber || '' };
+      const lines = currentInvoice.items || currentInvoice.lineItems || currentInvoice.services || [];
+      const result = await MediForgeInteropClient.call('submitClaim', {
+        patient,
+        provider,
+        invoice: currentInvoice,
+        services: lines,
+        payerCode: 'OHIP',
+        organizationId: user.organizationId || user.organization_id,
+        userId: user.id
+      });
+      alert(result.queued ? 'Claim queued (configure MCEDT in Billing settings).' : (result.submitted ? 'Claim submitted.' : result.error || 'See console.'));
+    }
   </script>
-  <script src="js/ohip-claim-export.js?v=20260623"></script>
+  <script src="js/interop-client.js?v=20260625"></script>
+  <script src="js/ohip-claim-export.js?v=20260625"></script>
   <script src="js/security.js?v=20260623"></script>
   <script src="js/logout-button.js"></script>
   <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->

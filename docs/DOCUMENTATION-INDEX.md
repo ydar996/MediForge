@@ -38,6 +38,10 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[investor-letter.html](../investor-letter.html)** | **Investor update letter (mediforge.netlify.app/investor-letter)** |
 | **[docs/investor/INVESTOR-LETTER-2026-06.md](investor/INVESTOR-LETTER-2026-06.md)** | **Written investor letter (keep in sync with /investor-letter)** |
 | **[docs/PHASE-1-CORE-STANDARDS-COMPLETION.md](PHASE-1-CORE-STANDARDS-COMPLETION.md)** | **Phase 1 completion evidence and task status** |
+| **[docs/PHASE-3-MCEDT-CLAIMS-COMPLETION.md](PHASE-3-MCEDT-CLAIMS-COMPLETION.md)** | **Phase 3 MCEDT claims completion evidence** |
+| **[claims-queue.html](../claims-queue.html)** | **OHIP claims queue** |
+| **[remittance-reconcile.html](../remittance-reconcile.html)** | **Remittance reconciliation** |
+| **[mcedt-settings.html](../mcedt-settings.html)** | **MCEDT / OHIP billing settings** |
 | **[consent-management.html](../consent-management.html)** | **Organization consent registry** |
 | **[docs/ONTARIOMD-GAP-REPORT.md](ONTARIOMD-GAP-REPORT.md)** | **Full OntarioMD gap status by category** |
 | **`docs/compliance/`** | PHIPA/privacy/residency docs (Phase 0 and Phase 1 complete) |

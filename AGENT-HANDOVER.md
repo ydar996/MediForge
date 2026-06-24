@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 22, 2026  
+**Last updated:** June 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -483,7 +483,7 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~50–60% documented Ontario readiness (Phases 0 and 1 complete, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
+**Current alignment:** ~55–65% documented Ontario readiness (Phases 0–3 software complete, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
@@ -506,6 +506,14 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Phase 3 MCEDT claims complete
+
+- **Owner ask:** Finish Phase 3; update all relevant pages, docs, handover, ontario readiness.
+- **Phase 3 delivered:** `mcedt-format`, `mcedt-client`, `mcedt-cutoff`, `claims-workflow`; gateway actions; `/claims-queue`, `/remittance-reconcile`, `/mcedt-settings`; invoice XML/submit; `claims-batch-daily`; tests.
+- **Docs synced:** implementation plan, readiness page/report, capabilities, PHASE-3 completion doc, handover, documentation index.
+- **Blocked:** live MOH upload, remittance download, eligibility API (clinic credentials).
+- **Production:** run `netlify deploy --prod` after promote if auto-deploy not connected.
 
 ### June 22, 2026: Rule #3 failure audit + companion doc catch-up
 
@@ -602,4 +610,4 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–1 complete; **Phase 2 blocked** until owner approves. Investor materials: `/investor-letter`, `/ontario-readiness`, `/capabilities`.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–3 software complete; **Phase 2 blocked** until owner approves. **Phase 4+** blocked similarly. Investor materials: `/investor-letter`, `/ontario-readiness`, `/capabilities`.

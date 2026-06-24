@@ -1,0 +1,93 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Remittance Reconciliation | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 900px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #008753; margin-top: 0; }
+    textarea { width: 100%; min-height: 160px; font-family: monospace; font-size: .85rem; }
+    .remit-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .92rem; }
+    .remit-table th, .remit-table td { padding: 8px 10px; border-bottom: 1px solid #eee; text-align: left; }
+    .remit-table th { background: #1565C0; color: #fff; }
+    .btn { margin-top: 12px; margin-right: 8px; padding: 10px 18px; background: #008753; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-secondary { background: #1565C0; }
+    a.btn { display: inline-block; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Remittance Reconciliation</h1>
+    <p>Paste OHIP remittance JSON (or upload from MCEDT when live). MediForge matches payments to open invoices.</p>
+    <label for="remit-json"><strong>Remittance JSON</strong></label>
+    <textarea id="remit-json" placeholder='{"format":"json","payerId":"OHIP","payments":[...]}'></textarea>
+    <button type="button" class="btn" id="reconcile-btn">Reconcile</button>
+    <button type="button" class="btn btn-secondary" id="download-mcedt-btn">Download from MCEDT (when configured)</button>
+    <div id="results" style="margin-top:20px"></div>
+    <h2>Recent remittance records</h2>
+    <div id="history">Loading...</div>
+    <a href="billing-dashboard" class="btn">← Billing Dashboard</a>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/remittance-reconcile.js"></script>
+  <script>
+    (async function () {
+      const results = document.getElementById('results');
+      const history = document.getElementById('history');
+
+      async function refreshHistory() {
+        const recs = await MediForgeRemittanceReconcile.loadRemittanceRecords();
+        if (!recs.length) {
+          history.innerHTML = '<p>No remittance records saved yet.</p>';
+          return;
+        }
+        history.innerHTML = recs
+          .map(
+            (r) =>
+              `<p>${(r.remittance_date || '').slice(0, 10)} · ${r.payer_code} · $${r.total_paid || 0} · ${r.reconciled ? 'reconciled' : 'pending'}</p>`
+          )
+          .join('');
+      }
+      await refreshHistory();
+
+      document.getElementById('reconcile-btn').addEventListener('click', async () => {
+        let raw;
+        try {
+          raw = JSON.parse(document.getElementById('remit-json').value);
+        } catch {
+          alert('Invalid JSON.');
+          return;
+        }
+        const invoices = JSON.parse(localStorage.getItem(window.getDataKey?.('invoices') || 'invoices') || '[]');
+        const result = await MediForgeRemittanceReconcile.processRemittanceViaGateway(raw, invoices);
+        MediForgeRemittanceReconcile.renderReconciliationResults(results, result);
+        await MediForgeRemittanceReconcile.saveRemittanceRecord({
+          payerCode: raw.payerId || 'OHIP',
+          remittanceDate: raw.remittanceDate || raw.paymentDate,
+          totalPaid: result.remittance?.totalPaid,
+          payload: raw,
+          reconciled: true
+        });
+        await refreshHistory();
+      });
+
+      document.getElementById('download-mcedt-btn').addEventListener('click', async () => {
+        if (!window.MediForgeInteropClient) return alert('Interop client not loaded.');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const result = await MediForgeInteropClient.call('downloadMcedtRemittance', {
+          organizationId: user.organizationId || user.organization_id,
+          userId: user.id
+        });
+        alert(result.queued ? 'MCEDT not configured. Paste remittance JSON manually.' : 'Download initiated (see server logs when live).');
+      });
+    })();
+  </script>
+</body>
+</html>

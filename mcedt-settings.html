@@ -1,0 +1,71 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>MCEDT Settings | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 640px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #008753; margin-top: 0; }
+    label { display: block; margin-top: 14px; font-weight: 600; }
+    input { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; }
+    .note { background: #fff8e1; border: 1px solid #ffe082; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: .9rem; }
+    .btn { margin-top: 16px; margin-right: 8px; padding: 10px 18px; background: #008753; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    a.btn { display: inline-block; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>MCEDT / OHIP Settings</h1>
+    <p>Configure clinic billing identifiers for OHIP claim submission. MOH certificates are stored in Netlify environment variables, not in the browser.</p>
+    <div class="note">Live MCEDT upload and remittance download require Ministry of Health enrollment per clinic. Until then, use claim export and manual remittance reconciliation.</div>
+    <form id="mcedt-form">
+      <label>OHIP Billing Number <input name="billingNumber" id="billingNumber" placeholder="123456"></label>
+      <label>Group Number <input name="groupNumber" id="groupNumber" placeholder="0001" value="0001"></label>
+      <label>MCEDT enabled (requires platform config) <input type="checkbox" name="enabled" id="mcedtEnabled"></label>
+      <button type="submit" class="btn">Save settings</button>
+    </form>
+    <p id="save-status"></p>
+    <button type="button" class="btn" id="eligibility-test-btn" style="background:#1565C0">Test PHN format check</button>
+    <pre id="eligibility-result" style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:.85rem"></pre>
+    <a href="claims-queue" class="btn">Claims Queue</a>
+    <a href="billing-dashboard" class="btn">← Billing Dashboard</a>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/mcedt-settings.js"></script>
+  <script>
+    (async function () {
+      const s = await MediForgeMcedtSettings.loadOrgSettings();
+      document.getElementById('billingNumber').value = s.billingNumber || '';
+      document.getElementById('groupNumber').value = s.groupNumber || '0001';
+      document.getElementById('mcedtEnabled').checked = s.enabled === true;
+
+      document.getElementById('mcedt-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          billingNumber: document.getElementById('billingNumber').value.trim(),
+          groupNumber: document.getElementById('groupNumber').value.trim() || '0001',
+          enabled: document.getElementById('mcedtEnabled').checked
+        };
+        const res = await MediForgeMcedtSettings.saveOrgSettings(payload);
+        document.getElementById('save-status').textContent = res.ok
+          ? (res.localOnly ? 'Saved locally.' : 'Saved to organization settings.')
+          : res.error;
+      });
+
+      document.getElementById('eligibility-test-btn').addEventListener('click', async () => {
+        const phn = prompt('Enter test PHN (10 digits + version):', '1234567890AB');
+        if (!phn) return;
+        const result = await MediForgeMcedtSettings.checkEligibility({ phn, dob: '1985-03-15' });
+        document.getElementById('eligibility-result').textContent = JSON.stringify(result, null, 2);
+      });
+    })();
+  </script>
+</body>
+</html>

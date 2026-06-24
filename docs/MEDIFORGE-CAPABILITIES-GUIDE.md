@@ -350,9 +350,9 @@ Built for Canadian practice:
 
 ---
 
-## 16a. Ontario EMR readiness (Phase 0 & Phase 1 complete, June 2026)
+## 16a. Ontario EMR readiness (Phases 0–3 complete, June 2026)
 
-Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials. Documented readiness ~50–60%.
+Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials. Documented readiness ~55–65%.
 
 | Feature | Detail |
 |---------|--------|
@@ -360,7 +360,10 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | CPP patient summary | `/cpp-patient-summary`: Ontario CPP-aligned summary from chart |
 | FHIR R4 chart export | Patient details: download chart as FHIR R4 Bundle |
 | Structured consent capture | `/patient-consents`: portal, data sharing, research consent types |
-| OHIP claim file export | Invoice details: export OHIP claim draft file |
+| OHIP claim file export | Invoice details: JSON and XML export; queue submit |
+| MCEDT claims queue | `/claims-queue` for draft/submitted/rejected claims |
+| Remittance reconcile | `/remittance-reconcile` upload and match payments |
+| MCEDT settings | `/mcedt-settings` billing number and enable flag |
 | Compliance pack | `docs/compliance/`: PHIPA, breach, custody, DR, data residency |
 | Gap report & implementation plan | `ONTARIOMD-GAP-REPORT.md`, `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` |
 | Clinical image viewer | `js/chart-image-viewer.js` on patient documents |

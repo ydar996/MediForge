@@ -72,20 +72,22 @@
 
 ## Phase 3: MCEDT Claims (OHIP)
 
+**Status: complete (June 2026, software).** Live MOH upload/download blocked until clinic credentials. See **`docs/PHASE-3-MCEDT-CLAIMS-COMPLETION.md`**.
+
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 3.1 | OHIP claim draft from clinical billing | 🔶 | `claims-adapter.js` |
+| 3.1 | OHIP claim draft from clinical billing | ✅ | `claims-adapter.js`, payer workflow |
 | 3.2 | Ontario L-codes on lab service lines | ✅ | June 2026 fix |
 | 3.3 | OHIP imaging fee codes on imaging lines | ✅ | June 2026 fix |
-| 3.4 | MOH claim file format (XSD/schema compliant) | ⬜ | Sample JSON only |
-| 3.5 | MCEDT Web Service client (upload/download) | ⬜ | Stub queues when disabled |
-| 3.6 | Clinic MOH credentials and certificates | ⬜ | 🚫 Per clinic |
-| 3.7 | Batch claim submission scheduler | ⬜ | |
-| 3.8 | Error handling and rejection workflow | ⬜ | |
-| 3.9 | Remittance download and parsing | ⬜ | |
-| 3.10 | Payment reconciliation UI | ⬜ | |
-| 3.11 | Cut-off date logic | ⬜ | |
-| 3.12 | OHIP eligibility checking API | ⬜ | |
+| 3.4 | MOH claim file format (XSD/schema compliant) | 🔶 | `mcedt-format.js` XML export |
+| 3.5 | MCEDT Web Service client (upload/download) | 🔶 | `mcedt-client.js`; live blocked |
+| 3.6 | Clinic MOH credentials and certificates | 🔶 | `/mcedt-settings`; certs in env |
+| 3.7 | Batch claim submission scheduler | 🔶 | `claims-batch-daily` function |
+| 3.8 | Error handling and rejection workflow | 🔶 | `claims-workflow.js`, `/claims-queue` |
+| 3.9 | Remittance download and parsing | 🔶 | Parse + UI; live download blocked |
+| 3.10 | Payment reconciliation UI | ✅ | `/remittance-reconcile` |
+| 3.11 | Cut-off date logic | ✅ | `mcedt-cutoff.js` |
+| 3.12 | OHIP eligibility checking API | 🔶 | PHN format check; live API blocked |
 
 ---
 

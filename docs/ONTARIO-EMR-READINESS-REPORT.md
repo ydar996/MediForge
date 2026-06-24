@@ -1,6 +1,6 @@
 # Ontario EMR Readiness Report
 
-**Version:** June 2026 (Phase 0 and Phase 1 complete)  
+**Version:** June 2026 (Phases 0–3 complete, software)  
 **Audience:** Investors, partners, clinic leaders  
 **Shareable web version:** https://mediforge.netlify.app/ontario-readiness  
 **Implementation tasks:** See **`ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**
@@ -11,13 +11,13 @@ This document is the written companion to the investor readiness webpage. Share 
 
 ## Executive Summary
 
-MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **50–60%** after Phase 0 and Phase 1 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
+MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **55–65%** after Phases 0–3 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
 
-**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phase 0 and Phase 1 (June 2026)** delivered internal evidence and core standards: gap report, PHIPA pack, FHIR export, CPP summary, consent management, gateway audit trail, and tested interoperability libraries.
+**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–3 (June 2026)** delivered internal evidence, core standards, and MCEDT claims software (queue, XML export, remittance reconcile).
 
 | Metric | Estimate |
 |--------|----------|
-| Overall Ontario readiness | 50–60% |
+| Overall Ontario readiness | 55–65% |
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
 | OntarioMD certification | 0% (application not submitted; evidence binder ~10–15%) |
@@ -86,10 +86,13 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| MCEDT Web Service client | Stub (~15%) | OHIP claim drafts; submit queues when not configured |
-| Claim file formats | Partial (~25%) | JSON drafts and invoice OHIP claim file export; not MOH XSD-certified |
-| Batch processing, remittance, reconciliation | Not started | |
-| Eligibility checking | Not started | PHN validation helpers only |
+| MCEDT Web Service client | Partial (~45%) | `mcedt-client.js`, claims queue, batch scheduler; live upload when credentialed |
+| Claim file formats | Partial (~45%) | JSON and MOH-oriented XML export; XSD sign-off pending MOH test env |
+| Batch processing | Partial (~40%) | `claims-batch-daily` function, `/claims-queue` |
+| Rejection workflow | Partial (~40%) | `claims-workflow.js`, reset-to-draft in queue |
+| Remittance & reconciliation | Partial (~45%) | `/remittance-reconcile`, `remittance_records` table |
+| Cut-off date logic | Done | `mcedt-cutoff.js` |
+| Eligibility checking | Partial (~25%) | PHN format validation; live MOH API blocked |
 
 ---
 
@@ -148,12 +151,27 @@ Internal readiness sprint delivered without provincial credentials:
 
 **Owner action:** Run `20260624100000_interop_messages_append_only.sql` per environment if not done.
 
+## Phase 3 Complete (June 2026, software)
+
+| Deliverable | Location |
+|-------------|----------|
+| MCEDT format & XML export | `lib/billing/mcedt-format.js` |
+| MCEDT client & cut-off | `lib/billing/mcedt-client.js`, `mcedt-cutoff.js` |
+| Claims workflow | `lib/billing/claims-workflow.js` |
+| Claims queue UI | `/claims-queue` |
+| Remittance reconcile UI | `/remittance-reconcile` |
+| MCEDT settings | `/mcedt-settings` |
+| Batch scheduler | `netlify/functions/claims-batch-daily.js` |
+| Gateway actions | `batchSubmitClaims`, `exportMcedtXml`, `checkOhipEligibility` |
+
+**Blocked until MOH credentials:** live claim upload, live remittance download, live eligibility API.
+
 ---
 
 ## Priority Roadmap
 
-1. **OntarioMD certification path** (~10–15%: Phases 0–1 evidence complete; application pending)
-2. **MCEDT claims** (~25%: draft export live; MOH credentials needed)
+1. **OntarioMD certification path** (~10–15%: Phases 0–3 evidence complete; application pending)
+2. **MCEDT claims (live)** (~45% software; MOH credentials needed for upload)
 3. **OLIS labs** (~20%: HL7/FHIR plumbing; Infoway onboarding)
 4. **PrescribeIT** (~10%: adapter stubs; vendor enrollment)
 5. **Imaging / DI** (~15%: orders + DICOMweb; DIR/PACS live)

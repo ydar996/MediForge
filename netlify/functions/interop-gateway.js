@@ -135,6 +135,31 @@ exports.handler = async (event) => {
           userId: body.userId
         });
         break;
+      case 'batchSubmitClaims':
+        result = await service.batchSubmitClaims({
+          claimRecords: body.claimRecords || body.claims,
+          submitter: body.submitter,
+          organizationId: body.organizationId,
+          userId: body.userId
+        });
+        break;
+      case 'checkOhipEligibility':
+        result = await service.checkOhipEligibility({
+          patient: body.patient,
+          organizationId: body.organizationId,
+          userId: body.userId
+        });
+        break;
+      case 'downloadMcedtRemittance':
+        result = await service.downloadMcedtRemittance({
+          remittanceDate: body.remittanceDate,
+          organizationId: body.organizationId,
+          userId: body.userId
+        });
+        break;
+      case 'exportMcedtXml':
+        result = service.exportMcedtXml({ batch: body.batch });
+        break;
       case 'dicomweb':
         result = await service.dicomweb({ operation: body.operation, params: body.params || {} });
         break;

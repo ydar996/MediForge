@@ -60,6 +60,32 @@
     URL.revokeObjectURL(url);
   }
 
+  function downloadClaimBatchXml(xml, filename) {
+    const blob = new Blob([xml], { type: 'application/xml' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = filename || `ohip-claim-batch-${new Date().toISOString().slice(0, 10)}.xml`;
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  }
+
+  async function exportInvoiceAsClaimXml(invoice, patient, provider, serviceLines) {
+    const batch = buildClaimBatchFromInvoice(invoice, patient, provider, serviceLines);
+    if (!global.MediForgeInteropClient) {
+      alert('XML export requires interop gateway. Use JSON export or open from billing dashboard.');
+      return batch;
+    }
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const result = await global.MediForgeInteropClient.call('exportMcedtXml', { batch });
+    if (result.xml) {
+      downloadClaimBatchXml(result.xml, `ohip-${batch.claims[0].claimReference || 'draft'}.xml`);
+    }
+    return result;
+  }
+
   function exportInvoiceAsClaimDraft(invoice, patient, provider, serviceLines) {
     const batch = buildClaimBatchFromInvoice(invoice, patient, provider, serviceLines);
     downloadClaimBatch(batch, `ohip-${batch.claims[0].claimReference || 'draft'}.json`);
@@ -76,6 +102,8 @@
   global.MediForgeOhipClaimExport = {
     buildClaimBatchFromInvoice,
     exportInvoiceAsClaimDraft,
-    downloadClaimBatch
+    exportInvoiceAsClaimXml,
+    downloadClaimBatch,
+    downloadClaimBatchXml
   };
 })(typeof window !== 'undefined' ? window : globalThis);
