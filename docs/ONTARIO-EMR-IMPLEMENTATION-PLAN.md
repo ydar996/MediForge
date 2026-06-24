@@ -173,7 +173,7 @@
 | 8.6 | Internal API/integration runbooks | 🔶 | Interop docs exist |
 | 8.7 | User guides for provincial features | ⬜ | When live |
 | 8.8 | Load testing (labs, claims volume) | ⬜ | |
-| 8.9 | Monitoring/alerting for integration failures | ⬜ | |
+| 8.9 | Monitoring/alerting for integration failures | 🔶 | Interop dashboard failure panel |
 
 ---
 

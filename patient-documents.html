@@ -1622,6 +1622,16 @@
         }
 
         function viewDocument(name, data, type) {
+            if (window.MediForgeChartImageViewer) {
+              const isImage = type && type.startsWith('image/');
+              const isPdf = type === 'application/pdf' || (name && /\.pdf$/i.test(name));
+              const isDicom = type === 'application/dicom' || (name && /\.dcm$/i.test(name));
+              if (isImage || isPdf || isDicom) {
+                const dataUrl = data && data.startsWith('data:') ? data : `data:${type || 'application/octet-stream'};base64,${data}`;
+                MediForgeChartImageViewer.openClinicalViewer({ title: name, url: dataUrl, mimeType: type, fileName: name });
+                return;
+              }
+            }
             // Create modal for viewing documents
             var existingViewer = document.getElementById("document-viewer-modal");
             if (existingViewer) {
@@ -2152,6 +2162,7 @@
     </script>
 
   <!-- Critical scripts loaded at end of body (matches dashboard.html pattern for proper Supabase initialization) -->
+  <script src="js/chart-image-viewer.js"></script>
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js?v=202510220113080113081308"></script>
   <script src="js/pre-emr-storage.js?v=202603271"></script>

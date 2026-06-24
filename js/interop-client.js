@@ -95,8 +95,8 @@
     return callGateway({ action: 'ingestOru', organizationId, rawHl7, userId, province, olisConsentGranted });
   }
 
-  async function generateLabHl7({ organizationId, patient, order, userId, province }) {
-    return callGateway({ action: 'generateLabHl7', organizationId, patient, order, userId, province });
+  async function generateLabFhir({ organizationId, patient, order, userId, province }) {
+    return callGateway({ action: 'generateLabFhir', organizationId, patient, order, userId, province });
   }
 
   async function fhirSearchPatients({ organizationId, phn, province, userId, olisConsentGranted }) {
@@ -111,8 +111,14 @@
     return callGateway({ action: 'dicomweb', operation, params, organizationId, province });
   }
 
+  /** Generic gateway call used by claims queue, remittance, MCEDT settings, etc. */
+  async function call(action, payload = {}) {
+    return callGateway({ action, ...payload });
+  }
+
   global.MediForgeInteropClient = {
     callGateway,
+    call,
     getConfig,
     listProvinces,
     transmitLabOrder,
@@ -122,6 +128,7 @@
     processRemittance,
     ingestOru,
     generateLabHl7,
+    generateLabFhir,
     fhirSearchPatients,
     matchPatient,
     dicomweb

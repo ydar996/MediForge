@@ -27,6 +27,7 @@
     <label for="remit-json"><strong>Remittance JSON</strong></label>
     <textarea id="remit-json" placeholder='{"format":"json","payerId":"OHIP","payments":[...]}'></textarea>
     <button type="button" class="btn" id="reconcile-btn">Reconcile</button>
+    <button type="button" class="btn btn-secondary" id="load-sample-btn">Load sample remittance</button>
     <button type="button" class="btn btn-secondary" id="download-mcedt-btn">Download from MCEDT (when configured)</button>
     <div id="results" style="margin-top:20px"></div>
     <h2>Recent remittance records</h2>
@@ -56,6 +57,16 @@
           .join('');
       }
       await refreshHistory();
+
+      document.getElementById('load-sample-btn').addEventListener('click', () => {
+        document.getElementById('remit-json').value = JSON.stringify({
+          format: 'era_json',
+          payerId: 'OHIP',
+          remittanceDate: new Date().toISOString().slice(0, 10),
+          totalPaid: 23.75,
+          payments: [{ claimId: 'INV-SAMPLE-001', amount: 23.75, status: 'paid', adjustmentReason: 'Training sample' }]
+        }, null, 2);
+      });
 
       document.getElementById('reconcile-btn').addEventListener('click', async () => {
         let raw;

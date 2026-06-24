@@ -177,10 +177,48 @@ exports.handler = async (event) => {
           })
         };
         break;
+      case 'generateLabFhir':
+        result = {
+          resource: interop.adapters.lab.orderToFhirServiceRequest({
+            patient: body.patient,
+            order: body.order,
+            config: service.config
+          })
+        };
+        break;
       case 'parseOru':
         result = interop.adapters.lab.oruToChartResults(
           interop.adapters.lab.parseOruMessage(body.rawHl7)
         );
+        break;
+      case 'simulateMllp':
+        if (!body.rawHl7) throw new Error('rawHl7 required');
+        {
+          const parsed = interop.hl7.parser.parseMessage(body.rawHl7);
+          const ack = interop.hl7.ack.generateAck({ inboundMsh: parsed.msh, ackCode: 'AA' });
+          const mllp = service.config.hl7?.mllp;
+          let live = null;
+          if (service.config.enabled && mllp?.host) {
+            try {
+              const sent = await interop.hl7.mllp.sendMllp({
+                host: mllp.host,
+                port: mllp.port || 2575,
+                message: body.rawHl7,
+                useTls: mllp.useTls !== false
+              });
+              live = { sent: true, ack: sent.ack };
+            } catch (err) {
+              live = { sent: false, error: err.message };
+            }
+          }
+          result = {
+            simulated: !live?.sent,
+            queued: !service.config.enabled || !mllp?.host,
+            ack,
+            ackParsed: interop.hl7.parser.parseAckMessage(ack),
+            live
+          };
+        }
         break;
       case 'config':
       case 'integrationStatus':

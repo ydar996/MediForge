@@ -25,6 +25,17 @@
     <h1>OHIP Claims Queue</h1>
     <p>Review provincial claim drafts and submissions. Live MOH upload requires MCEDT credentials in <a href="mcedt-settings">MCEDT Settings</a>.</p>
     <div class="note" id="summary">Loading summary...</div>
+    <p>
+      <label>Filter: </label>
+      <select id="status-filter">
+        <option value="all">All</option>
+        <option value="draft">Draft</option>
+        <option value="submitted">Submitted</option>
+        <option value="rejected">Rejected</option>
+        <option value="paid">Paid</option>
+      </select>
+      <button type="button" class="btn btn-secondary" id="export-xml-btn" style="margin-top:0;margin-left:8px;">Export draft XML</button>
+    </p>
     <div id="claims-table-wrap">Loading...</div>
     <button type="button" class="btn btn-secondary" id="batch-submit-btn">Submit draft batch (when configured)</button>
     <a href="billing-dashboard" class="btn">← Billing Dashboard</a>
@@ -45,12 +56,37 @@
         `Draft: ${counts.draft} · Submitted: ${counts.submitted} · Rejected: ${counts.rejected} · Paid: ${counts.paid}`;
       MediForgeClaimsQueue.renderTable(wrap, rows);
 
+      function refreshTable() {
+        const filter = document.getElementById('status-filter').value;
+        MediForgeClaimsQueue.renderTable(wrap, rows, { statusFilter: filter });
+      }
+      document.getElementById('status-filter').addEventListener('change', refreshTable);
+
+      document.getElementById('export-xml-btn').addEventListener('click', async () => {
+        const drafts = rows.filter((r) => r.status === 'draft');
+        if (!drafts.length) return alert('No draft claims to export.');
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const batch = { claims: drafts.map((d) => d.claim_payload || d), submitter: { billingNumber: user.billingNumber || user.ohipBillingNumber || '' } };
+        try {
+          const res = await MediForgeInteropClient.call('exportMcedtXml', { batch });
+          const xml = res.result?.xml || res.xml;
+          if (!xml) return alert('No XML returned.');
+          const blob = new Blob([xml], { type: 'application/xml' });
+          const a = document.createElement('a');
+          a.href = URL.createObjectURL(blob);
+          a.download = `ohip-claims-${new Date().toISOString().slice(0, 10)}.xml`;
+          a.click();
+        } catch (e) {
+          alert(e.message);
+        }
+      });
+
       wrap.addEventListener('click', async (e) => {
         const id = e.target.getAttribute('data-resubmit');
         if (!id) return;
         await MediForgeClaimsQueue.updateClaimStatus(id, 'draft', { error: null });
         rows = await MediForgeClaimsQueue.loadOrgClaims();
-        MediForgeClaimsQueue.renderTable(wrap, rows);
+        MediForgeClaimsQueue.renderTable(wrap, rows, { statusFilter: document.getElementById('status-filter').value });
       });
 
       document.getElementById('batch-submit-btn').addEventListener('click', async () => {

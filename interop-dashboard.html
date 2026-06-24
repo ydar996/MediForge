@@ -15,32 +15,73 @@
     .status { display: inline-block; padding: 4px 12px; border-radius: 20px; font-size: 0.85rem; }
     .status.ok { background: #d4edda; color: #155724; }
     .status.off { background: #f8d7da; color: #721c24; }
-    textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: 0.85rem; }
-    button { background: #008753; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; margin-top: 8px; }
+    .status.warn { background: #fff3cd; color: #856404; }
+    textarea, input[type=text] { width: 100%; min-height: 100px; font-family: monospace; font-size: 0.85rem; box-sizing: border-box; padding: 8px; }
+    input[type=text] { min-height: auto; margin-bottom: 8px; }
+    button { background: #008753; color: #fff; border: none; padding: 10px 18px; border-radius: 6px; cursor: pointer; margin-top: 8px; margin-right: 8px; }
     button:hover { background: #006b42; }
-    pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow: auto; font-size: 0.8rem; }
+    button.secondary { background: #1565C0; }
+    pre { background: #1e1e1e; color: #d4d4d4; padding: 16px; border-radius: 8px; overflow: auto; font-size: 0.8rem; max-height: 280px; }
     .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 12px; }
     .metric { background: #f8f9fa; padding: 16px; border-radius: 8px; border-left: 4px solid #008753; }
+    .fail-table { width: 100%; border-collapse: collapse; font-size: .85rem; margin-top: 12px; }
+    .fail-table th, .fail-table td { padding: 8px; border-bottom: 1px solid #eee; text-align: left; }
+    .fail-table th { background: #c62828; color: #fff; }
+    .nav-links { margin-bottom: 12px; }
+    .nav-links a { margin-right: 12px; color: #008753; font-weight: 600; }
   </style>
   <script src="js/ui-title-case.js?v=20260616120000" defer></script>
 </head>
 <body>
   <div class="container">
-    <p><a href="/">← Home</a> | <a href="MEDIFORGE-INTEROPERABILITY-DOCS.md">Documentation</a></p>
+    <p class="nav-links"><a href="/">← Home</a> <a href="lab-results-queue">Lab Results Queue</a> <a href="claims-queue">Claims Queue</a> <a href="patient-identifiers">PHN Registry</a></p>
     <h1>Interoperability Dashboard</h1>
     <p>HL7 v2 · FHIR R4 · DICOMweb · Ontario OLIS / Infoway compatible</p>
 
     <div class="card">
       <h2>Connection status</h2>
       <div id="config-status">Loading…</div>
+      <p id="failure-count" style="margin-top:12px;"></p>
+    </div>
+
+    <div class="card">
+      <h2>Simulate MLLP send (HL7)</h2>
+      <p>Paste an <code>ORM^O01</code> or any HL7 message. When MLLP is not configured, returns a simulated <code>AA</code> ACK without network I/O.</p>
+      <textarea id="mllp-input" placeholder="MSH|^~\&|MEDIFORGE|CLINIC|OLIS|LAB|..."></textarea>
+      <button type="button" id="btn-simulate-mllp">Simulate MLLP ACK</button>
+      <pre id="mllp-output"></pre>
     </div>
 
     <div class="card">
       <h2>Test ORU ingest (paste HL7)</h2>
-      <p>Paste an <code>ORU^R01</code> message to preview chart mapping. See <code>tests/samples/hl7/oru-r01-lab-result.hl7</code>.</p>
+      <p>Paste an <code>ORU^R01</code> message to preview chart mapping.</p>
       <textarea id="oru-input" placeholder="MSH|^~\&|..."></textarea>
       <button type="button" id="btn-parse-oru">Parse ORU → chart preview</button>
+      <button type="button" class="secondary" id="btn-load-oru-sample">Load sample ORU</button>
       <pre id="oru-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>FHIR patient search (PHN)</h2>
+      <p>Requires OLIS consent when <code>requireConsent</code> is enabled. Live search needs FHIR base URL in config.</p>
+      <input type="text" id="fhir-phn" placeholder="1234567890AB">
+      <button type="button" id="btn-fhir-search">Search by PHN</button>
+      <pre id="fhir-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>DICOM C-FIND (gateway stub)</h2>
+      <p>Proxies to configured DIMSE gateway URL. Returns queued guidance when gateway URL is not set.</p>
+      <input type="text" id="dicom-patient-id" placeholder="Patient ID or MRN">
+      <button type="button" id="btn-dicom-cfind">C-FIND studies (stub)</button>
+      <pre id="dicom-output"></pre>
+    </div>
+
+    <div class="card">
+      <h2>Integration failures (audit trail)</h2>
+      <p>Recent failed messages from <code>interop_messages</code> (append-only audit).</p>
+      <button type="button" class="secondary" id="btn-refresh-failures">Refresh</button>
+      <div id="failures-wrap">Loading…</div>
     </div>
 
     <div class="card">
@@ -58,24 +99,64 @@
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
   <script src="js/interop-client.js"></script>
+  <script src="js/interop-failures-monitor.js"></script>
   <script>
+    const ORU_SAMPLE = `MSH|^~\\&|OLIS|LAB|MEDIFORGE|CLINIC|20260611143000||ORU^R01|RES-LAB-MEC-001|P|2.5\\rPID|1||MEC0001^^^CLINIC||DOE^JANE||19800101|F\\rOBR|1||LAB-MEC-001||GLU^Glucose`;
+
+    async function orgContext() {
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      return {
+        organizationId: user.organizationId || user.organization_id,
+        userId: user.id || user.username,
+        province: user.province || 'ON'
+      };
+    }
+
     async function loadStatus() {
       const el = document.getElementById('config-status');
       try {
         const res = await MediForgeInteropClient.getConfig();
         const c = res.result || {};
+        const conn = c.connectivity || {};
         el.innerHTML = `
-          <p>Enabled: <span class="status ${c.enabled ? 'ok' : 'off'}">${c.enabled ? 'ON' : 'OFF'}</span></p>
-          <p>Province: ${c.province || ':'}</p>
-          <p>HL7 MLLP: <span class="status ${c.hl7Configured ? 'ok' : 'off'}">${c.hl7Configured ? 'Configured' : 'Not set'}</span></p>
-          <p>FHIR: <span class="status ${c.fhirConfigured ? 'ok' : 'off'}">${c.fhirConfigured ? 'Configured' : 'Not set'}</span></p>
-          <p>DICOMweb: <span class="status ${c.dicomConfigured ? 'ok' : 'off'}">${c.dicomConfigured ? 'Configured' : 'Not set'}</span></p>
+          <p>Enabled: <span class="status ${c.enabled ? 'ok' : 'off'}">${c.enabled ? 'ON' : 'OFF (queue mode)'}</span></p>
+          <p>Province: ${c.province || 'ON'}</p>
+          <p>HL7 MLLP: <span class="status ${conn.hl7Mllp ? 'ok' : 'warn'}">${conn.hl7Mllp ? 'Configured' : 'Simulate only'}</span></p>
+          <p>FHIR: <span class="status ${conn.fhir ? 'ok' : 'warn'}">${conn.fhir ? 'Configured' : 'Not set'}</span></p>
+          <p>DICOMweb: <span class="status ${conn.dicomweb ? 'ok' : 'warn'}">${conn.dicomweb ? 'Configured' : 'Not set'}</span></p>
           <p>Adapters: lab=${c.adapters?.lab}, imaging=${c.adapters?.imaging}, rx=${c.adapters?.rx}</p>
         `;
       } catch (e) {
         el.innerHTML = `<p class="status off">Gateway unreachable: ${e.message}</p>`;
       }
     }
+
+    async function refreshFailures() {
+      const wrap = document.getElementById('failures-wrap');
+      const countEl = document.getElementById('failure-count');
+      if (!window.MediForgeInteropFailures) {
+        wrap.innerHTML = '<p>Failure monitor module not loaded.</p>';
+        return;
+      }
+      const rows = await MediForgeInteropFailures.loadRecentFailures();
+      MediForgeInteropFailures.renderFailuresTable(wrap, rows);
+      countEl.innerHTML = rows.length
+        ? `<span class="status off">${rows.length} recent failure(s)</span>`
+        : '<span class="status ok">No recent integration failures</span>';
+    }
+
+    document.getElementById('btn-simulate-mllp').addEventListener('click', async () => {
+      const raw = document.getElementById('mllp-input').value.trim();
+      const out = document.getElementById('mllp-output');
+      if (!raw) { out.textContent = 'Paste HL7 first.'; return; }
+      try {
+        const ctx = await orgContext();
+        const res = await MediForgeInteropClient.callGateway({ action: 'simulateMllp', rawHl7: raw, ...ctx });
+        out.textContent = JSON.stringify(res.result, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
 
     document.getElementById('btn-parse-oru').addEventListener('click', async () => {
       const raw = document.getElementById('oru-input').value.trim();
@@ -89,7 +170,39 @@
       }
     });
 
+    document.getElementById('btn-load-oru-sample').addEventListener('click', () => {
+      document.getElementById('oru-input').value = ORU_SAMPLE.replace(/\\r/g, '\r');
+    });
+
+    document.getElementById('btn-fhir-search').addEventListener('click', async () => {
+      const phn = document.getElementById('fhir-phn').value.trim();
+      const out = document.getElementById('fhir-output');
+      if (!phn) { out.textContent = 'Enter PHN.'; return; }
+      try {
+        const ctx = await orgContext();
+        const res = await MediForgeInteropClient.fhirSearchPatients({ phn, olisConsentGranted: true, ...ctx });
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-dicom-cfind').addEventListener('click', async () => {
+      const patientId = document.getElementById('dicom-patient-id').value.trim();
+      const out = document.getElementById('dicom-output');
+      try {
+        const ctx = await orgContext();
+        const res = await MediForgeInteropClient.dicomweb('cFind', { query: { PatientID: patientId || '*' } }, ctx.organizationId, ctx.province);
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message + (e.message.includes('not configured') ? '\n\nSet dicomweb.dimseGatewayUrl in province config for live C-FIND.' : '');
+      }
+    });
+
+    document.getElementById('btn-refresh-failures').addEventListener('click', refreshFailures);
+
     loadStatus();
+    refreshFailures();
   </script>
 </body>
 </html>

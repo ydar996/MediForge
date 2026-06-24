@@ -8163,6 +8163,7 @@ async function loadPatientDetails() {
       <p><strong>Email:</strong> ${email || 'N/A'} | <strong>Phone:</strong> ${phone || 'N/A'} | <strong>Address:</strong> ${addressDisplay}</p>
       <p><strong>Emergency Contact:</strong> ${emergencyNameDisplay}${emergencyRelationship ? ` (${emergencyRelationship})` : ''} | <strong>Emergency Phone:</strong> ${emergencyPhone || 'N/A'} | <strong>Emergency Email:</strong> ${emergencyEmail || 'N/A'} | <strong>Emergency Address:</strong> ${emergencyAddressDisplay}</p>
       <p><strong>Has Diabetes:</strong> ${patient.hasDiabetes ? 'Yes' : 'No'} | <strong>Payment Source:</strong> ${paymentSource}</p>
+      <p><strong>OHIP PHN:</strong> ${(patient.phn || patient.healthCardNumber || patient.health_card_number || '').trim() || 'Not on file'}${(patient.healthCardVersion || patient.health_card_version) ? ' (' + (patient.healthCardVersion || patient.health_card_version) + ')' : ''} · <a href="patient-identifiers">PHN registry</a> · <a href="lab-results-queue">Lab results queue</a> · <a href="interop-dashboard">Interop dashboard</a></p>
       ${patient.paymentSource === 'Insurance' ? insuranceInfo.replace(/<p><strong>Payment Source:<\/strong>[^<]+<\/p>\s*/g, '') : ''}
     `;
     const editBtn = document.createElement("button");

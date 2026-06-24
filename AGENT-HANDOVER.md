@@ -507,6 +507,16 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Phases 1–4 polish sprint (owner-approved)
+
+- **Owner ask:** Finish everything we can still do ourselves from Phases 1–4.
+- **Phase 1:** Interop dashboard MLLP simulate, FHIR PHN search, DICOM C-FIND stub UI, failure audit panel; chart-image-viewer wired to patient-documents.
+- **Phase 2:** User manual Ontario section; evidence pages already live.
+- **Phase 3:** Claims queue filter + XML export; remittance sample loader; MCEDT PHN validation; billing cut-off banner.
+- **Phase 4:** External lab FHIR export + queue provincial send; PHN on patient chart; critical lab banner on main dashboard.
+- **Fix:** `MediForgeInteropClient.call()` for claims/remittance/MCEDT pages.
+- **Tests:** `tests/interop/phases-1-4-polish.test.js`.
+
 ### June 2026: Phase 2 + Phase 4 software complete (owner-approved)
 
 - **Owner ask:** Do what we can on our own in Phase 2 and 4; update pages and docs; deploy dev, promote staging and production.

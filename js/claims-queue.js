@@ -52,16 +52,18 @@
     return `<span class="badge" style="background:${c}22;color:${c}">${status}</span>`;
   }
 
-  function renderTable(container, rows) {
-    if (!rows.length) {
+  function renderTable(container, rows, options = {}) {
+    const filter = options.statusFilter || 'all';
+    const filtered = filter === 'all' ? rows : rows.filter((r) => r.status === filter);
+    if (!filtered.length) {
       container.innerHTML =
-        '<p>No insurance claims in queue yet. Claims are created when OHIP invoices are finalized with payer routing.</p>';
+        '<p>No insurance claims match this filter. Claims are created when OHIP invoices are finalized with payer routing.</p>';
       return;
     }
     const html = [
       '<table class="claims-table"><thead><tr><th>Invoice</th><th>Payer</th><th>Status</th><th>Updated</th><th>Error</th><th>Actions</th></tr></thead><tbody>'
     ];
-    rows.forEach((r) => {
+    filtered.forEach((r) => {
       const inv = r.invoice_id || (r.claim_payload?.invoice?.invoiceNumber) || '';
       const err = r.error ? String(r.error).slice(0, 80) : '';
       html.push(

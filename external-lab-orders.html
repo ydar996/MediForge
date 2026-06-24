@@ -429,6 +429,8 @@
               
               <div class="action-buttons">
                 <button class="btn btn-hl7" onclick="exportOrderHl7('${order.id}')">🔗 Export HL7 (ORM)</button>
+                <button class="btn btn-email" onclick="exportOrderFhir('${order.id}')">FHIR ServiceRequest</button>
+                <button class="btn btn-upload" onclick="transmitOrderToHub('${order.id}')">📡 Queue provincial send</button>
                 <button class="btn btn-print" onclick="printOrder('${orderId}')">🖨️ Print</button>
                 <button class="btn btn-email" onclick="emailOrder('${orderId}')">📧 Email</button>
                 <button class="btn btn-pdf" onclick="downloadPDF('${orderId}')">📄 Download PDF</button>
@@ -444,7 +446,6 @@
       }
     }
     
-    // Export lab order as HL7 ORM^O01 (OLIS-ready)
     async function exportOrderHl7(orderUuid) {
       const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
       if (!order) {
@@ -491,6 +492,44 @@
         }
       } catch (err) {
         alert('HL7 export failed: ' + (err.message || 'Unknown error'));
+      }
+    }
+
+    async function exportOrderFhir(orderUuid) {
+      const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
+      if (!order?.patient_id) return alert('Order or patient missing.');
+      if (!window.MediForgeInterop?.exportLabOrderFhir) return alert('Interop not loaded.');
+      try {
+        const result = await MediForgeInterop.exportLabOrderFhir({ patientId: order.patient_id, order, orderId: order.id });
+        if (result.blocked) return alert(result.message);
+        const resource = result.result?.resource || result.resource;
+        if (!resource) return alert('No FHIR resource returned.');
+        const blob = new Blob([JSON.stringify(resource, null, 2)], { type: 'application/json' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `lab-order-${order.serial_number || order.id}-fhir.json`;
+        a.click();
+      } catch (err) {
+        alert('FHIR export failed: ' + err.message);
+      }
+    }
+
+    async function transmitOrderToHub(orderUuid) {
+      const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
+      if (!order?.patient_id) return alert('Order or patient missing.');
+      if (!window.MediForgeInterop?.transmitLabOrder) return alert('Interop not loaded.');
+      try {
+        const result = await MediForgeInterop.transmitLabOrder({
+          patientId: order.patient_id,
+          order,
+          orderId: order.id
+        });
+        if (result.blocked) return alert(result.message);
+        if (result.error) return alert(result.error);
+        const queued = result.result?.queued !== false;
+        alert(queued ? 'Order queued for provincial hub (live send when integration enabled).' : 'Order transmitted to configured hub.');
+      } catch (err) {
+        alert('Transmit failed: ' + err.message);
       }
     }
 

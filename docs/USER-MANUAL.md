@@ -296,6 +296,24 @@ Dashboard → **Billing & Payments**.
 | Change prices | **Pricing catalog** / Configure services |
 | Month-end numbers | **Billing reports**: export CSV if needed |
 | Income by department | **General Ledger** |
+| OHIP claims queue | Billing dashboard → **OHIP Claims Queue** |
+| Remittance reconcile | Billing dashboard → **Remittance Reconcile** |
+
+### Ontario provincial tools (software ready)
+
+Live MOH/Infoway connections need clinic credentials. Staff can still use:
+
+| Tool | Purpose |
+|------|---------|
+| Patient chart | OHIP PHN line, CPP Summary, FHIR export, Consents |
+| `/claims-queue` | Review and export OHIP claim drafts |
+| `/remittance-reconcile` | Paste or load sample remittance JSON |
+| `/external-lab-orders` | Export HL7 or FHIR lab orders; queue provincial send |
+| `/lab-results-queue` | Paste inbound ORU lab results |
+| `/patient-identifiers` | PHN registry for provincial matching |
+| `/interop-dashboard` | HL7/FHIR tests, MLLP simulate, failure audit |
+
+See `/evidence-binder` for certification diligence links.
 
 ---
 

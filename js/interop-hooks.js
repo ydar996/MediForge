@@ -91,6 +91,24 @@
     }
   }
 
+  async function exportLabOrderFhir({ patientId, order, orderId }) {
+    if (!global.MediForgeInteropClient?.generateLabFhir) return { error: 'Client not loaded' };
+    const patient = normalizePatient(await loadPatient(patientId));
+    const orgId = await resolveOrgId();
+    const consent = await checkOlisConsentForPatient(patientId);
+    if (consent.blocked) return consent;
+    return global.MediForgeInteropClient.generateLabFhir({
+      organizationId: orgId,
+      patient,
+      order: {
+        id: orderId,
+        serial_number: order?.serial_number || order?.serialNumber,
+        selected_items: order?.selected_items || order?.selectedItems,
+        timestamp: order?.timestamp
+      }
+    });
+  }
+
   async function exportLabOrderHl7({ patientId, order, orderId }) {
     if (!global.MediForgeInteropClient?.generateLabHl7) return { error: 'Client not loaded' };
     const patient = normalizePatient(await loadPatient(patientId));
@@ -197,6 +215,7 @@
     applyLabResultsToOrder,
     ingestOruAndApply,
     exportLabOrderHl7,
+    exportLabOrderFhir,
     loadPatient,
     normalizePatient
   };
