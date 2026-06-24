@@ -423,6 +423,60 @@
     return { applied: true, prescriptionId: rx.id, feedback, patch };
   }
 
+  async function ingestHrmAndApply({ rawHl7, fhirBundle, patientId }) {
+    if (!global.MediForgeInteropClient) return { error: 'Interop client not loaded' };
+    try {
+      if (patientId && global.MediForgePatientConsent?.hasHrmConsent) {
+        const consent = await global.MediForgePatientConsent.hasHrmConsent(patientId);
+        if (consent.blocked) return consent;
+      }
+      const orgId = await resolveOrgId();
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await global.MediForgeInteropClient.ingestHrmReport({
+        organizationId: orgId,
+        rawHl7,
+        fhirBundle,
+        userId: user.id || user.username,
+        hrmConsentGranted: true
+      });
+      const document = response.result?.document || response.document;
+      if (!document) return { error: 'No document mapping returned', response };
+
+      const row = {
+        patient_id: patientId || null,
+        placer_id: document.placerId,
+        report_title: document.title,
+        report_body: document.body,
+        raw_hl7: rawHl7 || null,
+        fhir_bundle: fhirBundle || null,
+        status: 'awaiting_review'
+      };
+      const inserted = await MediForgeHrmInbox?.insertReport?.(row);
+      if (inserted?.error) return { error: inserted.error, document };
+      return { applied: true, reportId: inserted?.data?.id, document };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  async function queryDhdrForPatient({ patientId, fhirBundle }) {
+    if (!global.MediForgeInteropClient?.queryDhdr) return { error: 'Client not loaded' };
+    if (global.MediForgePatientConsent?.hasDhdrConsent) {
+      const consent = await global.MediForgePatientConsent.hasDhdrConsent(patientId);
+      if (consent.blocked) return consent;
+    }
+    const orgId = await resolveOrgId();
+    const patient = normalizePatient(await loadPatient(patientId));
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return global.MediForgeInteropClient.queryDhdr({
+      organizationId: orgId,
+      patient,
+      fhirBundle,
+      userId: user.id,
+      dhdrConsentGranted: true
+    });
+  }
+
   global.MediForgeInterop = {
     transmitLabOrder,
     transmitImagingOrder,
@@ -442,6 +496,8 @@
     launchConnectingOntario,
     launchSmartFhir,
     attachDicomStudyToOrder,
+    ingestHrmAndApply,
+    queryDhdrForPatient,
     loadPatient,
     normalizePatient
   };

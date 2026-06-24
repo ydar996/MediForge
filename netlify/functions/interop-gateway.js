@@ -268,6 +268,24 @@ exports.handler = async (event) => {
           })
         };
         break;
+      case 'ingestHrmReport':
+        result = await service.ingestHrmReport({
+          rawHl7: body.rawHl7,
+          fhirBundle: body.fhirBundle,
+          organizationId: body.organizationId,
+          userId: body.userId,
+          hrmConsentGranted: body.hrmConsentGranted
+        });
+        break;
+      case 'queryDhdr':
+        result = service.queryDhdrMedications({
+          patient: body.patient,
+          organizationId: body.organizationId,
+          userId: body.userId,
+          dhdrConsentGranted: body.dhdrConsentGranted,
+          fhirBundle: body.fhirBundle
+        });
+        break;
       case 'parseOru':
         result = interop.adapters.lab.oruToChartResults(
           interop.adapters.lab.parseOruMessage(body.rawHl7)

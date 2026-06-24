@@ -153,6 +153,34 @@
     return callGateway({ action: 'fhirSearchPatients', organizationId, phn, province, userId, olisConsentGranted });
   }
 
+  async function smartLaunch({ organizationId, patient, scope, launch, province }) {
+    return callGateway({ action: 'smartLaunch', organizationId, patient, scope, launch, province });
+  }
+
+  async function ingestHrmReport({ organizationId, rawHl7, fhirBundle, userId, province, hrmConsentGranted }) {
+    return callGateway({
+      action: 'ingestHrmReport',
+      organizationId,
+      rawHl7,
+      fhirBundle,
+      userId,
+      province,
+      hrmConsentGranted
+    });
+  }
+
+  async function queryDhdr({ organizationId, patient, fhirBundle, userId, province, dhdrConsentGranted }) {
+    return callGateway({
+      action: 'queryDhdr',
+      organizationId,
+      patient,
+      fhirBundle,
+      userId,
+      province,
+      dhdrConsentGranted
+    });
+  }
+
   async function matchPatient(params) {
     return callGateway({ action: 'matchPatient', ...params });
   }
@@ -186,6 +214,8 @@
     ingestImagingReport,
     connectingOntarioLaunch,
     smartLaunch,
+    ingestHrmReport,
+    queryDhdr,
     fhirSearchPatients,
     matchPatient,
     dicomweb

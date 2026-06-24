@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Provincial Hub Settings | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #008753; margin-top: 0; }
+    h2 { color: #006b42; font-size: 1.1rem; margin-top: 24px; }
+    label { display: block; margin-top: 12px; font-weight: 600; }
+    input { width: 100%; padding: 10px; margin-top: 4px; box-sizing: border-box; }
+    .note { background: #f4f9f6; border: 1px solid #cce8d8; padding: 12px; border-radius: 8px; margin: 16px 0; font-size: .9rem; }
+    .btn { margin-top: 16px; margin-right: 8px; padding: 10px 18px; background: #008753; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    a.btn { display: inline-block; text-decoration: none; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Provincial Hub Settings</h1>
+    <p>Per-organization URLs for HRM, DHDR, and ConnectingOntario. Live provincial pipes still require enrollment.</p>
+    <div class="note">Secrets and certificates belong in Netlify environment variables or secure Supabase settings, not in plain browser fields for production.</div>
+    <form id="hub-form">
+      <h2>HRM (Hospital Report Manager)</h2>
+      <label>Inbound endpoint / facility ID <input name="hrmFacilityId" id="hrmFacilityId" placeholder="HRM facility identifier"></label>
+      <h2>DHDR (Drug Repository)</h2>
+      <label>FHIR base URL <input name="dhdrFhirBase" id="dhdrFhirBase" placeholder="https://dhdr.example/fhir"></label>
+      <h2>ConnectingOntario (DI Viewer)</h2>
+      <label>Viewer base URL <input name="coViewerBase" id="coViewerBase" placeholder="https://connectingontario.example/viewer"></label>
+      <h2>SMART-on-FHIR</h2>
+      <label>Authorize URL <input name="smartAuthorize" id="smartAuthorize" placeholder="https://fhir.example/authorize"></label>
+      <label>Client ID <input name="smartClientId" id="smartClientId" placeholder="mediforge-emr"></label>
+      <button type="submit" class="btn">Save settings</button>
+    </form>
+    <p id="save-status"></p>
+    <a href="hrm-inbox" class="btn">HRM Inbox</a>
+    <a href="interop-dashboard" class="btn">Interop Dashboard</a>
+    <a href="dashboard" class="btn">← Dashboard</a>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/provincial-hub-settings.js"></script>
+  <script>
+    (async function () {
+      const s = await MediForgeProvincialHubSettings.loadOrgSettings();
+      document.getElementById('hrmFacilityId').value = s.hrmFacilityId || '';
+      document.getElementById('dhdrFhirBase').value = s.dhdrFhirBase || '';
+      document.getElementById('coViewerBase').value = s.coViewerBase || '';
+      document.getElementById('smartAuthorize').value = s.smartAuthorize || '';
+      document.getElementById('smartClientId').value = s.smartClientId || 'mediforge-emr';
+
+      document.getElementById('hub-form').addEventListener('submit', async (e) => {
+        e.preventDefault();
+        const payload = {
+          hrmFacilityId: document.getElementById('hrmFacilityId').value.trim(),
+          dhdrFhirBase: document.getElementById('dhdrFhirBase').value.trim(),
+          coViewerBase: document.getElementById('coViewerBase').value.trim(),
+          smartAuthorize: document.getElementById('smartAuthorize').value.trim(),
+          smartClientId: document.getElementById('smartClientId').value.trim() || 'mediforge-emr'
+        };
+        const res = await MediForgeProvincialHubSettings.saveOrgSettings(payload);
+        document.getElementById('save-status').textContent = res.ok
+          ? (res.localOnly ? 'Saved locally.' : 'Saved to organization settings.')
+          : res.error;
+      });
+    })();
+  </script>
+</body>
+</html>

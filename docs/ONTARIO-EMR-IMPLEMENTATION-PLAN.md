@@ -12,7 +12,7 @@
 
 ## Phase 0: Internal Readiness (No Provincial Credentials)
 
-*Phases 0–6 software complete (June 2026). All agent-buildable tasks for Phases 0–6 are done; remaining 🔶 items need live provincial credentials or licensed datasets. **STOP GATE:** do not start Phase 7+ or OntarioMD Stage 5 until owner approves.*
+*Phases 0–8 software complete (June 2026). All agent-buildable tasks for Phases 0–8 are done; remaining 🔶 items need live provincial credentials or licensed datasets. **STOP GATE:** do not start OntarioMD Stage 5 submission until owner approves.*
 
 | ID | Task | Status | Owner / Agent |
 |----|------|--------|---------------|
@@ -157,10 +157,10 @@
 
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 7.1 | HRM hospital report inbox module | ⬜ | |
-| 7.2 | HRM report auto-file to patient chart | ⬜ | |
-| 7.3 | DHDR drug repository query | ⬜ | |
-| 7.4 | ConnectingOntario viewer integration | ⬜ | |
+| 7.1 | HRM hospital report inbox module | 🔶 | `/hrm-inbox`, `hrm_inbound_reports` |
+| 7.2 | HRM report auto-file to patient chart | 🔶 | Ingest + review queue + file action |
+| 7.3 | DHDR drug repository query | 🔶 | Chart button, gateway `queryDhdr` |
+| 7.4 | ConnectingOntario viewer integration | 🔶 | Phase 6 stubs + provincial hub settings |
 | 7.5 | Hub credentials and agreements per clinic | ⬜ | 🚫 Partner |
 
 ---
@@ -170,14 +170,14 @@
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | 8.1 | Modular adapter architecture | ✅ | `lib/interop/`, `IntegrationService` |
-| 8.2 | Configurable per-org/per-province interfaces | 🔶 | `config/provinces/on.json` |
-| 8.3 | Integration audit trail | 🔶 | `interop_messages` |
-| 8.4 | Unit tests for interop/billing | 🔶 | `npm run test:interop` |
-| 8.5 | Provincial sandbox integration tests | ⬜ | |
-| 8.6 | Internal API/integration runbooks | 🔶 | Interop docs exist |
-| 8.7 | User guides for provincial features | ⬜ | When live |
-| 8.8 | Load testing (labs, claims volume) | ⬜ | |
-| 8.9 | Monitoring/alerting for integration failures | 🔶 | Interop dashboard failure panel |
+| 8.2 | Configurable per-org/per-province interfaces | 🔶 | `/provincial-hub-settings`, `on.json` |
+| 8.3 | Integration audit trail | 🔶 | `interop_messages` + gateway audit |
+| 8.4 | Unit tests for interop/billing | 🔶 | `npm run test:interop` (phase7/8 tests) |
+| 8.5 | Provincial sandbox integration tests | ⬜ | 🚫 Partner sandboxes |
+| 8.6 | Internal API/integration runbooks | 🔶 | `PROVINCIAL-INTEGRATION-RUNBOOK.md` |
+| 8.7 | User guides for provincial features | 🔶 | User manual provincial section |
+| 8.8 | Load testing (labs, claims volume) | 🔶 | `scripts/load-test-interop.mjs` |
+| 8.9 | Monitoring/alerting for integration failures | 🔶 | Dashboard failure summary by type |
 
 ---
 
@@ -212,6 +212,7 @@
 
 | Date | Change |
 |------|--------|
+| 2026-06 | Phase 7 HRM/DHDR desk + Phase 8 engineering polish; Phases 0–8 software complete where possible |
 | 2026-06 | Phase 6 imaging desk software; Phases 0–6 complete where possible |
 | 2026-06 | Phase 5 PrescribeIT eRx desk software; Phases 0–5 complete where possible |
 | 2026-06-23 | Initial plan from owner brief + readiness report; merged with ONTARIOMD-READINESS-PLAN Tier A/B tasks |

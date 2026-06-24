@@ -25,6 +25,29 @@
     return rows.length;
   }
 
+  function summarizeByMessageType(rows) {
+    const counts = {};
+    (rows || []).forEach((r) => {
+      const key = r.message_type || 'unknown';
+      counts[key] = (counts[key] || 0) + 1;
+    });
+    return Object.entries(counts)
+      .sort((a, b) => b[1] - a[1])
+      .map(([type, count]) => ({ type, count }));
+  }
+
+  function renderFailureSummary(container, rows) {
+    const summary = summarizeByMessageType(rows);
+    if (!summary.length) {
+      container.innerHTML = '';
+      return;
+    }
+    container.innerHTML =
+      '<p><strong>Failures by type:</strong> ' +
+      summary.map((s) => `${s.type} (${s.count})`).join(' · ') +
+      '</p>';
+  }
+
   function renderFailuresTable(container, rows) {
     if (!rows.length) {
       container.innerHTML = '<p>No failed integration messages in the audit trail.</p>';
@@ -48,6 +71,8 @@
   global.MediForgeInteropFailures = {
     loadRecentFailures,
     loadFailureCount,
+    summarizeByMessageType,
+    renderFailureSummary,
     renderFailuresTable
   };
 })(typeof window !== 'undefined' ? window : globalThis);

@@ -497,13 +497,20 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~65–75% documented Ontario readiness (Phases 0–6 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
+**Current alignment:** ~70–80% documented Ontario readiness (Phases 0–8 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
-**Phases 0–6 software are complete** (where possible without partner credentials). Do not start **Phase 7+** or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
+**Phases 0–8 software are complete** (where possible without partner credentials). Do not start **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
 
 Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
+
+### June 2026: Phase 7 HRM/DHDR + Phase 8 engineering — deploy dev → staging → production
+
+- **Owner ask:** Implement Phase 7 and 8 software we own; full Ontario doc sync; deploy.
+- **Phase 7:** `/hrm-inbox`, `/provincial-hub-settings`, HRM ingest + DHDR query, `hrm_query`/`dhdr_query` consents, gateway actions, chart DHDR button, migrations `20260626100000` + `20260626110000`.
+- **Phase 8:** provincial integration runbook, load-test script, failure summary by message type, phase7/8 interop tests.
+- **Docs:** Phase 7/8 completion docs, implementation plan, readiness/investor/capabilities/evidence binder; STOP GATE now OntarioMD Stage 5 only.
 
 ### Historical: Tier A/B same-day sprint (Phase 0, completed June 2026)
 

@@ -11,7 +11,7 @@
 
 ## Executive Summary
 
-MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **60 to 70%** after Phases 0–5 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
+MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **70 to 80%** after Phases 0–8 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
 
 **Phases 0–5 (June 2026): software complete where possible.** Delivered: internal evidence, core standards, MCEDT claims desk, OLIS-ready lab desk, PrescribeIT-ready eRx desk, spec traceability, self-assessment, and evidence binder. These raise documented evidence to **60 to 70%** internal readiness but do not constitute OntarioMD certification.
 
@@ -41,7 +41,7 @@ MediForge is a Canada-first, web-based clinic platform with a strong functional 
 | **EHR Connectivity** | OLIS (labs) | Partial | 20% | High |
 | | MCEDT (OHIP claims) | Partial | 25% | High |
 | | PrescribeIT (eRx) | Partial | 35% | High |
-| | HRM (hospital reports) | Missing | 0% | Blocked |
+| | HRM (hospital reports) | Partial | 45% | Blocked live |
 | | DHDR (drug repository) | Missing | 0% | Blocked |
 | | ConnectingOntario | Missing | 0% | Blocked |
 | | Imaging DI / DIR | Partial | 45% | Medium |
@@ -253,23 +253,23 @@ All live provincial connections are **Blocked** until Infoway, Ontario Health, M
 
 | Requirement | Status | Evidence / Gap |
 |-------------|--------|----------------|
-| HRM inbox module | Missing | Not implemented |
-| Auto-file hospital reports to chart | Missing | Not implemented |
-| HRM message parsing (HL7 / FHIR) | Missing | No adapter |
+| HRM inbox module | Partial | `/hrm-inbox`, `hrm_inbound_reports` |
+| Auto-file hospital reports to chart | Partial | Review queue + file action |
+| HRM message parsing (HL7 / FHIR) | Partial | `hrm-adapter.js`, gateway `ingestHrmReport` |
 | Clinic HRM enrollment | Blocked | Ontario Health agreements |
 
-**Category status: Missing (Blocked)**
+**Category status: Partial (~45%)**
 
 ### 2.5 DHDR (Digital Health Drug Repository)
 
 | Requirement | Status | Evidence / Gap |
 |-------------|--------|----------------|
-| Provincial medication history query | Missing | Not implemented |
-| FHIR MedicationStatement ingest from DHDR | Missing | Not implemented |
-| Patient consent before query | Partial | Consent type planned; no live query |
+| Provincial medication history query | Partial | Chart button, gateway `queryDhdr` stub |
+| FHIR MedicationStatement ingest from DHDR | Partial | `dhdr.js` bundle parser |
+| Patient consent before query | Partial | `dhdr_query` consent type |
 | DHDR clinic enrollment | Blocked | Partner process |
 
-**Category status: Missing (Blocked)**
+**Category status: Partial (~40%)**
 
 ### 2.6 ConnectingOntario
 

@@ -6,6 +6,8 @@
     { id: 'data_sharing', label: 'Data Sharing With Care Team', description: 'Share chart information with authorized clinic staff and covered agents.' },
     { id: 'olis_query', label: 'OLIS Lab Query (Future)', description: 'When enabled, query Ontario lab network with patient consent.' },
     { id: 'prescribeit_erx', label: 'PrescribeIT e-Prescribing', description: 'When enabled, transmit prescriptions to provincial pharmacy network (PrescribeIT / national eRx).' },
+    { id: 'hrm_query', label: 'HRM Hospital Reports', description: 'When enabled, receive and file Ontario Health HRM hospital reports to this patient chart.' },
+    { id: 'dhdr_query', label: 'DHDR Medication History', description: 'When enabled, query provincial Digital Health Drug Repository for medication history.' },
     { id: 'research', label: 'De-Identified Quality / Research', description: 'Use de-identified data for quality improvement or research.' }
   ];
 
@@ -75,11 +77,37 @@
     };
   }
 
+  async function hasHrmConsent(patientId) {
+    const rows = await loadConsents(patientId);
+    const granted = rows.some((c) => c.consent_type === 'hrm_query' && c.granted === true);
+    if (granted) return { ok: true, granted: true };
+    return {
+      ok: false,
+      blocked: true,
+      code: 'HRM_CONSENT_REQUIRED',
+      message: 'Enable HRM Hospital Reports consent on the patient chart before provincial hospital report actions.'
+    };
+  }
+
+  async function hasDhdrConsent(patientId) {
+    const rows = await loadConsents(patientId);
+    const granted = rows.some((c) => c.consent_type === 'dhdr_query' && c.granted === true);
+    if (granted) return { ok: true, granted: true };
+    return {
+      ok: false,
+      blocked: true,
+      code: 'DHDR_CONSENT_REQUIRED',
+      message: 'Enable DHDR Medication History consent on the patient chart before provincial drug repository queries.'
+    };
+  }
+
   global.MediForgePatientConsent = {
     CONSENT_TYPES,
     loadConsents,
     saveConsent,
     hasOlisConsent,
-    hasErxConsent
+    hasErxConsent,
+    hasHrmConsent,
+    hasDhdrConsent
   };
 })(typeof window !== 'undefined' ? window : globalThis);

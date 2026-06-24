@@ -57,8 +57,8 @@ Legend: **Done** = implemented and testable in product · **Partial** = foundati
 | DIR / Imaging | DICOMweb links | Partial | Chart viewer, documents, orders tab |
 | ConnectingOntario | DI viewer launch | Partial | Chart + interop dashboard stubs |
 | SMART-on-FHIR | Contextual viewer launch | Partial | Chart + interop dashboard stubs |
-| HRM | Hospital report inbox | Blocked | Phase 7 |
-| DHDR | Provincial drug repository | Blocked | Phase 7 |
+| HRM | Hospital report inbox | Partial | `/hrm-inbox`, Phase 7 software |
+| DHDR | Provincial drug repository | Partial | Chart query + gateway stub, Phase 7 |
 | ONE ID | Provincial identity federation | Blocked | Supabase auth today |
 
 ## Test and evidence artifacts

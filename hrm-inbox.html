@@ -1,0 +1,92 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>HRM Inbox | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 960px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #c62828; margin-top: 0; }
+    textarea { width: 100%; min-height: 140px; font-family: monospace; font-size: .85rem; }
+    .hrm-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .92rem; }
+    .hrm-table th, .hrm-table td { padding: 10px 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .hrm-table th { background: #c62828; color: #fff; }
+    .btn { margin-top: 12px; margin-right: 8px; padding: 10px 18px; background: #c62828; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-secondary { background: #008753; }
+    a.btn { display: inline-block; text-decoration: none; }
+    .note { background: #fdecea; border: 1px solid #ef9a9a; padding: 12px; border-radius: 8px; margin: 12px 0; font-size: .92rem; }
+    .btn-sm { font-size: .8rem; padding: 4px 10px; background: #FF9800; color: #fff; border: none; border-radius: 4px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>HRM Inbox (Hospital Reports)</h1>
+    <p>Inbound hospital reports for review and chart filing. Live HRM requires Ontario Health enrollment and patient <code>hrm_query</code> consent.</p>
+    <div class="note">Reports with <strong>awaiting_review</strong> need provider sign-off before patients see them in the portal.</div>
+    <div id="queue-wrap">Loading...</div>
+    <h2>Ingest report</h2>
+    <label for="patient-id">Patient ID (optional if embedded in message)</label>
+    <input type="text" id="patient-id" placeholder="patient-uuid" style="width:100%;padding:10px;margin:8px 0;box-sizing:border-box">
+    <textarea id="hrm-raw" placeholder="Paste HL7 MDM^T02 / ORU or FHIR DocumentReference JSON..."></textarea>
+    <button type="button" class="btn" id="ingest-btn">Ingest report</button>
+    <button type="button" class="btn btn-secondary" id="preview-btn">Preview mapping</button>
+    <pre id="preview" style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:.8rem;max-height:240px;overflow:auto"></pre>
+    <a href="provincial-hub-settings" class="btn btn-secondary">Provincial Hub Settings</a>
+    <a href="interop-dashboard" class="btn btn-secondary">Interop Dashboard</a>
+    <a href="dashboard" class="btn">← Dashboard</a>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/patient-consent.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/interop-hooks.js"></script>
+  <script src="/js/hrm-inbox.js"></script>
+  <script>
+    (async function () {
+      const wrap = document.getElementById('queue-wrap');
+      async function refresh() {
+        const rows = await MediForgeHrmInbox.loadAwaitingReports();
+        MediForgeHrmInbox.renderQueue(wrap, rows);
+      }
+      await refresh();
+
+      wrap.addEventListener('click', async (e) => {
+        const id = e.target.getAttribute('data-file');
+        if (!id) return;
+        const patientId = prompt('Patient ID to file this report to:');
+        if (!patientId) return;
+        await MediForgeHrmInbox.fileReport(id, patientId.trim());
+        await refresh();
+      });
+
+      document.getElementById('preview-btn').addEventListener('click', async () => {
+        const raw = document.getElementById('hrm-raw').value.trim();
+        if (!raw) return alert('Paste HL7 or FHIR JSON first.');
+        const payload = raw.startsWith('{') ? { fhirBundle: JSON.parse(raw) } : { rawHl7: raw };
+        const res = await MediForgeInteropClient.ingestHrmReport(payload);
+        document.getElementById('preview').textContent = JSON.stringify(res.result || res, null, 2);
+      });
+
+      document.getElementById('ingest-btn').addEventListener('click', async () => {
+        const raw = document.getElementById('hrm-raw').value.trim();
+        const patientId = document.getElementById('patient-id').value.trim();
+        if (!raw) return alert('Paste HL7 or FHIR JSON first.');
+        if (window.MediForgeInterop?.ingestHrmAndApply) {
+          const payload = { patientId: patientId || undefined };
+          if (raw.startsWith('{')) payload.fhirBundle = JSON.parse(raw);
+          else payload.rawHl7 = raw;
+          const result = await MediForgeInterop.ingestHrmAndApply(payload);
+          if (result.blocked) return alert(result.message);
+          if (result.error) return alert(result.error);
+          alert(result.applied ? 'Report filed to HRM inbox.' : 'Ingested.');
+          await refresh();
+        } else alert('Interop hooks not loaded.');
+      });
+    })();
+  </script>
+</body>
+</html>

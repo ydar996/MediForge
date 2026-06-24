@@ -34,7 +34,7 @@
 </head>
 <body>
   <div class="container">
-    <p class="nav-links"><a href="/">← Home</a> <a href="lab-results-queue">Lab Results Queue</a> <a href="imaging-results-queue">Imaging Results Queue</a> <a href="external-imaging-orders">External Imaging</a> <a href="claims-queue">Claims Queue</a> <a href="patient-identifiers">PHN Registry</a></p>
+    <p class="nav-links"><a href="/">← Home</a> <a href="lab-results-queue">Lab Results Queue</a> <a href="imaging-results-queue">Imaging Results Queue</a> <a href="external-imaging-orders">External Imaging</a> <a href="hrm-inbox">HRM Inbox</a> <a href="provincial-hub-settings">Provincial Hubs</a> <a href="claims-queue">Claims Queue</a> <a href="patient-identifiers">PHN Registry</a></p>
     <h1>Interoperability Dashboard</h1>
     <p>HL7 v2 · FHIR R4 · DICOMweb · Ontario OLIS / Infoway compatible</p>
 
@@ -99,9 +99,28 @@
     </div>
 
     <div class="card">
+      <h2>HRM inbox (Phase 7)</h2>
+      <p>Ingest hospital HL7 MDM/ORU or FHIR DocumentReference. Requires patient <code>hrm_query</code> consent when enabled.</p>
+      <textarea id="hrm-input" placeholder="MSH|^~\&|HOSP|..."></textarea>
+      <button type="button" id="btn-ingest-hrm">Preview HRM ingest</button>
+      <pre id="hrm-output"></pre>
+      <p><a href="/hrm-inbox">Open HRM inbox desk →</a></p>
+    </div>
+
+    <div class="card">
+      <h2>DHDR medication query (Phase 7)</h2>
+      <p>Build provincial medication history query URL or parse a MedicationStatement bundle. Requires <code>dhdr_query</code> consent.</p>
+      <input type="text" id="dhdr-patient-id" placeholder="Patient ID" style="width:100%;padding:10px;margin:8px 0;box-sizing:border-box">
+      <button type="button" id="btn-dhdr-query">Build DHDR query URL</button>
+      <pre id="dhdr-output"></pre>
+      <p><a href="/provincial-hub-settings">Provincial hub settings →</a></p>
+    </div>
+
+    <div class="card">
       <h2>Integration failures (audit trail)</h2>
       <p>Recent failed messages from <code>interop_messages</code> (append-only audit).</p>
       <button type="button" class="secondary" id="btn-refresh-failures">Refresh</button>
+      <div id="failures-summary"></div>
       <div id="failures-wrap">Loading…</div>
     </div>
 
@@ -112,6 +131,7 @@
         <div class="metric"><strong>Lab results</strong><br>ORU^R01 / DiagnosticReport</div>
         <div class="metric"><strong>Imaging</strong><br>DICOMweb + ImagingStudy</div>
         <div class="metric"><strong>eRx</strong><br>MedicationRequest / CCDD</div>
+        <div class="metric"><strong>HRM / DHDR</strong><br>Hospital reports + drug history</div>
       </div>
       <p style="margin-top:16px;color:#666;">Configure <code>config/interoperability.json</code> and Netlify env vars. Set <code>enabled: true</code> for live transmit.</p>
     </div>
@@ -160,6 +180,7 @@
         return;
       }
       const rows = await MediForgeInteropFailures.loadRecentFailures();
+      MediForgeInteropFailures.renderFailureSummary(document.getElementById('failures-summary'), rows);
       MediForgeInteropFailures.renderFailuresTable(wrap, rows);
       countEl.innerHTML = rows.length
         ? `<span class="status off">${rows.length} recent failure(s)</span>`
@@ -295,6 +316,38 @@
           patient: { id: patientId },
           scope: 'launch/patient openid fhirUser',
           launch: 'mediforge-chart'
+        });
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-ingest-hrm').addEventListener('click', async () => {
+      const raw = document.getElementById('hrm-input').value.trim();
+      const out = document.getElementById('hrm-output');
+      if (!raw) { out.textContent = 'Paste HL7 or FHIR JSON first.'; return; }
+      try {
+        const ctx = await orgContext();
+        const payload = raw.startsWith('{')
+          ? { fhirBundle: JSON.parse(raw), hrmConsentGranted: true, ...ctx }
+          : { rawHl7: raw, hrmConsentGranted: true, ...ctx };
+        const res = await MediForgeInteropClient.ingestHrmReport(payload);
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-dhdr-query').addEventListener('click', async () => {
+      const out = document.getElementById('dhdr-output');
+      try {
+        const ctx = await orgContext();
+        const patientId = document.getElementById('dhdr-patient-id').value.trim() || 'demo-patient';
+        const res = await MediForgeInteropClient.queryDhdr({
+          ...ctx,
+          patient: { id: patientId, phn: '1234567890AB' },
+          dhdrConsentGranted: true
         });
         out.textContent = JSON.stringify(res.result || res, null, 2);
       } catch (e) {

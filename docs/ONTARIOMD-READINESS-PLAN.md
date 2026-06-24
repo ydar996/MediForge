@@ -1,16 +1,16 @@
 # OntarioMD Readiness Plan: MediForge
 
 **Created:** June 23, 2026  
-**Last updated:** June 2026 (Phases 0–5 software)  
+**Last updated:** June 2026 (Phases 0–8 software)  
 **Owner target:** Complete internal readiness work in focused sprints, not an open-ended program.  
-**Current estimated alignment:** ~60–70% overall (Phases 0–5 software complete where possible, June 2026).  
+**Current estimated alignment:** ~70–80% overall (Phases 0–8 software complete where possible, June 2026).  
 **Next gate:** OntarioMD Stage 5 validation and live provincial pipes (partner credentials + owner vendor contact).
 
 ---
 
 ## STOP GATE: agents must read this first
 
-**Phases 0–5 software are complete** (where possible without partner credentials). Do not start **Phase 6+** (live imaging hubs, HRM/DHDR) or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
+**Phases 0–8 software are complete** (where possible without partner credentials). Do not start **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
 
 Until then: documentation upkeep and bug fixes only; no new Ontario implementation without approval.
 
@@ -20,7 +20,7 @@ When readiness scores or phase status change, update **all companion pairs** in 
 
 ---
 
-## Baseline (post Phases 0–5, June 2026)
+## Baseline (post Phases 0–8, June 2026)
 
 | Category | ~% in place | Strongest | Weakest |
 |----------|-------------|-----------|---------|

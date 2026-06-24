@@ -1800,6 +1800,7 @@
     <button onclick="exportCurrentPatientAdt()" class="nav-btn">📤 Export HL7 ADT</button>
     <button onclick="launchPatientConnectingOntario()" class="nav-btn">🖼️ DI Viewer (ConnectingOntario)</button>
     <button onclick="launchPatientSmartFhir()" class="nav-btn">🔗 SMART-on-FHIR Launch</button>
+    <button onclick="queryPatientDhdr()" class="nav-btn">💊 DHDR Medication History</button>
     <button onclick="exportCurrentPatientRecord()" class="nav-btn">💾 Export Full Record</button>
   </div>
   
@@ -4796,7 +4797,8 @@
   <script src="js/backup.js?v=20260623"></script>
   <script src="js/chart-image-viewer.js?v=20260624"></script>
   <script src="js/critical-lab-alerts.js?v=20260624"></script>
-  <script src="js/interop-client.js?v=20260624"></script>
+  <script src="js/interop-client.js"></script>
+  <script src="js/patient-consent.js"></script>
   <script src="js/interop-hooks.js?v=20260624"></script>
   <script src="js/interoperability.js?v=20260624"></script>
   <script src="js/fhir-patient-export.js?v=20260623"></script>
@@ -4898,6 +4900,24 @@
         window.open(url, '_blank', 'noopener');
       } else {
         alert('SMART-on-FHIR launch is a stub until FHIR base URL is configured. See interop dashboard for preview.');
+      }
+    }
+
+    async function queryPatientDhdr() {
+      const patientId = getCurrentPatientIdFromUrl();
+      if (!patientId || !window.MediForgeInterop?.queryDhdrForPatient) {
+        return alert('Interop module not loaded.');
+      }
+      const res = await MediForgeInterop.queryDhdrForPatient({ patientId });
+      if (res.blocked) return alert(res.message);
+      const meds = res.result?.medications || res.medications;
+      const queryUrl = res.result?.queryUrl || res.queryUrl;
+      if (meds?.length) {
+        alert('DHDR medications (preview):\n' + meds.map((m) => `- ${m.medication} (${m.status})`).join('\n'));
+      } else if (queryUrl && !String(queryUrl).includes('REPLACE_')) {
+        window.open(queryUrl, '_blank', 'noopener');
+      } else {
+        alert('DHDR query is queued until provincial FHIR base URL is configured. See Provincial Hub Settings.');
       }
     }
 

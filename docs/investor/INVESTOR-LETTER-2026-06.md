@@ -11,23 +11,23 @@
 
 Dear Investor,
 
-Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 6**, and where we are headed next.
+Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 8**, and where we are headed next.
 
 ## The short version
 
 MediForge is a **working multi-clinic EMR**, not a prototype. Daily clinic workflows are in production: patient charts, scheduling, prescribing, labs, imaging orders, billing, and a patient portal.
 
-Through June 2026 we completed **Phases 0–6 in software** (everything we can do without live provincial credentials):
+Through June 2026 we completed **Phases 0–8 in software** (everything we can do without live provincial credentials):
 
 | Metric | Estimate |
 |--------|----------|
-| Overall Ontario readiness | **65–75%** |
+| Overall Ontario readiness | **70–80%** |
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
 
 We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infoway connections remain industry gates every vendor must pass. Our gap is documented, bounded, and actively managed.
 
-## What we delivered (Phases 0–6, software)
+## What we delivered (Phases 0–8, software)
 
 **Phase 0:** OntarioMD gap report, PHIPA compliance pack, FHIR chart export, CPP summary, structured consents, i4C mapping, OHIP claim drafts, readiness page.
 
@@ -43,7 +43,11 @@ We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infowa
 
 **Phase 6:** Imaging results queue, external imaging orders (HL7/FHIR export), DICOMweb study links, ConnectingOntario and SMART-on-FHIR launch stubs (live DIR blocked).
 
-Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT/DIR pipes, OntarioMD Stage 5 validation, and third-party security audit.
+**Phase 7:** HRM inbox desk, hospital report ingest, DHDR medication query hooks, provincial hub settings, HRM/DHDR consent gates (live provincial pipes blocked).
+
+**Phase 8:** Provincial integration runbook, interop load-test script, failure monitoring by message type (third-party security audit still outstanding).
+
+Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT/DIR/HRM/DHDR pipes, OntarioMD Stage 5 validation, and third-party security audit.
 
 ## Why this matters for investment
 
@@ -52,11 +56,11 @@ Items that require **external partners** remain honestly blocked: ONE ID login, 
 3. **Evidence in the product:** Gap reports, compliance docs, self-assessment, and shareable pages are available for diligence today.
 4. **Canada-first:** ICD-10-CA, Ontario fee codes, Health Canada formulary, and CAD billing are in the product.
 
-## What comes next (Phase 7+)
+## What comes next
 
-1. Live MOH MCEDT and Infoway OLIS/PrescribeIT/DIR (clinic credentials)
+1. Live MOH MCEDT and Infoway OLIS/PrescribeIT/DIR/HRM/DHDR (clinic credentials)
 2. OntarioMD vendor path and reference site (owner action)
-3. HRM, DHDR, ConnectingOntario production hubs (Phase 7)
+3. OntarioMD Stage 5 validation at reference clinic
 
 We welcome diligence calls, demos, and introductions to Ontario clinical partners who may serve as a reference site.
 
