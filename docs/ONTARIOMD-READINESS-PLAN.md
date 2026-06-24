@@ -9,11 +9,9 @@
 
 ## STOP GATE: agents must read this first
 
-**Do not implement any item in this plan until the owner explicitly says:**
+**Phase 0 is complete.** Do not start **Phase 1+** until the owner explicitly says to proceed (e.g. Start Phase 1).
 
-> “Implement the Ontario-ready plan” / “Go ahead with OntarioMD sprint”
-
-Until then: documentation, gap analysis, and planning only.
+Until then: documentation upkeep only; no new Ontario implementation without approval.
 
 After approval: work on **`dev`** first; deploy only with owner approval per **`DEPLOYMENT-PIPELINE.md`**.
 
