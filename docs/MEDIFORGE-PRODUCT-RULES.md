@@ -117,10 +117,29 @@ Agents must follow this without the owner needing to repeat it. See **`AGENT-HAN
 
 ---
 
+## 9. Documentation stays in sync with code (always)
+
+When you change the product, update related documentation **in the same session**. Do not wait for the owner to ask.
+
+| Change type | Also update |
+|-------------|-------------|
+| Shareable webpage (`ontario-readiness.html`, `capabilities.html`) | Written companion in `docs/` |
+| Ontario readiness scores or gap status | `ONTARIO-EMR-READINESS-REPORT.md`, `ONTARIOMD-GAP-REPORT.md`, `/ontario-readiness` |
+| Implementation plan task completed | `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` status column |
+| Staff-visible workflow | `USER-MANUAL.md` + `user-manual.html` |
+| Any code/config session | `AGENT-HANDOVER.md` session log, `DOCUMENTATION-INDEX.md` |
+
+**Minimum before you finish:** session log in handover, documentation index if docs changed, companion page/doc pairs if either side changed.
+
+See **`AGENT-HANDOVER.md`** → **Rule #3** and **§ How to keep this document alive**.
+
+---
+
 ## Change log
 
 | Date | Change |
 |------|--------|
+| 2026-06-23 | §9 Documentation sync with code; companion page/doc pairs |
 | 2026-06-23 | §8 No em dashes: colons preferred; check script added |
 | 2026-06-17 | §6 Communication with project owner: simplest layman's terms always |
 | 2026-06-11 | Initial rules document at MediForge fork |

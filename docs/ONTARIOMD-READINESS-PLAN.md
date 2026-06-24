@@ -2,8 +2,8 @@
 
 **Created:** June 23, 2026  
 **Owner target:** Complete internal readiness work **today** (single sprint), not an 8-week program.  
-**Current estimated alignment:** ~35–45% overall (see baseline below).  
-**Realistic same-day lift:** +5 to +12 points → ~45–55% (internal evidence only; not certification).
+**Current estimated alignment:** ~45–55% overall (Phase 0 complete, June 23, 2026).  
+**Phase 1:** Blocked until owner approves next implementation phase.
 
 ---
 
@@ -19,14 +19,14 @@ After approval: work on **`dev`** first; deploy only with owner approval per **`
 
 ---
 
-## Baseline (June 23, 2026)
+## Baseline (post Phase 0, June 23, 2026)
 
 | Category | ~% in place | Strongest | Weakest |
 |----------|-------------|-----------|---------|
-| Foundational (HL7/FHIR, security, privacy) | 40–50% | Auth, RLS, audit_logs exist | ONE ID, immutable audit proof, formal PHIPA pack |
+| Foundational (HL7/FHIR, security, privacy) | 55–65% | Compliance pack, append-only audit, patient-access logging | ONE ID, legal review, third-party audit |
 | EHR connectivity (OLIS, HRM, PrescribeIT, etc.) | 5–15% | `lib/interop/`, integration stubs | No live provincial pipes |
-| Functional clinical | 70–80% | Charting, orders, scheduling, portal | Formal CPP, i4C-specific analytics |
-| Certification process | 0% |: | Not started |
+| Functional clinical | 75–85% | Charting, orders, portal; CPP, i4C, consents live | Full OntarioMD functional conformance |
+| Certification process | 5–10% | Gap report, evidence binder, readiness pages | OntarioMD application not started |
 
 **Sources:** Owner-provided OntarioMD spec summary (June 23, 2026); internal codebase review (`lib/interop/`, `lib/integrations/`, clinical modules, billing stubs).
 

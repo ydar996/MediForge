@@ -4,6 +4,8 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 
 **Last updated:** June 23, 2026
 
+**Agent rule:** When you change code or shareable pages, update related docs in the same session (**`AGENT-HANDOVER.md`** Rule #3). Keep companion pairs in sync (e.g. `/ontario-readiness` ↔ `ONTARIO-EMR-READINESS-REPORT.md`).
+
 ---
 
 ## Start here
@@ -30,7 +32,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[HYBRID-ARCHITECTURE-AUDIT.md](../HYBRID-ARCHITECTURE-AUDIT.md)** | Hybrid architecture audit |
 | **[ABSTRACTION-LAYER-EXPLAINED.md](../ABSTRACTION-LAYER-EXPLAINED.md)** | Data abstraction layer |
 | **[docs/ONTARIOMD-READINESS-PLAN.md](ONTARIOMD-READINESS-PLAN.md)** | **OntarioMD gap baseline, today sprint tiers, STOP gate: read before Ontario work** |
-| **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written investor readiness report (companion to /ontario-readiness)** |
+| **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written investor readiness report (keep in sync with /ontario-readiness)** |
 | **[docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md](ONTARIO-EMR-IMPLEMENTATION-PLAN.md)** | **Full Ontario EMR task backlog with milestones (Phases 0–8)** |
 | **[ontario-readiness.html](../ontario-readiness.html)** | **Investor readiness webpage (mediforge.netlify.app/ontario-readiness)** |
 | **[docs/ONTARIOMD-GAP-REPORT.md](ONTARIOMD-GAP-REPORT.md)** | **Full OntarioMD gap status by category** |

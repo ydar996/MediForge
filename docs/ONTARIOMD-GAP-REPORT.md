@@ -11,18 +11,18 @@
 
 ## Executive Summary
 
-MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **35 to 45%**. Clinical workflows are **70 to 80%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
+MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **45 to 55%** after Phase 0 (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
 
-**Phase 0 (June 2026):** Internal readiness work is in progress this sprint: gap report, compliance pack, audit hardening migration, FHIR R4 patient chart export, CPP-aligned patient summary, structured consent capture, i4C indicator mapping, and OHIP claim file export. These items raise documented evidence toward **45 to 55%** internal readiness but do not constitute OntarioMD certification.
+**Phase 0 (June 2026): complete.** Delivered: gap report, compliance pack, audit hardening migration, FHIR R4 patient chart export, CPP-aligned patient summary, structured consent capture, i4C indicator mapping, and OHIP claim file export. These raise documented evidence to **45 to 55%** internal readiness but do not constitute OntarioMD certification.
 
 | Pillar | ~% Ready | Status Mix |
 |--------|----------|------------|
-| **Overall Ontario readiness** | 35 to 45% | Clinical strong; connectivity and certification early |
-| **Foundational standards and security** | 40 to 50% | Libraries and RBAC in place; ONE ID and formal PHIPA pack outstanding |
+| **Overall Ontario readiness** | 45 to 55% | Phase 0 evidence complete; live connectivity and certification early |
+| **Foundational standards and security** | 55 to 65% | Compliance pack, audit hardening; ONE ID and legal review outstanding |
 | **EHR connectivity (provincial)** | 5 to 15% | Adapters and stubs; no live provincial pipes |
-| **Functional clinical EMR** | 70 to 80% | Charting, orders, portal, billing deployed; CPP and i4C formalization in Phase 0 |
-| **OntarioMD certification** | 0% | Planning and evidence binder started; application not submitted |
-| **Engineering practices** | 50 to 65% | Modular adapters strong; monitoring and sandbox testing weak |
+| **Functional clinical EMR** | 75 to 85% | CPP summary, i4C mapping, consent capture live |
+| **OntarioMD certification** | 5 to 10% | Gap report and evidence binder; application not submitted |
+| **Engineering practices** | 55 to 70% | Modular adapters and audit strong; sandbox testing weak |
 
 ---
 
@@ -31,15 +31,15 @@ MediForge is a Canada-first, web-based clinic platform with a strong functional 
 | Category | Item | Status | ~% | Priority |
 |----------|------|--------|-----|----------|
 | **Foundational** | HL7 v2 messaging | Partial | 60% | High |
-| | FHIR R4 | Partial | 50% | High |
+| | FHIR R4 | Partial | 55% | High |
 | | DICOM | Partial | 40% | Medium |
-| | PHIPA / security | Partial | 45% | High |
+| | PHIPA / security | Partial | 60% | High |
 | | ONE ID federation | Missing | 0% | Blocked |
 | | Audit logging | Partial | 65% | High |
 | | Encryption | Partial | 55% | Medium |
 | | Consent management | Partial | 40% | High |
 | **EHR Connectivity** | OLIS (labs) | Partial | 20% | High |
-| | MCEDT (OHIP claims) | Partial | 15% | High |
+| | MCEDT (OHIP claims) | Partial | 25% | High |
 | | PrescribeIT (eRx) | Partial | 10% | High |
 | | HRM (hospital reports) | Missing | 0% | Blocked |
 | | DHDR (drug repository) | Missing | 0% | Blocked |
@@ -57,7 +57,7 @@ MediForge is a Canada-first, web-based clinic platform with a strong functional 
 | | Inpatient module | Done | 80% | Low |
 | | Pharmacy module | Partial | 75% | Low |
 | **Certification** | OntarioMD vendor process | Missing | 0% | Blocked |
-| | Evidence binder | Partial | 35% | High |
+| | Evidence binder | Partial | 50% | High |
 | **Engineering** | Modular adapters | Done | 80% | : |
 | | Automated testing | Partial | 50% | Medium |
 | | Monitoring / alerting | Partial | 30% | Medium |
@@ -65,23 +65,25 @@ MediForge is a Canada-first, web-based clinic platform with a strong functional 
 
 ---
 
-## Phase 0: June 2026 Internal Readiness Sprint
+## Phase 0: June 2026 Internal Readiness Sprint (complete)
 
-These deliverables close documentation and evidence gaps without provincial credentials. Status as of June 23, 2026:
+These deliverables close documentation and evidence gaps without provincial credentials. Status as of June 23, 2026: **all items delivered** (Done or Partial with repo evidence).
 
 | ID | Deliverable | Status | Notes |
 |----|-------------|--------|-------|
 | 0.1 | This gap report (`ONTARIOMD-GAP-REPORT.md`) | **Done** | Published June 2026 |
-| 0.2 | Compliance pack (`docs/compliance/`) | **Partial** | PHIPA, breach, custody, DR, residency docs in sprint |
-| 0.3 | Audit hardening migration | **Partial** | `20260623200000_audit_logs_append_only.sql`; deploy to prod pending |
+| 0.2 | Compliance pack (`docs/compliance/`) | **Done** | PHIPA, breach, custody, DR, residency; legal review recommended |
+| 0.3 | Audit hardening migration | **Partial** | `20260623200000_audit_logs_append_only.sql`; owner runs per environment |
 | 0.4 | FHIR R4 patient chart export | **Partial** | `lib/interop/fhir/patient-chart-bundle.js`, `js/fhir-patient-export.js`, tests |
-| 0.5 | CPP-aligned patient summary | **Partial** | Ontario CPP field mapping view in sprint |
-| 0.6 | Data residency statement | **Partial** | Part of compliance pack |
-| 0.7 | Consent capture (DB + UI) | **Partial** | `patient_consents` migration, `js/patient-consent.js` |
+| 0.5 | CPP-aligned patient summary | **Partial** | `/cpp-patient-summary`, `js/cpp-patient-summary.js` |
+| 0.6 | Data residency statement | **Done** | `docs/compliance/DATA-RESIDENCY-CANADA.md` |
+| 0.7 | Consent capture (DB + UI) | **Partial** | `patient_consents` migration, `/patient-consents`, `js/patient-consent.js` |
 | 0.8 | i4C indicator mapping | **Partial** | `js/i4c-indicator-map.js` from preventive gaps |
 | 0.9 | OHIP claim file export | **Partial** | `js/ohip-claim-export.js`; not live MCEDT submit |
+| 0.10 | Investor readiness webpage | **Done** | `/ontario-readiness` synced with this report |
+| 0.11 | Written readiness report | **Done** | `ONTARIO-EMR-READINESS-REPORT.md` |
 
-**Phase 0 exit criteria:** All items at **Done** or **Partial** with evidence in repo; live provincial pipes remain **Blocked**.
+**Phase 0 exit criteria:** met. Live provincial pipes remain **Blocked**. Phase 1 blocked until owner approves.
 
 ---
 
@@ -594,7 +596,7 @@ These modules support daily clinic operations and align with Ontario EMR functio
 |-------|-------|
 | Author | MediForge engineering / OntarioMD readiness sprint |
 | Last updated | June 23, 2026 |
-| Next review | After Phase 0 completion or OntarioMD vendor contact |
+| Next review | After Phase 1 start or OntarioMD vendor contact |
 | Certification claim | **None.** This document is internal gap analysis only. |
 
 ---

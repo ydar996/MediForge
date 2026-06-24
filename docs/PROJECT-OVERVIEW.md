@@ -14,7 +14,7 @@ The owner is **not** a developer. **Every** agent reply to them must use the **s
 - Avoid leading with jargon; if a technical word is needed, give a one-sentence plain-English meaning right after.
 - Do the work (deploy, commit, checks) when possible instead of long DIY checklists.
 
-Full rules: **`AGENT-HANDOVER.md`** → **Rule #1** (plain English) and **Rule #2** (no em dashes).
+Full rules: **`AGENT-HANDOVER.md`** → **Rule #1** (plain English), **Rule #2** (no em dashes), **Rule #3** (documentation sync).
 
 ---
 

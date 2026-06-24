@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 23, 2026
+**Last updated:** June 23, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -39,9 +39,36 @@ See **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8.
 
 ---
 
+## Rule #3: Keep all project documentation in sync (always)
+
+Code, config, and docs ship together. **Every session that changes the product must update related documentation before you finish**: not only when the owner asks.
+
+| Do | Don't |
+|----|-------|
+| Update the written report when you change its shareable webpage (e.g. `ontario-readiness.html` ↔ `ONTARIO-EMR-READINESS-REPORT.md`) | Ship code or UI changes and leave companion docs at old percentages or "coming soon" |
+| Add a session log entry and bump **Last updated** in this file | Assume the owner will notice stale docs later |
+| Update **`docs/DOCUMENTATION-INDEX.md`** when you add or rename docs | Skip docs because "it's just a small fix" |
+| Update user manual (md + html) when staff-visible workflows change | Update only the file you edited |
+
+**Minimum checklist (every session with code or config changes):**
+
+1. **`AGENT-HANDOVER.md`**: session log + **Last updated** date.
+2. **`docs/DOCUMENTATION-INDEX.md`**: new/changed doc rows.
+3. **Companion pairs** (keep in sync):
+   - `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`
+   - `/capabilities` ↔ `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`
+   - `user-manual.html` ↔ `docs/USER-MANUAL.md`
+   - `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` task status when you complete plan items
+   - `docs/ONTARIOMD-GAP-REPORT.md` when Ontario readiness scores or gaps change
+4. **`docs/PROJECT-OVERVIEW.md`**: when architecture, auth, or major modules change.
+
+Full checklist: **§ How to keep this document alive** below. See also **`docs/MEDIFORGE-PRODUCT-RULES.md`** §9.
+
+---
+
 ## How to keep this document alive
 
-Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing**: not only when the owner asks.
+Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing**: not only when the owner asks. This is **Rule #3** above; the checklist below expands it.
 
 ### Always update (every session with code or config changes)
 
@@ -70,6 +97,7 @@ Documentation is part of the deliverable. **Every agent that makes meaningful ch
 
 - Do **not** paste secrets (passwords, service role keys, Netlify tokens) into any doc.
 - Do **not** finish a session with shipped code and stale handover/docs: the next agent and the owner depend on them.
+- When you change a **shareable webpage**, update its **written companion doc** in the same session (see Rule #3 companion pairs).
 - If you only answered a question with **no** code or config changes, doc updates are optional.
 
 ---
@@ -481,6 +509,16 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ### Session log
 
+### June 23, 2026 (later): Rule #3 documentation sync + stale Ontario docs fixed
+
+- **Owner ask:** Keep all project documentation updated as changes are made; confirm handover includes this permanently.
+- **Added:** **Rule #3: Keep all project documentation in sync** at top of `AGENT-HANDOVER.md` (companion page/doc pairs, minimum checklist).
+- **Added:** **`docs/MEDIFORGE-PRODUCT-RULES.md`** §9 (same rule for developers).
+- **Fixed:** `docs/ONTARIO-EMR-READINESS-REPORT.md` synced to `/ontario-readiness` (45–55%, Phase 0 complete).
+- **Fixed:** `docs/ONTARIOMD-GAP-REPORT.md` executive summary and Phase 0 table marked complete.
+- **Fixed:** `docs/ONTARIOMD-READINESS-PLAN.md` baseline updated post Phase 0.
+- **Lesson:** Rule existed in § How to keep this document alive since June 17 but was not followed during Phase 0 and ontario-readiness deploy; Rule #3 makes it impossible to miss.
+
 ### June 23, 2026: Phase 0 Ontario EMR implementation sprint **completed** (owner approved start)
 
 - **Owner said:** "Start implementation plan phase 0 first."
@@ -499,6 +537,12 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 - **Phase 1 blocked** until owner says to proceed.
 - **Git:** commit `a5ce7ad` on `dev` (26 files, +2716 lines).
 - **Deploy:** Netlify dev draft live at `https://6a3b35f806e4c50665ca006a--mediforge.netlify.app` (June 23, 2026). Run migrations before testing consents/RPC audit on live DB.
+
+### June 23, 2026 (later): Ontario readiness webpage updated for Phase 0
+
+- **Owner ask:** Reflect Phase 0 progress on `/ontario-readiness`.
+- **Updated:** `ontario-readiness.html` (45–55% overall, Phase 0 complete callout, pillar and table updates).
+- **Git:** commit `b183d13`; production deploy live.
 
 ### June 23, 2026 (later): Ontario readiness report docs, em dash policy, app-wide punctuation fix
 
@@ -535,4 +579,4 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1 plain English, #2 no em dashes) → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs when staff-visible features changed. **When touching lab/imaging catalogs:** follow **Billing fee codes: agent checklist** above. **OntarioMD:** read **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** and **`docs/ONTARIOMD-READINESS-PLAN.md`**; **do not implement** until owner approves.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1 plain English, #2 no em dashes, **#3 doc sync**) → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** Rule #3 checklist (handover session log, documentation index, companion page/doc pairs, user manual if staff-visible). **When touching lab/imaging catalogs:** follow **Billing fee codes: agent checklist** above. **OntarioMD:** read **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** and **`docs/ONTARIOMD-READINESS-PLAN.md`**; Phase 0 complete; **Phase 1 blocked** until owner approves.
