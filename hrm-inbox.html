@@ -57,9 +57,14 @@
       wrap.addEventListener('click', async (e) => {
         const id = e.target.getAttribute('data-file');
         if (!id) return;
-        const patientId = prompt('Patient ID to file this report to:');
-        if (!patientId) return;
-        await MediForgeHrmInbox.fileReport(id, patientId.trim());
+        let patientId = e.target.getAttribute('data-patient') || '';
+        if (!patientId) {
+          patientId = prompt('Patient ID to file this report to:') || '';
+        }
+        if (!patientId.trim()) return;
+        const res = await MediForgeHrmInbox.fileReport(id, patientId.trim());
+        if (res?.error) alert(res.error);
+        else alert('Report filed to patient chart.');
         await refresh();
       });
 

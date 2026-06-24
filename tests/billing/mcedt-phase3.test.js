@@ -28,6 +28,17 @@ describe('Phase 3: MCEDT format', () => {
     assert.match(xml, /A007A/);
   });
 
+  it('validates XML structure for exported batch', () => {
+    const batch = mcedtFormat.buildMcedtBatch({
+      claims: sampleBatch.claims,
+      submitter: sampleBatch.submitter
+    });
+    const xml = mcedtFormat.serializeBatchToXml(batch);
+    const xmlValidation = mcedtFormat.validateBatchXmlStructure(xml);
+    assert.equal(xmlValidation.valid, true);
+    assert.ok(xmlValidation.claimCount >= 1);
+  });
+
   it('parses MOH rejection JSON', () => {
     const r = mcedtFormat.parseMohRejection({ rejectionCode: 'E001', message: 'Invalid fee code', claimReference: 'INV-1' });
     assert.equal(r.rejectionCode, 'E001');

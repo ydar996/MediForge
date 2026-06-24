@@ -314,7 +314,11 @@ Live MOH/Infoway connections need clinic credentials. Staff can still use:
 | `/imaging-results-queue` | Paste inbound imaging reports; link DICOMweb studies |
 | `/external-imaging-orders` | Export HL7/FHIR imaging orders |
 | `/patient-identifiers` | PHN registry for provincial matching |
-| `/interop-dashboard` | HL7/FHIR tests, MLLP simulate, failure audit |
+| `/hrm-inbox` | Hospital report inbox: ingest HL7/FHIR, review, **File to chart** (writes unstructured record on patient) |
+| `/provincial-hub-settings` | Per-clinic HRM, DHDR, ConnectingOntario, SMART URLs (gateway reads these at runtime) |
+| Patient chart | **DHDR Medications** button (needs `dhdr_query` consent); hospital reports appear in documents after HRM filing |
+| `/consent-management` | Organization-wide consent registry (`hrm_query`, `dhdr_query`, `prescribeit_erx`, `olis_query`) |
+| `/interop-dashboard` | HL7/FHIR tests, MLLP simulate, failure audit, optional webhook alerts |
 
 See `/evidence-binder` for certification diligence links.
 

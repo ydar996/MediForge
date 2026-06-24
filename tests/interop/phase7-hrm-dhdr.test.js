@@ -87,6 +87,31 @@ describe('Phase 7: DHDR', () => {
   });
 });
 
+describe('Phase 7: HRM chart filing', () => {
+  const hrmChartFile = require('../../lib/interop/hrm-chart-file');
+
+  it('builds unstructured chart record from inbound report', () => {
+    const record = hrmChartFile.buildUnstructuredRecordFromReport({
+      id: 'abc-123',
+      report_title: 'Discharge Summary',
+      report_body: 'Patient stable.',
+      placer_id: 'PLACER-1'
+    });
+    assert.equal(record.id, 'hrm_abc-123');
+    assert.match(record.text, /Patient stable/);
+    assert.equal(record.placerId, 'PLACER-1');
+  });
+
+  it('merges unstructured records without duplicates', () => {
+    const merged = hrmChartFile.mergeUnstructuredRecords(
+      [{ id: 'a', kind: 'text', text: 'old' }],
+      [{ id: 'a', kind: 'text', text: 'new' }, { id: 'b', kind: 'text', text: 'other' }]
+    );
+    assert.equal(merged.length, 2);
+    assert.equal(merged.find((r) => r.id === 'a').text, 'new');
+  });
+});
+
 describe('Phase 7: IntegrationService HRM/DHDR', () => {
   const service = new IntegrationService({ supabase: null, config: { province: 'ON', security: { requireConsent: true } } });
 

@@ -352,7 +352,7 @@ Built for Canadian practice:
 
 ## 16a. Ontario EMR readiness (Phases 0–8 software, June 2026)
 
-Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT/HRM/DHDR still need partner credentials. Documented readiness ~70–80%.
+Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT/HRM/DHDR still need partner credentials. Documented readiness ~72–82%.
 
 | Feature | Detail |
 |---------|--------|

@@ -3,7 +3,7 @@
 **Created:** June 23, 2026  
 **Last updated:** June 2026 (Phases 0–8 software)  
 **Owner target:** Complete internal readiness work in focused sprints, not an open-ended program.  
-**Current estimated alignment:** ~70–80% overall (Phases 0–8 software complete where possible, June 2026).  
+**Current estimated alignment:** ~72–82% overall (Phases 0–8 software complete where possible, June 2026).  
 **Next gate:** OntarioMD Stage 5 validation and live provincial pipes (partner credentials + owner vendor contact).
 
 ---

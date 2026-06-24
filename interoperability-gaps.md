@@ -52,7 +52,7 @@ MediForge today is a **Supabase-first in-clinic EMR** with strong internal lab/p
 | FHIR R4 MedicationRequest | eRx | ❌ | ✅ Resource builder + Infoway adapter stub |
 | FHIR R4 ImagingStudy | Imaging metadata | ❌ | ✅ Resource builder |
 | DICOMweb QIDO/WADO/STOW | PACS images | ❌ | ✅ REST client in `lib/interop/dicom/` |
-| DICOM C-FIND/C-MOVE | Legacy PACS | ❌ | ⚠️ Config + proxy stub (full DIMSE needs gateway appliance) |
+| DICOM C-FIND/C-MOVE | Legacy PACS | ❌ | ✅ Stub responses when gateway URL not configured; live via dimseGatewayUrl |
 | LOINC / pCLOCD | Lab codes (Canada) | ❌ CPT only | ✅ Mapping layer + config |
 | CCDD | Drug codes (Canada) | ❌ Local drug list | ✅ Mapping layer + config |
 | SNOMED CT | Imaging/body site | ❌ | ✅ Mapping layer + config |

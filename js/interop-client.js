@@ -181,6 +181,25 @@
     });
   }
 
+  async function fileHrmReportToChart({ organizationId, reportId, patientId, userId, province }) {
+    return callGateway({
+      action: 'fileHrmReportToChart',
+      organizationId,
+      reportId,
+      patientId,
+      userId,
+      province
+    });
+  }
+
+  async function validateMcedtBatch({ organizationId, batch, province }) {
+    return callGateway({ action: 'validateMcedtBatch', organizationId, batch, province });
+  }
+
+  async function applyMohRejection({ organizationId, claim, rejection, province }) {
+    return callGateway({ action: 'applyMohRejection', organizationId, claim, rejection, province });
+  }
+
   async function matchPatient(params) {
     return callGateway({ action: 'matchPatient', ...params });
   }
@@ -216,6 +235,9 @@
     smartLaunch,
     ingestHrmReport,
     queryDhdr,
+    fileHrmReportToChart,
+    validateMcedtBatch,
+    applyMohRejection,
     fhirSearchPatients,
     matchPatient,
     dicomweb

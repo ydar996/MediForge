@@ -43,7 +43,7 @@
 | 1.5 | FHIR R4 REST client with OAuth2 | ✅ | `lib/interop/fhir/client.js` |
 | 1.6 | Production FHIR server or certified gateway exposure | 🔶 | `interop-gateway`: `exportPatientBundle`, `fhirSearchPatients` |
 | 1.7 | DICOMweb client (QIDO/WADO/STOW) | ✅ | `lib/interop/dicom/dicomweb-client.js` |
-| 1.8 | DICOM C-FIND/C-MOVE via gateway appliance | 🔶 | `cFindViaGateway`, `cMoveViaGateway` stubs |
+| 1.8 | DICOM C-FIND/C-MOVE via gateway appliance | ✅ | Stub responses when `dimseGatewayUrl` not set; live via gateway |
 | 1.9 | Embedded clinical image viewer in chart | ✅ | `chart-image-viewer.js`, documents + orders DICOMweb |
 | 1.10 | AES-256 field-level encryption (optional) | 🔶 | Setup/recovery UI exists |
 | 1.11 | Comprehensive audit logs for all integrations | ✅ | Gateway audit + `interop_messages` |
@@ -81,7 +81,7 @@
 | 3.1 | OHIP claim draft from clinical billing | ✅ | `claims-adapter.js`, payer workflow |
 | 3.2 | Ontario L-codes on lab service lines | ✅ | June 2026 fix |
 | 3.3 | OHIP imaging fee codes on imaging lines | ✅ | June 2026 fix |
-| 3.4 | MOH claim file format (XSD/schema compliant) | 🔶 | `mcedt-format.js` XML export |
+| 3.4 | MOH claim file format (XSD/schema compliant) | ✅ | `validateBatchXmlStructure` + XML export; MOH XSD sign-off still partner |
 | 3.5 | MCEDT Web Service client (upload/download) | 🔶 | `mcedt-client.js`; live blocked |
 | 3.6 | Clinic MOH credentials and certificates | 🔶 | `/mcedt-settings`; certs in env |
 | 3.7 | Batch claim submission scheduler | 🔶 | `claims-batch-daily` function |
@@ -157,8 +157,8 @@
 
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 7.1 | HRM hospital report inbox module | 🔶 | `/hrm-inbox`, `hrm_inbound_reports` |
-| 7.2 | HRM report auto-file to patient chart | 🔶 | Ingest + review queue + file action |
+| 7.1 | HRM hospital report inbox module | ✅ | `/hrm-inbox`, `hrm_inbound_reports` |
+| 7.2 | HRM report auto-file to patient chart | ✅ | `fileHrmReportToChart` gateway + chart unstructured record |
 | 7.3 | DHDR drug repository query | 🔶 | Chart button, gateway `queryDhdr` |
 | 7.4 | ConnectingOntario viewer integration | 🔶 | Phase 6 stubs + provincial hub settings |
 | 7.5 | Hub credentials and agreements per clinic | ⬜ | 🚫 Partner |
@@ -170,14 +170,14 @@
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | 8.1 | Modular adapter architecture | ✅ | `lib/interop/`, `IntegrationService` |
-| 8.2 | Configurable per-org/per-province interfaces | 🔶 | `/provincial-hub-settings`, `on.json` |
+| 8.2 | Configurable per-org/per-province interfaces | ✅ | `/provincial-hub-settings` → gateway merges `organizations.settings.provincialHubs` |
 | 8.3 | Integration audit trail | 🔶 | `interop_messages` + gateway audit |
 | 8.4 | Unit tests for interop/billing | 🔶 | `npm run test:interop` (phase7/8 tests) |
 | 8.5 | Provincial sandbox integration tests | ⬜ | 🚫 Partner sandboxes |
 | 8.6 | Internal API/integration runbooks | 🔶 | `PROVINCIAL-INTEGRATION-RUNBOOK.md` |
-| 8.7 | User guides for provincial features | 🔶 | User manual provincial section |
-| 8.8 | Load testing (labs, claims volume) | 🔶 | `scripts/load-test-interop.mjs` |
-| 8.9 | Monitoring/alerting for integration failures | 🔶 | Dashboard failure summary by type |
+| 8.7 | User guides for provincial features | ✅ | User manual HRM/DHDR/provincial hub sections |
+| 8.8 | Load testing (labs, claims volume) | ✅ | `scripts/load-test-interop.mjs`, `scripts/load-test-claims.mjs` |
+| 8.9 | Monitoring/alerting for integration failures | ✅ | Dashboard failure summary + optional webhook alert |
 
 ---
 

@@ -497,7 +497,7 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~70–80% documented Ontario readiness (Phases 0–8 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
+**Current alignment:** ~72–82% documented Ontario readiness (Phases 0–8 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
@@ -537,6 +537,14 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Phase 0–8 gap closure — HRM chart filing, org hub gateway, polish — deploy dev → staging → production
+
+- **Owner ask:** Close all immediate-control and queue-mode software gaps; sync Ontario docs + handover; deploy all environments.
+- **Software:** HRM **File to chart** (`fileHrmReportToChart`, unstructured record merge); provincial hub settings merged into gateway via `org-hub-config.js`; MCEDT `validateBatchXmlStructure`; DICOM C-FIND/C-MOVE stub responses; consent registry labels (HRM/DHDR/PrescribeIT); `scripts/load-test-claims.mjs`; interop failure webhook alerts; user manual HRM/DHDR/hub sections.
+- **Docs:** Implementation plan tasks 1.8, 3.4, 7.1–7.2, 8.2, 8.7–8.9 marked ✅; ontario-readiness ↔ readiness report at **72–82%**; PHASE-7 completion doc updated.
+- **Tests:** Extended phase7/8 + mcedt XML structure tests.
+- **Blocked unchanged:** Live provincial pipes, LOINC/CCCD licenses, OntarioMD Stage 5, owner tasks 2.2/2.3.
 
 ### June 2026: Owner confirmed eRx migration on all Supabase environments
 

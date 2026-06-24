@@ -9,6 +9,7 @@ const integrations = require('../../lib/integrations');
 const interop = require('../../lib/interop');
 const { logGatewayAction } = require('../../lib/interop/gateway-audit');
 const { createClient } = require('@supabase/supabase-js');
+const { loadOrgProvincialHubOverlay, mergeOrgHubsIntoConfig } = require('../../lib/integrations/org-hub-config');
 
 const CORS = {
   'Access-Control-Allow-Origin': '*',
@@ -41,13 +42,16 @@ function getSupabase() {
   return createClient(url, key);
 }
 
-function buildService(body) {
+async function buildService(body) {
   const province = body.province || process.env.INTEROP_DEFAULT_PROVINCE || 'ON';
   interop.config.clearConfigCache?.();
   integrations.configLoader.clearIntegrationsConfigCache();
-  const config = integrations.loadIntegrationsConfig({ province, reload: true });
+  const baseConfig = integrations.loadIntegrationsConfig({ province, reload: true });
+  const supabase = getSupabase();
+  const orgOverlay = await loadOrgProvincialHubOverlay(supabase, body.organizationId);
+  const config = mergeOrgHubsIntoConfig(baseConfig, orgOverlay);
   return new integrations.IntegrationService({
-    supabase: getSupabase(),
+    supabase,
     config,
     province
   });
@@ -71,7 +75,7 @@ exports.handler = async (event) => {
     return json(400, { error: 'Invalid JSON body' });
   }
 
-  const service = buildService(body);
+  const service = await buildService(body);
   const action = body.action;
   const supabase = getSupabase();
 
@@ -285,6 +289,20 @@ exports.handler = async (event) => {
           dhdrConsentGranted: body.dhdrConsentGranted,
           fhirBundle: body.fhirBundle
         });
+        break;
+      case 'fileHrmReportToChart':
+        result = await service.fileHrmReportToChart({
+          reportId: body.reportId,
+          patientId: body.patientId,
+          organizationId: body.organizationId,
+          userId: body.userId
+        });
+        break;
+      case 'validateMcedtBatch':
+        result = service.validateMcedtBatch({ batch: body.batch });
+        break;
+      case 'applyMohRejection':
+        result = service.applyMohRejection({ claim: body.claim, rejection: body.rejection });
         break;
       case 'parseOru':
         result = interop.adapters.lab.oruToChartResults(

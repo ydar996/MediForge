@@ -9,17 +9,17 @@ Phase 7 delivers the **software foundation** for Ontario provincial hub connecti
 
 | ID | Task | Status | Evidence |
 |----|------|--------|----------|
-| 7.1 | HRM hospital report inbox module | Partial | `/hrm-inbox`, `hrm_inbound_reports` table |
-| 7.2 | HRM report auto-file to patient chart | Partial | Ingest + review queue + file action |
+| 7.1 | HRM hospital report inbox module | Done | `/hrm-inbox`, `hrm_inbound_reports` table |
+| 7.2 | HRM report auto-file to patient chart | Done | `fileHrmReportToChart` + unstructured record on patient |
 | 7.3 | DHDR drug repository query | Partial | `dhdr.js`, chart button, interop dashboard |
-| 7.4 | ConnectingOntario viewer integration | Partial | Phase 6 stubs + `/provincial-hub-settings` |
+| 7.4 | ConnectingOntario viewer integration | Partial | Phase 6 stubs + `/provincial-hub-settings` merged into gateway |
 | 7.5 | Hub credentials and agreements per clinic | Blocked | Partner / MOH enrollment |
 
 ## New in Phase 7
 
-- **Libraries:** `hrm-adapter.js`, `hrm-workflow.js`, `hrm-consent.js`, `dhdr.js`, `dhdr-consent.js`
+- **Libraries:** `hrm-adapter.js`, `hrm-workflow.js`, `hrm-chart-file.js`, `hrm-consent.js`, `dhdr.js`, `dhdr-consent.js`, `org-hub-config.js`
 - **Staff UI:** `/hrm-inbox`, `/provincial-hub-settings`
-- **Gateway:** `ingestHrmReport`, `queryDhdr`
+- **Gateway:** `ingestHrmReport`, `queryDhdr`, `fileHrmReportToChart` (org hub URLs merged at runtime)
 - **Hooks:** `ingestHrmAndApply`, `queryDhdrForPatient`
 - **Consents:** `hrm_query`, `dhdr_query` (migration `20260626110000_hrm_dhdr_consent_types.sql`)
 - **Migration:** `20260626100000_hrm_inbound_reports.sql`

@@ -1,6 +1,9 @@
 'use strict';
 
 (function (global) {
+  const WEBHOOK_KEY = 'mediforge_interop_alert_webhook';
+  const ALERT_THRESHOLD = 5;
+
   async function loadRecentFailures(limit = 25) {
     if (!global.supabase) return [];
     const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -25,6 +28,15 @@
     return rows.length;
   }
 
+  function getAlertWebhookUrl() {
+    return localStorage.getItem(WEBHOOK_KEY) || '';
+  }
+
+  function setAlertWebhookUrl(url) {
+    if (url) localStorage.setItem(WEBHOOK_KEY, url.trim());
+    else localStorage.removeItem(WEBHOOK_KEY);
+  }
+
   function summarizeByMessageType(rows) {
     const counts = {};
     (rows || []).forEach((r) => {
@@ -36,16 +48,48 @@
       .map(([type, count]) => ({ type, count }));
   }
 
+  function buildAlertPayload(rows) {
+    return {
+      source: 'mediforge',
+      type: 'interop_failure_digest',
+      count: rows.length,
+      byType: summarizeByMessageType(rows),
+      at: new Date().toISOString()
+    };
+  }
+
+  async function maybePostFailureAlert(rows, { force = false } = {}) {
+    const webhook = getAlertWebhookUrl();
+    if (!webhook) return { skipped: true, reason: 'no_webhook' };
+    if (!force && rows.length < ALERT_THRESHOLD) {
+      return { skipped: true, reason: 'below_threshold', threshold: ALERT_THRESHOLD };
+    }
+    try {
+      const res = await fetch(webhook, {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(buildAlertPayload(rows))
+      });
+      return { posted: res.ok, status: res.status };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
   function renderFailureSummary(container, rows) {
     const summary = summarizeByMessageType(rows);
     if (!summary.length) {
       container.innerHTML = '';
       return;
     }
+    const webhook = getAlertWebhookUrl();
     container.innerHTML =
       '<p><strong>Failures by type:</strong> ' +
       summary.map((s) => `${s.type} (${s.count})`).join(' · ') +
-      '</p>';
+      '</p>' +
+      (webhook
+        ? `<p class="note">Alert webhook configured (posts when ${ALERT_THRESHOLD}+ failures).</p>`
+        : '<p class="note">Optional: set alert webhook in browser console with <code>MediForgeInteropFailures.setAlertWebhookUrl(url)</code>.</p>');
   }
 
   function renderFailuresTable(container, rows) {
@@ -72,6 +116,10 @@
     loadRecentFailures,
     loadFailureCount,
     summarizeByMessageType,
+    buildAlertPayload,
+    maybePostFailureAlert,
+    getAlertWebhookUrl,
+    setAlertWebhookUrl,
     renderFailureSummary,
     renderFailuresTable
   };

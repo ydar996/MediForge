@@ -4,7 +4,10 @@
   const TYPE_LABELS = {
     portal_access: 'Patient Portal',
     data_sharing: 'Data Sharing',
-    olis_query: 'OLIS Query (Future)',
+    olis_query: 'OLIS Query',
+    hrm_query: 'HRM Hospital Reports',
+    dhdr_query: 'DHDR Medication History',
+    prescribeit_erx: 'PrescribeIT ePrescribing',
     research: 'Research / Quality'
   };
 

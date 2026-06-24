@@ -11,13 +11,13 @@
 
 ## Executive Summary
 
-MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **70 to 80%** after Phases 0–8 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
+MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **72 to 82%** after Phases 0–8 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
 
-**Phases 0–8 (June 2026): software complete where possible.** Delivered through Phase 8: internal evidence, core standards, MCEDT claims desk, OLIS-ready lab desk, PrescribeIT-ready eRx desk, DIR-ready imaging desk, HRM inbox, DHDR query hooks, provincial hub settings, integration runbook, spec traceability, self-assessment, and evidence binder. These raise documented evidence to **70 to 80%** internal readiness but do not constitute OntarioMD certification.
+**Phases 0–8 (June 2026): software complete where possible.** Delivered through Phase 8: internal evidence, core standards, MCEDT claims desk, OLIS-ready lab desk, PrescribeIT-ready eRx desk, DIR-ready imaging desk, HRM inbox, DHDR query hooks, provincial hub settings, integration runbook, spec traceability, self-assessment, and evidence binder. These raise documented evidence to **72 to 82%** internal readiness but do not constitute OntarioMD certification.
 
 | Pillar | ~% Ready | Status Mix |
 |--------|----------|------------|
-| **Overall Ontario readiness** | 70 to 80% | Phases 0–8 software; live connectivity credential-gated |
+| **Overall Ontario readiness** | 72 to 82% | Phases 0–8 software; live connectivity credential-gated |
 | **Foundational standards and security** | 70 to 80% | Compliance pack, gateway audit, append-only interop messages |
 | **EHR connectivity (provincial)** | 5 to 15% | Adapters, staff UI, queue mode; no live provincial pipes |
 | **Functional clinical EMR** | 75 to 85% | CPP summary, i4C mapping, consent capture live |

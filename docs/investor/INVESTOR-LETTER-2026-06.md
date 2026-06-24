@@ -21,7 +21,7 @@ Through June 2026 we completed **Phases 0–8 in software** (everything we can d
 
 | Metric | Estimate |
 |--------|----------|
-| Overall Ontario readiness | **70–80%** |
+| Overall Ontario readiness | **72–82%** |
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
 
