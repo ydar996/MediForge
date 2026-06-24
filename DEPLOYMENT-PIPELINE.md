@@ -155,9 +155,14 @@ In each Supabase project → **Authentication → URL configuration**, add that 
 2. **PR `dev` → `staging`**: review diff on GitHub; test on staging URL.
 3. **PR `staging` → `main`**: production release; Netlify rebuilds production.
 
-**Do not** push directly to `main` for routine changes once this pipeline is live.
+**After every production promote (mandatory for agents):**
 
-**Do not** use manual CLI deploy to production except emergencies: it bypasses GitHub history and can desync repos.
+1. Confirm Netlify build **succeeded** (failed builds leave production on an old deploy even when GitHub `main` is updated).
+2. Run `npm run check` before deploy; em-dash and other checks block production builds.
+3. Spot-check live URLs match git: `/investor-letter`, `/ontario-readiness` (hard refresh). See **`AGENT-HANDOVER.md`** Rule #3.
+4. If Netlify auto-deploy failed, run CLI deploy per below, then confirm live site.
+
+**Do not** push to `main` for routine changes without verifying production afterward.
 
 ---
 

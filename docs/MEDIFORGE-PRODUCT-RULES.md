@@ -117,19 +117,20 @@ Agents must follow this without the owner needing to repeat it. See **`AGENT-HAN
 
 ---
 
-## 9. Documentation stays in sync with code (always)
+## 9. Documentation and live sites stay in sync (always)
 
-When you change the product, update related documentation **in the same session**. Do not wait for the owner to ask.
+When you change the product, update related documentation **in the same session** and **verify live URLs** after production promote. Do not wait for the owner to ask. Pushing to GitHub `main` is not the same as production being live: Netlify builds can fail (e.g. `check:no-em-dash`).
 
 | Change type | Also update |
 |-------------|-------------|
-| Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `investor-letter.html`) | Written companion in `docs/` (investor letter ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`) |
-| Ontario readiness scores or phase status | `ONTARIO-EMR-READINESS-REPORT.md`, `ONTARIOMD-GAP-REPORT.md`, `INVESTOR-LETTER-2026-06.md`, `/ontario-readiness`, `/investor-letter` |
-| Implementation plan task completed | `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` status column |
+| Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `investor-letter.html`, `evidence-binder.html`) | Written companion in `docs/` (see **`AGENT-HANDOVER.md`** Rule #3 table) |
+| Ontario readiness scores or phase status | Full companion set: readiness report, gap report, implementation plan, investor letter (html + md), ontario-readiness, capabilities (html + guide), evidence binder, at-a-glance |
+| Implementation plan task completed | `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` status column + matching `PHASE-*-COMPLETION.md` if applicable |
 | Staff-visible workflow | `USER-MANUAL.md` + `user-manual.html` |
 | Any code/config session | `AGENT-HANDOVER.md` session log, `DOCUMENTATION-INDEX.md` |
+| Promote to production | `npm run check` passes; Netlify deploy succeeded; spot-check live `/investor-letter` and `/ontario-readiness` match git |
 
-**Minimum before you finish:** session log in handover, documentation index if docs changed, companion page/doc pairs if either side changed.
+**Minimum before you finish:** session log in handover, documentation index if docs changed, every companion pair your change touches, and live-site verification after production deploy.
 
 See **`AGENT-HANDOVER.md`** → **Rule #3** and **§ How to keep this document alive**.
 
@@ -139,6 +140,7 @@ See **`AGENT-HANDOVER.md`** → **Rule #3** and **§ How to keep this document a
 
 | Date | Change |
 |------|--------|
+| 2026-06 | §9 expanded: live-site verification after production; full Ontario companion set |
 | 2026-06-23 | §9 Documentation sync with code; companion page/doc pairs |
 | 2026-06-23 | §8 No em dashes: colons preferred; check script added |
 | 2026-06-17 | §6 Communication with project owner: simplest layman's terms always |

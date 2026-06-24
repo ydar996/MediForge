@@ -41,28 +41,40 @@ See **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8.
 
 ## Rule #3: Keep all project documentation in sync (always)
 
-Code, config, and docs ship together. **Every session that changes the product must update related documentation before you finish**: not only when the owner asks.
+Code, config, docs, and **live websites** ship together. **Every session that changes the product must update related documentation and verify deploys before you finish**: not only when the owner asks. The owner should never have to say "sync the docs" or "production is stale."
 
 | Do | Don't |
 |----|-------|
 | Update the written report when you change its shareable webpage (e.g. `ontario-readiness.html` ↔ `ONTARIO-EMR-READINESS-REPORT.md`) | Ship code or UI changes and leave companion docs at old percentages or "coming soon" |
+| Update **every** companion in the Ontario readiness set when phase status or scores change (see list below) | Update only the file you edited |
 | Add a session log entry and bump **Last updated** in this file | Assume the owner will notice stale docs later |
 | Update **`docs/DOCUMENTATION-INDEX.md`** when you add or rename docs | Skip docs because "it's just a small fix" |
-| Update user manual (md + html) when staff-visible workflows change | Update only the file you edited |
+| Update user manual (md + html) when staff-visible workflows change | Treat GitHub push as "deployed" without checking the live URL |
+| After promote to **production**: confirm `npm run check` passes, Netlify build succeeded, and live pages match git (spot-check `/investor-letter`, `/ontario-readiness`) | Push to `main` and assume production updated when Netlify build failed silently |
+
+**Ontario readiness companion set (all must match: same phases, same %, same "what's next"):**
+
+| Live page | Written companion |
+|-----------|-------------------|
+| `/ontario-readiness` | `docs/ONTARIO-EMR-READINESS-REPORT.md` |
+| `/investor-letter` | `docs/investor/INVESTOR-LETTER-2026-06.md` |
+| `/capabilities` | `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` |
+| `/evidence-binder` | Phase completion docs in `docs/PHASE-*-COMPLETION.md` |
+| `/ontario-self-assessment` | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` (adapter rows) |
+| (scores/gaps) | `docs/ONTARIOMD-GAP-REPORT.md`, `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` |
+| Staff workflows | `user-manual.html` ↔ `docs/USER-MANUAL.md` |
 
 **Minimum checklist (every session with code or config changes):**
 
 1. **`AGENT-HANDOVER.md`**: session log + **Last updated** date.
 2. **`docs/DOCUMENTATION-INDEX.md`**: new/changed doc rows.
-3. **Companion pairs** (keep in sync):
-   - `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`
-   - `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md` (same percentages and phase status as readiness report)
-   - `docs/ONTARIOMD-GAP-REPORT.md` (executive summary and pillar scores when readiness changes)
-   - `/capabilities` ↔ `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`
-   - `user-manual.html` ↔ `docs/USER-MANUAL.md`
-   - `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` task status when you complete plan items
-   - `docs/ONTARIOMD-GAP-REPORT.md` when Ontario readiness scores or gaps change
-4. **`docs/PROJECT-OVERVIEW.md`**: when architecture, auth, or major modules change.
+3. **Companion pairs**: update every row in the table above that your change touches.
+4. **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**: task status when you complete plan items.
+5. **`docs/PROJECT-OVERVIEW.md`**: when architecture, auth, or major modules change.
+6. **Deploy verify** (when owner approves promote to staging/production):
+   - `npm run check` passes locally (failed checks block Netlify production builds).
+   - Git: `dev`, `staging`, and `main` at the same commit after promote.
+   - Live: open production URLs and confirm they match git (hard refresh). If Netlify build failed, run `netlify deploy --prod` per **`DEPLOYMENT-PIPELINE.md`**.
 
 Full checklist: **§ How to keep this document alive** below. See also **`docs/MEDIFORGE-PRODUCT-RULES.md`** §9.
 
@@ -508,6 +520,13 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Rule #3 strengthened — docs + live sites must stay in sync
+
+- **Owner ask:** Record permanently that all changes must be documented and companion pages kept in sync; confirm repo alignment.
+- **Root cause of stale production:** GitHub `main` updated but Netlify production build failed (`check:no-em-dash`); live site lagged git.
+- **Added:** Rule #3 expanded (Ontario companion set table, deploy verify checklist); **`MEDIFORGE-PRODUCT-RULES.md`** §9; **`DEPLOYMENT-PIPELINE.md`** post-promote verification steps; **`DOCUMENTATION-INDEX.md`** mandatory agent rule.
+- **Repos at this entry:** `dev`, `staging`, `main` all at `34acb9b` on GitHub; production manually deployed to match.
 
 ### June 2026: Phase 5 deploy — dev → staging → production
 
