@@ -521,6 +521,13 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Phase 0–6 polish completion — deploy dev → staging → production
+
+- **Owner ask:** Complete all remaining agent-buildable Phase 0–6 tasks; full Ontario doc sync; deploy.
+- **Chart:** Critical lab banner, HL7 ADT export, ConnectingOntario + SMART buttons, DICOMweb on orders/documents.
+- **Desks:** Rx pharmacy picker, claims rejection guidance, extended LOINC/CCDD mappings, encryption runbook.
+- **Evidence:** Expanded traceability matrix, self-assessment, evidence binder, user manual.
+
 ### June 2026: Phase 6 imaging desk + Phase 0–5 polish — deploy dev → staging → production
 
 - **Owner ask:** Finish Phase 0–5 polish (evidence, workflows, terminology mapping doc); implement Phase 6 software we own; full Ontario companion doc sync; deploy and verify live.

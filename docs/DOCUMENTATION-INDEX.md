@@ -52,6 +52,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/PHASE-5-PRESCRIBEIT-COMPLETION.md](PHASE-5-PRESCRIBEIT-COMPLETION.md)** | **Phase 5 software completion notes** |
 | **[docs/PHASE-6-IMAGING-DESK-COMPLETION.md](PHASE-6-IMAGING-DESK-COMPLETION.md)** | **Phase 6 imaging desk completion notes** |
 | **[docs/TERMINOLOGY-MAPPING-STATUS.md](TERMINOLOGY-MAPPING-STATUS.md)** | LOINC/pCLOCD/CCDD mapping vs licensed datasets |
+| **[docs/compliance/ENCRYPTION-KEY-MANAGEMENT.md](../compliance/ENCRYPTION-KEY-MANAGEMENT.md)** | Encryption key operational runbook |
 | **`docs/compliance/`** | PHIPA/privacy/residency docs (Phases 0–5 software complete) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 

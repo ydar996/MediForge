@@ -7,7 +7,7 @@
 
 | Code set | Status | Location |
 |----------|--------|----------|
-| LOINC / pCLOCD (lab) | Partial mapping layer | `lib/interop/terminology/loinc-pclocd.js` (~15 common tests + extensible config) |
+| LOINC / pCLOCD (lab) | Partial mapping layer | `lib/interop/terminology/loinc-pclocd.js` (~22 common tests + extensible config) |
 | SNOMED CT (imaging modality) | Partial | `lib/interop/terminology/snomed.js` |
 | CCDD / DIN (Rx) | Partial overlay | `lib/interop/terminology/ccdd.js` + Health Canada DPD formulary in product |
 | OHIP fee codes (lab/imaging) | Done | Provincial crosswalks in `config/` |

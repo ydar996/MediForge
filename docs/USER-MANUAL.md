@@ -305,12 +305,14 @@ Live MOH/Infoway connections need clinic credentials. Staff can still use:
 
 | Tool | Purpose |
 |------|---------|
-| Patient chart | OHIP PHN line, CPP Summary, FHIR export, Consents |
+| Patient chart | OHIP PHN line, CPP Summary, FHIR export, HL7 ADT export, Consents, critical lab banner, DI viewer stubs |
 | `/claims-queue` | Review and export OHIP claim drafts |
 | `/remittance-reconcile` | Paste or load sample remittance JSON |
 | `/external-lab-orders` | Export HL7 or FHIR lab orders; queue provincial send |
 | `/lab-results-queue` | Paste inbound ORU lab results |
-| `/erx-queue` | Queue provincial eRx transmit; ingest pharmacy dispense feedback |
+| `/erx-queue` | Queue provincial eRx transmit; pharmacy picker on prescription form |
+| `/imaging-results-queue` | Paste inbound imaging reports; link DICOMweb studies |
+| `/external-imaging-orders` | Export HL7/FHIR imaging orders |
 | `/patient-identifiers` | PHN registry for provincial matching |
 | `/interop-dashboard` | HL7/FHIR tests, MLLP simulate, failure audit |
 

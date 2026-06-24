@@ -647,6 +647,19 @@
                     }
                 });
             });
+            if (order.results && order.results._imaging && order.results._imaging.studies) {
+                order.results._imaging.studies.forEach(function(study) {
+                    if (!study || !study.wadoUrl) return;
+                    imagingDocs.push({
+                        name: 'DICOM Study' + (study.studyInstanceUid ? ' (' + String(study.studyInstanceUid).slice(-12) + ')' : ''),
+                        wadoUrl: study.wadoUrl,
+                        studyInstanceUid: study.studyInstanceUid,
+                        type: 'application/dicom',
+                        date: formatDate(study.linkedAt || order.created_at || new Date().toISOString()),
+                        size: 0
+                    });
+                });
+            }
             
             folders.push({
                 id: "imaging-results",
@@ -1318,7 +1331,7 @@
                                     alert('Could not open this document.');
                                     return;
                                 }
-                                viewDocument(d.name, url, mime);
+                                viewDocument(d.name, url, mime, d.wadoUrl, d.studyInstanceUid);
                             } catch (err) {
                                 console.error(err);
                                 alert(err.message || 'Could not open document');
@@ -1621,12 +1634,16 @@
             }
         }
 
-        function viewDocument(name, data, type) {
+        function viewDocument(name, data, type, wadoUrl, studyInstanceUid) {
             if (window.MediForgeChartImageViewer) {
               const isImage = type && type.startsWith('image/');
               const isPdf = type === 'application/pdf' || (name && /\.pdf$/i.test(name));
-              const isDicom = type === 'application/dicom' || (name && /\.dcm$/i.test(name));
+              const isDicom = type === 'application/dicom' || (name && /\.dcm$/i.test(name)) || wadoUrl;
               if (isImage || isPdf || isDicom) {
+                if (wadoUrl) {
+                  MediForgeChartImageViewer.openClinicalViewer({ title: name, wadoUrl, studyInstanceUid, mimeType: type || 'application/dicom', fileName: name });
+                  return;
+                }
                 const dataUrl = data && data.startsWith('data:') ? data : `data:${type || 'application/octet-stream'};base64,${data}`;
                 MediForgeChartImageViewer.openClinicalViewer({ title: name, url: dataUrl, mimeType: type, fileName: name });
                 return;

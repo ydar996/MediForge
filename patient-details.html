@@ -1797,8 +1797,13 @@
     <button onclick="openCppSummaryPage()" class="nav-btn">📋 CPP Summary</button>
     <button onclick="exportCurrentPatientFhir()" class="nav-btn">🔗 Export FHIR Bundle</button>
     <button onclick="openPatientConsentsPage()" class="nav-btn">✅ Consents</button>
+    <button onclick="exportCurrentPatientAdt()" class="nav-btn">📤 Export HL7 ADT</button>
+    <button onclick="launchPatientConnectingOntario()" class="nav-btn">🖼️ DI Viewer (ConnectingOntario)</button>
+    <button onclick="launchPatientSmartFhir()" class="nav-btn">🔗 SMART-on-FHIR Launch</button>
     <button onclick="exportCurrentPatientRecord()" class="nav-btn">💾 Export Full Record</button>
   </div>
+  
+  <div id="critical-lab-banner" style="display:none;"></div>
   
   <!-- Patient Demographics - Always Visible -->
   <div id="patient-info"></div>
@@ -4789,6 +4794,11 @@
   <script src="js/billing-payer-hooks.js"></script>
   <script src="js/encounter-billing.js?v=1"></script>  <!-- Bill from encounter -->
   <script src="js/backup.js?v=20260623"></script>
+  <script src="js/chart-image-viewer.js?v=20260624"></script>
+  <script src="js/critical-lab-alerts.js?v=20260624"></script>
+  <script src="js/interop-client.js?v=20260624"></script>
+  <script src="js/interop-hooks.js?v=20260624"></script>
+  <script src="js/interoperability.js?v=20260624"></script>
   <script src="js/fhir-patient-export.js?v=20260623"></script>
   <script src="js/i4c-indicator-map.js?v=20260623"></script>
   <script src="js/patient-access-audit.js?v=20260623"></script>
@@ -4847,6 +4857,61 @@
         alert('No patient ID found.');
       }
     }
+
+    function getCurrentPatientIdFromUrl() {
+      const urlParams = new URLSearchParams(window.location.search);
+      return urlParams.get('id') || urlParams.get('patientId');
+    }
+
+    async function exportCurrentPatientAdt() {
+      const patientId = getCurrentPatientIdFromUrl();
+      if (!patientId) return alert('No patient ID found.');
+      if (typeof window.exportPatientHL7Style === 'function') {
+        await window.exportPatientHL7Style(patientId);
+      } else {
+        alert('HL7 ADT export module not loaded.');
+      }
+    }
+
+    async function launchPatientConnectingOntario() {
+      const patientId = getCurrentPatientIdFromUrl();
+      if (!patientId || !window.MediForgeInterop?.launchConnectingOntario) {
+        return alert('Interop module not loaded.');
+      }
+      const res = await MediForgeInterop.launchConnectingOntario({ patientId, purpose: 'diagnostic-imaging' });
+      const launch = res.result?.launchUrl || res.launchUrl;
+      if (launch && !String(launch).startsWith('REPLACE_')) {
+        window.open(launch, '_blank', 'noopener');
+      } else {
+        alert('ConnectingOntario viewer URL is a stub until provincial credentials are configured. See interop dashboard for preview.');
+      }
+    }
+
+    async function launchPatientSmartFhir() {
+      const patientId = getCurrentPatientIdFromUrl();
+      if (!patientId || !window.MediForgeInterop?.launchSmartFhir) {
+        return alert('Interop module not loaded.');
+      }
+      const res = await MediForgeInterop.launchSmartFhir({ patientId, launch: 'mediforge-chart' });
+      const url = res.result?.authorizeUrl || res.authorizeUrl;
+      if (url && !String(url).includes('REPLACE_WITH_FHIR_BASE')) {
+        window.open(url, '_blank', 'noopener');
+      } else {
+        alert('SMART-on-FHIR launch is a stub until FHIR base URL is configured. See interop dashboard for preview.');
+      }
+    }
+
+    async function refreshCriticalLabBannerForChart() {
+      const patientId = getCurrentPatientIdFromUrl();
+      const el = document.getElementById('critical-lab-banner');
+      if (!patientId || !el || !window.MediForgeCriticalLabAlerts) return;
+      const rows = await MediForgeCriticalLabAlerts.loadCriticalLabOrdersForPatient(patientId);
+      MediForgeCriticalLabAlerts.renderPatientChartBanner(el, rows, patientId);
+    }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      refreshCriticalLabBannerForChart();
+    });
 
     // Export current patient record function
     function exportCurrentPatientRecord() {

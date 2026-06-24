@@ -38,7 +38,15 @@
     if (!supabase) return;
 
     const { data: order } = await supabase.from('orders').select('results').eq('id', orderId).single();
-    const merged = { ...(order?.results || {}), ...chartResults.results, _interop: { source: 'hl7_oru', at: new Date().toISOString() } };
+    const merged = {
+      ...(order?.results || {}),
+      ...chartResults.results,
+      _interop: {
+        source: 'hl7_oru',
+        critical: chartResults.critical === true,
+        at: new Date().toISOString()
+      }
+    };
 
     await supabase.from('orders').update({
       results: merged,

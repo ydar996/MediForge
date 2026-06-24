@@ -25,11 +25,16 @@ Phase 6 delivers the **software foundation** for Ontario DIR-style diagnostic im
 - **Hooks:** `ingestImagingAndApply`, `exportImagingOrderHl7/Fhir`, `launchConnectingOntario`, `launchSmartFhir`, `attachDicomStudyToOrder`
 - **Tests:** `tests/interop/phase6-imaging.test.js` (51 interop tests total)
 
-## Phase 0–5 polish (this sprint)
+## Phase 0–6 polish (complete)
 
-- **Terminology:** `docs/TERMINOLOGY-MAPPING-STATUS.md` (LOINC/pCLOCD/CCDD mapping vs licensed datasets)
-- **eRx workflow:** `prescriptions.js` routes external pharmacy to provincial queue with consent messaging
-- **Interop client:** fixed missing `generateLabHl7`; added imaging/CO/SMART client methods
+- **Patient chart:** critical lab banner, HL7 ADT export, ConnectingOntario + SMART launch buttons
+- **Orders/documents:** DICOMweb links on imaging orders and documents folder
+- **Prescriptions:** external pharmacy picker on Rx form
+- **Claims:** rejection code, reason, and guided resubmit on claims queue
+- **Terminology:** extended LOINC/CCDD default mappings + `TERMINOLOGY-MAPPING-STATUS.md`
+- **Evidence:** expanded traceability matrix, self-assessment, evidence binder, user manual
+- **Security:** `docs/compliance/ENCRYPTION-KEY-MANAGEMENT.md`
+- **Tests:** `tests/interop/phases-0-6-polish.test.js` (56 interop tests total)
 
 ## Owner / clinic actions
 

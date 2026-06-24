@@ -8768,6 +8768,9 @@ async function displayGeneratedOrders(patient) {
     if (status.toLowerCase().includes('sent') || status.toLowerCase().includes('completed') || status.toLowerCase() === 'sent_to_lab' || status.toLowerCase() === 'sent_to_external_lab') {
       statusClass = 'status-success';
       statusText = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
+    } else if (isCriticalLab) {
+      statusClass = 'status-pending';
+      statusText = 'Critical - review';
     } else if (status.toLowerCase().includes('pending') || status.toLowerCase().includes('generated')) {
       statusClass = 'status-pending';
       statusText = status.replace(/_/g, ' ').replace(/\b\w/g, l => l.toUpperCase());
@@ -8799,6 +8802,9 @@ async function displayGeneratedOrders(patient) {
     const hasResults = attsArray && attsArray.length > 0;
     // Only show View Results for lab orders when we have at least one completed test or result value (not just in-process with no values)
     const labResultsRaw = order.type === 'lab' && labResultsMap[order.id];
+    const isCriticalLab = order.type === 'lab' && (labResultsRaw?._interop?.critical === true || order.results?._interop?.critical === true);
+    const imagingWado = order.type === 'imaging' && order.results?._imaging?.studies?.[0]?.wadoUrl;
+    const imagingStudyUid = order.results?._imaging?.studies?.[0]?.studyInstanceUid;
     var labResultsCount = 0;
     function countDisplayableLabResults(res) {
       if (!res || typeof res !== 'object') return 0;
@@ -8842,6 +8848,11 @@ async function displayGeneratedOrders(patient) {
         `<button type="button" class="action-btn success-btn" onclick="viewOrderResults('${patient.id}', '${order.visitDate}', '${order.timestamp}', ${(order.id && (hasResults || hasLabResults)) ? `'${order.id}'` : 'null'})" title="View ${hasLabResults ? labResultsCount : resultsCount} result(s)" style="background: linear-gradient(135deg, #28a745 0%, #1e7e34 100%); color: white; border: 2px solid #1e7e34; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap;">
           &#128203; View Results
         </button>` : '';
+
+      const dicomBtn = imagingWado ?
+        `<button type="button" class="action-btn" onclick="window.MediForgeChartImageViewer && MediForgeChartImageViewer.openClinicalViewer({title:'DICOM Study', wadoUrl:'${String(imagingWado).replace(/'/g, "\\'")}', studyInstanceUid:'${(imagingStudyUid || '').replace(/'/g, "\\'")}', mimeType:'application/dicom'})" title="Open DICOMweb viewer" style="background:#6a1b9a;color:#fff;border:2px solid #4a148c;padding:6px 12px;border-radius:6px;font-weight:600;font-size:13px;">
+          DICOMweb
+        </button>` : '';
       
       row.innerHTML = `
         <td>${date}</td>
@@ -8855,6 +8866,7 @@ async function displayGeneratedOrders(patient) {
             &#128065; View
           </button>
           ${viewResultsBtn}
+          ${dicomBtn}
           ${removeTestHtml}
           ${canDeleteOrders ? 
             `<button type="button" class="action-btn danger-btn btn-danger" onclick="deleteOrder('${patient.id}', '${order.visitDate}', '${order.timestamp}', '${order.id || ''}', '${order.serialNumber || order.serial_number || ''}')" title="Delete this order" style="background: linear-gradient(135deg, #DC143C 0%, #8B0000 100%); color: white; border: 2px solid #8B0000; padding: 6px 12px; border-radius: 6px; cursor: pointer; font-weight: 600; font-size: 13px; white-space: nowrap; min-width: 70px;">

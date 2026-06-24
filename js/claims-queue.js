@@ -39,6 +39,22 @@
     });
   }
 
+  function parseRejectionDetails(row) {
+    const err = row.error ? String(row.error) : '';
+    const payload = row.claim_payload || {};
+    let code = row.rejection_code || payload.rejectionCode || '';
+    const codeMatch = err.match(/(?:REJ|code)[:\s]+([A-Z0-9-]+)/i);
+    if (!code && codeMatch) code = codeMatch[1];
+    const invoice = row.invoice_id || payload.invoice?.invoiceNumber || payload.invoiceNumber || '';
+    const guidance =
+      code && /PHN|HC/i.test(code)
+        ? 'Verify patient PHN and demographics on the invoice, then resubmit.'
+        : code && /FEE|CODE/i.test(code)
+          ? 'Check OHIP fee codes and service dates on the invoice.'
+          : 'Review the invoice in billing, correct the issue, then reset to draft and resubmit.';
+    return { message: err || 'Rejected by payer (no detail stored).', code, invoice, guidance };
+  }
+
   function statusBadge(status) {
     const colors = {
       draft: '#607D8B',
@@ -61,20 +77,28 @@
       return;
     }
     const html = [
-      '<table class="claims-table"><thead><tr><th>Invoice</th><th>Payer</th><th>Status</th><th>Updated</th><th>Error</th><th>Actions</th></tr></thead><tbody>'
+      '<table class="claims-table"><thead><tr><th>Invoice</th><th>Payer</th><th>Status</th><th>Updated</th><th>Details</th><th>Actions</th></tr></thead><tbody>'
     ];
     filtered.forEach((r) => {
-      const inv = r.invoice_id || (r.claim_payload?.invoice?.invoiceNumber) || '';
-      const err = r.error ? String(r.error).slice(0, 80) : '';
+      const inv = r.invoice_id || r.claim_payload?.invoice?.invoiceNumber || '';
+      const rej = r.status === 'rejected' ? parseRejectionDetails(r) : null;
+      const details = rej
+        ? `<div class="rej-detail"><strong>Code:</strong> ${rej.code || 'n/a'}<br><strong>Reason:</strong> ${rej.message}<br><em>${rej.guidance}</em></div>`
+        : r.error
+          ? String(r.error).slice(0, 120)
+          : '';
+      const invoiceLink = inv
+        ? `<a href="billing-dashboard?invoice=${encodeURIComponent(inv)}">Open billing</a>`
+        : '';
       html.push(
         `<tr data-claim-id="${r.id}">` +
           `<td>${inv}</td><td>${r.payer_code || ''}</td>` +
           `<td>${statusBadge(r.status)}</td>` +
           `<td>${(r.updated_at || '').slice(0, 10)}</td>` +
-          `<td>${err}</td>` +
+          `<td>${details}</td>` +
           `<td>` +
           (r.status === 'rejected'
-            ? `<button type="button" class="btn-sm" data-resubmit="${r.id}">Reset to draft</button>`
+            ? `${invoiceLink} <button type="button" class="btn-sm" data-resubmit="${r.id}">Reset to draft</button>`
             : '') +
           `</td></tr>`
       );
@@ -87,6 +111,7 @@
     loadOrgClaims,
     updateClaimStatus,
     submitClaimViaGateway,
+    parseRejectionDetails,
     renderTable,
     statusBadge
   };

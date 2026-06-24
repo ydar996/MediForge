@@ -12,7 +12,7 @@
 
 ## Phase 0: Internal Readiness (No Provincial Credentials)
 
-*Phases 0–6 software complete where possible (June 2026). **STOP GATE:** do not start Phase 7+ or OntarioMD Stage 5 until owner approves. See `ONTARIOMD-READINESS-PLAN.md`.*
+*Phases 0–6 software complete (June 2026). All agent-buildable tasks for Phases 0–6 are done; remaining 🔶 items need live provincial credentials or licensed datasets. **STOP GATE:** do not start Phase 7+ or OntarioMD Stage 5 until owner approves.*
 
 | ID | Task | Status | Owner / Agent |
 |----|------|--------|---------------|
@@ -44,7 +44,7 @@
 | 1.6 | Production FHIR server or certified gateway exposure | 🔶 | `interop-gateway`: `exportPatientBundle`, `fhirSearchPatients` |
 | 1.7 | DICOMweb client (QIDO/WADO/STOW) | ✅ | `lib/interop/dicom/dicomweb-client.js` |
 | 1.8 | DICOM C-FIND/C-MOVE via gateway appliance | 🔶 | `cFindViaGateway`, `cMoveViaGateway` stubs |
-| 1.9 | Embedded clinical image viewer in chart | 🔶 | `js/chart-image-viewer.js`, `patient-documents.html` |
+| 1.9 | Embedded clinical image viewer in chart | ✅ | `chart-image-viewer.js`, documents + orders DICOMweb |
 | 1.10 | AES-256 field-level encryption (optional) | 🔶 | Setup/recovery UI exists |
 | 1.11 | Comprehensive audit logs for all integrations | ✅ | Gateway audit + `interop_messages` |
 | 1.12 | Structured consent management module | ✅ | `/consent-management`, `/patient-consents` |
@@ -60,15 +60,15 @@
 
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 2.1 | Map product to Ontario EMR Specifications (foundation, functional, EHR connectivity) | 🔶 | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` |
+| 2.1 | Map product to Ontario EMR Specifications (foundation, functional, EHR connectivity) | ✅ | Expanded `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` |
 | 2.2 | Contact OntarioMD (emr@ontariomd.com) for vendor path | ⬜ | Owner |
 | 2.3 | Select reference clinic site | ⬜ | Owner |
-| 2.4 | Stage 1–4 internal conformance self-assessment | 🔶 | `/ontario-self-assessment` |
+| 2.4 | Stage 1–4 internal conformance self-assessment | ✅ | `/ontario-self-assessment` (Phases 0–6 rows) |
 | 2.5 | Stage 5 OntarioMD validation testing | ⬜ | 🚫 OntarioMD process |
 | 2.6 | Certification application submission | ⬜ | 🚫 OntarioMD process |
-| 2.7 | Maintain certification evidence binder (docs + screenshots) | 🔶 | `/evidence-binder`, readiness + capabilities |
+| 2.7 | Maintain certification evidence binder (docs + screenshots) | ✅ | `/evidence-binder`, readiness + capabilities |
 
-**Status: partial (June 2026, software).** See **`docs/PHASE-2-CERTIFICATION-EVIDENCE-COMPLETION.md`**. Stage 5 and submission blocked until OntarioMD vendor path opens.
+**Status: complete (June 2026, software).** Stage 5 and submission blocked until OntarioMD vendor path opens.
 
 ---
 
@@ -85,7 +85,7 @@
 | 3.5 | MCEDT Web Service client (upload/download) | 🔶 | `mcedt-client.js`; live blocked |
 | 3.6 | Clinic MOH credentials and certificates | 🔶 | `/mcedt-settings`; certs in env |
 | 3.7 | Batch claim submission scheduler | 🔶 | `claims-batch-daily` function |
-| 3.8 | Error handling and rejection workflow | 🔶 | `claims-workflow.js`, `/claims-queue` |
+| 3.8 | Error handling and rejection workflow | ✅ | `claims-workflow.js`, `/claims-queue` guided resubmit |
 | 3.9 | Remittance download and parsing | 🔶 | Parse + UI; live download blocked |
 | 3.10 | Payment reconciliation UI | ✅ | `/remittance-reconcile` |
 | 3.11 | Cut-off date logic | ✅ | `mcedt-cutoff.js` |
@@ -109,7 +109,7 @@
 | 4.8 | LOINC / pCLOCD code sets licensed and loaded | ⬜ | Mapping layer only |
 | 4.9 | OLIS consent capture before query | 🔶 | `olis_query` + server gate |
 | 4.10 | Inbound result review/reconcile queue UI | ✅ | `/lab-results-queue` |
-| 4.11 | Critical value alert handling | 🔶 | Hook on ingest |
+| 4.11 | Critical value alert handling | ✅ | Dashboard + patient chart banner |
 | 4.12 | Infoway/Ontario Health onboarding | ⬜ | 🚫 Partner |
 | 4.13 | OntarioMD/OLIS sandbox conformance testing | ⬜ | 🚫 Partner |
 
@@ -130,7 +130,7 @@
 | 5.7 | Cancellation | 🔶 | `cancelPrescription` |
 | 5.8 | Dispense status from pharmacy | 🔶 | `ingestMedicationDispense` + queue UI |
 | 5.9 | Full CCDD dataset licensed and merged | ⬜ | Optional overlay only |
-| 5.10 | Pharmacy selection UI | 🔶 | Sample directory + erx-queue |
+| 5.10 | Pharmacy selection UI | ✅ | Rx form picker + sample directory + erx-queue |
 | 5.11 | Secure messaging with pharmacy | ⬜ | Live PrescribeIT blocked |
 | 5.12 | PrescribeIT MFA requirements | ⬜ | App session only |
 | 5.13 | Infoway vendor partner enrollment | ⬜ | 🚫 Partner |

@@ -425,6 +425,30 @@ async function initializePrescriptionForm() {
       .then((n) => console.log('Canadian DPD formulary ready:', n, 'products'))
       .catch((err) => console.warn('Canadian formulary unavailable, using fallback list:', err.message));
   }
+  await initExternalPharmacyPicker();
+}
+
+let selectedExternalPharmacy = null;
+
+async function initExternalPharmacyPicker() {
+  const wrap = document.getElementById('external-pharmacy-wrap');
+  if (!wrap || !window.MediForgePharmacyDirectory) return;
+  const pharmacies = await MediForgePharmacyDirectory.loadOntarioPharmacies();
+  MediForgePharmacyDirectory.renderPharmacySelect(
+    wrap,
+    pharmacies,
+    currentPrescription?.erx_pharmacy_id,
+    (ph) => {
+      selectedExternalPharmacy = ph;
+      if (currentPrescription && ph) {
+        currentPrescription.erx_pharmacy_id = ph.id;
+        currentPrescription.erx_pharmacy_name = ph.name;
+        currentPrescription.pharmacy_status = 'external';
+        const useExt = document.getElementById('use-external-pharmacy');
+        if (useExt) useExt.checked = true;
+      }
+    }
+  );
 }
 
 // Load prescription data for editing
@@ -1858,6 +1882,17 @@ function collectPrescriptionData() {
     
     currentPrescription.medications.push(medication);
   }
+
+  const useExt = document.getElementById('use-external-pharmacy');
+  if (useExt?.checked || selectedExternalPharmacy) {
+    currentPrescription.pharmacy_status = 'external';
+    if (selectedExternalPharmacy) {
+      currentPrescription.erx_pharmacy_id = selectedExternalPharmacy.id;
+      currentPrescription.erx_pharmacy_name = selectedExternalPharmacy.name;
+    }
+  } else if (!currentPrescription.pharmacy_status) {
+    currentPrescription.pharmacy_status = 'pending';
+  }
   
   console.log('Prescription data collected:', currentPrescription);
 }
@@ -2542,7 +2577,8 @@ async function sendPrescriptionToPharmacy() {
       if (rxFn) {
         const result = await rxFn({
           patientId,
-          prescription: { ...currentPrescription, pharmacy_status: isExternalPharmacy ? 'external' : currentPrescription.pharmacy_status }
+          prescription: { ...currentPrescription, pharmacy_status: isExternalPharmacy ? 'external' : currentPrescription.pharmacy_status },
+          pharmacy: selectedExternalPharmacy || undefined
         });
         if (result && result.skipped) {
           externalMessage = '\n\nExternal e-prescribing skipped (' + (result.reason || 'not configured') + '). In-clinic pharmacy queue was updated.';
