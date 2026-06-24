@@ -505,6 +505,11 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
 
+### June 2026: Owner confirmed HRM/DHDR migrations on all Supabase environments
+
+- **Owner:** `20260626100000_hrm_inbound_reports.sql` and `20260626110000_hrm_dhdr_consent_types.sql` applied on dev, staging, and production.
+- **Docs:** `PHASE-7-HRM-DHDR-COMPLETION.md`, `evidence-binder.html` updated.
+
 ### June 2026: Phase 7 HRM/DHDR + Phase 8 engineering — deploy dev → staging → production
 
 - **Owner ask:** Implement Phase 7 and 8 software we own; full Ontario doc sync; deploy.
@@ -700,4 +705,4 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–5 software complete where possible; **Stage 5** blocked until OntarioMD vendor path. **Phase 6+** blocked similarly until owner approves. Supabase migrations (interop, audit, consents, billing, eRx columns) applied on all environments (owner confirmed). Investor materials (must stay in sync): `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–8 software complete where possible; **Stage 5** blocked until OntarioMD vendor path. Supabase migrations (interop, audit, consents, billing, eRx columns, HRM inbox, HRM/DHDR consent types) applied on all environments (owner confirmed). Investor materials (must stay in sync): `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.

@@ -27,7 +27,7 @@ Phase 7 delivers the **software foundation** for Ontario provincial hub connecti
 
 ## Owner / clinic actions
 
-1. Apply Supabase migrations on dev, staging, and production.
+1. ~~Apply Supabase migrations on dev, staging, and production.~~ **Done** (owner confirmed June 2026: `20260626100000`, `20260626110000`).
 2. Complete Ontario Health HRM and DHDR enrollment when ready for sandbox.
 3. Configure hub URLs in **Provincial Hub Settings** or org `settings.provincialHubs`.
 4. Enable patient consents (`hrm_query`, `dhdr_query`) before live queries.
