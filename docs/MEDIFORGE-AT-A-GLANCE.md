@@ -266,7 +266,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 | **Prescribing** | Health Canada drug search |
 | **Lab / imaging billing codes** | Ontario L-codes and OHIP imaging codes; maps for BC, AB, QC |
 | **USA mode** | CPT codes for labs/imaging where billing mode is set to USA |
-| **Ontario readiness (Phases 0–8 software)** | Gap report, compliance pack, MCEDT claims desk, OLIS lab desk, eRx queue, imaging desk, HRM inbox with chart filing, DHDR hooks, evidence binder, FHIR/CPP/consents, Strategic Partner pages at `/ontario-readiness` and `/strategic-partner-letter` (~72–82% documented readiness) |
+| **Ontario readiness (Phases 0–8 software)** | Gap report, compliance pack, MCEDT claims desk, OLIS lab desk, eRx queue, imaging desk, HRM inbox with chart filing, DHDR hooks, evidence binder, FHIR/CPP/consents, Strategic Partner pages at `/ontario-readiness`, `/strategic-partner-letter`, and `/valuation-equity-structure` (~72–82% documented readiness) |
 
 ---
 

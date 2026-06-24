@@ -2,7 +2,8 @@
 
 **Document prepared by:** Yinka Daramola, Founder and CEO, Work Chop Inc., owner of the MediForge HealthTech software  
 **Date:** June 2026 (updated to reflect Phases 0–8 software delivery)  
-**Written companion to:** [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Strategic Partner Letter](STRATEGIC-PARTNER-LETTER-2026-06.md) · [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness)
+**Shareable web version:** https://mediforge.netlify.app/valuation-equity-structure  
+**Written companion to:** [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Strategic Partner Letter](STRATEGIC-PARTNER-LETTER-2026-06.md) · [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · **`valuation-equity-structure.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
 
 **Source document (Word):** `docs/strategic-partner/originals/Valuation and Equity Structure for MediForge.docx`
 
@@ -123,7 +124,7 @@ All structures include a hard deadline: full liquidation within **18 months** or
 
 The proposed valuation and terms are realistic, evidence-based, and designed to create a strong foundation for **partnership** between the Founder and Strategic Partner. They fairly recognize the Founder's contributions while offering the Strategic Partner meaningful ownership and protections.
 
-All parties are encouraged to conduct full due diligence. Review live materials at [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness), [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter), and [/evidence-binder](https://mediforge.netlify.app/evidence-binder). Legal counsel should review and customize the final agreements for the specific jurisdiction and transaction.
+All parties are encouraged to conduct full due diligence. Review live materials at [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness), [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter), [/valuation-equity-structure](https://mediforge.netlify.app/valuation-equity-structure), and [/evidence-binder](https://mediforge.netlify.app/evidence-binder). Legal counsel should review and customize the final agreements for the specific jurisdiction and transaction.
 
 ---
 

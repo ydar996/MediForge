@@ -70,10 +70,28 @@ const PHASE7_CHART_FILES = [
 const NO_INVESTOR_TERMS_FILES = [
   'ontario-readiness.html',
   'strategic-partner-letter.html',
+  'valuation-equity-structure.html',
   'capabilities.html',
   'evidence-binder.html',
   'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
+  'docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md',
   'docs/ONTARIO-EMR-READINESS-REPORT.md'
+];
+
+/** Diligence pages must cross-link valuation and certification path */
+const MUST_LINK_VALUATION = [
+  'ontario-readiness.html',
+  'strategic-partner-letter.html',
+  'evidence-binder.html',
+  'capabilities.html',
+  'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
+  'docs/ONTARIO-EMR-READINESS-REPORT.md'
+];
+
+const MUST_HAVE_CERT_PATH = [
+  'ontario-readiness.html',
+  'docs/ONTARIO-EMR-READINESS-REPORT.md',
+  'evidence-binder.html'
 ];
 
 const INVESTOR_WORD = /\binvestors?\b/i;
@@ -127,6 +145,22 @@ for (const rel of NO_INVESTOR_TERMS_FILES) {
   if (!text) continue;
   if (INVESTOR_WORD.test(text)) {
     errors.push(`${rel}: contains legacy "investor" wording — use Strategic Partner`);
+  }
+}
+
+for (const rel of MUST_LINK_VALUATION) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('valuation-equity-structure')) {
+    errors.push(`${rel}: missing link to /valuation-equity-structure`);
+  }
+}
+
+for (const rel of MUST_HAVE_CERT_PATH) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('certification-path')) {
+    errors.push(`${rel}: missing certification-path section or link`);
   }
 }
 

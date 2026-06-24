@@ -98,4 +98,4 @@ The Founder assigns all right, title, and interest in the Product, code, designs
 
 ---
 
-*For diligence: [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter) · [/evidence-binder](https://mediforge.netlify.app/evidence-binder)*
+*For diligence: [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter) · [/valuation-equity-structure](https://mediforge.netlify.app/valuation-equity-structure) · [/evidence-binder](https://mediforge.netlify.app/evidence-binder)*

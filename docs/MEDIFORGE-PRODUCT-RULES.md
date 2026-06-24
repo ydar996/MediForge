@@ -123,8 +123,8 @@ When you change the product, update related documentation **in the same session*
 
 | Change type | Also update |
 |-------------|-------------|
-| Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `strategic-partner-letter.html`, `evidence-binder.html`) | Written companion in `docs/` (see **`AGENT-HANDOVER.md`** Rule #3 table) |
-| Ontario readiness scores or phase status | Full companion set: readiness report, gap report, implementation plan, Strategic Partner letter (html + md), ontario-readiness, capabilities (html + guide), evidence binder, at-a-glance |
+| Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `strategic-partner-letter.html`, `valuation-equity-structure.html`, `evidence-binder.html`) | Written companion in `docs/` (see **`AGENT-HANDOVER.md`** Rule #3 table) |
+| Ontario readiness scores or phase status | Full companion set: readiness report, gap report, implementation plan, Strategic Partner letter (html + md), valuation page (html + md), ontario-readiness, capabilities (html + guide), evidence binder, at-a-glance |
 | Implementation plan task completed | `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` status column + matching `PHASE-*-COMPLETION.md` if applicable |
 | Staff-visible workflow | `USER-MANUAL.md` + `user-manual.html` |
 | Any code/config session | `AGENT-HANDOVER.md` session log, `DOCUMENTATION-INDEX.md` |

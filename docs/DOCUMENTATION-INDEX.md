@@ -37,7 +37,8 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[ontario-readiness.html](../ontario-readiness.html)** | **Strategic Partner readiness webpage (mediforge.netlify.app/ontario-readiness)** |
 | **[strategic-partner-letter.html](../strategic-partner-letter.html)** | **Strategic Partner update letter (mediforge.netlify.app/strategic-partner-letter)** |
 | **[docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md](strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md)** | **Written Strategic Partner letter (keep in sync with /strategic-partner-letter and /ontario-readiness)** |
-| **[docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md](strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md)** | **Seed valuation and equity structure (Strategic Partner diligence)** |
+| **[valuation-equity-structure.html](../valuation-equity-structure.html)** | **Shareable valuation and equity structure (mediforge.netlify.app/valuation-equity-structure)** |
+| **[docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md](strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md)** | **Written companion (keep in sync with /valuation-equity-structure)** |
 | **[docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md](strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md)** | **Term sheet for seed preferred share financing** |
 | **`docs/strategic-partner/originals/`** | Source Word documents (valuation, term sheet, roadmap, agent instructions) |
 | **[docs/ROADMAP-CANADA-CERTIFICATION.md](ROADMAP-CANADA-CERTIFICATION.md)** | **Roadmap from current status to OntarioMD certification and commercial readiness** |

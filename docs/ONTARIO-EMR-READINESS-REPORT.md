@@ -298,7 +298,9 @@ Additional provincial certifications, advanced features, ongoing compliance and 
 | **`MEDIFORGE-INTEROPERABILITY-DOCS.md`** | Technical interop reference |
 | **`interoperability-gaps.md`** | Pre/post upgrade gap matrix |
 | **`/strategic-partner-letter`** | Shareable Strategic Partner update letter |
-| **`/ontario-readiness`** | Strategic Partner shareable webpage (keep in sync with this doc) |
+| **`/valuation-equity-structure`** | Seed valuation and equity structure (Strategic Partner diligence) |
+| **`/ontario-readiness`** | Strategic Partner shareable webpage (keep in sync with this doc); includes `#certification-path` |
+| **`/evidence-binder`** | Diligence index including valuation, roadmap, and phase completion records |
 | **`/capabilities`** | Full product capabilities showcase |
 
 ---
