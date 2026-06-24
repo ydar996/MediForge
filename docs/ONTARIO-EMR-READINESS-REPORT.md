@@ -13,14 +13,14 @@ This document is the written companion to the investor readiness webpage. Share 
 
 MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **50–60%** after Phase 0 and Phase 1 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
 
-**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phase 0 (June 2026)** delivered the internal evidence pack: gap report, PHIPA compliance documentation, audit hardening, FHIR patient export, CPP summary, consent capture, i4C mapping, and OHIP claim draft export.
+**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phase 0 and Phase 1 (June 2026)** delivered internal evidence and core standards: gap report, PHIPA pack, FHIR export, CPP summary, consent management, gateway audit trail, and tested interoperability libraries.
 
 | Metric | Estimate |
 |--------|----------|
 | Overall Ontario readiness | 50–60% |
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
-| OntarioMD certification | 0% (application not submitted; evidence binder ~5–10%) |
+| OntarioMD certification | 0% (application not submitted; evidence binder ~10–15%) |
 
 ---
 
@@ -28,10 +28,10 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 
 | Pillar | ~% | Strongest | Weakest |
 |--------|-----|-----------|---------|
-| Foundational (HL7/FHIR, security, privacy) | 55–65% | PHIPA compliance pack, append-only audit migration, patient-access logging | ONE ID, third-party security audit, legal review of policies |
+| Foundational (HL7/FHIR, security, privacy) | 60–70% | Gateway audit, interop append-only logging, consent management, PHIPA pack | ONE ID, third-party audit, legal review |
 | EHR connectivity (OLIS, HRM, PrescribeIT, etc.) | 5–15% | Interop libraries, gateway stubs | No live provincial pipes |
-| Functional clinical EMR | 75–85% | Charting, orders, portal, billing; CPP summary, i4C mapping, consent capture live | Full OntarioMD functional conformance testing |
-| Certification process | 5–10% | Gap report and evidence binder published | OntarioMD application not started |
+| Functional clinical EMR | 75–85% | Charting, orders, portal, billing; CPP, i4C, consents live | Full OntarioMD functional conformance testing |
+| Certification process | 10–15% | Gap report and evidence binder (Phases 0–1) | OntarioMD application not started |
 
 ---
 
@@ -40,11 +40,12 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 | Requirement | Status | Notes |
 |-------------|--------|-------|
 | HL7 v2 messaging engine | Partial (~60%) | ORM/ORU, ACK, MLLP in `lib/interop/hl7/`; not live |
-| HL7 FHIR R4 client/server | Partial (~55%) | Resource builders, gateway, patient chart Bundle export; no production FHIR server |
-| DICOM support | Partial (~40%) | DICOMweb client; file attach; no live PACS/viewer |
-| PHIPA/HIPAA-equivalent compliance | Partial (~60%) | RBAC, audit, encryption option, compliance pack in `docs/compliance/`; legal review outstanding |
-| Structured consent capture | Partial (~40%) | Portal, data sharing, research types; DB + UI (`/patient-consents`) |
-| Immutable audit trail | Partial (~65%) | Append-only DB migration; patient chart access logging (migration per environment) |
+| HL7 FHIR R4 client/server | Partial (~60%) | Gateway Bundle export, patient search, chart download |
+| DICOM support | Partial (~50%) | DICOMweb, gateway stubs, clinical image/PDF viewer |
+| PHIPA/HIPAA-equivalent compliance | Partial (~65%) | Compliance pack and policy index; legal review outstanding |
+| Structured consent capture | Partial (~55%) | Patient consents + organization consent management |
+| Immutable audit trail | Partial (~75%) | Append-only audit_logs and interop_messages |
+| Integration gateway audit | Done | All gateway actions logged to interop_messages |
 | ONE ID federation | Not started | Supabase auth only |
 
 ---
@@ -99,8 +100,8 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 | HRM (hospital report inbox) | Not implemented |
 | DHDR (drug repository) | Not implemented |
 | ConnectingOntario viewer | Not implemented |
-| Ontario EMR Specifications alignment | Partial (~50%) |
-| Evidence binder / gap report | Partial (~50%) |
+| Ontario EMR Specifications alignment | Partial (~55%) |
+| Evidence binder / gap report | Partial (~55%) |
 | OntarioMD validation process | Not started |
 
 ---
@@ -110,8 +111,8 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 | Practice | Status |
 |----------|--------|
 | Modular adapter architecture | Strong (~80%) |
-| Logging & audit trails | Partial (~70%) |
-| Automated testing | Partial (~55%) |
+| Logging & audit trails | Partial (~80%) |
+| Automated testing | Partial (~60%) |
 | Third-party security audit | Not done |
 | Integration documentation | Partial (~55%) |
 | High-volume scalability testing | Not done |
@@ -133,19 +134,31 @@ Internal readiness sprint delivered without provincial credentials:
 | i4C indicator mapping | `js/i4c-indicator-map.js` |
 | OHIP claim file draft export | `js/ohip-claim-export.js`, invoice details button |
 
-**Owner action:** Run both `2026062320*` migrations in Supabase SQL Editor (dev → staging → prod) before consents and chart-access audit RPC work on live DB.
+## Phase 1 Complete (June 2026)
+
+| Deliverable | Location |
+|-------------|----------|
+| Interop gateway audit | `lib/interop/gateway-audit.js`, `interop-gateway` function |
+| FHIR gateway export | `exportPatientBundle`, `fhirSearchPatients` actions |
+| Consent management (org) | `/consent-management` |
+| Clinical image viewer | `js/chart-image-viewer.js` |
+| Append-only interop_messages | `20260624100000_interop_messages_append_only.sql` |
+| PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
+| Investor letter | `/investor-letter` |
+
+**Owner action:** Run `20260624100000_interop_messages_append_only.sql` per environment if not done.
 
 ---
 
 ## Priority Roadmap
 
-1. **OntarioMD certification path** (~5–10%: gap report + evidence pack complete; application pending)
+1. **OntarioMD certification path** (~10–15%: Phases 0–1 evidence complete; application pending)
 2. **MCEDT claims** (~25%: draft export live; MOH credentials needed)
 3. **OLIS labs** (~20%: HL7/FHIR plumbing; Infoway onboarding)
 4. **PrescribeIT** (~10%: adapter stubs; vendor enrollment)
 5. **Imaging / DI** (~15%: orders + DICOMweb; DIR/PACS live)
 
-**Next:** Phase 1 core standards and OntarioMD vendor outreach (blocked until owner approves).
+**Next:** Phase 2 OntarioMD certification path (blocked until owner approves).
 
 ---
 
@@ -170,6 +183,10 @@ Internal readiness sprint delivered without provincial credentials:
 - PHIPA compliance documentation pack
 - OntarioMD gap report and evidence binder
 - OHIP claim file draft export from billing
+- Organization consent management registry
+- Interop gateway audit on all integration actions
+- Clinical image and PDF viewer for chart documents
+- Investor letter and readiness report pages
 
 ### Outstanding (Partner / Credential Gated)
 
@@ -188,7 +205,7 @@ Internal readiness sprint delivered without provincial credentials:
 
 1. **De-risked clinical core:** Daily clinic workflows are largely built and deployed.
 2. **Prepared integration layer:** HL7, FHIR, DICOMweb, billing adapters exist as tested foundations.
-3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phase 0 evidence is in repo.
+3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–1 evidence is in repo.
 4. **Canada-first moat:** ICD-10-CA, Ontario fee codes, Health Canada formulary, PHN matching, CAD billing are in the product.
 
 ---
@@ -202,6 +219,7 @@ Internal readiness sprint delivered without provincial credentials:
 | **`ONTARIOMD-READINESS-PLAN.md`** | Agent sprint plan and STOP gate for Phase 1+ |
 | **`MEDIFORGE-INTEROPERABILITY-DOCS.md`** | Technical interop reference |
 | **`interoperability-gaps.md`** | Pre/post upgrade gap matrix |
+| **`/investor-letter`** | Shareable investor update letter |
 | **`/ontario-readiness`** | Investor shareable webpage (keep in sync with this doc) |
 | **`/capabilities`** | Full product capabilities showcase |
 
