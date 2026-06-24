@@ -2,7 +2,8 @@
 
 **Work Chop Inc.** (the "Company")  
 **Date:** June 2026  
-**Status:** Discussion draft. Aligns with [Valuation and Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md).
+**Shareable web version:** https://mediforge.netlify.app/term-sheet  
+**Status:** Discussion draft. Aligns with [Valuation and Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md) · **`term-sheet.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
 
 **Source document (Word):** `docs/strategic-partner/originals/TERM SHEET FOR SEED PREFERRED SHARE FINANCING.docx`
 
@@ -98,4 +99,4 @@ The Founder assigns all right, title, and interest in the Product, code, designs
 
 ---
 
-*For diligence: [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter) · [/valuation-equity-structure](https://mediforge.netlify.app/valuation-equity-structure) · [/evidence-binder](https://mediforge.netlify.app/evidence-binder)*
+*For diligence: [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter) · [/valuation-equity-structure](https://mediforge.netlify.app/valuation-equity-structure) · [/term-sheet](https://mediforge.netlify.app/term-sheet) · [/evidence-binder](https://mediforge.netlify.app/evidence-binder)*

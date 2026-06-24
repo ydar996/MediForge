@@ -59,6 +59,7 @@ Code, config, docs, and **live websites** ship together. **Every session that ch
 | `/ontario-readiness` | `docs/ONTARIO-EMR-READINESS-REPORT.md` |
 | `/strategic-partner-letter` | `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md` |
 | `/valuation-equity-structure` | `docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md` |
+| `/term-sheet` | `docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md` |
 | `/capabilities` | `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` |
 | `/evidence-binder` | Phase completion docs in `docs/PHASE-*-COMPLETION.md` |
 | `/ontario-self-assessment` | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` (adapter rows) |
@@ -539,6 +540,12 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Term Sheet shareable webpage
+
+- **Owner ask:** Live page for term sheet (like valuation page).
+- **Added:** `/term-sheet` (`term-sheet.html`), Netlify redirects, cross-links from evidence binder, partner letter, valuation, ontario-readiness.
+- **Synced:** `TERM-SHEET-SEED-PREFERRED-SHARE.md`, documentation index, companion docs, sync check guards term-sheet links.
 
 ### June 2026: Valuation webpage deploy + Ontario companion sync
 

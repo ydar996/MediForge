@@ -71,14 +71,16 @@ const NO_INVESTOR_TERMS_FILES = [
   'ontario-readiness.html',
   'strategic-partner-letter.html',
   'valuation-equity-structure.html',
+  'term-sheet.html',
   'capabilities.html',
   'evidence-binder.html',
   'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
   'docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md',
+  'docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md',
   'docs/ONTARIO-EMR-READINESS-REPORT.md'
 ];
 
-/** Diligence pages must cross-link valuation and certification path */
+/** Diligence pages must cross-link valuation, term sheet, and certification path */
 const MUST_LINK_VALUATION = [
   'ontario-readiness.html',
   'strategic-partner-letter.html',
@@ -87,6 +89,8 @@ const MUST_LINK_VALUATION = [
   'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
   'docs/ONTARIO-EMR-READINESS-REPORT.md'
 ];
+
+const MUST_LINK_TERM_SHEET = MUST_LINK_VALUATION;
 
 const MUST_HAVE_CERT_PATH = [
   'ontario-readiness.html',
@@ -153,6 +157,14 @@ for (const rel of MUST_LINK_VALUATION) {
   if (!text) continue;
   if (!text.includes('valuation-equity-structure')) {
     errors.push(`${rel}: missing link to /valuation-equity-structure`);
+  }
+}
+
+for (const rel of MUST_LINK_TERM_SHEET) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('term-sheet')) {
+    errors.push(`${rel}: missing link to /term-sheet`);
   }
 }
 

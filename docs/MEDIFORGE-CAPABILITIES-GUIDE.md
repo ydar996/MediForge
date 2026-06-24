@@ -382,6 +382,7 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
 | Strategic Partner letter | `/strategic-partner-letter` shareable update (sync with readiness report at 72–82%) |
 | Valuation & equity | `/valuation-equity-structure` seed financing overview for Strategic Partner diligence |
+| Term sheet | `/term-sheet` seed preferred share discussion draft |
 | Certification path | `/ontario-readiness#certification-path` forward plan (Phases A–D, timeline, budget) |
 | Provincial integration runbook | `docs/PROVINCIAL-INTEGRATION-RUNBOOK.md` |
 

@@ -61,6 +61,7 @@ See **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** for task-level status.
 | Readiness report | `/ontario-readiness` (includes `#certification-path`) |
 | Strategic Partner letter | `/strategic-partner-letter` |
 | Valuation & equity structure | `/valuation-equity-structure` |
+| Term sheet | `/term-sheet` |
 | Evidence binder | `/evidence-binder` |
 | Self-assessment | `/ontario-self-assessment` |
 | eRx queue | `/erx-queue` |

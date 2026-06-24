@@ -3,7 +3,7 @@
 **Document prepared by:** Yinka Daramola, Founder and CEO, Work Chop Inc., owner of the MediForge HealthTech software  
 **Date:** June 2026 (updated to reflect Phases 0–8 software delivery)  
 **Shareable web version:** https://mediforge.netlify.app/valuation-equity-structure  
-**Written companion to:** [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Strategic Partner Letter](STRATEGIC-PARTNER-LETTER-2026-06.md) · [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · **`valuation-equity-structure.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
+**Written companion to:** [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Strategic Partner Letter](STRATEGIC-PARTNER-LETTER-2026-06.md) · [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness) · [/term-sheet](https://mediforge.netlify.app/term-sheet) · **`valuation-equity-structure.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
 
 **Source document (Word):** `docs/strategic-partner/originals/Valuation and Equity Structure for MediForge.docx`
 
