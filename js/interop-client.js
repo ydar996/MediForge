@@ -32,14 +32,15 @@
     return callGateway({ action: 'listProvinces' });
   }
 
-  async function transmitLabOrder({ organizationId, patient, order, userId, province }) {
+  async function transmitLabOrder({ organizationId, patient, order, userId, province, olisConsentGranted }) {
     return callGateway({
       action: 'transmitLabOrder',
       organizationId,
       patient,
       order,
       userId,
-      province
+      province,
+      olisConsentGranted: olisConsentGranted !== false
     });
   }
 
@@ -90,8 +91,16 @@
     });
   }
 
-  async function ingestOru({ organizationId, rawHl7, userId, province }) {
-    return callGateway({ action: 'ingestOru', organizationId, rawHl7, userId, province });
+  async function ingestOru({ organizationId, rawHl7, userId, province, olisConsentGranted }) {
+    return callGateway({ action: 'ingestOru', organizationId, rawHl7, userId, province, olisConsentGranted });
+  }
+
+  async function generateLabHl7({ organizationId, patient, order, userId, province }) {
+    return callGateway({ action: 'generateLabHl7', organizationId, patient, order, userId, province });
+  }
+
+  async function fhirSearchPatients({ organizationId, phn, province, userId, olisConsentGranted }) {
+    return callGateway({ action: 'fhirSearchPatients', organizationId, phn, province, userId, olisConsentGranted });
   }
 
   async function matchPatient(params) {
@@ -112,6 +121,8 @@
     submitClaim,
     processRemittance,
     ingestOru,
+    generateLabHl7,
+    fhirSearchPatients,
     matchPatient,
     dicomweb
   };

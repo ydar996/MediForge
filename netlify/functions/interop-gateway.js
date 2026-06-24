@@ -85,7 +85,8 @@ exports.handler = async (event) => {
           patient: body.patient,
           order: body.order,
           organizationId: body.organizationId,
-          userId: body.userId
+          userId: body.userId,
+          olisConsentGranted: body.olisConsentGranted
         });
         break;
       case 'transmitImagingOrder':
@@ -104,7 +105,8 @@ exports.handler = async (event) => {
           fhirBundle: body.fhirBundle,
           organizationId: body.organizationId,
           userId: body.userId,
-          orderId: body.orderId
+          orderId: body.orderId,
+          olisConsentGranted: body.olisConsentGranted
         });
         break;
       case 'transmitPrescription':
@@ -192,6 +194,13 @@ exports.handler = async (event) => {
         break;
       case 'fhirSearchPatients':
         if (!body.phn) throw new Error('phn required');
+        {
+          const consentBlock = service._olisConsentBlock(body.olisConsentGranted);
+          if (consentBlock) {
+            result = consentBlock;
+            break;
+          }
+        }
         result = await interop.fhir.client.searchPatients({
           baseUrl: body.baseUrl || process.env.INTEROP_FHIR_BASE_URL,
           oauth: {

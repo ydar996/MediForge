@@ -39,6 +39,9 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/investor/INVESTOR-LETTER-2026-06.md](investor/INVESTOR-LETTER-2026-06.md)** | **Written investor letter (keep in sync with /investor-letter)** |
 | **[docs/PHASE-1-CORE-STANDARDS-COMPLETION.md](PHASE-1-CORE-STANDARDS-COMPLETION.md)** | **Phase 1 completion evidence and task status** |
 | **[docs/PHASE-3-MCEDT-CLAIMS-COMPLETION.md](PHASE-3-MCEDT-CLAIMS-COMPLETION.md)** | **Phase 3 MCEDT claims completion evidence** |
+| **[docs/PHASE-2-CERTIFICATION-EVIDENCE-COMPLETION.md](PHASE-2-CERTIFICATION-EVIDENCE-COMPLETION.md)** | **Phase 2 certification evidence (software we can do)** |
+| **[docs/PHASE-4-OLIS-LAB-DESK-COMPLETION.md](PHASE-4-OLIS-LAB-DESK-COMPLETION.md)** | **Phase 4 OLIS lab desk completion evidence** |
+| **[docs/ONTARIO-EMR-SPEC-TRACEABILITY.md](ONTARIO-EMR-SPEC-TRACEABILITY.md)** | **Ontario EMR spec traceability matrix** |
 | **[claims-queue.html](../claims-queue.html)** | **OHIP claims queue** |
 | **[remittance-reconcile.html](../remittance-reconcile.html)** | **Remittance reconciliation** |
 | **[mcedt-settings.html](../mcedt-settings.html)** | **MCEDT / OHIP billing settings** |

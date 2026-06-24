@@ -1,6 +1,6 @@
 # Ontario EMR Readiness Report
 
-**Version:** June 2026 (Phases 0–3 complete, software)  
+**Version:** June 2026 (Phases 0–4 software complete where possible)  
 **Audience:** Investors, partners, clinic leaders  
 **Shareable web version:** https://mediforge.netlify.app/ontario-readiness  
 **Implementation tasks:** See **`ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**
@@ -11,16 +11,16 @@ This document is the written companion to the investor readiness webpage. Share 
 
 ## Executive Summary
 
-MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **55–65%** after Phases 0–3 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
+MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **60–70%** after Phases 0–4 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
 
-**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–3 (June 2026)** delivered internal evidence, core standards, and MCEDT claims software (queue, XML export, remittance reconcile).
+**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–4 (June 2026)** delivered internal evidence, core standards, MCEDT claims software, and OLIS-ready lab desk (HL7 export, ORU queue, PHN registry, consent gates).
 
 | Metric | Estimate |
 |--------|----------|
-| Overall Ontario readiness | 55–65% |
+| Overall Ontario readiness | 60–70% |
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
-| OntarioMD certification | 0% (application not submitted; evidence binder ~10–15%) |
+| OntarioMD certification | 0% (application not submitted; evidence binder ~25–35%) |
 
 ---
 
@@ -31,7 +31,7 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 | Foundational (HL7/FHIR, security, privacy) | 60–70% | Gateway audit, interop append-only logging, consent management, PHIPA pack | ONE ID, third-party audit, legal review |
 | EHR connectivity (OLIS, HRM, PrescribeIT, etc.) | 5–15% | Interop libraries, gateway stubs | No live provincial pipes |
 | Functional clinical EMR | 75–85% | Charting, orders, portal, billing; CPP, i4C, consents live | Full OntarioMD functional conformance testing |
-| Certification process | 10–15% | Gap report and evidence binder (Phases 0–1) | OntarioMD application not started |
+| Certification process | 25–35% | Spec traceability, self-assessment, evidence binder (Phases 0–2) | OntarioMD application not started |
 
 ---
 
@@ -54,9 +54,11 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| HL7 v2 lab interface | Foundation | ORM^O01, ORU^R01, MLLP when configured |
-| FHIR Patient Query | Stub | PHN matching; Ontario config template |
-| Auto-ingest results into charts | Partial | Ingest adapters; not wired to live LIS |
+| HL7 v2 lab interface | Partial (~45%) | ORM export, ORU ingest queue, MLLP when configured |
+| FHIR Patient Query | Partial (~30%) | Gateway + PHN registry; live OLIS blocked |
+| Auto-ingest results into charts | Partial (~40%) | `/lab-results-queue`, merge workflow |
+| OLIS consent gate | Partial (~50%) | `olis_query` consent; client + server |
+| PHN registry | Partial (~45%) | `/patient-identifiers` |
 | OntarioMD sandbox testing | Not started | Requires Infoway enrollment |
 
 ---

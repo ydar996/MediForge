@@ -56,15 +56,18 @@
       });
 
       if (global.supabaseClient && orgId && normalized.id) {
-        await global.supabaseClient.from('patient_identifiers').upsert({
-          patient_id: normalized.id,
-          organization_id: orgId,
-          identifier_type: 'PHN',
-          identifier_value: normalized.phn.replace(/\D/g, ''),
-          province,
-          verified: match?.matched === true,
-          updated_at: new Date().toISOString()
-        }, { onConflict: 'patient_id,identifier_type' }).catch(() => {});
+        const phnValue = String(normalized.phn).replace(/\s/g, '').toUpperCase();
+        await global.supabaseClient.from('patient_identifiers').upsert(
+          {
+            patient_id: normalized.id,
+            organization_id: orgId,
+            system: 'http://ehealthontario.ca/fhir/NamingSystem/id-on-patient-hcn',
+            value: phnValue,
+            province,
+            active: true
+          },
+          { onConflict: 'organization_id,system,value' }
+        ).catch(() => {});
       }
 
       if (typeof global.logAuditEvent === 'function') {

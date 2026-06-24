@@ -275,7 +275,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 Being honest helps set expectations:
 
 - **Live connections** to Ontario provincial systems (OLIS lab network, hospital report inbox, e-prescribing to pharmacies, OHIP claim submission): architecture exists; **live provincial credentials** are a next step, not yet flipped on for every clinic.
-- **OntarioMD certification**: Phases 0–1 evidence is in the product and docs; formal certification (Phase 2) not started yet.
+- **OntarioMD certification**: Phases 0–4 software evidence is in the product and docs; formal certification (Stage 5) not started yet. Evidence binder and self-assessment pages live.
 - Some brochure features depend on **clinic configuration** (pharmacy, inpatient, portal): not every clinic turns every module on.
 
 ---

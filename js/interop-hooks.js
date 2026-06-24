@@ -53,8 +53,66 @@
     }
   }
 
+  async function checkOlisConsentForPatient(patientId) {
+    if (!global.MediForgePatientConsent?.hasOlisConsent) return { ok: true, skipped: true };
+    return global.MediForgePatientConsent.hasOlisConsent(patientId);
+  }
+
+  async function ingestOruAndApply({ rawHl7, orderSerial, orderId, patientId }) {
+    if (!global.MediForgeInteropClient) return { error: 'Interop client not loaded' };
+    try {
+      if (patientId) {
+        const consent = await checkOlisConsentForPatient(patientId);
+        if (consent.blocked) return consent;
+      }
+      const orgId = await resolveOrgId();
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await global.MediForgeInteropClient.ingestOru({
+        organizationId: orgId,
+        rawHl7,
+        userId: user.id || user.username,
+        olisConsentGranted: true
+      });
+      const chart = response.result?.chart || response.chart;
+      if (!chart) return { error: 'No chart mapping returned', response };
+
+      let targetOrderId = orderId;
+      if (!targetOrderId && (orderSerial || chart.placerOrderNumber)) {
+        const found = await MediForgeLabResultsQueue?.findOrderBySerial?.(orderSerial || chart.placerOrderNumber);
+        targetOrderId = found?.id;
+      }
+      if (targetOrderId) {
+        await applyLabResultsToOrder(targetOrderId, chart);
+        return { applied: true, orderId: targetOrderId, critical: chart.critical, ack: response.result?.ack };
+      }
+      return { applied: false, chart, message: 'Order not found; use preview or set order serial.' };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  async function exportLabOrderHl7({ patientId, order, orderId }) {
+    if (!global.MediForgeInteropClient?.generateLabHl7) return { error: 'Client not loaded' };
+    const patient = normalizePatient(await loadPatient(patientId));
+    const orgId = await resolveOrgId();
+    const consent = await checkOlisConsentForPatient(patientId);
+    if (consent.blocked) return consent;
+    return global.MediForgeInteropClient.generateLabHl7({
+      organizationId: orgId,
+      patient,
+      order: {
+        id: orderId,
+        serial_number: order?.serial_number || order?.serialNumber,
+        selected_items: order?.selected_items || order?.selectedItems,
+        timestamp: order?.timestamp
+      }
+    });
+  }
+
   async function transmitLabOrder({ patientId, order, orderId }) {
     if (!global.MediForgeInteropClient) return { skipped: true, reason: 'client not loaded' };
+    const consent = await checkOlisConsentForPatient(patientId);
+    if (consent.blocked) return consent;
     try {
       const orgId = await resolveOrgId();
       const patient = normalizePatient(await loadPatient(patientId));
@@ -70,7 +128,10 @@
         },
         userId: user.id || user.username
       };
-      const response = await global.MediForgeInteropClient.transmitLabOrder(payload);
+      const response = await global.MediForgeInteropClient.transmitLabOrder({
+        ...payload,
+        olisConsentGranted: true
+      });
       if (typeof global.logAuditEvent === 'function') {
         global.logAuditEvent('interop_lab_order_sent', { orderId, serial: payload.order.serial_number, queued: response.result?.queued });
       }
@@ -134,6 +195,8 @@
     transmitImagingOrder,
     transmitPrescription,
     applyLabResultsToOrder,
+    ingestOruAndApply,
+    exportLabOrderHl7,
     loadPatient,
     normalizePatient
   };

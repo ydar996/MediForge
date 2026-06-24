@@ -50,9 +50,22 @@
     return row;
   }
 
+  async function hasOlisConsent(patientId) {
+    const rows = await loadConsents(patientId);
+    const granted = rows.some((c) => c.consent_type === 'olis_query' && c.granted === true);
+    if (granted) return { ok: true, granted: true };
+    return {
+      ok: false,
+      blocked: true,
+      code: 'OLIS_CONSENT_REQUIRED',
+      message: 'Enable OLIS Lab Query consent on the patient chart before provincial lab network actions.'
+    };
+  }
+
   global.MediForgePatientConsent = {
     CONSENT_TYPES,
     loadConsents,
-    saveConsent
+    saveConsent,
+    hasOlisConsent
   };
 })(typeof window !== 'undefined' ? window : globalThis);

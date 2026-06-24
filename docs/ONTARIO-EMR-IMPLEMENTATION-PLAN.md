@@ -60,13 +60,15 @@
 
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 2.1 | Map product to Ontario EMR Specifications (foundation, functional, EHR connectivity) | 🔶 | ~40% alignment |
+| 2.1 | Map product to Ontario EMR Specifications (foundation, functional, EHR connectivity) | 🔶 | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` |
 | 2.2 | Contact OntarioMD (emr@ontariomd.com) for vendor path | ⬜ | Owner |
 | 2.3 | Select reference clinic site | ⬜ | Owner |
-| 2.4 | Stage 1–4 internal conformance self-assessment | ⬜ | |
+| 2.4 | Stage 1–4 internal conformance self-assessment | 🔶 | `/ontario-self-assessment` |
 | 2.5 | Stage 5 OntarioMD validation testing | ⬜ | 🚫 OntarioMD process |
 | 2.6 | Certification application submission | ⬜ | 🚫 OntarioMD process |
-| 2.7 | Maintain certification evidence binder (docs + screenshots) | 🔶 | Capabilities + readiness pages |
+| 2.7 | Maintain certification evidence binder (docs + screenshots) | 🔶 | `/evidence-binder`, readiness + capabilities |
+
+**Status: partial (June 2026, software).** See **`docs/PHASE-2-CERTIFICATION-EVIDENCE-COMPLETION.md`**. Stage 5 and submission blocked until OntarioMD vendor path opens.
 
 ---
 
@@ -93,19 +95,21 @@
 
 ## Phase 4: OLIS Laboratory Integration
 
+**Status: partial (June 2026, software).** Live Infoway/OLIS blocked until onboarding. See **`docs/PHASE-4-OLIS-LAB-DESK-COMPLETION.md`**.
+
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 4.1 | HL7 v2 lab order outbound (ORM^O01 / OML^O21) | 🔶 | Generator ready |
-| 4.2 | HL7 v2 lab result inbound (ORU^R01) | 🔶 | Parser + ingest adapter |
+| 4.1 | HL7 v2 lab order outbound (ORM^O01 / OML^O21) | 🔶 | Export HL7 on external lab orders |
+| 4.2 | HL7 v2 lab result inbound (ORU^R01) | 🔶 | Parser + `/lab-results-queue` |
 | 4.3 | FHIR ServiceRequest for lab orders | 🔶 | Adapter ready |
 | 4.4 | FHIR DiagnosticReport + Observation ingest | 🔶 | Adapter ready |
-| 4.5 | FHIR Patient Query (OLIS) | ⬜ | PHN matching stub |
-| 4.6 | Auto-ingest results into patient charts | 🔶 | Not wired to live LIS |
-| 4.7 | Patient PHN storage and matching | 🔶 | `patient_identifiers` table |
+| 4.5 | FHIR Patient Query (OLIS) | 🔶 | Gateway + consent gate |
+| 4.6 | Auto-ingest results into patient charts | 🔶 | `ingestOruAndApply` workflow |
+| 4.7 | Patient PHN storage and matching | 🔶 | `/patient-identifiers` |
 | 4.8 | LOINC / pCLOCD code sets licensed and loaded | ⬜ | Mapping layer only |
-| 4.9 | OLIS consent capture before query | ⬜ | Config flag hook |
-| 4.10 | Inbound result review/reconcile queue UI | ⬜ | |
-| 4.11 | Critical value alert handling | 🔶 | Hook exists |
+| 4.9 | OLIS consent capture before query | 🔶 | `olis_query` + server gate |
+| 4.10 | Inbound result review/reconcile queue UI | ✅ | `/lab-results-queue` |
+| 4.11 | Critical value alert handling | 🔶 | Hook on ingest |
 | 4.12 | Infoway/Ontario Health onboarding | ⬜ | 🚫 Partner |
 | 4.13 | OntarioMD/OLIS sandbox conformance testing | ⬜ | 🚫 Partner |
 

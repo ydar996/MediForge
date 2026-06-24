@@ -1,0 +1,80 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Lab Results Queue | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 960px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #008753; margin-top: 0; }
+    textarea { width: 100%; min-height: 140px; font-family: monospace; font-size: .85rem; }
+    .lab-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .92rem; }
+    .lab-table th, .lab-table td { padding: 10px 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .lab-table th { background: #1565C0; color: #fff; }
+    .badge.crit { background: #fdecea; color: #c62828; padding: 2px 8px; border-radius: 999px; font-weight: 700; }
+    .btn { margin-top: 12px; margin-right: 8px; padding: 10px 18px; background: #008753; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-secondary { background: #1565C0; }
+    a.btn { display: inline-block; text-decoration: none; }
+    .note { background: #f4f9f6; border: 1px solid #cce8d8; padding: 12px; border-radius: 8px; margin: 12px 0; font-size: .92rem; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Lab Results Queue (OLIS-ready)</h1>
+    <p>Review inbound HL7 ORU results and interop-ingested lab data. Live OLIS requires Infoway credentials and patient <code>olis_query</code> consent.</p>
+    <div class="note">Orders with <strong>awaiting_review</strong> need provider sign-off before patients see results in the portal.</div>
+    <div id="queue-wrap">Loading...</div>
+    <h2>Ingest ORU^R01</h2>
+    <label for="order-serial">Order serial (optional if embedded in HL7)</label>
+    <input type="text" id="order-serial" placeholder="LAB-2026-0001" style="width:100%;padding:10px;margin:8px 0;box-sizing:border-box">
+    <textarea id="oru-raw" placeholder="Paste ORU^R01 HL7 message..."></textarea>
+    <button type="button" class="btn" id="ingest-btn">Ingest ORU</button>
+    <button type="button" class="btn btn-secondary" id="preview-btn">Preview mapping</button>
+    <pre id="preview" style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:.8rem;max-height:240px;overflow:auto"></pre>
+    <a href="external-lab-orders" class="btn btn-secondary">External Lab Orders</a>
+    <a href="dashboard" class="btn">← Dashboard</a>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/patient-consent.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/interop-hooks.js"></script>
+  <script src="/js/lab-results-queue.js"></script>
+  <script>
+    (async function () {
+      const wrap = document.getElementById('queue-wrap');
+      async function refresh() {
+        const rows = await MediForgeLabResultsQueue.loadAwaitingReviewOrders();
+        MediForgeLabResultsQueue.renderQueue(wrap, rows);
+      }
+      await refresh();
+
+      document.getElementById('preview-btn').addEventListener('click', async () => {
+        const raw = document.getElementById('oru-raw').value.trim();
+        if (!raw) return alert('Paste HL7 first.');
+        const res = await MediForgeInteropClient.callGateway({ action: 'parseOru', rawHl7: raw });
+        document.getElementById('preview').textContent = JSON.stringify(res.result || res, null, 2);
+      });
+
+      document.getElementById('ingest-btn').addEventListener('click', async () => {
+        const raw = document.getElementById('oru-raw').value.trim();
+        const serial = document.getElementById('order-serial').value.trim();
+        if (!raw) return alert('Paste HL7 first.');
+        if (window.MediForgeInterop?.ingestOruAndApply) {
+          const result = await MediForgeInterop.ingestOruAndApply({ rawHl7: raw, orderSerial: serial });
+          if (result.blocked) return alert(result.message);
+          if (result.error) return alert(result.error);
+          alert(result.applied ? 'Results applied to order.' : 'Parsed; check preview if order not matched.');
+          await refresh();
+        } else {
+          alert('Interop hooks not loaded.');
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

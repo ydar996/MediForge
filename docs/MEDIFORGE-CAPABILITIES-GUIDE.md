@@ -350,13 +350,18 @@ Built for Canadian practice:
 
 ---
 
-## 16a. Ontario EMR readiness (Phases 0–3 complete, June 2026)
+## 16a. Ontario EMR readiness (Phases 0–4 software, June 2026)
 
-Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials. Documented readiness ~55–65%.
+Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials. Documented readiness ~60–70%.
 
 | Feature | Detail |
 |---------|--------|
-| Investor readiness page | `/ontario-readiness`: pillar scores (~50–60%), roadmap, honest boundaries |
+| Investor readiness page | `/ontario-readiness`: pillar scores, roadmap, honest boundaries |
+| Evidence binder | `/evidence-binder`: diligence index for certification prep |
+| Self-assessment | `/ontario-self-assessment`: Stages 1–4 internal checklist |
+| Lab results queue | `/lab-results-queue`: ORU ingest and review (OLIS-ready) |
+| Patient identifiers | `/patient-identifiers`: OHIP PHN registry |
+| HL7 lab order export | External lab orders: Export HL7 (ORM) per order |
 | CPP patient summary | `/cpp-patient-summary`: Ontario CPP-aligned summary from chart |
 | FHIR R4 chart export | Patient details: download chart as FHIR R4 Bundle |
 | Structured consent capture | `/patient-consents`: portal, data sharing, research consent types |
@@ -393,7 +398,7 @@ Separate login for MediForge platform owner:
 ## 18. Honest boundaries (what is not live for every clinic yet)
 
 - **Live provincial connections** (OLIS lab network, hospital report inbox, e-prescribing to all pharmacies, OHIP claim auto-submit): prepared in software; needs provincial credentials and agreements per clinic.
-- **OntarioMD certification**: Phase 0 internal evidence complete; formal application not submitted.
+- **OntarioMD certification**: Phases 0–4 software evidence complete; formal Stage 5 validation not started.
 - Some modules (pharmacy, inpatient, in-house lab) are **optional**: each clinic turns on what it needs.
 
 ---

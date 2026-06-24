@@ -126,6 +126,16 @@
       background: #5a32a3;
       transform: translateY(-2px);
     }
+
+    .btn-hl7 {
+      background: #008753;
+      color: white;
+    }
+
+    .btn-hl7:hover {
+      background: #006b42;
+      transform: translateY(-2px);
+    }
     
     .attachments-section {
       margin-top: 15px;
@@ -256,6 +266,9 @@
     </div>
   </div>
   
+  <script src="/js/patient-consent.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/interop-hooks.js"></script>
   <script>
     let organizationId = null;
     
@@ -378,7 +391,7 @@
           }
           
           return `
-            <div class="order-card" id="order-${orderId}" data-order-id="${order.id}" data-display-serial="${displaySerial}">
+            <div class="order-card" id="order-${orderId}" data-order-id="${order.id}" data-patient-id="${order.patient_id || ''}" data-display-serial="${displaySerial}">
               <div class="order-header">
                 <div class="order-info">
                   <h3>Lab Order #${displaySerial}</h3>
@@ -415,6 +428,7 @@
               </div>
               
               <div class="action-buttons">
+                <button class="btn btn-hl7" onclick="exportOrderHl7('${order.id}')">🔗 Export HL7 (ORM)</button>
                 <button class="btn btn-print" onclick="printOrder('${orderId}')">🖨️ Print</button>
                 <button class="btn btn-email" onclick="emailOrder('${orderId}')">📧 Email</button>
                 <button class="btn btn-pdf" onclick="downloadPDF('${orderId}')">📄 Download PDF</button>
@@ -430,6 +444,56 @@
       }
     }
     
+    // Export lab order as HL7 ORM^O01 (OLIS-ready)
+    async function exportOrderHl7(orderUuid) {
+      const order = (window._externalLabOrders || []).find(o => o.id === orderUuid);
+      if (!order) {
+        alert('Order not found.');
+        return;
+      }
+      const patientId = order.patient_id;
+      if (!patientId) {
+        alert('Patient ID missing on this order.');
+        return;
+      }
+      if (!window.MediForgeInterop?.exportLabOrderHl7) {
+        alert('Interop module not loaded. Refresh the page.');
+        return;
+      }
+      try {
+        const result = await MediForgeInterop.exportLabOrderHl7({
+          patientId,
+          order,
+          orderId: order.id
+        });
+        if (result.blocked) {
+          alert(result.message || 'OLIS consent required. Enable olis_query consent on the patient chart.');
+          return;
+        }
+        if (result.error) {
+          alert(result.error);
+          return;
+        }
+        const hl7 = result.result?.hl7 || result.hl7;
+        if (!hl7) {
+          alert('No HL7 returned from gateway.');
+          return;
+        }
+        const serial = order.serial_number || order.id;
+        const blob = new Blob([hl7], { type: 'text/plain' });
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(blob);
+        a.download = `lab-order-${serial}.hl7`;
+        a.click();
+        URL.revokeObjectURL(a.href);
+        if (typeof logAuditEvent === 'function') {
+          logAuditEvent('interop_lab_hl7_exported', { orderId: order.id, serial });
+        }
+      } catch (err) {
+        alert('HL7 export failed: ' + (err.message || 'Unknown error'));
+      }
+    }
+
     // Print order
     function printOrder(orderId) {
       const orderCard = document.getElementById(`order-${orderId}`);

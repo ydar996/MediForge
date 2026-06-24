@@ -507,6 +507,15 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Phase 2 + Phase 4 software complete (owner-approved)
+
+- **Owner ask:** Do what we can on our own in Phase 2 and 4; update pages and docs; deploy dev, promote staging and production.
+- **Phase 2 delivered:** Spec traceability matrix (`docs/ONTARIO-EMR-SPEC-TRACEABILITY.md`); `/ontario-self-assessment`; `/evidence-binder`; PHASE-2 completion doc.
+- **Phase 4 delivered:** `olis-consent.js`, `lab-results-workflow.js`; `/lab-results-queue`, `/patient-identifiers`; HL7 export on external lab orders; consent gates (client + server); interop hooks (`ingestOruAndApply`, `exportLabOrderHl7`); tests `tests/interop/phase4-olis.test.js`.
+- **Docs synced:** ontario-readiness ↔ readiness report (60–70%), capabilities, implementation plan, at-a-glance, documentation index, PHASE-4 completion doc.
+- **Blocked:** OntarioMD Stage 5, live OLIS MLLP/FHIR, Infoway sandbox (partner credentials).
+- **Owner SQL:** ensure Step 4 interop tables (`20260611000000`) exist before append-only interop migration on staging.
+
 ### June 2026: Phase 3 MCEDT claims complete
 
 - **Owner ask:** Finish Phase 3; update all relevant pages, docs, handover, ontario readiness.
