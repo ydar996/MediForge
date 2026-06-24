@@ -45,7 +45,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 
 | Document | Description |
 |----------|-------------|
-| **[DEPLOYMENT-PIPELINE.md](../DEPLOYMENT-PIPELINE.md)** | **Git sync + dev/staging/prod promotion (read this)** |
+| **[RELEASE-NOTES-2026-06-PHASE0.md](../RELEASE-NOTES-2026-06-PHASE0.md)** | **Phase 0 Ontario EMR promotion notes (dev → staging → prod)** |
 | **[DEPLOYMENT-ENVIRONMENTS.md](../DEPLOYMENT-ENVIRONMENTS.md)** | dev / staging / main branches and Netlify sites |
 | **[DEPLOYMENT-HANDOVER.md](../DEPLOYMENT-HANDOVER.md)** | Deploy process summary |
 | **[DEPLOYMENT-GUIDE.md](../DEPLOYMENT-GUIDE.md)** | General deployment guide |

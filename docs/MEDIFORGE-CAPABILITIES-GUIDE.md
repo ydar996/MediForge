@@ -305,7 +305,7 @@ When enabled:
 | Report | Purpose |
 |--------|---------|
 | General reports | Clinic operational summaries |
-| Preventive gaps summary | Population-level gap tracking |
+| Preventive gaps summary | Population-level gap tracking; i4C-style indicator mapping for Ontario quality reporting readiness |
 | Conditions breakdown | Diagnosis distribution |
 | Condition stats | Detailed condition analytics |
 | Blood group summary | Population blood type overview |
@@ -345,8 +345,27 @@ Built for Canadian practice:
 | ICD-11 | International diagnosis coding (optional) |
 | Health Canada drugs | Prescribing search |
 | HL7-style export | Patient data export format |
-| FHIR / HL7 libraries | Integration architecture for labs, imaging, claims (live provincial connections next step) |
+| FHIR / HL7 libraries | Integration architecture for labs, imaging, claims; FHIR R4 patient chart Bundle export from chart |
 | LOINC / terminology helpers | Lab and clinical coding support |
+
+---
+
+## 16a. Ontario EMR readiness (Phase 0 complete, June 2026)
+
+Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials.
+
+| Feature | Detail |
+|---------|--------|
+| Investor readiness page | `/ontario-readiness`: pillar scores (~45–55%), roadmap, honest boundaries |
+| CPP patient summary | `/cpp-patient-summary`: Ontario CPP-aligned summary from chart |
+| FHIR R4 chart export | Patient details: download chart as FHIR R4 Bundle |
+| Structured consent capture | `/patient-consents`: portal, data sharing, research consent types |
+| OHIP claim file export | Invoice details: export OHIP claim draft file |
+| Compliance pack | `docs/compliance/`: PHIPA, breach, custody, DR, data residency |
+| Gap report & implementation plan | `ONTARIOMD-GAP-REPORT.md`, `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` |
+| Audit hardening | Append-only audit migration; patient chart access logging (run SQL per environment) |
+
+**Companion page:** keep `/capabilities` and this guide in sync (**`AGENT-HANDOVER.md`** Rule #3).
 
 ---
 
@@ -367,7 +386,7 @@ Separate login for MediForge platform owner:
 ## 18. Honest boundaries (what is not live for every clinic yet)
 
 - **Live provincial connections** (OLIS lab network, hospital report inbox, e-prescribing to all pharmacies, OHIP claim auto-submit): prepared in software; needs provincial credentials and agreements per clinic.
-- **OntarioMD certification**: readiness work in progress; not certified yet.
+- **OntarioMD certification**: Phase 0 internal evidence complete; formal application not submitted.
 - Some modules (pharmacy, inpatient, in-house lab) are **optional**: each clinic turns on what it needs.
 
 ---

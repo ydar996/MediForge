@@ -509,6 +509,15 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ### Session log
 
+### June 23, 2026: Phase 0 promoted dev → staging → production + capabilities update
+
+- **Owner ask:** Promote missed updates to staging and production with detailed notes; confirm capabilities page current.
+- **Git:** `dev`, `staging`, and `main` all promoted to `ca34046` (Phase 0). Capabilities + release notes committed after promotion.
+- **Release notes:** `RELEASE-NOTES-2026-06-PHASE0.md` (full commit list, URLs, SQL steps, verification checklist).
+- **Capabilities:** Added Ontario EMR Readiness section; synced `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`.
+- **Owner must run:** both `2026062320*` Supabase migrations on dev, staging, and prod SQL Editor.
+- **Phase 1:** blocked until owner says to proceed.
+
 ### June 23, 2026 (later): Rule #3 documentation sync + stale Ontario docs fixed
 
 - **Owner ask:** Keep all project documentation updated as changes are made; confirm handover includes this permanently.
