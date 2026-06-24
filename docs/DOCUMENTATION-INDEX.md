@@ -165,3 +165,4 @@ When you add or change features, docs, or deployment steps in a session:
 2. Add a **Session log** entry in **`AGENT-HANDOVER.md`**.
 3. Update **`docs/PROJECT-OVERVIEW.md`** when architecture or key modules change.
 4. Update **`docs/USER-MANUAL.md`** and **`user-manual.html`** together when clinic staff will see the change.
+5. Run **`npm run check:ontario-readiness`** when Ontario readiness scores or linked pages change.

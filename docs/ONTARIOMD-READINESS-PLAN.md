@@ -46,8 +46,8 @@ When readiness scores or phase status change, update **all companion pairs** in 
 | Phase 4 OLIS lab desk | **Partial** (live Infoway blocked) |
 | Phase 5 PrescribeIT software | **Partial** (eRx queue, cancel/renew/dispense; live Infoway blocked) |
 | Phase 6 imaging desk | **Partial** (results queue, external orders, CO/SMART stubs; live DIR blocked) |
-| Phase 7 HRM/DHDR software | **Partial** (inbox, query hooks, hub settings; live pipes blocked) |
-| Phase 8 engineering polish | **Partial** (runbook, load-test script, failure summary) |
+| Phase 7 HRM/DHDR software | **Partial** (inbox, File to chart, query hooks, hub settings on gateway; live pipes blocked) |
+| Phase 8 engineering polish | **Done** (org hub gateway merge, runbook, load tests, webhook alerts, user manual; sandbox tests blocked) |
 | OntarioMD Stage 5 / live pipes | **Blocked** until owner approves vendor path |
 
 See **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** for task-level status.

@@ -33,7 +33,7 @@ The owner does **not** want em dashes (—) in the app, docs, or agent replies. 
 
 **Scope:** All user-visible HTML, patient/staff UI strings in JS, owner-facing docs, marketing pages, and handover text.
 
-**Enforcement:** `npm run check` includes `check:no-em-dash`. To fix bulk issues: `node scripts/replace-em-dashes.mjs`.
+**Enforcement:** `npm run check` includes `check:no-em-dash` and **`check:ontario-readiness`** (companion score/phase sync). Cursor rule: `.cursor/rules/ontario-readiness-sync.mdc`.
 
 See **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8.
 
@@ -71,7 +71,8 @@ Code, config, docs, and **live websites** ship together. **Every session that ch
 3. **Companion pairs**: update every row in the table above that your change touches.
 4. **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**: task status when you complete plan items.
 5. **`docs/PROJECT-OVERVIEW.md`**: when architecture, auth, or major modules change.
-6. **Deploy verify** (when owner approves promote to staging/production):
+6. **`npm run check:ontario-readiness`**: must pass before finish when Ontario pages, scores, or provincial features changed.
+7. **Deploy verify** (when owner approves promote to staging/production):
    - `npm run check` passes locally (failed checks block Netlify production builds).
    - Git: `dev`, `staging`, and `main` at the same commit after promote.
    - Live: open production URLs and confirm they match git (hard refresh). If Netlify build failed, run `netlify deploy --prod` per **`DEPLOYMENT-PIPELINE.md`**.
@@ -537,6 +538,12 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Rule #3 enforcement — Ontario companion sync check + drift fix
+
+- **Owner ask:** Linked pages from ontario-readiness/investor-letter were out of sync; prevent recurrence.
+- **Fixed:** capabilities compare table (72–82%), HRM chart filing on capabilities/evidence-binder/investor letter, Phase 8 completion doc, readiness Phase 8 callout.
+- **Guard:** `scripts/check-ontario-readiness-sync.mjs` added to `npm run check`; `.cursor/rules/ontario-readiness-sync.mdc` (always apply).
 
 ### June 2026: Phase 0–8 gap closure — HRM chart filing, org hub gateway, polish — deploy dev → staging → production
 

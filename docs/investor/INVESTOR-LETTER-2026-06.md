@@ -43,9 +43,9 @@ We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infowa
 
 **Phase 6:** Imaging results queue, external imaging orders (HL7/FHIR export), DICOMweb study links, ConnectingOntario and SMART-on-FHIR launch stubs (live DIR blocked).
 
-**Phase 7:** HRM inbox desk, hospital report ingest, DHDR medication query hooks, provincial hub settings, HRM/DHDR consent gates (live provincial pipes blocked).
+**Phase 7:** HRM inbox desk, hospital report ingest, **File to chart** (unstructured record), DHDR medication query hooks, provincial hub settings merged into gateway, HRM/DHDR consent gates (live provincial pipes blocked).
 
-**Phase 8:** Provincial integration runbook, interop load-test script, failure monitoring by message type (third-party security audit still outstanding).
+**Phase 8:** Org hub URLs on gateway, provincial integration runbook, interop + claims load-test scripts, failure monitoring with optional webhook alerts, user manual provincial section (third-party security audit still outstanding).
 
 Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT/DIR/HRM/DHDR pipes, OntarioMD Stage 5 validation, and third-party security audit.
 
