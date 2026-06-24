@@ -184,6 +184,61 @@ Internal readiness sprint delivered without provincial credentials:
 
 ---
 
+## Path to Certification
+
+Forward-looking plan from today (Phases 0–8 software complete, **72–82%** documented readiness) to OntarioMD certification, live provincial pipes, pilot clinics, and commercial readiness. **Keep in sync with `#certification-path` on `/ontario-readiness`.**
+
+| Metric | Value |
+|--------|-------|
+| Estimated timeline to full commercial status | **6–12 months** |
+| Remaining budget (audits, legal, pilots, onboarding) | **$50k–$150k+** |
+| OntarioMD milestone fees (approx.) | **~$27,500** |
+
+### Phase A: OntarioMD certification path (2–6 months, owner-led)
+
+| Action | Owner | Status |
+|--------|-------|--------|
+| Contact OntarioMD (emr@ontariomd.com) for vendor consultation | Owner | Next step |
+| Select reference clinic site (Ottawa/Ontario pilot) | Owner | Not started |
+| Stage 1 application (architecture, features, alignment matrix) | Owner + agent | Evidence ready |
+| Stages 2–4 self-assessment and gap closure | Agent | Software live |
+| Stage 5 OntarioMD validation testing | OntarioMD | Blocked |
+| Pay OntarioMD milestone fees (~CAD $27,500 total) | Owner | Not started |
+| Third-party privacy impact assessment and security audit | Owner/vendor | Blocked |
+
+### Phase B: Live provincial integrations (3–6 months after credentials)
+
+| System | Key actions |
+|--------|-------------|
+| OLIS | Deploy with OntarioMD advisor; HL7 v2 + FHIR patient query; auto-ingest to chart |
+| MCEDT | OPS BPS Secure account; clinic certificates; live upload/download |
+| PrescribeIT | Partner API credentials; live eRx transmit, renew, cancel |
+| DIR / Imaging | DICOM via gateway; ConnectingOntario ClinicalViewer launch |
+| HRM / DHDR | Live hub enrollment; inbound report routing; drug repository query |
+
+### Phase C: Pilots and commercial readiness (3–6 months)
+
+Pilot deployments (1–3 Ottawa-area clinics), feedback and fixes, support/operations (helpdesk, training, SLA, monitoring, DR), legal and business readiness (contracts, insurance, sales collateral).
+
+### Phase D: Scale and expansion (ongoing)
+
+Additional provincial certifications, advanced features, ongoing compliance and integration maintenance.
+
+### Timeline summary
+
+| Phase | Focus | Estimate |
+|-------|-------|----------|
+| A | OntarioMD certification path | 2–6 months |
+| B | Live provincial integrations | 3–6 months (parallel with A where credentials allow) |
+| C | Pilots and go-to-market | 3–6 months |
+| **Total** | **Full commercial status** | **6–12 months** |
+
+**Next immediate action (owner):** Email OntarioMD at emr@ontariomd.com or support@ontariomd.com with a brief overview of MediForge (deployed EMR, Phases 0–8 software complete, 72–82% documented readiness) and request a **certification consultation**.
+
+**Resources:** OntarioMD (ontariomd.ca), Ontario Health Service Desk 1-888-411-7742, PrescribeIT (prescribeit.ca), MCEDT manuals (ontario.ca), Infoway (infowayinforoute.ca). Written companion: **`docs/ROADMAP-CANADA-CERTIFICATION.md`**.
+
+---
+
 ## Built Today vs Outstanding
 
 ### Built & Usable Today

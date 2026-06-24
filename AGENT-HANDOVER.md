@@ -539,11 +539,25 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Certification path added to Ontario Readiness page
+
+- **Owner ask:** Fold roadmap doc into `/ontario-readiness` instead of a separate page.
+- **Added:** `#certification-path` section on `ontario-readiness.html` (Phases A–D, timeline, budget, owner next step, contacts).
+- **Synced:** `docs/ONTARIO-EMR-READINESS-REPORT.md`, `docs/ROADMAP-CANADA-CERTIFICATION.md`, `evidence-binder.html`.
+
+### June 2026: Strategic Partner diligence docs added (valuation, term sheet, roadmap, agent instructions)
+
+- **Owner ask:** Add four Word documents from Documents folder; update language and status to match current project.
+- **Added:** `docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md`, `TERM-SHEET-SEED-PREFERRED-SHARE.md`, `docs/ROADMAP-CANADA-CERTIFICATION.md`, `docs/IMPLEMENTATION-INSTRUCTIONS-CODING-AGENTS.md`.
+- **Originals:** `docs/strategic-partner/originals/` (four `.docx` files preserved).
+- **Updates:** Strategic Partner language (not investor); Phases 0–8 software complete; 72–82% documented readiness; deployed multi-clinic EMR (not MVP-only).
+- **Index:** `DOCUMENTATION-INDEX.md`, `evidence-binder.html`, this session log.
+
 ### June 2026: Strategic Partner terminology (replace investor language)
 
 - **Owner ask:** Replace all "investor" references with Strategic Partner across documentation; partnership tone.
 - **Renamed:** `/investor-letter` → `/strategic-partner-letter` (301 redirect from old URL); `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md`.
-- **Note:** No valuation, equity structure, or term sheet files exist in this repo; Ontario readiness companions updated.
+- **Note:** Valuation, equity, and term sheet docs added later (see session above); Ontario readiness companions updated in same initiative.
 - **Guard:** `check-ontario-readiness-sync.mjs` now forbids stale scores and uses Strategic Partner paths.
 
 ### June 2026: Rule #3 enforcement — Ontario companion sync check + drift fix

@@ -37,6 +37,11 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[ontario-readiness.html](../ontario-readiness.html)** | **Strategic Partner readiness webpage (mediforge.netlify.app/ontario-readiness)** |
 | **[strategic-partner-letter.html](../strategic-partner-letter.html)** | **Strategic Partner update letter (mediforge.netlify.app/strategic-partner-letter)** |
 | **[docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md](strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md)** | **Written Strategic Partner letter (keep in sync with /strategic-partner-letter and /ontario-readiness)** |
+| **[docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md](strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md)** | **Seed valuation and equity structure (Strategic Partner diligence)** |
+| **[docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md](strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md)** | **Term sheet for seed preferred share financing** |
+| **`docs/strategic-partner/originals/`** | Source Word documents (valuation, term sheet, roadmap, agent instructions) |
+| **[docs/ROADMAP-CANADA-CERTIFICATION.md](ROADMAP-CANADA-CERTIFICATION.md)** | **Roadmap from current status to OntarioMD certification and commercial readiness** |
+| **[docs/IMPLEMENTATION-INSTRUCTIONS-CODING-AGENTS.md](IMPLEMENTATION-INSTRUCTIONS-CODING-AGENTS.md)** | **Ontario EMR pre-configuration brief for coding agents (status as of Phases 0–8)** |
 | **[docs/ONTARIO-EMR-SPEC-TRACEABILITY.md](ONTARIO-EMR-SPEC-TRACEABILITY.md)** | **Ontario EMR spec traceability matrix** |
 | **[docs/PHASE-1-CORE-STANDARDS-COMPLETION.md](PHASE-1-CORE-STANDARDS-COMPLETION.md)** | **Phase 1 completion evidence and task status** |
 | **[docs/PHASE-3-MCEDT-CLAIMS-COMPLETION.md](PHASE-3-MCEDT-CLAIMS-COMPLETION.md)** | **Phase 3 MCEDT claims completion evidence** |
