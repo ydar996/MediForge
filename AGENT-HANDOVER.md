@@ -521,6 +521,11 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Owner confirmed eRx migration on all Supabase environments
+
+- **Owner:** `20260625100000_prescribeit_erx_columns.sql` applied on dev, staging, and production.
+- **Docs:** `PHASE-5-PRESCRIBEIT-COMPLETION.md`, `evidence-binder.html` updated.
+
 ### June 2026: Phase 0–6 polish completion — deploy dev → staging → production
 
 - **Owner ask:** Complete all remaining agent-buildable Phase 0–6 tasks; full Ontario doc sync; deploy.

@@ -29,7 +29,7 @@ Phase 5 delivers the **software foundation** for Ontario PrescribeIT-style e-pre
 - **Staff UI:** `/erx-queue` (transmit, cancel, renewal, dispense ingest)
 - **Consent:** `prescribeit_erx` on patient consents
 - **Gateway:** `generateRxFhir`, `simulateRxTransmit`, `cancelPrescription`, `requestPrescriptionRenewal`, `ingestMedicationDispense`
-- **Migration:** `20260625100000_prescribeit_erx_columns.sql`
+- **Migration:** `20260625100000_prescribeit_erx_columns.sql` (applied on dev, staging, and production; owner confirmed June 2026)
 - **Tests:** `tests/interop/phase5-prescribeit.test.js`
 
 ## Owner / clinic actions
