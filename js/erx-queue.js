@@ -63,9 +63,9 @@
         `<tr data-rx-id="${r.id}">` +
           `<td>${r.prescription_number || r.id.slice(0, 8)}</td>` +
           `<td><a href="patient-details?patientId=${encodeURIComponent(r.patient_id)}">${r.patient_id}</a></td>` +
-          `<td>${r.erx_status || '—'}</td>` +
-          `<td>${r.erx_pharmacy_name || '—'}</td>` +
-          `<td>${r.erx_dispense_status || '—'}</td>` +
+          `<td>${r.erx_status || 'n/a'}</td>` +
+          `<td>${r.erx_pharmacy_name || 'n/a'}</td>` +
+          `<td>${r.erx_dispense_status || 'n/a'}</td>` +
           `<td>` +
           `<button type="button" class="btn-sm btn-transmit" data-id="${r.id}" data-patient="${r.patient_id}">Transmit</button> ` +
           `<button type="button" class="btn-sm btn-cancel" data-id="${r.id}" data-patient="${r.patient_id}">Cancel</button> ` +

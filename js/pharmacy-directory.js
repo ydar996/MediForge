@@ -36,7 +36,7 @@
     const html = ['<select id="pharmacy-select" style="width:100%;padding:10px;margin:8px 0"><option value="">Select pharmacy…</option>'];
     pharmacies.forEach((p) => {
       const sel = p.id === selectedId ? ' selected' : '';
-      html.push(`<option value="${p.id}"${sel}>${p.name} — ${p.address || ''}</option>`);
+      html.push(`<option value="${p.id}"${sel}>${p.name} - ${p.address || ''}</option>`);
     });
     html.push('</select>');
     container.innerHTML = html.join('');
