@@ -47,7 +47,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[mcedt-settings.html](../mcedt-settings.html)** | **MCEDT / OHIP billing settings** |
 | **[consent-management.html](../consent-management.html)** | **Organization consent registry** |
 | **[docs/ONTARIOMD-GAP-REPORT.md](ONTARIOMD-GAP-REPORT.md)** | **Full OntarioMD gap status by category** |
-| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phase 0 and Phase 1 complete) |
+| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phases 0–4 software complete) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 
 ---

@@ -12,7 +12,7 @@
 
 ## Phase 0: Internal Readiness (No Provincial Credentials)
 
-*From `ONTARIOMD-READINESS-PLAN.md` Tier A/B. **STOP GATE:** owner must say "Implement the Ontario-ready plan" before agents execute.*
+*Phases 0–4 software complete (June 2026). **STOP GATE:** do not start Phase 5+ or OntarioMD Stage 5 until owner approves. See `ONTARIOMD-READINESS-PLAN.md`.*
 
 | ID | Task | Status | Owner / Agent |
 |----|------|--------|---------------|

@@ -57,6 +57,7 @@ Code, config, and docs ship together. **Every session that changes the product m
 3. **Companion pairs** (keep in sync):
    - `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`
    - `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md` (same percentages and phase status as readiness report)
+   - `docs/ONTARIOMD-GAP-REPORT.md` (executive summary and pillar scores when readiness changes)
    - `/capabilities` ↔ `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`
    - `user-manual.html` ↔ `docs/USER-MANUAL.md`
    - `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` task status when you complete plan items
@@ -488,9 +489,9 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 ### STOP GATE: mandatory for all agents
 
-**Phases 0 and 1 are complete.** Do not start **Phase 2+** (OntarioMD certification path, live provincial pipes) until the owner explicitly says to proceed (e.g. **Start Phase 2**).
+**Phases 0–4 software are complete** (where possible without partner credentials). Do not start **Phase 5+** or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
 
-Documentation and planning before that phrase are OK. When phase status or readiness scores change, update **all companion pairs** in the same session (**Rule #3**).
+Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
 
 ### Historical: Tier A/B same-day sprint (Phase 0, completed June 2026)
 
@@ -507,6 +508,12 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Rule #3 audit — remaining stale Ontario companion docs
+
+- **Owner ask:** What else was missed after investor letter fix?
+- **Stale:** `ONTARIOMD-GAP-REPORT.md` (45–55%, Phase 0 only), `ONTARIOMD-READINESS-PLAN.md` (wrong STOP GATE), `compliance/README.md`, readiness report §6 evidence binder %, `ontario-readiness.html` Phase 0 “next” callout, `AGENT-HANDOVER.md` STOP GATE, implementation plan Phase 0 STOP GATE note.
+- **Fixed:** All above synced to 60–70% / Phases 0–4; gap report added to Rule #3 pairs; release notes marked historical.
 
 ### June 2026: Rule #3 fix — investor letter synced to readiness report
 

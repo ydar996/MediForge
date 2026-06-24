@@ -11,18 +11,18 @@
 
 ## Executive Summary
 
-MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **45 to 55%** after Phase 0 (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
+MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **60 to 70%** after Phases 0–4 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
 
-**Phase 0 (June 2026): complete.** Delivered: gap report, compliance pack, audit hardening migration, FHIR R4 patient chart export, CPP-aligned patient summary, structured consent capture, i4C indicator mapping, and OHIP claim file export. These raise documented evidence to **45 to 55%** internal readiness but do not constitute OntarioMD certification.
+**Phases 0–4 (June 2026): software complete where possible.** Delivered: internal evidence, core standards, MCEDT claims desk, OLIS-ready lab desk, spec traceability, self-assessment, and evidence binder. These raise documented evidence to **60 to 70%** internal readiness but do not constitute OntarioMD certification.
 
 | Pillar | ~% Ready | Status Mix |
 |--------|----------|------------|
-| **Overall Ontario readiness** | 45 to 55% | Phase 0 evidence complete; live connectivity and certification early |
-| **Foundational standards and security** | 55 to 65% | Compliance pack, audit hardening; ONE ID and legal review outstanding |
-| **EHR connectivity (provincial)** | 5 to 15% | Adapters and stubs; no live provincial pipes |
+| **Overall Ontario readiness** | 60 to 70% | Phases 0–4 software; live connectivity credential-gated |
+| **Foundational standards and security** | 60 to 70% | Compliance pack, gateway audit, append-only interop messages |
+| **EHR connectivity (provincial)** | 5 to 15% | Adapters, staff UI, queue mode; no live provincial pipes |
 | **Functional clinical EMR** | 75 to 85% | CPP summary, i4C mapping, consent capture live |
-| **OntarioMD certification** | 5 to 10% | Gap report and evidence binder; application not submitted |
-| **Engineering practices** | 55 to 70% | Modular adapters and audit strong; sandbox testing weak |
+| **OntarioMD certification** | 25 to 35% | Evidence binder, self-assessment; Stage 5 not started |
+| **Engineering practices** | 55 to 70% | Modular adapters, interop tests; sandbox testing weak |
 
 ---
 
@@ -83,7 +83,7 @@ These deliverables close documentation and evidence gaps without provincial cred
 | 0.10 | Investor readiness webpage | **Done** | `/ontario-readiness` synced with this report |
 | 0.11 | Written readiness report | **Done** | `ONTARIO-EMR-READINESS-REPORT.md` |
 
-**Phase 0 exit criteria:** met. **Phase 1 exit criteria:** met (June 2026). Live provincial pipes remain **Blocked**. Phase 2 blocked until owner approves.
+**Phase 0–4 exit criteria (software):** met where possible (June 2026). Live provincial pipes and OntarioMD Stage 5 remain **Blocked**. Owner action: OntarioMD vendor contact, reference clinic, MOH/Infoway credentials.
 
 ---
 
@@ -534,12 +534,18 @@ These modules support daily clinic operations and align with Ontario EMR functio
 
 ## 7. Prioritized Remediation Roadmap
 
-### Immediate (Phase 0, June 2026: no credentials)
+### Done (Phases 0–4 software, June 2026)
 
-1. Complete compliance pack and data residency statement  
-2. Deploy audit append-only migration to production  
-3. Ship FHIR export, CPP summary, consent UI, i4C map, claim export  
-4. Finalize evidence binder index linking specs to screenshots and docs  
+1. Compliance pack, data residency, FHIR export, CPP summary, consent UI, i4C map, claim export  
+2. MCEDT claims desk (queue, remittance, settings, cut-off logic)  
+3. OLIS-ready lab desk (HL7/FHIR export, ORU ingest queue, PHN registry, consent gates)  
+4. Evidence binder, self-assessment, spec traceability matrix  
+
+### Immediate (owner + ops)
+
+1. Deploy append-only audit and interop migrations to staging/production if not done  
+2. Contact OntarioMD for vendor certification path  
+3. Select reference clinic for future live pilots  
 
 ### Short term (3 to 6 months: owner + engineering)
 

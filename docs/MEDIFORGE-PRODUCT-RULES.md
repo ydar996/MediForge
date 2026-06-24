@@ -124,7 +124,7 @@ When you change the product, update related documentation **in the same session*
 | Change type | Also update |
 |-------------|-------------|
 | Shareable webpage (`ontario-readiness.html`, `capabilities.html`, `investor-letter.html`) | Written companion in `docs/` (investor letter ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`) |
-| Ontario readiness scores or phase status | `ONTARIO-EMR-READINESS-REPORT.md`, `INVESTOR-LETTER-2026-06.md`, `/ontario-readiness`, `/investor-letter` |
+| Ontario readiness scores or phase status | `ONTARIO-EMR-READINESS-REPORT.md`, `ONTARIOMD-GAP-REPORT.md`, `INVESTOR-LETTER-2026-06.md`, `/ontario-readiness`, `/investor-letter` |
 | Implementation plan task completed | `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` status column |
 | Staff-visible workflow | `USER-MANUAL.md` + `user-manual.html` |
 | Any code/config session | `AGENT-HANDOVER.md` session log, `DOCUMENTATION-INDEX.md` |

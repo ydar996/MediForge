@@ -105,8 +105,9 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 | HRM (hospital report inbox) | Not implemented |
 | DHDR (drug repository) | Not implemented |
 | ConnectingOntario viewer | Not implemented |
-| Ontario EMR Specifications alignment | Partial (~55%) |
-| Evidence binder / gap report | Partial (~55%) |
+| Ontario EMR Specifications alignment | Partial (~60%) |
+| Evidence binder / gap report | Partial (~65%) |
+| Self-assessment (Stages 1–4) | Partial (~55%) |
 | OntarioMD validation process | Not started |
 
 ---
@@ -225,7 +226,7 @@ Internal readiness sprint delivered without provincial credentials:
 
 1. **De-risked clinical core:** Daily clinic workflows are largely built and deployed.
 2. **Prepared integration layer:** HL7, FHIR, DICOMweb, billing adapters exist as tested foundations.
-3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–1 evidence is in repo.
+3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–4 software evidence is in repo.
 4. **Canada-first moat:** ICD-10-CA, Ontario fee codes, Health Canada formulary, PHN matching, CAD billing are in the product.
 
 ---

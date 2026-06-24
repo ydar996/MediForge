@@ -1,5 +1,7 @@
 # MediForge Release Notes: Phase 0 Ontario EMR Readiness
 
+> **Historical snapshot (June 23, 2026).** Documented readiness at promotion was ~50–60%. Current readiness is **~60–70%** (Phases 0–4 software). See `/ontario-readiness`, `docs/ONTARIO-EMR-READINESS-REPORT.md`, and `docs/investor/INVESTOR-LETTER-2026-06.md`.
+
 **Promoted:** June 23, 2026  
 **Release train:** `dev` → `staging` → `main` (all at commit `ca34046`, then capabilities update)  
 **Git range:** `ff90c2b` → `ca34046` (4 commits)
