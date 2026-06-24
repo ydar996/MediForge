@@ -36,12 +36,12 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md](ONTARIO-EMR-IMPLEMENTATION-PLAN.md)** | **Full Ontario EMR task backlog with milestones (Phases 0–8)** |
 | **[ontario-readiness.html](../ontario-readiness.html)** | **Investor readiness webpage (mediforge.netlify.app/ontario-readiness)** |
 | **[investor-letter.html](../investor-letter.html)** | **Investor update letter (mediforge.netlify.app/investor-letter)** |
-| **[docs/investor/INVESTOR-LETTER-2026-06.md](investor/INVESTOR-LETTER-2026-06.md)** | **Written investor letter (keep in sync with /investor-letter)** |
+| **[docs/investor/INVESTOR-LETTER-2026-06.md](investor/INVESTOR-LETTER-2026-06.md)** | **Written investor letter (keep in sync with /investor-letter and /ontario-readiness)** |
+| **[docs/ONTARIO-EMR-SPEC-TRACEABILITY.md](ONTARIO-EMR-SPEC-TRACEABILITY.md)** | **Ontario EMR spec traceability matrix** |
 | **[docs/PHASE-1-CORE-STANDARDS-COMPLETION.md](PHASE-1-CORE-STANDARDS-COMPLETION.md)** | **Phase 1 completion evidence and task status** |
 | **[docs/PHASE-3-MCEDT-CLAIMS-COMPLETION.md](PHASE-3-MCEDT-CLAIMS-COMPLETION.md)** | **Phase 3 MCEDT claims completion evidence** |
 | **[docs/PHASE-2-CERTIFICATION-EVIDENCE-COMPLETION.md](PHASE-2-CERTIFICATION-EVIDENCE-COMPLETION.md)** | **Phase 2 certification evidence (software we can do)** |
 | **[docs/PHASE-4-OLIS-LAB-DESK-COMPLETION.md](PHASE-4-OLIS-LAB-DESK-COMPLETION.md)** | **Phase 4 OLIS lab desk completion evidence** |
-| **[docs/ONTARIO-EMR-SPEC-TRACEABILITY.md](ONTARIO-EMR-SPEC-TRACEABILITY.md)** | **Ontario EMR spec traceability matrix** |
 | **[claims-queue.html](../claims-queue.html)** | **OHIP claims queue** |
 | **[remittance-reconcile.html](../remittance-reconcile.html)** | **Remittance reconciliation** |
 | **[mcedt-settings.html](../mcedt-settings.html)** | **MCEDT / OHIP billing settings** |

@@ -3,66 +3,57 @@
 **Date:** June 2026  
 **From:** Work Chop Inc.  
 **Shareable web version:** https://mediforge.netlify.app/investor-letter  
-**Related:** [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Capabilities](https://mediforge.netlify.app/capabilities)
+**Companion (keep in sync):** [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Evidence Binder](https://mediforge.netlify.app/evidence-binder) · [Capabilities](https://mediforge.netlify.app/capabilities)
+
+**Written companion to `investor-letter.html`** (see `AGENT-HANDOVER.md` Rule #3).
 
 ---
 
 Dear Investor,
 
-Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program (Phase 0 and Phase 1), and where we are headed next.
+Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 4**, and where we are headed next.
 
 ## The short version
 
-MediForge is a **working multi-clinic EMR**, not a prototype. Daily clinic workflows are in production: patient charts, scheduling, prescribing, labs, imaging orders, billing, and a patient portal. We have now completed **internal Ontario readiness (Phase 0)** and **core standards hardening (Phase 1)** so investors and partners can review documented evidence in the product and in our compliance pack.
+MediForge is a **working multi-clinic EMR**, not a prototype. Daily clinic workflows are in production: patient charts, scheduling, prescribing, labs, imaging orders, billing, and a patient portal.
 
-**Overall Ontario readiness:** approximately **50–60%** documented evidence (clinical core strong; live provincial pipes still credential-gated).
+Through June 2026 we completed **Phases 0–4 in software** (everything we can do without live provincial credentials):
 
-We are **not** OntarioMD-certified today. That remains an industry gate every vendor must pass. Our gap is documented, bounded, and actively managed.
+| Metric | Estimate |
+|--------|----------|
+| Overall Ontario readiness | **60–70%** |
+| Functional clinical EMR | 75–85% |
+| Live provincial connectivity | 5–15% |
 
-## What Phase 0 delivered (June 2026)
+We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infoway connections remain industry gates every vendor must pass. Our gap is documented, bounded, and actively managed.
 
-Without requiring provincial partner credentials, we shipped:
+## What we delivered (Phases 0–4, software)
 
-- OntarioMD gap report and phased implementation plan
-- PHIPA-aligned compliance documentation pack
-- FHIR R4 patient chart export from the live chart
-- CPP-aligned patient summary view
-- Structured consent capture (portal, data sharing, research)
-- i4C-style preventive indicator mapping
-- OHIP claim file draft export from billing
-- Append-only audit hardening for patient chart access
-- Investor readiness webpage at `/ontario-readiness`
+**Phase 0:** OntarioMD gap report, PHIPA compliance pack, FHIR chart export, CPP summary, structured consents, i4C mapping, OHIP claim drafts, readiness page.
 
-## What Phase 1 delivered (June 2026)
+**Phase 1:** HL7/FHIR/DICOM libraries, gateway audit trail, append-only interop messages, organization consent management, clinical image/PDF viewer.
 
-Phase 1 strengthened the **technical foundation** clinics and regulators expect:
+**Phase 2:** Spec traceability matrix, Stages 1–4 self-assessment, evidence binder (OntarioMD application not submitted).
 
-- HL7 v2 and FHIR R4 libraries tested and gateway-exposed
-- DICOMweb client and imaging study FHIR builders
-- Integration audit trail on every interoperability gateway action
-- Append-only `interop_messages` database protection
-- Organization-wide consent management module
-- Clinical image/PDF viewer for chart attachments
-- PHIPA policy pack index for diligence reviewers
+**Phase 3:** Claims queue, remittance reconcile, MCEDT settings, XML/JSON export, batch scheduler, cut-off logic (live MOH upload blocked until clinic credentials).
 
-Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT pipes, and third-party security audit.
+**Phase 4:** Lab results queue, PHN registry, HL7/FHIR lab order export, OLIS consent gates, interop dashboard (MLLP simulate, failure audit).
+
+Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT pipes, OntarioMD Stage 5 validation, and third-party security audit.
 
 ## Why this matters for investment
 
-1. **De-risked clinical core:** The hardest part of an EMR (day-to-day clinic use) is largely built.
-2. **Prepared integration layer:** HL7, FHIR, and DICOMweb are implemented as tested modules, not slide-deck promises.
-3. **Evidence in the repo:** Gap reports, compliance docs, and shareable pages are available for diligence today.
+1. **De-risked clinical core:** Day-to-day clinic use is largely built.
+2. **Prepared integration layer:** HL7, FHIR, DICOMweb, MCEDT, and OLIS desk are implemented with tests and staff UI.
+3. **Evidence in the product:** Gap reports, compliance docs, self-assessment, and shareable pages are available for diligence today.
 4. **Canada-first:** ICD-10-CA, Ontario fee codes, Health Canada formulary, and CAD billing are in the product.
 
-## What comes next (Phase 2+)
+## What comes next (Phase 5+)
 
-With your continued support, our priority sequence remains:
-
-1. OntarioMD vendor path and reference clinic site
-2. MCEDT claims (live MOH credentials)
-3. OLIS laboratory connectivity
-4. PrescribeIT e-prescribing
-5. Provincial imaging / DI repository integration
+1. PrescribeIT / e-prescribing software (Phase 5)
+2. Live MOH MCEDT and Infoway OLIS (clinic credentials)
+3. OntarioMD vendor path and reference site (owner action)
+4. Provincial imaging / DI repository integration
 
 We welcome diligence calls, demos, and introductions to Ontario clinical partners who may serve as a reference site.
 
@@ -71,6 +62,7 @@ We welcome diligence calls, demos, and introductions to Ontario clinical partner
 | Resource | URL |
 |----------|-----|
 | Ontario EMR Readiness Report | https://mediforge.netlify.app/ontario-readiness |
+| Evidence Binder | https://mediforge.netlify.app/evidence-binder |
 | Full Capabilities | https://mediforge.netlify.app/capabilities |
 | Live product | https://mediforge.netlify.app |
 

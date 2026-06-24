@@ -375,7 +375,7 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | Consent management (org) | `/consent-management` registry for administrators |
 | Interop gateway audit | Append-only `interop_messages`; all gateway actions logged |
 | PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
-| Investor letter | `/investor-letter` shareable update |
+| Investor letter | `/investor-letter` shareable update (sync with readiness report at 60–70%) |
 
 **Companion page:** keep `/capabilities` and this guide in sync (**`AGENT-HANDOVER.md`** Rule #3).
 

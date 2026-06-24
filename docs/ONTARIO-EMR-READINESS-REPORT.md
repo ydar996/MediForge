@@ -172,13 +172,13 @@ Internal readiness sprint delivered without provincial credentials:
 
 ## Priority Roadmap
 
-1. **OntarioMD certification path** (~10–15%: Phases 0–3 evidence complete; application pending)
+1. **OntarioMD certification path** (~25–35%: evidence binder, self-assessment, traceability; application pending)
 2. **MCEDT claims (live)** (~45% software; MOH credentials needed for upload)
-3. **OLIS labs** (~20%: HL7/FHIR plumbing; Infoway onboarding)
+3. **OLIS labs** (~35–45%: lab desk software; Infoway onboarding for live pipe)
 4. **PrescribeIT** (~10%: adapter stubs; vendor enrollment)
 5. **Imaging / DI** (~15%: orders + DICOMweb; DIR/PACS live)
 
-**Next:** Phase 2 OntarioMD certification path (blocked until owner approves).
+**Next:** Phase 5 PrescribeIT software (owner approval) or OntarioMD vendor contact (owner action).
 
 ---
 

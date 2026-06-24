@@ -56,6 +56,7 @@ Code, config, and docs ship together. **Every session that changes the product m
 2. **`docs/DOCUMENTATION-INDEX.md`**: new/changed doc rows.
 3. **Companion pairs** (keep in sync):
    - `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`
+   - `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md` (same percentages and phase status as readiness report)
    - `/capabilities` ↔ `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`
    - `user-manual.html` ↔ `docs/USER-MANUAL.md`
    - `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` task status when you complete plan items
@@ -483,7 +484,7 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~55–65% documented Ontario readiness (Phases 0–3 software complete, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
+**Current alignment:** ~60–70% documented Ontario readiness (Phases 0–4 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
@@ -506,6 +507,12 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Rule #3 fix — investor letter synced to readiness report
+
+- **Owner flagged:** `/investor-letter` still showed Phase 0–1 and 50–60% while `/ontario-readiness` showed 60–70% and Phases 0–4.
+- **Root cause:** Investor letter was not listed explicitly in Rule #3 companion pairs; polish sprints updated readiness/capabilities but skipped investor letter.
+- **Fixed:** `investor-letter.html` and `docs/investor/INVESTOR-LETTER-2026-06.md` synced to 60–70%, Phases 0–4; Rule #3 companion list updated; `MEDIFORGE-AT-A-GLANCE.md`, capabilities compare table, readiness report roadmap aligned.
 
 ### June 2026: Phases 1–4 polish sprint (owner-approved)
 
@@ -629,4 +636,4 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–3 software complete; **Phase 2 blocked** until owner approves. **Phase 4+** blocked similarly. Investor materials: `/investor-letter`, `/ontario-readiness`, `/capabilities`.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–4 software complete where possible; **Phase 2 Stage 5** blocked until OntarioMD vendor path. **Phase 5+** blocked similarly until owner approves. Investor materials (must stay in sync): `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.
