@@ -541,6 +541,11 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Revenue model — one-time implementation, lean OpEx
+
+- **Owner correction:** Initial implementation costs are not continuously heavy; cert/seed spend Years 1–2 only; light ~$1.5k/clinic onboarding thereafter.
+- **Growth curve:** 2 → 5 → 10 → 20 → 40 clinics; operating net positive from Year 3 on run-rate view.
+
 ### June 2026: Revenue projection and project plan pages
 
 - **Added:** `/project-plan` + `/revenue-projection` with markdown companions; Gantt capital flow; 5-year clinic-doubling revenue model ($120–$250/provider tiers).

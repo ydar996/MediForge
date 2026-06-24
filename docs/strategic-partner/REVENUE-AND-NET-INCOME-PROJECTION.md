@@ -11,15 +11,13 @@
 
 ## Purpose
 
-This document translates **implementation planning** (Phases 0–8 complete; certification path A–D; seed tranches) into **subscription revenue, implementation fees, operating costs, and net income** under a defined go-to-market assumption.
+This document translates **implementation planning** into **subscription revenue, setup fees, operating costs, and net income**.
 
-It answers: *If we land 2 clinics (5 providers each) and double clinic count every year, what do earnings and costs look like?*
+**Important:** Initial platform build (Phases 0–8) and certification path spend are **one-time**, seed-funded in **Years 1–2 only**. They are **not** modeled as heavy recurring implementation cost in Years 3–5. Ongoing clinic adds use **light onboarding** on an already-built platform.
 
 ---
 
 ## Pricing model (assumed)
-
-Canada-focused, global-ready tiers (per provider, per month, CAD):
 
 | Tier | Monthly (CAD) | Typical scope |
 |------|---------------|---------------|
@@ -27,128 +25,118 @@ Canada-focused, global-ready tiers (per provider, per month, CAD):
 | Standard | $180–$220 | Billing, scheduling, provincial integrations |
 | Premium / Enterprise | $250+ | Hospital modules, analytics, priority support |
 
-**Additional revenue:** one-time implementation **$2k–$15k** per clinic (size-based); add-on modules; **10–15%** annual prepay discount.
+**Customer pays (revenue):** one-time implementation **$2k–$15k** per clinic (modeled at **$6,000** avg); subscription per provider; optional 10–15% annual prepay discount.
 
-**Projection blend (Base case):**
+**Company cost (not revenue):** **~$1,500/clinic** light onboarding (config, training, go-live support) after the platform exists. Setup fees are modeled to **cover or exceed** this cost.
 
-| Item | Assumption |
-|------|------------|
-| Blended subscription (Years 2–5) | **$200/provider/month** (Standard-heavy Ontario clinics) |
-| Year 1 pilot discount | **20%** off subscription (**$160/provider/month**) |
-| Implementation fee (avg) | **$6,000** per new clinic (mid-range for 5-provider site) |
-| Annual prepay | Not modeled separately (conservative: monthly billing) |
+**Base blend:** **$200/provider/month** (Years 2–5); Year 1 pilot **20% off** ($160).
 
 ---
 
 ## Growth assumption
 
-| Rule | Value |
-|------|-------|
-| Starting footprint | **2 clinics × 5 providers = 10 providers** |
-| Growth | **Double total clinic count every commercial year** (net new clinics = prior year total) |
-| Providers per clinic | **5** (constant for projection simplicity) |
+Start **2 clinics × 5 providers**. Then **2 → 5 → 10 → 20 → 40** clinics (double from Year 2 onward).
 
-| Commercial year | Total clinics | Total providers | Net new clinics | Net new providers |
-|-----------------|---------------|-----------------|-----------------|-------------------|
-| 1 | 2 | 10 | 2 | 10 |
-| 2 | 4 | 20 | 2 | 10 |
-| 3 | 8 | 40 | 4 | 20 |
-| 4 | 16 | 80 | 8 | 40 |
-| 5 | 32 | 160 | 16 | 80 |
-
-**Commercial Year 1** begins after certification/pilot ramp (~**6–12 months** from seed Closing per [Project Plan](STRATEGIC-PARTNER-PROJECT-PLAN.md)). Revenue in Year 1 assumes full-year billing on initial 2 clinics at pilot pricing.
+| Commercial year | Total clinics | Total providers | Net new clinics |
+|-----------------|---------------|-----------------|-----------------|
+| 1 | 2 | 10 | 2 |
+| 2 | 5 | 25 | 3 |
+| 3 | 10 | 50 | 5 |
+| 4 | 20 | 100 | 10 |
+| 5 | 40 | 200 | 20 |
 
 ---
 
 ## Revenue projection (Base case, CAD)
 
-| Year | Providers | Subscription revenue | Implementation revenue | **Total revenue** |
-|------|-----------|----------------------|------------------------|-------------------|
+| Year | Providers | Subscription | Setup fees (revenue) | **Total revenue** |
+|------|-----------|--------------|-------------------|-------------------|
 | 1 | 10 | $19,200 | $12,000 | **$31,200** |
-| 2 | 20 | $48,000 | $12,000 | **$60,000** |
-| 3 | 40 | $96,000 | $24,000 | **$120,000** |
-| 4 | 80 | $192,000 | $48,000 | **$240,000** |
-| 5 | 160 | $384,000 | $96,000 | **$480,000** |
+| 2 | 25 | $60,000 | $18,000 | **$78,000** |
+| 3 | 50 | $120,000 | $30,000 | **$150,000** |
+| 4 | 100 | $240,000 | $60,000 | **$300,000** |
+| 5 | 200 | $480,000 | $120,000 | **$600,000** |
 
-**Formulas:**
-
-- Subscription Year 1: 10 × $160 × 12 = **$19,200**
-- Subscription Years 2–5: providers × $200 × 12
-- Implementation: net new clinics × $6,000
-
-**5-year cumulative revenue (Base):** **~$931,200**
+**5-year cumulative revenue:** **~$1,159,200**
 
 ---
 
-## Scenario comparison (Year 5 snapshot)
+## Cost structure: three layers (not one heavy line)
 
-| Scenario | Blended $/provider/mo | Year 5 providers | Year 5 subscription | Year 5 total revenue* |
-|----------|---------------------|------------------|---------------------|------------------------|
-| Conservative | $150 | 160 | $288,000 | **~$384,000** |
-| **Base** | **$200** | **160** | **$384,000** | **~$480,000** |
-| Upside | $220 | 160 | $422,400 | **~$518,400** |
+### Layer 1: One-time initial implementation (seed-funded, Years 1–2 only)
 
-*Includes implementation on 16 net new clinics at $6k (Upside uses $8k impl = $128k → **~$550k** total).
+Platform software is **already built** (Phases 0–8). Remaining **certification, audit, live pipes, and first pilots** are funded by seed tranches (~**$450k** midpoint over ~18 months). This bucket **does not repeat** in Years 3–5.
+
+| Year | One-time cert / seed deployment |
+|------|--------------------------------|
+| 1 | **$350,000** |
+| 2 | **$100,000** |
+| 3–5 | **$0** |
+
+### Layer 2: Light clinic onboarding (company cost, not platform rebuild)
+
+Each **new** clinic: config, training, go-live (~**$1,500** internal cost). Customer setup fee (**$6,000** modeled) is separate **revenue**.
+
+| Year | Net new clinics | Onboarding cost |
+|------|-----------------|-----------------|
+| 1 | 2 | $3,000 |
+| 2 | 3 | $4,500 |
+| 3 | 5 | $7,500 |
+| 4 | 10 | $15,000 |
+| 5 | 20 | $30,000 |
+
+### Layer 3: Steady-state OpEx (founder-led, lean scale)
+
+Cloud, compliance maintenance, support, sales, G&A. Grows with clinic count but **not** at initial implementation levels.
+
+| Category | Y1 | Y2 | Y3 | Y4 | Y5 |
+|----------|----|----|----|----|-----|
+| Cloud & tools | $10k | $12k | $15k | $22k | $30k |
+| Compliance maintenance | $20k | $22k | $25k | $28k | $30k |
+| Support & success | $15k | $25k | $35k | $50k | $65k |
+| Sales & marketing | $10k | $18k | $25k | $35k | $45k |
+| G&A | $20k | $23k | $20k | $20k | $25k |
+| **OpEx total** | **$75k** | **$100k** | **$120k** | **$155k** | **$195k** |
 
 ---
 
-## Cost structure (aligned with seed plan)
+## Total costs and operating P&L
 
-Costs split into **(A) pre-revenue / seed deployment** and **(B) ongoing operating expenses** once clinics are live.
+| Year | One-time cert (seed) | Onboarding | OpEx | **Operating costs** | **All-in costs** |
+|------|---------------------|------------|------|---------------------|------------------|
+| 1 | $350,000 | $3,000 | $75,000 | **$78,000** | **$428,000** |
+| 2 | $100,000 | $4,500 | $100,000 | **$104,500** | **$204,500** |
+| 3 | $0 | $7,500 | $120,000 | **$127,500** | **$127,500** |
+| 4 | $0 | $15,000 | $155,000 | **$170,000** | **$170,000** |
+| 5 | $0 | $30,000 | $195,000 | **$225,000** | **$225,000** |
 
-### A. Seed and certification spend (from Term Sheet / Project Plan)
-
-| Bucket | Amount (CAD) | Timing |
-|--------|--------------|--------|
-| Seed investment (total commitment) | $300,000–$600,000 | ~18 months, tranched |
-| Founder development fee (Company) | $100,000–$120,000 | Min 40% at Closing |
-| OntarioMD milestone fees | ~$27,500 | Phase A |
-| Audit, legal, pilot band | $50,000–$150,000 | Phases A–C |
-
-**Base model uses $450,000 seed deployment** over Commercial Years 1–2 (overlaps certification + first pilots).
-
-### B. Ongoing operating expenses (annual, estimated)
-
-| Category | Year 1 | Year 2 | Year 3 | Year 4 | Year 5 |
-|----------|--------|--------|--------|--------|--------|
-| Cloud (Supabase, Netlify, tools) | $12k | $18k | $30k | $48k | $72k |
-| Compliance & maintenance | $25k | $30k | $35k | $40k | $45k |
-| Support & success (staff/contract) | $20k | $55k | $85k | $120k | $160k |
-| Sales & marketing | $15k | $35k | $55k | $80k | $110k |
-| G&A (legal, accounting, insurance) | $18k | $22k | $28k | $35k | $42k |
-| **Total OpEx** | **$90k** | **$160k** | **$233k** | **$323k** | **$429k** |
-
-Year 1 OpEx is **incremental** to seed (founder-led support; pilots); heavy certification spend sits in seed tranches above.
-
-### C. Total cost by commercial year (Base)
-
-| Year | Seed / cert spend | Operating OpEx | **Total costs** |
-|------|-------------------|----------------|-----------------|
-| 1 | $280,000 | $90,000 | **$370,000** |
-| 2 | $170,000 | $160,000 | **$330,000** |
-| 3 | $40,000 | $233,000 | **$273,000** |
-| 4 | $20,000 | $323,000 | **$343,000** |
-| 5 | $20,000 | $429,000 | **$449,000** |
-
-Years 1–2: majority of seed tranches deployed. Years 3–5: tail compliance + scale OpEx; minimal new capital unless growth exceeds plan.
+**Operating costs** = onboarding + OpEx only (excludes one-time seed/cert). Use this for **run-rate profitability** after the initial build period.
 
 ---
 
 ## Net income projection (Base case, CAD)
 
-| Year | Total revenue | Total costs | **Net income** | **Cumulative net** |
-|------|---------------|-------------|----------------|---------------------|
-| 1 | $31,200 | $370,000 | **−$338,800** | −$338,800 |
-| 2 | $60,000 | $330,000 | **−$270,000** | −$608,800 |
-| 3 | $120,000 | $273,000 | **−$153,000** | −$761,800 |
-| 4 | $240,000 | $343,000 | **−$103,000** | −$864,800 |
-| 5 | $480,000 | $449,000 | **+$31,000** | −$833,800 |
+### All-in (includes one-time seed/cert in Years 1–2)
 
-### Interpretation
+| Year | Revenue | All-in costs | **Net income** |
+|------|---------|--------------|----------------|
+| 1 | $31,200 | $428,000 | **−$396,800** |
+| 2 | $78,000 | $204,500 | **−$126,500** |
+| 3 | $150,000 | $127,500 | **+$22,500** |
+| 4 | $300,000 | $170,000 | **+$130,000** |
+| 5 | $600,000 | $225,000 | **+$375,000** |
 
-- **Years 1–4:** Net cash negative; **seed capital funds certification, pilots, and OpEx** while provider count scales.
-- **Year 5 (Base):** First **modest positive net income** (~$31k) at 160 providers; **cumulative** still negative (~−$834k) without counting earlier founder sunk build.
-- **Subscription-only break-even on OpEx:** ~**$429k OpEx Year 5** ÷ ($200 × 12) ≈ **179 providers** at Base pricing (or ~**36 clinics** at 5 providers each). Doubling plan reaches 160 providers in Year 5: **near break-even, slightly below** on Base; **Upside pricing** or faster tier mix improves margin sooner.
+### Operating P&L (steady state: no repeated heavy implementation)
+
+| Year | Revenue | Operating costs | **Operating net** |
+|------|---------|-----------------|-------------------|
+| 3 | $150,000 | $127,500 | **+$22,500** |
+| 4 | $300,000 | $170,000 | **+$130,000** |
+| 5 | $600,000 | $225,000 | **+$375,000** |
+
+**Interpretation:** Heavy spend is **front-loaded** into seed Years 1–2. From Year 3 onward, costs are **run-rate only** (light onboarding + lean OpEx). Subscription + setup fees exceed operating costs once the clinic base scales.
+
+**Break-even on operating costs alone:** ~**53 providers** at $200/mo (~$127k/year OpEx + onboarding in Year 3). The **2 → 5 → 10** clinic path reaches **50 providers** in Year 3.
 
 ---
 
@@ -156,35 +144,12 @@ Years 1–2: majority of seed tranches deployed. Years 3–5: tail compliance + 
 
 | Metric | Base case |
 |--------|-----------|
-| ARPU (subscription) | $200/provider/month ($2,400/year) |
-| Implementation ARPU (Year 1 cohort) | $6,000/clinic one-time |
-| Year 5 MRR | $32,000/month (160 × $200) |
-| Year 5 ARR (subscription only) | $384,000 |
-| Gross margin (software) | **~75–85%** after cloud (typical SaaS; no COGS beyond hosting/support) |
-| LTV (5-year sub, no churn) | ~$12,000/provider at $200/mo |
-| Payback on $6k implementation | ~3 months of subscription revenue per provider at Standard tier |
-
----
-
-## How implementation planning maps to revenue
-
-| Implementation milestone | Revenue impact |
-|--------------------------|----------------|
-| Phases 0–8 complete (now) | Product ready; **no recurring revenue** until paid clinics |
-| Phase A–B (cert + live pipes) | Unlocks **Standard tier** value (billing, OLIS, eRx); required for Ontario list pricing |
-| Phase C (pilots) | **First 2 clinics**; pilot discount; implementation fees |
-| Phase D (scale) | Supports **doubling**; support and sales OpEx scale with clinic count |
-| Seed tranches | Fund gap until **~Year 4–5** subscription scale covers OpEx |
-
----
-
-## Sensitivities and risks
-
-1. **Slower doubling:** One year slip in clinic acquisition pushes break-even out 12+ months.
-2. **Churn:** Not modeled; 10% annual churn reduces Year 5 providers to ~144 effective.
-3. **Pricing pressure:** Conservative $150/provider/mo delays profit to ~**215 providers** for OpEx cover.
-4. **Credential delays:** Phase B slip delays live billing integrations → harder to justify Standard tier price.
-5. **Support intensity:** Multi-clinic EMR support can exceed model; Year 4–5 OpEx may run **15–25%** higher.
+| ARPU (subscription) | $2,400/provider/year at $200/mo |
+| Setup fee (customer) | $6,000/clinic revenue |
+| Setup cost (company) | ~$1,500/clinic (light onboarding) |
+| Year 5 MRR | $40,000/month (200 × $200) |
+| Year 5 ARR (subscription) | $480,000 |
+| Gross margin on subscription | ~75–85% after cloud |
 
 ---
 
@@ -192,12 +157,12 @@ Years 1–2: majority of seed tranches deployed. Years 3–5: tail compliance + 
 
 | Question | Base case answer |
 |----------|------------------|
-| Year 1 revenue (2 clinics, 10 providers)? | **~$31k** (pilot pricing + setup fees) |
-| Year 5 revenue (32 clinics, 160 providers)? | **~$480k** total (**~$384k** subscription) |
-| When does net income turn positive? | **Year 5** (~$31k); earlier under Upside pricing or slower OpEx growth |
-| What funds Years 1–4? | **Seed $300k–$600k** + founder development fee structure |
-| Why invest before profit? | Platform **already built**; seed buys certification, live pipes, and GTM to reach **doubling SaaS scale** |
+| Is implementation cost heavy every year? | **No.** One-time cert/seed in **Years 1–2 only**; then **~$1.5k/clinic** onboarding |
+| Year 5 revenue (40 clinics, 200 providers)? | **~$600k** total (**~$480k** subscription) |
+| When does operating net turn positive? | **Year 3** (~$23k operating net) |
+| Year 5 operating net? | **~$375k** on Base pricing and lean OpEx |
+| What funds Years 1–2? | **Seed $300k–$600k** (tranched); platform already built |
 
 ---
 
-*Illustrative model for diligence only. Not a forecast guarantee. Actual results depend on pricing, churn, sales velocity, credential timing, and operating choices. Align with [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) for capital terms.*
+*Illustrative model for diligence only. Not a forecast guarantee. Align with [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) for capital terms.*
