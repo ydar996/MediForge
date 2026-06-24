@@ -232,6 +232,42 @@ exports.handler = async (event) => {
           })
         };
         break;
+      case 'generateImagingHl7':
+        result = service.generateImagingHl7({ patient: body.patient, order: body.order });
+        break;
+      case 'generateImagingFhir':
+        result = service.generateImagingFhir({ patient: body.patient, order: body.order });
+        break;
+      case 'ingestImagingReport':
+        result = await service.ingestImagingReport({
+          rawHl7: body.rawHl7,
+          fhirBundle: body.fhirBundle,
+          organizationId: body.organizationId,
+          userId: body.userId
+        });
+        break;
+      case 'connectingOntarioLaunch':
+        result = service.connectingOntarioLaunch({
+          patient: body.patient,
+          purpose: body.purpose
+        });
+        break;
+      case 'smartLaunch':
+        result = service.smartLaunch({
+          patient: body.patient,
+          scope: body.scope,
+          launch: body.launch
+        });
+        break;
+      case 'attachDicomStudy':
+        result = {
+          results: service.attachDicomStudyToOrderResults(body.existingResults || {}, {
+            studyInstanceUid: body.studyInstanceUid,
+            wadoUrl: body.wadoUrl,
+            seriesUid: body.seriesUid
+          })
+        };
+        break;
       case 'parseOru':
         result = interop.adapters.lab.oruToChartResults(
           interop.adapters.lab.parseOruMessage(body.rawHl7)

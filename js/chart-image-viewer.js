@@ -10,7 +10,7 @@
     if (el) el.remove();
   }
 
-  function openClinicalViewer({ title, url, mimeType, fileName }) {
+  function openClinicalViewer({ title, url, mimeType, fileName, wadoUrl, studyInstanceUid }) {
     closeViewer();
     const type = mimeType || '';
     const modal = document.createElement('div');
@@ -36,8 +36,14 @@
       iframe.title = fileName || 'PDF document';
       iframe.style.cssText = 'width:min(1100px,96vw);height:90vh;border:none;border-radius:8px;background:#fff;';
       body.appendChild(iframe);
-    } else if (type === 'application/dicom' || (fileName && /\.dcm$/i.test(fileName))) {
-      body.innerHTML = `<div style="background:#fff;padding:28px;border-radius:12px;max-width:520px;text-align:center;"><h3 style="margin:0 0 12px;color:#006b42;">DICOM Study</h3><p style="margin:0 0 16px;color:#444;">Full PACS viewing requires a configured DICOMweb endpoint. Use the interoperability dashboard when your clinic connects to provincial imaging.</p><a href="interop-dashboard" style="color:#006b42;font-weight:700;">Open Interoperability Dashboard</a></div>`;
+    } else if (type === 'application/dicom' || (fileName && /\.dcm$/i.test(fileName)) || wadoUrl) {
+      const viewerHref = wadoUrl || url;
+      const studyLine = studyInstanceUid ? `<p style="margin:0 0 8px;color:#666;font-size:.9rem;">Study UID: ${studyInstanceUid}</p>` : '';
+      if (viewerHref && !String(viewerHref).startsWith('REPLACE_')) {
+        body.innerHTML = `<div style="background:#fff;padding:28px;border-radius:12px;max-width:560px;text-align:center;"><h3 style="margin:0 0 12px;color:#6a1b9a;">DICOM Study</h3>${studyLine}<p style="margin:0 0 16px;color:#444;">Open this study in your configured DICOMweb viewer.</p><a href="${viewerHref}" target="_blank" rel="noopener" style="display:inline-block;background:#6a1b9a;color:#fff;padding:12px 20px;border-radius:8px;font-weight:700;text-decoration:none;">Open DICOMweb viewer</a><p style="margin:16px 0 0;"><a href="imaging-results-queue" style="color:#008753;font-weight:700;">Imaging results queue</a></p></div>`;
+      } else {
+        body.innerHTML = `<div style="background:#fff;padding:28px;border-radius:12px;max-width:520px;text-align:center;"><h3 style="margin:0 0 12px;color:#006b42;">DICOM Study</h3><p style="margin:0 0 16px;color:#444;">Full PACS viewing requires a configured DICOMweb endpoint. Link a study from the imaging results queue or interoperability dashboard.</p><a href="interop-dashboard" style="color:#006b42;font-weight:700;">Open Interoperability Dashboard</a></div>`;
+      }
     } else {
       body.innerHTML = `<div style="background:#fff;padding:24px;border-radius:12px;"><p>Preview not available for this file type.</p><a href="${url}" target="_blank" rel="noopener" style="color:#006b42;font-weight:700;">Download file</a></div>`;
     }

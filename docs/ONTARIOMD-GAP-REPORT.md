@@ -44,7 +44,7 @@ MediForge is a Canada-first, web-based clinic platform with a strong functional 
 | | HRM (hospital reports) | Missing | 0% | Blocked |
 | | DHDR (drug repository) | Missing | 0% | Blocked |
 | | ConnectingOntario | Missing | 0% | Blocked |
-| | Imaging DI / DIR | Partial | 15% | Medium |
+| | Imaging DI / DIR | Partial | 45% | Medium |
 | **Functional Clinical** | Patients / demographics | Done | 90% | : |
 | | Charting (SOAP, problems) | Done | 85% | : |
 | | Orders (lab / imaging) | Done | 85% | : |

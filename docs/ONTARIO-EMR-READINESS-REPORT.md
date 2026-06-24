@@ -1,6 +1,6 @@
 # Ontario EMR Readiness Report
 
-**Version:** June 2026 (Phases 0–5 software complete where possible)  
+**Version:** June 2026 (Phases 0–6 software complete where possible)  
 **Audience:** Investors, partners, clinic leaders  
 **Shareable web version:** https://mediforge.netlify.app/ontario-readiness  
 **Implementation tasks:** See **`ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**
@@ -11,13 +11,13 @@ This document is the written companion to the investor readiness webpage. Share 
 
 ## Executive Summary
 
-MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **60–70%** after Phases 0–5 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
+MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **65–75%** after Phases 0–6 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
 
-**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–5 (June 2026)** delivered internal evidence, core standards, MCEDT claims software, OLIS-ready lab desk, and PrescribeIT-ready eRx desk.
+**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, DIR, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–6 (June 2026)** delivered internal evidence, core standards, MCEDT claims software, OLIS-ready lab desk, PrescribeIT-ready eRx desk, and DIR-ready imaging desk.
 
 | Metric | Estimate |
 |--------|----------|
-| Overall Ontario readiness | 60–70% |
+| Overall Ontario readiness | 65–75% |
 | Functional clinical EMR | 75–85% |
 | Live provincial connectivity | 5–15% |
 | OntarioMD certification | 0% (application not submitted; evidence binder ~25–35%) |
@@ -179,7 +179,7 @@ Internal readiness sprint delivered without provincial credentials:
 4. **PrescribeIT** (~35%: eRx queue, cancel/renew/dispense; live vendor enrollment)
 5. **Imaging / DI** (~15%: orders + DICOMweb; DIR/PACS live)
 
-**Next:** Phase 6 imaging software or OntarioMD vendor contact (owner action). Live PrescribeIT/OLIS/MCEDT need clinic credentials.
+**Next:** Phase 7 provincial hubs or OntarioMD vendor contact (owner action). Live PrescribeIT/OLIS/MCEDT/DIR need clinic credentials.
 
 ---
 

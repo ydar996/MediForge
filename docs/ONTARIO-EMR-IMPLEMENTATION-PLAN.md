@@ -12,7 +12,7 @@
 
 ## Phase 0: Internal Readiness (No Provincial Credentials)
 
-*Phases 0–5 software complete (June 2026). **STOP GATE:** do not start Phase 6+ or OntarioMD Stage 5 until owner approves. See `ONTARIOMD-READINESS-PLAN.md`.*
+*Phases 0–6 software complete where possible (June 2026). **STOP GATE:** do not start Phase 7+ or OntarioMD Stage 5 until owner approves. See `ONTARIOMD-READINESS-PLAN.md`.*
 
 | ID | Task | Status | Owner / Agent |
 |----|------|--------|---------------|
@@ -139,14 +139,16 @@
 
 ## Phase 6: Imaging & ConnectingOntario
 
+**Status: partial (June 2026, software).** Live DIR/PACS blocked until onboarding. See **`docs/PHASE-6-IMAGING-DESK-COMPLETION.md`**.
+
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | 6.1 | Imaging order catalog (67 studies) with OHIP codes | ✅ | June 2026 |
-| 6.2 | HL7/FHIR imaging order outbound | 🔶 | Adapters ready |
-| 6.3 | Structured imaging report ingest | 🔶 | DiagnosticReport path |
-| 6.4 | DICOMweb image storage links in chart | 🔶 | STOW/WADO client |
-| 6.5 | ConnectingOntario / DI repository query hooks | ⬜ | Config placeholders |
-| 6.6 | Contextual viewer launch from patient record | ⬜ | SMART-on-FHIR |
+| 6.2 | HL7/FHIR imaging order outbound | 🔶 | `/external-imaging-orders`, gateway exports |
+| 6.3 | Structured imaging report ingest | 🔶 | `/imaging-results-queue`, `ingestImagingReport` |
+| 6.4 | DICOMweb image storage links in chart | 🔶 | `attachDicomStudy`, chart viewer WADO |
+| 6.5 | ConnectingOntario / DI repository query hooks | 🔶 | Launch URL stub + interop dashboard |
+| 6.6 | Contextual viewer launch from patient record | 🔶 | SMART-on-FHIR launch stub |
 | 6.7 | DIR/PACS production onboarding | ⬜ | 🚫 Partner |
 
 ---
@@ -210,5 +212,6 @@
 
 | Date | Change |
 |------|--------|
+| 2026-06 | Phase 6 imaging desk software; Phases 0–6 complete where possible |
 | 2026-06 | Phase 5 PrescribeIT eRx desk software; Phases 0–5 complete where possible |
 | 2026-06-23 | Initial plan from owner brief + readiness report; merged with ONTARIOMD-READINESS-PLAN Tier A/B tasks |

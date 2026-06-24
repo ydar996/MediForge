@@ -34,7 +34,7 @@
 </head>
 <body>
   <div class="container">
-    <p class="nav-links"><a href="/">← Home</a> <a href="lab-results-queue">Lab Results Queue</a> <a href="claims-queue">Claims Queue</a> <a href="patient-identifiers">PHN Registry</a></p>
+    <p class="nav-links"><a href="/">← Home</a> <a href="lab-results-queue">Lab Results Queue</a> <a href="imaging-results-queue">Imaging Results Queue</a> <a href="external-imaging-orders">External Imaging</a> <a href="claims-queue">Claims Queue</a> <a href="patient-identifiers">PHN Registry</a></p>
     <h1>Interoperability Dashboard</h1>
     <p>HL7 v2 · FHIR R4 · DICOMweb · Ontario OLIS / Infoway compatible</p>
 
@@ -86,6 +86,16 @@
       <button type="button" class="secondary" id="btn-preview-rx">Preview MedicationRequest</button>
       <pre id="rx-output"></pre>
       <p><a href="/erx-queue">Open eRx queue →</a></p>
+    </div>
+
+    <div class="card">
+      <h2>Imaging desk (Phase 6 / DIR-ready)</h2>
+      <p>Generate imaging ORM/FHIR exports, ingest reports, and launch ConnectingOntario / SMART-on-FHIR stubs.</p>
+      <input type="text" id="img-patient-id" placeholder="Patient ID" style="width:100%;padding:10px;margin:8px 0;box-sizing:border-box">
+      <button type="button" id="btn-co-launch">ConnectingOntario launch URL</button>
+      <button type="button" class="secondary" id="btn-smart-launch">SMART-on-FHIR launch URL</button>
+      <pre id="img-output"></pre>
+      <p><a href="/imaging-results-queue">Imaging results queue →</a> · <a href="/external-imaging-orders">External imaging orders →</a></p>
     </div>
 
     <div class="card">
@@ -252,6 +262,39 @@
           patient: { id: patientId, firstName: 'Jane', lastName: 'Doe' },
           prescription,
           erxConsentGranted: true
+        });
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-co-launch').addEventListener('click', async () => {
+      const out = document.getElementById('img-output');
+      try {
+        const ctx = await orgContext();
+        const patientId = document.getElementById('img-patient-id').value.trim() || 'demo-patient';
+        const res = await MediForgeInteropClient.connectingOntarioLaunch({
+          ...ctx,
+          patient: { id: patientId, phn: '1234567890AB' },
+          purpose: 'diagnostic-imaging'
+        });
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-smart-launch').addEventListener('click', async () => {
+      const out = document.getElementById('img-output');
+      try {
+        const ctx = await orgContext();
+        const patientId = document.getElementById('img-patient-id').value.trim() || 'demo-patient';
+        const res = await MediForgeInteropClient.smartLaunch({
+          ...ctx,
+          patient: { id: patientId },
+          scope: 'launch/patient openid fhirUser',
+          launch: 'mediforge-chart'
         });
         out.textContent = JSON.stringify(res.result || res, null, 2);
       } catch (e) {

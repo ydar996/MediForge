@@ -160,6 +160,136 @@
     }
   }
 
+  async function applyImagingResultsToOrder(orderId, chartResults, wadoUrl) {
+    if (!orderId || !chartResults) return;
+    const supabase = global.supabaseClient || global.supabase;
+    if (!supabase) return;
+
+    const { data: order } = await supabase.from('orders').select('results').eq('id', orderId).single();
+    const merged = {
+      ...(order?.results || {}),
+      ...(chartResults.results || {}),
+      _interop: {
+        source: chartResults.standard || 'imaging_report',
+        placerOrderNumber: chartResults.placerOrderNumber || null,
+        at: new Date().toISOString()
+      }
+    };
+    if (wadoUrl) {
+      merged._imaging = merged._imaging || {};
+      merged._imaging.studies = merged._imaging.studies || [];
+      merged._imaging.studies.push({ wadoUrl, linkedAt: new Date().toISOString() });
+    }
+
+    await supabase.from('orders').update({
+      results: merged,
+      status: 'completed',
+      portal_results_status: 'awaiting_review',
+      completed_at: new Date().toISOString()
+    }).eq('id', orderId);
+  }
+
+  async function ingestImagingAndApply({ rawHl7, fhirBundle, orderSerial, orderId, wadoUrl }) {
+    if (!global.MediForgeInteropClient) return { error: 'Interop client not loaded' };
+    try {
+      const orgId = await resolveOrgId();
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const response = await global.MediForgeInteropClient.ingestImagingReport({
+        organizationId: orgId,
+        rawHl7,
+        fhirBundle,
+        userId: user.id || user.username
+      });
+      const chart = response.result?.chart || response.chart;
+      if (!chart) return { error: 'No chart mapping returned', response };
+
+      let targetOrderId = orderId;
+      if (!targetOrderId && (orderSerial || chart.placerOrderNumber)) {
+        const found = await MediForgeImagingResultsQueue?.findOrderBySerial?.(orderSerial || chart.placerOrderNumber);
+        targetOrderId = found?.id;
+      }
+      if (targetOrderId) {
+        await applyImagingResultsToOrder(targetOrderId, chart, wadoUrl);
+        return { applied: true, orderId: targetOrderId, chart };
+      }
+      return { applied: false, chart, message: 'Order not found; set order serial.' };
+    } catch (err) {
+      return { error: err.message };
+    }
+  }
+
+  async function exportImagingOrderHl7({ patientId, order, orderId }) {
+    if (!global.MediForgeInteropClient?.generateImagingHl7) return { error: 'Client not loaded' };
+    const patient = normalizePatient(await loadPatient(patientId));
+    const orgId = await resolveOrgId();
+    return global.MediForgeInteropClient.generateImagingHl7({
+      organizationId: orgId,
+      patient,
+      order: {
+        id: orderId,
+        serial_number: order?.serial_number || order?.serialNumber,
+        selected_items: order?.selected_items || order?.selectedItems,
+        timestamp: order?.timestamp
+      }
+    });
+  }
+
+  async function exportImagingOrderFhir({ patientId, order, orderId }) {
+    if (!global.MediForgeInteropClient?.generateImagingFhir) return { error: 'Client not loaded' };
+    const patient = normalizePatient(await loadPatient(patientId));
+    const orgId = await resolveOrgId();
+    return global.MediForgeInteropClient.generateImagingFhir({
+      organizationId: orgId,
+      patient,
+      order: {
+        id: orderId,
+        serial_number: order?.serial_number || order?.serialNumber,
+        selected_items: order?.selected_items || order?.selectedItems,
+        timestamp: order?.timestamp
+      }
+    });
+  }
+
+  async function launchConnectingOntario({ patientId, purpose }) {
+    if (!global.MediForgeInteropClient?.connectingOntarioLaunch) return { error: 'Client not loaded' };
+    const patient = normalizePatient(await loadPatient(patientId));
+    const orgId = await resolveOrgId();
+    return global.MediForgeInteropClient.connectingOntarioLaunch({
+      organizationId: orgId,
+      patient,
+      purpose
+    });
+  }
+
+  async function launchSmartFhir({ patientId, scope, launch }) {
+    if (!global.MediForgeInteropClient?.smartLaunch) return { error: 'Client not loaded' };
+    const patient = normalizePatient(await loadPatient(patientId));
+    const orgId = await resolveOrgId();
+    return global.MediForgeInteropClient.smartLaunch({
+      organizationId: orgId,
+      patient,
+      scope,
+      launch
+    });
+  }
+
+  async function attachDicomStudyToOrder({ orderId, studyInstanceUid, wadoUrl, seriesUid }) {
+    const supabase = global.supabaseClient || global.supabase;
+    if (!supabase || !orderId) return { error: 'Database required' };
+    const { data: order } = await supabase.from('orders').select('results').eq('id', orderId).single();
+    const res = await global.MediForgeInteropClient?.callGateway?.({
+      action: 'attachDicomStudy',
+      existingResults: order?.results || {},
+      studyInstanceUid,
+      wadoUrl,
+      seriesUid
+    });
+    const merged = res?.result?.results || res?.results;
+    if (!merged) return { error: 'Attach failed' };
+    await supabase.from('orders').update({ results: merged }).eq('id', orderId);
+    return { ok: true, results: merged };
+  }
+
   async function transmitImagingOrder({ patientId, order, orderId }) {
     if (!global.MediForgeInteropClient) return { skipped: true };
     try {
@@ -294,9 +424,16 @@
     requestRxRenewal,
     ingestDispenseAndApply,
     applyLabResultsToOrder,
+    applyImagingResultsToOrder,
     ingestOruAndApply,
+    ingestImagingAndApply,
     exportLabOrderHl7,
     exportLabOrderFhir,
+    exportImagingOrderHl7,
+    exportImagingOrderFhir,
+    launchConnectingOntario,
+    launchSmartFhir,
+    attachDicomStudyToOrder,
     loadPatient,
     normalizePatient
   };

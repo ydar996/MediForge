@@ -497,11 +497,11 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~60–70% documented Ontario readiness (Phases 0–5 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
+**Current alignment:** ~65–75% documented Ontario readiness (Phases 0–6 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
-**Phases 0–5 software are complete** (where possible without partner credentials). Do not start **Phase 6+** or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
+**Phases 0–6 software are complete** (where possible without partner credentials). Do not start **Phase 7+** or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
 
 Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
 
@@ -520,6 +520,13 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Phase 6 imaging desk + Phase 0–5 polish — deploy dev → staging → production
+
+- **Owner ask:** Finish Phase 0–5 polish (evidence, workflows, terminology mapping doc); implement Phase 6 software we own; full Ontario companion doc sync; deploy and verify live.
+- **Phase 6:** `/imaging-results-queue`, `/external-imaging-orders`, `imaging-results-workflow.js`, ConnectingOntario + SMART stubs, gateway actions, chart viewer WADO links, interop dashboard imaging panel, `phase6-imaging.test.js` (51 interop tests pass).
+- **Polish:** `TERMINOLOGY-MAPPING-STATUS.md`, `prescriptions.js` provincial eRx routing, fixed `generateLabHl7` in interop-client.
+- **Docs:** Phase 6 completion doc, implementation plan, gap report (DI ~45%), readiness/investor/capabilities/evidence binder, STOP GATE Phase 7+.
 
 ### June 2026: Rule #3 strengthened — docs + live sites must stay in sync
 

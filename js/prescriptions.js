@@ -2526,25 +2526,43 @@ async function sendPrescriptionToPharmacy() {
   await syncPrescriptionToSupabaseTable();
 
   let externalMessage = '';
-  if (typeof window.MediForgeInterop !== 'undefined' && typeof window.MediForgeInterop.transmitPrescription === 'function') {
+  const isExternalPharmacy =
+    currentPrescription.pharmacy_status === 'external' ||
+    currentPrescription.erx_pharmacy_name ||
+    (currentPrescription.pharmacy && currentPrescription.pharmacy !== 'in-house');
+
+  if (typeof window.MediForgeInterop !== 'undefined') {
     try {
       const patientId = currentPrescription.patient?.id;
-      const result = await window.MediForgeInterop.transmitPrescription({
-        patientId,
-        prescription: currentPrescription
-      });
-      if (result && result.skipped) {
-        externalMessage = '\n\nExternal e-prescribing is not enabled yet (provincial hub credentials required). The in-clinic pharmacy dashboard was updated.';
-      } else if (result && result.ok === false) {
-        externalMessage = '\n\nExternal transmit did not complete: ' + (result.message || 'check integration settings.');
-      } else {
-        externalMessage = '\n\nExternal e-prescribing transmit was queued.';
+      const rxFn = isExternalPharmacy && typeof window.MediForgeInterop.queueProvincialRx === 'function'
+        ? window.MediForgeInterop.queueProvincialRx
+        : typeof window.MediForgeInterop.transmitPrescription === 'function'
+          ? window.MediForgeInterop.transmitPrescription
+          : null;
+      if (rxFn) {
+        const result = await rxFn({
+          patientId,
+          prescription: { ...currentPrescription, pharmacy_status: isExternalPharmacy ? 'external' : currentPrescription.pharmacy_status }
+        });
+        if (result && result.skipped) {
+          externalMessage = '\n\nExternal e-prescribing skipped (' + (result.reason || 'not configured') + '). In-clinic pharmacy queue was updated.';
+        } else if (result && result.blocked) {
+          externalMessage = '\n\nProvincial eRx blocked: ' + (result.message || 'patient consent required (prescribeit_erx).');
+        } else if (result && result.ok === false) {
+          externalMessage = '\n\nExternal transmit did not complete: ' + (result.message || 'check integration settings.');
+        } else {
+          externalMessage = '\n\nProvincial eRx transmit was queued. Track status on the eRx queue desk.';
+        }
       }
     } catch (err) {
       externalMessage = '\n\nExternal transmit failed: ' + (err.message || err);
     }
   } else {
-    externalMessage = '\n\nFor electronic delivery to an outside pharmacy, provincial e-prescribing must be configured (see MEDIFORGE-CONNECTION-GUIDE.md).';
+    externalMessage = '\n\nFor electronic delivery to an outside pharmacy, use the eRx queue after configuring PrescribeIT (see MEDIFORGE-CONNECTION-GUIDE.md).';
+  }
+
+  if (isExternalPharmacy && typeof window.MediForgeErxQueue === 'undefined') {
+    externalMessage += '\n\nTip: open erx-queue to manage provincial transmits.';
   }
 
   alert(

@@ -1,0 +1,121 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>External Imaging Orders - MediForge</title>
+  <link rel="stylesheet" href="css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; padding: 24px; background: #f4f7f5; }
+    .container { max-width: 1100px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #6a1b9a; margin-top: 0; }
+    .order-card { border: 2px solid #ce93d8; border-left: 6px solid #6a1b9a; border-radius: 10px; padding: 20px; margin-bottom: 16px; background: #faf5fc; }
+    .btn { padding: 8px 14px; border: none; border-radius: 6px; cursor: pointer; margin-right: 8px; margin-top: 8px; font-weight: 600; }
+    .btn-hl7 { background: #6a1b9a; color: #fff; }
+    .btn-fhir { background: #008753; color: #fff; }
+    .btn-send { background: #1565C0; color: #fff; }
+    .back { background: #6c757d; color: #fff; text-decoration: none; display: inline-block; padding: 8px 16px; border-radius: 6px; margin-bottom: 16px; }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <a href="dashboard" class="back">← Dashboard</a>
+    <h1>External Imaging Orders (DIR-ready)</h1>
+    <p>Export HL7 ORM or FHIR ServiceRequest and queue provincial RIS transmit. Live DIR requires onboarding.</p>
+    <div id="orders-container">Loading...</div>
+    <p style="margin-top:20px;">
+      <a href="imaging-results-queue">Imaging Results Queue</a> ·
+      <a href="interop-dashboard">Interop Dashboard</a>
+    </p>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/interop-hooks.js"></script>
+  <script>
+    window._externalImagingOrders = [];
+
+    async function loadOrders() {
+      const container = document.getElementById('orders-container');
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const orgId = user.organizationId || user.organization_id;
+      if (!window.supabase || !orgId) {
+        container.innerHTML = '<p>Sign in and configure Supabase to load orders.</p>';
+        return;
+      }
+      const { data, error } = await supabase
+        .from('orders')
+        .select('*')
+        .eq('organization_id', orgId)
+        .eq('type', 'imaging')
+        .order('created_at', { ascending: false })
+        .limit(50);
+      if (error) {
+        container.innerHTML = '<p>Failed to load orders: ' + error.message + '</p>';
+        return;
+      }
+      window._externalImagingOrders = data || [];
+      if (!window._externalImagingOrders.length) {
+        container.innerHTML = '<p>No imaging orders found. Create one from the patient chart.</p>';
+        return;
+      }
+      container.innerHTML = window._externalImagingOrders.map((order) => {
+        const items = order.selected_items || order.selectedItems || [];
+        const studies = items.map((i) => i.name || i.study || 'Study').join(', ') || 'Imaging study';
+        return `<div class="order-card" id="order-${order.id}">
+          <h3>${order.serial_number || order.id}</h3>
+          <p>Patient: <a href="patient-details?patientId=${encodeURIComponent(order.patient_id)}">${order.patient_id}</a></p>
+          <p>Studies: ${studies}</p>
+          <p>Status: ${order.status || 'pending'}</p>
+          <button class="btn btn-hl7" onclick="exportImagingHl7('${order.id}')">Export HL7 (ORM)</button>
+          <button class="btn btn-fhir" onclick="exportImagingFhir('${order.id}')">FHIR ServiceRequest</button>
+          <button class="btn btn-send" onclick="transmitImaging('${order.id}')">Queue provincial send</button>
+        </div>`;
+      }).join('');
+    }
+
+    function getOrder(id) {
+      return (window._externalImagingOrders || []).find((o) => o.id === id);
+    }
+
+    async function exportImagingHl7(orderId) {
+      const order = getOrder(orderId);
+      if (!order?.patient_id) return alert('Order missing patient.');
+      const res = await MediForgeInterop.exportImagingOrderHl7({ patientId: order.patient_id, order, orderId: order.id });
+      if (res.error) return alert(res.error);
+      const hl7 = res.result?.hl7 || res.hl7;
+      if (!hl7) return alert('No HL7 returned.');
+      const blob = new Blob([hl7], { type: 'text/plain' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `imaging-order-${order.serial_number || order.id}.hl7`;
+      a.click();
+    }
+
+    async function exportImagingFhir(orderId) {
+      const order = getOrder(orderId);
+      if (!order?.patient_id) return alert('Order missing patient.');
+      const res = await MediForgeInterop.exportImagingOrderFhir({ patientId: order.patient_id, order, orderId: order.id });
+      if (res.error) return alert(res.error);
+      const resource = res.result?.resource || res.resource;
+      if (!resource) return alert('No FHIR resource returned.');
+      const blob = new Blob([JSON.stringify(resource, null, 2)], { type: 'application/json' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `imaging-order-${order.serial_number || order.id}-fhir.json`;
+      a.click();
+    }
+
+    async function transmitImaging(orderId) {
+      const order = getOrder(orderId);
+      if (!order?.patient_id) return alert('Order missing patient.');
+      const res = await MediForgeInterop.transmitImagingOrder({ patientId: order.patient_id, order, orderId: order.id });
+      if (res.error) return alert(res.error);
+      alert(res.result?.queued !== false ? 'Order queued for provincial hub.' : 'Transmit completed.');
+    }
+
+    loadOrders();
+  </script>
+</body>
+</html>

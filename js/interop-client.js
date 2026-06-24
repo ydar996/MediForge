@@ -114,8 +114,39 @@
     return callGateway({ action: 'ingestOru', organizationId, rawHl7, userId, province, olisConsentGranted });
   }
 
+  async function generateLabHl7({ organizationId, patient, order, userId, province }) {
+    return callGateway({ action: 'generateLabHl7', organizationId, patient, order, userId, province });
+  }
+
   async function generateLabFhir({ organizationId, patient, order, userId, province }) {
     return callGateway({ action: 'generateLabFhir', organizationId, patient, order, userId, province });
+  }
+
+  async function generateImagingHl7({ organizationId, patient, order, userId, province }) {
+    return callGateway({ action: 'generateImagingHl7', organizationId, patient, order, userId, province });
+  }
+
+  async function generateImagingFhir({ organizationId, patient, order, userId, province }) {
+    return callGateway({ action: 'generateImagingFhir', organizationId, patient, order, userId, province });
+  }
+
+  async function ingestImagingReport({ organizationId, rawHl7, fhirBundle, userId, province }) {
+    return callGateway({
+      action: 'ingestImagingReport',
+      organizationId,
+      rawHl7,
+      fhirBundle,
+      userId,
+      province
+    });
+  }
+
+  async function connectingOntarioLaunch({ organizationId, patient, purpose, province }) {
+    return callGateway({ action: 'connectingOntarioLaunch', organizationId, patient, purpose, province });
+  }
+
+  async function smartLaunch({ organizationId, patient, scope, launch, province }) {
+    return callGateway({ action: 'smartLaunch', organizationId, patient, scope, launch, province });
   }
 
   async function fhirSearchPatients({ organizationId, phn, province, userId, olisConsentGranted }) {
@@ -150,6 +181,11 @@
     ingestOru,
     generateLabHl7,
     generateLabFhir,
+    generateImagingHl7,
+    generateImagingFhir,
+    ingestImagingReport,
+    connectingOntarioLaunch,
+    smartLaunch,
     fhirSearchPatients,
     matchPatient,
     dicomweb
