@@ -350,13 +350,13 @@ Built for Canadian practice:
 
 ---
 
-## 16a. Ontario EMR readiness (Phase 0 complete, June 2026)
+## 16a. Ontario EMR readiness (Phase 0 & Phase 1 complete, June 2026)
 
-Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials.
+Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD certification path. **Not** OntarioMD-certified; live OLIS/MCEDT/PrescribeIT still need partner credentials. Documented readiness ~50–60%.
 
 | Feature | Detail |
 |---------|--------|
-| Investor readiness page | `/ontario-readiness`: pillar scores (~45–55%), roadmap, honest boundaries |
+| Investor readiness page | `/ontario-readiness`: pillar scores (~50–60%), roadmap, honest boundaries |
 | CPP patient summary | `/cpp-patient-summary`: Ontario CPP-aligned summary from chart |
 | FHIR R4 chart export | Patient details: download chart as FHIR R4 Bundle |
 | Structured consent capture | `/patient-consents`: portal, data sharing, research consent types |

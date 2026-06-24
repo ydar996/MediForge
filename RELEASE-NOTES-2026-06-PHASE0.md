@@ -16,7 +16,7 @@
 
 This release delivers **Phase 0 Ontario EMR internal readiness**: documentation, compliance pack, audit hardening, FHIR patient export, CPP-aligned summary, structured consent capture, i4C indicator mapping, OHIP claim file export, updated investor readiness page, and agent Rule #3 (documentation sync). **No live provincial pipes** (OLIS, MCEDT, PrescribeIT): those remain credential-gated.
 
-**Documented Ontario readiness:** ~45–55% (up from ~35–45%).
+**Documented Ontario readiness:** ~50–60% (up from ~35–45% at baseline; Phase 0 brought ~45–55%; Phase 1 ~50–60%).
 
 ---
 
@@ -113,17 +113,20 @@ Run in Supabase SQL Editor for **dev, staging, and production** (in that order):
 
 ## 8. Post-deploy verification (staging then production)
 
-1. Open `/ontario-readiness`: overall score shows **45–55%**, Phase 0 complete callout.
-2. Open a patient chart: CPP, FHIR, Consents buttons visible.
-3. After SQL migrations: open `/patient-consents?patientId=…` and save a consent.
-4. Open invoice details: **Export OHIP Claim Draft** downloads a file.
-5. Run `npm run test:interop` and `npm run check` (already passed at build time).
+1. Open `/ontario-readiness`: overall score shows **50–60%**, Phase 0 and Phase 1 complete callout.
+2. Open `/capabilities`: Ontario section shows Phase 0 and Phase 1, ~50–60%.
+3. Open a patient chart: CPP, FHIR, Consents buttons visible.
+4. After SQL migrations: open `/patient-consents?patientId=…` and save a consent; open `/consent-management` from dashboard.
+5. Open invoice details: **Export OHIP Claim Draft** downloads a file.
+6. Run `npm run test:interop` and `npm run check` (already passed at build time).
 
 ---
 
-## 9. Phase 1 (not started)
+## 9. Phase 1 (complete, June 2026)
 
-Blocked until owner approves. See `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` Phase 1 task list.
+See `docs/PHASE-1-CORE-STANDARDS-COMPLETION.md` and `docs/investor/INVESTOR-LETTER-2026-06.md`. **Documented Ontario readiness:** ~50–60%.
+
+**Phase 2** (OntarioMD certification path): blocked until owner approves. See `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`.
 
 ---
 

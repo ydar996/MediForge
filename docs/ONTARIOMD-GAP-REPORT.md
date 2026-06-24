@@ -83,7 +83,7 @@ These deliverables close documentation and evidence gaps without provincial cred
 | 0.10 | Investor readiness webpage | **Done** | `/ontario-readiness` synced with this report |
 | 0.11 | Written readiness report | **Done** | `ONTARIO-EMR-READINESS-REPORT.md` |
 
-**Phase 0 exit criteria:** met. Live provincial pipes remain **Blocked**. Phase 1 blocked until owner approves.
+**Phase 0 exit criteria:** met. **Phase 1 exit criteria:** met (June 2026). Live provincial pipes remain **Blocked**. Phase 2 blocked until owner approves.
 
 ---
 
@@ -596,7 +596,7 @@ These modules support daily clinic operations and align with Ontario EMR functio
 |-------|-------|
 | Author | MediForge engineering / OntarioMD readiness sprint |
 | Last updated | June 23, 2026 |
-| Next review | After Phase 1 start or OntarioMD vendor contact |
+| Next review | After Phase 2 start or OntarioMD vendor contact |
 | Certification claim | **None.** This document is internal gap analysis only. |
 
 ---

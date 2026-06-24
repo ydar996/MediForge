@@ -1,6 +1,6 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 23, 2026  
+**Last updated:** June 22, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -483,19 +483,17 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~35–45% vs OntarioMD certification spec (functional clinical strongest; provincial connectivity weakest).
+**Current alignment:** ~50–60% documented Ontario readiness (Phases 0 and 1 complete, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
-**Do not implement** OntarioMD sprint work (code, migrations, compliance docs body text, FHIR export UI, consent module, etc.) until the owner explicitly says:
+**Phases 0 and 1 are complete.** Do not start **Phase 2+** (OntarioMD certification path, live provincial pipes) until the owner explicitly says to proceed (e.g. **Start Phase 2**).
 
-> **“Implement the Ontario-ready plan”**
+Documentation and planning before that phrase are OK. When phase status or readiness scores change, update **all companion pairs** in the same session (**Rule #3**).
 
-Documentation and planning (gap reports requested as docs-only) are OK before that phrase.
+### Historical: Tier A/B same-day sprint (Phase 0, completed June 2026)
 
-### Today sprint (owner wants same-day, not 8 weeks)
-
-When approved, agents execute **Tier A** first (gap report, audit hardening, FHIR export, CPP summary, compliance pack, data residency doc), then **Tier B** if time (consent, i4C mapping, OHIP claim file draft). See plan doc for acceptance criteria.
+When approved, agents executed **Tier A** first (gap report, audit hardening, FHIR export, CPP summary, compliance pack, data residency doc), then **Tier B** (consent, i4C mapping, OHIP claim file draft). See plan doc for acceptance criteria.
 
 **Agent confidence with minimal owner supervision:**
 
@@ -509,12 +507,19 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ### Session log
 
+### June 22, 2026: Rule #3 failure audit + companion doc catch-up
+
+- **Owner ask:** Why Ontario readiness was not fully synced despite Rule #3; which other pages were stale.
+- **Root cause:** Phase 1 session updated code and some docs but did not verify every companion pair end-to-end before marking docs complete. Partial `/ontario-readiness` update (header vs body) slipped through.
+- **Fixed in this session:** `/ontario-readiness` + `ONTARIO-EMR-READINESS-REPORT.md` (prior commit `d9b3625`); `/capabilities` + `MEDIFORGE-CAPABILITIES-GUIDE.md`; `ONTARIOMD-GAP-REPORT.md`; `MEDIFORGE-AT-A-GLANCE.md`; `AGENT-HANDOVER.md` OntarioMD section and STOP GATE.
+- **Still outstanding:** `docs/USER-MANUAL.md` + `user-manual.html` (no consent management, FHIR export, or CPP summary sections yet).
+
 ### June 2026: Phase 1 complete + investor letter
 
 - **Owner ask:** Finish Phase 1; investor letter; update all relevant pages and docs.
 - **Phase 1 delivered:** Gateway audit logging, FHIR `exportPatientBundle`/`fhirSearchPatients`, consent management (`/consent-management`), chart image viewer module, `interop_messages` append-only migration, PHIPA policy pack index, Phase 1 completion doc, tests.
 - **Investor letter:** `/investor-letter` + `docs/investor/INVESTOR-LETTER-2026-06.md`.
-- **Docs synced:** implementation plan, readiness page/report, capabilities, handover, documentation index, compliance README.
+- **Docs synced:** implementation plan, investor letter, capabilities (partial: readiness pair missed until owner follow-up), handover, documentation index, compliance README.
 - **Owner SQL:** run `20260624100000_interop_messages_append_only.sql` per environment (if not done).
 - **Phase 2:** OntarioMD certification path (owner approval for vendor contact).
 
@@ -525,7 +530,7 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 - **Release notes:** `RELEASE-NOTES-2026-06-PHASE0.md` (full commit list, URLs, SQL steps, verification checklist).
 - **Capabilities:** Added Ontario EMR Readiness section; synced `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`.
 - **Owner must run:** both `2026062320*` Supabase migrations on dev, staging, and prod SQL Editor.
-- **Phase 1:** blocked until owner says to proceed.
+- **Phase 1:** complete (June 2026). Phase 2 blocked until owner says to proceed.
 
 ### June 23, 2026 (later): Rule #3 documentation sync + stale Ontario docs fixed
 

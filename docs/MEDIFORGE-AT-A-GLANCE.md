@@ -266,6 +266,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 | **Prescribing** | Health Canada drug search |
 | **Lab / imaging billing codes** | Ontario L-codes and OHIP imaging codes; maps for BC, AB, QC |
 | **USA mode** | CPT codes for labs/imaging where billing mode is set to USA |
+| **Ontario readiness (Phase 0 & 1)** | Gap report, compliance pack, FHIR chart export, CPP summary, consent capture and management, gateway audit trail, investor pages at `/ontario-readiness` and `/investor-letter` (~50–60% documented readiness) |
 
 ---
 
@@ -274,7 +275,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 Being honest helps set expectations:
 
 - **Live connections** to Ontario provincial systems (OLIS lab network, hospital report inbox, e-prescribing to pharmacies, OHIP claim submission): architecture exists; **live provincial credentials** are a next step, not yet flipped on for every clinic.
-- **OntarioMD certification**: planned readiness work documented separately; not certified yet.
+- **OntarioMD certification**: Phases 0–1 evidence is in the product and docs; formal certification (Phase 2) not started yet.
 - Some brochure features depend on **clinic configuration** (pharmacy, inpatient, portal): not every clinic turns every module on.
 
 ---
@@ -315,4 +316,4 @@ This guide is the written companion to the shareable webpage. **Give people the 
 
 **MediForge**: secure clinic management in the browser, built for modern primary care and specialty practices.
 
-*Document version: June 23, 2026. Reflects production feature set including lab/imaging order picker, Ontario fee codes, bulk import, patient portal, and preventive gaps.*
+*Document version: June 2026. Reflects production feature set including lab/imaging order picker, Ontario fee codes, bulk import, patient portal, preventive gaps, and Ontario EMR readiness Phases 0–1.*
