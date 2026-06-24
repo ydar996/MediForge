@@ -13,9 +13,28 @@
 
 This document outlines a proposed pre-money valuation range of **CAD $1.5 million to $2.2 million** (target approximately **$1.8 million**) and a balanced equity and governance structure for the seed financing of Work Chop Inc.'s MediForge Electronic Medical Records (EMR) platform.
 
-The analysis is grounded in 2025–2026 industry benchmarks for early-stage healthtech SaaS, MVP development costs, standard founder retention data, and common market practices.
+The analysis is grounded in 2025–2026 industry benchmarks for early-stage healthtech SaaS, platform development costs, standard founder retention data, and common market practices.
 
 The structure recognizes the Founder's completed development work while providing the **Strategic Partner** meaningful ownership, economic upside, and appropriate protections. It is designed to align incentives for long-term success and **mutual benefit** between the Founder and Strategic Partner.
+
+---
+
+## Seed Financing Summary
+
+Key terms aligned with the live [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) (discussion draft):
+
+| Term | Value |
+|------|-------|
+| Pre-money valuation | CAD $1,500,000 – $2,200,000 (target ~$1,800,000; negotiable) |
+| Investment amount | CAD $300,000 – $600,000 (Series Seed Preferred Shares; milestone-linked tranches over ~18 months, not a single lump sum) |
+| Founder common shares | 65–75% (target ~70%) |
+| Strategic Partner preferred shares | 20–30% |
+| Option pool | 10–15% |
+| Vesting | 4-year vesting with 1-year cliff (all equity) |
+| Upfront development fee | CAD $100,000–$120,000 (minimum 40% at closing; balance per note, conversion, or hybrid; full liquidation within 18 months or upon liquidity event) |
+| Legal fees cap | Reasonable amount (e.g., $15k–$25k total) |
+| Capital deployment | Four milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months, aligned with [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) Phases A–C; full schedule on [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
+| Definitive terms | Liquidation preference, anti-dilution, exclusivity, tranche milestones, and closing conditions: see [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
 
 ---
 
@@ -82,7 +101,7 @@ The proposed post-closing structure is designed to be fair, balanced, and aligne
 
 | Category | Percentage | Description |
 |----------|------------|-------------|
-| Founder (Yinka Daramola) | 65–75% | Common shares with voting rights; development contributions and ongoing leadership |
+| Founder (Yinka Daramola) | 65–75% (target ~70%) | Common shares with voting rights; development contributions and ongoing leadership |
 | Strategic Partner | 20–30% | Preferred shares providing economic upside and standard protections |
 | Option Pool | 10–15% | Reserved for future employees and advisors |
 
@@ -93,8 +112,9 @@ The proposed post-closing structure is designed to be fair, balanced, and aligne
 
 ### Governance and Control
 
-- **Board composition:** Balanced representation with Founder leadership as CEO. The Strategic Partner receives appropriate board or observer rights.
-- **Voting and decision rights:** Founder retains operational control while the Strategic Partner has standard protective provisions for major corporate actions (e.g., sale of the Company or significant new debt).
+- **Board:** Initially 3 members: Founder (CEO/Chair), 1 mutually agreed independent/advisor, and up to 1 Strategic Partner seat or observer.
+- **Control:** Founder retains majority voting control via Common Shares and operational authority as CEO.
+- **Protective provisions:** Strategic Partner receives standard veto on major corporate actions (e.g., sale of the Company or significant new debt). Day-to-day and product decisions remain with Founder/Board majority.
 - **Vesting:** Standard 4-year vesting with a 1-year cliff applies to all shares to protect the Company and align incentives.
 
 These terms follow common practices that balance founder execution with Strategic Partner protections (Founders Network, 2026).
@@ -124,7 +144,7 @@ All structures include a hard deadline: full liquidation within **18 months** or
 
 The proposed valuation and terms are realistic, evidence-based, and designed to create a strong foundation for **partnership** between the Founder and Strategic Partner. They fairly recognize the Founder's contributions while offering the Strategic Partner meaningful ownership and protections.
 
-All parties are encouraged to conduct full due diligence. Review live materials at [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness), [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter), [/valuation-equity-structure](https://mediforge.netlify.app/valuation-equity-structure), and [/evidence-binder](https://mediforge.netlify.app/evidence-binder). Legal counsel should review and customize the final agreements for the specific jurisdiction and transaction.
+All parties are encouraged to conduct full due diligence. Review live materials at [/ontario-readiness](https://mediforge.netlify.app/ontario-readiness), [/strategic-partner-letter](https://mediforge.netlify.app/strategic-partner-letter), [/valuation-equity-structure](https://mediforge.netlify.app/valuation-equity-structure), [/term-sheet](https://mediforge.netlify.app/term-sheet), and [/evidence-binder](https://mediforge.netlify.app/evidence-binder). Legal counsel should review and customize the final agreements for the specific jurisdiction and transaction.
 
 ---
 

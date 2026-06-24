@@ -541,6 +541,23 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Term sheet capital deployment schedule
+
+- **Owner ask:** Express timelines for money flow; investment is not a single CAD $300k disbursement.
+- **Added:** Milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months on term sheet, aligned with certification path Phases A–C; synced to valuation summary.
+
+### June 2026: Strategic Partner financial terms full sync
+
+- **Owner ask:** All facts must align across term sheet, valuation, and companions (not just development fee).
+- **Fixed:** Identical stat rows, Seed Financing Summary table on valuation, payment options on term sheet, governance (3-member board), founder target ~70%, investment $300k–$600k, legal cap $15k–$25k, fee terms (40% closing, 8–12%, 15–25%, 18 months).
+- **Guard:** Sync check now validates 16 shared financial facts across all four financial companions.
+
+### June 2026: Strategic Partner financial terms consistency (development fee)
+
+- **Owner ask:** Term sheet development fee did not match valuation page ($80k–$120k vs $100k–$120k).
+- **Fixed:** Term sheet html + md aligned to **CAD $100,000–$120,000**; stat row shows fee and ~$1.8M target pre-money.
+- **Guard:** Sync check now requires matching development fee across term sheet and valuation companions.
+
 ### June 2026: Term Sheet shareable webpage
 
 - **Owner ask:** Live page for term sheet (like valuation page).

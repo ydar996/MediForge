@@ -98,6 +98,37 @@ const MUST_HAVE_CERT_PATH = [
   'evidence-binder.html'
 ];
 
+/** Term sheet and valuation must agree on all shared seed financing facts */
+const FINANCIAL_TERM_FILES = [
+  'term-sheet.html',
+  'valuation-equity-structure.html',
+  'docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md',
+  'docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md'
+];
+
+const FINANCIAL_CANONICAL = [
+  { label: 'Pre-money $1.5M–$2.2M', pattern: /1,500,000.*2,200,000|\$1\.5M.*\$2\.2M/i },
+  { label: 'Target ~$1.8M pre-money', pattern: /~\$1\.8M|~\$1\.8 million|1,800,000/i },
+  { label: 'Investment $300k–$600k', pattern: /300,000.*600,000|\$300k.*\$600k/i },
+  { label: 'Development fee $100k–$120k', pattern: /100,000.?[\$]?120,000/i },
+  { label: 'Founder equity 65–75%', pattern: /65.75|65–75/i },
+  { label: 'Founder target ~70%', pattern: /target ~70%/i },
+  { label: 'Strategic Partner equity 20–30%', pattern: /20.30|20–30/i },
+  { label: 'Option pool 10–15%', pattern: /10.15|10–15/i },
+  { label: '4-year vesting', pattern: /4-year vesting/i },
+  { label: '1-year cliff', pattern: /1-year cliff/i },
+  { label: '40% at closing (dev fee)', pattern: /40%/i },
+  { label: '18-month dev fee liquidation', pattern: /18 months/i },
+  { label: '3-member board', pattern: /3 members/i },
+  { label: 'Legal fees cap $15k–$25k', pattern: /15k.*25k|15,000.*25,000/i },
+  { label: 'Fee note interest 8–12%', pattern: /8.12%/i },
+  { label: 'Convertible discount 15–25%', pattern: /15.25%/i },
+  { label: 'Milestone-linked tranches (not lump sum)', pattern: /milestone-linked tranche/i },
+  { label: 'Capital deployment 25/25/30/20', pattern: /25%.*25%.*30%.*20%|25% \/ 25% \/ 30% \/ 20%/i }
+];
+
+const STALE_DEV_FEE = /80,000.?[\$]?120,000/i;
+
 const INVESTOR_WORD = /\binvestors?\b/i;
 
 const errors = [];
@@ -173,6 +204,19 @@ for (const rel of MUST_HAVE_CERT_PATH) {
   if (!text) continue;
   if (!text.includes('certification-path')) {
     errors.push(`${rel}: missing certification-path section or link`);
+  }
+}
+
+for (const rel of FINANCIAL_TERM_FILES) {
+  const text = read(rel);
+  if (!text) continue;
+  for (const check of FINANCIAL_CANONICAL) {
+    if (!check.pattern.test(text)) {
+      errors.push(`${rel}: missing ${check.label}`);
+    }
+  }
+  if (STALE_DEV_FEE.test(text)) {
+    errors.push(`${rel}: stale development fee $80,000–$120,000 — use $100,000–$120,000`);
   }
 }
 
