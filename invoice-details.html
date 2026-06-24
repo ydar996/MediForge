@@ -106,6 +106,7 @@
       <button onclick="recordPaymentFor()" id="pay-btn" class="invoice-action-btn">&#128176; Record Payment</button>
       <button onclick="deleteInvoiceConfirm()" id="delete-btn" class="invoice-action-btn">&#128465; Delete Invoice</button>
       <button onclick="editInvoice()" id="edit-btn" class="invoice-action-btn">&#128394; Edit Invoice</button>
+      <button onclick="exportOhipClaimDraft()" id="ohip-export-btn" class="invoice-action-btn">&#128196; Export OHIP Claim Draft</button>
     </div>
 
     <div class="invoice-container" id="invoice-container">
@@ -678,7 +679,30 @@
       }
       window.location.href = `/collect-payment?invoiceId=${currentInvoice.id}`;
     }
+
+    function exportOhipClaimDraft() {
+      if (!currentInvoice) {
+        alert('Invoice not loaded.');
+        return;
+      }
+      const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+      const patient = patients.find((p) => String(p.id) === String(currentInvoice.patientId || currentInvoice.patient_id));
+      if (!patient) {
+        alert('Patient not found for this invoice.');
+        return;
+      }
+      const user = JSON.parse(localStorage.getItem('user') || '{}');
+      const provider = { billingNumber: user.billingNumber || user.ohipBillingNumber || '' };
+      const lines = currentInvoice.items || currentInvoice.lineItems || currentInvoice.services || [];
+      if (window.MediForgeOhipClaimExport) {
+        window.MediForgeOhipClaimExport.exportInvoiceAsClaimDraft(currentInvoice, patient, provider, lines);
+      } else {
+        alert('Claim export module not loaded.');
+      }
+    }
   </script>
+  <script src="js/ohip-claim-export.js?v=20260623"></script>
+  <script src="js/security.js?v=20260623"></script>
   <script src="js/logout-button.js"></script>
   <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
 </body>

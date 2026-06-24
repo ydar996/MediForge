@@ -1794,6 +1794,9 @@
     <button onclick="backToDashboard()" class="nav-btn">← Back to Dashboard</button>
     <button onclick="viewPatientDocuments()" class="nav-btn">📁 View Patient Documents</button>
     <button onclick="openPatientSummaryPage()" class="nav-btn">📄 Print Patient Summary</button>
+    <button onclick="openCppSummaryPage()" class="nav-btn">📋 CPP Summary</button>
+    <button onclick="exportCurrentPatientFhir()" class="nav-btn">🔗 Export FHIR Bundle</button>
+    <button onclick="openPatientConsentsPage()" class="nav-btn">✅ Consents</button>
     <button onclick="exportCurrentPatientRecord()" class="nav-btn">💾 Export Full Record</button>
   </div>
   
@@ -4785,6 +4788,11 @@
   <script src="js/payer-workflow.js?v=20260617180000"></script>
   <script src="js/billing-payer-hooks.js"></script>
   <script src="js/encounter-billing.js?v=1"></script>  <!-- Bill from encounter -->
+  <script src="js/backup.js?v=20260623"></script>
+  <script src="js/fhir-patient-export.js?v=20260623"></script>
+  <script src="js/i4c-indicator-map.js?v=20260623"></script>
+  <script src="js/patient-access-audit.js?v=20260623"></script>
+  <script src="js/security.js?v=20260623"></script>
   <script src="js/logout-button.js"></script>
   <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
 
@@ -4809,6 +4817,32 @@
       
       if (patientId) {
         window.open(`patient-summary?patientId=${patientId}&source=details`, '_blank');
+      } else {
+        alert('No patient ID found.');
+      }
+    }
+
+    function openCppSummaryPage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('id') || urlParams.get('patientId');
+      if (patientId) window.open(`cpp-patient-summary?patientId=${patientId}`, '_blank');
+      else alert('No patient ID found.');
+    }
+
+    function openPatientConsentsPage() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('id') || urlParams.get('patientId');
+      if (patientId) window.open(`patient-consents?patientId=${patientId}`, '_blank');
+      else alert('No patient ID found.');
+    }
+
+    function exportCurrentPatientFhir() {
+      const urlParams = new URLSearchParams(window.location.search);
+      const patientId = urlParams.get('id') || urlParams.get('patientId');
+      if (patientId && window.MediForgeFhirExport) {
+        window.MediForgeFhirExport.exportPatientFhirBundle(patientId);
+      } else if (patientId) {
+        alert('FHIR export module not loaded.');
       } else {
         alert('No patient ID found.');
       }

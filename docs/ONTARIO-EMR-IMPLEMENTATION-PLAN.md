@@ -16,15 +16,15 @@
 
 | ID | Task | Status | Owner / Agent |
 |----|------|--------|---------------|
-| 0.1 | Gap report: every OntarioMD category → Done / Partial / Missing / Blocked | ⬜ | Agent |
-| 0.2 | Compliance pack: PHIPA overview, breach procedure, custody, DR, data residency | ⬜ | Agent + legal review later |
-| 0.3 | Audit hardening: append-only DB rules, broader patient-access logging | 🔶 | Agent |
-| 0.4 | FHIR R4 Patient chart export (Bundle download/API) | 🔶 | Agent |
-| 0.5 | CPP-aligned patient summary view/tab | ⬜ | Agent |
-| 0.6 | Data residency statement (Supabase/Netlify Canada posture) | ⬜ | Agent |
-| 0.7 | Consent capture: DB + UI (portal, data sharing, research) | ⬜ | Agent + owner picks types |
-| 0.8 | i4C-style indicator mapping from preventive gaps | ⬜ | Agent |
-| 0.9 | OHIP claim file draft generator (export from billing drafts) | 🔶 | Agent |
+| 0.1 | Gap report: every OntarioMD category → Done / Partial / Missing / Blocked | ✅ | `docs/ONTARIOMD-GAP-REPORT.md` |
+| 0.2 | Compliance pack: PHIPA overview, breach procedure, custody, DR, data residency | ✅ | `docs/compliance/` |
+| 0.3 | Audit hardening: append-only DB rules, broader patient-access logging | ✅ | Migration + `patient-access-audit.js` |
+| 0.4 | FHIR R4 Patient chart export (Bundle download/API) | ✅ | `fhir-patient-export.js` + lib module |
+| 0.5 | CPP-aligned patient summary view/tab | ✅ | `/cpp-patient-summary` |
+| 0.6 | Data residency statement (Supabase/Netlify Canada posture) | ✅ | `docs/compliance/DATA-RESIDENCY-CANADA.md` |
+| 0.7 | Consent capture: DB + UI (portal, data sharing, research) | ✅ | `/patient-consents` + migration |
+| 0.8 | i4C-style indicator mapping from preventive gaps | ✅ | `js/i4c-indicator-map.js` |
+| 0.9 | OHIP claim file draft generator (export from billing drafts) | ✅ | `ohip-claim-export.js` + invoice button |
 | 0.10 | Investor/shareable readiness report page | ✅ | `/ontario-readiness` live |
 | 0.11 | Written readiness report in repo | ✅ | `ONTARIO-EMR-READINESS-REPORT.md` |
 

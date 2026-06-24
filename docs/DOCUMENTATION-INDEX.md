@@ -33,7 +33,8 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written investor readiness report (companion to /ontario-readiness)** |
 | **[docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md](ONTARIO-EMR-IMPLEMENTATION-PLAN.md)** | **Full Ontario EMR task backlog with milestones (Phases 0–8)** |
 | **[ontario-readiness.html](../ontario-readiness.html)** | **Investor readiness webpage (mediforge.netlify.app/ontario-readiness)** |
-| **`docs/compliance/`** | PHIPA/privacy/residency docs (populated during Ontario sprint) |
+| **[docs/ONTARIOMD-GAP-REPORT.md](ONTARIOMD-GAP-REPORT.md)** | **Full OntarioMD gap status by category** |
+| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phase 0 complete) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 
 ---

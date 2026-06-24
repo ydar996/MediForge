@@ -1,0 +1,87 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Patient Consents | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 720px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #008753; margin-top: 0; }
+    .consent-card { border: 1px solid #ddd; border-radius: 10px; padding: 16px; margin-bottom: 14px; }
+    .consent-card h3 { margin: 0 0 6px; color: #006b42; font-size: 1rem; }
+    .consent-card p { margin: 0 0 10px; color: #555; font-size: .9rem; }
+    label { display: flex; align-items: center; gap: 8px; font-weight: 600; }
+    textarea { width: 100%; margin-top: 8px; min-height: 48px; border-radius: 6px; border: 1px solid #ccc; padding: 8px; }
+    .btn { margin-top: 16px; padding: 12px 20px; background: #008753; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .msg { margin-top: 12px; padding: 10px; border-radius: 6px; display: none; }
+    .msg.ok { background: #e8f5e9; color: #006b42; display: block; }
+    .msg.err { background: #fdecea; color: #922b21; display: block; }
+  </style>
+  <script src="/js/ui-title-case.js" defer></script>
+</head>
+<body>
+  <div class="wrap">
+    <h1>Patient Consents</h1>
+    <p id="patient-label">Loading patient...</p>
+    <div id="consent-list"></div>
+    <button type="button" class="btn" id="save-btn">Save Consents</button>
+    <div id="msg" class="msg"></div>
+    <p style="margin-top:20px"><a href="javascript:history.back()">← Back to chart</a></p>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/security.js"></script>
+  <script src="/js/patient-consent.js"></script>
+  <script src="/js/patient-access-audit.js"></script>
+  <script>
+    (async function () {
+      const params = new URLSearchParams(location.search);
+      const patientId = params.get('patientId') || params.get('id');
+      const listEl = document.getElementById('consent-list');
+      const msgEl = document.getElementById('msg');
+      if (!patientId) {
+        document.getElementById('patient-label').textContent = 'Patient ID missing.';
+        return;
+      }
+      document.getElementById('patient-label').textContent = 'Patient ID: ' + patientId;
+      const types = MediForgePatientConsent.CONSENT_TYPES;
+      const existing = await MediForgePatientConsent.loadConsents(patientId);
+      const byType = {};
+      existing.forEach((r) => { byType[r.consent_type] = r; });
+
+      listEl.innerHTML = types.map((t) => {
+        const row = byType[t.id] || {};
+        const checked = row.granted ? 'checked' : '';
+        const notes = row.notes || '';
+        return `<div class="consent-card" data-type="${t.id}">
+          <h3>${t.label}</h3>
+          <p>${t.description}</p>
+          <label><input type="checkbox" class="consent-grant" ${checked}> Consent granted</label>
+          <textarea class="consent-notes" placeholder="Optional notes">${notes.replace(/</g,'')}</textarea>
+        </div>`;
+      }).join('');
+
+      document.getElementById('save-btn').addEventListener('click', async () => {
+        msgEl.className = 'msg';
+        try {
+          for (const card of listEl.querySelectorAll('.consent-card')) {
+            const type = card.dataset.type;
+            const granted = card.querySelector('.consent-grant').checked;
+            const notes = card.querySelector('.consent-notes').value;
+            await MediForgePatientConsent.saveConsent(patientId, type, granted, notes);
+          }
+          msgEl.textContent = 'Consents saved.';
+          msgEl.className = 'msg ok';
+        } catch (e) {
+          msgEl.textContent = 'Save failed: ' + e.message + ' (Run patient_consents migration if new.)';
+          msgEl.className = 'msg err';
+        }
+      });
+    })();
+  </script>
+</body>
+</html>

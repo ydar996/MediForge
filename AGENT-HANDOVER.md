@@ -481,6 +481,24 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ### Session log
 
+### June 23, 2026: Phase 0 Ontario EMR implementation sprint **completed** (owner approved start)
+
+- **Owner said:** "Start implementation plan phase 0 first."
+- **Delivered (all Phase 0 items):**
+  - `docs/ONTARIOMD-GAP-REPORT.md` (full category status)
+  - `docs/compliance/` pack (PHIPA, breach, custody, DR, data residency)
+  - Migrations: `20260623200000_audit_logs_append_only.sql`, `20260623210000_patient_consents.sql`
+  - FHIR export: `lib/interop/fhir/patient-chart-bundle.js`, `js/fhir-patient-export.js`, tests
+  - CPP summary: `/cpp-patient-summary` + `js/cpp-patient-summary.js`
+  - Consents UI: `/patient-consents` + `js/patient-consent.js`
+  - i4C mapping: `js/i4c-indicator-map.js`
+  - OHIP claim draft export: `js/ohip-claim-export.js` + invoice-details button
+  - Patient chart access audit: `js/patient-access-audit.js`
+  - Patient chart nav: CPP, FHIR, Consents buttons on `patient-details.html`
+- **Owner must run in Supabase SQL Editor (dev, then staging, then prod):** both `2026062320*` migrations above.
+- **Phase 1 blocked** until owner says to proceed.
+- **Deploy:** dev branch pushed; run migrations before testing consents/RPC audit on live DB.
+
 ### June 23, 2026 (later): Ontario readiness report docs, em dash policy, app-wide punctuation fix
 
 - **Owner ask:** Keep written copy of investor readiness report; merge tasks into implementation plan; remove all em dashes from app (use colons); document rule so agents never need reminding.
