@@ -35,8 +35,12 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written investor readiness report (keep in sync with /ontario-readiness)** |
 | **[docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md](ONTARIO-EMR-IMPLEMENTATION-PLAN.md)** | **Full Ontario EMR task backlog with milestones (Phases 0–8)** |
 | **[ontario-readiness.html](../ontario-readiness.html)** | **Investor readiness webpage (mediforge.netlify.app/ontario-readiness)** |
+| **[investor-letter.html](../investor-letter.html)** | **Investor update letter (mediforge.netlify.app/investor-letter)** |
+| **[docs/investor/INVESTOR-LETTER-2026-06.md](investor/INVESTOR-LETTER-2026-06.md)** | **Written investor letter (keep in sync with /investor-letter)** |
+| **[docs/PHASE-1-CORE-STANDARDS-COMPLETION.md](PHASE-1-CORE-STANDARDS-COMPLETION.md)** | **Phase 1 completion evidence and task status** |
+| **[consent-management.html](../consent-management.html)** | **Organization consent registry** |
 | **[docs/ONTARIOMD-GAP-REPORT.md](ONTARIOMD-GAP-REPORT.md)** | **Full OntarioMD gap status by category** |
-| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phase 0 complete) |
+| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phase 0 and Phase 1 complete) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 
 ---

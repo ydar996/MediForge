@@ -7,6 +7,7 @@
  */
 const integrations = require('../../lib/integrations');
 const interop = require('../../lib/interop');
+const { logGatewayAction } = require('../../lib/interop/gateway-audit');
 const { createClient } = require('@supabase/supabase-js');
 
 const CORS = {
@@ -72,6 +73,7 @@ exports.handler = async (event) => {
 
   const service = buildService(body);
   const action = body.action;
+  const supabase = getSupabase();
 
   try {
     let result;
@@ -160,13 +162,46 @@ exports.handler = async (event) => {
       case 'listProvinces':
         result = integrations.listProvinces();
         break;
+      case 'exportPatientBundle':
+        result = interop.fhir.patientChartBundle.buildPatientChartBundle(body.patient || body.chartData || {});
+        break;
+      case 'fhirSearchPatients':
+        if (!body.phn) throw new Error('phn required');
+        result = await interop.fhir.client.searchPatients({
+          baseUrl: body.baseUrl || process.env.INTEROP_FHIR_BASE_URL,
+          oauth: {
+            tokenUrl: process.env.INTEROP_FHIR_TOKEN_URL,
+            clientId: process.env.INTEROP_FHIR_CLIENT_ID,
+            clientSecret: process.env.INTEROP_FHIR_CLIENT_SECRET,
+            scope: process.env.INTEROP_FHIR_SCOPE
+          },
+          phn: body.phn,
+          province: body.province || 'ON'
+        });
+        break;
+      case 'buildImagingStudy':
+        result = interop.fhir.resources.buildImagingStudy(body);
+        break;
       default:
         return json(400, { error: `Unknown action: ${action}` });
     }
 
+    await logGatewayAction(supabase, {
+      action,
+      body,
+      status: 'success',
+      resultMeta: { action, queued: result?.queued }
+    });
+
     return json(200, { success: true, action, result });
   } catch (err) {
     console.error('[interop-gateway]', err);
+    await logGatewayAction(supabase, {
+      action,
+      body,
+      status: 'error',
+      error: err
+    }).catch(() => {});
     return json(500, { success: false, error: err.message });
   }
 };

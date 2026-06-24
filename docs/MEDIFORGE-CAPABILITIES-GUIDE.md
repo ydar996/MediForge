@@ -363,7 +363,11 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | OHIP claim file export | Invoice details: export OHIP claim draft file |
 | Compliance pack | `docs/compliance/`: PHIPA, breach, custody, DR, data residency |
 | Gap report & implementation plan | `ONTARIOMD-GAP-REPORT.md`, `ONTARIO-EMR-IMPLEMENTATION-PLAN.md` |
-| Audit hardening | Append-only audit migration; patient chart access logging (run SQL per environment) |
+| Clinical image viewer | `js/chart-image-viewer.js` on patient documents |
+| Consent management (org) | `/consent-management` registry for administrators |
+| Interop gateway audit | Append-only `interop_messages`; all gateway actions logged |
+| PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
+| Investor letter | `/investor-letter` shareable update |
 
 **Companion page:** keep `/capabilities` and this guide in sync (**`AGENT-HANDOVER.md`** Rule #3).
 

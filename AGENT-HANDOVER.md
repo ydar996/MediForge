@@ -509,6 +509,15 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ### Session log
 
+### June 2026: Phase 1 complete + investor letter
+
+- **Owner ask:** Finish Phase 1; investor letter; update all relevant pages and docs.
+- **Phase 1 delivered:** Gateway audit logging, FHIR `exportPatientBundle`/`fhirSearchPatients`, consent management (`/consent-management`), chart image viewer module, `interop_messages` append-only migration, PHIPA policy pack index, Phase 1 completion doc, tests.
+- **Investor letter:** `/investor-letter` + `docs/investor/INVESTOR-LETTER-2026-06.md`.
+- **Docs synced:** implementation plan, readiness page/report, capabilities, handover, documentation index, compliance README.
+- **Owner SQL:** run `20260624100000_interop_messages_append_only.sql` per environment (if not done).
+- **Phase 2:** OntarioMD certification path (owner approval for vendor contact).
+
 ### June 23, 2026: Phase 0 promoted dev → staging → production + capabilities update
 
 - **Owner ask:** Promote missed updates to staging and production with detailed notes; confirm capabilities page current.
@@ -588,4 +597,4 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1 plain English, #2 no em dashes, **#3 doc sync**) → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** Rule #3 checklist (handover session log, documentation index, companion page/doc pairs, user manual if staff-visible). **When touching lab/imaging catalogs:** follow **Billing fee codes: agent checklist** above. **OntarioMD:** read **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** and **`docs/ONTARIOMD-READINESS-PLAN.md`**; Phase 0 complete; **Phase 1 blocked** until owner approves.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–1 complete; **Phase 2 blocked** until owner approves. Investor materials: `/investor-letter`, `/ontario-readiness`, `/capabilities`.

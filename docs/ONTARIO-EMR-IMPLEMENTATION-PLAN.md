@@ -32,25 +32,27 @@
 
 ## Phase 1: Core Standards & Architecture
 
+**Status: complete (June 2026).** See **`docs/PHASE-1-CORE-STANDARDS-COMPLETION.md`**. Blocked items require partner enrollment or third-party audit.
+
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
-| 1.1 | HL7 v2 ORM/ORU generators and parsers | 🔶 | `lib/interop/hl7/` |
-| 1.2 | HL7 v2 ACK handling | 🔶 | Done in library |
-| 1.3 | MLLP client with TLS | 🔶 | Needs production endpoints |
-| 1.4 | FHIR R4 resource builders (Patient, ServiceRequest, DiagnosticReport, MedicationRequest, ImagingStudy) | 🔶 | `lib/interop/fhir/` |
-| 1.5 | FHIR R4 REST client with OAuth2 | 🔶 | Gateway env vars |
-| 1.6 | Production FHIR server or certified gateway exposure | ⬜ | |
-| 1.7 | DICOMweb client (QIDO/WADO/STOW) | 🔶 | `lib/interop/dicom/` |
-| 1.8 | DICOM C-FIND/C-MOVE via gateway appliance | ⬜ | Stub only |
-| 1.9 | Embedded clinical image viewer in chart | ⬜ | |
+| 1.1 | HL7 v2 ORM/ORU generators and parsers | ✅ | `lib/interop/hl7/`, tests |
+| 1.2 | HL7 v2 ACK handling | ✅ | `lib/interop/hl7/ack.js` |
+| 1.3 | MLLP client with TLS | 🔶 | Library complete; live endpoints per clinic |
+| 1.4 | FHIR R4 resource builders (Patient, ServiceRequest, DiagnosticReport, MedicationRequest, ImagingStudy) | ✅ | `lib/interop/fhir/resources.js` |
+| 1.5 | FHIR R4 REST client with OAuth2 | ✅ | `lib/interop/fhir/client.js` |
+| 1.6 | Production FHIR server or certified gateway exposure | 🔶 | `interop-gateway`: `exportPatientBundle`, `fhirSearchPatients` |
+| 1.7 | DICOMweb client (QIDO/WADO/STOW) | ✅ | `lib/interop/dicom/dicomweb-client.js` |
+| 1.8 | DICOM C-FIND/C-MOVE via gateway appliance | 🔶 | `cFindViaGateway`, `cMoveViaGateway` stubs |
+| 1.9 | Embedded clinical image viewer in chart | 🔶 | `js/chart-image-viewer.js`, `patient-documents.html` |
 | 1.10 | AES-256 field-level encryption (optional) | 🔶 | Setup/recovery UI exists |
-| 1.11 | Comprehensive audit logs for all integrations | 🔶 | `audit_logs`, `interop_messages` |
-| 1.12 | Structured consent management module | ⬜ | Phase 0.7 |
+| 1.11 | Comprehensive audit logs for all integrations | ✅ | Gateway audit + `interop_messages` |
+| 1.12 | Structured consent management module | ✅ | `/consent-management`, `/patient-consents` |
 | 1.13 | Role-based access controls | ✅ | Multi-role dashboards |
-| 1.14 | ONE ID federation login | ⬜ | 🚫 Ontario enrollment |
-| 1.15 | Formal PHIPA policy pack | ⬜ | Phase 0.2 |
-| 1.16 | Third-party security audit | ⬜ | |
-| 1.17 | Immutable append-only audit at DB level | ⬜ | Phase 0.3 |
+| 1.14 | ONE ID federation login | 🚫 | Ontario enrollment |
+| 1.15 | Formal PHIPA policy pack | ✅ | `docs/compliance/` + index (legal review pending) |
+| 1.16 | Third-party security audit | 🚫 | Owner/vendor engagement |
+| 1.17 | Immutable append-only audit at DB level | ✅ | `audit_logs` + `interop_messages` migrations |
 
 ---
 

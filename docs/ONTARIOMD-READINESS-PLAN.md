@@ -2,14 +2,14 @@
 
 **Created:** June 23, 2026  
 **Owner target:** Complete internal readiness work **today** (single sprint), not an 8-week program.  
-**Current estimated alignment:** ~45–55% overall (Phase 0 complete, June 23, 2026).  
-**Phase 1:** Blocked until owner approves next implementation phase.
+**Current estimated alignment:** ~50–60% overall (Phase 0 and Phase 1 complete, June 2026).  
+**Phase 2:** Blocked until owner approves OntarioMD certification work.
 
 ---
 
 ## STOP GATE: agents must read this first
 
-**Phase 0 is complete.** Do not start **Phase 1+** until the owner explicitly says to proceed (e.g. Start Phase 1).
+**Phase 0 is complete.** **Phase 1 is complete.** Do not start **Phase 2+** until the owner explicitly says to proceed (e.g. "Start Phase 2").
 
 Until then: documentation upkeep only; no new Ontario implementation without approval.
 
