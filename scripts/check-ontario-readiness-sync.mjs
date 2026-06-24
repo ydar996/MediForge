@@ -92,6 +92,10 @@ const MUST_LINK_VALUATION = [
 
 const MUST_LINK_TERM_SHEET = MUST_LINK_VALUATION;
 
+const MUST_LINK_PROJECT_PLAN = MUST_LINK_VALUATION;
+
+const MUST_LINK_REVENUE = MUST_LINK_VALUATION;
+
 const MUST_HAVE_CERT_PATH = [
   'ontario-readiness.html',
   'docs/ONTARIO-EMR-READINESS-REPORT.md',
@@ -196,6 +200,22 @@ for (const rel of MUST_LINK_TERM_SHEET) {
   if (!text) continue;
   if (!text.includes('term-sheet')) {
     errors.push(`${rel}: missing link to /term-sheet`);
+  }
+}
+
+for (const rel of MUST_LINK_PROJECT_PLAN) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('project-plan')) {
+    errors.push(`${rel}: missing link to /project-plan`);
+  }
+}
+
+for (const rel of MUST_LINK_REVENUE) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('revenue-projection')) {
+    errors.push(`${rel}: missing link to /revenue-projection`);
   }
 }
 

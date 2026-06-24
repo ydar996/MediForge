@@ -3,7 +3,7 @@
 **Date:** June 2026  
 **From:** Work Chop Inc.  
 **Shareable web version:** https://mediforge.netlify.app/strategic-partner-letter  
-**Companion (keep in sync):** [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Valuation & Equity Structure](https://mediforge.netlify.app/valuation-equity-structure) · [Term Sheet](https://mediforge.netlify.app/term-sheet) · [Evidence Binder](https://mediforge.netlify.app/evidence-binder) · [Capabilities](https://mediforge.netlify.app/capabilities)
+**Companion (keep in sync):** [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Valuation & Equity Structure](https://mediforge.netlify.app/valuation-equity-structure) · [Term Sheet](https://mediforge.netlify.app/term-sheet) · [Project Plan](https://mediforge.netlify.app/project-plan) · [Revenue Projection](https://mediforge.netlify.app/revenue-projection) · [Evidence Binder](https://mediforge.netlify.app/evidence-binder) · [Capabilities](https://mediforge.netlify.app/capabilities)
 
 **Written companion to `strategic-partner-letter.html`** (see `AGENT-HANDOVER.md` Rule #3).
 
@@ -73,6 +73,8 @@ We welcome diligence calls, demos, and introductions to Ontario clinical partner
 | Certification path (on readiness page) | https://mediforge.netlify.app/ontario-readiness#certification-path |
 | Valuation & Equity Structure | https://mediforge.netlify.app/valuation-equity-structure |
 | Term Sheet (Seed Preferred Shares) | https://mediforge.netlify.app/term-sheet |
+| Project Plan (costs & timeline) | https://mediforge.netlify.app/project-plan |
+| Revenue & net income projection | https://mediforge.netlify.app/revenue-projection |
 | Evidence Binder | https://mediforge.netlify.app/evidence-binder |
 | Imaging Results Queue | https://mediforge.netlify.app/imaging-results-queue |
 | eRx Queue | https://mediforge.netlify.app/erx-queue |

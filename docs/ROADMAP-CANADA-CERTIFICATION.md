@@ -3,7 +3,7 @@
 **Last updated:** June 2026  
 **Written companion to:** [Ontario EMR Implementation Plan](ONTARIO-EMR-IMPLEMENTATION-PLAN.md) · [Ontario Readiness Report](ONTARIO-EMR-READINESS-REPORT.md) · [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path)
 
-**Shareable web version:** The certification path (Phases A–D, timeline, budget, next action) is published on [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path). Keep this file in sync with that section per **`AGENT-HANDOVER.md`** Rule #3.
+**Shareable web version:** The certification path (Phases A–D, timeline, budget, next action) is published on [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path). **Consolidated Gantt-style project plan (costs + capital tranches):** [/project-plan](https://mediforge.netlify.app/project-plan). Keep this file in sync with that section per **`AGENT-HANDOVER.md`** Rule #3.
 
 **Source document (Word):** `docs/strategic-partner/originals/Roadmap to Canada Certification - MediForge.docx`
 

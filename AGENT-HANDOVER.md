@@ -541,6 +541,17 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
+### June 2026: Revenue projection and project plan pages
+
+- **Added:** `/project-plan` + `/revenue-projection` with markdown companions; Gantt capital flow; 5-year clinic-doubling revenue model ($120–$250/provider tiers).
+- **Synced:** Ontario readiness, evidence binder, capabilities, term sheet, valuation, partner letter; sync guard requires `/project-plan` and `/revenue-projection` on diligence pages.
+
+### June 2026: Strategic Partner project plan (costs, timeline, Gantt)
+
+- **Owner ask:** Single high-level overview of phased costs, timelines, and capital flow.
+- **Added:** `/project-plan` + `docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md` (Gantt-style 18-month view; tranches aligned with certification Phases A–D).
+- **Synced:** Cross-links on readiness, term sheet, valuation, evidence binder, capabilities, partner letter; sync guard requires `/project-plan` on diligence pages.
+
 ### June 2026: Term sheet capital deployment schedule
 
 - **Owner ask:** Express timelines for money flow; investment is not a single CAD $300k disbursement.

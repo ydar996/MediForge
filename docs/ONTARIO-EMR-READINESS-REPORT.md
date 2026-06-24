@@ -186,7 +186,7 @@ Internal readiness sprint delivered without provincial credentials:
 
 ## Path to Certification
 
-Forward-looking plan from today (Phases 0–8 software complete, **72–82%** documented readiness) to OntarioMD certification, live provincial pipes, pilot clinics, and commercial readiness. **Keep in sync with `#certification-path` on `/ontario-readiness`.**
+Forward-looking plan from today (Phases 0–8 software complete, **72–82%** documented readiness) to OntarioMD certification, live provincial pipes, pilot clinics, and commercial readiness. **Keep in sync with `#certification-path` on `/ontario-readiness`.** Consolidated Gantt-style costs and capital flow: **`/project-plan`**.
 
 | Metric | Value |
 |--------|-------|
@@ -299,7 +299,10 @@ Additional provincial certifications, advanced features, ongoing compliance and 
 | **`interoperability-gaps.md`** | Pre/post upgrade gap matrix |
 | **`/strategic-partner-letter`** | Shareable Strategic Partner update letter |
 | **`/valuation-equity-structure`** | Seed valuation and equity structure (Strategic Partner diligence) |
+| **`/project-plan`** | Gantt-style costs, timelines, seed tranche alignment |
+| **`/revenue-projection`** | 5-year revenue and net income model (pricing, clinic growth, costs) |
 | **`/term-sheet`** | Seed preferred share term sheet (discussion draft) |
+| **`/project-plan`** | Phased costs, timelines, Gantt-style capital deployment (sync with term sheet tranches) |
 | **`/ontario-readiness`** | Strategic Partner shareable webpage (keep in sync with this doc); includes `#certification-path` |
 | **`/evidence-binder`** | Diligence index including valuation, roadmap, and phase completion records |
 | **`/capabilities`** | Full product capabilities showcase |

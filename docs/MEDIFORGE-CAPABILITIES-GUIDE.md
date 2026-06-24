@@ -381,6 +381,8 @@ Shareable and in-app evidence for Ontario provincial connectivity and OntarioMD 
 | Interop gateway audit | Append-only `interop_messages`; all gateway actions logged |
 | PHIPA policy pack index | `docs/compliance/PHIPA-POLICY-PACK-INDEX.md` |
 | Strategic Partner letter | `/strategic-partner-letter` shareable update (sync with readiness report at 72–82%) |
+| Project plan | `/project-plan` Gantt-style costs, timelines, seed tranche alignment |
+| Revenue projection | `/revenue-projection` 5-year SaaS model, costs vs net income |
 | Valuation & equity | `/valuation-equity-structure` seed financing: pre-money ~$1.8M, investment $300k–$600k, equity split, dev fee $100k–$120k |
 | Term sheet | `/term-sheet` seed preferred share discussion draft (same facts as valuation page) |
 | Certification path | `/ontario-readiness#certification-path` forward plan (Phases A–D, timeline, budget) |
