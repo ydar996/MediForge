@@ -1,6 +1,6 @@
 # Ontario EMR Readiness Report
 
-**Version:** June 2026 (Phases 0–4 software complete where possible)  
+**Version:** June 2026 (Phases 0–5 software complete where possible)  
 **Audience:** Investors, partners, clinic leaders  
 **Shareable web version:** https://mediforge.netlify.app/ontario-readiness  
 **Implementation tasks:** See **`ONTARIO-EMR-IMPLEMENTATION-PLAN.md`**
@@ -11,9 +11,9 @@ This document is the written companion to the investor readiness webpage. Share 
 
 ## Executive Summary
 
-MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **60–70%** after Phases 0–4 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
+MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **60–70%** after Phases 0–5 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
 
-**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–4 (June 2026)** delivered internal evidence, core standards, MCEDT claims software, and OLIS-ready lab desk (HL7 export, ORU queue, PHN registry, consent gates).
+**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, HRM) need credentials and agreements; our architecture is prepared. **Phases 0–5 (June 2026)** delivered internal evidence, core standards, MCEDT claims software, OLIS-ready lab desk, and PrescribeIT-ready eRx desk.
 
 | Metric | Estimate |
 |--------|----------|
@@ -77,10 +77,10 @@ MediForge is a Canada-first clinic platform with **strong clinical functionality
 
 | Requirement | Status | Notes |
 |-------------|--------|-------|
-| PrescribeIT API | Foundation (~10%) | MedicationRequest builder; adapter stub |
+| PrescribeIT API | Partial (~35%) | `/erx-queue`, cancel/renew/dispense; live Infoway blocked |
 | CCDD drug dataset | Partial | Health Canada DPD (~14,800 products); full CCDD not licensed |
 | MFA for eRx | Partial | App lockout/session; not PrescribeIT-specific |
-| Pharmacy network messaging | In-clinic only | No external pharmacy network |
+| Pharmacy network messaging | Partial (queue mode) | Sample pharmacy directory + FHIR transmit when credentialed |
 
 ---
 
@@ -176,10 +176,10 @@ Internal readiness sprint delivered without provincial credentials:
 1. **OntarioMD certification path** (~25–35%: evidence binder, self-assessment, traceability; application pending)
 2. **MCEDT claims (live)** (~45% software; MOH credentials needed for upload)
 3. **OLIS labs** (~35–45%: lab desk software; Infoway onboarding for live pipe)
-4. **PrescribeIT** (~10%: adapter stubs; vendor enrollment)
+4. **PrescribeIT** (~35%: eRx queue, cancel/renew/dispense; live vendor enrollment)
 5. **Imaging / DI** (~15%: orders + DICOMweb; DIR/PACS live)
 
-**Next:** Phase 5 PrescribeIT software (owner approval) or OntarioMD vendor contact (owner action).
+**Next:** Phase 6 imaging software or OntarioMD vendor contact (owner action). Live PrescribeIT/OLIS/MCEDT need clinic credentials.
 
 ---
 
@@ -226,7 +226,7 @@ Internal readiness sprint delivered without provincial credentials:
 
 1. **De-risked clinical core:** Daily clinic workflows are largely built and deployed.
 2. **Prepared integration layer:** HL7, FHIR, DICOMweb, billing adapters exist as tested foundations.
-3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–4 software evidence is in repo.
+3. **Clear regulatory path:** OntarioMD certification gap is documented and bounded; Phases 0–5 software evidence is in repo.
 4. **Canada-first moat:** ICD-10-CA, Ontario fee codes, Health Canada formulary, PHN matching, CAD billing are in the product.
 
 ---

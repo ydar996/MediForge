@@ -183,12 +183,19 @@
     }
   }
 
-  async function transmitPrescription({ patientId, prescription }) {
+  async function checkErxConsentForPatient(patientId) {
+    if (!global.MediForgePatientConsent?.hasErxConsent) return { ok: true, skipped: true };
+    return global.MediForgePatientConsent.hasErxConsent(patientId);
+  }
+
+  async function transmitPrescription({ patientId, prescription, pharmacy }) {
     if (!global.MediForgeInteropClient) return { skipped: true };
     if (prescription?.pharmacy_status === 'pending') return { skipped: true, reason: 'in-house pharmacy' };
     if (prescription?.status !== 'signed') return { skipped: true, reason: 'not signed' };
 
     try {
+      const consent = await checkErxConsentForPatient(patientId);
+      if (consent.blocked) return consent;
       const orgId = await resolveOrgId();
       const patient = normalizePatient(await loadPatient(patientId));
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -200,7 +207,9 @@
         organizationId: orgId,
         patient,
         prescription: { ...prescription, medications },
-        userId: user.id
+        userId: user.id,
+        erxConsentGranted: true,
+        pharmacy
       });
     } catch (err) {
       console.warn('[interop] rx transmit failed:', err.message);
@@ -208,10 +217,82 @@
     }
   }
 
+  async function queueProvincialRx({ patientId, prescription, pharmacy }) {
+    return transmitPrescription({ patientId, prescription, pharmacy });
+  }
+
+  async function cancelProvincialRx({ patientId, prescription, reason }) {
+    if (!global.MediForgeInteropClient) return { error: 'Client not loaded' };
+    const consent = await checkErxConsentForPatient(patientId);
+    if (consent.blocked) return consent;
+    const orgId = await resolveOrgId();
+    const patient = normalizePatient(await loadPatient(patientId));
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return global.MediForgeInteropClient.callGateway({
+      action: 'cancelPrescription',
+      organizationId: orgId,
+      patient,
+      prescription,
+      userId: user.id,
+      erxConsentGranted: true,
+      reason
+    });
+  }
+
+  async function requestRxRenewal({ patientId, prescription }) {
+    if (!global.MediForgeInteropClient) return { error: 'Client not loaded' };
+    const consent = await checkErxConsentForPatient(patientId);
+    if (consent.blocked) return consent;
+    const orgId = await resolveOrgId();
+    const patient = normalizePatient(await loadPatient(patientId));
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    return global.MediForgeInteropClient.callGateway({
+      action: 'requestPrescriptionRenewal',
+      organizationId: orgId,
+      patient,
+      prescription,
+      userId: user.id,
+      erxConsentGranted: true,
+      requestedBy: user.username || user.email
+    });
+  }
+
+  async function ingestDispenseAndApply({ fhirBundle }) {
+    if (!global.MediForgeInteropClient) return { error: 'Client not loaded' };
+    const orgId = await resolveOrgId();
+    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const response = await global.MediForgeInteropClient.callGateway({
+      action: 'ingestMedicationDispense',
+      organizationId: orgId,
+      fhirBundle,
+      userId: user.id
+    });
+    const feedback = response.result || response;
+    if (!feedback?.parsed) return { applied: false, feedback };
+
+    const ref = feedback.prescriptionRef || '';
+    const num = ref.includes('/') ? ref.split('/').pop() : ref;
+    const rx = await MediForgeErxQueue?.findPrescriptionByNumber?.(num);
+    if (!rx) return { applied: false, feedback, message: 'Prescription not matched.' };
+
+    const patch = {
+      erx_dispense_status: feedback.pharmacyStatus || feedback.status,
+      erx_status: feedback.pharmacyStatus === 'filled' || feedback.status === 'completed' ? 'dispensed' : rx.erx_status,
+      pharmacy_status: feedback.pharmacyStatus === 'filled' ? 'filled' : rx.pharmacy_status,
+      filled_at: feedback.whenHandedOver || rx.filled_at
+    };
+    await MediForgeErxQueue?.patchPrescription?.(rx.id, patch);
+    return { applied: true, prescriptionId: rx.id, feedback, patch };
+  }
+
   global.MediForgeInterop = {
     transmitLabOrder,
     transmitImagingOrder,
     transmitPrescription,
+    queueProvincialRx,
+    cancelProvincialRx,
+    requestRxRenewal,
+    ingestDispenseAndApply,
     applyLabResultsToOrder,
     ingestOruAndApply,
     exportLabOrderHl7,

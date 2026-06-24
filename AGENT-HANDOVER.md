@@ -485,11 +485,11 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Full plan:** **`docs/ONTARIOMD-READINESS-PLAN.md`**
 
-**Current alignment:** ~60–70% documented Ontario readiness (Phases 0–4 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
+**Current alignment:** ~60–70% documented Ontario readiness (Phases 0–5 software complete where possible, June 2026). Clinical core strongest; live provincial connectivity still credential-gated (~5–15%).
 
 ### STOP GATE: mandatory for all agents
 
-**Phases 0–4 software are complete** (where possible without partner credentials). Do not start **Phase 5+** or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
+**Phases 0–5 software are complete** (where possible without partner credentials). Do not start **Phase 6+** or **OntarioMD Stage 5 submission** until the owner explicitly says to proceed.
 
 Documentation upkeep is required whenever readiness scores change: update **all companion pairs** (**Rule #3**), including `/investor-letter`, `ONTARIOMD-GAP-REPORT.md`, and `/ontario-readiness`.
 
@@ -508,6 +508,18 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
+
+### June 2026: Phase 5 deploy — dev → staging → production
+
+- **Owner ask:** Deploy Phase 5 PrescribeIT software; promote to staging and prod; sync all companion docs.
+- **Shipped:** `/erx-queue`, prescribeit_erx consent, rx cancel/renew/dispense, pharmacy directory, gateway actions, migration `20260625100000`, tests.
+- **Docs synced:** capabilities ↔ guide, readiness ↔ gap report ↔ investor letter, user manual, evidence binder, handover STOP GATE Phase 6+.
+
+### June 2026: Phase 5 PrescribeIT software + migrations marked complete
+
+- **Owner:** Supabase migrations applied on all environments; remove from todo. Start Phase 5 software we own.
+- **Phase 5:** eRx queue (`/erx-queue`), prescribeit_erx consent, rx cancel/renew/dispense workflow, pharmacy sample directory, gateway actions, migration `20260625100000`, tests `phase5-prescribeit.test.js`.
+- **Docs:** `PHASE-5-PRESCRIBEIT-COMPLETION.md`, implementation plan, gap report, readiness report, ontario-readiness Phase 5 callout; STOP GATE now Phase 6+.
 
 ### June 2026: Rule #3 audit — remaining stale Ontario companion docs
 
@@ -643,4 +655,4 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–4 software complete where possible; **Phase 2 Stage 5** blocked until OntarioMD vendor path. **Phase 5+** blocked similarly until owner approves. Investor materials (must stay in sync): `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1–#3) → **`GO-LIVE-GUIDE.md`** if setup incomplete. **OntarioMD:** Phases 0–5 software complete where possible; **Stage 5** blocked until OntarioMD vendor path. **Phase 6+** blocked similarly until owner approves. Supabase migrations (interop, audit, consents, billing, eRx columns) applied on all environments (owner confirmed). Investor materials (must stay in sync): `/investor-letter` ↔ `docs/investor/INVESTOR-LETTER-2026-06.md`, `/ontario-readiness` ↔ `docs/ONTARIO-EMR-READINESS-REPORT.md`, `/capabilities`.

@@ -1,6 +1,6 @@
 # MediForge compliance documentation
 
-**Status:** Phases 0–4 software complete where possible (June 2026). Suitable for OntarioMD readiness evidence. Legal review recommended before certification submission.
+**Status:** Phases 0–5 software complete where possible (June 2026). Suitable for OntarioMD readiness evidence. Legal review recommended before certification submission.
 
 **Purpose:** Operational and policy documents describing how MediForge handles personal health information (PHI) for Ontario clinics under PHIPA. These documents support internal evidence gathering; they do **not** replace legal counsel or a formal Privacy Impact Assessment.
 

@@ -11,13 +11,13 @@
 
 Dear Investor,
 
-Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 4**, and where we are headed next.
+Thank you for your interest in MediForge. This letter summarizes what we have built, what we completed in our Ontario EMR readiness program through **Phase 5**, and where we are headed next.
 
 ## The short version
 
 MediForge is a **working multi-clinic EMR**, not a prototype. Daily clinic workflows are in production: patient charts, scheduling, prescribing, labs, imaging orders, billing, and a patient portal.
 
-Through June 2026 we completed **Phases 0–4 in software** (everything we can do without live provincial credentials):
+Through June 2026 we completed **Phases 0–5 in software** (everything we can do without live provincial credentials):
 
 | Metric | Estimate |
 |--------|----------|
@@ -27,7 +27,7 @@ Through June 2026 we completed **Phases 0–4 in software** (everything we can d
 
 We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infoway connections remain industry gates every vendor must pass. Our gap is documented, bounded, and actively managed.
 
-## What we delivered (Phases 0–4, software)
+## What we delivered (Phases 0–5, software)
 
 **Phase 0:** OntarioMD gap report, PHIPA compliance pack, FHIR chart export, CPP summary, structured consents, i4C mapping, OHIP claim drafts, readiness page.
 
@@ -39,6 +39,8 @@ We are **not** OntarioMD-certified today. Stage 5 validation and live MOH/Infowa
 
 **Phase 4:** Lab results queue, PHN registry, HL7/FHIR lab order export, OLIS consent gates, interop dashboard (MLLP simulate, failure audit).
 
+**Phase 5:** eRx queue, FHIR MedicationRequest transmit/cancel/renewal, pharmacy directory UI, dispense feedback ingest, PrescribeIT consent gates (live Infoway endpoint blocked).
+
 Items that require **external partners** remain honestly blocked: ONE ID login, live OLIS/MCEDT/PrescribeIT pipes, OntarioMD Stage 5 validation, and third-party security audit.
 
 ## Why this matters for investment
@@ -48,12 +50,12 @@ Items that require **external partners** remain honestly blocked: ONE ID login, 
 3. **Evidence in the product:** Gap reports, compliance docs, self-assessment, and shareable pages are available for diligence today.
 4. **Canada-first:** ICD-10-CA, Ontario fee codes, Health Canada formulary, and CAD billing are in the product.
 
-## What comes next (Phase 5+)
+## What comes next (Phase 6+)
 
-1. PrescribeIT / e-prescribing software (Phase 5)
-2. Live MOH MCEDT and Infoway OLIS (clinic credentials)
+1. Provincial imaging / DI repository integration (Phase 6)
+2. Live MOH MCEDT and Infoway OLIS/PrescribeIT (clinic credentials)
 3. OntarioMD vendor path and reference site (owner action)
-4. Provincial imaging / DI repository integration
+4. HRM, DHDR, ConnectingOntario hubs (Phase 7)
 
 We welcome diligence calls, demos, and introductions to Ontario clinical partners who may serve as a reference site.
 
@@ -63,6 +65,7 @@ We welcome diligence calls, demos, and introductions to Ontario clinical partner
 |----------|-----|
 | Ontario EMR Readiness Report | https://mediforge.netlify.app/ontario-readiness |
 | Evidence Binder | https://mediforge.netlify.app/evidence-binder |
+| eRx Queue | https://mediforge.netlify.app/erx-queue |
 | Full Capabilities | https://mediforge.netlify.app/capabilities |
 | Live product | https://mediforge.netlify.app |
 

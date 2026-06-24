@@ -11,13 +11,13 @@
 
 ## Executive Summary
 
-MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **60 to 70%** after Phases 0–4 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
+MediForge is a Canada-first, web-based clinic platform with a strong functional EMR core and an integration layer prepared for Ontario provincial systems. Overall Ontario readiness is estimated at **60 to 70%** after Phases 0–5 software work (June 2026). Clinical workflows are **75 to 85%** complete. Live provincial connectivity remains **5 to 15%** because OLIS, MCEDT, PrescribeIT, HRM, DHDR, and ConnectingOntario require vendor agreements and clinic credentials that no code sprint alone can unlock.
 
-**Phases 0–4 (June 2026): software complete where possible.** Delivered: internal evidence, core standards, MCEDT claims desk, OLIS-ready lab desk, spec traceability, self-assessment, and evidence binder. These raise documented evidence to **60 to 70%** internal readiness but do not constitute OntarioMD certification.
+**Phases 0–5 (June 2026): software complete where possible.** Delivered: internal evidence, core standards, MCEDT claims desk, OLIS-ready lab desk, PrescribeIT-ready eRx desk, spec traceability, self-assessment, and evidence binder. These raise documented evidence to **60 to 70%** internal readiness but do not constitute OntarioMD certification.
 
 | Pillar | ~% Ready | Status Mix |
 |--------|----------|------------|
-| **Overall Ontario readiness** | 60 to 70% | Phases 0–4 software; live connectivity credential-gated |
+| **Overall Ontario readiness** | 60 to 70% | Phases 0–5 software; live connectivity credential-gated |
 | **Foundational standards and security** | 60 to 70% | Compliance pack, gateway audit, append-only interop messages |
 | **EHR connectivity (provincial)** | 5 to 15% | Adapters, staff UI, queue mode; no live provincial pipes |
 | **Functional clinical EMR** | 75 to 85% | CPP summary, i4C mapping, consent capture live |
@@ -40,7 +40,7 @@ MediForge is a Canada-first, web-based clinic platform with a strong functional 
 | | Consent management | Partial | 40% | High |
 | **EHR Connectivity** | OLIS (labs) | Partial | 20% | High |
 | | MCEDT (OHIP claims) | Partial | 25% | High |
-| | PrescribeIT (eRx) | Partial | 10% | High |
+| | PrescribeIT (eRx) | Partial | 35% | High |
 | | HRM (hospital reports) | Missing | 0% | Blocked |
 | | DHDR (drug repository) | Missing | 0% | Blocked |
 | | ConnectingOntario | Missing | 0% | Blocked |
@@ -83,7 +83,7 @@ These deliverables close documentation and evidence gaps without provincial cred
 | 0.10 | Investor readiness webpage | **Done** | `/ontario-readiness` synced with this report |
 | 0.11 | Written readiness report | **Done** | `ONTARIO-EMR-READINESS-REPORT.md` |
 
-**Phase 0–4 exit criteria (software):** met where possible (June 2026). Live provincial pipes and OntarioMD Stage 5 remain **Blocked**. Owner action: OntarioMD vendor contact, reference clinic, MOH/Infoway credentials.
+**Phase 0–5 exit criteria (software):** met where possible (June 2026). Live provincial pipes and OntarioMD Stage 5 remain **Blocked**. Owner action: OntarioMD vendor contact, reference clinic, MOH/Infoway credentials.
 
 ---
 
@@ -240,14 +240,14 @@ All live provincial connections are **Blocked** until Infoway, Ontario Health, M
 | In-clinic prescribing (Health Canada DPD) | Done | ~14,800 products, interaction checks |
 | FHIR MedicationRequest builder | Partial | `lib/interop/adapters/rx-adapter.js` |
 | PrescribeIT transmission profile | Partial | Adapter stub; queues when disabled |
-| Prescription transmit to pharmacy network | Missing | No live send |
-| Renewal, cancel, dispense status | Missing | MedicationDispense stub only |
+| Prescription transmit to pharmacy network | Partial | `/erx-queue`, gateway transmit; queues when disabled |
+| Renewal, cancel, dispense status | Partial | Cancel, renewal, MedicationDispense ingest |
 | Full CCDD dataset | Missing | Optional overlay; not licensed |
-| Pharmacy selection for external network | Missing | In-clinic pharmacy only |
+| Pharmacy selection for external network | Partial | Sample Ontario directory + erx-queue UI |
 | PrescribeIT MFA requirements | Missing | App session security only |
 | Infoway vendor enrollment | Blocked | Partner process |
 
-**Category status: Partial (~10%)**
+**Category status: Partial (~35%)**
 
 ### 2.4 HRM (Hospital Report Manager)
 
@@ -534,12 +534,13 @@ These modules support daily clinic operations and align with Ontario EMR functio
 
 ## 7. Prioritized Remediation Roadmap
 
-### Done (Phases 0–4 software, June 2026)
+### Done (Phases 0–5 software, June 2026)
 
 1. Compliance pack, data residency, FHIR export, CPP summary, consent UI, i4C map, claim export  
 2. MCEDT claims desk (queue, remittance, settings, cut-off logic)  
 3. OLIS-ready lab desk (HL7/FHIR export, ORU ingest queue, PHN registry, consent gates)  
-4. Evidence binder, self-assessment, spec traceability matrix  
+4. PrescribeIT-ready eRx desk (transmit/cancel/renew/dispense, pharmacy directory, consent gates)  
+5. Evidence binder, self-assessment, spec traceability matrix  
 
 ### Immediate (owner + ops)
 
@@ -552,7 +553,7 @@ These modules support daily clinic operations and align with Ontario EMR functio
 1. Contact OntarioMD for vendor certification path  
 2. MOH XSD claim format and MCEDT client (credential-ready)  
 3. OLIS inbound queue UI and ORM/ORU end-to-end in sandbox  
-4. PrescribeIT adapter hardening and Infoway enrollment paperwork  
+4. PrescribeIT live pilot (eRx queue software complete; Infoway enrollment paperwork)  
 5. Formal PHIPA pack legal review  
 
 ### Medium term (6 to 18 months: partners required)

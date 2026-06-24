@@ -55,14 +55,33 @@
     });
   }
 
-  async function transmitPrescription({ organizationId, patient, prescription, userId, province }) {
+  async function transmitPrescription({ organizationId, patient, prescription, userId, province, erxConsentGranted, pharmacy }) {
     return callGateway({
       action: 'transmitPrescription',
       organizationId,
       patient,
       prescription,
       userId,
-      province
+      province,
+      erxConsentGranted: erxConsentGranted !== false,
+      pharmacy
+    });
+  }
+
+  async function generateRxFhir({ organizationId, patient, prescription, userId, province, pharmacy }) {
+    return callGateway({ action: 'generateRxFhir', organizationId, patient, prescription, userId, province, pharmacy });
+  }
+
+  async function simulateRxTransmit({ organizationId, patient, prescription, userId, province, erxConsentGranted, pharmacy }) {
+    return callGateway({
+      action: 'simulateRxTransmit',
+      organizationId,
+      patient,
+      prescription,
+      userId,
+      province,
+      erxConsentGranted: erxConsentGranted !== false,
+      pharmacy
     });
   }
 
@@ -124,6 +143,8 @@
     transmitLabOrder,
     transmitImagingOrder,
     transmitPrescription,
+    generateRxFhir,
+    simulateRxTransmit,
     submitClaim,
     processRemittance,
     ingestOru,

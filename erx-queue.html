@@ -1,0 +1,151 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>eRx Queue (PrescribeIT-ready) | MediForge</title>
+  <link rel="stylesheet" href="/css/styles.css">
+  <style>
+    body { font-family: 'Segoe UI', sans-serif; background: #f4f7f5; margin: 0; padding: 24px; }
+    .wrap { max-width: 1000px; margin: 0 auto; background: #fff; border-radius: 12px; padding: 28px; box-shadow: 0 4px 18px rgba(0,0,0,.08); }
+    h1 { color: #6A1B9A; margin-top: 0; }
+    textarea { width: 100%; min-height: 120px; font-family: monospace; font-size: .85rem; }
+    .erx-table { width: 100%; border-collapse: collapse; margin-top: 16px; font-size: .92rem; }
+    .erx-table th, .erx-table td { padding: 10px 12px; border-bottom: 1px solid #eee; text-align: left; }
+    .erx-table th { background: #6A1B9A; color: #fff; }
+    .btn { margin-top: 12px; margin-right: 8px; padding: 10px 18px; background: #6A1B9A; color: #fff; border: none; border-radius: 8px; font-weight: 700; cursor: pointer; }
+    .btn-secondary { background: #008753; }
+    .btn-sm { padding: 6px 10px; font-size: .8rem; margin: 2px; border: none; border-radius: 6px; cursor: pointer; background: #6A1B9A; color: #fff; }
+    .btn-sm.btn-cancel { background: #c62828; }
+    .btn-sm.btn-renew { background: #1565C0; }
+    a.btn { display: inline-block; text-decoration: none; }
+    .note { background: #f9f4fc; border: 1px solid #e1bee7; padding: 12px; border-radius: 8px; margin: 12px 0; font-size: .92rem; }
+    input[type="search"] { width: 100%; padding: 10px; margin: 8px 0; box-sizing: border-box; }
+  </style>
+</head>
+<body>
+  <div class="wrap">
+    <h1>eRx Queue (PrescribeIT-ready)</h1>
+    <p>Queue, transmit, cancel, and track provincial e-prescriptions. Live PrescribeIT requires Infoway credentials and patient <code>prescribeit_erx</code> consent.</p>
+    <div class="note">When integration is disabled, transmits are <strong>queued/simulated</strong> and logged in the interop audit trail.</div>
+    <div id="queue-wrap">Loading...</div>
+
+    <h2>Default pharmacy for transmit</h2>
+    <input type="search" id="pharmacy-search" placeholder="Search Ontario sample pharmacies…">
+    <div id="pharmacy-wrap"></div>
+
+    <h2>Ingest MedicationDispense (pharmacy feedback)</h2>
+    <textarea id="dispense-json" placeholder='Paste MedicationDispense JSON or Bundle…'></textarea>
+    <button type="button" class="btn" id="ingest-dispense-btn">Ingest dispense status</button>
+    <pre id="dispense-preview" style="background:#f5f5f5;padding:12px;border-radius:8px;font-size:.8rem;max-height:200px;overflow:auto"></pre>
+
+    <a href="interop-dashboard" class="btn btn-secondary">Interop Dashboard</a>
+    <a href="prescription" class="btn btn-secondary">Prescriptions</a>
+    <a href="dashboard" class="btn">← Dashboard</a>
+  </div>
+  <script src="/js/vendor/supabase.min.js"></script>
+  <script src="/js/supabase-client.js"></script>
+  <script src="/js/patient-consent.js"></script>
+  <script src="/js/pharmacy-directory.js"></script>
+  <script src="/js/interop-client.js"></script>
+  <script src="/js/interop-hooks.js"></script>
+  <script src="/js/erx-queue.js"></script>
+  <script>
+    (async function () {
+      const wrap = document.getElementById('queue-wrap');
+      let selectedPharmacy = null;
+      const pharmacies = await MediForgePharmacyDirectory.loadOntarioPharmacies();
+      MediForgePharmacyDirectory.renderPharmacySelect(document.getElementById('pharmacy-wrap'), pharmacies, null, (ph) => {
+        selectedPharmacy = ph;
+      });
+      document.getElementById('pharmacy-search').addEventListener('input', (e) => {
+        const filtered = MediForgePharmacyDirectory.searchPharmacies(pharmacies, e.target.value);
+        MediForgePharmacyDirectory.renderPharmacySelect(document.getElementById('pharmacy-wrap'), filtered, selectedPharmacy?.id, (ph) => {
+          selectedPharmacy = ph;
+        });
+      });
+
+      async function refresh() {
+        const rows = await MediForgeErxQueue.loadErxQueue();
+        MediForgeErxQueue.renderQueue(wrap, rows);
+        bindRowActions();
+      }
+
+      async function loadFullPrescription(id) {
+        const user = JSON.parse(localStorage.getItem('user') || '{}');
+        const { data } = await supabaseClient.from('prescriptions').select('*').eq('id', id).single();
+        return data;
+      }
+
+      function bindRowActions() {
+        wrap.querySelectorAll('.btn-transmit').forEach((btn) => {
+          btn.onclick = async () => {
+            const rx = await loadFullPrescription(btn.dataset.id);
+            if (!rx) return alert('Prescription not found.');
+            const res = await MediForgeInterop.queueProvincialRx({
+              patientId: btn.dataset.patient,
+              prescription: rx,
+              pharmacy: selectedPharmacy
+            });
+            if (res.blocked) return alert(res.message);
+            if (res.error) return alert(res.error);
+            await MediForgeErxQueue.patchPrescription(rx.id, {
+              erx_status: res.result?.queued ? 'queued' : 'transmitted',
+              erx_pharmacy_id: selectedPharmacy?.id,
+              erx_pharmacy_name: selectedPharmacy?.name,
+              erx_transmitted_at: new Date().toISOString(),
+              pharmacy_status: 'external'
+            });
+            alert(res.result?.queued ? 'Queued for provincial transmit (simulate mode).' : 'Transmitted.');
+            await refresh();
+          };
+        });
+        wrap.querySelectorAll('.btn-cancel').forEach((btn) => {
+          btn.onclick = async () => {
+            const rx = await loadFullPrescription(btn.dataset.id);
+            const reason = prompt('Cancellation reason (optional):') || '';
+            const res = await MediForgeInterop.cancelProvincialRx({
+              patientId: btn.dataset.patient,
+              prescription: rx,
+              reason
+            });
+            if (res.blocked) return alert(res.message);
+            if (res.error) return alert(res.error);
+            await MediForgeErxQueue.patchPrescription(rx.id, { erx_status: 'cancelled', pharmacy_status: 'cancelled' });
+            alert('Cancellation queued.');
+            await refresh();
+          };
+        });
+        wrap.querySelectorAll('.btn-renew').forEach((btn) => {
+          btn.onclick = async () => {
+            const rx = await loadFullPrescription(btn.dataset.id);
+            const res = await MediForgeInterop.requestRxRenewal({
+              patientId: btn.dataset.patient,
+              prescription: rx
+            });
+            if (res.blocked) return alert(res.message);
+            if (res.error) return alert(res.error);
+            await MediForgeErxQueue.patchPrescription(rx.id, { erx_status: 'renewal_requested' });
+            alert('Renewal request queued.');
+            await refresh();
+          };
+        });
+      }
+
+      document.getElementById('ingest-dispense-btn').addEventListener('click', async () => {
+        const raw = document.getElementById('dispense-json').value.trim();
+        if (!raw) return alert('Paste JSON first.');
+        let bundle;
+        try { bundle = JSON.parse(raw); } catch { return alert('Invalid JSON.'); }
+        const res = await MediForgeInterop.ingestDispenseAndApply({ fhirBundle: bundle });
+        document.getElementById('dispense-preview').textContent = JSON.stringify(res, null, 2);
+        if (res.applied) await refresh();
+      });
+
+      await refresh();
+    })();
+  </script>
+</body>
+</html>

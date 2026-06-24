@@ -310,6 +310,7 @@ Live MOH/Infoway connections need clinic credentials. Staff can still use:
 | `/remittance-reconcile` | Paste or load sample remittance JSON |
 | `/external-lab-orders` | Export HL7 or FHIR lab orders; queue provincial send |
 | `/lab-results-queue` | Paste inbound ORU lab results |
+| `/erx-queue` | Queue provincial eRx transmit; ingest pharmacy dispense feedback |
 | `/patient-identifiers` | PHN registry for provincial matching |
 | `/interop-dashboard` | HL7/FHIR tests, MLLP simulate, failure audit |
 

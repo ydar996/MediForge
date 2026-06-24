@@ -78,6 +78,17 @@
     </div>
 
     <div class="card">
+      <h2>Simulate eRx transmit (PrescribeIT-ready)</h2>
+      <p>Build FHIR MedicationRequest payload. Requires patient <code>prescribeit_erx</code> consent when enabled. Queues when Infoway endpoint is not configured.</p>
+      <textarea id="rx-json" placeholder='{"prescription_number":"MEC-RX-0001","medications":[{"name":"Metformin 500mg","dosage":"500mg","frequency":"BID"}]}'></textarea>
+      <input type="text" id="rx-patient-id" placeholder="Patient ID" style="width:100%;padding:10px;margin:8px 0;box-sizing:border-box">
+      <button type="button" id="btn-simulate-rx">Simulate Rx transmit</button>
+      <button type="button" class="secondary" id="btn-preview-rx">Preview MedicationRequest</button>
+      <pre id="rx-output"></pre>
+      <p><a href="/erx-queue">Open eRx queue →</a></p>
+    </div>
+
+    <div class="card">
       <h2>Integration failures (audit trail)</h2>
       <p>Recent failed messages from <code>interop_messages</code> (append-only audit).</p>
       <button type="button" class="secondary" id="btn-refresh-failures">Refresh</button>
@@ -200,6 +211,53 @@
     });
 
     document.getElementById('btn-refresh-failures').addEventListener('click', refreshFailures);
+
+    function sampleRxPrescription() {
+      return {
+        prescription_number: 'MEC-RX-SIM-001',
+        status: 'signed',
+        medications: [{ name: 'Metformin 500mg', din: '02229726', dosage: '500mg', frequency: 'BID' }]
+      };
+    }
+
+    document.getElementById('btn-preview-rx').addEventListener('click', async () => {
+      const out = document.getElementById('rx-output');
+      try {
+        const ctx = await orgContext();
+        let prescription;
+        try { prescription = JSON.parse(document.getElementById('rx-json').value.trim() || '{}'); } catch { prescription = sampleRxPrescription(); }
+        if (!prescription.medications) prescription = sampleRxPrescription();
+        const patientId = document.getElementById('rx-patient-id').value.trim() || 'demo-patient';
+        const res = await MediForgeInteropClient.generateRxFhir({
+          ...ctx,
+          patient: { id: patientId, firstName: 'Jane', lastName: 'Doe' },
+          prescription
+        });
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
+
+    document.getElementById('btn-simulate-rx').addEventListener('click', async () => {
+      const out = document.getElementById('rx-output');
+      try {
+        const ctx = await orgContext();
+        let prescription;
+        try { prescription = JSON.parse(document.getElementById('rx-json').value.trim() || '{}'); } catch { prescription = sampleRxPrescription(); }
+        if (!prescription.medications) prescription = sampleRxPrescription();
+        const patientId = document.getElementById('rx-patient-id').value.trim() || 'demo-patient';
+        const res = await MediForgeInteropClient.simulateRxTransmit({
+          ...ctx,
+          patient: { id: patientId, firstName: 'Jane', lastName: 'Doe' },
+          prescription,
+          erxConsentGranted: true
+        });
+        out.textContent = JSON.stringify(res.result || res, null, 2);
+      } catch (e) {
+        out.textContent = e.message;
+      }
+    });
 
     loadStatus();
     refreshFailures();

@@ -47,7 +47,10 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[mcedt-settings.html](../mcedt-settings.html)** | **MCEDT / OHIP billing settings** |
 | **[consent-management.html](../consent-management.html)** | **Organization consent registry** |
 | **[docs/ONTARIOMD-GAP-REPORT.md](ONTARIOMD-GAP-REPORT.md)** | **Full OntarioMD gap status by category** |
-| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phases 0–4 software complete) |
+| **PrescribeIT / eRx desk** | Partial (~35%) | `/erx-queue`, MedicationRequest workflow; live pipe blocked |
+| **[erx-queue.html](../erx-queue.html)** | **Provincial eRx queue (PrescribeIT-ready)** |
+| **[docs/PHASE-5-PRESCRIBEIT-COMPLETION.md](PHASE-5-PRESCRIBEIT-COMPLETION.md)** | **Phase 5 software completion notes** |
+| **`docs/compliance/`** | PHIPA/privacy/residency docs (Phases 0–5 software complete) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 
 ---

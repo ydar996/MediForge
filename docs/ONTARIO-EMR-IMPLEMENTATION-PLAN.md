@@ -12,7 +12,7 @@
 
 ## Phase 0: Internal Readiness (No Provincial Credentials)
 
-*Phases 0–4 software complete (June 2026). **STOP GATE:** do not start Phase 5+ or OntarioMD Stage 5 until owner approves. See `ONTARIOMD-READINESS-PLAN.md`.*
+*Phases 0–5 software complete (June 2026). **STOP GATE:** do not start Phase 6+ or OntarioMD Stage 5 until owner approves. See `ONTARIOMD-READINESS-PLAN.md`.*
 
 | ID | Task | Status | Owner / Agent |
 |----|------|--------|---------------|
@@ -117,20 +117,22 @@
 
 ## Phase 5: PrescribeIT / ePrescribing
 
+**Status: partial (June 2026, software).** Live Infoway/PrescribeIT blocked until onboarding. See **`docs/PHASE-5-PRESCRIBEIT-COMPLETION.md`**.
+
 | ID | Task | Status | Notes |
 |----|------|--------|-------|
 | 5.1 | In-clinic prescribing (Health Canada DPD) | ✅ | ~14,800 products |
 | 5.2 | Drug interaction alerts | ✅ | |
-| 5.3 | FHIR MedicationRequest builder | 🔶 | |
-| 5.4 | PrescribeIT / Infoway transmission profile | 🔶 | Adapter stub |
-| 5.5 | Prescription transmit (create, send) | ⬜ | Queues when disabled |
-| 5.6 | Renewal requests | ⬜ | |
-| 5.7 | Cancellation | ⬜ | |
-| 5.8 | Dispense status from pharmacy | ⬜ | MedicationDispense stub |
+| 5.3 | FHIR MedicationRequest builder | ✅ | `rx-adapter.js`, `generateRxFhir` |
+| 5.4 | PrescribeIT / Infoway transmission profile | 🔶 | Infoway profile + pharmacy routing |
+| 5.5 | Prescription transmit (create, send) | 🔶 | `/erx-queue`, gateway; queues when disabled |
+| 5.6 | Renewal requests | 🔶 | `requestPrescriptionRenewal` |
+| 5.7 | Cancellation | 🔶 | `cancelPrescription` |
+| 5.8 | Dispense status from pharmacy | 🔶 | `ingestMedicationDispense` + queue UI |
 | 5.9 | Full CCDD dataset licensed and merged | ⬜ | Optional overlay only |
-| 5.10 | Pharmacy selection UI | ⬜ | In-house only today |
-| 5.11 | Secure messaging with pharmacy | ⬜ | |
-| 5.12 | PrescribeIT MFA requirements | ⬜ | |
+| 5.10 | Pharmacy selection UI | 🔶 | Sample directory + erx-queue |
+| 5.11 | Secure messaging with pharmacy | ⬜ | Live PrescribeIT blocked |
+| 5.12 | PrescribeIT MFA requirements | ⬜ | App session only |
 | 5.13 | Infoway vendor partner enrollment | ⬜ | 🚫 Partner |
 
 ---
@@ -208,4 +210,5 @@
 
 | Date | Change |
 |------|--------|
+| 2026-06 | Phase 5 PrescribeIT eRx desk software; Phases 0–5 complete where possible |
 | 2026-06-23 | Initial plan from owner brief + readiness report; merged with ONTARIOMD-READINESS-PLAN Tier A/B tasks |

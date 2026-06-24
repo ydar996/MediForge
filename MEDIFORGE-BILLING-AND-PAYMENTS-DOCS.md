@@ -161,7 +161,7 @@ npm run test:clinical
 
 ## Production checklist
 
-- [ ] Run Supabase migrations (billing + interop)
+- [x] Run Supabase migrations (billing + interop) — applied on dev, staging, production (June 2026). New eRx columns: `20260625100000_prescribeit_erx_columns.sql`.
 - [ ] Configure `billing-payers.json` per clinic province
 - [ ] OHIP billing number on provider profile
 - [ ] MCEDT / clearinghouse credentials (provincial)

@@ -115,7 +115,53 @@ exports.handler = async (event) => {
           patient: body.patient,
           prescription: body.prescription,
           organizationId: body.organizationId,
+          userId: body.userId,
+          erxConsentGranted: body.erxConsentGranted,
+          pharmacy: body.pharmacy
+        });
+        break;
+      case 'cancelPrescription':
+        result = await service.cancelPrescription({
+          patient: body.patient,
+          prescription: body.prescription,
+          organizationId: body.organizationId,
+          userId: body.userId,
+          erxConsentGranted: body.erxConsentGranted,
+          reason: body.reason
+        });
+        break;
+      case 'requestPrescriptionRenewal':
+        result = await service.requestPrescriptionRenewal({
+          patient: body.patient,
+          prescription: body.prescription,
+          organizationId: body.organizationId,
+          userId: body.userId,
+          erxConsentGranted: body.erxConsentGranted,
+          requestedBy: body.requestedBy
+        });
+        break;
+      case 'ingestMedicationDispense':
+        result = await service.ingestMedicationDispense({
+          fhirBundle: body.fhirBundle || body.resource,
+          organizationId: body.organizationId,
           userId: body.userId
+        });
+        break;
+      case 'generateRxFhir':
+        result = service.generateRxFhir({
+          patient: body.patient,
+          prescription: body.prescription,
+          pharmacy: body.pharmacy
+        });
+        break;
+      case 'simulateRxTransmit':
+        result = await service.simulateRxTransmit({
+          patient: body.patient,
+          prescription: body.prescription,
+          organizationId: body.organizationId,
+          userId: body.userId,
+          erxConsentGranted: body.erxConsentGranted,
+          pharmacy: body.pharmacy
         });
         break;
       case 'submitClaim':

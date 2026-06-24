@@ -33,7 +33,7 @@ Legend: **Done** = implemented and testable in product · **Partial** = foundati
 | Claims | OHIP claim submission | Partial | MCEDT queue, XML export (Phase 3) |
 | Portal | Patient access to results | Done | Patient portal, results workflow |
 | Reporting | Clinic analytics | Done | Reports, preventive gaps |
-| ePrescribing | External pharmacy network | Partial | In-clinic Rx; PrescribeIT stub |
+| ePrescribing | External pharmacy network | Partial | `/erx-queue`, MedicationRequest workflow |
 | Lab requisitions | Order and track labs | Done | Lab orders, external lab desk |
 | Imaging requisitions | Order imaging | Done | Imaging orders module |
 
@@ -45,7 +45,7 @@ Legend: **Done** = implemented and testable in product · **Partial** = foundati
 | OLIS | FHIR Patient Query | Partial | Gateway stub + PHN registry |
 | OLIS | Patient consent before query | Partial | `olis_query` consent + server gate |
 | MCEDT | Claim file and submission | Partial | Phase 3 MCEDT modules |
-| PrescribeIT | MedicationRequest transmit | Partial | Rx adapter queues when disabled |
+| PrescribeIT | MedicationRequest transmit | Partial | eRx queue; transmit/cancel/renew/dispense |
 | HRM | Hospital report inbox | Blocked | Not implemented |
 | DHDR | Provincial drug repository | Blocked | Not implemented |
 | ConnectingOntario | DI viewer launch | Blocked | Config stub only |
