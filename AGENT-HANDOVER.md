@@ -497,7 +497,8 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
   - Patient chart nav: CPP, FHIR, Consents buttons on `patient-details.html`
 - **Owner must run in Supabase SQL Editor (dev, then staging, then prod):** both `2026062320*` migrations above.
 - **Phase 1 blocked** until owner says to proceed.
-- **Deploy:** dev branch pushed; run migrations before testing consents/RPC audit on live DB.
+- **Git:** commit `a5ce7ad` on `dev` (26 files, +2716 lines).
+- **Deploy:** Netlify dev draft live at `https://6a3b35f806e4c50665ca006a--mediforge.netlify.app` (June 23, 2026). Run migrations before testing consents/RPC audit on live DB.
 
 ### June 23, 2026 (later): Ontario readiness report docs, em dash policy, app-wide punctuation fix
 
