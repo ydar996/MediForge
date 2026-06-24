@@ -1,7 +1,7 @@
 # Promote Dev → Staging → Production (simple walkthrough)
 
 **Situation:** All new work is on **`dev`** (22+ commits ahead of `staging` and `main` as of June 2026).  
-**Rule:** Code and database must move together — deploy the app first, then run SQL on the **matching** Supabase project.
+**Rule:** Code and database must move together: deploy the app first, then run SQL on the **matching** Supabase project.
 
 | Environment | Git branch | Website | Supabase project |
 |-------------|------------|---------|------------------|
@@ -11,18 +11,18 @@
 
 ---
 
-## Part 1 — Promote code to Staging (≈5 minutes)
+## Part 1: Promote code to Staging (≈5 minutes)
 
-### Option A — GitHub (no terminal)
+### Option A: GitHub (no terminal)
 
 1. Open https://github.com/ydar996/MediForge/compare/staging...dev
 2. Click **Create pull request**
-3. Title: `Promote dev to staging — registration, ICD-10, integrations, icon fixes`
+3. Title: `Promote dev to staging: registration, ICD-10, integrations, icon fixes`
 4. **Merge** the PR
 5. Wait for Netlify **mediforge-staging** deploy to finish (green check on GitHub or Netlify dashboard)
 6. Open https://mediforge-staging.netlify.app and hard-refresh (Ctrl+F5)
 
-### Option B — PowerShell (fastest if you already merged locally)
+### Option B: PowerShell (fastest if you already merged locally)
 
 ```powershell
 cd C:\Users\yinka\Documents\MediForge
@@ -36,11 +36,11 @@ Netlify deploys **mediforge-staging** automatically when `staging` updates.
 
 ---
 
-## Part 2 — Run SQL on Staging (≈20–30 minutes)
+## Part 2: Run SQL on Staging (≈20–30 minutes)
 
 **Open:** Supabase → **MediForge Staging** → **SQL Editor**
 
-Use the full checklist in **`SQL-RUN-PACKET-DEV-STAGING.md`**. Summary — run **in order**, one file per query, wait for Success:
+Use the full checklist in **`SQL-RUN-PACKET-DEV-STAGING.md`**. Summary: run **in order**, one file per query, wait for Success:
 
 | Step | File |
 |------|------|
@@ -57,17 +57,17 @@ Use the full checklist in **`SQL-RUN-PACKET-DEV-STAGING.md`**. Summary — run *
 
 **Auth (Staging only):** Authentication → URL configuration → Site URL `https://mediforge-staging.netlify.app` → add Redirect URLs for `/login`, `/register` → turn **Confirm email OFF** for easier testing.
 
-**Verify** — paste the queries at the bottom of `SQL-RUN-PACKET-DEV-STAGING.md` (expect `race` column, no `tribe`, 2 RPCs).
+**Verify**: paste the queries at the bottom of `SQL-RUN-PACKET-DEV-STAGING.md` (expect `race` column, no `tribe`, 2 RPCs).
 
 **Smoke test on Staging:**
 
 1. Register a test clinic or join with org code
-2. Add patient — Race dropdown + ICD-10 search (diabetes → E11 codes)
+2. Add patient: Race dropdown + ICD-10 search (diabetes → E11 codes)
 3. Patient intake link → submit → staff approve
 
 ---
 
-## Part 3 — Promote code to Production (only after Staging passes)
+## Part 3: Promote code to Production (only after Staging passes)
 
 ### GitHub PR (recommended)
 
@@ -86,7 +86,7 @@ git push origin main
 
 ---
 
-## Part 4 — Run SQL on Production (≈20–30 minutes)
+## Part 4: Run SQL on Production (≈20–30 minutes)
 
 **Only after Staging smoke test passes.**
 
@@ -94,7 +94,7 @@ git push origin main
 2. Run **the same Steps 1–10** from `SQL-RUN-PACKET-DEV-STAGING.md`
 3. **Do not** turn off email confirmation on production
 4. Run **Verify** queries
-5. Optional: controlled smoke test with a test org — not live patient data
+5. Optional: controlled smoke test with a test org: not live patient data
 
 ---
 
@@ -103,7 +103,7 @@ git push origin main
 - Canadian registration & intake (postal codes, race demographics, profile RPC)
 - ICD-10-CA default + dashboard toggle
 - Patient-reported medications (manual entry UX)
-- Canadian interoperability layer (labs, imaging, Rx, billing — config only until hubs connected)
+- Canadian interoperability layer (labs, imaging, Rx, billing: config only until hubs connected)
 - Icon / encoding fixes repo-wide
 - Legal agreements Canada-first
 

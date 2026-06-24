@@ -1,5 +1,5 @@
 /**
- * Billing mode settings — system.billingMode ("Canada" | "USA") in organizations.settings.
+ * Billing mode settings: system.billingMode ("Canada" | "USA") in organizations.settings.
  */
 (function (global) {
   'use strict';

@@ -55,7 +55,7 @@ window.COMMON_OTC_MEDICATIONS_CA = [
   { name: "Hydrogen peroxide 3%", generic: "Hydrogen peroxide", strength: "3%", form: "Topical solution", category: "OTC - First aid", interactions: [], contraindications: [] },
   { name: "Isopropyl alcohol 70%", generic: "Isopropyl alcohol", strength: "70%", form: "Topical solution", category: "OTC - First aid", interactions: [], contraindications: [] },
 
-  // { name: "Paracetamol", ... } — UK name; use Acetaminophen (Tylenol) above. Full list in DPD formulary.
+  // { name: "Paracetamol", ... }: UK name; use Acetaminophen (Tylenol) above. Full list in DPD formulary.
   { name: "Glucosamine", generic: "Glucosamine sulfate", strength: "500mg, 1500mg", form: "Tablet, Capsule", category: "OTC - Supplement", interactions: [], contraindications: [] },
   { name: "Probiotic", generic: "Lactobacillus, Bifidobacterium", strength: "Various CFU", form: "Capsule", category: "OTC - Supplement", interactions: [], contraindications: [] },
   { name: "Echinacea", generic: "Echinacea", strength: "Various", form: "Capsule, Liquid", category: "OTC - Herbal supplement", interactions: [], contraindications: [] },

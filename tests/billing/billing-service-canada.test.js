@@ -25,7 +25,7 @@ const usPatient = {
   insuranceName: 'BCBS'
 };
 
-describe('BillingService — Canada mode', () => {
+describe('BillingService: Canada mode', () => {
   const svc = new BillingService({ mode: 'Canada' });
 
   it('loads Canada config with CAD currency', () => {
@@ -122,7 +122,7 @@ describe('BillingService — Canada mode', () => {
   });
 });
 
-describe('BillingService — mode integrity', () => {
+describe('BillingService: mode integrity', () => {
   it('preserves billingModeAtCapture on legacy Canada invoice when org switches to USA', () => {
     const usaSvc = new BillingService({ mode: 'USA' });
     const claim = usaSvc.generateClaim({

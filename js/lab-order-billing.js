@@ -576,7 +576,7 @@ window.generateInvoiceFromLabOrder = async function(orderId, selectedItemsOverri
       return null;
     }
     
-    // Link invoice to lab order(s) — all orders in group get same invoice_id
+    // Link invoice to lab order(s): all orders in group get same invoice_id
     const payerCleared =
       typeof window.MediForgePayerWorkflow?.isPayerClearedForService === 'function' &&
       window.MediForgePayerWorkflow.isPayerClearedForService(invoice);
@@ -798,7 +798,7 @@ window.cancelLabOrderInvoice = async function(orderId) {
       }
     }
     
-    // Unlink invoice from lab order(s) — all orders with this invoice_id (including grouped)
+    // Unlink invoice from lab order(s): all orders with this invoice_id (including grouped)
     const { error: updateError } = await supabase
       .from('orders')
       .update({

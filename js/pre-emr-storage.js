@@ -1,6 +1,6 @@
 /**
  * Supabase Storage uploads for Pre-EMR medical records (images, PDFs).
- * Bucket: patient-documents — path: {orgId}/{patientUuid}/pre-emr-medical-records/{file}
+ * Bucket: patient-documents: path: {orgId}/{patientUuid}/pre-emr-medical-records/{file}
  */
 (function (global) {
   var BUCKET = 'patient-documents';
@@ -386,10 +386,10 @@
 
   /**
    * @param {object} patient
-   * @param {File[]} files — order = next page numbers after existing file records (e.g. one file → Page N+1)
+   * @param {File[]} files: order = next page numbers after existing file records (e.g. one file → Page N+1)
    * @param {object} [options]
-   * @param {function} [options.onProgress] — ({ phase, pageIndex, totalPages, bytesUploaded, bytesTotal, percent, etaSeconds, label })
-   * @param {number} [options.concurrency] — default 3
+   * @param {function} [options.onProgress]: ({ phase, pageIndex, totalPages, bytesUploaded, bytesTotal, percent, etaSeconds, label })
+   * @param {number} [options.concurrency]: default 3
    * @returns {Promise<object[]>}
    */
   async function uploadPreEmrFiles(patient, files, options) {

@@ -1,5 +1,5 @@
 /**
- * Staging smoke test — page assets, Race, ICD-10, manual medications.
+ * Staging smoke test: page assets, Race, ICD-10, manual medications.
  * Run: npm run test:staging-smoke
  */
 import os from 'node:os';

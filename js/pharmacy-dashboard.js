@@ -317,7 +317,7 @@ function pharmacyPatientIdUi(item) {
     typeof window.patientMrnDisplay === 'function'
       ? window.patientMrnDisplay(subject, hint)
       : hint;
-  return String(raw || '—').replace(/</g, '&lt;');
+  return String(raw || ':').replace(/</g, '&lt;');
 }
 
 // Load incoming prescriptions
@@ -838,7 +838,7 @@ async function renderInventoryDashboard(el, inventory) {
       </a>
       <a href="/pharmacy-inventory-details?type=total-items" class="kpi-card" style="background:linear-gradient(135deg,#6f42c1,#4a2d82);color:white;padding:16px;border-radius:8px;text-decoration:none;display:block;cursor:pointer;color:inherit;">
         <div style="font-size:12px;opacity:0.9;">Avg Turnover</div>
-        <div style="font-size:24px;font-weight:700;">${kpis.avgTurnover ?? '—'}</div>
+        <div style="font-size:24px;font-weight:700;">${kpis.avgTurnover ?? ':'}</div>
         <div style="font-size:11px;opacity:0.8;margin-top:4px;">View details →</div>
       </a>
     </div>
@@ -1025,13 +1025,13 @@ function renderInventoryTable(el, inventory, fmt) {
     const esc = (v)=>String(v??'').replace(/</g,'&lt;').replace(/"/g,'&quot;');
     const cells = visibleKeys.map(k => {
       const v = getVal(item, k);
-      if (k === 'medication_name') return `<td data-col="${k}" class="inv-cell inv-cell--name"><strong>${esc(v) || '—'}</strong></td>`;
+      if (k === 'medication_name') return `<td data-col="${k}" class="inv-cell inv-cell--name"><strong>${esc(v) || ':'}</strong></td>`;
       if (k === 'expiry_date' && v) return `<td data-col="${k}">${new Date(v).toLocaleDateString()}</td>`;
       if (k === 'last_received_date' && v) return `<td data-col="${k}">${new Date(v).toLocaleDateString()}</td>`;
       if (k === 'last_sold_date' && v) return `<td data-col="${k}">${new Date(v).toLocaleDateString()}</td>`;
       if ((k === 'cost_price' || k === 'selling_price') && v != null && v !== '') return `<td data-col="${k}">${fmt(v)}</td>`;
       if (k === 'status') return `<td data-col="${k}" class="${stockClass}">${status}</td>`;
-      return `<td data-col="${k}">${esc(v) || '—'}</td>`;
+      return `<td data-col="${k}">${esc(v) || ':'}</td>`;
     }).join('');
     return `<tr>${cells}<td data-col="actions" class="inv-cell inv-cell--actions">
       <button type="button" class="btn btn-outline-secondary btn-edit-inventory" data-id="${item.id}" style="padding:4px 8px;font-size:12px;">Edit</button>
@@ -1186,13 +1186,13 @@ async function renderInventoryAnalytics(el, inventory) {
       <div style="background:white;padding:16px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <h4>Slow-Moving / Dead Stock (&gt;60 days unsold)</h4>
         <table class="inventory-table" style="font-size:13px;"><thead><tr><th>Item</th><th>Qty</th><th>Days since sold</th><th>Value</th></tr></thead><tbody>
-          ${(slow.length?slow.slice(0,20):[]).map(i=>`<tr><td>${(i.medication_name||'').replace(/</g,'&lt;')}</td><td>${i.quantity_on_hand||i.current_stock}</td><td>${i.days_since_sold??'—'}</td><td>${fmt((i.cost_price||i.cost_per_unit||0)*(i.quantity_on_hand||i.current_stock||0))}</td></tr>`).join('')}
+          ${(slow.length?slow.slice(0,20):[]).map(i=>`<tr><td>${(i.medication_name||'').replace(/</g,'&lt;')}</td><td>${i.quantity_on_hand||i.current_stock}</td><td>${i.days_since_sold??':'}</td><td>${fmt((i.cost_price||i.cost_per_unit||0)*(i.quantity_on_hand||i.current_stock||0))}</td></tr>`).join('')}
         </tbody></table>
       </div>
       <div style="background:white;padding:16px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,0.08);">
         <h4>Expiry Risk (FEFO priority)</h4>
         <table class="inventory-table" style="font-size:13px;"><thead><tr><th>Item</th><th>Batch</th><th>Expiry</th><th>Days left</th><th>Qty</th></tr></thead><tbody>
-          ${(expiryRisk.length?expiryRisk.slice(0,20):[]).map(i=>`<tr class="${i.expired?'stock-out':i.near_expiry?'stock-low':''}"><td>${(i.medication_name||'').replace(/</g,'&lt;')}</td><td>${i.batch_number||'—'}</td><td>${i.expiry_date?new Date(i.expiry_date).toLocaleDateString():'—'}</td><td>${i.days_to_expiry??'—'}</td><td>${i.quantity_on_hand||i.current_stock}</td></tr>`).join('')}
+          ${(expiryRisk.length?expiryRisk.slice(0,20):[]).map(i=>`<tr class="${i.expired?'stock-out':i.near_expiry?'stock-low':''}"><td>${(i.medication_name||'').replace(/</g,'&lt;')}</td><td>${i.batch_number||':'}</td><td>${i.expiry_date?new Date(i.expiry_date).toLocaleDateString():':'}</td><td>${i.days_to_expiry??':'}</td><td>${i.quantity_on_hand||i.current_stock}</td></tr>`).join('')}
         </tbody></table>
       </div>
     </div>
@@ -1303,7 +1303,7 @@ function costHistoryFieldLabel(field) {
   if (field === 'cost_per_unit') return 'Average cost (WAC)';
   if (field === 'selling_price_per_unit') return 'Selling price';
   if (field === 'price_unit') return 'Price unit';
-  return field || '—';
+  return field || ':';
 }
 
 async function showInventoryCostHistoryModal(inventoryId, item) {
@@ -1312,7 +1312,7 @@ async function showInventoryCostHistoryModal(inventoryId, item) {
   const currency = typeof window.getDefaultCurrency === 'function' ? window.getDefaultCurrency() : 'CAD';
   const fmtMoney = (v) =>
     v == null || v === ''
-      ? '—'
+      ? ':'
       : typeof window.formatCurrency === 'function'
         ? window.formatCurrency(parseFloat(v), currency)
         : (currency === 'NGN' ? 'NGN ' : '$') + parseFloat(v).toFixed(2);
@@ -1376,20 +1376,20 @@ async function showInventoryCostHistoryModal(inventoryId, item) {
           r.field_changed === 'price_unit'
             ? r.old_value_text != null
               ? esc(r.old_value_text)
-              : '—'
+              : ':'
             : fmtMoney(r.old_value);
         const newV =
           r.field_changed === 'price_unit'
             ? r.new_value_text != null
               ? esc(r.new_value_text)
-              : '—'
+              : ':'
             : fmtMoney(r.new_value);
         return `<tr>
-          <td>${r.effective_from ? new Date(r.effective_from).toLocaleString() : '—'}</td>
+          <td>${r.effective_from ? new Date(r.effective_from).toLocaleString() : ':'}</td>
           <td>${esc(costHistoryFieldLabel(r.field_changed))}</td>
           <td>${oldV}</td>
           <td>${newV}</td>
-          <td>${esc(r.changed_by || '—')}</td>
+          <td>${esc(r.changed_by || ':')}</td>
         </tr>`;
       })
       .join('');
@@ -1397,13 +1397,13 @@ async function showInventoryCostHistoryModal(inventoryId, item) {
     const purRows = purchases
       .map((r) => {
         return `<tr>
-          <td>${r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</td>
-          <td>${r.quantity != null ? esc(r.quantity) : '—'}</td>
-          <td>${r.balance_after != null ? esc(r.balance_after) : '—'}</td>
-          <td>${r.unit_cost != null && r.unit_cost !== '' ? fmtMoney(r.unit_cost) : '—'}</td>
-          <td>${r.extended_cost != null && r.extended_cost !== '' ? fmtMoney(r.extended_cost) : '—'}</td>
-          <td style="max-width:220px;font-size:12px;">${esc(r.notes || r.reason || '—')}</td>
-          <td>${esc(r.performed_by_username || '—')}</td>
+          <td>${r.created_at ? new Date(r.created_at).toLocaleString() : ':'}</td>
+          <td>${r.quantity != null ? esc(r.quantity) : ':'}</td>
+          <td>${r.balance_after != null ? esc(r.balance_after) : ':'}</td>
+          <td>${r.unit_cost != null && r.unit_cost !== '' ? fmtMoney(r.unit_cost) : ':'}</td>
+          <td>${r.extended_cost != null && r.extended_cost !== '' ? fmtMoney(r.extended_cost) : ':'}</td>
+          <td style="max-width:220px;font-size:12px;">${esc(r.notes || r.reason || ':')}</td>
+          <td>${esc(r.performed_by_username || ':')}</td>
         </tr>`;
       })
       .join('');
@@ -1411,11 +1411,11 @@ async function showInventoryCostHistoryModal(inventoryId, item) {
     const othRows = other
       .map((r) => {
         return `<tr>
-          <td>${r.created_at ? new Date(r.created_at).toLocaleString() : '—'}</td>
-          <td>${esc(r.transaction_type || '—')}</td>
-          <td>${r.quantity != null ? esc(r.quantity) : '—'}</td>
-          <td>${r.balance_after != null ? esc(r.balance_after) : '—'}</td>
-          <td style="max-width:260px;font-size:12px;">${esc(r.notes || r.reason || '—')}</td>
+          <td>${r.created_at ? new Date(r.created_at).toLocaleString() : ':'}</td>
+          <td>${esc(r.transaction_type || ':')}</td>
+          <td>${r.quantity != null ? esc(r.quantity) : ':'}</td>
+          <td>${r.balance_after != null ? esc(r.balance_after) : ':'}</td>
+          <td style="max-width:260px;font-size:12px;">${esc(r.notes || r.reason || ':')}</td>
         </tr>`;
       })
       .join('');
@@ -1423,13 +1423,13 @@ async function showInventoryCostHistoryModal(inventoryId, item) {
     const lotRows = invLots
       .map((r) => {
         return `<tr>
-          <td>${r.expiry_date ? esc(r.expiry_date) : '—'}</td>
-          <td>${r.received_at ? new Date(r.received_at).toLocaleString() : '—'}</td>
-          <td>${r.quantity_on_hand != null ? esc(r.quantity_on_hand) : '—'}</td>
-          <td>${r.unit_cost != null && r.unit_cost !== '' ? fmtMoney(r.unit_cost) : '—'}</td>
-          <td>${esc(r.batch_number || '—')}</td>
-          <td>${esc(r.source || '—')}</td>
-          <td style="max-width:200px;font-size:12px;">${esc(r.notes || '—')}</td>
+          <td>${r.expiry_date ? esc(r.expiry_date) : ':'}</td>
+          <td>${r.received_at ? new Date(r.received_at).toLocaleString() : ':'}</td>
+          <td>${r.quantity_on_hand != null ? esc(r.quantity_on_hand) : ':'}</td>
+          <td>${r.unit_cost != null && r.unit_cost !== '' ? fmtMoney(r.unit_cost) : ':'}</td>
+          <td>${esc(r.batch_number || ':')}</td>
+          <td>${esc(r.source || ':')}</td>
+          <td style="max-width:200px;font-size:12px;">${esc(r.notes || ':')}</td>
         </tr>`;
       })
       .join('');
@@ -1875,7 +1875,7 @@ function loadPharmacistPrescribeForm() {
       resultsEl.innerHTML = data.map(p => {
         const name = [p.first_name, p.last_name].filter(Boolean).join(' ');
         const dob = p.date_of_birth ? (typeof p.date_of_birth === 'string' ? p.date_of_birth.substring(0, 10) : String(p.date_of_birth).substring(0, 10)) : '';
-        const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(p) : null) || p.patient_id || (p.id && !String(p.id).includes('-') ? p.id : '') || '—';
+        const displayId = (typeof window.getPatientIdentifier === 'function' ? window.getPatientIdentifier(p) : null) || p.patient_id || (p.id && !String(p.id).includes('-') ? p.id : '') || ':';
         const label = name + ' (' + displayId + ')' + (dob ? ' · DOB: ' + dob : '');
         const labelEsc = label.replace(/"/g, '&quot;');
         return `<div class="pharm-patient-option" style="padding: 10px; cursor: pointer; border-bottom: 1px solid #eee;" data-id="${p.id}" data-name="${labelEsc}">${label}</div>`;

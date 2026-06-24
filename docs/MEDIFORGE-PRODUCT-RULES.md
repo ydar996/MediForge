@@ -2,7 +2,7 @@
 
 These rules define how MediForge differs from the legacy codebase it was forked from. Agents and developers must follow them for all new work.
 
-**Last updated:** June 17, 2026
+**Last updated:** June 23, 2026
 
 ---
 
@@ -28,7 +28,7 @@ These rules define how MediForge differs from the legacy codebase it was forked 
 | Currency converter | CAD in `EXCHANGE_RATES` and `CURRENCY_INFO` |
 | Per-org override | Billing settings and org `currency` column still win |
 
-**Mecure Clinics exception:** After login, if org name contains “mecure”, `js/universal-data-loader.js` may set billing default to **NGN** — intentional for that clinic’s operations.
+**Mecure Clinics exception:** After login, if org name contains “mecure”, `js/universal-data-loader.js` may set billing default to **NGN**: intentional for that clinic’s operations.
 
 ---
 
@@ -41,7 +41,7 @@ MediForge uses a **dedicated Supabase project** with **no pre-seeded organizatio
 | Who | How they get access |
 |-----|---------------------|
 | **Mecure Clinics** | Owner registers via `/register` as the **first** organization after go-live |
-| **All other clinics** | Must complete `/register` (new org flow) — no manual seeding in production |
+| **All other clinics** | Must complete `/register` (new org flow): no manual seeding in production |
 | **Platform admin** | Created via `sql-scripts/create-platform-admin.sql` + Supabase Auth user |
 
 ### Do not
@@ -63,7 +63,7 @@ MediForge uses a **dedicated Supabase project** with **no pre-seeded organizatio
 
 - **No patient data** in the MediForge repo (no backup JSON dumps in git).
 - Schema export (`scripts/export-database-schema.ps1`) is **structure only**.
-- Tenant isolation via `organization_id` + RLS — never weaken RLS for convenience.
+- Tenant isolation via `organization_id` + RLS: never weaken RLS for convenience.
 
 ---
 
@@ -83,7 +83,7 @@ Placeholder values in `js/supabase-env.js` must be replaced before production us
 
 AI agents and anyone writing **to the project owner** (not internal dev docs) must:
 
-- Use the **simplest layman's terms** in **every** conversation — including feasibility, imports, database design, and “how would this work?”
+- Use the **simplest layman's terms** in **every** conversation: including feasibility, imports, database design, and “how would this work?”
 - Lead with what it means for the clinic; put technical detail in code comments or developer docs.
 - Do the work when possible; don't dump long technical checklists unless the owner asked to do it themselves.
 
@@ -97,9 +97,30 @@ Same as **`AGENT-HANDOVER.md`**: explicit approval, dev first, one batched deplo
 
 ---
 
+## 8. Writing style: no em dashes
+
+Do **not** use em dashes (—) in user-facing text, owner-facing documentation, marketing pages, or agent replies to the owner.
+
+| Instead of | Use |
+|------------|-----|
+| `Feature — description` | `Feature: description` |
+| `Updated June 2026 — share this page` | `Updated June 2026: share this page` |
+| `Built for clinics — not hospitals only` | `Built for clinics: not hospitals only` |
+
+**Preferred alternatives:** colon, comma, period, or parentheses.
+
+**Check:** `npm run check:no-em-dash` (also runs in full `npm run check`).
+
+**Bulk fix:** `node scripts/replace-em-dashes.mjs`
+
+Agents must follow this without the owner needing to repeat it. See **`AGENT-HANDOVER.md`** → **Rule #2**.
+
+---
+
 ## Change log
 
 | Date | Change |
 |------|--------|
-| 2026-06-17 | §6 Communication with project owner — simplest layman's terms always |
+| 2026-06-23 | §8 No em dashes: colons preferred; check script added |
+| 2026-06-17 | §6 Communication with project owner: simplest layman's terms always |
 | 2026-06-11 | Initial rules document at MediForge fork |

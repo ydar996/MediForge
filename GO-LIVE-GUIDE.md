@@ -2,8 +2,8 @@
 
 MediForge has two halves:
 
-1. **The website** (all the pages) — lives on **Netlify**.
-2. **The database** (organizations, users, patients) — lives on **Supabase**.
+1. **The website** (all the pages): lives on **Netlify**.
+2. **The database** (organizations, users, patients): lives on **Supabase**.
 
 You set up the database first, then the website. The new database starts **empty**:
 you will register **Mecure Clinics** as the first organization, and every other
@@ -11,7 +11,7 @@ organization must register themselves through the site.
 
 ---
 
-## Part 1 — Create the database (about 15 minutes)
+## Part 1: Create the database (about 15 minutes)
 
 ### Step 1: Create a new Supabase project (5 min)
 
@@ -23,7 +23,7 @@ organization must register themselves through the site.
 ### Step 2: Copy the database structure from your old project (5 min)
 
 The new project needs the same tables and security rules as your old system
-(structure only — **no patient data is copied**).
+(structure only: **no patient data is copied**).
 
 1. Make sure **Docker Desktop** is running on your PC (whale icon in the taskbar).
 2. In your **old** Supabase project: click **Connect** (top bar) and copy the
@@ -50,13 +50,13 @@ The new project needs the same tables and security rules as your old system
 
 ---
 
-## Part 2 — Put the website live (about 10 minutes)
+## Part 2: Put the website live (about 10 minutes)
 
 ### Step 4: Connect the website to your new database (2 min)
 
 1. In the new Supabase project: **Project Settings → API**. You'll see two things:
    - **Project URL** (looks like `https://abcd1234.supabase.co`)
-   - **Publishable / anon key** (a long code — this one is safe for browsers)
+   - **Publishable / anon key** (a long code: this one is safe for browsers)
 2. Open the file `js/supabase-env.js` in this folder and replace the two
    placeholder values with yours. Save.
 
@@ -93,7 +93,7 @@ run on Netlify's servers and need their own keys:
 
 ---
 
-## Part 3 — Create Mecure Clinics (5 minutes)
+## Part 3: Create Mecure Clinics (5 minutes)
 
 1. Open your live site and go to `/register`.
 2. Register **Mecure Clinics** as a new organization, with its admin user.

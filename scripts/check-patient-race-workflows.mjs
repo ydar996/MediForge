@@ -56,7 +56,7 @@ assertNotMatch(
   'intake payload has no tribe field'
 );
 
-// patients.js: race only — no tribe storage or fallbacks
+// patients.js: race only: no tribe storage or fallbacks
 assertNotMatch('js/patients.js', /\btribe\b/, 'patients.js has no tribe references');
 assertNotMatch('netlify/functions/secure-supabase.js', /\btribe\b/, 'secure-supabase has no tribe references');
 

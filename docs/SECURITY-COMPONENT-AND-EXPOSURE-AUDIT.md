@@ -2,7 +2,7 @@
 
 **Date:** May 2026  
 **Scope:** MediForge repo, Netlify deploy (dev / staging / production), Supabase  
-**Status:** Tier A complete — Tier B library updates complete (May 2026)
+**Status:** Tier A complete: Tier B library updates complete (May 2026)
 
 ---
 
@@ -19,7 +19,7 @@ Tier **A** must be done first (especially **rotating Supabase keys**). Tiers B a
 
 ## Findings by severity
 
-### Critical — public exposure
+### Critical: public exposure
 
 | Issue | Evidence | Risk |
 |--------|----------|------|
@@ -27,14 +27,14 @@ Tier **A** must be done first (especially **rotating Supabase keys**). Tiers B a
 | **Admin / recovery / test pages deployed** | e.g. `unlock-all-locked-accounts.html` on production | Extra attack surface; some tools change auth or data |
 | **Entire repo published** | `publish = "."` in `netlify.toml` | `sql-scripts/`, backup folders, migration tools exposed unless blocked |
 
-### High — outdated libraries (production)
+### High: outdated libraries (production)
 
 | Component | Version in use | Notes |
 |-----------|----------------|-------|
 | **jsPDF** | 2.5.1 (cdnjs) | Used on subscription/legal PDF pages; CVEs fixed in 3.0.1+ / 4.x |
 | **Supabase JS** | 2.45.0 vendored + unpinned `@2` on many HTML files | Stale; supply-chain drift on CDN copies |
 
-### Medium — dev/build only
+### Medium: dev/build only
 
 | Component | Version | Notes |
 |-----------|---------|-------|
@@ -45,7 +45,7 @@ Tier **A** must be done first (especially **rotating Supabase keys**). Tiers B a
 
 | Issue | Notes |
 |--------|-------|
-| **html2canvas 1.4.1** | Old; clinical/PDF flows — monitor |
+| **html2canvas 1.4.1** | Old; clinical/PDF flows: monitor |
 | **CSP `unsafe-inline`** | Weakens XSS protection; hard to remove quickly |
 | **Unpinned Netlify Node** | Functions use Netlify default runtime |
 
@@ -59,7 +59,7 @@ Tier **A** must be done first (especially **rotating Supabase keys**). Tiers B a
 
 ## Remediation tiers
 
-### Tier A — do first (critical)
+### Tier A: do first (critical)
 
 | ID | Action | Owner | Repo / ops |
 |----|--------|-------|------------|
@@ -72,18 +72,18 @@ Tier **A** must be done first (especially **rotating Supabase keys**). Tiers B a
 
 **Tier A is complete** (keys rotated, legacy JWT disabled, credentials file removed/blocked).
 
-### Tier B — library updates (complete May 2026)
+### Tier B: library updates (complete May 2026)
 
 | ID | Action | Status |
 |----|--------|--------|
-| **B1** | jsPDF **4.2.1** on subscription/legal/dashboard PDF pages | Done — CDN pins via `npm run sync:vendor` |
-| **B2** | `@supabase/supabase-js` **2.106.1** vendored + pinned CDN | Done — `js/vendor/supabase.min.js` |
-| **B3** | `npm audit fix`; Puppeteer **≥ 25** | Done — 0 npm audit vulnerabilities |
-| **B4** | html2canvas review | Done — **1.4.1** is latest on npm; pinned on all CDN refs; used for DOM capture before PDF on clinical/billing pages; no newer release to adopt |
+| **B1** | jsPDF **4.2.1** on subscription/legal/dashboard PDF pages | Done: CDN pins via `npm run sync:vendor` |
+| **B2** | `@supabase/supabase-js` **2.106.1** vendored + pinned CDN | Done: `js/vendor/supabase.min.js` |
+| **B3** | `npm audit fix`; Puppeteer **≥ 25** | Done: 0 npm audit vulnerabilities |
+| **B4** | html2canvas review | Done: **1.4.1** is latest on npm; pinned on all CDN refs; used for DOM capture before PDF on clinical/billing pages; no newer release to adopt |
 
 Regenerate pins: `npm run sync:vendor` (see `js/vendor/vendor-manifest.json`).
 
-### Tier C — hardening (later)
+### Tier C: hardening (later)
 
 | ID | Action |
 |----|--------|

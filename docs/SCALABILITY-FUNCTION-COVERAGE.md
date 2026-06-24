@@ -1,8 +1,8 @@
-# Scalability & isolation — Netlify Functions coverage register
+# Scalability & isolation: Netlify Functions coverage register
 
 **Purpose:** Every serverless function under `netlify/functions/*.js` is classified and reviewed for **timeout/memory limits**, **unbounded work** (loops, full-table scans), **tenant isolation** (service role, missing `organization_id`), and **abuse** (auth, rate limits). Complements `SCALABILITY-PAGE-COVERAGE.md` (browser entry points).
 
-**Parent plan:** `docs/SCALABILITY-AND-ISOLATION-IMPLEMENTATION-PLAN.md` — treat this register as a **Phase 0 deliverable** for backend entry points.
+**Parent plan:** `docs/SCALABILITY-AND-ISOLATION-IMPLEMENTATION-PLAN.md`: treat this register as a **Phase 0 deliverable** for backend entry points.
 
 **Scope:** `netlify/functions/**/*.js` (currently flat `*.js` only). If you add subfolders or new handlers, **append a row** or regenerate via the script below.
 
@@ -24,8 +24,8 @@
 | Column | Values |
 |--------|--------|
 | **Tier** | A / B / C / D (required) |
-| **Scalability** | Pending / N/A / Done — timeouts, batching, cold-start impact |
-| **Isolation** | Pending / N/A / Done — org boundaries, auth, service-role guardrails |
+| **Scalability** | Pending / N/A / Done: timeouts, batching, cold-start impact |
+| **Isolation** | Pending / N/A / Done: org boundaries, auth, service-role guardrails |
 | **Trigger** | HTTP path, cron schedule, or internal |
 | **Notes** | Tables/RPCs touched, env vars, link to `SCALABILITY-INVENTORY.md` |
 

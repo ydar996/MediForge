@@ -2,7 +2,7 @@
 
 **Audience:** Someone comfortable with web dashboards and copy-paste, not necessarily a database expert.
 
-**Goal:** You already have **production** data in one Supabase project. This guide helps you add **two new empty projects**—**Staging** and **Dev**—with the **same table structure** (schema) as production, so tests and experiments do not touch live patient data.
+**Goal:** You already have **production** data in one Supabase project. This guide helps you add **two new empty projects**:**Staging** and **Dev**:with the **same table structure** (schema) as production, so tests and experiments do not touch live patient data.
 
 **Related:** Netlify sites and branches are described in [`DEPLOYMENT-ENVIRONMENTS.md`](../DEPLOYMENT-ENVIRONMENTS.md). Site IDs are in [`NETLIFY-SITE-IDS.txt`](../NETLIFY-SITE-IDS.txt).
 
@@ -14,14 +14,14 @@
 
 | Term | Meaning | For dev/staging |
 |------|---------|-----------------|
-| **Organization** | Billing folder (e.g. **MediForge**) | **Keep the one you have** — do not create a new org |
+| **Organization** | Billing folder (e.g. **MediForge**) | **Keep the one you have**: do not create a new org |
 | **Project** | One database + Auth + Storage for one environment | **Create 2 new projects** inside MediForge org |
 
 You end with **1 organization, 3 projects** (Prod + Dev + Staging). You are **not** creating extra organizations.
 
 - **Supabase project** = one dedicated PostgreSQL database + Auth + Storage + APIs for that environment.
 - **Production** stays where it is. You **do not delete or move** it in this guide.
-- You will **create two new projects** (click **New project**, not **New organization**), then **replay** the same SQL migration files your team already uses so the new databases **look like** production structurally (tables, policies, functions)—usually **without** copying real patient rows.
+- You will **create two new projects** (click **New project**, not **New organization**), then **replay** the same SQL migration files your team already uses so the new databases **look like** production structurally (tables, policies, functions):usually **without** copying real patient rows.
 
 ---
 
@@ -38,17 +38,17 @@ You end with **1 organization, 3 projects** (Prod + Dev + Staging). You are **no
 
 1. Go to [Supabase Dashboard](https://supabase.com/dashboard).
 2. Open your **MediForge** organization (where **MediForge-Prod** already lives).
-3. Click **New project** — **not** “+ New organization”.
+3. Click **New project**: **not** “+ New organization”.
 4. Confirm **Organization: MediForge** on the form (same org as production).
 5. **Name:** e.g. `MediForge Staging` (any clear name).
 6. **Database password:** generate a strong password and **save it** in your password manager (you rarely need it day-to-day, but you need it for some tools).
 7. **Region:** match production (see §2).
-8. **Pricing plan:** choose what fits your org (Free tier has limits; paid orgs bill **compute per project**—see Supabase pricing). Staging is often on the **smallest** instance size.
+8. **Pricing plan:** choose what fits your org (Free tier has limits; paid orgs bill **compute per project**:see Supabase pricing). Staging is often on the **smallest** instance size.
 9. Click **Create new project** and wait until the dashboard shows the project as ready.
 
 **Write down:**
 
-- **Project reference** (a short id like `abcdefghijklmnop`) — visible in **Settings → General**.
+- **Project reference** (a short id like `abcdefghijklmnop`): visible in **Settings → General**.
 - Nothing else yet; keys come in the next step.
 
 ---
@@ -85,7 +85,7 @@ Your repository stores SQL under `supabase/migrations/`. Those files are the **r
 
 You have two practical approaches.
 
-### Option A — Recommended if someone on the team uses the terminal: Supabase CLI
+### Option A: Recommended if someone on the team uses the terminal: Supabase CLI
 
 1. Install the [Supabase CLI](https://supabase.com/docs/guides/cli) on your computer.
 2. In a terminal, go to your project folder (the repo root where the `supabase` folder lives).
@@ -95,9 +95,9 @@ You have two practical approaches.
    - This applies migration history to that project. Resolve any errors with your developer; first-time setup issues are usually fixable.
 6. **Link** to **Dev**: `supabase link --project-ref <DEV_PROJECT_REF>` and run `supabase db push` again.
 
-If the repo has no `supabase/config.toml`, the CLI may ask you to run `supabase init` once in the repo—your developer can confirm; the important part is **link + push** per project.
+If the repo has no `supabase/config.toml`, the CLI may ask you to run `supabase init` once in the repo:your developer can confirm; the important part is **link + push** per project.
 
-### Option B — No CLI: run SQL in the Supabase SQL Editor (dashboard)
+### Option B: No CLI: run SQL in the Supabase SQL Editor (dashboard)
 
 1. Open **Staging** → **SQL Editor**.
 2. Run migration files **in chronological order** by the date prefix in the filename (e.g. `20250118000000_...` before `20251105000000_...`).
@@ -116,7 +116,7 @@ If the repo has no `supabase/config.toml`, the CLI may ask you to run `supabase 
 | Approach | When to use |
 |----------|-------------|
 | **Empty + test data** | Safest default. Create a fake organization and users for testing. |
-| **Anonymized subset** | When you need realistic volume without real identities—requires a planned export/process; get compliance advice first. |
+| **Anonymized subset** | When you need realistic volume without real identities:requires a planned export/process; get compliance advice first. |
 | **Full copy of production** | Highest risk (PHI duplication). Only with explicit policy, encryption, and access control. Not covered here. |
 
 For most teams, **start empty** and add only what you need to click through the app.
@@ -168,7 +168,7 @@ You have **three Netlify sites** (see `NETLIFY-SITE-IDS.txt`). Each site should 
 
 ## 11. Quick verification (smoke test)
 
-1. In **Staging** SQL Editor, run: `select count(*) from information_schema.tables where table_schema = 'public';` — you should see a non-zero count if migrations ran.
+1. In **Staging** SQL Editor, run: `select count(*) from information_schema.tables where table_schema = 'public';`: you should see a non-zero count if migrations ran.
 2. Log in to the **staging Netlify URL** (once frontend points at Staging Supabase) with a **user that exists only in Staging Auth**.
 3. Confirm you **cannot** see production-only data if databases were kept separate.
 
@@ -188,8 +188,8 @@ Store API keys in **Netlify env** and a **secure vault**, not in the Git repo.
 
 ## 13. If something goes wrong
 
-- **“Permission denied” or RLS errors:** Often normal until test users and org rows exist; compare with how production seeds admin users (migrations or manual SQL—ask your developer).
-- **Migration fails halfway:** Do not guess; snapshot the error message and fix forward with help—avoid half-applied manual runs on production.
+- **“Permission denied” or RLS errors:** Often normal until test users and org rows exist; compare with how production seeds admin users (migrations or manual SQL:ask your developer).
+- **Migration fails halfway:** Do not guess; snapshot the error message and fix forward with help:avoid half-applied manual runs on production.
 - **Wrong database from the browser:** Frontend config must match the site; see §9.
 
 ---

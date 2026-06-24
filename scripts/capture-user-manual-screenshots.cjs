@@ -80,7 +80,7 @@ async function loginClinic(page) {
       return el ? el.textContent.trim() : '';
     });
     throw new Error(
-      'Login failed — still on login page.' +
+      'Login failed: still on login page.' +
         (errText ? ` Message: ${errText}` : ' Check MANUAL_USERNAME / MANUAL_PASSWORD.')
     );
   }
@@ -158,7 +158,7 @@ async function main() {
     } else if (!attached) {
       await loginClinic(page);
     } else {
-      console.log('Connected Chrome is not logged in — log in on dev, then re-run with --connect');
+      console.log('Connected Chrome is not logged in: log in on dev, then re-run with --connect');
       await browser.disconnect();
       process.exit(1);
     }

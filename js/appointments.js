@@ -577,7 +577,7 @@ function filterAppointments() {
   
   const query = (document.getElementById("appt-search") || {}).value || '';
   
-  // Filter appointments based on search query (guard missing fields — undefined patientName threw and cleared UI)
+  // Filter appointments based on search query (guard missing fields: undefined patientName threw and cleared UI)
   const q = (query || '').toLowerCase();
   filteredAppointments = allAppointments.filter((appt) => {
     const name = (appt.patientName || appt.patient_name || '').toString().toLowerCase();
@@ -1929,7 +1929,7 @@ async function loadAvailableSlots() {
   }
 }
 
-// Add appointment (skip on add-appointment.html — that page has its own submit handler)
+// Add appointment (skip on add-appointment.html: that page has its own submit handler)
 const addForm = document.getElementById("add-appointment-form");
 const addAppointmentPage = /add-appointment/i.test(window.location.pathname || '');
 if (addForm && !addAppointmentPage) {
@@ -2043,7 +2043,7 @@ if (addForm && !addAppointmentPage) {
     //   if (slotTime <= now) { alert("Cannot book past times on the current day."); return; }
     // }
 
-    // Duplicate guard (local) — allow retry when a prior save never reached the cloud
+    // Duplicate guard (local): allow retry when a prior save never reached the cloud
     const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
     const hasExisting = appointments.some(appt => {
       if (appt.date !== selectedDate || appt.patientName !== displayName) return false;
@@ -2536,7 +2536,7 @@ async function generateDailyView(date) {
         const patientLink = await renderSchedulePatientLink(appt);
         const status = scheduleEscapeHtml(appt.status || 'scheduled');
         html += `<tr>
-          <td>${scheduleEscapeHtml(appt.time || '—')}</td>
+          <td>${scheduleEscapeHtml(appt.time || ':')}</td>
           <td>${scheduleEscapeHtml(formatProviderDisplayName(appt.doctor || appt.doctor_name || 'Unassigned'))}</td>
           <td>${patientLink}</td>
           <td style="text-transform: capitalize;">${status}</td>
@@ -2564,7 +2564,7 @@ async function generateDailyView(date) {
           : '';
         status = `<a href="add-appointment?date=${dateStr}&time=${slot}${doctorParam}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">Free</a>`;
       }
-      html += `<tr><td>${slot}</td><td>${status}</td><td style="text-transform: capitalize;">${slotAppts.length ? scheduleEscapeHtml(slotAppts[0].status || 'scheduled') : '—'}</td></tr>`;
+      html += `<tr><td>${slot}</td><td>${status}</td><td style="text-transform: capitalize;">${slotAppts.length ? scheduleEscapeHtml(slotAppts[0].status || 'scheduled') : ':'}</td></tr>`;
     }
     html += '</tbody></table>';
   }
@@ -2579,7 +2579,7 @@ async function generateDailyByProviderView(date) {
   const providers = await getScheduleProviders(date);
   const allSlots = getAllSlots();
 
-  let html = `<h3>Daily Schedule by Provider — ${date.toDateString()}</h3>`;
+  let html = `<h3>Daily Schedule by Provider: ${date.toDateString()}</h3>`;
   html += '<button onclick="changeDate(-1, \'byProvider\')">Previous Day</button> ';
   html += '<button onclick="changeDate(1, \'byProvider\')">Next Day</button>';
 
@@ -2815,7 +2815,7 @@ async function showDailyDetails(dateStr) {
                   <h4 style="margin: 0 0 10px 0; color: #333;">${scheduleEscapeHtml(formatProviderDisplayName(provider.label))} <span style="font-weight: normal; color: #666;">(${providerAppts.length})</span></h4>
                   <ul style="margin: 0; padding-left: 20px;">
                     ${providerAppts.sort((a, b) => (a.time || '').localeCompare(b.time || '')).map((apt) =>
-                      `<li style="margin-bottom: 6px;"><strong>${scheduleEscapeHtml(apt.time || '—')}</strong> — ${scheduleEscapeHtml(apt.patientName)}${apt.appointment_type ? ` <span style="color:#666;">(${scheduleEscapeHtml(apt.appointment_type)})</span>` : ''}</li>`
+                      `<li style="margin-bottom: 6px;"><strong>${scheduleEscapeHtml(apt.time || ':')}</strong>: ${scheduleEscapeHtml(apt.patientName)}${apt.appointment_type ? ` <span style="color:#666;">(${scheduleEscapeHtml(apt.appointment_type)})</span>` : ''}</li>`
                     ).join('')}
                   </ul>
                 </div>`;

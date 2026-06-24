@@ -1,4 +1,4 @@
-# MediForge Release Notes — June 2026 (Dev → Staging → Production)
+# MediForge Release Notes: June 2026 (Dev → Staging → Production)
 
 **Release train:** `dev` → `staging` → `main`  
 **Production website:** https://mediforge.netlify.app  
@@ -6,7 +6,7 @@
 **Dev website:** https://mediforge-dev.netlify.app  
 
 **Commits included:** `3e01354` through `23fb50b` (23 commits ahead of previous production)  
-**⚠️ Database required:** Run SQL Steps 1–10 on **each** environment after deploy — see [SQL-RUN-PACKET-DEV-STAGING.md](SQL-RUN-PACKET-DEV-STAGING.md)
+**⚠️ Database required:** Run SQL Steps 1–10 on **each** environment after deploy: see [SQL-RUN-PACKET-DEV-STAGING.md](SQL-RUN-PACKET-DEV-STAGING.md)
 
 ---
 
@@ -23,7 +23,7 @@ This release transforms MediForge from an Africa-market EHR baseline into a **Ca
 | Feature | Detail |
 |---------|--------|
 | **Canada-first address UX** | Country defaults to Canada; cascading **province/state** and **city** dropdowns; **postal code** validation for CA/US |
-| **Join existing organization** | Fixed RLS failures — user signs into Supabase Auth before profile insert; `insert_registration_profile` RPC for secure profile creation |
+| **Join existing organization** | Fixed RLS failures: user signs into Supabase Auth before profile insert; `insert_registration_profile` RPC for secure profile creation |
 | **Plain-English errors** | Registration failures show readable messages (username taken, org not found, etc.) |
 | **Auth email sanitization** | Internal `@mediforge.app` auth emails generated correctly from username + org id |
 | **Payer / insurance fields** | Payment source, provincial health card (PHN), private insurance member/policy numbers on registration |
@@ -47,7 +47,7 @@ Steps **1**, **6**, **7** in SQL run packet.
 
 ---
 
-## 2. Patient demographics — race (replaces Tribe)
+## 2. Patient demographics: race (replaces Tribe)
 
 ### New / improved
 
@@ -88,7 +88,7 @@ Steps **2**, **3**, **6**.
 
 ---
 
-## 4. Diagnosis codes — ICD-10-CA (Canadian physicians)
+## 4. Diagnosis codes: ICD-10-CA (Canadian physicians)
 
 ### New / improved
 
@@ -144,9 +144,9 @@ None.
 | **FHIR R4** | ServiceRequest, DiagnosticReport, MedicationRequest (Infoway profile) |
 | **DICOMweb** | QIDO-RS, WADO-RS, STOW-RS; C-FIND/C-MOVE via gateway |
 | **Province config** | Ontario, BC, Alberta templates (`config/canada-provinces.json`, `config/provinces/*.json`) |
-| **Gateway** | `netlify/functions/interop-gateway.js` — server-side routing + audit |
+| **Gateway** | `netlify/functions/interop-gateway.js`: server-side routing + audit |
 | **Workflow hooks** | Auto-transmit on lab/imaging order save, signed Rx; PHN registration on patient save |
-| **Connection guide** | `MEDIFORGE-CONNECTION-GUIDE.md` — OntarioMD, Infoway, OLIS onboarding steps |
+| **Connection guide** | `MEDIFORGE-CONNECTION-GUIDE.md`: OntarioMD, Infoway, OLIS onboarding steps |
 
 ### Default state
 
@@ -167,9 +167,9 @@ Step **4** (`interop_messages`, `patient_identifiers` tables).
 | **Payer engine** | OHIP, RAMQ, MSP, AHCIP detection; invoice enrichment with payer split |
 | **Claim drafts** | Provincial claim draft generation (MCEDT/Teleplan/HLINK transport placeholders) |
 | **Remittance** | ERA parsing and invoice reconciliation |
-| **Patient payments** | Cash, check, bank transfer, Interac e-Transfer, Zelle, card — with audit hooks |
+| **Patient payments** | Cash, check, bank transfer, Interac e-Transfer, Zelle, card: with audit hooks |
 | **Billing check-in** | New page wiring payer engine to check-in flow |
-| **Config** | `config/billing-payers.json` — provincial payers, private insurers, copay rules |
+| **Config** | `config/billing-payers.json`: provincial payers, private insurers, copay rules |
 
 ### SQL required
 
@@ -177,7 +177,7 @@ Step **5** (`patient_payer_profiles`, `insurance_claims` tables).
 
 ---
 
-## 8. UI quality — icons & encoding
+## 8. UI quality: icons & encoding
 
 ### Fixed
 
@@ -201,8 +201,8 @@ None.
 |------|--------|
 | **Three-environment pipeline** | `dev` / `staging` / `main` branches → Netlify sites |
 | **Deploy docs** | `DEPLOYMENT-PIPELINE.md`, `SETUP-DEV-STAGING-SIMPLE.md`, `PROMOTE-RELEASE-WALKTHROUGH.md` |
-| **SQL packet** | `SQL-RUN-PACKET-DEV-STAGING.md` — Steps 1–10 idempotent |
-| **Clinical tests** | `npm run test:clinical` — 32 tests (interop + integrations + billing) |
+| **SQL packet** | `SQL-RUN-PACKET-DEV-STAGING.md`: Steps 1–10 idempotent |
+| **Clinical tests** | `npm run test:clinical`: 32 tests (interop + integrations + billing) |
 | **ICD-10 page tests** | `npm run test:icd10` / `test:icd10:dev` |
 | **Netlify build** | `inject-supabase-env.cjs` + `npm run check` on deploy |
 
@@ -237,8 +237,8 @@ Run on **MediForge Staging** first, then **MediForge-Prod** after staging smoke 
 ### Smoke test (each environment after SQL)
 
 1. Register test clinic (Canada address + postal code) OR join with org code  
-2. Add patient — Race dropdown, ICD-10 search (diabetes → E11)  
-3. Add patient-reported medication — custom name + dosage  
+2. Add patient: Race dropdown, ICD-10 search (diabetes → E11)  
+3. Add patient-reported medication: custom name + dosage  
 4. Patient intake link → submit → staff approve  
 5. Dashboard → verify ICD-10/ICD-11 toggle under Facility Configuration  
 

@@ -1,4 +1,4 @@
-# Scalability & Multi-Tenant Isolation — Implementation Plan
+# Scalability & Multi-Tenant Isolation: Implementation Plan
 
 **Purpose:** Executable plan to improve **query scalability** and **organization-level data isolation** without breaking existing features. Suitable for internal execution or handover to another engineer/agent.
 
@@ -8,7 +8,7 @@
 
 **Document version:** 1.1  
 **Last updated:** 2026-03-25  
-**Change log:** 1.1 — Mandatory **full root-level page coverage** via `docs/SCALABILITY-PAGE-COVERAGE.md`; **Netlify Functions** checklist via `docs/SCALABILITY-FUNCTION-COVERAGE.md`.
+**Change log:** 1.1: Mandatory **full root-level page coverage** via `docs/SCALABILITY-PAGE-COVERAGE.md`; **Netlify Functions** checklist via `docs/SCALABILITY-FUNCTION-COVERAGE.md`.
 
 ---
 
@@ -24,11 +24,11 @@
 
 ## 2. Principles (non-negotiable)
 
-1. **One vertical slice per PR** — e.g. “patient list pagination” only, not patients + appointments + orders in one change.
-2. **Backward compatibility** — Same user journeys (URLs, roles); changes are **data-fetch shape** (limits, columns), not removal of features.
-3. **Staging first** — Every merge to `dev`/`staging` runs automated/manual regression (Section 8) before production.
-4. **Feature flags (optional)** — Use env or runtime flags for risky paths (e.g. `STRICT_PAGINATION=true`) if behavior differs for tiny vs large orgs.
-5. **Migrations are additive first** — Prefer new indexes and new query patterns; avoid destructive DDL until validated.
+1. **One vertical slice per PR**: e.g. “patient list pagination” only, not patients + appointments + orders in one change.
+2. **Backward compatibility**: Same user journeys (URLs, roles); changes are **data-fetch shape** (limits, columns), not removal of features.
+3. **Staging first**: Every merge to `dev`/`staging` runs automated/manual regression (Section 8) before production.
+4. **Feature flags (optional)**: Use env or runtime flags for risky paths (e.g. `STRICT_PAGINATION=true`) if behavior differs for tiny vs large orgs.
+5. **Migrations are additive first**: Prefer new indexes and new query patterns; avoid destructive DDL until validated.
 
 ---
 
@@ -60,7 +60,7 @@ Execute phases **in order** unless Phase 0/1 runs in parallel with doc-only work
 
 ---
 
-## 5. Phase 0 — Baseline & inventory
+## 5. Phase 0: Baseline & inventory
 
 ### 5.1 Goals
 
@@ -93,10 +93,10 @@ Execute phases **in order** unless Phase 0/1 runs in parallel with doc-only work
 
 ### 5.3 Deliverables
 
-- `docs/SCALABILITY-PAGE-COVERAGE.md` — **authoritative list of all root `*.html` pages** with Tier + Scalability + Isolation columns (maintained in git).
-- `docs/SCALABILITY-FUNCTION-COVERAGE.md` — **authoritative list of all `netlify/functions` handlers** with the same columns (cron, HTTP proxy, email, etc.).
-- `docs/SCALABILITY-INVENTORY.md` (or appendix in this file) — table of **queries** and risk rating (High/Med/Low); cross-link page names to the coverage register.
-- `docs/REGRESSION-CHECKLIST-SCALABILITY.md` — copy Section 8 into a standalone checklist for QA.
+- `docs/SCALABILITY-PAGE-COVERAGE.md`: **authoritative list of all root `*.html` pages** with Tier + Scalability + Isolation columns (maintained in git).
+- `docs/SCALABILITY-FUNCTION-COVERAGE.md`: **authoritative list of all `netlify/functions` handlers** with the same columns (cron, HTTP proxy, email, etc.).
+- `docs/SCALABILITY-INVENTORY.md` (or appendix in this file): table of **queries** and risk rating (High/Med/Low); cross-link page names to the coverage register.
+- `docs/REGRESSION-CHECKLIST-SCALABILITY.md`: copy Section 8 into a standalone checklist for QA.
 
 ### 5.4 Acceptance criteria
 
@@ -106,11 +106,11 @@ Execute phases **in order** unless Phase 0/1 runs in parallel with doc-only work
 - [ ] Tier C/D pages explicitly marked so implementers do not waste cycles on static assets.
 - [ ] No production code change required for Phase 0 (optional: add comments in inventory linking to line numbers).
 
-**Scope note:** Only **root** `*.html` files are listed in the page register. Shared `js/*.js` modules are covered **via** the pages that load them (inventory links `patients.html` → `js/patients.js`). HTML under archive folders (e.g. `sync-upgrade-backup-*`) is **out of scope** unless product still links to it — if so, add a one-off row or move the page into root and regenerate.
+**Scope note:** Only **root** `*.html` files are listed in the page register. Shared `js/*.js` modules are covered **via** the pages that load them (inventory links `patients.html` → `js/patients.js`). HTML under archive folders (e.g. `sync-upgrade-backup-*`) is **out of scope** unless product still links to it: if so, add a one-off row or move the page into root and regenerate.
 
 ---
 
-## 6. Phase 1 — Indexes & query alignment
+## 6. Phase 1: Indexes & query alignment
 
 ### 6.1 Goals
 
@@ -147,7 +147,7 @@ Execute phases **in order** unless Phase 0/1 runs in parallel with doc-only work
 
 ---
 
-## 7. Phase 2 — Pagination & narrow `select()`
+## 7. Phase 2: Pagination & narrow `select()`
 
 ### 7.1 Goals
 
@@ -167,10 +167,10 @@ Default: .select('id, patient_id, first_name, last_name, dob, ...')
 
 **Source of truth:** After Phase 0, sort **Tier A** pages from `docs/SCALABILITY-PAGE-COVERAGE.md` where **Scalability** ≠ `N/A` and **Scalability** ≠ `Done`, ordered by **inventory risk** (High first). The list below is the **default** starting order if priorities are equal:
 
-1. **Patient list / search** — `patients.html`, `js/patients.js`, `js/supabase-patients.js`, `js/universal-data-loader.js` (as applicable).
-2. **Appointments** — `appointments.html`, `js/appointments.js`, related pages.
-3. **Lab orders** — `lab-scientist-dashboard.html`, `select-lab-orders.html`, related JS.
-4. **Messages** — `messages.html`, `js/messages.js`.
+1. **Patient list / search**: `patients.html`, `js/patients.js`, `js/supabase-patients.js`, `js/universal-data-loader.js` (as applicable).
+2. **Appointments**: `appointments.html`, `js/appointments.js`, related pages.
+3. **Lab orders**: `lab-scientist-dashboard.html`, `select-lab-orders.html`, related JS.
+4. **Messages**: `messages.html`, `js/messages.js`.
 5. **Remaining Tier A** pages with bulk loads (e.g. `inpatient-dashboard.html`, `reports.html`, `billing-dashboard.html`) per register.
 6. **Tier B** (platform/security/billing ops) after Tier A hot paths.
 
@@ -234,7 +234,7 @@ Default: .select('id, patient_id, first_name, last_name, dob, ...')
 
 ---
 
-## 9. Phase 3 — localStorage / hybrid data caps
+## 9. Phase 3: localStorage / hybrid data caps
 
 ### 9.1 Goals
 
@@ -261,7 +261,7 @@ Default: .select('id, patient_id, first_name, last_name, dob, ...')
 
 ---
 
-## 10. Phase 4 — RLS audit & hardening
+## 10. Phase 4: RLS audit & hardening
 
 ### 10.1 Goals
 
@@ -270,7 +270,7 @@ Default: .select('id, patient_id, first_name, last_name, dob, ...')
 
 ### 10.2 Tasks
 
-1. **Export policy list** — For each table with PHI: RLS enabled? Policies listed?
+1. **Export policy list**: For each table with PHI: RLS enabled? Policies listed?
 2. **Standard pattern** (adapt to your auth model):
    - `USING (organization_id = auth.jwt() ->> 'organization_id')`  
    - Or `organization_id IN (SELECT ... from user_org_map ...)`  
@@ -299,7 +299,7 @@ Default: .select('id, patient_id, first_name, last_name, dob, ...')
 
 ---
 
-## 11. Phase 5 — Rate limiting & expensive operations
+## 11. Phase 5: Rate limiting & expensive operations
 
 ### 11.1 Goals
 
@@ -320,7 +320,7 @@ Default: .select('id, patient_id, first_name, last_name, dob, ...')
 
 ---
 
-## 12. Phase 6 — Optional scale tier (async, replicas, dedicated tenants)
+## 12. Phase 6: Optional scale tier (async, replicas, dedicated tenants)
 
 ### 12.1 When to trigger
 
@@ -404,12 +404,12 @@ Output: PR description, migration file names, and any env vars added.
 
 This plan **does** cover **all** deployable root-level HTML entry points by requiring:
 
-1. **`docs/SCALABILITY-PAGE-COVERAGE.md`** — one row per `*.html` in the repository root (regenerate when pages are added/removed).
-2. **`docs/SCALABILITY-FUNCTION-COVERAGE.md`** — one row per `netlify/functions` handler (regenerate when functions are added/removed).
-3. **Tier assignment** — every page and every function gets A/B/C/D so work is prioritized correctly; nothing is “invisible” to the plan.
-4. **Phase 2+** — implementation order is driven by the registers + inventory risk, not an informal subset of pages.
+1. **`docs/SCALABILITY-PAGE-COVERAGE.md`**: one row per `*.html` in the repository root (regenerate when pages are added/removed).
+2. **`docs/SCALABILITY-FUNCTION-COVERAGE.md`**: one row per `netlify/functions` handler (regenerate when functions are added/removed).
+3. **Tier assignment**: every page and every function gets A/B/C/D so work is prioritized correctly; nothing is “invisible” to the plan.
+4. **Phase 2+**: implementation order is driven by the registers + inventory risk, not an informal subset of pages.
 
-**What is not duplicated row-by-row:** Shared `js/` and `css/` modules are traced **through** the pages that load them and the query inventory — otherwise the HTML register would duplicate hundreds of paths without adding clarity. **Netlify functions** are **not** inferred from HTML alone; use `SCALABILITY-FUNCTION-COVERAGE.md`.
+**What is not duplicated row-by-row:** Shared `js/` and `css/` modules are traced **through** the pages that load them and the query inventory: otherwise the HTML register would duplicate hundreds of paths without adding clarity. **Netlify functions** are **not** inferred from HTML alone; use `SCALABILITY-FUNCTION-COVERAGE.md`.
 
 ---
 

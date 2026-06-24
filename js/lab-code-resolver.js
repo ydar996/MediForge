@@ -1,5 +1,5 @@
 /**
- * Browser lab/imaging code resolver — dual CPT (USA) and provincial fee codes (Canada).
+ * Browser lab/imaging code resolver: dual CPT (USA) and provincial fee codes (Canada).
  * Internal catalog keys stay LAB - #####.
  */
 (function (global) {
@@ -101,7 +101,7 @@
       cpt: panelCpt || resolvedCpt,
       ohipFeeCode: fee,
       provincialFeeCode: fee,
-      displayCode: fee === 'PRIVATE' ? 'Private pay' : (fee || panelCpt || resolvedCpt || labCode || '—'),
+      displayCode: fee === 'PRIVATE' ? 'Private pay' : (fee || panelCpt || resolvedCpt || labCode || ':'),
       claimFeeCode: fee,
       cptReference: panelCpt || resolvedCpt,
       codeSystem: fee ? codeSystem : 'CPT (unmapped)',

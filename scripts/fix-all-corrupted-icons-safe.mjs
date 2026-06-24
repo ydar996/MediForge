@@ -69,7 +69,7 @@ function cleanScriptLine(line) {
 
   let s = line;
 
-  // String literals that START with ?? or ? (safe — not ternary)
+  // String literals that START with ?? or ? (safe: not ternary)
   s = s.replace(/(^|[^\\(?:=\[+,\s])(['"`])\?\?\s+/g, (_, pre, q) => `${pre}${q}${I.info} `);
   s = s.replace(/(^|[^\\(?:=\[+,\s])(['"`])\?\s+/g, (_, pre, q) => `${pre}${q}${I.check} `);
 
@@ -94,7 +94,7 @@ function cleanScriptLine(line) {
   s = s.replace(/innerHTML\s*=\s*'\?'/g, `innerHTML = '${I.close}'`);
   s = s.replace(/innerHTML\s*=\s*"\?"/g, `innerHTML = "${I.close}"`);
 
-  // addSecurityItem messages — leave text; formatSecurityAuditMessage handles display
+  // addSecurityItem messages: leave text; formatSecurityAuditMessage handles display
   return s;
 }
 

@@ -1,4 +1,4 @@
-# Scalability & isolation — page coverage register
+# Scalability & isolation: page coverage register
 
 **Purpose:** Every root-level application page must be classified and reviewed. This register is **mandatory** for Phase 0 completion per SCALABILITY-AND-ISOLATION-IMPLEMENTATION-PLAN.md.
 
@@ -366,4 +366,4 @@
 Get-ChildItem -Filter '*.html' -File | Sort-Object Name | ForEach-Object { "| ``$($_.Name)`` | | | | |" }
 ```
 
-*Generated file — row count should match root `*.html` count.*
+*Generated file: row count should match root `*.html` count.*

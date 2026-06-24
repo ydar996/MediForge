@@ -174,7 +174,7 @@ function initializeSupabaseClient() {
         if (session) {
           persistSupabaseSession(session);
         } else if (event === 'SIGNED_OUT') {
-          // Only clear on explicit sign-out — not on INITIAL_SESSION races during page load
+          // Only clear on explicit sign-out: not on INITIAL_SESSION races during page load
           localStorage.removeItem('supabase_session');
         }
 

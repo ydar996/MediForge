@@ -1,5 +1,5 @@
 /**
- * Browser payer engine — loads config/billing-payers.json and enriches invoices
+ * Browser payer engine: loads config/billing-payers.json and enriches invoices
  */
 (function (global) {
   const PROVINCE_PAYER_MAP = {

@@ -5,7 +5,7 @@
  *  - js/pricing.js lab catalog
  *  - js/patients.js imaging catalog
  *
- * Clinics never run or edit this — MediForge ships the generated file.
+ * Clinics never run or edit this: MediForge ships the generated file.
  */
 import path from 'path';
 import { fileURLToPath } from 'url';

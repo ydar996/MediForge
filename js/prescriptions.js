@@ -1245,7 +1245,7 @@ function populatePrescriptionDiagnosisPicker(patient) {
     const empty = document.createElement('option');
     empty.value = '';
     empty.disabled = true;
-    empty.textContent = 'No diagnoses on file yet — search ICD below to add one';
+    empty.textContent = 'No diagnoses on file yet: search ICD below to add one';
     select.appendChild(empty);
     return;
   }

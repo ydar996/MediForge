@@ -38,7 +38,7 @@ const ALLOWED_RPCS = new Set([
 const ALLOWED_TABLE_INSERTS = new Set(['audit_logs']);
 const ALLOWED_TABLE_SELECTS = new Set(['audit_logs']); // For platform admin queries that bypass RLS
 
-/** MFA Staff Clinic only — canonical MFA-SC IDs and merged sequence across MIN/MFA/MFA-MC/MFA-SC stems. */
+/** MFA Staff Clinic only: canonical MFA-SC IDs and merged sequence across MIN/MFA/MFA-MC/MFA-SC stems. */
 const MFASC_ORGANIZATION_ID = '94534e80-06a8-468f-b8a2-ece3f07697c4';
 
 const CORS_DEFAULT_HEADERS = {
@@ -75,7 +75,7 @@ function normalizePrefix(prefix, fallback = 'MEC') {
   return fallback;
 }
 
-/** MFA Staff Clinic only — same stem rules as js/supabase-patients.js (sequence must not restart when prefix changes). */
+/** MFA Staff Clinic only: same stem rules as js/supabase-patients.js (sequence must not restart when prefix changes). */
 function maxPatientSequenceNumber(patientRows) {
   const stemPatterns = [
     /^MIN([0-9]{4})$/i,
@@ -568,7 +568,7 @@ exports.handler = async function handler(event) {
       let username = p_username || null;
       let userRecord = null;
 
-      // Always load public.users by id when provided (service role — works for platform admin diagnosing any org).
+      // Always load public.users by id when provided (service role: works for platform admin diagnosing any org).
       if (p_user_id) {
         try {
           const uid = encodeURIComponent(String(p_user_id).trim());

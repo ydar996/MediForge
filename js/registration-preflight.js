@@ -140,7 +140,7 @@ class RegistrationPreflight {
     if (formData.username && (/\s/.test(String(formData.username)) || !/^[a-z0-9._-]+$/i.test(String(formData.username).trim()))) {
       return {
         success: false,
-        message: 'Use a simple username — letters and numbers only, no spaces. Example: jsmith'
+        message: 'Use a simple username: letters and numbers only, no spaces. Example: jsmith'
       };
     }
 

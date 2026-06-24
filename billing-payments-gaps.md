@@ -7,7 +7,7 @@
 
 ## Executive summary
 
-MediForge has a **solid cash-first clinic billing system** (invoices, collect-payment, cash register, GL) inherited from the African-market build. **Canadian provincial billing (OHIP, RAMQ, MSP, AHCIP) does not exist.** Private insurance is **demographics only** — no electronic claims or remittance. Patient payments support cash, check, bank transfer, card (manual entry), and mobile money — but **not Zelle/e-Transfer** as first-class methods, and **no copay/deductible/payment-plan engine**.
+MediForge has a **solid cash-first clinic billing system** (invoices, collect-payment, cash register, GL) inherited from the African-market build. **Canadian provincial billing (OHIP, RAMQ, MSP, AHCIP) does not exist.** Private insurance is **demographics only**: no electronic claims or remittance. Patient payments support cash, check, bank transfer, card (manual entry), and mobile money: but **not Zelle/e-Transfer** as first-class methods, and **no copay/deductible/payment-plan engine**.
 
 **Upgrade delivered today:** `lib/billing/` payer engine, `config/billing-payers.json`, hooks on `createInvoice`/`recordPayment`, enhanced registration/checkout UI, claim/remittance adapters (stubs ready for provincial onboarding), tests, and docs.
 
@@ -54,7 +54,7 @@ MediForge has a **solid cash-first clinic billing system** (invoices, collect-pa
 | Link billing ↔ lab/imaging/Rx | Partial | ✅ `sourceType` / `sourceId` on invoices |
 | CAD default for Canada | Partial | ✅ Payer engine sets CAD |
 
-**Legend:** ✅ Implemented | ⚠️ Foundation/stub — production credentials & conformance still required | ❌ Missing
+**Legend:** ✅ Implemented | ⚠️ Foundation/stub: production credentials & conformance still required | ❌ Missing
 
 ---
 
@@ -68,7 +68,7 @@ MediForge has a **solid cash-first clinic billing system** (invoices, collect-pa
 | AHCIP | Alberta | HLINK | Config + claim draft JSON |
 | Blue Cross / Canada Life / Manulife / Sun Life / GSC | National | EDI 837 / proprietary | Private claim stub |
 
-Production submission requires provincial vendor onboarding — not included in repo.
+Production submission requires provincial vendor onboarding: not included in repo.
 
 ---
 

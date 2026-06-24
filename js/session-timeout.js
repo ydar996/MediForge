@@ -143,7 +143,7 @@
     sessionGuardReady = true;
     sessionTimeoutInitialized = true;
 
-    // Each page navigation is user activity — prevents stale lastActivity from prior page
+    // Each page navigation is user activity: prevents stale lastActivity from prior page
     lastActivityTime = Date.now();
     localStorage.setItem('lastActivity', lastActivityTime.toString());
 
@@ -581,7 +581,7 @@
           hideFinalWarning();
           finalWarningShown = false;
           warningShown = false;
-          debugLog('Session restored after timeout check — staying logged in');
+          debugLog('Session restored after timeout check: staying logged in');
           return;
         }
       } catch (refreshErr) {
@@ -838,7 +838,7 @@
     bootSessionTimeout();
   }
 
-  // Browser back/forward — treat as activity and refresh auth tokens
+  // Browser back/forward: treat as activity and refresh auth tokens
   window.addEventListener('pageshow', function() {
     updateActivity();
     if (typeof window.ensureStaffSession === 'function') {

@@ -68,7 +68,7 @@ async function main() {
   const vendorOut = path.join(root, manifest['@supabase/supabase-js'].vendorPath);
   console.log(`Downloading @supabase/supabase-js@${SUPABASE_VERSION}...`);
   const body = await fetchUrl(supabaseUrl);
-  const header = `/**\n * @supabase/supabase-js@${SUPABASE_VERSION} (UMD)\n * Sync: npm run sync:vendor — see js/vendor/vendor-manifest.json\n */\n`;
+  const header = `/**\n * @supabase/supabase-js@${SUPABASE_VERSION} (UMD)\n * Sync: npm run sync:vendor: see js/vendor/vendor-manifest.json\n */\n`;
   fs.writeFileSync(vendorOut, header + body.toString('utf8'), 'utf8');
   console.log(`Wrote ${manifest['@supabase/supabase-js'].vendorPath}`);
 

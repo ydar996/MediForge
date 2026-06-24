@@ -611,7 +611,7 @@
       : '<p class="muted">No vitals recorded for this visit yet.</p>';
 
     const dxHtml = (s.diagnoses || []).length
-      ? `<ul>${s.diagnoses.map((d) => `<li><strong>${d.name}</strong>${d.notes ? ` — ${d.notes}` : ''}</li>`).join('')}</ul>`
+      ? `<ul>${s.diagnoses.map((d) => `<li><strong>${d.name}</strong>${d.notes ? `: ${d.notes}` : ''}</li>`).join('')}</ul>`
       : '<p class="muted">No diagnoses documented for this visit yet.</p>';
 
     const ordersHtml = (s.orders || []).length
@@ -623,15 +623,15 @@
       : '<p class="muted">No lab or imaging orders for this visit.</p>';
 
     const rxHtml = (s.prescriptions || []).length
-      ? `<ul>${s.prescriptions.map((m) => `<li><strong>${m.name}</strong>${m.dosage ? ` ${m.dosage}` : ''}${m.frequency ? ` — ${m.frequency}` : ''}</li>`).join('')}</ul>`
+      ? `<ul>${s.prescriptions.map((m) => `<li><strong>${m.name}</strong>${m.dosage ? ` ${m.dosage}` : ''}${m.frequency ? `: ${m.frequency}` : ''}</li>`).join('')}</ul>`
       : '<p class="muted">No prescriptions sent during this visit.</p>';
 
     const refHtml = (s.referrals || []).length
-      ? `<ul>${s.referrals.map((r) => `<li><strong>${r.specialist}</strong>${r.diagnoses ? ` — ${r.diagnoses}` : ''}</li>`).join('')}</ul>`
+      ? `<ul>${s.referrals.map((r) => `<li><strong>${r.specialist}</strong>${r.diagnoses ? `: ${r.diagnoses}` : ''}</li>`).join('')}</ul>`
       : '<p class="muted">No referrals sent during this visit.</p>';
 
     const apptHtml = (s.upcomingAppointments || []).length
-      ? `<ul>${s.upcomingAppointments.map((a) => `<li>${formatDate(a.date)}${a.time ? ` at ${a.time}` : ''} — ${a.doctor || 'Provider'}${a.reason ? ` (${a.reason})` : ''}</li>`).join('')}</ul>`
+      ? `<ul>${s.upcomingAppointments.map((a) => `<li>${formatDate(a.date)}${a.time ? ` at ${a.time}` : ''}: ${a.doctor || 'Provider'}${a.reason ? ` (${a.reason})` : ''}</li>`).join('')}</ul>`
       : '<p class="muted">No upcoming appointments scheduled.</p>';
 
     const visitHeaderHtml = skipVisitHeader ? '' : `
@@ -640,7 +640,7 @@
         ${s.visitTime ? `<p><strong>Scheduled time:</strong> ${esc(s.visitTime)}</p>` : ''}
         ${s.checkedInAt ? `<p><strong>Checked in:</strong> ${esc(s.checkedInAt)}</p>` : ''}
         ${s.checkedOutAt ? `<p><strong>Visit ended:</strong> ${esc(s.checkedOutAt)}</p>` : ''}
-        <p><strong>Provider:</strong> ${s.provider || '—'}</p>
+        <p><strong>Provider:</strong> ${s.provider || ':'}</p>
         ${s.chiefComplaint ? `<p><strong>Chief complaint:</strong> ${s.chiefComplaint}</p>` : ''}
       </div>`;
 
@@ -652,7 +652,7 @@
       <div class="summary-block"><h3>Orders</h3>${ordersHtml}</div>
       <div class="summary-block"><h3>Prescriptions</h3>${rxHtml}</div>
       <div class="summary-block"><h3>Referrals</h3>${refHtml}</div>
-      <div class="summary-block"><h3>Follow-up plan</h3><p>${s.followUpPlan || '—'}</p></div>
+      <div class="summary-block"><h3>Follow-up plan</h3><p>${s.followUpPlan || ':'}</p></div>
       <div class="summary-block"><h3>Upcoming appointments</h3>${apptHtml}</div>
       <p class="muted" style="margin-top:20px;font-size:12px;">This is a high-level summary. Your provider may update clinical notes after your visit.</p>
     `;
@@ -669,11 +669,11 @@
   function hasMeaningfulText(val) {
     if (val == null) return false;
     const s = String(val).trim();
-    return s.length > 0 && s !== '—';
+    return s.length > 0 && s !== ':';
   }
 
   /**
-   * Patient portal must not show empty shells — only real chart content or a locked note.
+   * Patient portal must not show empty shells: only real chart content or a locked note.
    */
   function isVisitSummaryReadyForPortal(snapshot, options) {
     if (!snapshot) return false;

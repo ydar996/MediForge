@@ -1,14 +1,14 @@
 # MediForge Agent Handover (living document)
 
-**Last updated:** June 23, 2026  
+**Last updated:** June 23, 2026
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
 ---
 
-## Rule #1 — Talk to the owner in plain English (always)
+## Rule #1: Talk to the owner in plain English (always)
 
-The project owner is **not** a developer. **Every** reply to them — questions, plans, explanations, status updates, technical topics — must use the **simplest layman's terms** first.
+The project owner is **not** a developer. **Every** reply to them: questions, plans, explanations, status updates, technical topics: must use the **simplest layman's terms** first.
 
 | Do | Don't |
 |----|-------|
@@ -17,13 +17,31 @@ The project owner is **not** a developer. **Every** reply to them — questions,
 | Use a short analogy when a concept is new | Dump acronyms without a one-sentence plain meaning |
 | Do the work yourself when you can | Hand back long DIY checklists unless they asked |
 
-Technical detail belongs in code comments and docs for developers — **not** as the first thing in chat with the owner. See also **`docs/MEDIFORGE-PRODUCT-RULES.md`** §6 and **`docs/PROJECT-OVERVIEW.md`** → “Talking to the project owner”.
+Technical detail belongs in code comments and docs for developers: **not** as the first thing in chat with the owner. See also **`docs/MEDIFORGE-PRODUCT-RULES.md`** §6 and **`docs/PROJECT-OVERVIEW.md`** → “Talking to the project owner”.
+
+---
+
+## Rule #2: No em dashes in user-facing text (always)
+
+The owner does **not** want em dashes (—) in the app, docs, or agent replies. Use **colons**, commas, or separate sentences instead.
+
+| Do | Don't |
+|----|-------|
+| “Lab orders: 176+ tests” | “Lab orders — 176+ tests” |
+| “June 23, 2026: Readiness report published” | “June 23, 2026 — Readiness report published” |
+| “Reviewed: results available” | “Reviewed — results available” |
+
+**Scope:** All user-visible HTML, patient/staff UI strings in JS, owner-facing docs, marketing pages, and handover text.
+
+**Enforcement:** `npm run check` includes `check:no-em-dash`. To fix bulk issues: `node scripts/replace-em-dashes.mjs`.
+
+See **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8.
 
 ---
 
 ## How to keep this document alive
 
-Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing** — not only when the owner asks.
+Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing**: not only when the owner asks.
 
 ### Always update (every session with code or config changes)
 
@@ -38,20 +56,20 @@ Documentation is part of the deliverable. **Every agent that makes meaningful ch
 
 ### Update when the change is user-facing (staff will see it)
 
-4. **`docs/USER-MANUAL.md`** and **`user-manual.html`** — keep both in sync (same steps, plain language).
-5. **`docs/user-manual/HOW-TO-UPDATE-MANUAL.md`** — note new screenshot slot numbers if UI changed.
-6. **Feature guide** — add or update a focused doc when helpful (e.g. `docs/PATIENT-BULK-IMPORT-GUIDE.md`).
+4. **`docs/USER-MANUAL.md`** and **`user-manual.html`**: keep both in sync (same steps, plain language).
+5. **`docs/user-manual/HOW-TO-UPDATE-MANUAL.md`**: note new screenshot slot numbers if UI changed.
+6. **Feature guide**: add or update a focused doc when helpful (e.g. `docs/PATIENT-BULK-IMPORT-GUIDE.md`).
 
 ### Update when deployment or environment changes
 
-7. **`NETLIFY-SITE-IDS.txt`** — if sites were created or IDs changed.
-8. **`GO-LIVE-GUIDE.md`** — if first-time setup steps changed.
-9. **`DEPLOYMENT-PIPELINE.md`** or **`PROMOTE-RELEASE-WALKTHROUGH.md`** — if promotion or env rules changed.
+7. **`NETLIFY-SITE-IDS.txt`**: if sites were created or IDs changed.
+8. **`GO-LIVE-GUIDE.md`**: if first-time setup steps changed.
+9. **`DEPLOYMENT-PIPELINE.md`** or **`PROMOTE-RELEASE-WALKTHROUGH.md`**: if promotion or env rules changed.
 
 ### Rules
 
 - Do **not** paste secrets (passwords, service role keys, Netlify tokens) into any doc.
-- Do **not** finish a session with shipped code and stale handover/docs — the next agent and the owner depend on them.
+- Do **not** finish a session with shipped code and stale handover/docs: the next agent and the owner depend on them.
 - If you only answered a question with **no** code or config changes, doc updates are optional.
 
 ---
@@ -60,10 +78,10 @@ Documentation is part of the deliverable. **Every agent that makes meaningful ch
 
 This repeats **Rule #1** so agents do not miss it mid-document.
 
-- **Always** use the simplest layman's terms — including when explaining feasibility, database design, imports, or “how would this work?”
+- **Always** use the simplest layman's terms: including when explaining feasibility, database design, imports, or “how would this work?”
 - Say **what** changed, **why** it matters for the clinic, and **what they should do next**.
 - **Never** give jargon-first answers. If a technical word is unavoidable, define it in one plain sentence immediately after.
-- When you can **do the work yourself** (deploy, commit, run checks, capture screenshots), **do it** — do not hand back a long DIY checklist unless they asked to do it themselves.
+- When you can **do the work yourself** (deploy, commit, run checks, capture screenshots), **do it**: do not hand back a long DIY checklist unless they asked to do it themselves.
 - Keep answers **short and direct**. Use numbered steps for anything they must click or type.
 - For **user manual screenshots**: point them to **`docs/user-manual/GET-THE-PICTURES.md`** (Snipping Tool method first; automatic script second).
 
@@ -81,7 +99,7 @@ It was **forked from a prior codebase in June 2026**, fully rebranded, and point
 |------|--------|
 | **Product name** | MediForge only. No “EHR Africa” branding in user-facing copy or new docs. |
 | **Default currency** | **CAD** (Canadian Dollar) for new orgs and platform fallbacks. Orgs can override (e.g. Mecure → NGN). |
-| **Organizations** | Database starts **empty**. **Mecure Clinics** is registered first via `/register`. **All other orgs must self-register** — do not seed demo orgs in production. |
+| **Organizations** | Database starts **empty**. **Mecure Clinics** is registered first via `/register`. **All other orgs must self-register**: do not seed demo orgs in production. |
 | **Data isolation** | Each org sees only its own data (Supabase RLS + `organization_id`). |
 | **Secrets** | Browser uses publishable key in `js/supabase-env.js` (or Netlify build injection). Service role key **only** in Netlify env + Functions. |
 
@@ -146,9 +164,9 @@ Use **`NETLIFY-SITE-IDS.txt`** after sites exist. Full pipeline: **`DEPLOYMENT-P
 
 | Step | Action |
 |------|--------|
-| 1 | `git add` changed files — **never** commit secrets (`.env`, service role keys, `supabase-credentials*.txt`, live tokens) |
+| 1 | `git add` changed files: **never** commit secrets (`.env`, service role keys, `supabase-credentials*.txt`, live tokens) |
 | 2 | `git commit -m "..."` with a clear message |
-| 3 | `git push origin <branch>` — default **`dev`** for new work; **`main`** only when owner approved a production release |
+| 3 | `git push origin <branch>`: default **`dev`** for new work; **`main`** only when owner approved a production release |
 | 4 | Deploy (if approved) via **git push** to the matching branch when Netlify CD is linked, or CLI with site ID |
 | 5 | Verify: `git status` clean; `Your branch is up to date with 'origin/...'` |
 
@@ -163,7 +181,7 @@ git push origin staging  # → mediforge-staging (after PR)
 git push origin main     # → mediforge production (after PR + approval)
 ```
 
-Do **not** rely on manual `netlify deploy` for routine releases — it desyncs GitHub from the live site.
+Do **not** rely on manual `netlify deploy` for routine releases: it desyncs GitHub from the live site.
 
 ### Netlify CLI auth
 
@@ -186,12 +204,12 @@ Promotion: `dev` → `staging` → `main` via PR. Full setup: **`DEPLOYMENT-PIPE
 **Current git state (June 16, 2026):**
 
 - GitHub: https://github.com/ydar996/MediForge
-- Branches **`dev`**, **`staging`**, **`main`** — aligned after promotions; push `dev` first for new work
-- **Netlify site IDs** — see **`NETLIFY-SITE-IDS.txt`** (dev, staging, production all live)
+- Branches **`dev`**, **`staging`**, **`main`**: aligned after promotions; push `dev` first for new work
+- **Netlify site IDs**: see **`NETLIFY-SITE-IDS.txt`** (dev, staging, production all live)
 - **Supabase per site:** Dev, Staging, and Prod each have their own project; set `SUPABASE_URL`, `SUPABASE_PUBLISHABLE_KEY`, `SUPABASE_SERVICE_ROLE_KEY`, and **`SUPABASE_PROJECT_REF`** (build inject when URL is masked)
-- Production: https://mediforge.netlify.app — site ID `06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a`
-- Dev: https://mediforge-dev.netlify.app — site ID `d15040f5-830c-49fc-bd54-10165abcc5e8`
-- Staging: https://mediforge-staging.netlify.app — site ID `a0626083-1c07-436e-84a3-ca8555ca632e`
+- Production: https://mediforge.netlify.app: site ID `06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a`
+- Dev: https://mediforge-dev.netlify.app: site ID `d15040f5-830c-49fc-bd54-10165abcc5e8`
+- Staging: https://mediforge-staging.netlify.app: site ID `a0626083-1c07-436e-84a3-ca8555ca632e`
 
 ---
 
@@ -237,7 +255,7 @@ git push origin dev
 git push origin staging
 git push origin main
 
-# CLI deploy (emergency or before CD linked — use site ID from NETLIFY-SITE-IDS.txt)
+# CLI deploy (emergency or before CD linked: use site ID from NETLIFY-SITE-IDS.txt)
 netlify status
 netlify link --id 06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a   # production example
 netlify deploy --prod --dir . --message "Summary: ..."
@@ -252,7 +270,7 @@ git restore .netlify/   # if pre-push hook complains about .netlify churn
 
 | Document | Audience | Purpose |
 |----------|----------|---------|
-| **`AGENT-HANDOVER.md`** (this file) | AI agents | Living handover — update every session |
+| **`AGENT-HANDOVER.md`** (this file) | AI agents | Living handover: update every session |
 | **`GO-LIVE-GUIDE.md`** | Owner | First-time Netlify + Supabase setup |
 | **`docs/DOCUMENTATION-INDEX.md`** | Everyone | Master index of all docs |
 | **`docs/PROJECT-OVERVIEW.md`** | Developers | Technical deep dive |
@@ -262,7 +280,7 @@ git restore .netlify/   # if pre-push hook complains about .netlify churn
 | **`CRITICAL-WORKFLOWS.md`** | QA / agents | Regression scenarios before deploy |
 | **`docs/USER-DOCUMENTATION-INDEX.md`** | Clinic staff | End-user help topics |
 
-Legacy handover notes from the fork (hybrid architecture, prescriptions, legal agreements, etc.) remain in `HANDOVER-*.md` files — use when debugging those areas.
+Legacy handover notes from the fork (hybrid architecture, prescriptions, legal agreements, etc.) remain in `HANDOVER-*.md` files: use when debugging those areas.
 
 ---
 
@@ -279,9 +297,9 @@ Legacy handover notes from the fork (hybrid architecture, prescriptions, legal a
 
 The codebase still contains **legacy implementation details** from the source fork:
 
-- `js/mediforge-org-patient-id.js` — org-specific patient ID prefixes (`window.mf*` API).
-- Migrations referencing orgs like MFASC / MIN-* — apply only if those orgs exist in **this** database (they won’t on a fresh MediForge DB).
-- Mecure test patient ID examples (e.g. `MEC0006`) in old handover docs — valid only after Mecure is registered and has data.
+- `js/mediforge-org-patient-id.js`: org-specific patient ID prefixes (`window.mf*` API).
+- Migrations referencing orgs like MFASC / MIN-*: apply only if those orgs exist in **this** database (they won’t on a fresh MediForge DB).
+- Mecure test patient ID examples (e.g. `MEC0006`) in old handover docs: valid only after Mecure is registered and has data.
 
 On a **fresh MediForge database**, ignore org-specific migration scripts unless the owner explicitly creates those organizations.
 
@@ -289,7 +307,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
-### June 11, 2026 — Initial MediForge fork
+### June 11, 2026: Initial MediForge fork
 
 - Cloned codebase to `Documents/MediForge`; removed backups, node_modules, `.git` history from source.
 - Rebranded ~354 files from legacy name to **MediForge**; scrubbed old Supabase URLs/keys from app code.
@@ -299,15 +317,15 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - Fresh git repo: `main` @ `173f3ac`.
 - **Owner next steps:** Run go-live guide; create Netlify sites; fill `NETLIFY-SITE-IDS.txt`; register Mecure Clinics.
 
-### June 11, 2026 — Legacy `ehr` name scrub
+### June 11, 2026: Legacy `ehr` name scrub
 
 - Clarified for owner: literal **“ehr-africa”** text was already removed; remaining hits were generic **EHR** (Electronic Health Record) or internal **`ehr*`** code prefixes from the fork.
 - Renamed `js/ehr-org-patient-id.js` → `js/mediforge-org-patient-id.js`; `window.ehr*` → `window.mf*`.
 - Renamed `diagnose-ehr-app.html` → `diagnose-mediforge-app.html`.
 - Updated cache keys (`mediforge-cache`), session cookies, dashboard title, and 88+ files via `scripts/scrub-ehr-legacy-names.ps1`.
-- **Still OK to keep:** “Electronic Health Record (EHR)” as a medical acronym on marketing pages — that is not “EHR Africa” branding.
+- **Still OK to keep:** “Electronic Health Record (EHR)” as a medical acronym on marketing pages: that is not “EHR Africa” branding.
 
-### June 12, 2026 — Production live, GitHub connected, deployment pipeline docs
+### June 12, 2026: Production live, GitHub connected, deployment pipeline docs
 
 - Production live at https://mediforge.netlify.app (Netlify site ID recorded in `NETLIFY-SITE-IDS.txt`).
 - GitHub repo https://github.com/ydar996/MediForge on branch `main`.
@@ -316,108 +334,108 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Mandatory agent rule:** always commit + push; keep PC, GitHub, and Netlify in sync.
 - **Owner next steps:** create `dev` + `staging` branches, Netlify sites, and Dev/Staging Supabase projects per **`DEPLOYMENT-PIPELINE.md`**.
 
-### June 13, 2026 — User manual update + plain-language rule
+### June 13, 2026: User manual update + plain-language rule
 
 - Updated **`user-manual.html`** and **`docs/USER-MANUAL.md`** for June 2026 features (Canada registration, race, ICD-10-CA, manual meds, patient intake).
-- Added **`docs/user-manual/GET-THE-PICTURES.md`** — plain steps for manual screenshots (Snipping Tool) or automatic capture.
+- Added **`docs/user-manual/GET-THE-PICTURES.md`**: plain steps for manual screenshots (Snipping Tool) or automatic capture.
 - Strengthened **Communication with the user** in this file: simplest layman's terms always; point to GET-THE-PICTURES for manual images.
 - **Owner next steps:** Save PNGs into `docs/user-manual/images/` (see GET-THE-PICTURES.md), then deploy so `/user-manual` shows pictures on production.
 
-### June 14–15, 2026 — Preventive gaps, user manual screenshots, login config fix
+### June 14–15, 2026: Preventive gaps, user manual screenshots, login config fix
 
 - **Preventive care gaps:** Mark Addressed + proof attachments (`js/preventive.js`, Supabase `unstructured_records`).
 - **User manual:** Sections 8–9 (prescriptions, preventive gaps); screenshots `05`, `19`, `20`.
 - **Login regression:** Netlify build was writing masked `SUPABASE_URL` (`****************e.co`) into `js/supabase-env.js` on redeploy. Fixed with `SUPABASE_PROJECT_REF` + `scripts/resolve-supabase-url.cjs` + `get-supabase-browser-config` + login wait for async client (`6d05572`). Promoted dev → staging → production.
 - **Netlify env:** Each site needs `SUPABASE_PROJECT_REF` (dev `hhxsmenuphzfxvgwxvut`, staging `imfgrcbpjvoerfhhckiy`, prod `fyhtdkotlyyqyrjabojw`).
 
-### June 16, 2026 — Bulk patient import
+### June 16, 2026: Bulk patient import
 
-- **`/bulk-patient-import`** — CSV/Excel mass registration with flexible headers, optional legacy Patient IDs, preview, Supabase-first save.
+- **`/bulk-patient-import`**: CSV/Excel mass registration with flexible headers, optional legacy Patient IDs, preview, Supabase-first save.
 - Template: **`data/patient-bulk-import-template.csv`**; guide: **`docs/PATIENT-BULK-IMPORT-GUIDE.md`**.
 - Dashboard button under **Patient Management**.
 - Deployed dev → staging → production (this session).
 
-### June 17, 2026 — Promote bulk import + intake fixes to staging and production
+### June 17, 2026: Promote bulk import + intake fixes to staging and production
 
 - Merged `dev` → `staging` → `main` (commit `c32debe`).
 - Deployed **mediforge-staging** and **mediforge** (production).
 - **Live:** https://mediforge-staging.netlify.app and https://mediforge.netlify.app
 
-### June 17, 2026 — Bulk import: map columns mode
+### June 17, 2026: Bulk import: map columns mode
 
-- **`/bulk-patient-import`** — **Map my columns** mode: match foreign spreadsheet headers, extras → patient Notes.
+- **`/bulk-patient-import`**: **Map my columns** mode: match foreign spreadsheet headers, extras → patient Notes.
 - Smarter parsing: `Age (DOB)` like `63 (1962-11-27)`, `Health Ins. #`, `Health Card Type`, `Record ID`.
 - **Keep existing Patient IDs** optional; when off, new org numbers assigned and old file ID stored in Notes.
 
-### June 17, 2026 — Rule #1 plain language (reinforced)
+### June 17, 2026: Rule #1 plain language (reinforced)
 
-- Added **Rule #1 — Talk to the owner in plain English** at the top of this handover (before other sections).
-- **`docs/PROJECT-OVERVIEW.md`** — new “Talking to the project owner” section.
-- **`docs/MEDIFORGE-PRODUCT-RULES.md`** — new §6 Communication with the project owner.
+- Added **Rule #1: Talk to the owner in plain English** at the top of this handover (before other sections).
+- **`docs/PROJECT-OVERVIEW.md`**: new “Talking to the project owner” section.
+- **`docs/MEDIFORGE-PRODUCT-RULES.md`**: new §6 Communication with the project owner.
 
-### June 17, 2026 — Mandatory documentation upkeep (spelled out)
+### June 17, 2026: Mandatory documentation upkeep (spelled out)
 
 - Expanded **§ How to keep this document alive** with explicit checklist: handover, documentation index, project overview, user manual (md + html), feature guides, deployment docs.
 - Synced **`DEPLOYMENT-PIPELINE.md`**, **`docs/DOCUMENTATION-INDEX.md`**, and **`START-HERE.md`** to reference the same rule.
 
-### June 17, 2026 — Patient practice fields + profile persistence (dev deploy)
+### June 17, 2026: Patient practice fields + profile persistence (dev deploy)
 
-- **Six optional patient fields:** Enrolled Physician, Status Enrolment, Show Email on Consults, Date Joined Practice, Health Insurance Card Effective Date, Assigned Physician MRP — on add/edit patient forms and bulk import.
+- **Six optional patient fields:** Enrolled Physician, Status Enrolment, Show Email on Consults, Date Joined Practice, Health Insurance Card Effective Date, Assigned Physician MRP: on add/edit patient forms and bulk import.
 - **Date Joined Practice:** auto-set on new registration; existing patients backfilled from registration date via migration.
 - **Profile fix:** medical license and personal phone now persist through registration, login, and edit profile.
-- **Migration:** `supabase/migrations/20260616140000_patient_enrolment_practice_fields.sql` — **must be run in dev Supabase SQL Editor** before new fields save to the database.
+- **Migration:** `supabase/migrations/20260616140000_patient_enrolment_practice_fields.sql`: **must be run in dev Supabase SQL Editor** before new fields save to the database.
 - Pushed to **`dev`** → https://mediforge-dev.netlify.app
 
-### June 17, 2026 — Promote practice fields + profile fix to staging and production
+### June 17, 2026: Promote practice fields + profile fix to staging and production
 
 - **`fd2ef4d`** on `dev`, `staging`, and `main` (dashboard: bulk import after Setup Patient Portal).
 - **Staging:** https://mediforge-staging.netlify.app
 - **Production:** https://mediforge.netlify.app
 - **Owner:** Run migration `20260616140000_patient_enrolment_practice_fields.sql` on **staging** and **production** Supabase if not done yet (dev first).
 
-### June 18, 2026 — Schedule by provider + patient portal lab/results/pickup (dev → staging → production)
+### June 18, 2026: Schedule by provider + patient portal lab/results/pickup (dev → staging → production)
 
 - **Commit `9135454`** on `dev`, `staging`, and `main` (includes prior `bf9ff49` schedule-by-provider on all branches).
 - **Schedule:** Per-provider daily grid on `/schedule` (By Provider button + provider filter on Daily View).
-- **Patient portal — Results (`/patient-results`):**
+- **Patient portal: Results (`/patient-results`):**
   - Status **Order Sent** when order goes to external lab/imaging (no in-house lab assumption).
   - **Test Completed: Awaiting Provider Review** when results are back but doctor has not reviewed.
-  - **Reviewed — results available** after doctor marks reviewed; patient can open results + provider comments.
+  - **Reviewed: results available** after doctor marks reviewed; patient can open results + provider comments.
   - **Print / view order copy** for lab and imaging requisitions anytime.
-- **Patient portal — Medications:** **I picked this up** fixed (legacy `RX…` ids, not only UUID); records `patient_pickup_at`; clinic notified via portal message; pharmacy Filled tab shows pickup status.
-- **SQL migrations (owner ran on dev Supabase):** `20260618160000`, `20260618170000`, `20260618180000` — run same three on **staging** and **production** Supabase if not done yet.
+- **Patient portal: Medications:** **I picked this up** fixed (legacy `RX…` ids, not only UUID); records `patient_pickup_at`; clinic notified via portal message; pharmacy Filled tab shows pickup status.
+- **SQL migrations (owner ran on dev Supabase):** `20260618160000`, `20260618170000`, `20260618180000`: run same three on **staging** and **production** Supabase if not done yet.
 - **URLs:** Dev https://mediforge-dev.netlify.app · Staging https://mediforge-staging.netlify.app · Prod https://mediforge.netlify.app
 - **Owner next steps:** Hard-refresh portal after deploy; run three portal SQL files on staging/prod Supabase; smoke-test Results + Medications on dev.
 
-### June 18, 2026 (later) — Visit summaries auto-publish (dev → staging → production)
+### June 18, 2026 (later): Visit summaries auto-publish (dev → staging → production)
 
-- **Commit `2174d2d`** — Patient portal **Visit Summaries** no longer empty after concluded visits.
+- **Commit `2174d2d`**: Patient portal **Visit Summaries** no longer empty after concluded visits.
 - **Auto-publish** when staff **checks out** an appointment, **locks** a clinical note, or opens a concluded visit note (backfill).
 - **Portal fallback** lists completed/checked-out appointments even before a full summary row exists.
 - **Owner next steps:** Hard-refresh `/patient-visit-summaries`; for existing patients with missing summaries, open their clinical note once or re-check-out; ensure `20260617140000_office_visit_summaries.sql` ran on each Supabase environment.
 
-### June 22, 2026 — Lab & imaging order picker: categories, search, notes, expanded imaging catalog (dev → staging → production)
+### June 22, 2026: Lab & imaging order picker: categories, search, notes, expanded imaging catalog (dev → staging → production)
 
-- **Imaging catalog:** 67 studies (was 39) — added Ontario requisition gaps (contrast echo, sinus/shoulder/elbow X-rays, combined abdomen+pelvis US, transvaginal pelvis, MSK ultrasound, arterial ABI, PFT, Holter, etc.) with **CPT/OHIP** codes via `npm run build:diagnostic-catalog`.
-- **Categories:** Imaging grouped like the paper form (Cardiology, X-Ray, Ultrasound, CT, MRI, Mammography, etc.). Lab orders already had category headers — unchanged data model.
-- **UI:** `select-lab-orders.html` and `select-imaging-orders.html` — **search bar**, **category filter**, **ordering note** per test (saved on the order and printed on requisitions). Shared module: **`js/diagnostic-order-picker.js`**.
-- **No SQL required** — doctor notes live inside existing `orders.selected_items` JSON.
+- **Imaging catalog:** 67 studies (was 39): added Ontario requisition gaps (contrast echo, sinus/shoulder/elbow X-rays, combined abdomen+pelvis US, transvaginal pelvis, MSK ultrasound, arterial ABI, PFT, Holter, etc.) with **CPT/OHIP** codes via `npm run build:diagnostic-catalog`.
+- **Categories:** Imaging grouped like the paper form (Cardiology, X-Ray, Ultrasound, CT, MRI, Mammography, etc.). Lab orders already had category headers: unchanged data model.
+- **UI:** `select-lab-orders.html` and `select-imaging-orders.html`: **search bar**, **category filter**, **ordering note** per test (saved on the order and printed on requisitions). Shared module: **`js/diagnostic-order-picker.js`**.
+- **No SQL required**: doctor notes live inside existing `orders.selected_items` JSON.
 - **Docs:** `AGENT-HANDOVER.md`, `docs/DOCUMENTATION-INDEX.md`, `docs/PROJECT-OVERVIEW.md`, `docs/USER-MANUAL.md`, `user-manual.html`.
 - **URLs:** Dev https://mediforge-dev.netlify.app · Staging https://mediforge-staging.netlify.app · Prod https://mediforge.netlify.app
 - **Owner next steps:** Hard-refresh after deploy; from a clinical note open **Order Labs** or **Order Imaging** and try search + optional note; no Supabase scripts for this feature.
 
-### June 22, 2026 (later) — Ontario lab & imaging fee codes fixed (L-codes + proper imaging codes) (dev → staging → production)
+### June 22, 2026 (later): Ontario lab & imaging fee codes fixed (L-codes + proper imaging codes) (dev → staging → production)
 
-- **Problem the owner spotted:** Almost all imaging studies showed the same code **G004**; dozens of lab tests showed **G482** (physician venipuncture — wrong schedule). Codes came from category placeholders in `scripts/build-diagnostic-catalog.mjs`, not Ontario fee schedules.
-- **Fix — imaging:** `config/ohip-imaging-fee-crosswalk.json` — CPT → proper OHIP professional codes (X-, G-, J- per study type). **G004 removed** from imaging map.
-- **Fix — labs:** `config/ohip-lab-fee-crosswalk.json` + `scripts/ohip-lab-fee-crosswalk-data.mjs` — **168 CPTs + 11 panels** → Ontario **Laboratory Services L-codes** (Schedule 22, licensed lab appendix, 2026 SOB-LS bulletins). **99 distinct L-codes**; **0** lab rows on G482. Quantiferon-TB shows **Private pay** (not OHIP-insured at community labs).
+- **Problem the owner spotted:** Almost all imaging studies showed the same code **G004**; dozens of lab tests showed **G482** (physician venipuncture: wrong schedule). Codes came from category placeholders in `scripts/build-diagnostic-catalog.mjs`, not Ontario fee schedules.
+- **Fix: imaging:** `config/ohip-imaging-fee-crosswalk.json`: CPT → proper OHIP professional codes (X-, G-, J- per study type). **G004 removed** from imaging map.
+- **Fix: labs:** `config/ohip-lab-fee-crosswalk.json` + `scripts/ohip-lab-fee-crosswalk-data.mjs`: **168 CPTs + 11 panels** → Ontario **Laboratory Services L-codes** (Schedule 22, licensed lab appendix, 2026 SOB-LS bulletins). **99 distinct L-codes**; **0** lab rows on G482. Quantiferon-TB shows **Private pay** (not OHIP-insured at community labs).
 - **Build:** `npm run build:diagnostic-catalog` regenerates `ohip-cpt-crosswalk-reference.json`, `lab-code-map-canada.json`, and syncs `js/patients.js` / `js/pricing.js`. Tests: `tests/billing/generate-lab-code-map.test.js`.
-- **No SQL required** — config/JS only.
+- **No SQL required**: config/JS only.
 - **Owner next steps:** Hard-refresh (Ctrl+F5) on Order Labs / Order Imaging; spot-check CBC **L393**, TSH **L341**, chest X-ray **X091**, ECG **G313**.
 
 ---
 
-## Billing fee codes — agent checklist (learned June 2026)
+## Billing fee codes: agent checklist (learned June 2026)
 
 When adding or expanding **lab** or **imaging** catalog tests, agents **must not** rely on category default codes (e.g. `G482`, `J307`, `G004`). Those are placeholders and will show wrong codes to clinicians.
 
@@ -427,7 +445,7 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 | 2 | Run `npm run build:diagnostic-catalog` and `npm run check:lab-codes`. |
 | 3 | **Sanity-check diversity:** if >3 unrelated tests share one fee code, investigate before shipping. |
 | 4 | Run `node --test tests/billing/generate-lab-code-map.test.js`. |
-| 5 | Mark uninsured tests (e.g. Quantiferon) as `PRIVATE` in crosswalk — do not invent L-codes. |
+| 5 | Mark uninsured tests (e.g. Quantiferon) as `PRIVATE` in crosswalk: do not invent L-codes. |
 
 **Owner handover hints that help agents:** (a) “Fee codes must match Ontario lab L-codes / imaging OHIP schedule, not one code for everything.” (b) “After catalog expansion, verify fee code column shows distinct codes per test.” (c) Point agents at this checklist and the two crosswalk JSON files.
 
@@ -439,7 +457,7 @@ When adding or expanding **lab** or **imaging** catalog tests, agents **must not
 
 **Current alignment:** ~35–45% vs OntarioMD certification spec (functional clinical strongest; provincial connectivity weakest).
 
-### STOP GATE — mandatory for all agents
+### STOP GATE: mandatory for all agents
 
 **Do not implement** OntarioMD sprint work (code, migrations, compliance docs body text, FHIR export UI, consent module, etc.) until the owner explicitly says:
 
@@ -455,15 +473,25 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 
 | Tier | Can agent deliver today? | Owner input |
 |------|--------------------------|-------------|
-| **A** (gap report, audit, FHIR export, CPP, compliance skeleton, residency doc) | **Yes — very high (85–95%)** | Review at end; no blockers |
-| **B** (consent, i4C map, claim file draft) | **Yes — high (75–85%)** if Tier A done | ~5 min on consent types |
-| **C** (live OLIS, HRM, PrescribeIT, ONE ID, MCEDT live, certification) | **No — not in agent control** | External partners |
+| **A** (gap report, audit, FHIR export, CPP, compliance skeleton, residency doc) | **Yes: very high (85–95%)** | Review at end; no blockers |
+| **B** (consent, i4C map, claim file draft) | **Yes: high (75–85%)** if Tier A done | ~5 min on consent types |
+| **C** (live OLIS, HRM, PrescribeIT, ONE ID, MCEDT live, certification) | **No: not in agent control** | External partners |
 
 **Realistic same-day score lift:** +5 to +12 points (internal evidence), not full certification.
 
 ### Session log
 
-### June 23, 2026 — OntarioMD readiness plan documented (implementation **blocked** pending owner go-ahead)
+### June 23, 2026 (later): Ontario readiness report docs, em dash policy, app-wide punctuation fix
+
+- **Owner ask:** Keep written copy of investor readiness report; merge tasks into implementation plan; remove all em dashes from app (use colons); document rule so agents never need reminding.
+- **Created:** `docs/ONTARIO-EMR-READINESS-REPORT.md` (written report companion to `/ontario-readiness`).
+- **Created:** `docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md` (Phases 0–8 task backlog with status: Done / Partial / Not started / Blocked).
+- **Created:** `scripts/replace-em-dashes.mjs`, `scripts/check-no-em-dash.mjs`; added `check:no-em-dash` to `npm run check`.
+- **Updated:** **Rule #2** in this file (no em dashes); **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8; **`docs/PROJECT-OVERVIEW.md`** writing style section; **`docs/DOCUMENTATION-INDEX.md`**.
+- **Bulk fix:** Replaced em dashes with colons in **170 files** (HTML, JS UI strings, docs). Vendor minified JS excluded.
+- **Owner next step:** Review `/ontario-readiness` and implementation plan; say **"Implement the Ontario-ready plan"** when ready to start Phase 0 sprint.
+
+### June 23, 2026: OntarioMD readiness plan documented (implementation **blocked** pending owner go-ahead)
 
 - **Owner ask:** Improve OntarioMD alignment score; wants work **today**, not 8 weeks; minimal supervision; **do not implement yet**.
 - **Created:** `docs/ONTARIOMD-READINESS-PLAN.md` (tiers, confidence, acceptance criteria, STOP gate).
@@ -472,20 +500,20 @@ When approved, agents execute **Tier A** first (gap report, audit hardening, FHI
 - **Baseline score:** ~35–45%; same-day target ~45–55% after Tier A+B sprint.
 - **Owner next step:** Say **“Implement the Ontario-ready plan”** when ready to start. Optional: list 2–3 consent types for Tier B.
 
-### June 23, 2026 (later) — Plain-language features overview for non-technical readers
+### June 23, 2026 (later): Plain-language features overview for non-technical readers
 
-- **Created:** `docs/MEDIFORGE-AT-A-GLANCE.md` — what MediForge does today in everyday language (not a how-to manual).
+- **Created:** `docs/MEDIFORGE-AT-A-GLANCE.md`: what MediForge does today in everyday language (not a how-to manual).
 - **Updated:** `docs/DOCUMENTATION-INDEX.md`, `docs/USER-DOCUMENTATION-INDEX.md`.
 - **Similar existing docs:** `MEDIFORGE-BROCHURE-CONTENT.md` (marketing tables), `key-features.html` / `brochure.html` (web), `USER-MANUAL.md` (step-by-step staff guide).
 
-### June 23, 2026 — Full capabilities guide + shareable webpage
+### June 23, 2026: Full capabilities guide + shareable webpage
 
-- **Created:** `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` — most complete written feature list (June 2026).
-- **Created:** `capabilities.html` — public shareable page with icons and **real app screenshots** from user manual.
+- **Created:** `docs/MEDIFORGE-CAPABILITIES-GUIDE.md`: most complete written feature list (June 2026).
+- **Created:** `capabilities.html`: public shareable page with icons and **real app screenshots** from user manual.
 - **Share URL:** https://mediforge.netlify.app/capabilities (after deploy).
 - **vs brochure/key-features:** capabilities page is current; brochure is shorter marketing PDF; key-features is outdated vs 2026 build.
 - **Owner next step:** Deploy to dev/staging/prod when ready; share `/capabilities` link with partners.
 
 ---
 
-**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs (`USER-MANUAL.md` / `user-manual.html`) when staff-visible features changed. **When touching lab/imaging catalogs:** follow **Billing fee codes — agent checklist** above. **OntarioMD:** read **`docs/ONTARIOMD-READINESS-PLAN.md`**; **do not implement** until owner approves.
+**Next agent:** Read this file → **`docs/MEDIFORGE-PRODUCT-RULES.md`** (Rules #1 plain English, #2 no em dashes) → **`GO-LIVE-GUIDE.md`** if setup is incomplete. Follow deployment approval rules. **Before you finish any session with changes:** update this handover (session log), **`docs/DOCUMENTATION-INDEX.md`**, and user-facing docs when staff-visible features changed. **When touching lab/imaging catalogs:** follow **Billing fee codes: agent checklist** above. **OntarioMD:** read **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** and **`docs/ONTARIOMD-READINESS-PLAN.md`**; **do not implement** until owner approves.

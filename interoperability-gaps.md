@@ -8,7 +8,7 @@
 
 ## Executive summary
 
-MediForge today is a **Supabase-first in-clinic EMR** with strong internal lab/pharmacy workflows but **no production-grade external interoperability**. Orders and results live in the `orders` table (JSONB); prescriptions in `prescriptions`. CPT codes and ICD-11 are used internally—not LOINC, pCLOCD, SNOMED CT, or CCDD.
+MediForge today is a **Supabase-first in-clinic EMR** with strong internal lab/pharmacy workflows but **no production-grade external interoperability**. Orders and results live in the `orders` table (JSONB); prescriptions in `prescriptions`. CPT codes and ICD-11 are used internally:not LOINC, pCLOCD, SNOMED CT, or CCDD.
 
 **This document records pre-upgrade gaps.** Core interoperability modules are being added under `lib/interop/`, `netlify/functions/interop-gateway.js`, and `js/interop-client.js`.
 
@@ -127,7 +127,7 @@ Migration: `supabase/migrations/20260611000000_interoperability_tables.sql`
 1. Infoway / provincial onboarding and conformance testing  
 2. Production MLLP endpoints and certificates (often via integration engine)  
 3. LOINC/pCLOCD/CCDD code sets licensed and loaded (not shipped in repo)  
-4. DIMSE (C-FIND/C-MOVE) typically requires a DICOM gateway appliance—we provide DICOMweb + proxy config  
+4. DIMSE (C-FIND/C-MOVE) typically requires a DICOM gateway appliance:we provide DICOMweb + proxy config  
 5. Legal BAAs and patient consent workflows per province  
 
 **Ready today:** Standards-compliant message generation/parsing, configurable adapters, gateway API, test suite, chart attach workflows, and extensibility layer for partner onboarding.

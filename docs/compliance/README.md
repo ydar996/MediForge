@@ -1,6 +1,6 @@
 # MediForge compliance documentation
 
-**Status:** Placeholder — content to be generated during OntarioMD readiness sprint (after owner approval).
+**Status:** Placeholder: content to be generated during OntarioMD readiness sprint (after owner approval).
 
 **Planned documents:**
 

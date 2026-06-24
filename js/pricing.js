@@ -86,7 +86,7 @@ function extractCptFromLabCatalogCode(code) {
 
 // Ensure all 33 lab services exist in the catalog
 function ensureLabServicesExist(catalog) {
-  // MEDIFORGE_CATALOG:PRICING_LABS_START — auto-synced
+  // MEDIFORGE_CATALOG:PRICING_LABS_START: auto-synced
   const labServices = [
     { code: 'LAB - 85730', name: 'Activated Partial Thromboplastin Time (APTT)' },
     { code: 'LAB - 86850', name: 'Antibody Screen (Indirect Coombs)' },

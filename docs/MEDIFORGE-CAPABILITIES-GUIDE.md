@@ -1,10 +1,10 @@
-# MediForge — Complete Capabilities Guide
+# MediForge: Complete Capabilities Guide
 
 **Version:** June 2026  
-**Audience:** Partners, investors, clinic leaders, healthcare staff — anyone who wants the full picture in plain language.  
+**Audience:** Partners, investors, clinic leaders, healthcare staff: anyone who wants the full picture in plain language.  
 **Shareable web version (with pictures):** https://mediforge.netlify.app/capabilities
 
-This document is the **detailed companion** to the capabilities webpage. Share the **URL** with external audiences — not this file path.
+This document is the **detailed companion** to the capabilities webpage. Share the **URL** with external audiences: not this file path.
 
 ---
 
@@ -67,8 +67,8 @@ Each role sees a tailored dashboard:
 
 - Secure login with session timeout
 - Account lockout and admin unlock
-- **Role-based access** — staff only see what they need
-- **Audit log** — who did what, when
+- **Role-based access**: staff only see what they need
+- **Audit log**: who did what, when
 - **Security dashboard** for the clinic
 - Optional **field-level encryption** with recovery workflow
 - Signed **legal agreements** stored per user
@@ -100,14 +100,14 @@ Patients get their own secure login when the clinic enables the portal.
 
 ### Bulk and online registration
 
-- **Bulk import** from CSV or Excel — map foreign column headers, optional keep legacy patient IDs
-- **Patient self-intake** — send a link; patient fills form online
-- **Intake approval queue** — staff review and approve before chart goes live
+- **Bulk import** from CSV or Excel: map foreign column headers, optional keep legacy patient IDs
+- **Patient self-intake**: send a link; patient fills form online
+- **Intake approval queue**: staff review and approve before chart goes live
 
 ### Historical and unstructured data
 
-- **Pre-EMR / unstructured records** — attach scanned paper history before full digitization
-- **Deleted patients** — soft delete with recovery and audit trail
+- **Pre-EMR / unstructured records**: attach scanned paper history before full digitization
+- **Deleted patients**: soft delete with recovery and audit trail
 
 ### The patient chart (everything in one place)
 
@@ -115,11 +115,11 @@ Patients get their own secure login when the clinic enables the portal.
 |---------------|----------------|
 | Demographics | Identity, contact, insurance, practice enrolment |
 | Medical history | Past conditions and surgeries |
-| Problem / diagnosis list | Active and resolved — ICD-10-CA or ICD-11 codes |
+| Problem / diagnosis list | Active and resolved: ICD-10-CA or ICD-11 codes |
 | Allergies | Allergen, reaction, severity |
 | Medications | Active and historical |
 | Immunizations | Vaccines, dates, lot numbers |
-| Vital signs | BP, pulse, temp, weight, height, BMI — with trends |
+| Vital signs | BP, pulse, temp, weight, height, BMI: with trends |
 | Visits & encounters | Linked to appointments and notes |
 | Orders | Lab and imaging with status |
 | Referrals | To specialists with urgency |
@@ -166,7 +166,7 @@ Patients get their own secure login when the clinic enables the portal.
 
 ### Imaging orders
 
-- **67 imaging studies** — X-ray, ultrasound, CT, MRI, mammography, cardiology (ECG, echo, stress, Holter), nuclear medicine, sleep studies, PFT, and more
+- **67 imaging studies**: X-ray, ultrasound, CT, MRI, mammography, cardiology (ECG, echo, stress, Holter), nuclear medicine, sleep studies, PFT, and more
 - Search, categories, ordering notes
 - **OHIP imaging fee codes** for Ontario
 - Print imaging requisition
@@ -189,7 +189,7 @@ Patients get their own secure login when the clinic enables the portal.
 
 - Book, edit, cancel appointments
 - **Daily schedule calendar**
-- **View by provider** — each doctor’s column
+- **View by provider**: each doctor’s column
 - Clinic-wide schedule configuration
 - Upcoming appointments list
 - **SMS reminder text** copy helper for staff
@@ -200,7 +200,7 @@ Patients get their own secure login when the clinic enables the portal.
 
 ## 6. Preventive care & clinical alerts
 
-- **Preventive care gaps** — age/sex-based screening reminders (e.g. vaccines, cancer screening)
+- **Preventive care gaps**: age/sex-based screening reminders (e.g. vaccines, cancer screening)
 - Mark gap as addressed with **proof attachment** (PDF/image)
 - **Preventive gaps summary report** for the clinic
 - **Blood pressure alerts dashboard** for out-of-range readings
@@ -328,9 +328,9 @@ When enabled:
 
 ## 15. Offline & mobile
 
-- **Works offline** for many tasks — document, prescribe, manage patients when internet drops
+- **Works offline** for many tasks: document, prescribe, manage patients when internet drops
 - Automatic sync when connection returns
-- **Progressive Web App** — install on phone/tablet like an app
+- **Progressive Web App**: install on phone/tablet like an app
 - Responsive design for desktop, tablet, phone
 
 ---
@@ -366,9 +366,9 @@ Separate login for MediForge platform owner:
 
 ## 18. Honest boundaries (what is not live for every clinic yet)
 
-- **Live provincial connections** (OLIS lab network, hospital report inbox, e-prescribing to all pharmacies, OHIP claim auto-submit) — prepared in software; needs provincial credentials and agreements per clinic.
-- **OntarioMD certification** — readiness work in progress; not certified yet.
-- Some modules (pharmacy, inpatient, in-house lab) are **optional** — each clinic turns on what it needs.
+- **Live provincial connections** (OLIS lab network, hospital report inbox, e-prescribing to all pharmacies, OHIP claim auto-submit): prepared in software; needs provincial credentials and agreements per clinic.
+- **OntarioMD certification**: readiness work in progress; not certified yet.
+- Some modules (pharmacy, inpatient, in-house lab) are **optional**: each clinic turns on what it needs.
 
 ---
 
@@ -376,10 +376,10 @@ Separate login for MediForge platform owner:
 
 | Document / page | Best for | How it differs from this guide |
 |-----------------|----------|--------------------------------|
-| **This guide** (`capabilities` page) | Sharing with anyone — fullest, current, with real screenshots | Most complete; June 2026 feature set |
+| **This guide** (`capabilities` page) | Sharing with anyone: fullest, current, with real screenshots | Most complete; June 2026 feature set |
 | **At a Glance** (internal md) | Quick internal summary | Shorter; fewer modules listed |
 | **brochure.html** | Marketing one-pager; PDF download | Shorter overview; stock photos; fewer 2026 features (no bulk import detail, portal results workflow, fee codes, schedule-by-provider, etc.) |
-| **key-features.html** | Feature checklist for prospects | Detailed cards but **outdated** vs current build — missing ICD-10-CA, Health Canada Rx, bulk import, intake approval, Ontario L-codes, expanded imaging catalog, portal order review, physician verification, backup request workflow, and more |
+| **key-features.html** | Feature checklist for prospects | Detailed cards but **outdated** vs current build: missing ICD-10-CA, Health Canada Rx, bulk import, intake approval, Ontario L-codes, expanded imaging catalog, portal order review, physician verification, backup request workflow, and more |
 | **USER-MANUAL.md** | Staff how-to (“click here”) | Instructions, not a capabilities showcase |
 | **MEDIFORGE-BROCHURE-CONTENT.md** | Source text for brochure PDF | Marketing tables; not updated for every 2026 release |
 
@@ -387,4 +387,4 @@ Separate login for MediForge platform owner:
 
 ---
 
-*MediForge — built for modern primary care, specialty clinics, and hospital-attached practices. Powered by Work Chop Inc.*
+*MediForge: built for modern primary care, specialty clinics, and hospital-attached practices. Powered by Work Chop Inc.*

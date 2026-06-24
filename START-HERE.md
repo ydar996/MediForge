@@ -1,4 +1,4 @@
-# Start here — MediForge
+# Start here: MediForge
 
 **MediForge** is a clinic management / EMR web app (patients, appointments, notes, billing, pharmacy, labs, and more).
 
@@ -17,19 +17,19 @@
 **Defaults for this product:**
 
 - Currency: **Canadian Dollar (CAD)** unless a clinic sets otherwise
-- Organizations: database starts empty — **Mecure Clinics** registers first; everyone else uses **Register**
+- Organizations: database starts empty: **Mecure Clinics** registers first; everyone else uses **Register**
 
 ---
 
 ## If you are an AI agent
 
-1. Read **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living doc — **read first, update before you finish**).
+1. Read **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living doc: **read first, update before you finish**).
 2. Read **[docs/MEDIFORGE-PRODUCT-RULES.md](docs/MEDIFORGE-PRODUCT-RULES.md)** (CAD, orgs, no legacy branding).
 3. Use **[docs/DOCUMENTATION-INDEX.md](docs/DOCUMENTATION-INDEX.md)** to find deeper docs.
-4. Read **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)** — git sync + dev/staging/prod promotion.
+4. Read **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)**: git sync + dev/staging/prod promotion.
 5. **Never deploy** without explicit owner approval (“Yes, deploy” / “I approve”).
-6. **Always commit and push** before finishing — keep PC, GitHub, and Netlify in sync.
-7. **Always update documentation** when you change code — handover session log, documentation index, project overview, and user manual (markdown + HTML) when staff will see the change. Full checklist: **AGENT-HANDOVER.md** § “How to keep this document alive”.
+6. **Always commit and push** before finishing: keep PC, GitHub, and Netlify in sync.
+7. **Always update documentation** when you change code: handover session log, documentation index, project overview, and user manual (markdown + HTML) when staff will see the change. Full checklist: **AGENT-HANDOVER.md** § “How to keep this document alive”.
 
 ---
 

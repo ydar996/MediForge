@@ -11,9 +11,9 @@
 
 # Why MediForge?
 
-Healthcare institutions in Canada face familiar challenges: reliable patient documentation, secure billing in Canadian dollars, and workflows that still work when connectivity drops. MediForge was built for North American physician practices—from solo clinics to multi-site groups.
+Healthcare institutions in Canada face familiar challenges: reliable patient documentation, secure billing in Canadian dollars, and workflows that still work when connectivity drops. MediForge was built for North American physician practices:from solo clinics to multi-site groups.
 
-**Offline-first architecture** means your staff can document, prescribe, and manage patients even when the internet is down. **Billing in CAD** by default, with multi-currency capability when you need it. **ICD-11 integration** keeps you aligned with international standards. And **role-based access** ensures the right people see the right data—whether you run a single clinic or a multi-facility network.
+**Offline-first architecture** means your staff can document, prescribe, and manage patients even when the internet is down. **Billing in CAD** by default, with multi-currency capability when you need it. **ICD-11 integration** keeps you aligned with international standards. And **role-based access** ensures the right people see the right data:whether you run a single clinic or a multi-facility network.
 
 ---
 
@@ -21,15 +21,15 @@ Healthcare institutions in Canada face familiar challenges: reliable patient doc
 
 MediForge is a full-stack Electronic Health Record (EHR) and practice management system that combines:
 
-- **Clinical documentation** — SOAP notes, e-prescriptions, lab and imaging orders, referrals
-- **Laboratory management** — 40+ structured lab templates, scientist workflow, external lab integration
-- **Pharmacy operations** — Dispensing, allergy checks, invoicing
-- **Financial management** — CAD billing, invoicing, payments, cash register, reporting; multi-currency capable
-- **Patient engagement** — Secure patient portal for appointments, medications, and results
-- **Inpatient care** — Admissions, rounds, discharge summaries
-- **Compliance & security** — Audit logs, encryption, legal agreements
+- **Clinical documentation**: SOAP notes, e-prescriptions, lab and imaging orders, referrals
+- **Laboratory management**: 40+ structured lab templates, scientist workflow, external lab integration
+- **Pharmacy operations**: Dispensing, allergy checks, invoicing
+- **Financial management**: CAD billing, invoicing, payments, cash register, reporting; multi-currency capable
+- **Patient engagement**: Secure patient portal for appointments, medications, and results
+- **Inpatient care**: Admissions, rounds, discharge summaries
+- **Compliance & security**: Audit logs, encryption, legal agreements
 
-The system runs as a **Progressive Web App (PWA)**—installable on any device, works offline, and syncs automatically when connectivity returns.
+The system runs as a **Progressive Web App (PWA)**:installable on any device, works offline, and syncs automatically when connectivity returns.
 
 ---
 
@@ -54,7 +54,7 @@ The system runs as a **Progressive Web App (PWA)**—installable on any device, 
 |---------|-------------|
 | **Patient registration** | Complete demographics capture: name, DOB, gender, contact, address, emergency contact, insurance details. |
 | **Patient search & filtering** | Fast search by name, patient number, date of birth, or phone. Pagination for large patient lists. |
-| **Patient profiles** | Central record with tabbed views for all clinical data—medical history, diagnoses, vitals, medications, allergies, immunizations, visits, orders, referrals, appointments, encounters. |
+| **Patient profiles** | Central record with tabbed views for all clinical data:medical history, diagnoses, vitals, medications, allergies, immunizations, visits, orders, referrals, appointments, encounters. |
 | **Patient documents** | Attach PDFs, images, and other documents to patient records. |
 | **CSV export** | Export patient lists for reporting, migration, or external analysis. |
 | **Patient intake & approvals** | Review and approve new patient registrations before they enter the system. |
@@ -110,7 +110,7 @@ The system runs as a **Progressive Web App (PWA)**—installable on any device, 
 | **Lab result entry** | Structured templates for 40+ test types with field validation and normal ranges. |
 | **Doctor lab results** | View lab results by patient with filtering and drill-down. |
 | **External lab orders** | Manage orders sent to external laboratories for processing. |
-| **Lab order billing** | Payment confirmation before result entry—integrate billing with lab workflow. |
+| **Lab order billing** | Payment confirmation before result entry:integrate billing with lab workflow. |
 | **Lab templates** | Structured, validated templates for: |
 
 ### Lab Test Types (40+)
@@ -226,7 +226,7 @@ The system runs as a **Progressive Web App (PWA)**—installable on any device, 
 | **Setup encryption** | Optional field-level encryption for sensitive data. |
 | **Recover encryption** | Secure key recovery for encrypted data. |
 | **Legal agreements** | View and sign agreements (terms, privacy, consent). |
-| **Organization code** | Shareable code for staff registration—links new users to organization. |
+| **Organization code** | Shareable code for staff registration:links new users to organization. |
 
 ---
 
@@ -282,7 +282,7 @@ The system runs as a **Progressive Web App (PWA)**—installable on any device, 
 
 | Feature | Description |
 |---------|-------------|
-| **Progressive Web App (PWA)** | Installable on any device—desktop, tablet, smartphone. No app store required. |
+| **Progressive Web App (PWA)** | Installable on any device:desktop, tablet, smartphone. No app store required. |
 | **Offline capability** | Works without internet; data syncs automatically when connectivity returns. |
 | **LocalStorage persistence** | Local data storage for resilience and speed. |
 | **Supabase sync** | Cloud sync for real-time collaboration and backup. |

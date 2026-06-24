@@ -80,7 +80,7 @@
         message:
           'Claim queued to ' +
           payerDisplayName(invoice) +
-          '. No patient payment required — service can proceed.'
+          '. No patient payment required: service can proceed.'
       };
     }
 

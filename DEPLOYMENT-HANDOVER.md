@@ -2,7 +2,7 @@
 
 **Last updated:** June 22, 2026
 
-> **Primary handover:** **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living document — read and update every session).  
+> **Primary handover:** **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living document: read and update every session).  
 > **Pipeline (dev → staging → prod + git sync):** **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)**  
 > **First-time setup:** **[GO-LIVE-GUIDE.md](GO-LIVE-GUIDE.md)**  
 > **Environments:** **[DEPLOYMENT-ENVIRONMENTS.md](DEPLOYMENT-ENVIRONMENTS.md)**
@@ -17,11 +17,11 @@ Use layman's terms. Explain what changed, why it matters, and what you handled v
 
 ## Deployment rules (mandatory)
 
-1. **Never deploy without explicit approval** (“Yes, deploy” / “I approve” — not just “deploy”).
-2. **Dev site first** — staging and production need separate approval each time.
-3. **One deployment per batch** — detailed `--message` listing all changes.
-4. **No secrets in git** — Supabase service role and Netlify tokens live in Netlify env vars only.
-5. **Always keep repos in sync** — commit + push after changes; GitHub must match what is deployed.
+1. **Never deploy without explicit approval** (“Yes, deploy” / “I approve”: not just “deploy”).
+2. **Dev site first**: staging and production need separate approval each time.
+3. **One deployment per batch**: detailed `--message` listing all changes.
+4. **No secrets in git**: Supabase service role and Netlify tokens live in Netlify env vars only.
+5. **Always keep repos in sync**: commit + push after changes; GitHub must match what is deployed.
 
 ---
 
@@ -58,7 +58,7 @@ Set in **Site configuration → Environment variables** on **each** site:
 |----------|---------|
 | `SUPABASE_URL` | Supabase project URL for **that** environment |
 | `SUPABASE_PUBLISHABLE_KEY` | Browser-safe key (injected at build) |
-| `SUPABASE_SERVICE_ROLE_KEY` | Server-only (Functions) — **secret** |
+| `SUPABASE_SERVICE_ROLE_KEY` | Server-only (Functions): **secret** |
 
 After adding vars, trigger a deploy (push to branch or `netlify deploy --prod --dir .`).
 

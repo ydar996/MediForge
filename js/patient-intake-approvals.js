@@ -126,7 +126,7 @@
   function updateUserContextUI() {
     const staff = getStaffSession();
     const displayName = buildStaffDisplayName(staff);
-    const orgLabel = organizationContext?.name || staff.org || staff.organization || "—";
+    const orgLabel = organizationContext?.name || staff.org || staff.organization || ":";
     if (userChipEl) {
       userChipEl.textContent = `${displayName} · ${orgLabel}`;
       userChipEl.hidden = false;
@@ -196,7 +196,7 @@
   }
 
   function formatDateTime(value) {
-    if (!value) return "—";
+    if (!value) return ":";
     try {
       return new Date(value).toLocaleString(undefined, {
         dateStyle: "medium",
@@ -208,7 +208,7 @@
   }
 
   function formatPhone(value) {
-    return value && value.trim() ? value.trim() : "—";
+    return value && value.trim() ? value.trim() : ":";
   }
 
   function buildFullName(payload) {
@@ -223,7 +223,7 @@
       .map(part => (part || "").trim())
       .filter(Boolean)
       .join(" ");
-    return contactName || "—";
+    return contactName || ":";
   }
 
   function getLocalQueue() {
@@ -408,7 +408,7 @@
 
     const valueEl = document.createElement("span");
     valueEl.className = "detail-value";
-    valueEl.textContent = value || "—";
+    valueEl.textContent = value || ":";
 
     item.appendChild(labelEl);
     item.appendChild(valueEl);
@@ -472,7 +472,7 @@
       const tr = document.createElement("tr");
       row.forEach(cell => {
         const td = document.createElement("td");
-        td.textContent = cell || "—";
+        td.textContent = cell || ":";
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -511,11 +511,11 @@
 
     const submittedLine = document.createElement("span");
     submittedLine.textContent = isLocal
-      ? "Awaiting sync — stored locally on this device"
+      ? "Awaiting sync: stored locally on this device"
       : `Submitted ${formatDateTime(submission.created_at)}`;
 
     const contactLine = document.createElement("span");
-    contactLine.textContent = `Phone: ${formatPhone(submission.patient_payload.phone)} · Email: ${submission.patient_payload.email || "—"}`;
+    contactLine.textContent = `Phone: ${formatPhone(submission.patient_payload.phone)} · Email: ${submission.patient_payload.email || ":"}`;
 
     meta.appendChild(nameHeading);
     meta.appendChild(submittedLine);
@@ -706,7 +706,7 @@
     const grid = document.createElement("div");
     grid.className = "detail-grid";
     Object.entries(customFields).forEach(([key, value]) => {
-      const item = createDetailItem(key.replace(/_/g, " "), Array.isArray(value) ? value.join(", ") : (typeof value === "boolean" ? (value ? "Yes" : "No") : (value || "—")));
+      const item = createDetailItem(key.replace(/_/g, " "), Array.isArray(value) ? value.join(", ") : (typeof value === "boolean" ? (value ? "Yes" : "No") : (value || ":")));
       grid.appendChild(item);
     });
     section.appendChild(grid);

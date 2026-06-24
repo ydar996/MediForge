@@ -1,4 +1,4 @@
-# MediForge Billing System — Canada / USA Toggle
+# MediForge Billing System: Canada / USA Toggle
 
 **Last updated:** June 17, 2026  
 **Module:** `src/billing/` → `lib/billing/` (Node) + `js/billing-service-browser.js` (browser)
@@ -22,9 +22,9 @@ Toggling the mode changes fee schedules, payer lists, claim formats, submission 
 
 1. Go to **Dashboard → Billing → Configure services & pricing** (`configure-services.html`).
 2. Under **Global Billing Settings**, choose **Billing System**:
-   - **Canada** — Provincial (OHIP, MSP, RAMQ, AHCIP)
-   - **USA** — Insurance (CPT / ICD-10-CM / 837P)
-3. Save — currency default updates (CAD or USD) and the org setting is stored in:
+   - **Canada**: Provincial (OHIP, MSP, RAMQ, AHCIP)
+   - **USA**: Insurance (CPT / ICD-10-CM / 837P)
+3. Save: currency default updates (CAD or USD) and the org setting is stored in:
    - `localStorage`: `{org}_billing_settings.system.billingMode`
    - **Supabase**: `organizations.settings.billingMode` and `organizations.settings.system.billingMode`
 
@@ -67,7 +67,7 @@ All actions append to an in-memory **audit log** (`getAuditLog()`) for complianc
 
 ## Sample claim flows
 
-### Canada — OHIP office visit
+### Canada: OHIP office visit
 
 1. Patient registered with **provincial** payer + PHN (Ontario).
 2. Doctor completes encounter → **Bill Visit** uses `A007A` from Ontario schedule.
@@ -75,7 +75,7 @@ All actions append to an in-memory **audit log** (`getAuditLog()`) for complianc
 4. `generateClaim` → provincial draft → `submitClaim` queues to **MCEDT** until credentials configured.
 5. Remittance advice posts payer payment; patient balance unchanged.
 
-### USA — Commercial E/M visit
+### USA: Commercial E/M visit
 
 1. Patient registered with **private insurance** + member ID.
 2. Encounter billed with **CPT 99213**.
@@ -89,11 +89,11 @@ All actions append to an in-memory **audit log** (`getAuditLog()`) for complianc
 
 | Area | Integration |
 |------|-------------|
-| **Admin settings** | `configure-services.html` — billing mode toggle |
-| **Encounters** | `js/encounter-billing.js` — fee schedule + claim draft |
-| **Checkout** | `collect-payment.html` — mode-aware payment scripts |
-| **Registration** | `BillingService.validateRegistration()` — PHN vs member ID |
-| **Payer hooks** | `js/billing-payer-hooks.js` — existing copay/claim queue (unchanged path) |
+| **Admin settings** | `configure-services.html`: billing mode toggle |
+| **Encounters** | `js/encounter-billing.js`: fee schedule + claim draft |
+| **Checkout** | `collect-payment.html`: mode-aware payment scripts |
+| **Registration** | `BillingService.validateRegistration()`: PHN vs member ID |
+| **Payer hooks** | `js/billing-payer-hooks.js`: existing copay/claim queue (unchanged path) |
 
 ---
 
@@ -123,9 +123,9 @@ npm run test:billing
 
 Includes:
 
-- `tests/billing/billing-service-canada.test.js` — 11 Canada scenarios
-- `tests/billing/billing-service-usa.test.js` — 12 USA scenarios
-- `tests/billing/billing-payer.test.js` — legacy payer engine tests
+- `tests/billing/billing-service-canada.test.js`: 11 Canada scenarios
+- `tests/billing/billing-service-usa.test.js`: 12 USA scenarios
+- `tests/billing/billing-payer.test.js`: legacy payer engine tests
 
 ---
 
@@ -134,7 +134,7 @@ Includes:
 - **PHIPA (Canada):** Audit claim generation, payment collection, and remittance posting. PHN stored in `patient_payer_profiles` / patient record; minimize exposure in logs.
 - **HIPAA (USA):** 837P/ERA handling must use encrypted transport in production; audit log supplements `audit_logs` table.
 - **Data integrity:** Never rewrite `billingModeAtCapture` on existing invoices when the org toggles mode.
-- **Live submission:** MCEDT, Teleplan, RAMQ, and US clearinghouses require clinic credentials — stubs queue claims safely until onboarding completes.
+- **Live submission:** MCEDT, Teleplan, RAMQ, and US clearinghouses require clinic credentials: stubs queue claims safely until onboarding completes.
 
 ---
 
@@ -164,6 +164,6 @@ tests/billing/billing-service-usa.test.js
 
 ## Related docs
 
-- `BILLING-SYSTEM-GUIDE.md` — cash register & invoices
-- `MEDIFORGE-BILLING-AND-PAYMENTS-DOCS.md` — payer profiles migration
-- `billing-payments-gaps.md` — remaining production gaps (live MCEDT, Supabase catalog sync)
+- `BILLING-SYSTEM-GUIDE.md`: cash register & invoices
+- `MEDIFORGE-BILLING-AND-PAYMENTS-DOCS.md`: payer profiles migration
+- `billing-payments-gaps.md`: remaining production gaps (live MCEDT, Supabase catalog sync)

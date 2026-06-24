@@ -154,7 +154,7 @@ window.getAppointmentTypes = async function() {
     }
   ];
 
-  // Load billing services and convert to appointment types (exclude Laboratory — single standard lab type only)
+  // Load billing services and convert to appointment types (exclude Laboratory: single standard lab type only)
   let billingServiceTypes = [];
   if (typeof window.getPricingCatalog === 'function') {
     try {

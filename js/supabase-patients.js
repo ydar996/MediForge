@@ -257,7 +257,7 @@ window.getSupabasePatient = async function(patientId) {
 
 // ===== PATIENT ID GENERATION =====
 
-/** MFA Staff Clinic — must not fall back to first 3 letters of org name ("MIN"). */
+/** MFA Staff Clinic: must not fall back to first 3 letters of org name ("MIN"). */
 const MFASC_ORGANIZATION_ID = '94534e80-06a8-468f-b8a2-ece3f07697c4';
 
 // Generate sequential patient ID for organization

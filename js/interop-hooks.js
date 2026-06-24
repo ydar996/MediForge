@@ -49,7 +49,7 @@
     }).eq('id', orderId);
 
     if (chartResults.critical && typeof global.showErrorNotification === 'function') {
-      global.showErrorNotification('Critical lab result received — review immediately.');
+      global.showErrorNotification('Critical lab result received: review immediately.');
     }
   }
 

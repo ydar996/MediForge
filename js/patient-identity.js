@@ -1,5 +1,5 @@
 /**
- * Patient identity — single API for chart safety.
+ * Patient identity: single API for chart safety.
  *
  * INVARIANTS (enforced by convention + CI check:patient-identity):
  * - `patients.id` (row UUID) is the only key for internal joins and matching.
@@ -42,7 +42,7 @@
   }
 
   /**
-   * @param {string} rowUuid — patients.id
+   * @param {string} rowUuid: patients.id
    * @returns {Promise<string|null>} non-UUID display id for URLs, or null
    */
   async function rowUuidToUrlDisplayId(rowUuid) {

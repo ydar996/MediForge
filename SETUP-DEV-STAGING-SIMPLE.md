@@ -1,4 +1,4 @@
-# Set up Dev and Staging — simple guide
+# Set up Dev and Staging: simple guide
 
 **Time:** about 1–2 hours (first time)  
 **You already have:** production live at https://mediforge.netlify.app
@@ -7,22 +7,22 @@
 
 | Environment | Website | Who uses it |
 |-------------|---------|-------------|
-| **Dev** | https://mediforge-dev.netlify.app | You and developers — try new ideas |
+| **Dev** | https://mediforge-dev.netlify.app | You and developers: try new ideas |
 | **Staging** | https://mediforge-staging.netlify.app | Final check before go-live |
 | **Production** | https://mediforge.netlify.app | Real clinics (already live) |
 
-Each environment has its **own database** — test data never touches live patient records.
+Each environment has its **own database**: test data never touches live patient records.
 
 ---
 
-## Read this first — organization vs project (important)
+## Read this first: organization vs project (important)
 
 Supabase uses two words that sound similar. They are **not** the same thing.
 
 | Word | Plain English | What you do for dev/staging |
 |------|---------------|-----------------------------|
-| **Organization** | Your **billing folder** — the account that owns everything | **Keep the one you already have** (named **MediForge**) |
-| **Project** | One **database + website backend** — one per environment | **Create 2 new projects** inside that same folder |
+| **Organization** | Your **billing folder**: the account that owns everything | **Keep the one you already have** (named **MediForge**) |
+| **Project** | One **database + website backend**: one per environment | **Create 2 new projects** inside that same folder |
 
 ### What you have today
 
@@ -34,7 +34,7 @@ MediForge  ← organization (billing folder)
 ### What you will have when done
 
 ```
-MediForge  ← same organization — still only ONE
+MediForge  ← same organization: still only ONE
 ├── MediForge-Prod      ← production (unchanged)
 ├── MediForge Dev       ← NEW project (practice database)
 └── MediForge Staging   ← NEW project (practice database)
@@ -44,8 +44,8 @@ MediForge  ← same organization — still only ONE
 
 | | Before | After |
 |---|--------|-------|
-| **Organizations** | 1 (MediForge) | **1** — no change |
-| **Projects** | 1 (Prod) | **3** — add Dev + Staging |
+| **Organizations** | 1 (MediForge) | **1**: no change |
+| **Projects** | 1 (Prod) | **3**: add Dev + Staging |
 
 ### Do this ✅
 
@@ -57,17 +57,17 @@ MediForge  ← same organization — still only ONE
 
 - Do **not** click **+ New organization**
 - Do **not** create a second billing account
-- You are **not** setting up 5 organizations — you stay at **1 organization, 3 projects**
+- You are **not** setting up 5 organizations: you stay at **1 organization, 3 projects**
 
-> **In the Supabase dashboard:** when you click **New project**, you should see **Organization: MediForge** (or similar) at the top of the form. If it asks you to create a **new organization**, stop — you are in the wrong place.
+> **In the Supabase dashboard:** when you click **New project**, you should see **Organization: MediForge** (or similar) at the top of the form. If it asks you to create a **new organization**, stop: you are in the wrong place.
 
 ---
 
-## Part 1 — Create two practice databases (Supabase)
+## Part 1: Create two practice databases (Supabase)
 
-You will do the steps below **twice** — first for **Dev**, then again for **Staging**.
+You will do the steps below **twice**: first for **Dev**, then again for **Staging**.
 
-### Step A — Open the right place
+### Step A: Open the right place
 
 1. Go to [supabase.com/dashboard](https://supabase.com/dashboard)
 2. In the left sidebar, click your **MediForge** organization (you should already see **MediForge-Prod** listed)
@@ -75,7 +75,7 @@ You will do the steps below **twice** — first for **Dev**, then again for **St
    - **Not** “New organization”  
    - **Not** “+ New organization” in the org switcher
 
-### Step B — Create the project (repeat for Dev, then for Staging)
+### Step B: Create the project (repeat for Dev, then for Staging)
 
 | Field | First time | Second time |
 |-------|------------|-------------|
@@ -90,7 +90,7 @@ You will do the steps below **twice** — first for **Dev**, then again for **St
 
 When finished, your MediForge organization should list **three** projects: **Prod**, **Dev**, and **Staging**.
 
-### Step C — Copy three keys from each new project
+### Step C: Copy three keys from each new project
 
 Open **MediForge Dev** → **Project Settings** → **API**. Copy all three. Then do the same for **MediForge Staging**.
 
@@ -100,7 +100,7 @@ Open **MediForge Dev** → **Project Settings** → **API**. Copy all three. The
 | Publishable key | Netlify env vars for that site |
 | Secret key | Netlify env vars for that site (keep private) |
 
-### Step D — Give each new database the same “layout” as production
+### Step D: Give each new database the same “layout” as production
 
 **Easiest if you have help from a developer:** they run `supabase db push` for each project.
 
@@ -117,11 +117,11 @@ Then optionally:
 
 ---
 
-## Part 2 — Create two practice websites (Netlify)
+## Part 2: Create two practice websites (Netlify)
 
 Netlify is separate from Supabase. Here you create **two new websites** that point at your **Dev** and **Staging** Git branches.
 
-### If you can see your other GitHub repos in Netlify — but not MediForge
+### If you can see your other GitHub repos in Netlify: but not MediForge
 
 **Why (plain English):**  
 Your Netlify ↔ GitHub link is working. **MediForge is just not on Netlify’s allowed list yet.**
@@ -129,11 +129,11 @@ Your Netlify ↔ GitHub link is working. **MediForge is just not on Netlify’s 
 That usually happens because:
 
 - Netlify is set to **“Only select repositories”**, and
-- **MediForge is a new repo** — you picked your older repos when you first connected Netlify, but **MediForge did not exist yet**, so it was never added.
+- **MediForge is a new repo**: you picked your older repos when you first connected Netlify, but **MediForge did not exist yet**, so it was never added.
 
 Your other projects show up; MediForge does not. That is the telltale sign.
 
-**Fix — add MediForge to the list (about 1 minute):**
+**Fix: add MediForge to the list (about 1 minute):**
 
 1. On the Netlify repo picker, click **Configure Netlify on GitHub**  
    *(Or: GitHub → profile photo → **Settings** → **Applications** → **Installed GitHub Apps** → **Netlify** → **Configure**.)*
@@ -149,7 +149,7 @@ Your other projects show up; MediForge does not. That is the telltale sign.
 
 1. Go to [app.netlify.com](https://app.netlify.com) → **Add new site** → **Import an existing project**
 2. Choose **GitHub** → repo **MediForge**
-3. **Branch:** you will create `dev` in Part 3 — pick **`dev`** when it exists (or create branch first)
+3. **Branch:** you will create `dev` in Part 3: pick **`dev`** when it exists (or create branch first)
 4. **Site name:** `mediforge-dev`
 5. **Build command:** `node scripts/inject-supabase-env.cjs && npm run check`
 6. **Publish directory:** `.`
@@ -176,9 +176,9 @@ Open your existing **mediforge** site → confirm it deploys from GitHub branch 
 
 ---
 
-## Part 3 — Create two Git branches (GitHub)
+## Part 3: Create two Git branches (GitHub)
 
-Open PowerShell — run **one line at a time**:
+Open PowerShell: run **one line at a time**:
 
 ```powershell
 cd C:\Users\yinka\Documents\MediForge
@@ -216,7 +216,7 @@ If Netlify sites were created before these branches existed, go back to Netlify 
 
 ---
 
-## Part 4 — Tell Supabase about the new website addresses
+## Part 4: Tell Supabase about the new website addresses
 
 In **each** Supabase project (**MediForge Dev** and **MediForge Staging**):
 
@@ -228,10 +228,10 @@ In **each** Supabase project (**MediForge Dev** and **MediForge Staging**):
 
 ---
 
-## Part 5 — Quick test
+## Part 5: Quick test
 
-1. Open https://mediforge-dev.netlify.app — page loads
-2. Try `/login` — connects (no errors about Supabase)
+1. Open https://mediforge-dev.netlify.app: page loads
+2. Try `/login`: connects (no errors about Supabase)
 3. Register a **test** clinic on Dev only (not production)
 
 ---

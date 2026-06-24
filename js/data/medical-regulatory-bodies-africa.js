@@ -1,5 +1,5 @@
 /**
- * African medical practitioner regulatory bodies — reference data for physician verification copy.
+ * African medical practitioner regulatory bodies: reference data for physician verification copy.
  *
  * Update this file when authorities change or better public information is available.
  * Bump _meta.version when you edit entries.
@@ -9,7 +9,7 @@
  * - aliases: alternate spellings / ISO-style names from forms or imports
  * - regulatoryBody: full name from official sources where known
  * - unknownAgency: when true, end-user notices use the generic phrase only (not regulatoryBody text)
- * - verificationNotes: internal hints (websites, how to verify) — not shown in standard doctor notices
+ * - verificationNotes: internal hints (websites, how to verify): not shown in standard doctor notices
  */
 (function (w) {
   'use strict';

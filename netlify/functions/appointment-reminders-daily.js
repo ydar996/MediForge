@@ -226,11 +226,11 @@ exports.handler = async function (event) {
           }
 
           const patientName = patientData ? `${patientData.first_name || ''} ${patientData.last_name || ''}`.trim() || 'Patient' : 'Patient';
-          const patientId = patientData?.patient_id || apt.patient_id || '—';
+          const patientId = patientData?.patient_id || apt.patient_id || ':';
           const dob = patientData?.date_of_birth ? new Date(patientData.date_of_birth).toISOString().split('T')[0] : null;
-          const dobStr = dob ? new Date(dob).toLocaleDateString() : '—';
+          const dobStr = dob ? new Date(dob).toLocaleDateString() : ':';
           const timeStr = apt.appointment_time ? String(apt.appointment_time).slice(0, 5) : '';
-          const purpose = apt.reason || '—';
+          const purpose = apt.reason || ':';
           const smsUrl = `/appointment-sms-reminders?patient=${encodeURIComponent(patientId)}&date=${encodeURIComponent(aptDate)}`;
 
           const title = `Appointment reminder: ${daysBefore} day${daysBefore !== 1 ? 's' : ''} until appointment`;

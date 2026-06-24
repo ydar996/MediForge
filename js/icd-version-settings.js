@@ -18,7 +18,7 @@
       const confirmed = confirm(
         `Switch diagnosis coding standard from ${getLabel(current)} to ${getLabel(next)}?\n\n` +
           "This applies to all users in your organization when searching diagnoses, medical history, and prescriptions.\n\n" +
-          "Existing saved diagnoses are not changed — only new searches and selections.\n\n" +
+          "Existing saved diagnoses are not changed: only new searches and selections.\n\n" +
           "Refresh open clinical pages after switching."
       );
       if (!confirmed) return;

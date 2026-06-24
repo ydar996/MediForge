@@ -46,7 +46,7 @@
 
   function copyRejectedUploadLine(country) {
     var f = noticeFragment(country);
-    return 'Upload new documents — proof from ' + f.fromClause + ' and your medical school diploma — before: ';
+    return 'Upload new documents: proof from ' + f.fromClause + ' and your medical school diploma: before: ';
   }
 
   w.resolvePhysicianVerificationOrgCountry = resolveOrgCountry;
@@ -107,7 +107,7 @@
 
   /**
    * Start the 90-day verification clock for doctors: insert physician_verifications if missing.
-   * Call after successful login (or session restore) — no need to open the verification page.
+   * Call after successful login (or session restore): no need to open the verification page.
    */
   w.ensurePhysicianVerificationRecordForProfile = async function (profile) {
     if (!profile || !profile.id || !profile.organization_id) return;
@@ -243,7 +243,7 @@
             body.appendChild(p2);
             var p3 = document.createElement('p');
             p3.textContent =
-              'You can check status from the Dashboard — Departmental Dashboards — Physician credential verification, or open the verification page from the banner.';
+              'You can check status from the Dashboard: Departmental Dashboards: Physician credential verification, or open the verification page from the banner.';
             body.appendChild(p3);
           } else if (status === 'rejected') {
             var r1 = document.createElement('p');
@@ -370,7 +370,7 @@
               })
             );
           }
-          var skip = mkBtn('Continue without uploading now — you can upload later', false, function () {
+          var skip = mkBtn('Continue without uploading now: you can upload later', false, function () {
             removeOverlay();
           });
           skip.setAttribute(
@@ -435,7 +435,7 @@
     return PV_BANNER_SNOOZE_PREFIX + userId;
   }
 
-  /** Next 9:00 AM local — today if still before then, otherwise tomorrow (periodic daily reminder). */
+  /** Next 9:00 AM local: today if still before then, otherwise tomorrow (periodic daily reminder). */
   function getNextPeriodicBannerReminderMs() {
     var now = new Date();
     var next = new Date(now.getFullYear(), now.getMonth(), now.getDate(), 9, 0, 0, 0);
@@ -539,12 +539,12 @@
 
     var bodyLines = [];
     var accentBorder = '#f9a825';
-    var summaryHint = 'Credential verification — expand for instructions and countdown';
+    var summaryHint = 'Credential verification: expand for instructions and countdown';
     var panelColor = '#5d4037';
     var orgCountryBanner = (summary.profile && summary.profile.organizationCountry) || '';
     if (overdue) {
       accentBorder = '#c62828';
-      summaryHint = 'Access may be limited — expand for details and deadline';
+      summaryHint = 'Access may be limited: expand for details and deadline';
       panelColor = '#b71c1c';
       bodyLines.push(
         'Portal access is limited until your credentials are verified. ' + copyUploadProofWhenLimited(orgCountryBanner)
@@ -555,7 +555,7 @@
       bodyLines.push('Access deadline was: <strong>' + new Date(untilMs).toLocaleString() + '</strong>');
     } else if (status === 'pending_review') {
       accentBorder = '#1565c0';
-      summaryHint = 'Documents under review — expand for deadline and links';
+      summaryHint = 'Documents under review: expand for deadline and links';
       panelColor = '#0d47a1';
       bodyLines.push('Your documents are pending platform review.');
       bodyLines.push('Deadline to stay fully active: <strong>' + new Date(untilMs).toLocaleString() + '</strong>');

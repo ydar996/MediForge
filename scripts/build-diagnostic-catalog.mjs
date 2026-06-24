@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Build Canada/US diagnostic catalog (labs + imaging) and sync into patients.js + pricing.js.
- * Platform-maintained — clinics do not edit catalog JSON by hand in production.
+ * Platform-maintained: clinics do not edit catalog JSON by hand in production.
  */
 import fs from 'fs';
 import path from 'path';
@@ -360,11 +360,11 @@ function patchPatientsJs(labs, imaging) {
   const file = path.join(repoRoot, 'js', 'patients.js');
   let src = fs.readFileSync(file, 'utf8');
 
-  const labBlock = `// MEDIFORGE_CATALOG:LAB_START — auto-synced by npm run build:diagnostic-catalog
+  const labBlock = `// MEDIFORGE_CATALOG:LAB_START: auto-synced by npm run build:diagnostic-catalog
 const LAB_TESTS = ${toJsArray(sortLabs(labs), 0)};
 // MEDIFORGE_CATALOG:LAB_END`;
 
-  const imgBlock = `// MEDIFORGE_CATALOG:IMG_START — auto-synced by npm run build:diagnostic-catalog
+  const imgBlock = `// MEDIFORGE_CATALOG:IMG_START: auto-synced by npm run build:diagnostic-catalog
 const IMAGING_TESTS = ${toJsArray(imaging, 0)};
 // MEDIFORGE_CATALOG:IMG_END`;
 
@@ -415,7 +415,7 @@ function patchPricingJs(labs) {
   let src = fs.readFileSync(file, 'utf8');
   const seeds = sortLabs(labs).map(labToPricingSeed);
   const lines = seeds.map((s) => `    { code: '${s.code}', name: '${s.name.replace(/'/g, "\\'")}' }`).join(',\n');
-  const block = `// MEDIFORGE_CATALOG:PRICING_LABS_START — auto-synced
+  const block = `// MEDIFORGE_CATALOG:PRICING_LABS_START: auto-synced
   const labServices = [
 ${lines}
   ];

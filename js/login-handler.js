@@ -283,7 +283,7 @@ document.addEventListener('DOMContentLoaded', function() {
         const userData = JSON.parse(localStorage.getItem('user') || '{}');
         const userRole = String(userData.role || '').toLowerCase();
 
-        // Patient accounts use the self-service portal — never staff legal agreements
+        // Patient accounts use the self-service portal: never staff legal agreements
         if (userRole === 'patient') {
           hideLoginVerifyingOverlay();
           if (result.passwordResetRequired || userData.passwordResetRequired) {

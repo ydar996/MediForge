@@ -2,7 +2,7 @@
 
 ## Agent note: plain language for the user
 
-When you explain deploys or ask for approval, use **layman's terms** — see **`AGENT-HANDOVER.md`** (“Communication with the user”). Deploy yourself when you have explicit approval; don't make the user follow a long technical checklist unless they asked to.
+When you explain deploys or ask for approval, use **layman's terms**: see **`AGENT-HANDOVER.md`** (“Communication with the user”). Deploy yourself when you have explicit approval; don't make the user follow a long technical checklist unless they asked to.
 
 ## 🚀 Quick Deploy with Detailed Messages
 

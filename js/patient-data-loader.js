@@ -279,7 +279,7 @@ function portalIsUuidLike(id) {
   return s.includes('-') && s.length === 36;
 }
 
-/** appointments.patient_id is UUID (FK to patients.id) — not legacy MRN. */
+/** appointments.patient_id is UUID (FK to patients.id): not legacy MRN. */
 async function resolvePortalPatientUuid(patientId) {
   const ids = await resolvePortalPatientIds(patientId);
   return ids.find(portalIsUuidLike) || null;
@@ -814,7 +814,7 @@ window.getPatientSummary = async function(requestedPatientId = null) {
       results = [];
     }
     
-    // Clinical sections — same sources as EMR (patient-details problem list + past medical history)
+    // Clinical sections: same sources as EMR (patient-details problem list + past medical history)
     const medicalHistory = buildPortalMedicalHistory(demographics);
     const conditions = buildPortalConditions(demographics);
     const allergies = parsePortalJsonField(demographics.allergies);

@@ -64,10 +64,10 @@ function normalizeMedName(desc) {
     s = s.replace(formMatch[0], '').trim();
   }
   const strengthMatch = s.match(/(\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|%|iu)(?:\s*\/\s*\d+(?:\.\d+)?\s*(?:mg|mcg|g|ml|%))?)/i);
-  let strength = strengthMatch ? strengthMatch[1].replace(/\s+/g, '') : '—';
+  let strength = strengthMatch ? strengthMatch[1].replace(/\s+/g, '') : ':';
   let name = s.replace(strengthMatch ? strengthMatch[0] : '', '').replace(/[,.]/g, '').trim();
   name = name.replace(/^\s*(tab|cap|syr|inj|iv|gutt)\.?\s*/i, '').trim() || name;
-  return { name: name || '—', strength, form };
+  return { name: name || ':', strength, form };
 }
 
 function toKey(item) {
@@ -100,7 +100,7 @@ const formIdx = stockHeader.findIndex(h => h.includes('form') || h === 'form');
 for (let i = 1; i < stockLines.length; i++) {
   const parts = stockLines[i].split(',').map(p => p.replace(/^"|"$/g, '').trim());
   const name = (parts[nameIdx] || '').trim();
-  const strength = (parts[strIdx] || '—').trim();
+  const strength = (parts[strIdx] || ':').trim();
   const form = (parts[formIdx] || 'Tablet').trim();
   if (name) stockKeys.add(fuzzyKey(name, strength, form));
 }
@@ -120,7 +120,7 @@ for (let i = 1; i < costLines.length; i++) {
   if (!itemDesc || itemDesc.startsWith('(') || /^[A-Z]\)\.?\s*$/.test(itemDesc) || /^EMERGENCY|^$/.test(itemDesc)) continue;
   if (cost == null || cost <= 0) continue;
   const { name, strength, form } = normalizeMedName(itemDesc);
-  if (!name || name === '—') continue;
+  if (!name || name === ':') continue;
   const key = fuzzyKey(name, strength, form);
   if (stockKeys.has(key)) continue;
   let found = false;
@@ -137,7 +137,7 @@ for (let i = 1; i < costLines.length; i++) {
     notInStock.push({
       original_description: itemDesc,
       medication_name: name,
-      strength: strength === '—' ? '' : strength,
+      strength: strength === ':' ? '' : strength,
       form,
       cost_per_unit: cost,
       quantity: parseInt(parts[qtyIdx] || parts[4] || '0', 10) || ''

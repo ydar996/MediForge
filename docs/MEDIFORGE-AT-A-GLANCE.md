@@ -1,18 +1,18 @@
 # MediForge at a Glance
 
 **What this is:** A plain-language guide to everything MediForge can do **today** (June 2026).  
-**Who it’s for:** Anyone — clinic owners, doctors, nurses, reception, investors, partners, or family members who want to understand the product without reading technical manuals.
+**Who it’s for:** Anyone: clinic owners, doctors, nurses, reception, investors, partners, or family members who want to understand the product without reading technical manuals.
 
 **Not the same as:**
-- **[USER-MANUAL.md](USER-MANUAL.md)** — step-by-step instructions for staff (“click here, then there”).
-- **[MEDIFORGE-BROCHURE-CONTENT.md](../MEDIFORGE-BROCHURE-CONTENT.md)** — marketing source material (denser, table format).
-- **[key-features.html](../key-features.html)** / **[brochure.html](../brochure.html)** — web pages for the public site.
+- **[USER-MANUAL.md](USER-MANUAL.md)**: step-by-step instructions for staff (“click here, then there”).
+- **[MEDIFORGE-BROCHURE-CONTENT.md](../MEDIFORGE-BROCHURE-CONTENT.md)**: marketing source material (denser, table format).
+- **[key-features.html](../key-features.html)** / **[brochure.html](../brochure.html)**: web pages for the public site.
 
 ---
 
 ## In one sentence
 
-**MediForge is a secure, web-based clinic system** that helps healthcare teams register patients, document visits, order tests, prescribe medications, bill for services, and — when you turn it on — let patients see their own information online.
+**MediForge is a secure, web-based clinic system** that helps healthcare teams register patients, document visits, order tests, prescribe medications, bill for services, and: when you turn it on: let patients see their own information online.
 
 You use it in a normal web browser (Chrome, Edge, Safari, Firefox). No special software to install on every computer, though it can also work like an app on phones and tablets.
 
@@ -60,8 +60,8 @@ Everything about a person’s care lives in one **patient chart**.
 
 - Search by name, patient number, date of birth, or phone
 - Add new patients with full contact and demographic details
-- **Bulk import** many patients at once from a spreadsheet (CSV or Excel) — useful when moving from paper or another system
-- **Patient self-intake** — send a link so new patients fill in their details online; staff review and approve before the chart goes live
+- **Bulk import** many patients at once from a spreadsheet (CSV or Excel): useful when moving from paper or another system
+- **Patient self-intake**: send a link so new patients fill in their details online; staff review and approve before the chart goes live
 - Optional fields for Canadian practice: health card info, enrolled physician, date joined practice, race (for quality reporting), and more
 - Attach documents (PDFs, images) to the chart
 - Export patient lists or a **full record export** when needed
@@ -78,25 +78,25 @@ Each chart is organized into clear sections:
 | **Allergies** | Allergens, reactions, severity |
 | **Medications** | Current and past prescriptions; manual entry supported |
 | **Immunizations** | Vaccines given, dates, lot numbers |
-| **Vital signs** | Blood pressure, pulse, weight, height, BMI — with trends over time |
+| **Vital signs** | Blood pressure, pulse, weight, height, BMI: with trends over time |
 | **Visits & encounters** | History of appointments and clinical encounters |
 | **Orders** | Lab and imaging orders and their status |
 | **Referrals** | Letters and tracking to specialists |
-| **Preventive care gaps** | Reminders for screenings or vaccines the patient may still need — with proof attachments |
+| **Preventive care gaps** | Reminders for screenings or vaccines the patient may still need: with proof attachments |
 | **Patient summary** | Printable overview for referrals or patient requests |
 
 ---
 
-## Clinical work — documenting care
+## Clinical work: documenting care
 
 ### Clinical notes (SOAP format)
 
 Doctors and clinicians write structured visit notes:
 
-- **S** — what the patient said (subjective)
-- **O** — exam findings and test results (objective)
-- **A** — assessment / diagnosis
-- **P** — plan (treatment, follow-up, orders)
+- **S**: what the patient said (subjective)
+- **O**: exam findings and test results (objective)
+- **A**: assessment / diagnosis
+- **P**: plan (treatment, follow-up, orders)
 
 Notes link to the patient’s chart and can include preventive care gap review during the visit.
 
@@ -176,7 +176,7 @@ When the clinic turns it on, patients log in to their own secure area:
 
 For clinics that **perform tests on site** (not only send to LifeLabs/Dynacare):
 
-- Lab scientist **dashboard** — queue of orders waiting for results
+- Lab scientist **dashboard**: queue of orders waiting for results
 - **Structured templates** for dozens of test types (CBC, chemistry panels, urinalysis, serology, etc.)
 - Enter results with validation; doctors view results from the chart
 - Billing step can be tied to lab workflow
@@ -216,9 +216,9 @@ Optional module for organizations that admit patients:
 
 ## Reports, quality & prevention
 
-- **Preventive care gaps** — surfaces overdue screenings, vaccines, or follow-ups; staff can mark addressed and attach proof
-- **Audit logs** — record of who did what in the system (for accountability and compliance)
-- **Security dashboard** — clinic-level security monitoring tools
+- **Preventive care gaps**: surfaces overdue screenings, vaccines, or follow-ups; staff can mark addressed and attach proof
+- **Audit logs**: record of who did what in the system (for accountability and compliance)
+- **Security dashboard**: clinic-level security monitoring tools
 - Export and reporting for administrators
 
 ---
@@ -252,7 +252,7 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 - View all registered organizations
 - Platform-wide settings and legal agreements
 - Subscription / plan management (when enabled)
-- Cross-clinic oversight — not day-to-day clinical use
+- Cross-clinic oversight: not day-to-day clinical use
 
 ---
 
@@ -273,17 +273,17 @@ A separate **platform login** exists for the owner of MediForge itself (not indi
 
 Being honest helps set expectations:
 
-- **Live connections** to Ontario provincial systems (OLIS lab network, hospital report inbox, e-prescribing to pharmacies, OHIP claim submission) — architecture exists; **live provincial credentials** are a next step, not yet flipped on for every clinic.
-- **OntarioMD certification** — planned readiness work documented separately; not certified yet.
-- Some brochure features depend on **clinic configuration** (pharmacy, inpatient, portal) — not every clinic turns every module on.
+- **Live connections** to Ontario provincial systems (OLIS lab network, hospital report inbox, e-prescribing to pharmacies, OHIP claim submission): architecture exists; **live provincial credentials** are a next step, not yet flipped on for every clinic.
+- **OntarioMD certification**: planned readiness work documented separately; not certified yet.
+- Some brochure features depend on **clinic configuration** (pharmacy, inpatient, portal): not every clinic turns every module on.
 
 ---
 
-## Quick reference — main areas of the app
+## Quick reference: main areas of the app
 
 | Area | Plain description |
 |------|-------------------|
-| Dashboard | Home screen — buttons to every module |
+| Dashboard | Home screen: buttons to every module |
 | Patients | Search, charts, bulk import, intake approval |
 | Clinical note | SOAP documentation during a visit |
 | Lab / imaging orders | Searchable catalogs with notes and fee codes |
@@ -301,7 +301,7 @@ Being honest helps set expectations:
 
 ## Where to learn more
 
-This guide is the written companion to the shareable webpage. **Give people the link** — not file paths:
+This guide is the written companion to the shareable webpage. **Give people the link**: not file paths:
 
 **https://mediforge.netlify.app/capabilities**
 
@@ -313,6 +313,6 @@ This guide is the written companion to the shareable webpage. **Give people the 
 
 ---
 
-**MediForge** — secure clinic management in the browser, built for modern primary care and specialty practices.
+**MediForge**: secure clinic management in the browser, built for modern primary care and specialty practices.
 
 *Document version: June 23, 2026. Reflects production feature set including lab/imaging order picker, Ontario fee codes, bulk import, patient portal, and preventive gaps.*

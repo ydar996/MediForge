@@ -8,7 +8,7 @@
 
 ## What it does
 
-Imports many patients at once from a spreadsheet into your organization’s Supabase database (with local cache). Empty fields are allowed — complete them later in **Edit Patient**.
+Imports many patients at once from a spreadsheet into your organization’s Supabase database (with local cache). Empty fields are allowed: complete them later in **Edit Patient**.
 
 ---
 
@@ -37,7 +37,7 @@ If date of birth is missing, a placeholder is stored so the row still imports; f
 
 | Option | When to use |
 |--------|-------------|
-| **Keep existing Patient IDs** (checkbox, default on) | Migrating legacy chart numbers — put them in the **Patient ID** column |
+| **Keep existing Patient IDs** (checkbox, default on) | Migrating legacy chart numbers: put them in the **Patient ID** column |
 | Uncheck the box | Always assign new org auto-numbers (e.g. `MFA-SC0001`) |
 
 Duplicate IDs in the file or database are skipped for that row; other rows continue.
@@ -58,7 +58,7 @@ In **Map my columns** mode, any column you do not map to a standard field can be
 
 ---
 
-## Patient IDs — keep or replace
+## Patient IDs: keep or replace
 
 | Checkbox | What happens |
 |----------|----------------|
@@ -69,7 +69,7 @@ In **Map my columns** mode, any column you do not map to a standard field can be
 
 ## After import
 
-1. **Manage Patients** — search and open charts to complete missing fields.
+1. **Manage Patients**: search and open charts to complete missing fields.
 2. Upload ID and insurance card images per patient (not included in CSV import).
 3. Review **Notes** on imported patients for bulk-import warnings.
 
@@ -82,7 +82,7 @@ In **Map my columns** mode, any column you do not map to a standard field can be
 | Code | `js/bulk-patient-import.js`, `bulk-patient-import.html` |
 | Saves | Supabase `patients` insert + localStorage via `getDataKey('patients')` |
 | Supersedes | `data-import-export.html` localStorage-only CSV import for demographics |
-| Excel | SheetJS (`xlsx` CDN) — first worksheet, row 1 = headers |
+| Excel | SheetJS (`xlsx` CDN): first worksheet, row 1 = headers |
 
 ---
 

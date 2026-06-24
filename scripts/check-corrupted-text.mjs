@@ -8,7 +8,7 @@ import { fileURLToPath } from 'node:url';
 const ROOT = path.resolve(path.dirname(fileURLToPath(import.meta.url)), '..');
 const BAD = '\uFFFD';
 const SKIP_DIRS = new Set(['node_modules', '.git', 'js/vendor', 'tests']);
-/** Large generated ICD code databases — icd10ca excluded (stable build output). */
+/** Large generated ICD code databases: icd10ca excluded (stable build output). */
 const MOJIBAKE_SKIP = new Set(['js/icd10ca.js']);
 
 /** Legacy double-encoding / mojibake icon sequences (UTF-8 read as Latin-1). */

@@ -121,7 +121,7 @@
   }
 
   function formatDateTime(value) {
-    if (!value) return "—";
+    if (!value) return ":";
     try {
       return new Date(value).toLocaleString(undefined, { dateStyle: "medium", timeStyle: "short" });
     } catch (error) {
@@ -130,7 +130,7 @@
   }
 
   function formatPhone(value) {
-    return value && value.trim() ? value.trim() : "—";
+    return value && value.trim() ? value.trim() : ":";
   }
 
   function buildFullName(payload) {
@@ -145,7 +145,7 @@
       .map(part => (part || "").trim())
       .filter(Boolean)
       .join(" ");
-    return contactName || "—";
+    return contactName || ":";
   }
 
   function createDetailItem(label, value) {
@@ -156,7 +156,7 @@
     labelEl.textContent = label;
     const valueEl = document.createElement("span");
     valueEl.className = "detail-value";
-    valueEl.textContent = value || "—";
+    valueEl.textContent = value || ":";
     item.appendChild(labelEl);
     item.appendChild(valueEl);
     return item;
@@ -205,7 +205,7 @@
       const tr = document.createElement("tr");
       row.forEach(cell => {
         const td = document.createElement("td");
-        td.textContent = cell || "—";
+        td.textContent = cell || ":";
         tr.appendChild(td);
       });
       tbody.appendChild(tr);
@@ -229,7 +229,7 @@
     Object.entries(customFields).forEach(([key, value]) => {
       const item = createDetailItem(
         key.replace(/_/g, " "),
-        Array.isArray(value) ? value.join(", ") : (typeof value === "boolean" ? (value ? "Yes" : "No") : (value || "—"))
+        Array.isArray(value) ? value.join(", ") : (typeof value === "boolean" ? (value ? "Yes" : "No") : (value || ":"))
       );
       grid.appendChild(item);
     });
@@ -367,75 +367,75 @@
 
     const personalSection = createDetailSection("Patient Details", [
       createDetailItem("Full Name", fullName),
-      createDetailItem("Date of Birth", payload.dob || "—"),
-      createDetailItem("Gender", payload.gender || "—"),
-      createDetailItem("Marital Status", payload.maritalStatus || "—"),
-      createDetailItem("Race", payload.race || "—"),
-      createDetailItem("Email", payload.email || "—"),
+      createDetailItem("Date of Birth", payload.dob || ":"),
+      createDetailItem("Gender", payload.gender || ":"),
+      createDetailItem("Marital Status", payload.maritalStatus || ":"),
+      createDetailItem("Race", payload.race || ":"),
+      createDetailItem("Email", payload.email || ":"),
       createDetailItem("Phone", formatPhone(payload.phone)),
-      createDetailItem("Has Diabetes", payload.hasDiabetes === true ? "Yes" : payload.hasDiabetes === false ? "No" : "—")
+      createDetailItem("Has Diabetes", payload.hasDiabetes === true ? "Yes" : payload.hasDiabetes === false ? "No" : ":")
     ]);
 
     const paymentItems = [
-      createDetailItem("Primary Payer", payload.paymentSource || "—"),
-      createDetailItem("Preferred Payment Method", payload.preferredPaymentMethod || "—")
+      createDetailItem("Primary Payer", payload.paymentSource || ":"),
+      createDetailItem("Preferred Payment Method", payload.preferredPaymentMethod || ":")
     ];
     const payerSource = String(payload.paymentSource || "").toLowerCase();
     if (payerSource.includes("provincial") || payerSource.includes("ohip")) {
-      paymentItems.push(createDetailItem("Province / Territory", payload.province || "—"));
-      paymentItems.push(createDetailItem("Health Card (PHN)", payload.healthCardNumber || payload.phn || "—"));
+      paymentItems.push(createDetailItem("Province / Territory", payload.province || ":"));
+      paymentItems.push(createDetailItem("Health Card (PHN)", payload.healthCardNumber || payload.phn || ":"));
       if (payload.healthCardVersion) {
         paymentItems.push(createDetailItem("Health Card Version", payload.healthCardVersion));
       }
     } else if (payerSource.includes("insur") || payerSource.includes("private")) {
-      paymentItems.push(createDetailItem("Insurance Company", payload.insuranceName || "—"));
-      paymentItems.push(createDetailItem("Member Number", payload.insuranceMemberNumber || "—"));
+      paymentItems.push(createDetailItem("Insurance Company", payload.insuranceName || ":"));
+      paymentItems.push(createDetailItem("Member Number", payload.insuranceMemberNumber || ":"));
       if (payload.insurancePolicyGroupNumber) {
         paymentItems.push(createDetailItem("Policy / Group Number", payload.insurancePolicyGroupNumber));
       }
     } else if (payerSource.includes("wcb") || payerSource.includes("workers")) {
-      paymentItems.push(createDetailItem("Province / Territory", payload.province || "—"));
-      paymentItems.push(createDetailItem("WCB Claim / File Number", payload.wcbClaimNumber || "—"));
+      paymentItems.push(createDetailItem("Province / Territory", payload.province || ":"));
+      paymentItems.push(createDetailItem("WCB Claim / File Number", payload.wcbClaimNumber || ":"));
     }
-    paymentItems.push(createDetailItem("Identification Card", payload.identificationCard ? "✓ Uploaded" : "—"));
-    paymentItems.push(createDetailItem("Insurance Card", (payload.insuranceCard || payload.insuranceCardFront) ? "✓ Uploaded" : "—"));
+    paymentItems.push(createDetailItem("Identification Card", payload.identificationCard ? "✓ Uploaded" : ":"));
+    paymentItems.push(createDetailItem("Insurance Card", (payload.insuranceCard || payload.insuranceCardFront) ? "✓ Uploaded" : ":"));
     const paymentSection = createDetailSection("Payment & Coverage", paymentItems);
 
     const addressSection = createDetailSection("Address", [
-      createDetailItem("Address Line 1", payload.addressLine1 || "—"),
-      createDetailItem("Address Line 2", payload.addressLine2 || "—"),
-      createDetailItem("City / Town", payload.city || "—"),
-      createDetailItem("State / Region", payload.state || "—"),
-      createDetailItem("Country", payload.country || "—")
+      createDetailItem("Address Line 1", payload.addressLine1 || ":"),
+      createDetailItem("Address Line 2", payload.addressLine2 || ":"),
+      createDetailItem("City / Town", payload.city || ":"),
+      createDetailItem("State / Region", payload.state || ":"),
+      createDetailItem("Country", payload.country || ":")
     ]);
 
     const emergencySection = createDetailSection("Emergency Contact", [
       createDetailItem("Full Name", buildEmergencyContact(payload)),
-      createDetailItem("Relationship", payload.emergencyRelationship || "—"),
+      createDetailItem("Relationship", payload.emergencyRelationship || ":"),
       createDetailItem("Phone", formatPhone(payload.emergencyPhone)),
-      createDetailItem("Email", payload.emergencyEmail || "—"),
-      createDetailItem("Address Line 1", payload.emergencyAddressLine1 || "—"),
-      createDetailItem("Address Line 2", payload.emergencyAddressLine2 || "—"),
-      createDetailItem("City / Town", payload.emergencyCity || "—"),
-      createDetailItem("State / Region", payload.emergencyState || "—"),
-      createDetailItem("Country", payload.emergencyCountry || "—")
+      createDetailItem("Email", payload.emergencyEmail || ":"),
+      createDetailItem("Address Line 1", payload.emergencyAddressLine1 || ":"),
+      createDetailItem("Address Line 2", payload.emergencyAddressLine2 || ":"),
+      createDetailItem("City / Town", payload.emergencyCity || ":"),
+      createDetailItem("State / Region", payload.emergencyState || ":"),
+      createDetailItem("Country", payload.emergencyCountry || ":")
     ]);
 
     const medicalHistorySection = createDetailTableSection(
       "Past Medical History",
       ["Date", "Event / Condition", "Notes"],
-      (payload.medicalHistory || []).map(entry => [entry.date || "—", entry.event || "—", entry.notes || "—"])
+      (payload.medicalHistory || []).map(entry => [entry.date || ":", entry.event || ":", entry.notes || ":"])
     );
 
     const medicationsSection = createDetailTableSection(
       "Patient-Reported Medications",
       ["Name", "Dosage", "Start Date", "End Date", "Notes"],
       (payload.medications || []).map(entry => [
-        entry.name || "—",
-        entry.dosage || "—",
-        entry.startDate || entry.start || "—",
-        entry.endDate || entry.end || "—",
-        entry.notes || "—"
+        entry.name || ":",
+        entry.dosage || ":",
+        entry.startDate || entry.start || ":",
+        entry.endDate || entry.end || ":",
+        entry.notes || ":"
       ])
     );
 
@@ -443,11 +443,11 @@
       "Allergies",
       ["Category", "Allergen", "Severity", "Reactions", "Notes"],
       (payload.allergies || []).map(entry => [
-        entry.category || "—",
-        entry.allergen || "—",
-        entry.severity || "—",
-        Array.isArray(entry.reactions) ? entry.reactions.join(", ") : (entry.reactions || "—"),
-        entry.notes || "—"
+        entry.category || ":",
+        entry.allergen || ":",
+        entry.severity || ":",
+        Array.isArray(entry.reactions) ? entry.reactions.join(", ") : (entry.reactions || ":"),
+        entry.notes || ":"
       ])
     );
 
@@ -455,9 +455,9 @@
       "Immunizations",
       ["Vaccine", "Date", "Notes"],
       (payload.immunizations || []).map(entry => [
-        entry.vaccine || "—",
-        entry.date || "—",
-        entry.notes || "—"
+        entry.vaccine || ":",
+        entry.date || ":",
+        entry.notes || ":"
       ])
     );
 

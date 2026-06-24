@@ -151,7 +151,7 @@ window.resolveOrganizationId = async function() {
         .maybeSingle();
       
       if (!error && data && data.id) {
-        // Update user object and organizations cache (merge — preserve settings)
+        // Update user object and organizations cache (merge: preserve settings)
         user.organizationId = data.id;
         user.organization_id = data.id;
         localStorage.setItem("user", JSON.stringify(user));

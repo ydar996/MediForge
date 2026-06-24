@@ -3,8 +3,8 @@
  * Fetch Supabase security advisors (same source as Dashboard → Database → Linter).
  *
  * Requires:
- *   SUPABASE_ACCESS_TOKEN — Personal access token (Account → Access Tokens)
- *   SUPABASE_PROJECT_REF  — Project ref (Settings → General), e.g. from project URL
+ *   SUPABASE_ACCESS_TOKEN: Personal access token (Account → Access Tokens)
+ *   SUPABASE_PROJECT_REF : Project ref (Settings → General), e.g. from project URL
  *
  * Usage:
  *   node scripts/fetch-security-advisors.mjs
@@ -89,7 +89,7 @@ console.log(`Project: ${projectRef}`);
 console.log(`Security lints: ${lints.length}${filterArg ? ` (filtered)` : ''}\n`);
 
 if (lints.length === 0) {
-  console.log('No matching security advisories — migration likely cleared the targeted checks.');
+  console.log('No matching security advisories: migration likely cleared the targeted checks.');
   process.exit(0);
 }
 
@@ -103,9 +103,9 @@ for (const lint of lints.sort((a, b) =>
 )) {
   const table = lint.metadata?.schema
     ? `${lint.metadata.schema}.${lint.metadata.name}`
-    : lint.metadata?.name ?? '—';
+    : lint.metadata?.name ?? ':';
   console.log(`[${lint.level}] ${lint.name}`);
-  console.log(`  ${lint.title} — ${table}`);
+  console.log(`  ${lint.title}: ${table}`);
   console.log(`  ${lint.detail}`);
   if (lint.metadata?.sensitive_columns) {
     console.log(`  columns: ${lint.metadata.sensitive_columns.join(', ')}`);

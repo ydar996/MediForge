@@ -1,5 +1,5 @@
 /**
- * Patient portal — lab/imaging order copy and reviewed results viewer.
+ * Patient portal: lab/imaging order copy and reviewed results viewer.
  */
 (function (global) {
   'use strict';
@@ -35,7 +35,7 @@
   }
 
   function formatDate(val) {
-    if (!val) return '—';
+    if (!val) return ':';
     const d = new Date(val);
     return Number.isNaN(d.getTime())
       ? String(val).slice(0, 10)
@@ -147,7 +147,7 @@ th{background:#008751;color:#fff;}
 <div class="meta">
 <p><strong>Patient:</strong> ${esc(patientName)}</p>
 <p><strong>Order #:</strong> ${esc(formatSerial(order))}</p>
-<p><strong>Reviewed results</strong> — released by your care team</p>
+<p><strong>Reviewed results</strong>: released by your care team</p>
 </div>
 ${body}
 </body></html>`;

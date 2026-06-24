@@ -116,7 +116,7 @@ window.isLegacyMinPatientMrn = function isLegacyMinPatientMrn(s) {
   return /^MIN[0-9]{4}$/i.test(s.trim());
 };
 
-/** Plain MFA#### (four digits only after MFA) — superseded by MFA-SC#### for MFASC canonical orgs */
+/** Plain MFA#### (four digits only after MFA): superseded by MFA-SC#### for MFASC canonical orgs */
 window.isPlainMfaFourDigitMrn = function isPlainMfaFourDigitMrn(s) {
   if (!s || typeof s !== 'string') return false;
   return /^MFA[0-9]{4}$/i.test(s.trim());
@@ -329,7 +329,7 @@ window.patientMrnForUi = function patientMrnForUi(patient, urlIdentifier) {
     typeof window.getPatientIdForDisplay === 'function'
       ? window.getPatientIdForDisplay(patient, urlIdentifier)
       : '';
-  return v || '—';
+  return v || ':';
 };
 
 /** Read patient id token from current page URL (for display mapping). */
@@ -355,7 +355,7 @@ window.getUrlPatientIdHint = function getUrlPatientIdHint() {
 window.displayPatientMrn = function displayPatientMrn(patientOrString, urlHint) {
   return typeof window.patientMrnDisplay === 'function'
     ? window.patientMrnDisplay(patientOrString, urlHint)
-    : '—';
+    : ':';
 };
 
 /**
@@ -370,7 +370,7 @@ window.patientMrnDisplay = function patientMrnDisplay(patientOrString, urlHint) 
   if (patientOrString != null && typeof patientOrString === 'object') {
     return typeof window.patientMrnForUi === 'function'
       ? window.patientMrnForUi(patientOrString, hint)
-      : '—';
+      : ':';
   }
   const s = patientOrString == null ? '' : String(patientOrString).trim();
   if (!s) {
@@ -378,7 +378,7 @@ window.patientMrnDisplay = function patientMrnDisplay(patientOrString, urlHint) 
       const fromHint = window.normalizePatientMrnForUi(hint);
       if (fromHint && !window.isLegacyMinPatientMrn(fromHint)) return fromHint;
     }
-    return '—';
+    return ':';
   }
   if (typeof window.normalizePatientMrnForUi === 'function') {
     const mapped = window.normalizePatientMrnForUi(s);
@@ -412,7 +412,7 @@ window.patientMrnDisplay = function patientMrnDisplay(patientOrString, urlHint) 
       const fromHint = window.normalizePatientMrnForUi(hint);
       if (fromHint && !window.isLegacyMinPatientMrn(fromHint)) return fromHint;
     }
-    return '—';
+    return ':';
   }
   if (
     typeof window.isPlainMfaFourDigitMrn === 'function' &&
@@ -420,7 +420,7 @@ window.patientMrnDisplay = function patientMrnDisplay(patientOrString, urlHint) 
     typeof window.isCanonicalMfaScOrg === 'function' &&
     window.isCanonicalMfaScOrg()
   ) {
-    return '—';
+    return ':';
   }
   return s;
 };
@@ -436,7 +436,7 @@ function patientRowUuidForDisplay(p) {
  * For orgs with patient_id_prefix / patient_id_previous_prefix (e.g. MIN#### → MFA-MC####),
  * prefer the new display form when: no patient row uses the mapped id yet, or the mapped id
  * resolves to this same person. If the mapped id belongs to another patient, return null
- * and keep the real id from the record (e.g. MIN) — avoids label collision.
+ * and keep the real id from the record (e.g. MIN): avoids label collision.
  */
 window.chooseDisplayPatientIdForMigratedOrg = async function chooseDisplayPatientIdForMigratedOrg(patient) {
   if (!patient || !window.supabaseClient) return null;
@@ -574,7 +574,7 @@ window.resolvePatientByIdentifier = async function(identifier) {
     }
     debugWarn(
       hasStaleMin
-        ? '⚠️ resolvePatientByIdentifier: Local patient_id is legacy MIN — refreshing from Supabase...'
+        ? '⚠️ resolvePatientByIdentifier: Local patient_id is legacy MIN: refreshing from Supabase...'
         : '⚠️ resolvePatientByIdentifier: Found patient in localStorage but missing valid legacy ID. Querying Supabase to get patient_id...'
     );
     patient = null;
@@ -686,7 +686,7 @@ window.resolvePatientByIdentifier = async function(identifier) {
         supabasePatient = result.data;
         error = result.error;
         
-        // FALLBACK: MIN#### not in DB — same person may have been re-keyed to MFA-MC#### only (org migration)
+        // FALLBACK: MIN#### not in DB: same person may have been re-keyed to MFA-MC#### only (org migration)
         if (!supabasePatient && !error && identifier.match(/^MIN[0-9]{4}$/i)) {
           try {
             const { data: orgRow } = await window.supabaseClient
@@ -2163,7 +2163,7 @@ let tempAllergies = [];
 let tempImmunizations = [];
 
 // Lab tests array for clinical-note.html
-// MEDIFORGE_CATALOG:LAB_START — auto-synced by npm run build:diagnostic-catalog
+// MEDIFORGE_CATALOG:LAB_START: auto-synced by npm run build:diagnostic-catalog
 const LAB_TESTS = [
 {
   name: "Activated Partial Thromboplastin Time (APTT)",
@@ -3777,7 +3777,7 @@ LAB_TESTS.sort((a, b) => {
   return nameA.localeCompare(nameB);
 });
 
-// MEDIFORGE_CATALOG:IMG_START — auto-synced by npm run build:diagnostic-catalog
+// MEDIFORGE_CATALOG:IMG_START: auto-synced by npm run build:diagnostic-catalog
 const IMAGING_TESTS = [
 {
   name: "Contrast Echocardiogram",
@@ -4442,7 +4442,7 @@ if (typeof window !== 'undefined') {
     return String(s || '')
       .trim()
       .replace(/\s+/g, ' ')
-      .replace(/[–—]/g, '-')
+      .replace(/[–:]/g, '-')
       .toLowerCase();
   };
 
@@ -5986,7 +5986,7 @@ if (addPatientForm) {
         customPatientIdGroup.style.display = "block";
         customPatientIdInput.value = "";
         customPatientIdInput.placeholder =
-          "Optional — leave blank for next auto number (e.g. MFA-SC####); or enter to override";
+          "Optional: leave blank for next auto number (e.g. MFA-SC####); or enter to override";
       } else {
         if (customPatientIdGroup) customPatientIdGroup.style.display = "none";
         customPatientIdInput.placeholder = "Enter patient/file number";
@@ -6474,7 +6474,7 @@ if (addPatientForm) {
           }
         }
       } else {
-        // Prefer Supabase-aware prefix (settings.patient_id_prefix, MFA-SC for MFASC) — never user.org.slice(0,3) → MIN
+        // Prefer Supabase-aware prefix (settings.patient_id_prefix, MFA-SC for MFASC): never user.org.slice(0,3) → MIN
         if (window.supabaseClient && orgId && typeof window.generateSupabasePatientId === 'function') {
           try {
             patientId = await window.generateSupabasePatientId(orgId);
@@ -7699,7 +7699,7 @@ async function loadPatientDetails() {
   if (patient) {
     // Latest patient_id from Supabase (e.g. after MIN → MFA-MC migration on the row).
     // Resolve the canonical row UUID first, refresh patient_id from that row, then optionally
-    // align with the URL id only when it refers to the same row — avoids overwriting with a
+    // align with the URL id only when it refers to the same row: avoids overwriting with a
     // different patient's row when patientNumber matched the URL but patient_id did not.
     try {
       const user = JSON.parse(localStorage.getItem('user') || '{}');
@@ -8169,7 +8169,7 @@ async function loadPatientDetails() {
     editBtn.textContent = "Edit Demographics";
     // CRITICAL: Use legacy ID (displayPatientId) for edit URL, not UUID
     const editPatientId =
-      patientIdForUi && patientIdForUi !== '—' ? patientIdForUi : patientId || displayPatientId;
+      patientIdForUi && patientIdForUi !== ':' ? patientIdForUi : patientId || displayPatientId;
     editBtn.onclick = () => window.location.href = `/edit-patient?id=${encodeURIComponent(editPatientId)}`;
     document.getElementById("patient-info").appendChild(editBtn);
     // console.log('🔧 TRACE: loadPatientDetails - patient.medicalHistory:', patient.medicalHistory);
@@ -13906,7 +13906,7 @@ function compactPatientListEntries(arr) {
   return arr.filter(p => p != null && typeof p === 'object');
 }
 
-/** Visible recovery if note load throws—does not delete data. */
+/** Visible recovery if note load throws:does not delete data. */
 function showClinicalNoteLoadFailureBanner(err) {
   const id = 'clinical-note-load-failure-banner';
   let el = document.getElementById(id);
@@ -15079,7 +15079,7 @@ async function loadClinicalNote() {
     await displayGaps(patientId, "preventive-gaps-list");
   }
 
-  // Set title and metadata — canonical MRN for UI (maps legacy MIN → MFA-MC/MFA-SC)
+  // Set title and metadata: canonical MRN for UI (maps legacy MIN → MFA-MC/MFA-SC)
   const displayPatientId =
     typeof window.patientMrnDisplay === 'function'
       ? window.patientMrnDisplay(patient, patientId)
@@ -15500,7 +15500,7 @@ async function loadClinicalNote() {
     });
   }
   } catch (err) {
-    console.error('[loadClinicalNote] Load error—patient data was not deleted:', err);
+    console.error('[loadClinicalNote] Load error:patient data was not deleted:', err);
     try {
       window._skipAutoSave = false;
     } catch (_) {}
@@ -20751,7 +20751,7 @@ function displayPrescriptionsSummary(prescriptions) {
   }
   
   function pharmacyStatusLabel(s) {
-    if (!s) return '—';
+    if (!s) return ':';
     const labels = { pending: 'Pending', 'approved_by_pharmacist': 'Approved', 'in-process': 'In process', filled: 'Filled', completed: 'Completed', rejected: 'Rejected', sent_out: 'Sent out', cancelled: 'Cancelled', external: 'External' };
     return labels[s] || s;
   }
@@ -21103,7 +21103,7 @@ function displayAllPrescriptionsSummary(prescriptions) {
   const sortedPrescriptions = prescriptions.sort((a, b) => new Date(b.date) - new Date(a.date));
   
   function pharmacyStatusLabel(s) {
-    if (!s) return '—';
+    if (!s) return ':';
     const labels = { pending: 'Pending', 'approved_by_pharmacist': 'Approved', 'in-process': 'In process', filled: 'Filled', completed: 'Completed', rejected: 'Rejected', sent_out: 'Sent out', cancelled: 'Cancelled', external: 'External' };
     return labels[s] || s;
   }
@@ -21771,7 +21771,7 @@ function generatePrescriptionViewContent(prescription) {
           <p><strong>Name:</strong> ${prescription.patient.firstName} ${prescription.patient.lastName}</p>
           <p><strong>Date of Birth:</strong> ${prescription.patient.dateOfBirth}</p>
           <p><strong>Gender:</strong> ${prescription.patient.gender}</p>
-          <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(prescription.patient, prescription.patient_id || prescription.patient?.patient_id) : '—'}</p>
+          <p><strong>Patient ID:</strong> ${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(prescription.patient, prescription.patient_id || prescription.patient?.patient_id) : ':'}</p>
           ${prescription.patient.address ? `<p><strong>Address:</strong> ${prescription.patient.address}</p>` : ''}
           ${prescription.patient.phone ? `<p><strong>Phone:</strong> ${prescription.patient.phone}</p>` : ''}
         </div>

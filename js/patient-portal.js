@@ -1,5 +1,5 @@
 /**
- * Patient portal shared helpers — order status, prescriptions, messaging.
+ * Patient portal shared helpers: order status, prescriptions, messaging.
  */
 (function (global) {
   'use strict';
@@ -89,7 +89,7 @@
     if (portalOrderResultsAreVisible(order)) {
       return {
         key: 'results_available',
-        label: 'Reviewed — results available',
+        label: 'Reviewed: results available',
         tone: 'success',
         canView: true,
         canViewOrder: true,
@@ -148,7 +148,7 @@
       return { key: 'due', label: 'Due for pick up', tone: 'warning', canMarkPickup: true };
     }
     if (status === 'draft' || status === 'unsigned') {
-      return { key: 'pending', label: 'Pending — sent by doctor', tone: 'info', canMarkPickup: false };
+      return { key: 'pending', label: 'Pending: sent by doctor', tone: 'info', canMarkPickup: false };
     }
     if (status === 'cancelled') {
       return { key: 'cancelled', label: 'Cancelled', tone: 'muted', canMarkPickup: false };
@@ -364,7 +364,7 @@
       return 'Appointment requests are not enabled yet. Ask your clinic to run the portal SQL migrations.';
     }
     if (msg.includes('permission denied') || msg.includes('42501') || msg.includes('PGRST301')) {
-      return 'Access denied — your portal account may not be linked correctly. Contact your clinic.';
+      return 'Access denied: your portal account may not be linked correctly. Contact your clinic.';
     }
     if (msg.includes('Patient session required')) {
       return 'Please sign out and sign in again at the patient login page.';

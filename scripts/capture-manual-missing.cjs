@@ -1,5 +1,5 @@
 #!/usr/bin/env node
-/** Capture 05-clinical-note.png only (heavy page — JPEG, subjective tab). */
+/** Capture 05-clinical-note.png only (heavy page: JPEG, subjective tab). */
 const puppeteer = require('puppeteer');
 const fs = require('fs');
 const path = require('path');

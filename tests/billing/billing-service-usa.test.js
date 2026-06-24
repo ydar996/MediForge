@@ -15,7 +15,7 @@ const usPatient = {
   insurancePayer: 'BCBS'
 };
 
-describe('BillingService — USA mode', () => {
+describe('BillingService: USA mode', () => {
   const svc = new BillingService({ mode: 'USA' });
 
   it('loads USA config with USD currency', () => {
@@ -117,7 +117,7 @@ describe('BillingService — USA mode', () => {
   });
 });
 
-describe('BillingService — fromOrganizationSettings', () => {
+describe('BillingService: fromOrganizationSettings', () => {
   it('resolves USA from settings.system.billingMode', () => {
     const svc = BillingService.fromOrganizationSettings({ system: { billingMode: 'USA' } });
     assert.equal(svc.mode, 'USA');

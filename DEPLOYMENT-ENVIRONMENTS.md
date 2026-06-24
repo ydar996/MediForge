@@ -1,7 +1,7 @@
 # Deployment Environments
 
 This project uses three Netlify sites and three Git branches to separate
-development, staging, and production deployments — same pattern as EHR-Africa.
+development, staging, and production deployments: same pattern as EHR-Africa.
 
 **Full pipeline (setup + git sync rules):** **[DEPLOYMENT-PIPELINE.md](DEPLOYMENT-PIPELINE.md)**
 
@@ -31,7 +31,7 @@ After code changes, agents **must**:
 4. Confirm `git status` is clean and remote is up to date.
 
 **Preferred deploy:** `git push` → Netlify Continuous Deployment builds the site.  
-**Avoid:** CLI `netlify deploy` to production for routine work — it can leave GitHub out of sync with what is live.
+**Avoid:** CLI `netlify deploy` to production for routine work: it can leave GitHub out of sync with what is live.
 
 If you CLI-deploy anyway, **commit and push to `main` immediately** after.
 
@@ -46,7 +46,7 @@ This reduces production risk: test twice before live users see changes.
 
 ## Minimizing downtime
 
-- Static site deploys on Netlify are **atomic** — the new version swaps in when the build finishes; no manual server restart.
+- Static site deploys on Netlify are **atomic**: the new version swaps in when the build finishes; no manual server restart.
 - Never push untested changes directly to `main`.
 - Run **`CRITICAL-WORKFLOWS.md`** scenarios on staging before promoting to production.
 - Use **separate Supabase projects** for dev/staging so tests never touch production patient data.

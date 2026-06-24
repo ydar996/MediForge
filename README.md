@@ -9,7 +9,7 @@ Electronic health record and clinic operations platform. **Default currency: Can
 | Role | Read this |
 |------|-----------|
 | **Project owner** | **[START-HERE.md](START-HERE.md)** → **[GO-LIVE-GUIDE.md](GO-LIVE-GUIDE.md)** (first deploy) |
-| **AI agent / developer** | **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living handover — update every session) |
+| **AI agent / developer** | **[AGENT-HANDOVER.md](AGENT-HANDOVER.md)** (living handover: update every session) |
 
 ---
 

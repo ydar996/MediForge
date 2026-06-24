@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Remove tribe from collection, storage, and reporting — race only.
+ * Remove tribe from collection, storage, and reporting: race only.
  */
 import fs from 'fs';
 import path from 'path';

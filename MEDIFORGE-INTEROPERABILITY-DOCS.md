@@ -144,7 +144,7 @@ Header: `X-Interop-Key: <INTEROP_GATEWAY_API_KEY>` when configured.
 - Store PHN in `patient_identifiers` table
 - OLIS FHIR profiles referenced in `lib/interop/fhir/resources.js` meta.profile
 - Production OLIS requires Infoway onboarding, conformance testing, and consent management
-- MLLP endpoints are typically provided by integration partner—not public internet
+- MLLP endpoints are typically provided by integration partner:not public internet
 
 Reference: [Simplifier Ontario FHIR guides](https://simplifier.net/organizations/ontariohealth)
 

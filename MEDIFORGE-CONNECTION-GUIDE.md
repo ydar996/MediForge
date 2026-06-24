@@ -32,7 +32,7 @@ Clinic (MediForge)
 
 ---
 
-## Step 1 — Choose your province
+## Step 1: Choose your province
 
 1. Open `config/integrations.json` and set `"defaultProvince": "ON"` (or `BC`, `AB`, etc.).
 2. Edit the matching file in `config/provinces/` with endpoints provided by your integration partner.
@@ -42,9 +42,9 @@ Dashboard (future): Facility Configuration → **Integration Province** toggle.
 
 ---
 
-## Step 2 — Ontario (priority)
+## Step 2: Ontario (priority)
 
-### Labs — OLIS
+### Labs: OLIS
 
 | Item | Detail |
 |------|--------|
@@ -52,7 +52,7 @@ Dashboard (future): Facility Configuration → **Integration Province** toggle.
 | **Messages** | HL7 ORM^O01 / OML^O21 outbound; ORU^R01 inbound |
 | **FHIR** | ServiceRequest, DiagnosticReport, Observation |
 | **Patient ID** | OHIP PHN (10 digits) + version code |
-| **Who to contact** | [Ontario Health](https://www.ontariohealth.ca/) — Digital Services; integration often via certified EMR vendor path |
+| **Who to contact** | [Ontario Health](https://www.ontariohealth.ca/): Digital Services; integration often via certified EMR vendor path |
 | **Certification** | [OntarioMD](https://www.ontariomd.ca/) EMR certification and OLIS conformance |
 | **Security** | PHIPA compliance, OAuth2 (FHIR), MLLP over TLS, audit logging |
 
@@ -61,7 +61,7 @@ Dashboard (future): Facility Configuration → **Integration Province** toggle.
 1. Complete OntarioMD EMR certification (or partner with a certified integrator).
 2. Sign OLIS integration agreement with Ontario Health / eHealth Ontario successor org.
 3. Receive sandbox MLLP host + FHIR base URL + OAuth client credentials.
-4. Paste values into `config/provinces/on.json` (never commit secrets — use Netlify env vars).
+4. Paste values into `config/provinces/on.json` (never commit secrets: use Netlify env vars).
 5. Set Netlify environment variables:
    - `INTEROP_FHIR_CLIENT_ID`
    - `INTEROP_FHIR_CLIENT_SECRET`
@@ -69,7 +69,7 @@ Dashboard (future): Facility Configuration → **Integration Province** toggle.
    - `INTEROP_DEFAULT_PROVINCE=ON`
 6. Run `npm run test:integrations` and test on `interop-dashboard.html`.
 
-### Imaging — Ontario DIR
+### Imaging: Ontario DIR
 
 | Item | Detail |
 |------|--------|
@@ -80,27 +80,27 @@ Dashboard (future): Facility Configuration → **Integration Province** toggle.
 
 Configure `dicomweb` roots in `config/provinces/on.json`. Use `INTEROP_DICOM_TOKEN` for bearer auth.
 
-### e-Prescribing — Infoway
+### e-Prescribing: Infoway
 
 | Item | Detail |
 |------|--------|
 | **Standard** | Infoway national ePrescribing (post-PrescribeIT program) |
 | **Messages** | FHIR R4 MedicationRequest outbound; MedicationDispense feedback inbound |
 | **Drug codes** | Health Canada DPD / CCDD via `lib/interop/terminology/ccdd.js` |
-| **Who to contact** | [Canada Health Infoway](https://www.infoway-inforoute.ca/) — partner onboarding |
+| **Who to contact** | [Canada Health Infoway](https://www.infoway-inforoute.ca/): partner onboarding |
 
-### Billing — OHIP / MCEDT
+### Billing: OHIP / MCEDT
 
 | Item | Detail |
 |------|--------|
 | **Portal** | Medical Claims Electronic Data Transfer (MCEDT) |
 | **Transport** | Provincial web services with client certificate |
-| **Who to contact** | Ministry of Health — OHIP billing; need valid OHIP billing number |
-| **Patient payments** | Cash, check, bank transfer, Interac e-Transfer, Zelle (where applicable), card — configured in `config/billing-payers.json` |
+| **Who to contact** | Ministry of Health: OHIP billing; need valid OHIP billing number |
+| **Patient payments** | Cash, check, bank transfer, Interac e-Transfer, Zelle (where applicable), card: configured in `config/billing-payers.json` |
 
 ---
 
-## Step 3 — British Columbia
+## Step 3: British Columbia
 
 | Domain | Hub | Contact |
 |--------|-----|---------|
@@ -113,7 +113,7 @@ Config file: `config/provinces/bc.json`
 
 ---
 
-## Step 4 — Alberta
+## Step 4: Alberta
 
 | Domain | Hub | Contact |
 |--------|-----|---------|
@@ -128,11 +128,11 @@ Config file: `config/provinces/ab.json`
 
 ## Security and privacy requirements
 
-- **PHIPA / PIPEDA** — all message audit trails stored in `interop_messages` (Supabase).
-- **Consent** — OLIS queries require documented patient consent (`config` → `security.requireConsent`).
-- **Credentials** — store in Netlify env vars, not in git.
-- **VPN / mTLS** — many provincial MLLP endpoints require VPN or mutual TLS certificates issued after approval.
-- **Audit** — all outbound/inbound flows logged via `lib/integrations/audit-logger.js`.
+- **PHIPA / PIPEDA**: all message audit trails stored in `interop_messages` (Supabase).
+- **Consent**: OLIS queries require documented patient consent (`config` → `security.requireConsent`).
+- **Credentials**: store in Netlify env vars, not in git.
+- **VPN / mTLS**: many provincial MLLP endpoints require VPN or mutual TLS certificates issued after approval.
+- **Audit**: all outbound/inbound flows logged via `lib/integrations/audit-logger.js`.
 
 ---
 
@@ -204,9 +204,9 @@ Admin test UI: `/interop-dashboard.html`
 
 ## Related documentation
 
-- `MEDIFORGE-INTEROPERABILITY-DOCS.md` — HL7/FHIR/DICOM technical reference
-- `MEDIFORGE-BILLING-AND-PAYMENTS-DOCS.md` — Payer engine and patient payments
-- `interoperability-gaps.md` — Known gaps vs production connectivity
+- `MEDIFORGE-INTEROPERABILITY-DOCS.md`: HL7/FHIR/DICOM technical reference
+- `MEDIFORGE-BILLING-AND-PAYMENTS-DOCS.md`: Payer engine and patient payments
+- `interoperability-gaps.md`: Known gaps vs production connectivity
 
 ---
 

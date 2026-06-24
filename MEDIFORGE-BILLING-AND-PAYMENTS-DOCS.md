@@ -33,7 +33,7 @@ Works alongside **`MEDIFORGE-INTEROPERABILITY-DOCS.md`** for lab/imaging/Rx orde
 
 Private insurers in config: Blue Cross, Canada Life, Manulife, Sun Life, Green Shield, Desjardins.
 
-**Production claim submission** requires provincial onboarding — drafts are stored in `insurance_claims`.
+**Production claim submission** requires provincial onboarding: drafts are stored in `insurance_claims`.
 
 ---
 
@@ -173,10 +173,10 @@ npm run test:clinical
 
 ## Honest limits (today)
 
-- **OHIP/RAMQ/MSP live claim submission** — draft only until MCEDT/clearinghouse connected  
-- **Eligibility verification** — stub; no live OHIP eligibility API  
-- **Card processing** — manual entry; gateway integration config-ready  
-- **Fee schedules** — use pricing catalog; provincial fee codes in claim payload only  
+- **OHIP/RAMQ/MSP live claim submission**: draft only until MCEDT/clearinghouse connected  
+- **Eligibility verification**: stub; no live OHIP eligibility API  
+- **Card processing**: manual entry; gateway integration config-ready  
+- **Fee schedules**: use pricing catalog; provincial fee codes in claim payload only  
 
 For interoperability setup see **`MEDIFORGE-INTEROPERABILITY-DOCS.md`**.
 

@@ -30,7 +30,7 @@
 
 ## Paystack (js.paystack.co)
 
-Paystack's inline script (`https://js.paystack.co/v1/inline.js`) is updated by them without version pinning. **SRI is not recommended** for this script—adding it would likely break when Paystack deploys updates. Consider self-hosting if supply-chain risk is critical.
+Paystack's inline script (`https://js.paystack.co/v1/inline.js`) is updated by them without version pinning. **SRI is not recommended** for this script:adding it would likely break when Paystack deploys updates. Consider self-hosting if supply-chain risk is critical.
 
 ---
 

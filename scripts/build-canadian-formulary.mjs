@@ -167,7 +167,7 @@ async function build() {
   const ccddOverlay = loadCcddOverlay();
   let rows = loadFromExtractFiles();
   if (!rows) {
-    console.log("No local drug.txt — downloading from Health Canada DPD API…");
+    console.log("No local drug.txt: downloading from Health Canada DPD API…");
     rows = await loadFromApi();
   }
 

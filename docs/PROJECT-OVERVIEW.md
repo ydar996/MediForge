@@ -2,19 +2,29 @@
 
 Technical reference for developers and AI agents. For operational handover, see **`AGENT-HANDOVER.md`**. For first deploy, see **`GO-LIVE-GUIDE.md`**.
 
-**Last updated:** June 22, 2026
+**Last updated:** June 23, 2026
 
 ---
 
 ## Talking to the project owner
 
-The owner is **not** a developer. **Every** agent reply to them must use the **simplest layman's terms** — questions, plans, status, and technical topics included.
+The owner is **not** a developer. **Every** agent reply to them must use the **simplest layman's terms**: questions, plans, status, and technical topics included.
 
 - Explain what something means for the **clinic**, not how the code is wired.
 - Avoid leading with jargon; if a technical word is needed, give a one-sentence plain-English meaning right after.
 - Do the work (deploy, commit, checks) when possible instead of long DIY checklists.
 
-Full rule: **`AGENT-HANDOVER.md`** → **Rule #1** and **Communication with the user**.
+Full rules: **`AGENT-HANDOVER.md`** → **Rule #1** (plain English) and **Rule #2** (no em dashes).
+
+---
+
+## Writing style (all agents)
+
+Do **not** use em dashes (Unicode U+2014) in user-facing HTML, UI strings, owner docs, or chat replies. Use **colons**, commas, or separate sentences.
+
+- **Check:** `npm run check:no-em-dash`
+- **Bulk fix:** `node scripts/replace-em-dashes.mjs`
+- **Policy:** **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8
 
 ---
 
@@ -51,7 +61,7 @@ MediForge/
 | Auth | Supabase Auth |
 | Files | Supabase Storage (`patient-documents`) |
 | Hosting | Netlify (static publish + Functions) |
-| Payments | Paystack integration (`js/paystack-integration.js`) — configure per region |
+| Payments | Paystack integration (`js/paystack-integration.js`): configure per region |
 | Offline | Service worker + localStorage hybrid cache |
 
 ---
@@ -96,9 +106,9 @@ Separate patient auth flow; see **`PATIENT-PORTAL-STATUS.md`**.
 
 Most pages rely on:
 
-1. **`js/supabase-client.js`** — initializes client from `window.__SUPABASE_CONFIG__`
-2. **`js/universal-data-loader.js`** — syncs Supabase → localStorage per org
-3. Feature modules (`js/patients.js`, `js/billing.js`, …) — read/write with Supabase-first, localStorage fallback
+1. **`js/supabase-client.js`**: initializes client from `window.__SUPABASE_CONFIG__`
+2. **`js/universal-data-loader.js`**: syncs Supabase → localStorage per org
+3. Feature modules (`js/patients.js`, `js/billing.js`, …): read/write with Supabase-first, localStorage fallback
 
 Detailed architecture notes: **`HANDOVER-NOTE-HYBRID-ARCHITECTURE.md`**, **`HYBRID-ARCHITECTURE-AUDIT.md`**.
 
@@ -138,8 +148,8 @@ command = "node scripts/inject-supabase-env.cjs && npm run check"
 publish = "."
 ```
 
-1. **`scripts/inject-supabase-env.cjs`** — writes `js/supabase-env.js` from Netlify env at build time
-2. **`npm run check`** — `check:icons` + `check:patient-identity` guardrails
+1. **`scripts/inject-supabase-env.cjs`**: writes `js/supabase-env.js` from Netlify env at build time
+2. **`npm run check`**: `check:icons` + `check:patient-identity` guardrails
 
 Local deploy (after owner approval):
 
@@ -151,14 +161,14 @@ netlify deploy --prod --dir .
 
 ## Database setup
 
-### Option A — Fresh MediForge (recommended)
+### Option A: Fresh MediForge (recommended)
 
 1. New Supabase project
 2. Import schema only: **`scripts/export-database-schema.ps1`** → `mediforge-schema.sql`
 3. Optional: run migrations incrementally from `supabase/migrations/` if schema dump is incomplete
 4. Create storage bucket + platform admin (see **`GO-LIVE-GUIDE.md`**)
 
-### Option B — Supabase CLI linked project
+### Option B: Supabase CLI linked project
 
 If using Supabase CLI against a linked project:
 
@@ -170,9 +180,9 @@ Requires `supabase link` and a configured project. Not required for initial go-l
 
 ### SQL utilities
 
-- **`sql-scripts/`** — one-off fixes, diagnostics (not auto-run)
-- **`sql-scripts/create-platform-admin.sql`** — platform login setup
-- **`sql-scripts/COMPLETE-SCHEMA-ALL-TABLES.sql`** — partial clinical tables only; **not** a full app schema
+- **`sql-scripts/`**: one-off fixes, diagnostics (not auto-run)
+- **`sql-scripts/create-platform-admin.sql`**: platform login setup
+- **`sql-scripts/COMPLETE-SCHEMA-ALL-TABLES.sql`**: partial clinical tables only; **not** a full app schema
 
 ---
 
@@ -197,8 +207,8 @@ Feature guides: **`BILLING-SYSTEM-GUIDE.md`**, **`PLATFORM-ADMIN-GUIDE.md`**, **
 
 ## Testing before deploy
 
-1. **`npm run check`** — static guards
-2. **`CRITICAL-WORKFLOWS.md`** — manual regression paths
+1. **`npm run check`**: static guards
+2. **`CRITICAL-WORKFLOWS.md`**: manual regression paths
 3. Local server smoke test on changed pages
 4. Owner explicit approval → single Netlify deploy with detailed message
 
@@ -206,7 +216,7 @@ Feature guides: **`BILLING-SYSTEM-GUIDE.md`**, **`PLATFORM-ADMIN-GUIDE.md`**, **
 
 ## Related documentation
 
-- **`docs/DOCUMENTATION-INDEX.md`** — full doc catalog
-- **`docs/MEDIFORGE-PRODUCT-RULES.md`** — CAD, org, branding rules
-- **`DEPLOYMENT-ENVIRONMENTS.md`** — dev/staging/prod branches
-- **`docs/SUPABASE-DEV-STAGING-SETUP.md`** — separate Supabase projects per environment
+- **`docs/DOCUMENTATION-INDEX.md`**: full doc catalog
+- **`docs/MEDIFORGE-PRODUCT-RULES.md`**: CAD, org, branding rules
+- **`DEPLOYMENT-ENVIRONMENTS.md`**: dev/staging/prod branches
+- **`docs/SUPABASE-DEV-STAGING-SETUP.md`**: separate Supabase projects per environment

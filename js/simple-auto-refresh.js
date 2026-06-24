@@ -10,7 +10,7 @@ console.log('🔄 Simple Auto-Refresh System loaded');
     // Configuration
     const CONFIG = {
         CURRENT_VERSION: '20251022120000',
-        // Only list known bad *app* cache-bust query strings. Do NOT use 'v=1' — many data
+        // Only list known bad *app* cache-bust query strings. Do NOT use 'v=1': many data
         // files legitimately use ?v=1; src.includes('v=1') also false-positives on ?v=10, etc.
         OLD_VERSIONS: [
             'v=20251019043800',

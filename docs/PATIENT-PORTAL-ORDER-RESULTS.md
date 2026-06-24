@@ -1,4 +1,4 @@
-# Patient portal — lab/imaging orders and results
+# Patient portal: lab/imaging orders and results
 
 **Last updated:** June 18, 2026
 
@@ -8,7 +8,7 @@
 |--------|----------------------|------------------|
 | Order sent to external lab/imaging | **Order Sent** | Print / view order copy |
 | Results received, not yet reviewed by doctor | **Test Completed: Awaiting Provider Review** | Print / view order copy only |
-| Doctor marked reviewed | **Reviewed — results available** | View reviewed results (values, files, provider comments) |
+| Doctor marked reviewed | **Reviewed: results available** | View reviewed results (values, files, provider comments) |
 
 ## Staff actions
 
@@ -23,8 +23,8 @@
 
 ## Key files
 
-- `patient-results.html` — Results list UI
-- `patient-medications.html` — Prescriptions + pickup button
-- `js/patient-portal.js` — Status logic
-- `js/patient-portal-orders.js` — Order copy + reviewed results viewer
-- `js/patient-data-loader.js` — Portal data fetch + prescription enrichment
+- `patient-results.html`: Results list UI
+- `patient-medications.html`: Prescriptions + pickup button
+- `js/patient-portal.js`: Status logic
+- `js/patient-portal-orders.js`: Order copy + reviewed results viewer
+- `js/patient-data-loader.js`: Portal data fetch + prescription enrichment

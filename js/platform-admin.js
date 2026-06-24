@@ -288,7 +288,7 @@ function isPlatformAdminSession() {
   }
 }
 
-/** Count via secure-supabase (service role) — matches patient list in clinic view. */
+/** Count via secure-supabase (service role): matches patient list in clinic view. */
 async function privilegedOrgTableCount(orgId, tableName) {
   if (!isPlatformAdminSession() || typeof window.secureSupabaseRpc !== 'function') {
     return null;
@@ -690,7 +690,7 @@ window.getGlobalAuditLog = async function(filters = {}) {
       let supabaseAuditLogs = null;
       let auditLogsError = null;
 
-      // Prefer secure proxy (service role) — direct SELECT is blocked by RLS unless JWT
+      // Prefer secure proxy (service role): direct SELECT is blocked by RLS unless JWT
       // matches legacy hardcoded platform-admin emails in create_audit_logs_table.sql.
       if (typeof window.secureSupabaseSelect === 'function') {
         try {

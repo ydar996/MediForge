@@ -1,5 +1,5 @@
 /**
- * MediForge bulk patient import — CSV and Excel (.xlsx).
+ * MediForge bulk patient import: CSV and Excel (.xlsx).
  * Template mode: flexible header matching. Map mode: user maps columns + extras → Notes.
  */
 (function () {
@@ -376,7 +376,7 @@
     let dob = parseFlexibleDate(get('dob'));
     if (!dob) {
       dob = IMPORT_PLACEHOLDER_DOB;
-      warnings.push('missing DOB (placeholder set — edit patient later)');
+      warnings.push('missing DOB (placeholder set: edit patient later)');
     }
 
     const patientIdRaw = get('patientId');
@@ -529,7 +529,7 @@
       noteParts.push('Former chart number from import file: ' + patient.importLegacyId);
     }
     if (patient.importNotes) noteParts.push(patient.importNotes);
-    if (incomplete) noteParts.push('Bulk import — review: ' + incomplete);
+    if (incomplete) noteParts.push('Bulk import: review: ' + incomplete);
     const notes = noteParts.length ? noteParts.join(' | ') : null;
 
     return {
@@ -737,7 +737,7 @@
   }
 
   function buildMappingSelectOptions(selected) {
-    let html = '<option value="' + MAP_SKIP + '">— Skip —</option>';
+    let html = '<option value="' + MAP_SKIP + '">: Skip :</option>';
     html += '<option value="' + MAP_NOTES + '"' + (selected === MAP_NOTES ? ' selected' : '') + '>Add to patient Notes</option>';
     Object.keys(FIELD_LABELS).forEach(function (key) {
       html += '<option value="' + key + '"' + (selected === key ? ' selected' : '') + '>' +
@@ -767,7 +767,7 @@
       });
       const sampleTd = document.createElement('td');
       sampleTd.className = 'sample-cell';
-      sampleTd.textContent = cellVal(sampleRow, idx) || '—';
+      sampleTd.textContent = cellVal(sampleRow, idx) || ':';
       sampleTd.title = cellVal(sampleRow, idx);
       tr.innerHTML = '<td>' + escapeHtml(header) + '</td>';
       tr.appendChild(sampleTd);
@@ -826,12 +826,12 @@
     state.parsed.forEach(function (item) {
       const p = item.patient;
       const tr = document.createElement('tr');
-      const warn = (item.warnings || []).join('; ') || '—';
+      const warn = (item.warnings || []).join('; ') || ':';
       let idDisplay;
       if (keepExisting) {
         idDisplay = p.customPatientId || p.id || '(auto on import)';
       } else if (p.customPatientId || p.id) {
-        idDisplay = '(new number — file had ' + (p.customPatientId || p.id) + ')';
+        idDisplay = '(new number: file had ' + (p.customPatientId || p.id) + ')';
       } else {
         idDisplay = '(new number on import)';
       }
@@ -839,7 +839,7 @@
         '<td>' + item.rowNum + '</td>' +
         '<td>' + escapeHtml(idDisplay) + '</td>' +
         '<td>' + escapeHtml((p.firstName || '') + ' ' + (p.lastName || '')) + '</td>' +
-        '<td>' + escapeHtml(p.dob === IMPORT_PLACEHOLDER_DOB ? '—' : p.dob) + '</td>' +
+        '<td>' + escapeHtml(p.dob === IMPORT_PLACEHOLDER_DOB ? ':' : p.dob) + '</td>' +
         '<td class="warn-cell">' + escapeHtml(warn) + '</td>' +
         '<td>Ready</td>';
       tbody.appendChild(tr);
@@ -859,7 +859,7 @@
     if (summary) {
       summary.textContent = state.parsed.length + ' patient(s) ready' +
         (state.errors.length ? '; ' + state.errors.length + ' row(s) skipped' : '') +
-        (state.fileName ? ' — ' + state.fileName : '');
+        (state.fileName ? ': ' + state.fileName : '');
     }
     document.getElementById('import-run-btn').disabled = state.parsed.length === 0;
   }
@@ -949,7 +949,7 @@
         }
         await importOnePatient(idResult.patient, orgId);
         ok++;
-        log.innerHTML += '<div class="log-ok">Row ' + item.rowNum + ': ' + escapeHtml(patient.id) + ' — ' +
+        log.innerHTML += '<div class="log-ok">Row ' + item.rowNum + ': ' + escapeHtml(patient.id) + ': ' +
           escapeHtml(patient.firstName + ' ' + patient.lastName) + '</div>';
       } catch (err) {
         fail++;
@@ -957,7 +957,7 @@
       }
     }
 
-    progress.textContent = 'Done — ' + ok + ' imported, ' + fail + ' failed.';
+    progress.textContent = 'Done: ' + ok + ' imported, ' + fail + ' failed.';
     btn.disabled = false;
 
     if (typeof window.logAuditEvent === 'function') {

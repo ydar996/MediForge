@@ -11,7 +11,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | Document | Who | Description |
 |----------|-----|-------------|
 | **[START-HERE.md](../START-HERE.md)** | Owner + agents | One-page orientation |
-| **[AGENT-HANDOVER.md](../AGENT-HANDOVER.md)** | AI agents | **Living handover** — update every session |
+| **[AGENT-HANDOVER.md](../AGENT-HANDOVER.md)** | AI agents | **Living handover**: update every session |
 | **[GO-LIVE-GUIDE.md](../GO-LIVE-GUIDE.md)** | Owner | First Netlify + Supabase setup (~30 min) |
 | **[README.md](../README.md)** | Everyone | Repo intro |
 
@@ -22,14 +22,17 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | Document | Description |
 |----------|-------------|
 | **[docs/MEDIFORGE-AT-A-GLANCE.md](MEDIFORGE-AT-A-GLANCE.md)** | Short plain-language overview (internal) |
-| **[docs/MEDIFORGE-CAPABILITIES-GUIDE.md](MEDIFORGE-CAPABILITIES-GUIDE.md)** | **Full capabilities guide — companion to /capabilities page** |
+| **[docs/MEDIFORGE-CAPABILITIES-GUIDE.md](MEDIFORGE-CAPABILITIES-GUIDE.md)** | **Full capabilities guide: companion to /capabilities page** |
 | **[capabilities.html](../capabilities.html)** | **Shareable public page with screenshots (mediforge.netlify.app/capabilities)** |
 | **[docs/PROJECT-OVERVIEW.md](PROJECT-OVERVIEW.md)** | Stack, folders, auth, billing, functions |
 | **[CRITICAL-WORKFLOWS.md](../CRITICAL-WORKFLOWS.md)** | Regression test scenarios |
 | **[HANDOVER-NOTE-HYBRID-ARCHITECTURE.md](../HANDOVER-NOTE-HYBRID-ARCHITECTURE.md)** | Supabase + localStorage design |
 | **[HYBRID-ARCHITECTURE-AUDIT.md](../HYBRID-ARCHITECTURE-AUDIT.md)** | Hybrid architecture audit |
 | **[ABSTRACTION-LAYER-EXPLAINED.md](../ABSTRACTION-LAYER-EXPLAINED.md)** | Data abstraction layer |
-| **[docs/ONTARIOMD-READINESS-PLAN.md](ONTARIOMD-READINESS-PLAN.md)** | **OntarioMD gap baseline, today sprint tiers, STOP gate — read before Ontario work** |
+| **[docs/ONTARIOMD-READINESS-PLAN.md](ONTARIOMD-READINESS-PLAN.md)** | **OntarioMD gap baseline, today sprint tiers, STOP gate: read before Ontario work** |
+| **[docs/ONTARIO-EMR-READINESS-REPORT.md](ONTARIO-EMR-READINESS-REPORT.md)** | **Written investor readiness report (companion to /ontario-readiness)** |
+| **[docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md](ONTARIO-EMR-IMPLEMENTATION-PLAN.md)** | **Full Ontario EMR task backlog with milestones (Phases 0–8)** |
+| **[ontario-readiness.html](../ontario-readiness.html)** | **Investor readiness webpage (mediforge.netlify.app/ontario-readiness)** |
 | **`docs/compliance/`** | PHIPA/privacy/residency docs (populated during Ontario sprint) |
 | **`lib/interop/`** | HL7 v2, FHIR R4, lab/imaging adapters (Ontario connectivity foundation) |
 

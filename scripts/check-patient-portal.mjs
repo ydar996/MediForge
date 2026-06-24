@@ -65,7 +65,7 @@ for (const table of tables) {
     console.log(`  FAIL  table missing: ${table}`);
     failed++;
   } else if (error) {
-    console.log(`  OK    table ${table} (${error.code || 'query blocked — expected without patient JWT'})`);
+    console.log(`  OK    table ${table} (${error.code || 'query blocked: expected without patient JWT'})`);
   } else {
     console.log(`  OK    table ${table}`);
   }

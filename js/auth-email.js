@@ -44,7 +44,7 @@
     if (/\s/.test(cleanUser) || !/^[a-z0-9._-]+$/i.test(cleanUser)) {
       return {
         ok: false,
-        error: 'Use a simple username — letters and numbers only, no spaces. Example: jsmith'
+        error: 'Use a simple username: letters and numbers only, no spaces. Example: jsmith'
       };
     }
 
@@ -61,7 +61,7 @@
     return { ok: true, email };
   };
 
-  /** Plain-English errors only — no technical details for clinic staff. */
+  /** Plain-English errors only: no technical details for clinic staff. */
   window.userFriendlyRegistrationError = function userFriendlyRegistrationError(message) {
     const msg = String(message || '').toLowerCase();
 

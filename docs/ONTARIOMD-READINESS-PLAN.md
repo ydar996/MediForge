@@ -1,4 +1,4 @@
-# OntarioMD Readiness Plan — MediForge
+# OntarioMD Readiness Plan: MediForge
 
 **Created:** June 23, 2026  
 **Owner target:** Complete internal readiness work **today** (single sprint), not an 8-week program.  
@@ -7,7 +7,7 @@
 
 ---
 
-## STOP GATE — agents must read this first
+## STOP GATE: agents must read this first
 
 **Do not implement any item in this plan until the owner explicitly says:**
 
@@ -26,7 +26,7 @@ After approval: work on **`dev`** first; deploy only with owner approval per **`
 | Foundational (HL7/FHIR, security, privacy) | 40–50% | Auth, RLS, audit_logs exist | ONE ID, immutable audit proof, formal PHIPA pack |
 | EHR connectivity (OLIS, HRM, PrescribeIT, etc.) | 5–15% | `lib/interop/`, integration stubs | No live provincial pipes |
 | Functional clinical | 70–80% | Charting, orders, scheduling, portal | Formal CPP, i4C-specific analytics |
-| Certification process | 0% | — | Not started |
+| Certification process | 0% |: | Not started |
 
 **Sources:** Owner-provided OntarioMD spec summary (June 23, 2026); internal codebase review (`lib/interop/`, `lib/integrations/`, clinical modules, billing stubs).
 
@@ -41,32 +41,32 @@ After approval: work on **`dev`** first; deploy only with owner approval per **`
 | **Very high (90%+)** | Agent can finish alone; owner only reviews at end |
 | **High (75–89%)** | Agent finishes; owner approves 1–2 wording or policy choices |
 | **Medium (50–74%)** | Needs owner input on scope or legal sign-off |
-| **Low (&lt;50%)** | Requires external partners (OntarioMD, Infoway, MOH) — not a code sprint |
+| **Low (&lt;50%)** | Requires external partners (OntarioMD, Infoway, MOH): not a code sprint |
 
-### Tier A — Today sprint (agent-led, minimal owner input)
+### Tier A: Today sprint (agent-led, minimal owner input)
 
 | # | Deliverable | Agent confidence | Owner input needed |
 |---|-------------|------------------|-------------------|
-| A1 | **Gap report + prioritized backlog** (`docs/ONTARIOMD-GAP-REPORT.md`) | Very high | None — review optional |
+| A1 | **Gap report + prioritized backlog** (`docs/ONTARIOMD-GAP-REPORT.md`) | Very high | None: review optional |
 | A2 | **Compliance & privacy pack** (PHIPA, breach, custody, DR summary) in `docs/compliance/` | High | Optional legal review later |
-| A3 | **Audit hardening** — append-only rules, broader patient-access logging (migration + hooks) | Very high | None |
-| A4 | **FHIR R4 Patient chart export** — Bundle from existing chart using `lib/interop/fhir/` | High | None |
-| A5 | **CPP-aligned patient summary** — single view/tab mapping Ontario CPP fields from existing data | High | None |
-| A6 | **Data residency statement** — document Supabase/Netlify Canada posture + checklist | High | Confirm prod Supabase region if not CA |
+| A3 | **Audit hardening**: append-only rules, broader patient-access logging (migration + hooks) | Very high | None |
+| A4 | **FHIR R4 Patient chart export**: Bundle from existing chart using `lib/interop/fhir/` | High | None |
+| A5 | **CPP-aligned patient summary**: single view/tab mapping Ontario CPP fields from existing data | High | None |
+| A6 | **Data residency statement**: document Supabase/Netlify Canada posture + checklist | High | Confirm prod Supabase region if not CA |
 
 **Tier A same-day score impact:** ~+5 to +8 points (foundational + functional evidence).
 
-### Tier B — Today if time remains (one quick owner choice)
+### Tier B: Today if time remains (one quick owner choice)
 
 | # | Deliverable | Agent confidence | Owner input needed |
 |---|-------------|------------------|-------------------|
-| B1 | **Consent capture** — DB table + minimal UI (portal + chart sharing) | High | Pick 2–3 consent types (e.g. portal, data sharing, research) |
-| B2 | **i4C-style indicator mapping** — map preventive gaps → Ontario primary-care indicators | Medium-high | Confirm indicator list priority (top 10 OK) |
-| B3 | **OHIP claim file draft generator** — structured export from billing drafts (not live MCEDT) | Medium-high | None for format; live submit needs MOH later |
+| B1 | **Consent capture**: DB table + minimal UI (portal + chart sharing) | High | Pick 2–3 consent types (e.g. portal, data sharing, research) |
+| B2 | **i4C-style indicator mapping**: map preventive gaps → Ontario primary-care indicators | Medium-high | Confirm indicator list priority (top 10 OK) |
+| B3 | **OHIP claim file draft generator**: structured export from billing drafts (not live MCEDT) | Medium-high | None for format; live submit needs MOH later |
 
 **Tier B same-day score impact:** ~+3 to +5 additional points.
 
-### Tier C — Not today (blocked without partners)
+### Tier C: Not today (blocked without partners)
 
 | Item | Why not same-day |
 |------|------------------|
@@ -75,11 +75,11 @@ After approval: work on **`dev`** first; deploy only with owner approval per **`
 | Live MCEDT submission | MOH billing credentials |
 | Certification application / reference site | OntarioMD vendor process |
 
-**Ceiling without Tier C:** ~55–60% internal readiness evidence — not certified EMR status.
+**Ceiling without Tier C:** ~55–60% internal readiness evidence: not certified EMR status.
 
 ---
 
-## Today sprint — execution order (after owner approval)
+## Today sprint: execution order (after owner approval)
 
 1. A1 Gap report (anchors all other work)  
 2. A3 Audit hardening (quick win, high audit value)  
@@ -90,7 +90,7 @@ After approval: work on **`dev`** first; deploy only with owner approval per **`
 7. B1–B3 if clock time remains  
 8. `npm run check` + targeted tests  
 9. Update **`AGENT-HANDOVER.md`** session log  
-10. Commit to **`dev`** — deploy only when owner approves  
+10. Commit to **`dev`**: deploy only when owner approves  
 
 ---
 
@@ -124,6 +124,9 @@ After approval: work on **`dev`** first; deploy only with owner approval per **`
 
 | Path | Role |
 |------|------|
+| **`docs/ONTARIO-EMR-READINESS-REPORT.md`** | Written investor readiness report |
+| **`docs/ONTARIO-EMR-IMPLEMENTATION-PLAN.md`** | Full task backlog (Phases 0–8) |
+| **`ontario-readiness.html`** | Shareable investor page (`/ontario-readiness`) |
 | `lib/interop/` | HL7 v2, FHIR R4, DICOMweb, terminology |
 | `lib/integrations/IntegrationService.js` | Outbound queue (OLIS/rx/claims stubs) |
 | `config/provinces/on.json` | Ontario integration placeholders |

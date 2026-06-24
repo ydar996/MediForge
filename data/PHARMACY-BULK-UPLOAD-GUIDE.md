@@ -10,7 +10,7 @@ Use this guide for bulk importing or updating pharmacy inventory, including **co
 
 | Column | Required | Description | Example |
 |--------|----------|-------------|---------|
-| **Medication Name** | Yes | Generic or brand name—must match prescriptions | Amlodipine |
+| **Medication Name** | Yes | Generic or brand name:must match prescriptions | Amlodipine |
 | **Strength** | Yes | Dosage strength | 10mg, 500mg, 5/50mg |
 | **Form** | Yes | Dosage form | Tablet, Capsule, Injection, Syrup, Cream, Eye drops |
 | **Quantity on Hand** | Yes | Amount in stock | 16 |
@@ -40,7 +40,7 @@ The import recognizes these alternative headers:
 - Formula: \((\text{old qty} \times \text{old WAC} + \text{receipt qty} \times \text{receipt unit cost}) / (\text{old qty} + \text{receipt qty})\). If there was no prior average, the first receipt cost becomes the average.
 - **Receipt lines** are stored on **`inventory_transactions`** (`transaction_type = 'purchase'`) with **`unit_cost`** and **`extended_cost`** when the DB migration for those columns has been applied.
 - **Average cost changes** are appended to **`inventory_price_history`** and **`inventory_price_changed`** audit events (with a `source` such as `bulk_import`, `restock_wac`, or `initial_stock`).
-- **Cost-only bulk rows** (quantity `0`, cost filled) **replace** the stored average for that item—they do not blend with zero new units.
+- **Cost-only bulk rows** (quantity `0`, cost filled) **replace** the stored average for that item:they do not blend with zero new units.
 
 Run migration: `supabase/migrations/20260416120000_inventory_transaction_unit_cost.sql` on your Supabase project so purchase rows can store unit cost.
 

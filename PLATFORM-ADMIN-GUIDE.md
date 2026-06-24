@@ -4,7 +4,7 @@
 **Audience:** Platform owner only (not clinic staff).
 
 > **Clinic staff:** use the [User Manual](docs/USER-MANUAL.md) or [user-manual.html](user-manual.html).  
-> **Security:** Platform login is **not** linked from the public login page. Store credentials in a password manager only—never in this file.
+> **Security:** Platform login is **not** linked from the public login page. Store credentials in a password manager only:never in this file.
 
 ## Overview
 

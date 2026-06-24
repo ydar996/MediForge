@@ -16,12 +16,12 @@ function fail(msg) {
 }
 
 if (!fs.existsSync(FORMULARY)) {
-  fail("missing js/canadian-nhp-formulary.js — run: npm run build:nhp-formulary");
+  fail("missing js/canadian-nhp-formulary.js: run: npm run build:nhp-formulary");
 }
 
 const stat = fs.statSync(FORMULARY);
 if (stat.size < MIN_BYTES) {
-  fail(`js/canadian-nhp-formulary.js too small (${stat.size} bytes) — rebuild`);
+  fail(`js/canadian-nhp-formulary.js too small (${stat.size} bytes): rebuild`);
 }
 
 const text = fs.readFileSync(FORMULARY, "utf8");
@@ -33,4 +33,4 @@ if (count < MIN_PRODUCTS) {
 const buildMatch = text.match(/CANADIAN_NHP_FORMULARY_BUILD\s*=\s*'([^']+)'/);
 const build = buildMatch ? buildMatch[1] : "unknown";
 const sizeMb = (stat.size / (1024 * 1024)).toFixed(2);
-console.log(`check:nhp-formulary OK — ${count} products, ${sizeMb} MB, build ${build}`);
+console.log(`check:nhp-formulary OK: ${count} products, ${sizeMb} MB, build ${build}`);

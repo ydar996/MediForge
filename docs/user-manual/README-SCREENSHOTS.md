@@ -2,7 +2,7 @@
 
 The user manual (`user-manual.html` and `docs/USER-MANUAL.md`) references images in this folder.
 
-## Option A — Already logged in on dev (easiest)
+## Option A: Already logged in on dev (easiest)
 
 The script **cannot** see your normal browser tab. Use **remote debugging** so it attaches to Chrome/Edge while you stay logged in:
 
@@ -31,7 +31,7 @@ No username/password needed when `--connect` sees an logged-in tab.
 
 ---
 
-## Option B — Username and password (unattended)
+## Option B: Username and password (unattended)
 
 From the project root:
 
@@ -44,7 +44,7 @@ npm run manual:screenshots
 
 Use your **username** (e.g. `ydar2`), not always the email address.
 
-Optional — platform admin screens:
+Optional: platform admin screens:
 
 ```bash
 MANUAL_PLATFORM_USERNAME=your_platform_username \
@@ -54,12 +54,12 @@ node scripts/capture-user-manual-screenshots.mjs --platform
 
 Images are saved as `01-login.png`, `02-dashboard.png`, etc.
 
-## Option B — Manual capture
+## Option B: Manual capture
 
 1. Log in to your clinic site.
 2. Take a full-window screenshot at each step listed in the manual (figure captions).
 3. Save files using the exact names in `user-manual.html` (`01-login.png` … `12-org-users.png`).
-4. Refresh `user-manual.html` in the browser — images appear automatically.
+4. Refresh `user-manual.html` in the browser: images appear automatically.
 
 ## File list
 
@@ -78,12 +78,12 @@ Images are saved as `01-login.png`, `02-dashboard.png`, etc.
 | `11-offline.png` | Browser offline or app offline banner (optional) |
 | `12-org-users.png` | User management (admin) |
 | `13-register.png` | Registration (new clinic / join org) |
-| `14-add-patient.png` | Add patient — address, race, health card |
-| `15-manual-medication.png` | Add patient — medication “Not in list” area |
+| `14-add-patient.png` | Add patient: address, race, health card |
+| `15-manual-medication.png` | Add patient: medication “Not in list” area |
 | `16-patient-intake.png` | Patient self-intake form |
 | `17-intake-approvals.png` | Review Patient Intake (admin) |
-| `18-icd-settings.png` | Dashboard — Diagnosis Codes ICD-10-CA / ICD-11 toggle |
-| `19-prescription.png` | Prescription — diagnosis search + Health Canada drug search |
-| `20-preventive-gaps.png` | Clinical note — Preventive Care Gaps tab (expanded) |
+| `18-icd-settings.png` | Dashboard: Diagnosis Codes ICD-10-CA / ICD-11 toggle |
+| `19-prescription.png` | Prescription: diagnosis search + Health Canada drug search |
+| `20-preventive-gaps.png` | Clinical note: Preventive Care Gaps tab (expanded) |
 
 When you add a feature, follow **`HOW-TO-UPDATE-MANUAL.md`** in this folder.

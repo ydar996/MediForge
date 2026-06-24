@@ -830,7 +830,7 @@ function labDashboardPatientIdUi(patientData, rawOrderPatientId) {
   const subject = (patientData && patientData.patient) || hint;
   return typeof window.patientMrnDisplay === 'function'
     ? window.patientMrnDisplay(subject, hint)
-    : hint || '—';
+    : hint || ':';
 }
 
   const patientDataMap = new Map(); // Map order.patient_id -> { name, legacyId }

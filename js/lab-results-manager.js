@@ -156,7 +156,7 @@ function getResultByKey(results, key) {
   return k ? results[k] : null;
 }
 
-/** Panel-aware lookup — must stay aligned with lab-scientist-dashboard getTestResultForDisplay (same panels as LAB_PANEL_TEST_NAMES). */
+/** Panel-aware lookup: must stay aligned with lab-scientist-dashboard getTestResultForDisplay (same panels as LAB_PANEL_TEST_NAMES). */
 function getLineResultLikeDashboard(results, testNameStr) {
   if (!results || typeof results !== 'object') return null;
   var name = String(testNameStr || '').trim();
@@ -518,7 +518,7 @@ window.getInProcessLabOrders = async function() {
             }
             // In Process: at least one test in-process (order can also appear in Incoming/Completed)
             let hasInProcessTest = orderHasPendingOrInProcess(results, selectedItems, false);
-            // Legacy: only when there are no selected_items — otherwise Object.values can match stale keys
+            // Legacy: only when there are no selected_items: otherwise Object.values can match stale keys
             // and the dashboard shows an empty card (same class of bug as false-pending Incoming).
             if (!hasInProcessTest && selectedItems.length === 0) {
               hasInProcessTest = Object.values(results).some(function (r) {

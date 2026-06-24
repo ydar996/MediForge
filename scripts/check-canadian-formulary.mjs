@@ -21,23 +21,23 @@ if (!fs.existsSync(SEARCH)) {
 }
 
 if (!fs.existsSync(FORMULARY)) {
-  fail("missing js/canadian-formulary.js — run: npm run build:formulary");
+  fail("missing js/canadian-formulary.js: run: npm run build:formulary");
 }
 
 const stat = fs.statSync(FORMULARY);
 if (stat.size < MIN_BYTES) {
-  fail(`js/canadian-formulary.js too small (${stat.size} bytes) — rebuild with npm run build:formulary`);
+  fail(`js/canadian-formulary.js too small (${stat.size} bytes): rebuild with npm run build:formulary`);
 }
 
 const text = fs.readFileSync(FORMULARY, "utf8");
 const productMatches = text.match(/\{\s*din:/g);
 const count = productMatches ? productMatches.length : 0;
 if (count < MIN_PRODUCTS) {
-  fail(`only ${count} products (expected >= ${MIN_PRODUCTS}) — run: npm run build:formulary`);
+  fail(`only ${count} products (expected >= ${MIN_PRODUCTS}): run: npm run build:formulary`);
 }
 
 const buildMatch = text.match(/CANADIAN_FORMULARY_BUILD\s*=\s*'([^']+)'/);
 const build = buildMatch ? buildMatch[1] : "unknown";
 const sizeMb = (stat.size / (1024 * 1024)).toFixed(2);
 
-console.log(`check:formulary OK — ${count} products, ${sizeMb} MB, build ${build}`);
+console.log(`check:formulary OK: ${count} products, ${sizeMb} MB, build ${build}`);

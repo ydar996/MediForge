@@ -24,7 +24,7 @@
 | FlexxForms              | `C:\Users\yinka\Documents\FlexxForms`           | **3000** (frontend)<br>**4000** (backend) | Forms / React + backend project. Vite dev server on 3000 proxies API to 4000. | `npm run dev` (frontend on 3000). See vite.config.js and README. |
 | Float                   | `C:\Users\yinka\Documents\Float`                | **4000** (main API)<br>**3010** (admin hub/web)<br>3002, 3003, 3004+ (various demo sandboxes: merchant, bank, etc.) | Large multi-service fintech demo / sandbox system (API, admin, multiple merchant/bank demo storefronts). Complex launchers and scripts. | Multiple: `npm run start:dev -w @float/api`, launch exes, docker, specific ps1 scripts that set PORT. See README.md and scripts/ folder. |
 | ZipTransact             | `C:\Users\yinka\Documents\ZipTransact`          | **3001** (API default)<br>3002, 3004, 3005+ (other services in monorepo) | NestJS API + other services (monorepo).                                    | API: `const port = Number(process.env["API_PORT"] ?? 3001)` in apps/api/src/main.ts. See root README for other demo ports. |
-| AutoPartsHubNigeria     | `C:\Users\yinka\Documents\AutoPartsHubNigeria`  | **8000**                | Static HTML/JS + Firebase auto parts site. No real backend server — just a local file server for development. | `python -m http.server 8000`<br>or `npx http-server`<br>or `php -S localhost:8000`<br>(recommended in its README.md) |
+| AutoPartsHubNigeria     | `C:\Users\yinka\Documents\AutoPartsHubNigeria`  | **8000**                | Static HTML/JS + Firebase auto parts site. No real backend server: just a local file server for development. | `python -m http.server 8000`<br>or `npx http-server`<br>or `php -S localhost:8000`<br>(recommended in its README.md) |
 
 ### Leftover / Old Folders to Clean Up
 - **UltrLifeNavigator** (old spelling, different from current)  
@@ -33,13 +33,13 @@
   This appears to be an earlier unfinished attempt. It is safe to delete the whole folder if you no longer need it.
 
 ### Non-Web / Desktop / Script Tools (No Fixed Server Port)
-These live in Documents but are local GUI or CLI tools — they do not run a persistent web server on a port:
-- Interest Calculator (`C:\Users\yinka\Documents\Interest Calculator`) — Tkinter desktop app.
-- Transcriber (`C:\Users\yinka\Documents\Transcriber`) — Local OCR / transcription GUI tool.
-- Statementer (`C:\Users\yinka\Documents\Statementer`) — Statement parsing / processing scripts.
+These live in Documents but are local GUI or CLI tools: they do not run a persistent web server on a port:
+- Interest Calculator (`C:\Users\yinka\Documents\Interest Calculator`): Tkinter desktop app.
+- Transcriber (`C:\Users\yinka\Documents\Transcriber`): Local OCR / transcription GUI tool.
+- Statementer (`C:\Users\yinka\Documents\Statementer`): Statement parsing / processing scripts.
 
 ### Other Notes
-- Many large Node projects (node_modules folders) contain example ports (e.g. 4318 for OpenTelemetry, 5432 for Postgres examples). These are **not** the apps' own ports — ignore them.
+- Many large Node projects (node_modules folders) contain example ports (e.g. 4318 for OpenTelemetry, 5432 for Postgres examples). These are **not** the apps' own ports: ignore them.
 - Common default ports you should avoid for new personal apps: 3000, 5000, 8000, 8080, 3001 (they are used by many frameworks and the projects above).
 - Good safe ports seen here: 4500, 9876, 3456, 5500, 3010.
 

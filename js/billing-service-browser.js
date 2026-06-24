@@ -1,5 +1,5 @@
 /**
- * Browser BillingService — loads mode config JSON and exposes claim/payment APIs.
+ * Browser BillingService: loads mode config JSON and exposes claim/payment APIs.
  * Core logic is tested in Node via lib/billing (src/billing re-export).
  */
 (function (global) {

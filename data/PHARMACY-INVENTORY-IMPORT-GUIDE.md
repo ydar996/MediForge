@@ -10,21 +10,21 @@ Use this guide to prepare medication and consumable data for import into the EHR
 
 | Column | Required | Description | Example |
 |--------|----------|-------------|---------|
-| **medication_name** | Yes | Generic or brand name—**must match what doctors prescribe** (e.g. Amlodipine, Paracetamol) | Amlodipine |
+| **medication_name** | Yes | Generic or brand name:**must match what doctors prescribe** (e.g. Amlodipine, Paracetamol) | Amlodipine |
 | **strength** | Yes | Dosage strength | 10mg, 500mg, 5/50mg |
 | **form** | Yes | Dosage form | Tablet, Capsule, Injection, Syrup, Cream, Eye drops |
 | **quantity** | Yes | Amount in stock | 16 |
 | **unit_of_measure** | Yes | Unit used to count/stock the item | PACKS, TABS, BOTTLES, VIALS, AMPOULES, PCS |
 | **expiry_date** | No | Expiration date | 2027-06-01 or Jun-27 |
 | **unit_price** | No | Price per unit (in org currency) | 1500 |
-| **unit_for_pricing** | No | Unit that the price applies to—use only when different from unit_of_measure | TAB, CARD, PACK |
+| **unit_for_pricing** | No | Unit that the price applies to:use only when different from unit_of_measure | TAB, CARD, PACK |
 
 ### unit_of_measure vs unit_for_pricing
 
 | Column | Meaning |
 |--------|---------|
 | **unit_of_measure** | How you count and track stock (e.g. 16 PACKS, 600 TABS) |
-| **unit_for_pricing** | What unit the unit_price is per—leave blank when price is per the same unit as quantity |
+| **unit_for_pricing** | What unit the unit_price is per:leave blank when price is per the same unit as quantity |
 
 **Examples:**
 - Stock: 16 PACKS, price ₦1,500 per PACK → `unit_of_measure: PACKS`, `unit_price: 1500`, `unit_for_pricing:` (leave blank)
@@ -92,7 +92,7 @@ If your data uses the older format below, the import will **normalize** it to ma
 
 ## Template files
 
-- **`data/pharmacy-bulk-upload-template.csv`** — Recommended template with descriptive column names, includes **Cost per Unit** and **Selling Price per Unit**. Use for full imports or bulk cost/price updates.
-- **`data/pharmacy-inventory-import-template.csv`** — Original minimal template (still supported).
+- **`data/pharmacy-bulk-upload-template.csv`**: Recommended template with descriptive column names, includes **Cost per Unit** and **Selling Price per Unit**. Use for full imports or bulk cost/price updates.
+- **`data/pharmacy-inventory-import-template.csv`**: Original minimal template (still supported).
 
 See **`data/PHARMACY-BULK-UPLOAD-GUIDE.md`** for bulk cost updates and column variations.

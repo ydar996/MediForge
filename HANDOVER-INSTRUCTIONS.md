@@ -16,11 +16,11 @@ This is a comprehensive Electronic Health Records (EHR) system for Africa, built
 - **Patients:** https://mediforge.netlify.app/patients.html
 
 ### **Login Credentials**
-- Use your staff test account — **do not store passwords in git** (password manager only).
+- Use your staff test account: **do not store passwords in git** (password manager only).
 
 ### **Netlify Deployment**
 - **Project ID:** OLD-SITE-ID-REMOVED-CREATE-NEW-SITE (see also `NETLIFY-SITE-IDS.txt`)
-- **Deploy:** push to branch (Netlify CD) or `netlify deploy` when approved — see `AGENT-HANDOVER.md`
+- **Deploy:** push to branch (Netlify CD) or `netlify deploy` when approved: see `AGENT-HANDOVER.md`
 - **GitHub Repo:** https://github.com/ydar996/MediForge.git
 
 ### **Supabase Backend**

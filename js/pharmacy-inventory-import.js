@@ -357,7 +357,7 @@
       const ndcVal = cell(parts, idx.ndc) || null;
       const barcodeVal = cell(parts, idx.barcode) || null;
       const warehouseVal = cell(parts, idx.wh) || null;
-      const strength = cell(parts, idx.str) || '—';
+      const strength = cell(parts, idx.str) || ':';
       const form = normalizeFormLabel(cell(parts, idx.form));
 
       items.push({
@@ -401,7 +401,7 @@
       items.push({
         medication_name: medication_name || medName.trim(),
         generic_name: medication_name || medName.trim(),
-        strength: strength || '—',
+        strength: strength || ':',
         form: normalizeFormLabel(form || 'Tablet'),
         current_stock: quantity,
         unit_of_measure: unit,
@@ -795,7 +795,7 @@
                     source: 'bulk_import',
                     reason:
                       addQty > 0 && rc != null
-                        ? 'Receipt ' + addQty + ' @ ' + rc + ' → WAC ' + (newWac != null ? newWac : '—')
+                        ? 'Receipt ' + addQty + ' @ ' + rc + ' → WAC ' + (newWac != null ? newWac : ':')
                         : addQty > 0
                           ? 'Stock +' + addQty + ' (no receipt cost)'
                           : rc != null

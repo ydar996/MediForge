@@ -9,14 +9,14 @@ Keep clinic staff instructions in **plain language**. Update two files together 
 
 ## Checklist for each new feature
 
-1. **Write steps** — numbered list: what to click, what to type, what success looks like.
-2. **Add a section** — new `<section id="...">` in `user-manual.html` and matching heading in `USER-MANUAL.md`.
-3. **Add sidebar link** — `<aside class="sidebar">` in `user-manual.html`.
-4. **Add a screenshot slot** — next number in `docs/user-manual/images/` (e.g. `19-my-feature.png`).
-5. **Document the shot** — one row in `docs/user-manual/README-SCREENSHOTS.md`.
-6. **Capture the image** — `npm run manual:screenshots:connect` (see README-SCREENSHOTS.md).
-7. **Bump “Last updated”** — top of both manual files (month + year).
-8. **Deploy** — push to `dev` → staging → production like any other change.
+1. **Write steps**: numbered list: what to click, what to type, what success looks like.
+2. **Add a section**: new `<section id="...">` in `user-manual.html` and matching heading in `USER-MANUAL.md`.
+3. **Add sidebar link**: `<aside class="sidebar">` in `user-manual.html`.
+4. **Add a screenshot slot**: next number in `docs/user-manual/images/` (e.g. `19-my-feature.png`).
+5. **Document the shot**: one row in `docs/user-manual/README-SCREENSHOTS.md`.
+6. **Capture the image**: `npm run manual:screenshots:connect` (see README-SCREENSHOTS.md).
+7. **Bump “Last updated”**: top of both manual files (month + year).
+8. **Deploy**: push to `dev` → staging → production like any other change.
 
 ## Screenshot naming
 
@@ -27,8 +27,8 @@ In HTML:
 ```html
 <figure class="screenshot">
   <img src="docs/user-manual/images/14-add-patient.png" alt="Add patient form" onerror="this.dataset.missing='1'">
-  <div class="screenshot-missing">Screenshot: add patient — <code>14-add-patient.png</code></div>
-  <figcaption>Figure 14 — Add a new patient</figcaption>
+  <div class="screenshot-missing">Screenshot: add patient: <code>14-add-patient.png</code></div>
+  <figcaption>Figure 14: Add a new patient</figcaption>
 </figure>
 ```
 

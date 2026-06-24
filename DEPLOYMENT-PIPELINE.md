@@ -50,7 +50,7 @@ Before finishing any session with code changes, agents **must**:
 1. `git add` relevant files (never secrets: `.env`, service role keys, `supabase-credentials*.txt`).
 2. `git commit` with a clear message.
 3. `git push origin <branch>` (usually `dev` first, not `main`).
-4. **Update project documentation** — see **`AGENT-HANDOVER.md`** § “How to keep this document alive” (handover session log, `docs/DOCUMENTATION-INDEX.md`, `docs/PROJECT-OVERVIEW.md`, and `USER-MANUAL.md` / `user-manual.html` when user-facing).
+4. **Update project documentation**: see **`AGENT-HANDOVER.md`** § “How to keep this document alive” (handover session log, `docs/DOCUMENTATION-INDEX.md`, `docs/PROJECT-OVERVIEW.md`, and `USER-MANUAL.md` / `user-manual.html` when user-facing).
 5. Deploy only with **explicit owner approval** (“Yes, deploy” / “I approve”).
 6. Confirm: `git status` clean and remote matches.
 
@@ -81,16 +81,16 @@ Browser: open the GitHub repo and confirm your latest commit appears.
 
 | Item | Status |
 |------|--------|
-| Production Netlify | **Live** — `mediforge` → https://mediforge.netlify.app |
+| Production Netlify | **Live**: `mediforge` → https://mediforge.netlify.app |
 | Production site ID | `06ef6cf9-280d-4d5f-97a2-7cbfd7586b7a` (see `NETLIFY-SITE-IDS.txt`) |
 | Production Supabase | **MediForge-Prod** (project ref `fyhtdkotlyyqyrjabojw`) |
-| GitHub repo | **Connected** — https://github.com/ydar996/MediForge |
+| GitHub repo | **Connected**: https://github.com/ydar996/MediForge |
 | Git branch `main` | Exists; tracks production |
 | Git branch `dev` | **Create** (see setup below) |
 | Git branch `staging` | **Create** (see setup below) |
 | Netlify `mediforge-dev` | **Create and link to `dev` branch** |
 | Netlify `mediforge-staging` | **Create and link to `staging` branch** |
-| Dev / Staging Supabase | **Create** — see `docs/SUPABASE-DEV-STAGING-SETUP.md` |
+| Dev / Staging Supabase | **Create**: see `docs/SUPABASE-DEV-STAGING-SETUP.md` |
 
 ---
 
@@ -143,7 +143,7 @@ In each Supabase project → **Authentication → URL configuration**, add that 
 ### D. Test the pipeline
 
 1. Make a tiny change on `dev`, commit, `git push origin dev`
-2. Open https://mediforge-dev.netlify.app — confirm deploy finished
+2. Open https://mediforge-dev.netlify.app: confirm deploy finished
 3. Open a PR **dev → staging** on GitHub, merge, confirm staging site
 4. When ready for live users: PR **staging → main**, merge, confirm production
 
@@ -151,13 +151,13 @@ In each Supabase project → **Authentication → URL configuration**, add that 
 
 ## Promotion flow (no downtime strategy)
 
-1. **Develop on `dev`** — all feature work lands here first.
-2. **PR `dev` → `staging`** — review diff on GitHub; test on staging URL.
-3. **PR `staging` → `main`** — production release; Netlify rebuilds production.
+1. **Develop on `dev`**: all feature work lands here first.
+2. **PR `dev` → `staging`**: review diff on GitHub; test on staging URL.
+3. **PR `staging` → `main`**: production release; Netlify rebuilds production.
 
 **Do not** push directly to `main` for routine changes once this pipeline is live.
 
-**Do not** use manual CLI deploy to production except emergencies — it bypasses GitHub history and can desync repos.
+**Do not** use manual CLI deploy to production except emergencies: it bypasses GitHub history and can desync repos.
 
 ---
 

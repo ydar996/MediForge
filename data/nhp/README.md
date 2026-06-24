@@ -14,4 +14,4 @@ The first run caches raw API data to `data/nhp-cache/product-licences.json` (~60
 
 ## Search
 
-Merged with DPD in `js/canadian-formulary-search.js` — `searchCanadianDrugs()` returns both prescription drugs (DIN) and natural health products (NPN).
+Merged with DPD in `js/canadian-formulary-search.js`: `searchCanadianDrugs()` returns both prescription drugs (DIN) and natural health products (NPN).

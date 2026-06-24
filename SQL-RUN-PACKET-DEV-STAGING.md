@@ -1,4 +1,4 @@
-# SQL run packet — Dev, Staging & Production
+# SQL run packet: Dev, Staging & Production
 
 Simple checklist for Supabase **SQL Editor**. Run scripts **one at a time**, wait for **Success**, then move on.
 
@@ -24,7 +24,7 @@ All scripts below are **idempotent** (safe to run more than once).
 
 ## Before you start
 
-1. Open the **correct** Supabase project (Dev, Staging, or Prod — do not mix them up).
+1. Open the **correct** Supabase project (Dev, Staging, or Prod: do not mix them up).
 2. Go to **SQL Editor → New query**.
 3. Open each file from your repo, **Select all → Copy → Paste → Run**.
 
@@ -75,21 +75,21 @@ If the database already has production-style tables, skip this and start at **St
 | **3** | `supabase/migrations/20260611170000_intake_approval_postal_demographics.sql` | Intake approval: postal code + demographics |
 | **4** | `supabase/migrations/20260611000000_interoperability_tables.sql` | Interop queue + PHN identifiers |
 | **5** | `supabase/migrations/20260611100000_billing_payers_tables.sql` | Billing / payer profiles + claims |
-| **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | **Required** — org Admin UPDATE, `get_organization_intake_context` RPC, intake approval permissions |
-| **7** | `supabase/migrations/20260612100000_registration_profile_rpc.sql` | **Required** — registration profile RPC + own-profile SELECT (fixes join-org RLS failures) |
-| **8** | `supabase/migrations/20260612110000_add_patient_race_column.sql` | **Required** — `race` column on patients (replaces Tribe in UI) |
-| **9** | `supabase/migrations/20260612120000_intake_approval_race_column.sql` | **Required** — intake approval RPC writes `race` from self-registration payload |
-| **10** | `supabase/migrations/20260612130000_drop_patient_tribe_column.sql` | **Required** — adds `race` if missing, backfills from `tribe`, race-only intake RPC, drops `tribe` |
+| **6** | `supabase/migrations/20260611180000_registration_and_intake_fixes.sql` | **Required**: org Admin UPDATE, `get_organization_intake_context` RPC, intake approval permissions |
+| **7** | `supabase/migrations/20260612100000_registration_profile_rpc.sql` | **Required**: registration profile RPC + own-profile SELECT (fixes join-org RLS failures) |
+| **8** | `supabase/migrations/20260612110000_add_patient_race_column.sql` | **Required**: `race` column on patients (replaces Tribe in UI) |
+| **9** | `supabase/migrations/20260612120000_intake_approval_race_column.sql` | **Required**: intake approval RPC writes `race` from self-registration payload |
+| **10** | `supabase/migrations/20260612130000_drop_patient_tribe_column.sql` | **Required**: adds `race` if missing, backfills from `tribe`, race-only intake RPC, drops `tribe` |
 
-**Step 8 skip:** Step 10 includes `ADD COLUMN race` — safe to run Step 10 even if Step 8 was skipped.
+**Step 8 skip:** Step 10 includes `ADD COLUMN race`: safe to run Step 10 even if Step 8 was skipped.
 
 **Step 2 skip:** If `patient_intake_submissions` already exists, Step 2 is optional (re-running is still safe).
 
-**Do not run separately:** `supabase/migrations/20260611150000_users_registration_rls.sql` — already included in Step 1.
+**Do not run separately:** `supabase/migrations/20260611150000_users_registration_rls.sql`: already included in Step 1.
 
 ---
 
-## After SQL — Auth settings (Dev & Staging only)
+## After SQL: Auth settings (Dev & Staging only)
 
 **Authentication → URL configuration**
 
@@ -106,7 +106,7 @@ Production: keep **Confirm email ON** unless your prod policy says otherwise.
 
 ---
 
-## Optional — platform admin (Dev / Staging)
+## Optional: platform admin (Dev / Staging)
 
 Only if you need `/platform-login`:
 
@@ -161,7 +161,7 @@ On **Dev** (repeat on Staging when Dev passes):
 
 1. Register a **test clinic** at `/register` (Canada address + postal code), or **Join Existing Organization** with an org code.
 2. Accept legal agreements on the registration form.
-3. Staff: **Add patient** — confirm **Race** dropdown (including *Declined to Disclose*) and research note under the field.
+3. Staff: **Add patient**: confirm **Race** dropdown (including *Declined to Disclose*) and research note under the field.
 4. Open the clinic **patient intake link** and submit a test patient (self-registration).
 5. Staff: approve intake → patient record should have **race**, address, and postal code.
 
@@ -177,7 +177,7 @@ When promoting **Staging → main** (production website):
 4. Do **not** turn off email confirmation on production.
 5. Run the **Verify** queries above, then smoke-test with a controlled test org if possible.
 
-**No SQL needed for:** legal agreement text updates (Canada/US) — those are HTML/JS only, deployed with the app.
+**No SQL needed for:** legal agreement text updates (Canada/US): those are HTML/JS only, deployed with the app.
 
 ---
 
@@ -188,7 +188,7 @@ When promoting **Staging → main** (production website):
 | `sql-scripts/fix-registration-rls.sql` | Superseded by Step 1 |
 | `supabase/migrations/20260611150000_users_registration_rls.sql` | Included in Step 1 |
 | `supabase/migrations/20251105000002_fix_staff_data_access.sql` | Old; use `20251105000003` on Prod only if needed |
-| One-off `RUN_THIS_*` / data-fix scripts | Prod data fixes only — not fresh setup |
+| One-off `RUN_THIS_*` / data-fix scripts | Prod data fixes only: not fresh setup |
 
 ---
 
@@ -197,16 +197,16 @@ When promoting **Staging → main** (production website):
 **MediForge Dev**
 
 - [ ] Latest code deployed to Dev
-- [ ] Step 1 — `RUN-PACKET-dev-staging-idempotent.sql`
-- [ ] Step 2 — patient intake tables (if needed)
-- [ ] Step 3 — intake approval postal/demographics
-- [ ] Step 4 — interoperability tables
-- [ ] Step 5 — billing tables
-- [ ] Step 6 — `20260611180000_registration_and_intake_fixes.sql`
-- [ ] Step 7 — `20260612100000_registration_profile_rpc.sql`
-- [ ] Step 8 — `20260612110000_add_patient_race_column.sql`
-- [ ] Step 9 — `20260612120000_intake_approval_race_column.sql`
-- [ ] Step 10 — `20260612130000_drop_patient_tribe_column.sql`
+- [ ] Step 1: `RUN-PACKET-dev-staging-idempotent.sql`
+- [ ] Step 2: patient intake tables (if needed)
+- [ ] Step 3: intake approval postal/demographics
+- [ ] Step 4: interoperability tables
+- [ ] Step 5: billing tables
+- [ ] Step 6: `20260611180000_registration_and_intake_fixes.sql`
+- [ ] Step 7: `20260612100000_registration_profile_rpc.sql`
+- [ ] Step 8: `20260612110000_add_patient_race_column.sql`
+- [ ] Step 9: `20260612120000_intake_approval_race_column.sql`
+- [ ] Step 10: `20260612130000_drop_patient_tribe_column.sql`
 - [ ] Auth URLs + Confirm email OFF
 - [ ] Verify queries pass
 - [ ] Smoke test: clinic registration + add patient + patient self-intake
@@ -227,4 +227,4 @@ When promoting **Staging → main** (production website):
 
 ---
 
-*Last updated: 12 June 2026 — race-only demographics; tribe column removed (Step 10).*
+*Last updated: 12 June 2026: race-only demographics; tribe column removed (Step 10).*

@@ -1,4 +1,4 @@
-# 💰 MediForge Billing — User Guide
+# 💰 MediForge Billing: User Guide
 
 **Last updated:** May 2026  
 **Audience:** Receptionists, cashiers, billers, and clinic managers.

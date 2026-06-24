@@ -2,7 +2,7 @@
 
 **Last updated:** June 2026  
 **Who this is for:** Doctors, nurses, receptionists, billers, lab staff, pharmacists, and clinic administrators.  
-**Plain language:** Step-by-step help for everyday tasks—not technical setup.
+**Plain language:** Step-by-step help for everyday tasks:not technical setup.
 
 **Also available as a web page with pictures:** open `user-manual.html` on your site (e.g. `https://mediforge.netlify.app/user-manual`).
 
@@ -16,7 +16,7 @@
 2. [Logging in](#2-logging-in)
 3. [Registering a clinic (Canada)](#3-registering-a-clinic-canada)
 4. [Your dashboard](#4-your-dashboard)
-5. [Patients — find a chart](#5-patients--find-a-chart)
+5. [Patients: find a chart](#5-patients--find-a-chart)
 6. [Add a patient (race, ICD-10, medications)](#6-add-a-patient-race-icd-10-medications)
 7. [Patient self-intake](#7-patient-self-intake)
 8. [Clinical notes (SOAP)](#8-clinical-notes-soap)
@@ -97,7 +97,7 @@ See [USER-INSTRUCTIONS-ACCOUNT-LOCKED.md](../USER-INSTRUCTIONS-ACCOUNT-LOCKED.md
 
 ## 4. Your dashboard
 
-After login you see the **Dashboard**—your home screen with buttons for each area.
+After login you see the **Dashboard**:your home screen with buttons for each area.
 
 ![Dashboard](user-manual/images/02-dashboard.png)
 
@@ -121,7 +121,7 @@ After login you see the **Dashboard**—your home screen with buttons for each a
 
 ---
 
-## 5. Patients — find a chart
+## 5. Patients: find a chart
 
 ### Find a patient
 
@@ -141,8 +141,8 @@ After login you see the **Dashboard**—your home screen with buttons for each a
 2. Enter name, date of birth, gender, phone, and **Canadian address** (province, city, **postal code**).
 3. Select **Race** (required). *Declined to Disclose* is allowed.
 4. Optional: PHN / insurance numbers.
-5. **Past medical history — dates:** *Estimated date is acceptable* appears under date fields when the exact day is unknown.
-6. **Past medical history — diagnosis search:** type a condition (e.g. *diabetes*) and pick an **ICD-10-CA** code, or use a custom entry.
+5. **Past medical history: dates:** *Estimated date is acceptable* appears under date fields when the exact day is unknown.
+6. **Past medical history: diagnosis search:** type a condition (e.g. *diabetes*) and pick an **ICD-10-CA** code, or use a custom entry.
 7. **Medications patient already takes:** search the list, or type a name and click **Not in list? Use my typed medication name**, then enter **dosage**.
 8. **Save**.
 
@@ -208,7 +208,7 @@ From a clinical note you can order **lab tests** or **imaging studies** (X-ray, 
 4. Click **Send Out** (or **Send to Lab Scientist** for in-house lab if your clinic uses it). You can also select several tests and use **bulk send** for one combined lab order.
 5. Notes appear on the printed/PDF requisition with the order.
 
-**Tip:** No database setup is required for this feature — it works after the app is updated.
+**Tip:** No database setup is required for this feature: it works after the app is updated.
 
 ---
 
@@ -220,7 +220,7 @@ Write prescriptions with full **ICD-10-CA** diagnosis codes and **Health Canada*
 2. Search **diagnosis** (type at least 2 letters, e.g. *diabetes*).
 3. Add **medications**: type a drug name (e.g. *metformin*) and select from the formulary list.
 4. Enter dose, route, frequency, and duration.
-5. Click **Save Prescription** — diagnosis and medications update the patient chart.
+5. Click **Save Prescription**: diagnosis and medications update the patient chart.
 6. Optional: **Send to Pharmacy** queues the Rx for your in-clinic pharmacy dashboard.
 7. Print, download, or email per clinic policy.
 
@@ -237,7 +237,7 @@ MediForge lists screenings and immunizations the patient may still need (by age,
 3. Click **Add Proof** to attach a PDF or image (lab, immunization record, etc.). Proof saves to the chart.
 4. **Mark Unaddressed** reverses the status. **View Proof** opens attachments.
 
-**Tip:** Buttons are disabled while the note is **locked** — unlock first if needed.
+**Tip:** Buttons are disabled while the note is **locked**: unlock first if needed.
 
 ![Preventive care gaps](user-manual/images/20-preventive-gaps.png)
 
@@ -257,10 +257,10 @@ See also **Preventive Gaps Summary** on the dashboard for clinic-wide reports.
 
 ### Other scheduling tools
 
-- **View Schedule Calendar** — calendar view  
-- **Upcoming Appointments** — list of what’s next  
-- **Appointment Reminder Settings** — configure reminders (admins)  
-- **Upcoming Appointments – Copy SMS** — copy reminder text to send by phone  
+- **View Schedule Calendar**: calendar view  
+- **Upcoming Appointments**: list of what’s next  
+- **Appointment Reminder Settings**: configure reminders (admins)  
+- **Upcoming Appointments – Copy SMS**: copy reminder text to send by phone  
 
 ---
 
@@ -292,9 +292,9 @@ Dashboard → **Billing & Payments**.
 | Invoice to pay later | Create invoice, then collect payment when they return |
 | See all invoices | Billing → View invoices |
 | Void a wrong payment | Billing → View all payments → **Void** (with reason) |
-| Daily cash drawer | **Cash register** — open in morning, close at night |
+| Daily cash drawer | **Cash register**: open in morning, close at night |
 | Change prices | **Pricing catalog** / Configure services |
-| Month-end numbers | **Billing reports** — export CSV if needed |
+| Month-end numbers | **Billing reports**: export CSV if needed |
 | Income by department | **General Ledger** |
 
 ---
@@ -307,7 +307,7 @@ Dashboard → **Billing & Payments**.
 
 ![Messages](user-manual/images/09-messages.png)
 
-Use messages for handoffs (“please call this patient”), not for emergency care—use your clinic’s emergency procedures.
+Use messages for handoffs (“please call this patient”), not for emergency care:use your clinic’s emergency procedures.
 
 ---
 
@@ -347,9 +347,9 @@ Open the button that matches your job; workflows inside are similar to the main 
 **Short version:**
 
 1. Admin: Dashboard → turn **In-Patient Services** to **On**.
-2. **Configure In-Patient Facilities** — add rooms and beds.
+2. **Configure In-Patient Facilities**: add rooms and beds.
 3. Doctor: admit from **clinical note**.
-4. Nurse/admin: **Admissions Dashboard** — assign bed, document rounds, discharge.
+4. Nurse/admin: **Admissions Dashboard**: assign bed, document rounds, discharge.
 
 ---
 
@@ -370,10 +370,10 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 ## 18. Reports and audit
 
-- **View Reports** — clinic-level summaries  
-- **Preventive Gaps Summary**, **Conditions Breakdown**, etc. — quality and population views  
-- **View Audit Log** — who did what and when (admins)  
-- **Security Dashboard** — security-related events (admins)  
+- **View Reports**: clinic-level summaries  
+- **Preventive Gaps Summary**, **Conditions Breakdown**, etc.: quality and population views  
+- **View Audit Log**: who did what and when (admins)  
+- **Security Dashboard**: security-related events (admins)  
 
 ---
 
@@ -407,7 +407,7 @@ MediForge can keep working when the connection drops **if you prepared while onl
 - Use **Platform Dashboard** to see all clinics, counts, and activity.
 - **View** a clinic to see their dashboard; **Manage Clinics** to suspend, export, or register clinics.
 
-**Full guide:** [PLATFORM-ADMIN-GUIDE.md](../PLATFORM-ADMIN-GUIDE.md) (credentials are not stored in the repo—use your secure password manager).
+**Full guide:** [PLATFORM-ADMIN-GUIDE.md](../PLATFORM-ADMIN-GUIDE.md) (credentials are not stored in the repo:use your secure password manager).
 
 ---
 
@@ -436,9 +436,9 @@ MediForge can keep working when the connection drops **if you prepared while onl
 - **Billing:** [BILLING-SYSTEM-GUIDE.md](../BILLING-SYSTEM-GUIDE.md)  
 - **Offline:** [HOW-TO-USE-OFFLINE-CAPABILITIES.md](../HOW-TO-USE-OFFLINE-CAPABILITIES.md)  
 - **In-patient:** [INPATIENT-SETUP-GUIDE.md](../INPATIENT-SETUP-GUIDE.md)  
-- **Your clinic administrator** — usernames, roles, organization code  
+- **Your clinic administrator**: usernames, roles, organization code  
 - **Work Chop Inc. support:** support@eworkchop.com  
 
 ---
 
-*MediForge — clinic management for Canada and beyond. Powered by Work Chop Inc.*
+*MediForge: clinic management for Canada and beyond. Powered by Work Chop Inc.*

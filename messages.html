@@ -606,15 +606,15 @@
             const typeLabel = isNew ? 'New appointment' : (isCancel ? 'Cancel' : 'Reschedule');
             const apptWhen = appt.appointment_date
               ? `${appt.appointment_date}${appt.appointment_time ? ' ' + appt.appointment_time : ''}`
-              : '—';
+              : ':';
             const reqAt = r.created_at ? new Date(r.created_at).toLocaleString() : '';
             const detail = isNew
-              ? `Reason: ${escapeHtml(r.reason || '—')}. Preferred: ${escapeHtml(r.preferred_date || '—')} at ${escapeHtml(r.preferred_time || '—')}${r.reschedule_notes ? ' — ' + escapeHtml(r.reschedule_notes) : ''}`
+              ? `Reason: ${escapeHtml(r.reason || ':')}. Preferred: ${escapeHtml(r.preferred_date || ':')} at ${escapeHtml(r.preferred_time || ':')}${r.reschedule_notes ? ': ' + escapeHtml(r.reschedule_notes) : ''}`
               : (isCancel
-                ? `Reason: ${escapeHtml(r.reason || '—')}`
-                : `Preferred: ${escapeHtml(r.preferred_date || '—')} at ${escapeHtml(r.preferred_time || '—')}${r.reschedule_notes ? ' — ' + escapeHtml(r.reschedule_notes) : ''}`);
+                ? `Reason: ${escapeHtml(r.reason || ':')}`
+                : `Preferred: ${escapeHtml(r.preferred_date || ':')} at ${escapeHtml(r.preferred_time || ':')}${r.reschedule_notes ? ': ' + escapeHtml(r.reschedule_notes) : ''}`);
             return `<div class="message-item unread" style="cursor:default">
-              <div class="message-subject">${escapeHtml(name)} — ${typeLabel} request</div>
+              <div class="message-subject">${escapeHtml(name)}: ${typeLabel} request</div>
               <div class="message-meta">${isNew ? '' : 'Current appt: ' + escapeHtml(apptWhen) + ' · '}${escapeHtml(reqAt)}</div>
               <div class="message-preview">${detail}</div>
               <div style="margin-top:10px;display:flex;gap:8px;flex-wrap:wrap">
@@ -632,7 +632,7 @@
             const name = `${p.first_name || ''} ${p.last_name || ''}`.trim() || 'Patient';
             const reqAt = o.portal_results_request_at ? new Date(o.portal_results_request_at).toLocaleString() : '';
             return `<div class="message-item" style="cursor:default">
-              <div class="message-subject">${escapeHtml(name)} — ${o.type === 'imaging' ? 'Imaging' : 'Lab'}</div>
+              <div class="message-subject">${escapeHtml(name)}: ${o.type === 'imaging' ? 'Imaging' : 'Lab'}</div>
               <div class="message-meta">Requested ${escapeHtml(reqAt)}</div>
               <button class="action-btn btn-mark-addressed" style="margin-top:10px" onclick="publishPortalResults('${o.id}')">Publish for patient</button>
             </div>`;
@@ -881,7 +881,7 @@
         let preview = (n.title || '') + ': ' + (n.body || '').substring(0, 100);
         if (n.type === 'appointment_reminder' && n.metadata && typeof n.metadata === 'object') {
           const m = n.metadata;
-          preview = (m.patient_name || 'Patient') + ' (ID: ' + (m.patient_id || '—') + ') | ' + (m.appointment_date || '') + ' ' + (m.appointment_time || '') + ' | ' + (m.reason || '');
+          preview = (m.patient_name || 'Patient') + ' (ID: ' + (m.patient_id || ':') + ') | ' + (m.appointment_date || '') + ' ' + (m.appointment_time || '') + ' | ' + (m.reason || '');
         } else if (n.body) {
           preview = (n.title || '') + ': ' + (n.body || '').substring(0, 100);
         }
