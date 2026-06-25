@@ -37,14 +37,16 @@ The Company has developed a proprietary Electronic Medical Records (EMR) softwar
 
 ### Capital deployment schedule
 
-The Strategic Partner's commitment is **not** a single disbursement at Closing. Capital is deployed in **milestone-linked tranches** over approximately **18 months**, aligned with Phases A–D on the [Ontario Readiness certification path](https://mediforge.netlify.app/ontario-readiness#certification-path). Preferred share economics apply to the full committed amount; each tranche funds agreed operational milestones in definitive agreements.
+The Strategic Partner's commitment is **not** a single disbursement at Closing. Capital is deployed in **milestone-linked tranches** over approximately **18 months**, aligned with Phases A–D on the [Ontario Readiness certification path](https://mediforge.netlify.app/ontario-readiness#certification-path). [Adjust line items](https://mediforge.netlify.app/financial-model) on the Financial Model page.
 
-| Tranche | Target period | Share of round | Illustrative amount* | Indicative milestones | Primary uses |
-|---------|---------------|----------------|----------------------|----------------------|--------------|
-| 1 | Closing (Month 0) | 25% | $75k–$150k | Definitive agreements executed; IP assigned to Company | Legal closing; Founder development fee **$32k–$48k** at Closing (40%); OntarioMD vendor consultation; reference clinic search; compliance and audit retainers |
-| 2 | Months 2–4 | 25% | $75k–$150k | Phase A: reference clinic LOI or site selected; Stage 1 evidence submitted or Stages 1–4 package complete; third-party audit vendor engaged | OntarioMD milestone fees (initial); privacy impact assessment and security audit; certification evidence polish |
-| 3 | Months 5–10 | 30% | $90k–$180k | Phase B: first provincial credential enrollment initiated (e.g., MCEDT or OLIS); Stage 5 validation scheduled or underway | Live provincial integration onboarding; conformance testing; gateway and clinic credential wiring |
-| 4 | Months 11–18 | 20% | $60k–$120k | Phase C: first pilot clinic operational or first live provincial test transaction completed | Pilot clinic support; sales and marketing; commercial operations; remaining development fee balance per Section 4 if structured as note or hybrid |
+| Tranche | Target period | Share of round | Illustrative amount* | Indicative milestones | Primary use categories |
+|---------|---------------|----------------|----------------------|----------------------|------------------------|
+| 1 | Closing (Month 0) | 25% | $75k–$150k | Definitive agreements executed; IP assigned to Company | Legal; Founder development fee at Closing; OntarioMD vendor consultation; … |
+| 2 | Months 2–4 | 25% | $75k–$150k | Phase A: Stage 1 submitted; audit engaged | OntarioMD milestone fees; privacy impact assessment and security audit; … |
+| 3 | Months 5–10 | 30% | $90k–$180k | Phase B: first provincial credential live | Provincial credential enrollment; conformance testing; … |
+| 4 | Months 11–18 | 20% | $60k–$120k | Phase C: first pilot clinic operational | Pilot clinic support; sales and marketing; remaining dev fee balance; … |
+
+**Line-item detail with amounts and tranche totals:** [/capital-deployment-detail](https://mediforge.netlify.app/capital-deployment-detail)
 
 *Illustrative amounts use 25% / 25% / 30% / 20% of the committed round ($300k low, $600k high). Exact milestone definitions, release mechanics, and reporting cadence (e.g., quarterly use-of-proceeds) to be set in definitive agreements. Tranche timing may overlap where credentials allow (Phases A and B in parallel per readiness plan).
 

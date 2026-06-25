@@ -39,6 +39,22 @@ See **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8.
 
 ---
 
+## Rule #2b: Title Case on headings and labels (always)
+
+User-facing **headings** (h1–h6), **table headers** (th), **buttons**, **labels**, **nav links**, and **section titles** use **Title Case** (MediForge style), not sentence case.
+
+| Do | Don't |
+|----|-------|
+| Include `js/ui-title-case.js` on every diligence/shareable HTML page | Ship diligence pages without the title-case script (they were missing on term sheet, project plan, etc.) |
+| Run `npm run check:diligence-title-case` before finish | Rely on handover text alone: agents forget without automation |
+| Write new headings in Title Case in source when you add them | Use CSS `text-transform: uppercase` on headings or form labels |
+
+**Enforcement:** `npm run check:diligence-title-case` (in full `npm run check`). Cursor rule: `.cursor/rules/title-case-ui.mdc`.
+
+**Why agents kept forgetting:** Handover instructions existed but diligence pages did not load `ui-title-case.js`, and there was no automated check. Both are fixed now.
+
+---
+
 ## Rule #3: 100% parity (non-negotiable — owner requirement)
 
 The owner requires **100% parity**, not "good enough" or "the sync guard passed."
@@ -84,6 +100,7 @@ Code, config, docs, and **live websites** ship together. **Every session that ch
 | `/project-plan` | `docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md` |
 | `/revenue-projection` | `docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md` |
 | `/financial-model` | static defaults in companions + link to interactive page (browser localStorage is not in git) |
+| `/capital-deployment-detail` | dynamic (financial model); summary on term sheet + project plan; line items from `js/financial-model.js` |
 | `/capabilities` | `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` |
 | `/evidence-binder` | Phase completion docs in `docs/PHASE-*-COMPLETION.md` |
 | `/ontario-self-assessment` | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` (adapter rows) |
@@ -375,6 +392,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### June 2026: Capital deployment detail page + Title Case enforcement
+
+- **Owner ask:** Term sheet capital schedule too dense; want detail on separate page with tabular totals. Title Case on headers not sticking despite handover.
+- **Added:** `/capital-deployment-detail` (itemized outflows by tranche with subtotals); term sheet summary table simplified with link to detail page.
+- **Title Case:** Rule #2b in handover; `.cursor/rules/title-case-ui.mdc`; `ui-title-case.js` on all diligence pages; `npm run check:diligence-title-case` blocks missing script.
+- **Deployed:** pending this commit (dev → staging → production).
 
 ### June 2026: Rule #3 codified — 100% parity (owner requirement)
 

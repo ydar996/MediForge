@@ -33,6 +33,43 @@
     });
   }
 
+  function buildOutflowDetailRows(p, fmt) {
+    return p.seedUse.trancheBlocks.flatMap((block) => {
+      const header = {
+        cells: [
+          { html: '<strong>T' + block.tranche + '</strong>' },
+          { html: '<strong>' + block.period + '</strong> · ' + block.milestone },
+          { html: '<strong>' + fmt(block.trancheAmount) + '</strong>', className: 'num' }
+        ]
+      };
+      const lines = block.items.map((item) => ({
+        cells: [
+          { text: '' },
+          { text: item.label },
+          { text: fmt(item.amount), className: 'num' }
+        ]
+      }));
+      const total = {
+        className: 'highlight',
+        cells: [
+          { text: '' },
+          { html: '<strong>Tranche ' + block.tranche + ' total outflows</strong>' },
+          { html: '<strong>' + fmt(block.totalOutflows) + '</strong>', className: 'num' }
+        ]
+      };
+      return [header, ...lines, total];
+    });
+  }
+
+  function shortPrimaryUses(block) {
+    const labels = block.items
+      .filter((it) => it.key !== 'remainder')
+      .slice(0, 3)
+      .map((it) => it.label.split(' (')[0].split(' ($')[0]);
+    const suffix = block.items.filter((it) => it.key !== 'remainder').length > 3 ? '; …' : '';
+    return labels.join('; ') + suffix;
+  }
+
   function showCustomBanner() {
     const m = FM();
     if (!m || !m.hasCustomOverrides()) return;
@@ -153,38 +190,32 @@
             { html: block.milestone },
             { text: t.index + ' (' + Math.round(t.pct * 100) + '%)' },
             { html: '<strong>' + fmt(t.amountLow, true) + '–' + fmt(t.amountHigh, true) + '</strong><br><small>Mid: ' + fmt(t.amount) + '</small>' },
-            { html: block.items.filter((it) => it.key !== 'remainder').map((it) => it.label).slice(0, 3).join('; ') + '…' }
+            { html: shortPrimaryUses(block) + ' · <a href="/capital-deployment-detail">Detail</a>' }
           ]
         };
       }),
       { cells: [{ html: 'Ongoing' }, { html: 'Phase D: scale' }, { text: 'Revenue / future round' }, { text: 'TBD' }, { html: 'Expansion and maintenance' }] }
     ]);
 
-    fillTbody(document.getElementById('fm-outflow-detail-tbody'), p.seedUse.trancheBlocks.flatMap((block) => {
-      const header = {
-        cells: [
-          { html: '<strong>T' + block.tranche + '</strong>' },
-          { html: block.period, colSpan: 3 },
-          { html: '<strong>' + fmt(block.trancheAmount) + '</strong>', className: 'num' }
-        ]
-      };
-      const lines = block.items.map((item) => ({
-        cells: [
-          { text: '' },
-          { html: item.label, colSpan: 3 },
-          { text: fmt(item.amount), className: 'num' }
-        ]
-      }));
-      const total = {
-        className: 'highlight',
-        cells: [
-          { text: '' },
-          { html: '<strong>Tranche ' + block.tranche + ' total outflows</strong>', colSpan: 3 },
-          { html: '<strong>' + fmt(block.totalOutflows) + '</strong>', className: 'num' }
-        ]
-      };
-      return [header, ...lines, total];
-    }));
+    fillTbody(document.getElementById('fm-outflow-detail-tbody'), buildOutflowDetailRows(p, fmt));
+  }
+
+  function renderCapitalDeploymentPage() {
+    const m = FM();
+    if (!m) return;
+    const p = m.computeProjection();
+    const fmt = m.formatCad;
+
+    const seedStat = document.querySelector('[data-fm-stat="seed"]');
+    if (seedStat) seedStat.textContent = fmt(p.assumptions.seedLow, true) + '–' + fmt(p.assumptions.seedHigh, true);
+
+    const grandStat = document.getElementById('fm-grand-stat');
+    if (grandStat) grandStat.textContent = fmt(p.seedUse.grandTotal);
+
+    fillTbody(document.getElementById('fm-outflow-detail-tbody'), buildOutflowDetailRows(p, fmt));
+
+    const grand = document.getElementById('fm-outflow-grand');
+    if (grand) grand.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong>';
   }
 
   function renderDevFeeSection(opts) {
@@ -222,7 +253,6 @@
 
     fillTbody(document.getElementById('fm-tranche-tbody'), p.seedUse.trancheBlocks.map((block, i) => {
       const t = p.tranches[i];
-      const uses = block.items.map((it) => it.label + ' (' + fmt(it.amount) + ')').join('; ');
       return {
         cells: [
           { text: String(block.tranche) },
@@ -230,32 +260,10 @@
           { text: Math.round(t.pct * 100) + '%' },
           { html: fmt(t.amountLow, true) + '–' + fmt(t.amountHigh, true) + '<br><small>Mid: ' + fmt(t.amount) + '</small>' },
           { text: block.milestone },
-          { html: uses }
+          { html: shortPrimaryUses(block) }
         ]
       };
     }));
-
-    fillTbody(document.getElementById('fm-outflow-tbody'), p.seedUse.trancheBlocks.flatMap((block) => {
-      const rows = block.items.map((item) => ({
-        cells: [
-          { text: 'T' + block.tranche },
-          { text: item.label },
-          { text: fmt(item.amount), className: 'num' }
-        ]
-      }));
-      rows.push({
-        className: 'highlight',
-        cells: [
-          { text: 'T' + block.tranche },
-          { html: '<strong>Total outflows</strong>' },
-          { html: '<strong>' + fmt(block.totalOutflows) + '</strong>', className: 'num' }
-        ]
-      });
-      return rows;
-    }));
-
-    const grand = document.getElementById('fm-outflow-grand');
-    if (grand) grand.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong>';
 
     const seedSummary = document.getElementById('fm-seed-composition');
     if (seedSummary) {
@@ -273,6 +281,7 @@
     if (page === 'revenue') renderRevenuePage();
     if (page === 'project-plan') renderProjectPlanPage();
     if (page === 'term-sheet') renderTermSheetPage();
+    if (page === 'capital-deployment') renderCapitalDeploymentPage();
     if (page === 'valuation') {
       renderDevFeeSection({
         termSheetLink: true,

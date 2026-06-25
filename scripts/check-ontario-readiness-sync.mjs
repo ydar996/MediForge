@@ -96,6 +96,11 @@ const MUST_LINK_PROJECT_PLAN = MUST_LINK_VALUATION;
 
 const MUST_LINK_REVENUE = MUST_LINK_VALUATION;
 
+const MUST_LINK_CAPITAL_DETAIL = [
+  'term-sheet.html',
+  'docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md'
+];
+
 const MUST_LINK_FINANCIAL_MODEL = [
   'ontario-readiness.html',
   'strategic-partner-letter.html',
@@ -241,6 +246,14 @@ for (const rel of MUST_LINK_FINANCIAL_MODEL) {
   if (!text) continue;
   if (!text.includes('financial-model')) {
     errors.push(`${rel}: missing link to /financial-model`);
+  }
+}
+
+for (const rel of MUST_LINK_CAPITAL_DETAIL) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('capital-deployment-detail')) {
+    errors.push(`${rel}: missing link to /capital-deployment-detail`);
   }
 }
 
