@@ -4,7 +4,7 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 
 **Last updated:** June 2026
 
-**Agent rule (mandatory):** Every session that changes the product must update related docs, record a session log in **`AGENT-HANDOVER.md`**, and after production promote verify live URLs match git. Full companion set and checklist: **`AGENT-HANDOVER.md`** Rule #3 and **`docs/MEDIFORGE-PRODUCT-RULES.md`** §9.
+**Agent rule (mandatory):** Every session that changes the product must update related docs, record a session log in **`AGENT-HANDOVER.md`**, and after production promote verify live URLs match git. **100% parity** (HTML ↔ markdown companions): **`AGENT-HANDOVER.md`** Rule #3. Full companion set and checklist: Rule #4 and **`docs/MEDIFORGE-PRODUCT-RULES.md`** §9.
 
 ---
 

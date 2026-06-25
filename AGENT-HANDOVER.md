@@ -33,15 +33,36 @@ The owner does **not** want em dashes (—) in the app, docs, or agent replies. 
 
 **Scope:** All user-visible HTML, patient/staff UI strings in JS, owner-facing docs, marketing pages, and handover text.
 
-**Enforcement:** `npm run check` includes `check:no-em-dash` and **`check:ontario-readiness`** (companion score/phase sync). Cursor rule: `.cursor/rules/ontario-readiness-sync.mdc`.
+**Enforcement:** `npm run check` includes `check:no-em-dash` and **`check:ontario-readiness`** (companion score/phase sync). Cursor rules: `.cursor/rules/diligence-100-percent-parity.mdc` and `.cursor/rules/ontario-readiness-sync.mdc`.
 
 See **`docs/MEDIFORGE-PRODUCT-RULES.md`** §8.
 
 ---
 
-## Rule #3: Keep all project documentation in sync (always)
+## Rule #3: 100% parity (non-negotiable — owner requirement)
 
-Code, config, docs, and **live websites** ship together. **Every session that changes the product must update related documentation and verify deploys before you finish**: not only when the owner asks. The owner should never have to say "sync the docs" or "production is stale."
+The owner requires **100% parity**, not "good enough" or "the sync guard passed."
+
+**100% parity means:** every HTML diligence page and its written markdown companion carry the **same facts, figures, links, and prose structure** (paragraph breaks, section order, bullet lists, dollar amounts, dev-fee splits, cross-links). If you change presentation on the live page (mobile splits, new nav link, new financial model), you **must** update the companion **in the same session** before you finish.
+
+| Do | Don't |
+|----|-------|
+| Edit `strategic-partner-letter.html` **and** `STRATEGIC-PARTNER-LETTER-2026-06.md` together | Update HTML only and leave markdown dense or missing links |
+| Match paragraph splits between `/ontario-readiness` and `ONTARIO-EMR-READINESS-REPORT.md` | Treat "scores match" as done when prose layout differs |
+| Add `/financial-model` everywhere other diligence pages link project plan / revenue / term sheet | Require the owner to ask again for parity |
+| Run `npm run check:ontario-readiness` **and** spot-check companion pairs side by side | Stop when automated checks pass but companions still diverge |
+
+**Automated guard (`npm run check:ontario-readiness`)** catches scores, seed terms, stale bands, and required cross-links. It does **not** catch every prose or layout difference. **Your job is 100% parity; the script is a floor, not the ceiling.**
+
+**Archive-only (not parity targets):** `docs/strategic-partner/originals/*.docx` Word exports. Do not treat stale Word files as live truth; HTML + markdown companions are canonical.
+
+Cursor rules: `.cursor/rules/diligence-100-percent-parity.mdc` (always on) and `.cursor/rules/ontario-readiness-sync.mdc`.
+
+---
+
+## Rule #4: Keep all project documentation in sync (always)
+
+Code, config, docs, and **live websites** ship together. **Every session that changes the product must update related documentation and verify deploys before you finish**: not only when the owner asks. The owner should never have to say "sync the docs" or "production is stale." **Rule #3 (100% parity) applies to every companion pair below.**
 
 | Do | Don't |
 |----|-------|
@@ -60,6 +81,9 @@ Code, config, docs, and **live websites** ship together. **Every session that ch
 | `/strategic-partner-letter` | `docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md` |
 | `/valuation-equity-structure` | `docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md` |
 | `/term-sheet` | `docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md` |
+| `/project-plan` | `docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md` |
+| `/revenue-projection` | `docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md` |
+| `/financial-model` | static defaults in companions + link to interactive page (browser localStorage is not in git) |
 | `/capabilities` | `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` |
 | `/evidence-binder` | Phase completion docs in `docs/PHASE-*-COMPLETION.md` |
 | `/ontario-self-assessment` | `docs/ONTARIO-EMR-SPEC-TRACEABILITY.md` (adapter rows) |
@@ -85,7 +109,7 @@ Full checklist: **§ How to keep this document alive** below. See also **`docs/M
 
 ## How to keep this document alive
 
-Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing**: not only when the owner asks. This is **Rule #3** above; the checklist below expands it.
+Documentation is part of the deliverable. **Every agent that makes meaningful changes in a session must update project docs before finishing**: not only when the owner asks. This expands **Rule #3 (100% parity)** and **Rule #4 (sync checklist)** above.
 
 ### Always update (every session with code or config changes)
 
@@ -114,7 +138,7 @@ Documentation is part of the deliverable. **Every agent that makes meaningful ch
 
 - Do **not** paste secrets (passwords, service role keys, Netlify tokens) into any doc.
 - Do **not** finish a session with shipped code and stale handover/docs: the next agent and the owner depend on them.
-- When you change a **shareable webpage**, update its **written companion doc** in the same session (see Rule #3 companion pairs).
+- When you change a **shareable webpage**, update its **written companion doc** in the same session (see Rule #3 companion pairs and Rule #4 checklist).
 - If you only answered a question with **no** code or config changes, doc updates are optional.
 
 ---
@@ -351,6 +375,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### June 2026: Rule #3 codified — 100% parity (owner requirement)
+
+- **Owner ask:** Stop partial sync; require **100% parity** between HTML diligence pages and markdown companions (facts, structure, links). Record in handover and agent self-instruction.
+- **Added:** **`AGENT-HANDOVER.md` Rule #3** (100% parity, non-negotiable); former sync checklist is **Rule #4**; **`.cursor/rules/diligence-100-percent-parity.mdc`** (alwaysApply).
+- **Updated:** `.cursor/rules/ontario-readiness-sync.mdc`; sync guard now requires `/financial-model` on all diligence HTML + financial markdown companions.
+- **Parity fixes:** Partner letter HTML/md aligned (paragraph structure, phase list, financial-model links); readiness report executive summary split to match HTML; financial-model links on readiness, evidence binder, valuation, capabilities footer; `DOCUMENTATION-INDEX.md` references Rule #3 100% parity.
 
 ### June 11, 2026: Initial MediForge fork
 

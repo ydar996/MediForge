@@ -11,9 +11,17 @@ This document is the written companion to the Strategic Partner readiness webpag
 
 ## Executive Summary
 
-MediForge is a Canada-first clinic platform with **strong clinical functionality today** (~75–85%) and a **clear path** toward Ontario provincial connectivity and OntarioMD certification. Overall Ontario readiness is estimated at **72–82%** after Phases 0–8 (June 2026). Live provincial pipes remain at **5–15%** because they require partner credentials every certified vendor must obtain.
+MediForge has invested heavily in a production-grade clinical EMR: patient charts, orders, prescribing, billing, and patient portal.
 
-**The opportunity:** Clinical workflows are largely complete and deployed. Provincial integrations (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR) need credentials and agreements; our architecture is prepared. **Phases 0–8 (June 2026)** delivered internal evidence, core standards, MCEDT claims software, OLIS-ready lab desk, PrescribeIT-ready eRx desk, DIR-ready imaging desk, HRM inbox, and DHDR query hooks.
+We are building interoperability foundations ahead of provincial partner onboarding while those daily workflows stay in use.
+
+**The opportunity:** Clinical workflows are largely complete and in use.
+
+Provincial integrations (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR) require credentials and agreements that are standard for any Ontario EMR vendor. Our architecture is prepared; live pipes are the remaining gap.
+
+**Phases 0–8 (June 2026)** delivered internal evidence, core standards, MCEDT claims software (with XML structure validation), OLIS-ready lab desk, PrescribeIT-ready eRx desk, DIR-ready imaging desk, HRM inbox with chart filing, DHDR query hooks, and per-org provincial hub config on the gateway. Documented readiness is now ~**72–82%**.
+
+Live MOH/Infoway upload still needs partner credentials.
 
 | Metric | Estimate |
 |--------|----------|
@@ -186,7 +194,7 @@ Internal readiness sprint delivered without provincial credentials:
 
 ## Path to Certification
 
-Forward-looking plan from today (Phases 0–8 software complete, **72–82%** documented readiness) to OntarioMD certification, live provincial pipes, pilot clinics, and commercial readiness. **Keep in sync with `#certification-path` on `/ontario-readiness`.** Consolidated Gantt-style costs and capital flow: **`/project-plan`**.
+Forward-looking plan from today (Phases 0–8 software complete, **72–82%** documented readiness) to OntarioMD certification, live provincial pipes, pilot clinics, and commercial readiness. **Keep in sync with `#certification-path` on `/ontario-readiness`.** Consolidated Gantt-style costs and capital flow: **`/project-plan`**. Revenue and net income: **`/revenue-projection`**. Source inputs: **`/financial-model`**.
 
 | Metric | Value |
 |--------|-------|
@@ -301,8 +309,8 @@ Additional provincial certifications, advanced features, ongoing compliance and 
 | **`/valuation-equity-structure`** | Seed valuation and equity structure (Strategic Partner diligence) |
 | **`/project-plan`** | Gantt-style costs, timelines, seed tranche alignment |
 | **`/revenue-projection`** | 5-year revenue and net income model (pricing, clinic growth, costs) |
+| **`/financial-model`** | Interactive source inputs (localStorage); drives revenue, project plan, term sheet in-browser |
 | **`/term-sheet`** | Seed preferred share term sheet (discussion draft) |
-| **`/project-plan`** | Phased costs, timelines, Gantt-style capital deployment (sync with term sheet tranches) |
 | **`/ontario-readiness`** | Strategic Partner shareable webpage (keep in sync with this doc); includes `#certification-path` |
 | **`/evidence-binder`** | Diligence index including valuation, roadmap, and phase completion records |
 | **`/capabilities`** | Full product capabilities showcase |

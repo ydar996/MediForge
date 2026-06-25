@@ -97,10 +97,17 @@ const MUST_LINK_PROJECT_PLAN = MUST_LINK_VALUATION;
 const MUST_LINK_REVENUE = MUST_LINK_VALUATION;
 
 const MUST_LINK_FINANCIAL_MODEL = [
+  'ontario-readiness.html',
+  'strategic-partner-letter.html',
+  'valuation-equity-structure.html',
+  'evidence-binder.html',
   'term-sheet.html',
   'project-plan.html',
   'revenue-projection.html',
   'capabilities.html',
+  'docs/ONTARIO-EMR-READINESS-REPORT.md',
+  'docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md',
+  'docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md',
   'docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md',
   'docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md',
   'docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md'
@@ -261,7 +268,7 @@ for (const rel of FINANCIAL_TERM_FILES) {
 if (errors.length) {
   console.error('check-ontario-readiness-sync: FAILED\n');
   errors.forEach((e) => console.error(`  - ${e}`));
-  console.error('\nFix companions per Rule #3 (AGENT-HANDOVER.md) and .cursor/rules/ontario-readiness-sync.mdc');
+  console.error('\nFix companions per Rule #3 (100% parity) and Rule #4 (AGENT-HANDOVER.md) and .cursor/rules/diligence-100-percent-parity.mdc');
   process.exit(1);
 }
 
