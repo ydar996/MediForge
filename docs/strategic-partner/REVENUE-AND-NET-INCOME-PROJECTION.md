@@ -5,7 +5,7 @@
 **Shareable web version:** https://mediforge.netlify.app/revenue-projection  
 **Written companion to:** **`revenue-projection.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
 
-**Related:** [Project Plan](STRATEGIC-PARTNER-PROJECT-PLAN.md) · [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Valuation](VALUATION-AND-EQUITY-STRUCTURE.md) · [Ontario Readiness](https://mediforge.netlify.app/ontario-readiness)
+**Related:** [Financial Model](https://mediforge.netlify.app/financial-model) (interactive inputs) · [Project Plan](STRATEGIC-PARTNER-PROJECT-PLAN.md) · [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Valuation](VALUATION-AND-EQUITY-STRUCTURE.md) · [Ontario Readiness](https://mediforge.netlify.app/ontario-readiness)
 
 ---
 

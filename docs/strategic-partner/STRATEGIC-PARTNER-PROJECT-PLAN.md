@@ -5,7 +5,7 @@
 **Shareable web version:** https://mediforge.netlify.app/project-plan  
 **Written companion to:** **`project-plan.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
 
-**Related diligence:** [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Valuation & Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md) · [Revenue Projection](REVENUE-AND-NET-INCOME-PROJECTION.md) · [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) · [Canada Certification Roadmap](../ROADMAP-CANADA-CERTIFICATION.md)
+**Related diligence:** [Financial Model](https://mediforge.netlify.app/financial-model) (interactive inputs) · [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Valuation & Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md) · [Revenue Projection](REVENUE-AND-NET-INCOME-PROJECTION.md) · [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) · [Canada Certification Roadmap](../ROADMAP-CANADA-CERTIFICATION.md)
 
 ---
 

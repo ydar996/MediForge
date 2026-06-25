@@ -96,6 +96,16 @@ const MUST_LINK_PROJECT_PLAN = MUST_LINK_VALUATION;
 
 const MUST_LINK_REVENUE = MUST_LINK_VALUATION;
 
+const MUST_LINK_FINANCIAL_MODEL = [
+  'term-sheet.html',
+  'project-plan.html',
+  'revenue-projection.html',
+  'capabilities.html',
+  'docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md',
+  'docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md',
+  'docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md'
+];
+
 const MUST_HAVE_CERT_PATH = [
   'ontario-readiness.html',
   'docs/ONTARIO-EMR-READINESS-REPORT.md',
@@ -216,6 +226,14 @@ for (const rel of MUST_LINK_REVENUE) {
   if (!text) continue;
   if (!text.includes('revenue-projection')) {
     errors.push(`${rel}: missing link to /revenue-projection`);
+  }
+}
+
+for (const rel of MUST_LINK_FINANCIAL_MODEL) {
+  const text = read(rel);
+  if (!text) continue;
+  if (!text.includes('financial-model')) {
+    errors.push(`${rel}: missing link to /financial-model`);
   }
 }
 

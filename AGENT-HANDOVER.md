@@ -562,6 +562,12 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Owner ask:** Express timelines for money flow; investment is not a single CAD $300k disbursement.
 - **Added:** Milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months on term sheet, aligned with certification path Phases A–C; synced to valuation summary.
 
+### June 2026: Interactive financial model (source inputs)
+
+- **Owner ask:** Clarify $300k–$600k composition; tweak clinics/providers/pricing; capital outflows with totals; reports auto-adjust.
+- **Added:** `/financial-model` + `js/financial-model.js` (localStorage); dynamic Revenue, Project Plan, Term Sheet via `financial-model-reports.js`.
+- **Note:** Custom assumptions are browser-local; markdown companions remain static defaults with link to interactive page.
+
 ### June 2026: Development fee range update ($80k–$120k)
 
 - **Owner ask:** Lower development fee floor to **CAD $80,000–$120,000** (from $100k–$120k).

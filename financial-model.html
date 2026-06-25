@@ -1,0 +1,338 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="MediForge interactive financial model: seed outlay breakdown, clinic growth, revenue and cost assumptions. Work Chop Inc., June 2026.">
+  <meta name="theme-color" content="#008753">
+  <link rel="icon" type="image/svg+xml" href="/favicon.svg">
+  <title>Financial Model | MediForge Strategic Partner</title>
+  <style>
+    :root { --primary-green: #008753; --dark-green: #006b42; --gold: #FFD700; --charcoal: #36454F; --ivory: #FFFFF0; --muted: #636e72; --red: #c0392b; --blue: #1565C0; }
+    * { box-sizing: border-box; }
+    body { margin: 0; font-family: 'Segoe UI', Tahoma, sans-serif; background: linear-gradient(135deg, var(--ivory), #f5f5dc); color: var(--charcoal); line-height: 1.6; }
+    .nav { position: fixed; top: 0; left: 0; right: 0; z-index: 10; background: linear-gradient(135deg, var(--primary-green), var(--dark-green)); color: #fff; padding: 12px 24px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 8px; }
+    .nav a { color: #fff; text-decoration: none; font-weight: 600; padding: 6px 10px; border-radius: 6px; font-size: .9rem; }
+    .nav a:hover { background: rgba(255,255,255,.15); }
+    .hero { margin-top: 56px; background: linear-gradient(135deg, var(--primary-green), #1a3a5c); color: #fff; text-align: center; padding: 44px 24px 36px; }
+    .hero h1 { margin: 0 0 8px; font-size: clamp(1.5rem, 4vw, 2.1rem); }
+    .hero p { margin: 0; opacity: .9; font-size: .95rem; }
+    .wrap { max-width: 1040px; margin: 0 auto; padding: 32px 24px 56px; }
+    .paper { background: #fff; border-radius: 14px; padding: 32px 36px; box-shadow: 0 8px 32px rgba(0,0,0,.08); margin-bottom: 24px; }
+    .paper h2 { color: var(--dark-green); font-size: 1.2rem; margin: 0 0 12px; padding-bottom: 8px; border-bottom: 2px solid rgba(0,135,83,.2); }
+    .paper h3 { color: var(--dark-green); font-size: 1rem; margin: 20px 0 10px; }
+    .note { background: #f4f9f6; border-left: 4px solid var(--gold); padding: 14px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: .92rem; }
+    .note.warn { border-left-color: var(--red); background: #fff8f8; }
+    .note.info { border-left-color: var(--blue); background: #f0f6ff; }
+    table { width: 100%; border-collapse: collapse; margin: 12px 0; font-size: .88rem; }
+    th, td { padding: 8px 10px; text-align: left; border-bottom: 1px solid #eee; vertical-align: middle; }
+    th { background: var(--primary-green); color: #fff; font-weight: 700; }
+    td.num, th.num { text-align: right; font-variant-numeric: tabular-nums; }
+    tr.highlight td { background: rgba(255,215,0,.12); font-weight: 700; }
+    tr.subhead td { background: #f4f9f6; font-weight: 700; }
+    input[type="number"], input[type="text"] { width: 100%; max-width: 120px; padding: 6px 8px; border: 1px solid #ccc; border-radius: 6px; font: inherit; }
+    input.wide { max-width: 160px; }
+    label { font-size: .85rem; font-weight: 600; display: block; margin-bottom: 4px; }
+    .field-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 16px; margin: 16px 0; }
+    .field { background: #fafafa; border-radius: 8px; padding: 12px; border: 1px solid #eee; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin: 20px 0; }
+    .btn { padding: 11px 18px; border-radius: 8px; font-weight: 700; border: none; cursor: pointer; font-family: inherit; font-size: .92rem; text-decoration: none; display: inline-block; }
+    .btn-primary { background: var(--gold); color: var(--charcoal); }
+    .btn-secondary { background: var(--primary-green); color: #fff; }
+    .btn-outline { background: #fff; color: var(--dark-green); border: 2px solid var(--primary-green); }
+    .preview-stat { display: grid; grid-template-columns: repeat(auto-fit, minmax(140px, 1fr)); gap: 12px; margin: 16px 0; }
+    .preview-stat div { background: #f4f9f6; border-radius: 8px; padding: 12px; text-align: center; border: 1px solid #cce8d8; }
+    .preview-stat b { display: block; color: var(--primary-green); font-size: 1.1rem; }
+    .preview-stat span { font-size: .72rem; color: var(--muted); }
+    .status-pill { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: .75rem; font-weight: 700; }
+    .status-default { background: #e8f5ee; color: var(--dark-green); }
+    .status-custom { background: #fff3cd; color: #8a4b00; }
+    a { color: var(--blue); }
+    .footer { text-align: center; padding: 20px; font-size: .85rem; color: #666; }
+    @media (max-width: 640px) { .paper { padding: 22px 18px; } }
+  </style>
+</head>
+<body>
+  <nav class="nav">
+    <strong>Financial Model (source inputs)</strong>
+    <div>
+      <a href="/revenue-projection">Revenue</a>
+      <a href="/project-plan">Project Plan</a>
+      <a href="/term-sheet">Term Sheet</a>
+      <a href="/valuation-equity-structure">Valuation</a>
+    </div>
+  </nav>
+
+  <header class="hero">
+    <h1>Interactive Financial Model</h1>
+    <p>Adjust clinics, providers, pricing, costs, and seed outlays. Saved changes flow to Revenue, Project Plan, and Term Sheet in this browser.</p>
+    <p style="margin-top:10px"><span id="model-status" class="status-pill status-default">Default assumptions</span></p>
+  </header>
+
+  <main class="wrap">
+    <section class="paper">
+      <h2>What does the $300k–$600k seed outlay comprise?</h2>
+      <p>The Strategic Partner commitment is <strong>not</strong> a lump-sum software build. Phases 0–8 platform software is already delivered. Seed capital funds <strong>certification, live provincial pipes, pilots, and go-to-market</strong> over ~18 months in four milestone-linked tranches (25% / 25% / 30% / 20%).</p>
+      <div class="note info">
+        <strong>At the $450k midpoint</strong>, illustrative outflows include: legal closing (~$20k), founder dev fee at closing (~40% of dev fee), OntarioMD and audit fees (~$70k+), provincial credential onboarding (~$135k tranche), pilot and commercial launch (~$90k tranche), plus working-capital contingencies per tranche. Adjust the <strong>seed commitment slider</strong> below to rescale all line items proportionally.
+      </div>
+      <div id="seed-composition-preview" class="preview-stat"></div>
+    </section>
+
+    <section class="paper">
+      <h2>Seed &amp; capital assumptions</h2>
+      <div class="field-grid">
+        <div class="field">
+          <label for="seed-commitment">Seed commitment midpoint (CAD)</label>
+          <input type="number" id="seed-commitment" class="wide" min="300000" max="600000" step="10000">
+          <small style="color:var(--muted)">Range fixed at $300k–$600k per term sheet; line items scale from this midpoint.</small>
+        </div>
+        <div class="field">
+          <label for="dev-fee">Founder development fee (CAD)</label>
+          <input type="number" id="dev-fee" class="wide" min="80000" max="120000" step="5000">
+        </div>
+        <div class="field">
+          <label for="providers-per-clinic">Providers per clinic</label>
+          <input type="number" id="providers-per-clinic" min="1" max="50" step="1">
+        </div>
+        <div class="field">
+          <label for="monthly-rate">Standard monthly rate / provider (CAD)</label>
+          <input type="number" id="monthly-rate" min="120" max="300" step="10">
+        </div>
+        <div class="field">
+          <label for="setup-fee">Setup fee revenue / new clinic (CAD)</label>
+          <input type="number" id="setup-fee" min="2000" max="15000" step="500">
+        </div>
+        <div class="field">
+          <label for="onboarding-cost">Onboarding cost / new clinic (CAD)</label>
+          <input type="number" id="onboarding-cost" min="500" max="5000" step="100">
+        </div>
+      </div>
+    </section>
+
+    <section class="paper">
+      <h2>Clinic &amp; revenue growth (per commercial year)</h2>
+      <p>Edit clinic count and operating assumptions for each of five commercial years. Providers = clinics × providers per clinic.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th class="num">Clinics</th>
+            <th class="num">$/provider/mo</th>
+            <th class="num">OpEx (CAD)</th>
+            <th class="num">One-time cert/seed</th>
+            <th class="num">Providers</th>
+            <th class="num">Revenue (preview)</th>
+          </tr>
+        </thead>
+        <tbody id="years-input-tbody"></tbody>
+      </table>
+    </section>
+
+    <section class="paper">
+      <h2>Capital deployment: expected outflows by tranche</h2>
+      <p>Each tranche lists illustrative uses. Amounts scale with seed commitment. The <strong>Total outflows</strong> row must equal the tranche deployment.</p>
+      <table>
+        <thead>
+          <tr>
+            <th>Tranche</th>
+            <th>Period</th>
+            <th>Outflow item</th>
+            <th class="num">Amount (CAD)</th>
+          </tr>
+        </thead>
+        <tbody id="outflow-preview-tbody"></tbody>
+        <tfoot>
+          <tr class="highlight">
+            <td colspan="3"><strong>Grand total (all tranches)</strong></td>
+            <td class="num" id="outflow-grand-total"><strong>-</strong></td>
+          </tr>
+        </tfoot>
+      </table>
+    </section>
+
+    <section class="paper">
+      <h2>Live preview: 5-year operating P&amp;L</h2>
+      <div id="pnl-preview" class="preview-stat"></div>
+      <table>
+        <thead>
+          <tr>
+            <th>Year</th>
+            <th class="num">Revenue</th>
+            <th class="num">Operating costs</th>
+            <th class="num">Operating net</th>
+            <th class="num">All-in net</th>
+          </tr>
+        </thead>
+        <tbody id="pnl-preview-tbody"></tbody>
+      </table>
+    </section>
+
+    <div class="actions">
+      <button type="button" class="btn btn-primary" id="save-model-btn">Save &amp; apply to reports</button>
+      <button type="button" class="btn btn-secondary" id="preview-model-btn">Preview (no save)</button>
+      <button type="button" class="btn btn-outline" id="reset-model-btn">Reset to defaults</button>
+      <a class="btn btn-secondary" href="/revenue-projection">Open Revenue Report</a>
+      <a class="btn btn-secondary" href="/term-sheet">Open Term Sheet</a>
+    </div>
+
+    <div class="note warn">
+      <strong>Browser-local only:</strong> Assumptions are stored in this browser's localStorage. They do not change the public default site for other visitors. Markdown companions remain static reference copies; live report pages read your saved model when you open them in the same browser.
+    </div>
+  </main>
+
+  <footer class="footer">MediForge Financial Model · June 2026 · Source inputs for Strategic Partner diligence</footer>
+
+  <script src="/js/financial-model.js"></script>
+  <script>
+    (function () {
+      const FM = window.MediForgeFinancialModel;
+      const fmt = FM.formatCad;
+
+      const els = {
+        seed: document.getElementById('seed-commitment'),
+        devFee: document.getElementById('dev-fee'),
+        ppc: document.getElementById('providers-per-clinic'),
+        monthlyRate: document.getElementById('monthly-rate'),
+        setupFee: document.getElementById('setup-fee'),
+        onboarding: document.getElementById('onboarding-cost'),
+        yearsBody: document.getElementById('years-input-tbody'),
+        outflowBody: document.getElementById('outflow-preview-tbody'),
+        grandTotal: document.getElementById('outflow-grand-total'),
+        pnlBody: document.getElementById('pnl-preview-tbody'),
+        pnlStats: document.getElementById('pnl-preview'),
+        seedComp: document.getElementById('seed-composition-preview'),
+        status: document.getElementById('model-status')
+      };
+
+      function readFormAssumptions() {
+        const years = [];
+        els.yearsBody.querySelectorAll('tr[data-year]').forEach((tr) => {
+          years.push({
+            clinics: parseInt(tr.querySelector('.y-clinics').value, 10) || 0,
+            monthlyRate: parseFloat(tr.querySelector('.y-rate').value) || 200,
+            opex: parseInt(tr.querySelector('.y-opex').value, 10) || 0,
+            oneTimeCert: parseInt(tr.querySelector('.y-onetime').value, 10) || 0
+          });
+        });
+        return {
+          seedCommitment: parseInt(els.seed.value, 10) || FM.DEFAULTS.seedCommitment,
+          devFee: parseInt(els.devFee.value, 10) || FM.DEFAULTS.devFee,
+          providersPerClinic: parseInt(els.ppc.value, 10) || FM.DEFAULTS.providersPerClinic,
+          monthlySubRate: parseInt(els.monthlyRate.value, 10) || FM.DEFAULTS.monthlySubRate,
+          setupFeeRevenue: parseInt(els.setupFee.value, 10) || FM.DEFAULTS.setupFeeRevenue,
+          onboardingCostPerClinic: parseInt(els.onboarding.value, 10) || FM.DEFAULTS.onboardingCostPerClinic,
+          years
+        };
+      }
+
+      function buildYearRows(a) {
+        els.yearsBody.innerHTML = '';
+        a.years.forEach((y, i) => {
+          const tr = document.createElement('tr');
+          tr.setAttribute('data-year', String(i));
+          tr.innerHTML =
+            '<td>Year ' + (i + 1) + '</td>' +
+            '<td class="num"><input type="number" class="y-clinics" min="0" value="' + y.clinics + '"></td>' +
+            '<td class="num"><input type="number" class="y-rate" min="80" value="' + (y.monthlyRate != null ? y.monthlyRate : a.monthlySubRate) + '"></td>' +
+            '<td class="num"><input type="number" class="y-opex" min="0" step="1000" value="' + y.opex + '"></td>' +
+            '<td class="num"><input type="number" class="y-onetime" min="0" step="1000" value="' + (y.oneTimeCert || 0) + '"></td>' +
+            '<td class="num y-providers">-</td>' +
+            '<td class="num y-revenue">-</td>';
+          els.yearsBody.appendChild(tr);
+        });
+      }
+
+      function renderPreview(a) {
+        const p = FM.computeProjection(a);
+        els.yearsBody.querySelectorAll('tr[data-year]').forEach((tr, i) => {
+          const row = p.years[i];
+          tr.querySelector('.y-providers').textContent = row.providers;
+          tr.querySelector('.y-revenue').textContent = fmt(row.revenue);
+        });
+
+        els.outflowBody.innerHTML = '';
+        p.seedUse.trancheBlocks.forEach((block) => {
+          block.items.forEach((item) => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = '<td>T' + block.tranche + '</td><td>' + block.period + '</td><td>' + item.label + '</td><td class="num">' + fmt(item.amount) + '</td>';
+            els.outflowBody.appendChild(tr);
+          });
+          const tot = document.createElement('tr');
+          tot.className = 'highlight';
+          tot.innerHTML = '<td>T' + block.tranche + '</td><td>' + block.period + '</td><td><strong>Total outflows</strong></td><td class="num"><strong>' + fmt(block.totalOutflows) + '</strong></td>';
+          els.outflowBody.appendChild(tot);
+        });
+        els.grandTotal.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong>';
+
+        const topCats = Object.entries(p.seedUse.byCategory).sort((x, y) => y[1] - x[1]).slice(0, 4);
+        els.seedComp.innerHTML = topCats.map(([k, v]) => '<div><b>' + fmt(v, true) + '</b><span>' + k.replace(/ \(.*\)/, '') + '</span></div>').join('') +
+          '<div><b>' + fmt(p.seedUse.grandTotal, true) + '</b><span>Total seed deployment</span></div>';
+
+        els.pnlStats.innerHTML =
+          '<div><b>' + p.summary.clinicGrowth + '</b><span>Clinic growth</span></div>' +
+          '<div><b>' + fmt(p.summary.year5Revenue, true) + '</b><span>Year 5 revenue</span></div>' +
+          '<div><b>Year ' + (p.summary.operatingPositiveYear || 'n/a') + '</b><span>Operating net positive</span></div>';
+
+        els.pnlBody.innerHTML = '';
+        p.years.forEach((y) => {
+          const tr = document.createElement('tr');
+          if (y.operatingNet > 0) tr.style.color = 'var(--dark-green)';
+          tr.innerHTML =
+            '<td>' + y.year + '</td>' +
+            '<td class="num">' + fmt(y.revenue) + '</td>' +
+            '<td class="num">' + fmt(y.operatingCosts) + '</td>' +
+            '<td class="num">' + (y.operatingNet >= 0 ? '+' : '−') + fmt(Math.abs(y.operatingNet)).replace('$', '$') + '</td>' +
+            '<td class="num">' + (y.netIncome >= 0 ? '+' : '−') + fmt(Math.abs(y.netIncome)).replace('$', '$') + '</td>';
+          els.pnlBody.appendChild(tr);
+        });
+      }
+
+      function loadFormFromAssumptions(a) {
+        els.seed.value = a.seedCommitment;
+        els.devFee.value = a.devFee;
+        els.ppc.value = a.providersPerClinic;
+        els.monthlyRate.value = a.monthlySubRate;
+        els.setupFee.value = a.setupFeeRevenue;
+        els.onboarding.value = a.onboardingCostPerClinic;
+        buildYearRows(a);
+        renderPreview(a);
+        els.status.textContent = FM.hasCustomOverrides() ? 'Custom assumptions saved' : 'Default assumptions';
+        els.status.className = 'status-pill ' + (FM.hasCustomOverrides() ? 'status-custom' : 'status-default');
+      }
+
+      document.getElementById('save-model-btn').addEventListener('click', function () {
+        FM.saveOverrides(readFormAssumptions());
+        loadFormFromAssumptions(FM.getAssumptions());
+        alert('Saved. Open Revenue, Project Plan, or Term Sheet to see updated figures.');
+      });
+
+      document.getElementById('preview-model-btn').addEventListener('click', function () {
+        const merged = FM.mergeAssumptions(FM.getAssumptions(), readFormAssumptions());
+        renderPreview(merged);
+      });
+
+      document.getElementById('reset-model-btn').addEventListener('click', function () {
+        if (confirm('Reset all assumptions to defaults?')) {
+          FM.resetOverrides();
+          loadFormFromAssumptions(FM.getAssumptions());
+        }
+      });
+
+      [els.seed, els.devFee, els.ppc, els.monthlyRate, els.setupFee, els.onboarding].forEach((input) => {
+        input.addEventListener('input', function () {
+          const merged = FM.mergeAssumptions(FM.getAssumptions(), readFormAssumptions());
+          renderPreview(merged);
+        });
+      });
+
+      els.yearsBody.addEventListener('input', function () {
+        const merged = FM.mergeAssumptions(FM.getAssumptions(), readFormAssumptions());
+        renderPreview(merged);
+      });
+
+      loadFormFromAssumptions(FM.getAssumptions());
+    })();
+  </script>
+</body>
+</html>

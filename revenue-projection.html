@@ -38,6 +38,7 @@
     tr.positive td { color: var(--dark-green); font-weight: 700; }
     tr.negative td.num { color: var(--red); }
     .note { background: #f4f9f6; border-left: 4px solid var(--gold); padding: 14px 16px; margin: 16px 0; border-radius: 0 8px 8px 0; font-size: .93rem; }
+    .note.warn { background: #fff8e6; border-left-color: #c9a000; }
     .tier-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 12px; margin: 16px 0; }
     .tier { background: #fafafa; border-radius: 10px; padding: 14px; border-top: 3px solid var(--primary-green); }
     .tier b { display: block; color: var(--dark-green); font-size: 1.1rem; }
@@ -54,10 +55,11 @@
   </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </head>
-<body>
+<body data-fm-page="revenue">
   <nav class="nav">
     <strong>MediForge Revenue Model</strong>
     <div>
+      <a href="/financial-model">Model Inputs</a>
       <a href="/project-plan">Project Plan</a>
       <a href="/term-sheet">Term Sheet</a>
       <a href="/valuation-equity-structure">Valuation</a>
@@ -68,28 +70,29 @@
   <header class="hero">
     <h1>Revenue &amp; Net Income Projection</h1>
     <p class="subtitle">Work Chop Inc. · MediForge EMR · Canada-focused pricing</p>
-    <p class="meta">June 2026 · Clinics: 2 → 5 → 10 → 20 → 40 · Initial implementation one-time (Years 1–2 only)</p>
+    <p class="meta" id="fm-hero-meta">June 2026 · Clinics: 2 → 5 → 10 → 20 → 40 · Initial implementation one-time (Years 1–2 only)</p>
   </header>
 
   <main class="wrap">
+    <div class="note warn" id="fm-custom-banner" hidden style="background:#fff8e6;border-left:4px solid #c9a000;margin-bottom:16px;border-radius:8px;padding:12px 16px"></div>
     <article class="paper" id="revenue-doc">
 
       <div class="stat-row">
-        <div class="stat"><b>$120–$250</b><span>Per provider / month (CAD)</span></div>
-        <div class="stat"><b>10 → 200</b><span>Providers (Years 1–5)</span></div>
-        <div class="stat"><b>~$600k</b><span>Year 5 revenue</span></div>
-        <div class="stat"><b>Year 3+</b><span>Operating net positive</span></div>
+        <div class="stat"><b data-fm-stat="pricing">$120–$250</b><span>Per provider / month (CAD)</span></div>
+        <div class="stat"><b data-fm-stat="providers">10 → 200</b><span>Providers (Years 1–5)</span></div>
+        <div class="stat"><b data-fm-stat="y5rev">~$600k</b><span>Year 5 revenue</span></div>
+        <div class="stat"><b data-fm-stat="oppos">Year 3+</b><span>Operating net positive</span></div>
       </div>
 
       <div class="note">
-        <strong>Initial implementation is not modeled as continuously heavy.</strong> Platform build (Phases 0–8) is complete. Certification and live-pipe spend are <strong>one-time, seed-funded in Years 1–2</strong>. New clinics after that use <strong>light onboarding (~$1.5k/clinic cost)</strong> on the existing product; customer setup fees (~$6k) are <strong>revenue</strong>, not repeated platform build.
+        <strong>Initial implementation is not modeled as continuously heavy.</strong> Platform build (Phases 0–8) is complete. Certification and live-pipe spend are <strong>one-time, seed-funded in Years 1–2</strong>. New clinics after that use <strong>light onboarding (~$1.5k/clinic cost)</strong> on the existing product; customer setup fees (~$6k) are <strong>revenue</strong>, not repeated platform build. <a href="/financial-model">Adjust assumptions</a> on the Financial Model page.
       </div>
 
       <h2>Growth: 2 → 5 → 10 → 20 → 40 clinics</h2>
       <p><strong>5 providers per clinic.</strong> Double clinic count from Year 2 onward (after starting with 2 pilots).</p>
       <table>
         <thead><tr><th>Year</th><th class="num">Clinics</th><th class="num">Providers</th><th class="num">Net new clinics</th></tr></thead>
-        <tbody>
+        <tbody id="fm-growth-tbody">
           <tr><td>1</td><td class="num">2</td><td class="num">10</td><td class="num">2</td></tr>
           <tr><td>2</td><td class="num">5</td><td class="num">25</td><td class="num">3</td></tr>
           <tr><td>3</td><td class="num">10</td><td class="num">50</td><td class="num">5</td></tr>
@@ -99,16 +102,10 @@
       </table>
 
       <h2>Revenue (Base case, CAD)</h2>
-      <p>$200/provider/mo (Year 1 pilot $160); setup fee <strong>$6,000</strong> per new clinic charged to customer.</p>
+      <p id="fm-revenue-note">$200/provider/mo (Year 1 pilot $160); setup fee <strong>$6,000</strong> per new clinic charged to customer.</p>
       <table>
         <thead><tr><th>Year</th><th class="num">Subscription</th><th class="num">Setup fees</th><th class="num">Total revenue</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td class="num">$19,200</td><td class="num">$12,000</td><td class="num">$31,200</td></tr>
-          <tr><td>2</td><td class="num">$60,000</td><td class="num">$18,000</td><td class="num">$78,000</td></tr>
-          <tr><td>3</td><td class="num">$120,000</td><td class="num">$30,000</td><td class="num">$150,000</td></tr>
-          <tr><td>4</td><td class="num">$240,000</td><td class="num">$60,000</td><td class="num">$300,000</td></tr>
-          <tr class="highlight"><td>5</td><td class="num">$480,000</td><td class="num">$120,000</td><td class="num">$600,000</td></tr>
-        </tbody>
+        <tbody id="fm-revenue-tbody"></tbody>
       </table>
 
       <h2>Costs: three layers</h2>
@@ -117,11 +114,7 @@
       <p>Certification, audit, live pipes, first pilots. Funded by seed tranches. <strong>$0 in Years 3–5.</strong></p>
       <table>
         <thead><tr><th>Year</th><th class="num">One-time cert / seed</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td class="num">$350,000</td></tr>
-          <tr><td>2</td><td class="num">$100,000</td></tr>
-          <tr><td>3–5</td><td class="num">$0</td></tr>
-        </tbody>
+        <tbody id="fm-onetime-tbody"></tbody>
       </table>
 
       <h3>2. Light clinic onboarding (company cost)</h3>
@@ -130,42 +123,25 @@
       <h3>3. Steady-state OpEx (lean, founder-led scale)</h3>
       <table>
         <thead><tr><th>Year</th><th class="num">Onboarding</th><th class="num">OpEx</th><th class="num">Operating costs</th></tr></thead>
-        <tbody>
-          <tr><td>1</td><td class="num">$3,000</td><td class="num">$75,000</td><td class="num">$78,000</td></tr>
-          <tr><td>2</td><td class="num">$4,500</td><td class="num">$100,000</td><td class="num">$104,500</td></tr>
-          <tr><td>3</td><td class="num">$7,500</td><td class="num">$120,000</td><td class="num">$127,500</td></tr>
-          <tr><td>4</td><td class="num">$15,000</td><td class="num">$155,000</td><td class="num">$170,000</td></tr>
-          <tr><td>5</td><td class="num">$30,000</td><td class="num">$195,000</td><td class="num">$225,000</td></tr>
-        </tbody>
+        <tbody id="fm-costs-tbody"></tbody>
       </table>
 
       <h2>Net income</h2>
       <h3>Operating P&amp;L (run-rate: no repeated heavy implementation)</h3>
       <table>
         <thead><tr><th>Year</th><th class="num">Revenue</th><th class="num">Operating costs</th><th class="num">Operating net</th></tr></thead>
-        <tbody>
-          <tr class="negative"><td>1</td><td class="num">$31,200</td><td class="num">$78,000</td><td class="num">−$46,800</td></tr>
-          <tr class="negative"><td>2</td><td class="num">$78,000</td><td class="num">$104,500</td><td class="num">−$26,500</td></tr>
-          <tr class="positive"><td>3</td><td class="num">$150,000</td><td class="num">$127,500</td><td class="num">+$22,500</td></tr>
-          <tr class="positive"><td>4</td><td class="num">$300,000</td><td class="num">$170,000</td><td class="num">+$130,000</td></tr>
-          <tr class="positive"><td>5</td><td class="num">$600,000</td><td class="num">$225,000</td><td class="num">+$375,000</td></tr>
-        </tbody>
+        <tbody id="fm-operating-tbody"></tbody>
       </table>
 
       <h3>All-in (includes one-time seed/cert Years 1–2)</h3>
       <table>
         <thead><tr><th>Year</th><th class="num">Revenue</th><th class="num">All-in costs</th><th class="num">Net income</th></tr></thead>
-        <tbody>
-          <tr class="negative"><td>1</td><td class="num">$31,200</td><td class="num">$428,000</td><td class="num">−$396,800</td></tr>
-          <tr class="negative"><td>2</td><td class="num">$78,000</td><td class="num">$204,500</td><td class="num">−$126,500</td></tr>
-          <tr class="positive"><td>3</td><td class="num">$150,000</td><td class="num">$127,500</td><td class="num">+$22,500</td></tr>
-          <tr class="positive"><td>4</td><td class="num">$300,000</td><td class="num">$170,000</td><td class="num">+$130,000</td></tr>
-          <tr class="positive"><td>5</td><td class="num">$600,000</td><td class="num">$225,000</td><td class="num">+$375,000</td></tr>
-        </tbody>
+        <tbody id="fm-allin-tbody"></tbody>
       </table>
 
       <div class="cta">
-        <a class="btn-primary" href="/project-plan">Project Plan</a>
+        <a class="btn-primary" href="/financial-model">Model Inputs</a>
+        <a class="btn-secondary" href="/project-plan">Project Plan</a>
         <a class="btn-secondary" href="/term-sheet">Term Sheet</a>
         <a class="btn-secondary" href="/valuation-equity-structure">Valuation</a>
         <button type="button" class="btn-secondary" id="download-pdf-btn">Download PDF</button>
@@ -180,6 +156,8 @@
 
   <footer class="footer">MediForge Revenue Projection · June 2026 · Synced with docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md</footer>
 
+  <script src="/js/financial-model.js"></script>
+  <script src="/js/financial-model-reports.js"></script>
   <script>
     document.getElementById('download-pdf-btn').addEventListener('click', function () {
       html2pdf().set({ margin: 12, filename: 'MediForge-Revenue-Projection-2026-06.pdf', html2canvas: { scale: 2 } }).from(document.getElementById('revenue-doc')).save();
