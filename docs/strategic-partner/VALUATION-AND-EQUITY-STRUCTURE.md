@@ -31,7 +31,7 @@ Key terms aligned with the live [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md)
 | Strategic Partner preferred shares | 20–30% |
 | Option pool | 10–15% |
 | Vesting | 4-year vesting with 1-year cliff (all equity) |
-| Upfront development fee | CAD $80,000–$120,000 (minimum 40% at closing; balance per note, conversion, or hybrid; full liquidation within 18 months or upon liquidity event) |
+| Upfront development fee | CAD $80,000–$120,000 (**$32,000–$48,000** at Closing = 40%; balance $48,000–$72,000 per options; full liquidation within 18 months) |
 | Legal fees cap | Reasonable amount (e.g., $15k–$25k total) |
 | Capital deployment | Four milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months, aligned with [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) Phases A–C; full schedule on [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
 | Definitive terms | Liquidation preference, anti-dilution, exclusivity, tranche milestones, and closing conditions: see [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
@@ -123,18 +123,24 @@ These terms follow common practices that balance founder execution with Strategi
 
 ## Upfront Development Fee
 
-A one-time development fee of **CAD $80,000–$120,000** is proposed. This compensates for the Founder's pre-financing development work that created the deployed platform and de-risked the opportunity for all parties. Such fees are a standard and transparent way to recognize pre-seed contributions in founder-led companies.
+A one-time development fee of **CAD $80,000–$120,000** is proposed. This compensates for the Founder's pre-financing development work that created the deployed platform and de-risked the opportunity for all parties.
 
-The fee does not need to be paid fully upfront. However, a **minimum of 40%** shall be paid at closing. The balance (60% or less) may be structured using one or more of the following transparent, Strategic-Partner-friendly options, as mutually agreed in the definitive agreements:
+| Component | Amount (CAD) | Notes |
+|-----------|--------------|-------|
+| **Total development fee** | **$80,000–$120,000** | One-time; Phases 0–8 platform already delivered |
+| **Paid at Closing (min 40%)** | **$32,000–$48,000** | Cash from Tranche 1 (midpoint **$40,000**) |
+| **Deferred balance (up to 60%)** | **$48,000–$72,000** | Structured per options below (midpoint **$60,000**) |
+
+The deferred balance may be structured using one or more of the following transparent, Strategic-Partner-friendly options, as mutually agreed in definitive agreements:
 
 **Option 1: Interest-Bearing Promissory Note (Deferred Cash Payment)**  
-The unpaid balance documented as a short-term loan from the Founder to the Company. Simple interest at a market rate (e.g., 8–12% per annum), repaid in equal monthly or quarterly installments over 12–18 months.
+Deferred portion **$48,000–$72,000** documented as a short-term loan. Simple interest **8–12%** per annum, repaid over **12–18 months**. Example at **$60,000** midpoint: total repayment ~**$67,500** including interest. [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Project Plan](STRATEGIC-PARTNER-PROJECT-PLAN.md).
 
 **Option 2: Convertible Note (Conversion into Equity)**  
-The unpaid balance may convert into equity at the next qualified financing round at a discount (e.g., 15–25%) or using a pre-agreed valuation cap.
+Deferred portion **$48,000–$72,000** converts at the next qualified financing at a **15–25% discount** or pre-agreed valuation cap (e.g. **~$2.2M**). Example: **$60,000** note with **20% discount** → ~**$75,000** equity value at conversion.
 
 **Option 3: Hybrid Structure**  
-A portion as an interest-bearing note, with the remainder satisfied through a small additional equity grant to the Founder or a capped revenue share (e.g., 1–3% of gross revenue until paid, with a maximum cap).
+Split midpoint balance **$60,000**: e.g. **$30,000** note plus **$30,000** via **1–3% capped revenue share** until paid. Example at **2%** of Year 4 subscription revenue (~**$240k**) → ~**$4,800/yr** ([Revenue Projection](REVENUE-AND-NET-INCOME-PROJECTION.md)). Live inputs: [/financial-model](https://mediforge.netlify.app/financial-model).
 
 All structures include a hard deadline: full liquidation within **18 months** or upon a liquidity event, whichever occurs first.
 

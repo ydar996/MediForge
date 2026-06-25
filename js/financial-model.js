@@ -37,7 +37,7 @@
         milestone: 'Definitive agreements; IP assigned',
         items: [
           { label: 'Legal & definitive agreements', amount: 20000 },
-          { label: 'Founder development fee (40% at closing)', key: 'devFeeClosing' },
+          { label: 'Founder development fee ($32k–$48k at Closing, 40%)', key: 'devFeeClosing' },
           { label: 'PIA / security audit retainer', amount: 15000 },
           { label: 'OntarioMD vendor consultation', amount: 5000 },
           { label: 'Reference clinic search & LOI prep', amount: 10000 },
@@ -255,6 +255,86 @@
     };
   }
 
+  function computeDevFeeBreakdown(assumptions) {
+    assumptions = assumptions || getAssumptions();
+    const pct = assumptions.devFeeClosingPct;
+    const low = assumptions.devFeeLow;
+    const high = assumptions.devFeeHigh;
+    const mid = assumptions.devFee;
+    const closingLow = Math.round(low * pct);
+    const closingHigh = Math.round(high * pct);
+    const balanceLow = low - closingLow;
+    const balanceHigh = high - closingHigh;
+    const closingMid = Math.round(mid * pct);
+    const balanceMid = mid - closingMid;
+    const noteInterestLow = Math.round(balanceLow * 0.08);
+    const noteInterestHigh = Math.round(balanceHigh * 0.12 * 1.5);
+    const convertLow = Math.round(balanceMid / 0.85);
+    const convertHigh = Math.round(balanceMid / 0.75);
+    const hybridNote = Math.round(balanceMid * 0.5);
+    const hybridRevShare = balanceMid - hybridNote;
+    return {
+      totalLow: low,
+      totalHigh: high,
+      totalMid: mid,
+      closingPct: pct,
+      closingLow,
+      closingHigh,
+      closingMid,
+      balanceLow,
+      balanceHigh,
+      balanceMid,
+      noteRepayLow: balanceLow + noteInterestLow,
+      noteRepayHigh: balanceHigh + noteInterestHigh,
+      noteRepayMid: balanceMid + Math.round(balanceMid * 0.10 * 1.25),
+      convertEquityLow: convertLow,
+      convertEquityHigh: convertHigh,
+      hybridNote,
+      hybridRevShare
+    };
+  }
+
+  function buildDevFeeScheduleHtml(assumptions, opts) {
+    assumptions = assumptions || getAssumptions();
+    opts = opts || {};
+    const d = computeDevFeeBreakdown(assumptions);
+    const fmt = formatCad;
+    const termSheetLink = opts.termSheetLink !== false;
+    const revenueLink = opts.revenueLink !== false;
+    const intro = opts.intro ||
+      'Upon Closing, the Company shall pay the Founder a one-time development fee of <strong>CAD ' +
+      fmt(d.totalLow) + '–' + fmt(d.totalHigh) + '</strong>. This recognizes Phases 0–8 software delivery' +
+      (termSheetLink ? ' and matches the <a href="/valuation-equity-structure">Valuation &amp; Equity Structure</a>' : '') + '.';
+
+    return (
+      intro +
+      '<table style="margin:16px 0"><thead><tr><th>Component</th><th class="num">Amount (CAD)</th><th>Notes</th></tr></thead><tbody>' +
+      '<tr><td>Total development fee</td><td class="num"><strong>' + fmt(d.totalLow) + '–' + fmt(d.totalHigh) + '</strong></td><td>One-time; Phases 0–8 platform already delivered</td></tr>' +
+      '<tr class="highlight"><td><strong>Paid at Closing (min 40%)</strong></td><td class="num"><strong>' + fmt(d.closingLow) + '–' + fmt(d.closingHigh) + '</strong></td><td><strong>40%</strong> of fee = cash from Tranche 1 (midpoint <strong>' + fmt(d.closingMid) + '</strong>)</td></tr>' +
+      '<tr><td>Deferred balance (up to 60%)</td><td class="num">' + fmt(d.balanceLow) + '–' + fmt(d.balanceHigh) + '</td><td>Structured per options below (midpoint <strong>' + fmt(d.balanceMid) + '</strong>)</td></tr>' +
+      '</tbody></table>' +
+      '<p id="dev-fee-options">The deferred balance may be structured as:</p>' +
+      '<div class="fee-option"><p><strong>Option 1: Interest-Bearing Promissory Note</strong><br>' +
+      'Deferred portion <strong>' + fmt(d.balanceLow) + '–' + fmt(d.balanceHigh) + '</strong> documented as a Company note to the Founder. ' +
+      'Simple interest <strong>8–12%</strong> per annum, repaid over <strong>12–18 months</strong>. ' +
+      'Example at <strong>' + fmt(d.balanceMid) + '</strong> midpoint, ~10% over 15 months: interest ~<strong>' + fmt(Math.round(d.balanceMid * 0.10 * 1.25)) + '</strong>; total repayment ~<strong>' + fmt(d.noteRepayMid) + '</strong> ' +
+      '(range ~<strong>' + fmt(d.noteRepayLow) + '–' + fmt(d.noteRepayHigh) + '</strong>). ' +
+      (termSheetLink ? '<a href="/term-sheet#dev-fee-schedule">Term sheet detail</a> · ' : '') +
+      '<a href="/project-plan">Tranche 4 may fund installments</a>.</p></div>' +
+      '<div class="fee-option"><p><strong>Option 2: Convertible Note</strong><br>' +
+      'Deferred portion <strong>' + fmt(d.balanceLow) + '–' + fmt(d.balanceHigh) + '</strong> converts at the next qualified financing. ' +
+      '<strong>15–25% discount</strong> or pre-agreed valuation cap (e.g. <strong>~$2.2M</strong> pre-money). ' +
+      'Example: <strong>' + fmt(d.balanceMid) + '</strong> note with <strong>20% discount</strong> → converts as ~<strong>' + fmt(Math.round(d.balanceMid / 0.8)) + '</strong> of equity value. ' +
+      '<a href="/valuation-equity-structure#dev-fee-schedule">Valuation context</a>.</p></div>' +
+      '<div class="fee-option"><p><strong>Option 3: Hybrid Structure</strong><br>' +
+      'Split the <strong>' + fmt(d.balanceMid) + '</strong> midpoint balance: e.g. <strong>' + fmt(d.hybridNote) + '</strong> promissory note (Option 1 terms) plus <strong>' + fmt(d.hybridRevShare) + '</strong> via ' +
+      '<strong>1–3% capped revenue share</strong> until paid. Example at <strong>2%</strong> of projected Year 4 subscription revenue (~<strong>$240k</strong>) → ~<strong>$4,800/yr</strong> toward the revenue-share portion' +
+      (revenueLink ? ' (<a href="/revenue-projection">revenue model</a>)' : '') + '. ' +
+      '<a href="/financial-model">Adjust assumptions</a>.</p></div>' +
+      '<p>All structures include full liquidation within <strong>18 months</strong> or upon a liquidity event, whichever occurs first.</p>'
+    );
+  }
+
   function computeProjection(assumptions) {
     assumptions = assumptions || getAssumptions();
     const years = [];
@@ -291,6 +371,8 @@
     mergeAssumptions,
     saveOverrides,
     resetOverrides,
+    computeDevFeeBreakdown,
+    buildDevFeeScheduleHtml,
     computeProjection,
     computeTranches,
     resolveTrancheOutflows,

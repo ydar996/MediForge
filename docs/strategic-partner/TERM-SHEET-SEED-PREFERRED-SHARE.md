@@ -41,7 +41,7 @@ The Strategic Partner's commitment is **not** a single disbursement at Closing. 
 
 | Tranche | Target period | Share of round | Illustrative amount* | Indicative milestones | Primary uses |
 |---------|---------------|----------------|----------------------|----------------------|--------------|
-| 1 | Closing (Month 0) | 25% | $75k–$150k | Definitive agreements executed; IP assigned to Company | Legal closing; Founder development fee (minimum 40% at closing); OntarioMD vendor consultation; reference clinic search; compliance and audit retainers |
+| 1 | Closing (Month 0) | 25% | $75k–$150k | Definitive agreements executed; IP assigned to Company | Legal closing; Founder development fee **$32k–$48k** at Closing (40%); OntarioMD vendor consultation; reference clinic search; compliance and audit retainers |
 | 2 | Months 2–4 | 25% | $75k–$150k | Phase A: reference clinic LOI or site selected; Stage 1 evidence submitted or Stages 1–4 package complete; third-party audit vendor engaged | OntarioMD milestone fees (initial); privacy impact assessment and security audit; certification evidence polish |
 | 3 | Months 5–10 | 30% | $90k–$180k | Phase B: first provincial credential enrollment initiated (e.g., MCEDT or OLIS); Stage 5 validation scheduled or underway | Live provincial integration onboarding; conformance testing; gateway and clinic credential wiring |
 | 4 | Months 11–18 | 20% | $60k–$120k | Phase C: first pilot clinic operational or first live provincial test transaction completed | Pilot clinic support; sales and marketing; commercial operations; remaining development fee balance per Section 4 if structured as note or hybrid |
@@ -66,16 +66,24 @@ All equity subject to **4-year vesting** with **1-year cliff**.
 
 ## 4. Upfront Development Fee
 
-Upon Closing, the Company shall pay the Founder a one-time development fee of **CAD $80,000–$120,000**. This recognizes the Founder's development of the deployed platform (Phases 0–8 software) and matches [Valuation and Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md). A **minimum of 40%** shall be paid at closing. The balance may be structured as:
+Upon Closing, the Company shall pay the Founder a one-time development fee of **CAD $80,000–$120,000**. This recognizes the Founder's development of the deployed platform (Phases 0–8 software) and matches [Valuation and Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md).
+
+| Component | Amount (CAD) | Notes |
+|-----------|--------------|-------|
+| **Total development fee** | **$80,000–$120,000** | One-time; platform already delivered |
+| **Paid at Closing (min 40%)** | **$32,000–$48,000** | Cash from Tranche 1 (midpoint **$40,000**) |
+| **Deferred balance (up to 60%)** | **$48,000–$72,000** | Structured per options below (midpoint **$60,000**) |
+
+The deferred balance may be structured as:
 
 **Option 1: Interest-Bearing Promissory Note**  
-Simple interest at 8–12% per annum, repaid over 12–18 months.
+Deferred portion **$48,000–$72,000** as a Company note. Simple interest **8–12%** per annum, repaid over **12–18 months**. Example at **$60,000** midpoint, ~10% over 15 months: interest ~**$7,500**; total repayment ~**$67,500** (range ~**$51,840–$84,960**). [Project Plan](STRATEGIC-PARTNER-PROJECT-PLAN.md) Tranche 4 may fund installments.
 
 **Option 2: Convertible Note**  
-Converts at next qualified financing at a 15–25% discount or pre-agreed valuation cap.
+Deferred portion **$48,000–$72,000** converts at the next qualified financing at a **15–25% discount** or pre-agreed valuation cap (e.g. **~$2.2M** pre-money). Example: **$60,000** note with **20% discount** → converts as ~**$75,000** of equity value. See [Valuation](VALUATION-AND-EQUITY-STRUCTURE.md#upfront-development-fee).
 
 **Option 3: Hybrid Structure**  
-Portion as note, remainder via small equity grant or capped revenue share (1–3% until paid).
+Split the **$60,000** midpoint balance: e.g. **$30,000** promissory note (Option 1 terms) plus **$30,000** via **1–3% capped revenue share** until paid. Example at **2%** of projected Year 4 subscription revenue (~**$240k**) → ~**$4,800/yr** toward the revenue-share portion ([Revenue Projection](REVENUE-AND-NET-INCOME-PROJECTION.md)). Adjust on [/financial-model](https://mediforge.netlify.app/financial-model).
 
 All structures include full liquidation within **18 months** or upon a liquidity event, whichever occurs first.
 

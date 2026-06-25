@@ -187,6 +187,20 @@
     }));
   }
 
+  function renderDevFeeSection(opts) {
+    const m = FM();
+    if (!m) return;
+    const container = document.getElementById('fm-devfee-section');
+    if (!container) return;
+    container.innerHTML = m.buildDevFeeScheduleHtml(m.getAssumptions(), opts || {});
+
+    const closingStat = document.querySelector('[data-fm-stat="devfee-closing"]');
+    if (closingStat) {
+      const d = m.computeDevFeeBreakdown();
+      closingStat.textContent = m.formatCad(d.closingLow, true) + '–' + m.formatCad(d.closingHigh, true);
+    }
+  }
+
   function renderTermSheetPage() {
     const m = FM();
     if (!m) return;
@@ -202,7 +216,9 @@
     });
 
     const devFeePara = document.getElementById('fm-devfee-text');
-    if (devFeePara) devFeePara.innerHTML = 'Upon Closing, the Company shall pay the Founder a one-time development fee of <strong>CAD ' + fmt(a.devFeeLow) + '–' + fmt(a.devFeeHigh) + '</strong>. This recognizes Phases 0–8 software delivery and matches the <a href="/valuation-equity-structure">Valuation &amp; Equity Structure</a>. A <strong>minimum of 40%</strong> shall be paid at closing. The balance may be structured as:';
+    if (devFeePara) devFeePara.remove();
+
+    renderDevFeeSection({ termSheetLink: true, revenueLink: true });
 
     fillTbody(document.getElementById('fm-tranche-tbody'), p.seedUse.trancheBlocks.map((block, i) => {
       const t = p.tranches[i];
@@ -257,6 +273,13 @@
     if (page === 'revenue') renderRevenuePage();
     if (page === 'project-plan') renderProjectPlanPage();
     if (page === 'term-sheet') renderTermSheetPage();
+    if (page === 'valuation') {
+      renderDevFeeSection({
+        termSheetLink: true,
+        revenueLink: true,
+        intro: 'A one-time development fee of <strong>CAD ' + FM().formatCad(FM().computeDevFeeBreakdown().totalLow) + '–' + FM().formatCad(FM().computeDevFeeBreakdown().totalHigh) + '</strong> is proposed. This compensates for the Founder\'s pre-financing development work that created the deployed platform and de-risked the opportunity for all parties.'
+      });
+    }
   }
 
   global.MediForgeFinancialReports = { initPage, renderRevenuePage, renderProjectPlanPage, renderTermSheetPage };
