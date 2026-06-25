@@ -383,6 +383,8 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Updated:** `.cursor/rules/ontario-readiness-sync.mdc`; sync guard now requires `/financial-model` on all diligence HTML + financial markdown companions.
 - **Parity fixes:** Partner letter HTML/md aligned (paragraph structure, phase list, financial-model links); readiness report executive summary split to match HTML; financial-model links on readiness, evidence binder, valuation, capabilities footer; `DOCUMENTATION-INDEX.md` references Rule #3 100% parity.
 
+- **Deployed:** `df49ac2` to dev, staging, and production (CLI prod deploy after CD lag). Verified `/financial-model` links and readiness executive summary on all three URLs.
+
 ### June 11, 2026: Initial MediForge fork
 
 - Cloned codebase to `Documents/MediForge`; removed backups, node_modules, `.git` history from source.
