@@ -562,6 +562,11 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Owner ask:** Express timelines for money flow; investment is not a single CAD $300k disbursement.
 - **Added:** Milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months on term sheet, aligned with certification path Phases A–C; synced to valuation summary.
 
+### June 2026: Diligence pages mobile readability
+
+- **Owner ask:** Strategic Partner / Ontario readiness pages too dense on mobile; crowded top nav.
+- **Added:** `/css/diligence-mobile.css` + `/js/diligence-nav.js` (collapsible Menu on mobile, desktop unchanged); split long paragraphs on letter and readiness summary; `diligence-content` spacing on all diligence pages.
+
 ### June 2026: Interactive financial model (source inputs)
 
 - **Owner ask:** Clarify $300k–$600k composition; tweak clinics/providers/pricing; capital outflows with totals; reports auto-adjust.
