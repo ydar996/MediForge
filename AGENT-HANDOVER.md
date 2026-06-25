@@ -398,7 +398,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Owner ask:** Term sheet capital schedule too dense; want detail on separate page with tabular totals. Title Case on headers not sticking despite handover.
 - **Added:** `/capital-deployment-detail` (itemized outflows by tranche with subtotals); term sheet summary table simplified with link to detail page.
 - **Title Case:** Rule #2b in handover; `.cursor/rules/title-case-ui.mdc`; `ui-title-case.js` on all diligence pages; `npm run check:diligence-title-case` blocks missing script.
-- **Deployed:** pending this commit (dev → staging → production).
+- **Deployed:** `d98422b` to dev, staging, and production (CLI prod deploy). Verified `/capital-deployment-detail`, term sheet link, and readiness on all three URLs.
 
 ### June 2026: Rule #3 codified — 100% parity (owner requirement)
 
