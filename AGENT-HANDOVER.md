@@ -414,7 +414,8 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Owner ask:** Stop fabricating dollar amounts (e.g. $40k provincial enrollment); use sourced figures or TBD only.
 - **Changed:** `js/financial-model.js` tranche outflows: sourced items only (OntarioMD $27,500 + HST, term-sheet dev fee); all else TBD + unallocated bucket per tranche.
 - **Added:** Rule #2c, `FINANCIAL-MODEL-SOURCES.md`, `.cursor/rules/evidence-based-financials.mdc`, `/financial-model#sources`.
-- **Updated:** Readiness report and HTML: OntarioMD fee cited; removed unsourced $50k–$150k band; revenue one-time cert defaults $0.
+- **Updated:** Readiness report and HTML: OntarioMD fee cited; removed unsourced $50k–$150k band; revenue one-time cert defaults $0; project plan and term sheet companions aligned; `DOCUMENTATION-INDEX.md` financial diligence rows.
+- **Deployed:** `a26c01f` to dev, staging, and production (CLI prod deploy after CD lag). Verified `/ontario-readiness`, `/financial-model`, `/capital-deployment-detail` on all three URLs.
 
 ### June 2026: Capital deployment detail page + Title Case enforcement
 
