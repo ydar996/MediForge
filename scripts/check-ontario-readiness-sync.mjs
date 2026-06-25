@@ -114,7 +114,7 @@ const FINANCIAL_CANONICAL = [
   { label: 'Pre-money $1.5M–$2.2M', pattern: /1,500,000.*2,200,000|\$1\.5M.*\$2\.2M/i },
   { label: 'Target ~$1.8M pre-money', pattern: /~\$1\.8M|~\$1\.8 million|1,800,000/i },
   { label: 'Investment $300k–$600k', pattern: /300,000.*600,000|\$300k.*\$600k/i },
-  { label: 'Development fee $100k–$120k', pattern: /100,000.?[\$]?120,000/i },
+  { label: 'Development fee $80k–$120k', pattern: /80,000.?[\$]?120,000/i },
   { label: 'Founder equity 65–75%', pattern: /65.75|65–75/i },
   { label: 'Founder target ~70%', pattern: /target ~70%/i },
   { label: 'Strategic Partner equity 20–30%', pattern: /20.30|20–30/i },
@@ -131,7 +131,7 @@ const FINANCIAL_CANONICAL = [
   { label: 'Capital deployment 25/25/30/20', pattern: /25%.*25%.*30%.*20%|25% \/ 25% \/ 30% \/ 20%/i }
 ];
 
-const STALE_DEV_FEE = /80,000.?[\$]?120,000/i;
+const STALE_DEV_FEE = /100,000.?[\$]?120,000/i;
 
 const INVESTOR_WORD = /\binvestors?\b/i;
 
@@ -236,7 +236,7 @@ for (const rel of FINANCIAL_TERM_FILES) {
     }
   }
   if (STALE_DEV_FEE.test(text)) {
-    errors.push(`${rel}: stale development fee $80,000–$120,000 — use $100,000–$120,000`);
+    errors.push(`${rel}: stale development fee $100,000–$120,000 — use $80,000–$120,000`);
   }
 }
 

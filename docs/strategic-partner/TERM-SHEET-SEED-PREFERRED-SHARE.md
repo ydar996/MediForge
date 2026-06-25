@@ -66,7 +66,7 @@ All equity subject to **4-year vesting** with **1-year cliff**.
 
 ## 4. Upfront Development Fee
 
-Upon Closing, the Company shall pay the Founder a one-time development fee of **CAD $100,000–$120,000**. This recognizes the Founder's development of the deployed platform (Phases 0–8 software) and matches [Valuation and Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md). A **minimum of 40%** shall be paid at closing. The balance may be structured as:
+Upon Closing, the Company shall pay the Founder a one-time development fee of **CAD $80,000–$120,000**. This recognizes the Founder's development of the deployed platform (Phases 0–8 software) and matches [Valuation and Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md). A **minimum of 40%** shall be paid at closing. The balance may be structured as:
 
 **Option 1: Interest-Bearing Promissory Note**  
 Simple interest at 8–12% per annum, repaid over 12–18 months.

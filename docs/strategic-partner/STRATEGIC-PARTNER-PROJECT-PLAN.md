@@ -31,7 +31,7 @@ Detailed task backlogs remain in [ONTARIO-EMR-IMPLEMENTATION-PLAN.md](../ONTARIO
 | Time to full commercial status (operational) | **6–12 months** from June 2026 |
 | Seed investment (Strategic Partner) | **CAD $300,000 – $600,000** |
 | Capital deployment | **Four tranches** over **~18 months** (not a lump sum) |
-| Founder development fee (Company obligation) | **CAD $100,000–$120,000** (min 40% at Closing) |
+| Founder development fee (Company obligation) | **CAD $80,000–$120,000** (min 40% at Closing) |
 | OntarioMD milestone fees (approx.) | **~CAD $27,500** |
 | Third-party audit / legal / pilot band | **$50k–$150k+** (within seed use of proceeds) |
 
@@ -71,7 +71,7 @@ Illustrative amounts use a **$450,000 midpoint** commitment (25% / 25% / 30% / 2
 
 | Period | Operational focus | Seed tranche | Illustrative capital (CAD) | Primary cost categories |
 |--------|-------------------|--------------|------------------------------|-------------------------|
-| **Pre-Closing** | Phases 0–8 software (done) | n/a | Sunk founder capital; **dev fee $100k–$120k** recognized at Closing | Platform build (replacement cost **$140k–$320k+**) |
+| **Pre-Closing** | Phases 0–8 software (done) | n/a | Sunk founder capital; **dev fee $80k–$120k** recognized at Closing | Platform build (replacement cost **$140k–$320k+**) |
 | **Month 0** | Closing; OntarioMD vendor contact; reference clinic search | **Tranche 1 (25%)** | **$75k–$150k** | Legal/definitive docs ($15k–$25k); dev fee min 40%; compliance retainers; vendor consultation |
 | **Months 2–4** | **Phase A:** certification path, Stage 1 submission, audit vendor | **Tranche 2 (25%)** | **$75k–$150k** | OntarioMD fees (initial portion of **~$27.5k**); PIA/security audit ($25k–$60k); evidence polish |
 | **Months 5–10** | **Phase B:** live MCEDT/OLIS/PrescribeIT/DIR/HRM/DHDR onboarding | **Tranche 3 (30%)** | **$90k–$180k** | Credential enrollment; conformance testing; integration engineering support; Stage 5 prep |

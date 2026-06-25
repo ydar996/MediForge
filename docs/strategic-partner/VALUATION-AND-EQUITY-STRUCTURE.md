@@ -31,7 +31,7 @@ Key terms aligned with the live [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md)
 | Strategic Partner preferred shares | 20–30% |
 | Option pool | 10–15% |
 | Vesting | 4-year vesting with 1-year cliff (all equity) |
-| Upfront development fee | CAD $100,000–$120,000 (minimum 40% at closing; balance per note, conversion, or hybrid; full liquidation within 18 months or upon liquidity event) |
+| Upfront development fee | CAD $80,000–$120,000 (minimum 40% at closing; balance per note, conversion, or hybrid; full liquidation within 18 months or upon liquidity event) |
 | Legal fees cap | Reasonable amount (e.g., $15k–$25k total) |
 | Capital deployment | Four milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months, aligned with [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) Phases A–C; full schedule on [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
 | Definitive terms | Liquidation preference, anti-dilution, exclusivity, tranche milestones, and closing conditions: see [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
@@ -123,7 +123,7 @@ These terms follow common practices that balance founder execution with Strategi
 
 ## Upfront Development Fee
 
-A one-time development fee of **CAD $100,000–$120,000** is proposed. This compensates for the Founder's pre-financing development work that created the deployed platform and de-risked the opportunity for all parties. Such fees are a standard and transparent way to recognize pre-seed contributions in founder-led companies.
+A one-time development fee of **CAD $80,000–$120,000** is proposed. This compensates for the Founder's pre-financing development work that created the deployed platform and de-risked the opportunity for all parties. Such fees are a standard and transparent way to recognize pre-seed contributions in founder-led companies.
 
 The fee does not need to be paid fully upfront. However, a **minimum of 40%** shall be paid at closing. The balance (60% or less) may be structured using one or more of the following transparent, Strategic-Partner-friendly options, as mutually agreed in the definitive agreements:
 
