@@ -55,6 +55,22 @@ User-facing **headings** (h1–h6), **table headers** (th), **buttons**, **label
 
 ---
 
+## Rule #2c: Evidence-based dollar amounts in diligence (always)
+
+Do **not** invent dollar figures for Strategic Partner materials. Every amount shown to a partner must be **sourced** or labeled **TBD pending quotes**.
+
+| Show a dollar amount when | Do not |
+|---------------------------|--------|
+| Published fee schedule (e.g. OntarioMD $27,500 + HST) with link | Fabricate line items like "$40k provincial enrollment" without a quote |
+| Term sheet or valuation terms (seed range, dev fee, legal cap) | Present model placeholders as if they were invoices |
+| Owner provides a signed quote or invoice | Scale unsourced defaults to look precise |
+
+**TBD is correct** when no quote exists. Tranche tables show **deployment %** from the term sheet plus **sourced subtotals** and **unallocated pending quotes**.
+
+**Reference:** `docs/strategic-partner/FINANCIAL-MODEL-SOURCES.md` · live `/financial-model#sources`
+
+---
+
 ## Rule #3: 100% parity (non-negotiable — owner requirement)
 
 The owner requires **100% parity**, not "good enough" or "the sync guard passed."
@@ -99,7 +115,7 @@ Code, config, docs, and **live websites** ship together. **Every session that ch
 | `/term-sheet` | `docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md` |
 | `/project-plan` | `docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md` |
 | `/revenue-projection` | `docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md` |
-| `/financial-model` | static defaults in companions + link to interactive page (browser localStorage is not in git) |
+| `/financial-model` | `docs/strategic-partner/FINANCIAL-MODEL-SOURCES.md` + static defaults in companions (browser localStorage is not in git) |
 | `/capital-deployment-detail` | dynamic (financial model); summary on term sheet + project plan; line items from `js/financial-model.js` |
 | `/capabilities` | `docs/MEDIFORGE-CAPABILITIES-GUIDE.md` |
 | `/evidence-binder` | Phase completion docs in `docs/PHASE-*-COMPLETION.md` |
@@ -392,6 +408,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### June 2026: Evidence-based financial model (no invented line items)
+
+- **Owner ask:** Stop fabricating dollar amounts (e.g. $40k provincial enrollment); use sourced figures or TBD only.
+- **Changed:** `js/financial-model.js` tranche outflows: sourced items only (OntarioMD $27,500 + HST, term-sheet dev fee); all else TBD + unallocated bucket per tranche.
+- **Added:** Rule #2c, `FINANCIAL-MODEL-SOURCES.md`, `.cursor/rules/evidence-based-financials.mdc`, `/financial-model#sources`.
+- **Updated:** Readiness report and HTML: OntarioMD fee cited; removed unsourced $50k–$150k band; revenue one-time cert defaults $0.
 
 ### June 2026: Capital deployment detail page + Title Case enforcement
 

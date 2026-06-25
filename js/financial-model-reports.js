@@ -39,25 +39,38 @@
         cells: [
           { html: '<strong>T' + block.tranche + '</strong>' },
           { html: '<strong>' + block.period + '</strong> · ' + block.milestone },
-          { html: '<strong>' + fmt(block.trancheAmount) + '</strong>', className: 'num' }
+          { html: '<strong>' + fmt(block.trancheAmount) + '</strong> deployment', className: 'num' }
         ]
       };
-      const lines = block.items.map((item) => ({
-        cells: [
-          { text: '' },
-          { text: item.label },
-          { text: fmt(item.amount), className: 'num' }
-        ]
-      }));
-      const total = {
+      const lines = block.items.map((item) => {
+        let labelHtml = item.label;
+        if (item.sourceMeta && item.sourceMeta.url) {
+          labelHtml += ' <a href="' + item.sourceMeta.url + '" target="_blank" rel="noopener">(source)</a>';
+        }
+        return {
+          cells: [
+            { text: '' },
+            { html: labelHtml },
+            { html: item.displayAmount, className: 'num' }
+          ]
+        };
+      });
+      const sourced = {
         className: 'highlight',
         cells: [
           { text: '' },
-          { html: '<strong>Tranche ' + block.tranche + ' total outflows</strong>' },
-          { html: '<strong>' + fmt(block.totalOutflows) + '</strong>', className: 'num' }
+          { html: '<strong>Sourced subtotal</strong>' },
+          { html: '<strong>' + fmt(block.sourcedTotal) + '</strong>', className: 'num' }
         ]
       };
-      return [header, ...lines, total];
+      const deploy = {
+        cells: [
+          { text: '' },
+          { html: '<strong>Tranche deployment (term sheet %)</strong>' },
+          { html: '<strong>' + fmt(block.trancheAmount) + '</strong>', className: 'num' }
+        ]
+      };
+      return [header, ...lines, sourced, deploy];
     });
   }
 
@@ -210,12 +223,19 @@
     if (seedStat) seedStat.textContent = fmt(p.assumptions.seedLow, true) + '–' + fmt(p.assumptions.seedHigh, true);
 
     const grandStat = document.getElementById('fm-grand-stat');
-    if (grandStat) grandStat.textContent = fmt(p.seedUse.grandTotal);
+    if (grandStat) grandStat.textContent = fmt(p.seedUse.unallocatedGrandTotal) + ' unallocated';
+
+    const sourcedStat = document.getElementById('fm-sourced-stat');
+    if (sourcedStat) sourcedStat.textContent = fmt(p.seedUse.sourcedGrandTotal);
 
     fillTbody(document.getElementById('fm-outflow-detail-tbody'), buildOutflowDetailRows(p, fmt));
 
     const grand = document.getElementById('fm-outflow-grand');
-    if (grand) grand.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong>';
+    if (grand) {
+      grand.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong> seed commitment · ' +
+        fmt(p.seedUse.sourcedGrandTotal) + ' sourced · ' +
+        fmt(p.seedUse.unallocatedGrandTotal) + ' pending quotes';
+    }
   }
 
   function renderDevFeeSection(opts) {
@@ -271,7 +291,13 @@
         .sort((a, b) => b[1] - a[1])
         .map(([k, v]) => '<li><strong>' + k + ':</strong> ' + fmt(v) + '</li>')
         .join('');
-      seedSummary.innerHTML = '<p>At <strong>' + fmt(a.seedCommitment) + '</strong> midpoint commitment, the <strong>$' + fmt(a.seedLow, true).replace('$', '') + '–' + fmt(a.seedHigh, true) + '</strong> round deploys as follows (scaled to your model):</p><ul>' + cats + '</ul><p><strong>Grand total outflows:</strong> ' + fmt(p.seedUse.grandTotal) + ' (equals committed seed at midpoint).</p>';
+      seedSummary.innerHTML =
+        '<p>At <strong>' + fmt(a.seedCommitment) + '</strong> midpoint commitment (' + fmt(a.seedLow, true) + '–' + fmt(a.seedHigh, true) + ' range), tranches deploy per the term sheet (25% / 25% / 30% / 20%).</p>' +
+        '<p><strong>Sourced line items only</strong> (published fees and term-sheet amounts):</p><ul>' + cats + '</ul>' +
+        '<p><strong>Sourced total:</strong> ' + fmt(p.seedUse.sourcedGrandTotal) + '. ' +
+        '<strong>Unallocated pending vendor quotes:</strong> ' + fmt(p.seedUse.unallocatedGrandTotal) + '. ' +
+        '<a href="/capital-deployment-detail">Full schedule</a> · ' +
+        '<a href="/financial-model#sources">Sources</a>.</p>';
     }
   }
 

@@ -23,7 +23,7 @@
 
 **Realistic timeline from today:** **6–12 months** for certification path and pilots, depending on OntarioMD pace, reference clinic selection, and credential onboarding. Software foundation is largely in place.
 
-**Budget (remaining):** **$50k–$150k+** for third-party audits, legal/compliance review, OntarioMD fees (~CAD $27,500), pilot support, and live integration onboarding.
+**Budget (remaining):** **TBD pending quotes** for third-party audits, legal beyond term-sheet cap, pilot support, and live integration onboarding. **OntarioMD EMR validation fees:** **$27,500 + HST** ([published schedule](https://www.ontariomd.ca/emr-certification/emr-certification)).
 
 ---
 

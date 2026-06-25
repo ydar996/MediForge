@@ -199,8 +199,8 @@ Forward-looking plan from today (Phases 0–8 software complete, **72–82%** do
 | Metric | Value |
 |--------|-------|
 | Estimated timeline to full commercial status | **6–12 months** |
-| Remaining budget (audits, legal, pilots, onboarding) | **$50k–$150k+** |
-| OntarioMD milestone fees (approx.) | **~$27,500** |
+| Remaining spend (audits, legal beyond cap, pilots, provincial onboarding) | **TBD pending quotes** (budget after vendor and OntarioMD engagement) |
+| OntarioMD EMR validation milestone fees | **$27,500 + HST** ([OntarioMD fee schedule](https://www.ontariomd.ca/emr-certification/emr-certification): $2,500 + $15,000 + $10,000 at Stages 1, 3, 4) |
 
 ### Phase A: OntarioMD certification path (2–6 months, owner-led)
 
@@ -211,7 +211,7 @@ Forward-looking plan from today (Phases 0–8 software complete, **72–82%** do
 | Stage 1 application (architecture, features, alignment matrix) | Owner + agent | Evidence ready |
 | Stages 2–4 self-assessment and gap closure | Agent | Software live |
 | Stage 5 OntarioMD validation testing | OntarioMD | Blocked |
-| Pay OntarioMD milestone fees (~CAD $27,500 total) | Owner | Not started |
+| Pay OntarioMD milestone fees ($27,500 + HST per published schedule) | Owner | Not started |
 | Third-party privacy impact assessment and security audit | Owner/vendor | Blocked |
 
 ### Phase B: Live provincial integrations (3–6 months after credentials)

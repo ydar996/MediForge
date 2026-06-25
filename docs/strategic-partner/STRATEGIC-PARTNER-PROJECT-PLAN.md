@@ -5,7 +5,7 @@
 **Shareable web version:** https://mediforge.netlify.app/project-plan  
 **Written companion to:** **`project-plan.html`** (keep in sync per `AGENT-HANDOVER.md` Rule #3)
 
-**Related diligence:** [Financial Model](https://mediforge.netlify.app/financial-model) (interactive inputs) · [Capital Deployment Detail](https://mediforge.netlify.app/capital-deployment-detail) · [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Valuation & Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md) · [Revenue Projection](REVENUE-AND-NET-INCOME-PROJECTION.md) · [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) · [Canada Certification Roadmap](../ROADMAP-CANADA-CERTIFICATION.md)
+**Related diligence:** [Financial Model](https://mediforge.netlify.app/financial-model) (interactive inputs) · [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md) (evidence policy) · [Capital Deployment Detail](https://mediforge.netlify.app/capital-deployment-detail) · [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) · [Valuation & Equity Structure](VALUATION-AND-EQUITY-STRUCTURE.md) · [Revenue Projection](REVENUE-AND-NET-INCOME-PROJECTION.md) · [Ontario Readiness Report](https://mediforge.netlify.app/ontario-readiness) · [Certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) · [Canada Certification Roadmap](../ROADMAP-CANADA-CERTIFICATION.md)
 
 ---
 
@@ -32,8 +32,8 @@ Detailed task backlogs remain in [ONTARIO-EMR-IMPLEMENTATION-PLAN.md](../ONTARIO
 | Seed investment (Strategic Partner) | **CAD $300,000 – $600,000** |
 | Capital deployment | **Four tranches** over **~18 months** (not a lump sum) |
 | Founder development fee (Company obligation) | **CAD $80,000–$120,000** (**$32,000–$48,000** at Closing = 40%; balance per options) |
-| OntarioMD milestone fees (approx.) | **~CAD $27,500** |
-| Third-party audit / legal / pilot band | **$50k–$150k+** (within seed use of proceeds) |
+| OntarioMD milestone fees | **$27,500 + HST** ([OntarioMD](https://www.ontariomd.ca/emr-certification/emr-certification)) |
+| Third-party audit / legal / pilot spend | **TBD pending quotes** (see [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md); line items on [Capital Deployment Detail](https://mediforge.netlify.app/capital-deployment-detail)) |
 
 ---
 
@@ -72,10 +72,10 @@ Illustrative amounts use a **$450,000 midpoint** commitment (25% / 25% / 30% / 2
 | Period | Operational focus | Seed tranche | Illustrative capital (CAD) | Primary cost categories |
 |--------|-------------------|--------------|------------------------------|-------------------------|
 | **Pre-Closing** | Phases 0–8 software (done) | n/a | Sunk founder capital; **dev fee $80k–$120k** recognized at Closing | Platform build (replacement cost **$140k–$320k+**) |
-| **Month 0** | Closing; OntarioMD vendor contact; reference clinic search | **Tranche 1 (25%)** | **$75k–$150k** | Legal/definitive docs ($15k–$25k); dev fee **$32k–$48k** at Closing (40%); compliance retainers; vendor consultation |
-| **Months 2–4** | **Phase A:** certification path, Stage 1 submission, audit vendor | **Tranche 2 (25%)** | **$75k–$150k** | OntarioMD fees (initial portion of **~$27.5k**); PIA/security audit ($25k–$60k); evidence polish |
-| **Months 5–10** | **Phase B:** live MCEDT/OLIS/PrescribeIT/DIR/HRM/DHDR onboarding | **Tranche 3 (30%)** | **$90k–$180k** | Credential enrollment; conformance testing; integration engineering support; Stage 5 prep |
-| **Months 11–18** | **Phase C:** pilot clinics, sales, commercial ops | **Tranche 4 (20%)** | **$60k–$120k** | Pilot support; marketing and sales; ops; remaining dev fee balance if note/hybrid |
+| **Month 0** | Closing; OntarioMD vendor contact; reference clinic search | **Tranche 1 (25%)** | **$75k–$150k** | Legal/definitive docs (TBD pending quotes); dev fee **$32k–$48k** at Closing (40%); compliance retainers (TBD); vendor consultation |
+| **Months 2–4** | **Phase A:** certification path, Stage 1 submission, audit vendor | **Tranche 2 (25%)** | **$75k–$150k** | OntarioMD fees (**$27,500 + HST** per [published schedule](https://www.ontariomd.ca/emr-certification/emr-certification)); PIA/security audit (TBD pending quotes); evidence polish |
+| **Months 5–10** | **Phase B:** live MCEDT/OLIS/PrescribeIT/DIR/HRM/DHDR onboarding | **Tranche 3 (30%)** | **$90k–$180k** | Provincial credential onboarding; conformance testing; integration support (TBD pending quotes); Stage 5 prep |
+| **Months 11–18** | **Phase C:** pilot clinics, sales, commercial ops | **Tranche 4 (20%)** | **$60k–$120k** | Pilot support; marketing and sales (TBD pending quotes); remaining dev fee balance if note/hybrid |
 | **Ongoing** | **Phase D:** scale and expansion | Revenue / future round | TBD | Additional provinces; advanced features; compliance maintenance |
 
 **Total seed deployment:** **$300k–$600k** over ~18 months. **Operational commercial target:** **6–12 months** (Phases A–C core path).
@@ -130,7 +130,7 @@ Detail: [ROADMAP-CANADA-CERTIFICATION.md](../ROADMAP-CANADA-CERTIFICATION.md) an
 
 - **OntarioMD pace** and **reference clinic selection** drive Phase A duration (owner-led).
 - **Live provincial pipes** require Infoway/MOH/Ontario Health credentials shared by all vendors (not unique to MediForge).
-- **Third-party security audit** is outstanding; budgeted in Tranche 2 band.
+- **Third-party security audit** is outstanding; amount **TBD pending quotes** (Tranche 2).
 - Tranche timing assumes good-faith milestone achievement; definitive docs define remedies if external gates delay progress.
 
 ---

@@ -39,6 +39,13 @@ Master catalog of project documentation. **Agents:** start with **`AGENT-HANDOVE
 | **[docs/strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md](strategic-partner/STRATEGIC-PARTNER-LETTER-2026-06.md)** | **Written Strategic Partner letter (keep in sync with /strategic-partner-letter and /ontario-readiness)** |
 | **[term-sheet.html](../term-sheet.html)** | **Shareable term sheet (mediforge.netlify.app/term-sheet)** |
 | **[docs/strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md](strategic-partner/TERM-SHEET-SEED-PREFERRED-SHARE.md)** | **Written companion (keep in sync with /term-sheet)** |
+| **[financial-model.html](../financial-model.html)** | **Interactive financial model (mediforge.netlify.app/financial-model)** |
+| **[docs/strategic-partner/FINANCIAL-MODEL-SOURCES.md](strategic-partner/FINANCIAL-MODEL-SOURCES.md)** | **Evidence policy for sourced vs TBD dollar amounts (Rule #2c)** |
+| **[capital-deployment-detail.html](../capital-deployment-detail.html)** | **Itemized seed outflows by tranche (mediforge.netlify.app/capital-deployment-detail)** |
+| **[project-plan.html](../project-plan.html)** | **Capital flow and certification timeline (mediforge.netlify.app/project-plan)** |
+| **[docs/strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md](strategic-partner/STRATEGIC-PARTNER-PROJECT-PLAN.md)** | **Written companion (keep in sync with /project-plan)** |
+| **[revenue-projection.html](../revenue-projection.html)** | **Five-year revenue projection (mediforge.netlify.app/revenue-projection)** |
+| **[docs/strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md](strategic-partner/REVENUE-AND-NET-INCOME-PROJECTION.md)** | **Written companion (keep in sync with /revenue-projection)** |
 | **[valuation-equity-structure.html](../valuation-equity-structure.html)** | **Shareable valuation and equity structure (mediforge.netlify.app/valuation-equity-structure)** |
 | **[docs/strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md](strategic-partner/VALUATION-AND-EQUITY-STRUCTURE.md)** | **Written companion (keep in sync with /valuation-equity-structure)** |
 | **`docs/strategic-partner/originals/`** | Source Word documents (valuation, term sheet, roadmap, agent instructions) |
