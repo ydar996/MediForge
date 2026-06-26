@@ -31,11 +31,23 @@ Detailed task backlogs remain in [ONTARIO-EMR-IMPLEMENTATION-PLAN.md](../ONTARIO
 | OntarioMD certification progress | **0%** (Stages 1–5 pending) |
 | Live provincial connectivity | **5–15%** (credential-gated) |
 | Time to full commercial status (operational) | **6–12 months** from June 2026 |
-| Seed investment (Strategic Partner) | **CAD $300,000 – $600,000** |
-| Capital deployment | **Four tranches** over **~18 months** (not a lump sum) |
-| Founder development fee (Company obligation) | **CAD $80,000–$120,000** (**$32,000–$48,000** at Closing = 40%; balance per options) |
+| Seed investment (Strategic Partner) | **CAD $300,000 – $600,000** max commitment; **Base planning ~$400k** expected deploy |
+| Capital deployment | **Four tranches** over **~18 months** (Tranches 3–4 conditional on milestones + approved budget) |
+| Founder development fee (Company obligation) | **CAD $80,000–$120,000** (default **40%** at Closing; **25%** negotiable alternative) |
 | OntarioMD milestone fees | **$27,500 + HST** (~$31,075 total; [OntarioMD](https://www.ontariomd.ca/emr-certification/emr-certification/overview)) |
-| Remaining spend to cert + initial live readiness | **~$60k–$200k+** benchmark (mid **~$80k–$150k**; subject to quotes) |
+| Base cert + pilot spend (benchmark) | **~$90k–$150k** new spend (excludes dev fee; see [scenarios](https://mediforge.netlify.app/financial-model#scenarios)) |
+
+---
+
+## Partner expectations: Lean / Base / Stress
+
+| Scenario | Max commitment | New cert + pilot spend | Expected total deploy* |
+|----------|----------------|------------------------|-------------------------|
+| **Lean** | $300k | $60k–$90k | $250k–$300k |
+| **Base (default)** | $400k | $90k–$150k | $300k–$400k |
+| **Stress (ceiling)** | $600k | $150k–$200k+ | $450k–$600k |
+
+*Includes dev fee and GTM buffer. Detail: [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md).
 
 ---
 
@@ -69,7 +81,7 @@ gantt
 
 ## Phased costs and capital alignment
 
-Illustrative amounts use a **$450,000 midpoint** commitment (25% / 25% / 30% / 20%). Scale proportionally for $300k–$600k. **Benchmark cost detail:** [certification path on Readiness Report](https://mediforge.netlify.app/ontario-readiness#certification-path) and [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md). Tranche outflows on `/financial-model` remain **TBD pending quotes** until vendor invoices exist.
+Illustrative amounts use a **$400,000 Base midpoint** (max commitment still $300k–$600k). **Benchmark cost detail:** [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) and [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md). Tranche tables show sourced amounts, **TBD until quotes**, and **remaining tranche balance (awaiting quotes)** as discretionary headroom.
 
 | Period | Operational focus | Seed tranche | Illustrative capital (CAD) | Primary cost categories |
 |--------|-------------------|--------------|------------------------------|-------------------------|
@@ -90,8 +102,8 @@ Illustrative amounts use a **$450,000 midpoint** commitment (25% / 25% / 30% / 2
 |---------|--------|-------------------------------------|--------------|
 | 1 | Closing | IP assigned; OntarioMD consultation initiated | Company legally funded; dev fee partial paid; audit/legal engaged |
 | 2 | Months 2–4 | Reference clinic LOI; Stage 1 submitted; audit underway | Certification path unlocked; compliance spend committed |
-| 3 | Months 5–10 | First provincial credential live; Stage 5 scheduled | Live pipes moving from queue-mode to test transactions |
-| 4 | Months 11–18 | First pilot clinic live or first live provincial transaction | Revenue-ready pilots; GTM spend |
+| 3 | Months 5–10 | First provincial credential live; Stage 5 scheduled | **Conditional:** partner-approved budget + quotes |
+| 4 | Months 11–18 | First pilot clinic live or first live provincial transaction | **Conditional:** partner-approved budget + quotes |
 
 Exact release mechanics and reporting (e.g., quarterly use-of-proceeds) per definitive agreements. See [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md).
 

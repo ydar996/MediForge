@@ -33,7 +33,31 @@
     });
   }
 
-  function buildOutflowDetailRows(p, fmt) {
+  function buildPartnerScenariosHtml() {
+    const m = FM();
+    if (!m) return '';
+    const fmt = m.formatCad;
+    const rows = m.PARTNER_SCENARIOS.map((s) =>
+      '<tr><td><strong>' + s.label + '</strong></td>' +
+      '<td class="num">' + fmt(s.commitment, true) + '</td>' +
+      '<td class="num">' + s.certSpendLabel + '</td>' +
+      '<td class="num">' + s.expectedDeployLabel + '</td>' +
+      '<td>' + s.summary + '</td></tr>'
+    ).join('');
+    return '<p><strong>Maximum commitment</strong> is the term-sheet ceiling ($300k–$600k). <strong>Expected deploy</strong> is our planning estimate for Lean / Base / Stress. Funds not assigned to quoted line items appear as <strong>' + m.REMAINDER_LABEL.toLowerCase() + '</strong> in tranche tables. Tranches 3 and 4 release only on milestones <em>and</em> partner-approved use-of-proceeds.</p>' +
+      '<table><thead><tr><th>Scenario</th><th class="num">Max commitment</th><th class="num">New cert + pilot spend</th><th class="num">Expected total deploy*</th><th>Notes</th></tr></thead><tbody>' +
+      rows + '</tbody></table>' +
+      '<p style="font-size:.9rem;color:#636e72;margin-top:10px">*Expected deploy includes founder development fee and commercialization buffer. Cert spend excludes sunk Phases 0–8 build. OntarioMD <strong>$27,500 + HST</strong> is sourced in all scenarios. Top of Stress range is a ceiling, not a spending target.</p>';
+  }
+
+  function renderPartnerScenarios() {
+    const html = buildPartnerScenariosHtml();
+    if (!html) return;
+    document.querySelectorAll('[data-fm-partner-scenarios]').forEach((node) => {
+      node.innerHTML = html;
+    });
+  }
+
     return p.seedUse.trancheBlocks.flatMap((block) => {
       const header = {
         cells: [
@@ -211,6 +235,7 @@
     ]);
 
     fillTbody(document.getElementById('fm-outflow-detail-tbody'), buildOutflowDetailRows(p, fmt));
+    renderPartnerScenarios();
   }
 
   function renderCapitalDeploymentPage() {
@@ -223,7 +248,7 @@
     if (seedStat) seedStat.textContent = fmt(p.assumptions.seedLow, true) + '–' + fmt(p.assumptions.seedHigh, true);
 
     const grandStat = document.getElementById('fm-grand-stat');
-    if (grandStat) grandStat.textContent = fmt(p.seedUse.unallocatedGrandTotal) + ' unallocated';
+    if (grandStat) grandStat.textContent = fmt(p.seedUse.unallocatedGrandTotal) + ' reserve';
 
     const sourcedStat = document.getElementById('fm-sourced-stat');
     if (sourcedStat) sourcedStat.textContent = fmt(p.seedUse.sourcedGrandTotal);
@@ -232,10 +257,12 @@
 
     const grand = document.getElementById('fm-outflow-grand');
     if (grand) {
-      grand.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong> seed commitment · ' +
+      grand.innerHTML = '<strong>' + fmt(p.seedUse.grandTotal) + '</strong> max commitment · ' +
         fmt(p.seedUse.sourcedGrandTotal) + ' sourced · ' +
-        fmt(p.seedUse.unallocatedGrandTotal) + ' pending quotes';
+        fmt(p.seedUse.unallocatedGrandTotal) + ' discretionary reserve';
     }
+
+    renderPartnerScenarios();
   }
 
   function renderDevFeeSection(opts) {
@@ -292,17 +319,23 @@
         .map(([k, v]) => '<li><strong>' + k + ':</strong> ' + fmt(v) + '</li>')
         .join('');
       seedSummary.innerHTML =
-        '<p>At <strong>' + fmt(a.seedCommitment) + '</strong> midpoint commitment (' + fmt(a.seedLow, true) + '–' + fmt(a.seedHigh, true) + ' range), tranches deploy per the term sheet (25% / 25% / 30% / 20%).</p>' +
+        '<p><strong>Default planning scenario: Base (~$400k commitment).</strong> Maximum term-sheet ceiling remains $300k–$600k. Expected deploy is lower than max commitment unless Stress milestones require it.</p>' +
+        '<p>At <strong>' + fmt(a.seedCommitment) + '</strong> model midpoint (' + fmt(a.seedLow, true) + '–' + fmt(a.seedHigh, true) + ' range), tranches deploy per the term sheet (25% / 25% / 30% / 20%).</p>' +
         '<p><strong>Sourced line items only</strong> (published fees and term-sheet amounts):</p><ul>' + cats + '</ul>' +
         '<p><strong>Sourced total:</strong> ' + fmt(p.seedUse.sourcedGrandTotal) + '. ' +
-        '<strong>Unallocated pending vendor quotes:</strong> ' + fmt(p.seedUse.unallocatedGrandTotal) + '. ' +
+        '<strong>Discretionary reserve (awaiting quotes):</strong> ' + fmt(p.seedUse.unallocatedGrandTotal) + '. ' +
+        'This is headroom in each tranche, not a planned invoice. ' +
         '<a href="/capital-deployment-detail">Full schedule</a> · ' +
+        '<a href="/financial-model#scenarios">Scenarios</a> · ' +
         '<a href="/financial-model#sources">Sources</a>.</p>';
     }
+
+    renderPartnerScenarios();
   }
 
   function initPage() {
     showCustomBanner();
+    renderPartnerScenarios();
     const page = document.body.getAttribute('data-fm-page');
     if (page === 'revenue') renderRevenuePage();
     if (page === 'project-plan') renderProjectPlanPage();

@@ -54,7 +54,9 @@ Diligence materials are live at the links below, so the Strategic Partner and Fo
 
 ## What comes next
 
-**Full certification** means OntarioMD Stages 1–5 validation (including reference site assessment), enabling live provincial pipes and commercial pilots. Estimated timeline: **6–12 months** (Phases A–C). Remaining spend from today is benchmarked at **~$60k–$200k+** CAD (mid ~$80k–$150k), plus sourced OntarioMD fees of **$27,500 + HST**. See the [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) and [project plan](https://mediforge.netlify.app/project-plan) for detail.
+**Full certification** means OntarioMD Stages 1–5 validation (including reference site assessment), enabling live provincial pipes and commercial pilots. Estimated timeline: **6–12 months** (Phases A–C).
+
+**Partner expectations (default Base scenario):** max commitment up to **$300k–$600k**; we plan to deploy about **$300k–$400k** including the development fee. New cert-related spend is benchmarked at **$90k–$150k** (plus sourced OntarioMD **$27,500 + HST**). The **$600k** top end is a Stress ceiling, not our spending target. See [Lean / Base / Stress scenarios](https://mediforge.netlify.app/financial-model#scenarios) and the [project plan](https://mediforge.netlify.app/project-plan).
 
 **Immediate owner actions:** Email OntarioMD for consultation; obtain legal and audit quotes; prepare Stage 1 application and reference clinic; explore Ontario health tech grants.
 

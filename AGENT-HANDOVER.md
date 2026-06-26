@@ -65,7 +65,9 @@ Do **not** invent dollar figures for Strategic Partner materials. Every amount s
 | Term sheet or valuation terms (seed range, dev fee, legal cap) | Present model placeholders as if they were invoices |
 | Owner provides a signed quote or invoice | Scale unsourced defaults to look precise |
 
-**TBD is correct** when no quote exists. Tranche tables show **deployment %** from the term sheet plus **sourced subtotals** and **unallocated pending quotes**.
+**TBD until quotes is correct** when no quote exists. Tranche tables show **deployment %** from the term sheet plus **sourced subtotals** and **remaining tranche balance (awaiting quotes)** as discretionary headroom.
+
+**Partner scenarios:** Lean ($300k) / Base ($400k default) / Stress ($600k ceiling). Max commitment ≠ expected deploy. See `FINANCIAL-MODEL-SOURCES.md` and `/financial-model#scenarios`.
 
 **Reference:** `docs/strategic-partner/FINANCIAL-MODEL-SOURCES.md` · live `/financial-model#sources`
 
@@ -408,6 +410,14 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### June 2026: Partner expectations (Lean / Base / Stress) and clearer tranche language
+
+- **Owner ask:** Tone down aggressive spend framing; set realistic partner expectations; clarify "unallocated pending quotes."
+- **Added:** Lean / Base / Stress scenarios across term sheet, project plan, financial model, valuation, readiness, partner letter; default model midpoint **$400k** (was $450k).
+- **Renamed:** "Unallocated pending quotes" → **remaining tranche balance (awaiting quotes)** (discretionary headroom, not planned spend).
+- **Term sheet:** Tranches 3–4 conditional on milestones + partner-approved budget; negotiable **25% dev fee at Closing** alternative.
+- **Distinction:** Max commitment ($300k–$600k) vs expected deploy (Base ~$300k–$400k incl. dev fee).
 
 ### June 2026: Certification path research integration (cost benchmarks and references)
 

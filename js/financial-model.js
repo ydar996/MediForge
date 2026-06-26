@@ -19,8 +19,38 @@
     }
   };
 
+  const REMAINDER_LABEL = 'Remaining tranche balance (awaiting quotes)';
+
+  /** Planning scenarios for partner expectations (not contractual caps) */
+  const PARTNER_SCENARIOS = [
+    {
+      id: 'lean',
+      label: 'Lean',
+      commitment: 300000,
+      certSpendLabel: '$60k–$90k',
+      expectedDeployLabel: '$250k–$300k',
+      summary: 'Tight partner control; founder-heavy delivery; minimal paid consulting'
+    },
+    {
+      id: 'base',
+      label: 'Base (default planning)',
+      commitment: 400000,
+      certSpendLabel: '$90k–$150k',
+      expectedDeployLabel: '$300k–$400k',
+      summary: 'Default diligence midpoint; benchmark cert spend + dev fee + modest GTM buffer'
+    },
+    {
+      id: 'stress',
+      label: 'Stress (ceiling)',
+      commitment: 600000,
+      certSpendLabel: '$150k–$200k+',
+      expectedDeployLabel: '$450k–$600k',
+      summary: 'High audit scope or remediation; ceiling for modeling, not planned spend'
+    }
+  ];
+
   const DEFAULTS = {
-    seedCommitment: 450000,
+    seedCommitment: 400000,
     seedLow: 300000,
     seedHigh: 600000,
     devFee: 100000,
@@ -51,7 +81,7 @@
           { label: 'Founder development fee at Closing (min 40%)', key: 'devFeeClosing', source: 'term-sheet' },
           { label: 'Legal and definitive agreements (company cap per term sheet)', key: 'legalCapNote', source: 'term-sheet' },
           { label: 'Corporate admin, insurance, reference clinic search', source: 'tbd' },
-          { label: 'Unallocated pending quotes', key: 'remainder', source: 'computed' }
+          { label: REMAINDER_LABEL, key: 'remainder', source: 'computed' }
         ]
       },
       {
@@ -63,7 +93,7 @@
           { label: 'Privacy impact assessment and security audit', source: 'tbd' },
           { label: 'Certification evidence and reference site preparation', source: 'tbd' },
           { label: 'Dev fee deferred portion (if note/hybrid)', key: 'devFeeDeferredNote', source: 'term-sheet' },
-          { label: 'Unallocated pending quotes', key: 'remainder', source: 'computed' }
+          { label: REMAINDER_LABEL, key: 'remainder', source: 'computed' }
         ]
       },
       {
@@ -74,7 +104,7 @@
           { label: 'Provincial onboarding (MCEDT, OLIS, PrescribeIT, DIR, HRM, DHDR)', source: 'tbd' },
           { label: 'Conformance testing and integration engineering', source: 'tbd' },
           { label: 'Stage 5 validation preparation', source: 'tbd' },
-          { label: 'Unallocated pending quotes', key: 'remainder', source: 'computed' }
+          { label: REMAINDER_LABEL, key: 'remainder', source: 'computed' }
         ]
       },
       {
@@ -84,13 +114,13 @@
         items: [
           { label: 'Pilot clinic support and commercial launch', source: 'tbd' },
           { label: 'Remaining development fee balance (if note/hybrid)', key: 'devFeeRemainder', source: 'term-sheet' },
-          { label: 'Unallocated pending quotes', key: 'remainder', source: 'computed' }
+          { label: REMAINDER_LABEL, key: 'remainder', source: 'computed' }
         ]
       }
     ]
   };
 
-  const BASE_SEED = 450000;
+  const BASE_SEED = 400000;
 
   function deepClone(obj) {
     return JSON.parse(JSON.stringify(obj));
@@ -205,7 +235,7 @@
       const remainderItem = items.find((it) => it.key === 'remainder');
       if (remainderItem) {
         remainderItem.amount = Math.max(0, trancheAmt - sourcedTotal);
-        remainderItem.label = 'Unallocated pending quotes';
+        remainderItem.label = REMAINDER_LABEL;
         remainderItem.displayAmount = formatCad(remainderItem.amount);
       }
       return {
@@ -382,7 +412,8 @@
   global.MediForgeFinancialModel = {
     STORAGE_KEY,
     EVENT_NAME,
-    SOURCES,
+    REMAINDER_LABEL,
+    PARTNER_SCENARIOS,
     DEFAULTS: deepClone(DEFAULTS),
     hasCustomOverrides,
     loadOverrides,

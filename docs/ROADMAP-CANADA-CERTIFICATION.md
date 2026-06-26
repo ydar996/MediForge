@@ -25,20 +25,7 @@
 
 **Realistic timeline from today:** **6–12 months** for certification path and pilots, depending on OntarioMD pace, reference clinic selection, and credential onboarding. Software foundation is largely in place.
 
-**Budget (remaining, benchmark estimates; subject to quotes):**
-
-| Category | Estimate (CAD) |
-|----------|----------------|
-| OntarioMD EMR validation fees | **$27,500 + HST** (~$31,075 total) ([sourced](https://www.ontariomd.ca/emr-certification/emr-certification/overview)) |
-| PIA / security audit / PHIPA pen test | **$10k–$40k** (benchmark) |
-| Legal / PHIPA pack finalization | **$5k–$15k** (benchmark) |
-| Consulting / evidence support | **$5k–$25k+** (benchmark) |
-| Reference / pilot clinic support | **$5k–$30k+** (benchmark) |
-| Dev remediation | **Variable** (potentially low) |
-| Provincial onboarding | **Mostly time + support contracts** |
-| **Rough total additional** | **~$60k–$200k+** (mid **~$80k–$150k**) |
-
-Obtain vendor quotes for binding budgets. Interactive tranche model: [/financial-model](https://mediforge.netlify.app/financial-model). Detail: [FINANCIAL-MODEL-SOURCES.md](strategic-partner/FINANCIAL-MODEL-SOURCES.md).
+**Budget (remaining, benchmark estimates; subject to quotes):** See [Lean / Base / Stress scenarios](https://mediforge.netlify.app/financial-model#scenarios). **Base default:** ~$400k expected deploy; cert spend **$90k–$150k** (excludes dev fee). OntarioMD fees **$27,500 + HST** ([sourced](https://www.ontariomd.ca/emr-certification/emr-certification/overview)).
 
 ---
 

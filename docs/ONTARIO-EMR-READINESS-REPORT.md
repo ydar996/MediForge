@@ -199,7 +199,7 @@ Forward-looking plan from today (Phases 0–8 software complete, **72–82%** do
 | Metric | Value |
 |--------|-------|
 | Estimated timeline to full commercial status | **6–12 months** |
-| Remaining spend (benchmark estimate; subject to quotes) | **~$60k–$200k+** CAD (realistic mid **~$80k–$150k**) |
+| Remaining spend (Base cert benchmark) | **~$90k–$150k** CAD (Lean $60k–$90k · Stress up to $200k+) |
 | OntarioMD EMR validation milestone fees | **$27,500 + HST** (~$31,075 total; [OntarioMD fee schedule](https://www.ontariomd.ca/emr-certification/emr-certification): $2,500 + $15,000 + $10,000 at Stages 1, 3, 4) |
 
 *June 2026 research update. Benchmark ranges are not vendor quotes; see cost table below and [Financial Model Sources](strategic-partner/FINANCIAL-MODEL-SOURCES.md).*
@@ -220,7 +220,7 @@ Successful completion of **OntarioMD five-stage EMR validation** (Stages 1–5, 
 
 ### Estimated costs from current state to certification and initial live readiness
 
-**Disclaimer:** Figures below are **benchmark estimates** from published OntarioMD fees and industry compliance ranges. They are **subject to vendor quotes, validation findings, and internal capacity**. Tranche line items on `/financial-model` show sourced amounts or **TBD pending quotes** until invoices exist.
+**Disclaimer:** Figures below are **benchmark estimates**. Tranche line items on `/financial-model` show sourced amounts or **TBD until quotes**. **Remaining tranche balance (awaiting quotes)** is headroom per tranche, not a planned invoice.
 
 | Category | Estimate (CAD) | Notes |
 |----------|----------------|-------|
@@ -231,7 +231,17 @@ Successful completion of **OntarioMD five-stage EMR validation** (Stages 1–5, 
 | Reference / pilot clinic deployment (Stage 5 + Phase C) | **$5k–$30k+** (benchmark) | Reference site and first pilots |
 | Dev remediation / sandbox / minor alignment | **Variable** (potentially low) | Depends on Stage 5 findings |
 | Provincial onboarding | **Mostly time + support contracts** | Low direct fees; TBD pending quotes |
-| **Rough total additional spend** | **~$60k–$200k+** (mid **~$80k–$150k**) | Within seed tranche capacity ($300k–$600k round) |
+| **Rough total additional spend (Base mid)** | **~$90k–$150k** (Lean $60k–$90k · Stress up to $200k+) | Max round $300k–$600k includes dev fee + GTM |
+
+### Partner expectations: Lean / Base / Stress
+
+| Scenario | Max commitment | New cert + pilot spend | Expected total deploy* | Notes |
+|----------|----------------|------------------------|-------------------------|-------|
+| **Lean** | $300k | $60k–$90k | $250k–$300k | Tight control; founder-heavy |
+| **Base (default)** | $400k | $90k–$150k | $300k–$400k | Default model midpoint |
+| **Stress (ceiling)** | $600k | $150k–$200k+ | $450k–$600k | Ceiling, not spending target |
+
+*Includes dev fee and GTM buffer. Tranches 3 and 4 require milestones and partner-approved use-of-proceeds. See [Financial Model scenarios](https://mediforge.netlify.app/financial-model#scenarios).
 
 ### Phase A: OntarioMD certification path (2–6 months, owner-led)
 

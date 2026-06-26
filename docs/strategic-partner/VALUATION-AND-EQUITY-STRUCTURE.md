@@ -26,14 +26,14 @@ Key terms aligned with the live [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md)
 | Term | Value |
 |------|-------|
 | Pre-money valuation | CAD $1,500,000 – $2,200,000 (target ~$1,800,000; negotiable) |
-| Investment amount | CAD $300,000 – $600,000 (Series Seed Preferred Shares; milestone-linked tranches over ~18 months, not a single lump sum) |
+| Investment amount | CAD $300,000 – $600,000 (Series Seed Preferred Shares; milestone-linked tranches over ~18 months, not a single lump sum). **Base planning default: ~$400k expected deploy.** |
 | Founder common shares | 65–75% (target ~70%) |
 | Strategic Partner preferred shares | 20–30% |
 | Option pool | 10–15% |
 | Vesting | 4-year vesting with 1-year cliff (all equity) |
 | Upfront development fee | CAD $80,000–$120,000 (**$32,000–$48,000** at Closing = 40%; balance $48,000–$72,000 per options; full liquidation within 18 months) |
 | Legal fees cap | Reasonable amount (e.g., $15k–$25k total) |
-| Capital deployment | Four milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months, aligned with [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) Phases A–C; full schedule on [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
+| Capital deployment | Four milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months, aligned with [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) Phases A–C; **Tranches 3–4 conditional** on milestones and partner-approved budget; [scenarios](https://mediforge.netlify.app/financial-model#scenarios) |
 | Definitive terms | Liquidation preference, anti-dilution, exclusivity, tranche milestones, and closing conditions: see [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
 
 ---

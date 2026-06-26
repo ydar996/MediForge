@@ -35,9 +35,23 @@ The Company has developed a proprietary Electronic Medical Records (EMR) softwar
 | Disbursement | Milestone-linked tranches over ~18 months (not a single lump sum at Closing) |
 | Use of Proceeds | Certification path, live provincial onboarding, pilots, sales, compliance, and operations (see schedule below) |
 
+### What the $300k–$600k comprises
+
+**Maximum commitment** is $300k–$600k over ~18 months. **Default planning scenario: Base (~$400k expected deploy).** Seed proceeds fund certification and commercial launch, not greenfield EMR build (Phases 0–8 complete). The founder development fee ($80k–$120k) is a **separate obligation** for work already delivered; it is not part of the cert-only budget.
+
+### Partner expectations: Lean / Base / Stress
+
+| Scenario | Max commitment | New cert + pilot spend | Expected total deploy* | Notes |
+|----------|----------------|------------------------|-------------------------|-------|
+| **Lean** | $300k | $60k–$90k | $250k–$300k | Tight control; founder-heavy |
+| **Base (default)** | $400k | $90k–$150k | $300k–$400k | Default model midpoint |
+| **Stress (ceiling)** | $600k | $150k–$200k+ | $450k–$600k | Ceiling, not spending target |
+
+*Includes dev fee and GTM buffer. **Remaining tranche balance (awaiting quotes)** in tranche tables is headroom after sourced items, not a planned invoice. **Tranches 3 and 4** require Phase B/C milestones and partner-approved use-of-proceeds.
+
 ### Capital deployment schedule
 
-The Strategic Partner's commitment is **not** a single disbursement at Closing. Capital is deployed in **milestone-linked tranches** over approximately **18 months**, aligned with Phases A–D on the [Ontario Readiness certification path](https://mediforge.netlify.app/ontario-readiness#certification-path). [Adjust line items](https://mediforge.netlify.app/financial-model) on the Financial Model page.
+The Strategic Partner's commitment is **not** a single disbursement at Closing. Capital is deployed in **milestone-linked tranches** over approximately **18 months**, aligned with Phases A–D on the [Ontario Readiness certification path](https://mediforge.netlify.app/ontario-readiness#certification-path). **Tranches 3 and 4** release on milestones **and** partner-approved budgets (vendor quotes where applicable). [Adjust assumptions](https://mediforge.netlify.app/financial-model) on the Financial Model page.
 
 | Tranche | Target period | Share of round | Illustrative amount* | Indicative milestones | Primary use categories |
 |---------|---------------|----------------|----------------------|----------------------|------------------------|
@@ -46,7 +60,7 @@ The Strategic Partner's commitment is **not** a single disbursement at Closing. 
 | 3 | Months 5–10 | 30% | $90k–$180k | Phase B: first provincial credential live | Provincial credential enrollment; conformance testing; … |
 | 4 | Months 11–18 | 20% | $60k–$120k | Phase C: first pilot clinic operational | Pilot clinic support; sales and marketing; remaining dev fee balance; … |
 
-**Line-item detail with amounts and tranche totals:** [/capital-deployment-detail](https://mediforge.netlify.app/capital-deployment-detail). **Evidence policy:** sourced figures or **TBD pending quotes** in tranche outflows; **planning benchmarks** (~$60k–$200k+ to certification) on [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path) (see [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md) and [/financial-model#sources](https://mediforge.netlify.app/financial-model#sources)).
+**Line-item detail:** [/capital-deployment-detail](https://mediforge.netlify.app/capital-deployment-detail). **Scenarios:** [/financial-model#scenarios](https://mediforge.netlify.app/financial-model#scenarios). **Sources:** [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md).
 
 *Illustrative amounts use 25% / 25% / 30% / 20% of the committed round ($300k low, $600k high). Exact milestone definitions, release mechanics, and reporting cadence (e.g., quarterly use-of-proceeds) to be set in definitive agreements. Tranche timing may overlap where credentials allow (Phases A and B in parallel per readiness plan).
 
@@ -73,8 +87,9 @@ Upon Closing, the Company shall pay the Founder a one-time development fee of **
 | Component | Amount (CAD) | Notes |
 |-----------|--------------|-------|
 | **Total development fee** | **$80,000–$120,000** | One-time; platform already delivered |
-| **Paid at Closing (min 40%)** | **$32,000–$48,000** | Cash from Tranche 1 (midpoint **$40,000**) |
-| **Deferred balance (up to 60%)** | **$48,000–$72,000** | Structured per options below (midpoint **$60,000**) |
+| **Paid at Closing (default min 40%)** | **$32,000–$48,000** | Cash from Tranche 1 (midpoint **$40,000**) |
+| **Negotiable alternative** | **25% at Closing** | Balance tied to Stage 1 submission + first pilot (reduces day-one cash) |
+| **Deferred balance (up to 60–75%)** | **$48,000–$72,000** | Structured per options below (midpoint **$60,000**) |
 
 The deferred balance may be structured as:
 
