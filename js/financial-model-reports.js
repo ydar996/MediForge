@@ -44,7 +44,12 @@
       '<td class="num">' + s.expectedDeployLabel + '</td>' +
       '<td>' + s.summary + '</td></tr>'
     ).join('');
-    return '<p><strong>Maximum commitment</strong> is the term-sheet ceiling ($300k–$600k). <strong>Expected deploy</strong> is our planning estimate for Lean / Base / Stress. Funds not assigned to quoted line items appear as <strong>' + m.REMAINDER_LABEL.toLowerCase() + '</strong> in tranche tables. Tranches 3 and 4 release only on milestones <em>and</em> partner-approved use-of-proceeds.</p>' +
+    return '<div class="stacked-lines">' +
+      '<p><strong>Maximum commitment</strong> is the term-sheet ceiling ($300k–$600k).</p>' +
+      '<p><strong>Expected deploy</strong> is our planning estimate for Lean / Base / Stress.</p>' +
+      '<p>Funds not assigned to quoted line items appear as <strong>' + m.REMAINDER_LABEL.toLowerCase() + '</strong> in tranche tables.</p>' +
+      '<p>Tranches 3 and 4 release only on milestones <em>and</em> partner-approved use-of-proceeds.</p>' +
+      '</div>' +
       '<table><thead><tr><th>Scenario</th><th class="num">Max commitment</th><th class="num">New cert + pilot spend</th><th class="num">Expected total deploy*</th><th>Notes</th></tr></thead><tbody>' +
       rows + '</tbody></table>' +
       '<p style="font-size:.9rem;color:#636e72;margin-top:10px">*Expected deploy includes founder development fee and commercialization buffer. Cert spend excludes sunk Phases 0–8 build. OntarioMD <strong>$27,500 + HST</strong> is sourced in all scenarios. Top of Stress range is a ceiling, not a spending target.</p>';
