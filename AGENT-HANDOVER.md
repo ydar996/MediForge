@@ -418,6 +418,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Renamed:** "Unallocated pending quotes" → **remaining tranche balance (awaiting quotes)** (discretionary headroom, not planned spend).
 - **Term sheet:** Tranches 3–4 conditional on milestones + partner-approved budget; negotiable **25% dev fee at Closing** alternative.
 - **Distinction:** Max commitment ($300k–$600k) vs expected deploy (Base ~$300k–$400k incl. dev fee).
+- **Deployed:** `fc6ef81` to dev, staging, and production.
 
 ### June 2026: Certification path research integration (cost benchmarks and references)
 
