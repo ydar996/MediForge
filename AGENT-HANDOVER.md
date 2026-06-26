@@ -417,6 +417,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Cause:** Missing `buildOutflowDetailRows` function wrapper in `js/financial-model-reports.js` (syntax error crashed script on load).
 - **Fixed:** Restored function declaration so `renderRevenuePage()` runs and fills all dynamic tables.
 - **Note:** Written companion `REVENUE-AND-NET-INCOME-PROJECTION.md` already had full tables; live page was JS-only failure. All-in net income on live page uses interactive defaults (`oneTimeCert` $0); markdown all-in table includes illustrative seed Years 1–2 (pre-existing design).
+- **Deployed:** `0cc2379` to dev, staging, and production (CLI prod deploy).
 
 ### June 2026: Mobile stacked-lines spacing (phase bullets and financial summary)
 
