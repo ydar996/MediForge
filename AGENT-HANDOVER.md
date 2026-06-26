@@ -414,6 +414,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Owner ask:** Integrate June 2026 research on OntarioMD certification costs, timeline, status, next steps, and APA sources across Ontario readiness and commercial diligence pack.
 - **Updated:** `#certification-path` on `/ontario-readiness` (status table, full certification definition, cost benchmarks with disclaimers, next steps, cross-border note, references); mirrored in readiness report, roadmap, project plan, evidence binder, partner letter, `FINANCIAL-MODEL-SOURCES.md`, `/financial-model#sources`.
 - **Policy:** OntarioMD $27,500 + HST remains **sourced**; other categories are **benchmark estimates** (planning) with tranche outflows still **TBD pending quotes** until invoices exist.
+- **Deployed:** `23585c9` to dev, staging, and production.
 
 ### June 2026: Evidence-based financial model (no invented line items)
 
