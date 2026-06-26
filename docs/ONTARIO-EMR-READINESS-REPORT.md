@@ -235,6 +235,12 @@ Successful completion of **OntarioMD five-stage EMR validation** (Stages 1–5, 
 
 ### Partner expectations: Lean / Base / Stress
 
+**Maximum commitment** is the term-sheet ceiling (**CAD $300,000 – $600,000**).
+
+**Expected deploy** is our planning estimate. Default diligence midpoint: **Base (up to $400,000)**.
+
+Under Base, we expect to deploy approximately **CAD $300,000 – $400,000** in total.
+
 | Scenario | Max commitment | New cert + pilot spend | Expected total deploy* | Notes |
 |----------|----------------|------------------------|-------------------------|-------|
 | **Lean** | $300k | $60k–$90k | $250k–$300k | Tight control; founder-heavy |

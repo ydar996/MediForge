@@ -67,7 +67,7 @@ Do **not** invent dollar figures for Strategic Partner materials. Every amount s
 
 **TBD until quotes is correct** when no quote exists. Tranche tables show **deployment %** from the term sheet plus **sourced subtotals** and **remaining tranche balance (awaiting quotes)** as discretionary headroom.
 
-**Partner scenarios:** Lean ($300k) / Base ($400k default) / Stress ($600k ceiling). Max commitment ≠ expected deploy. See `FINANCIAL-MODEL-SOURCES.md` and `/financial-model#scenarios`.
+**Partner scenarios:** Base ask **up to $400k** (term-sheet range $300k–$600k). Lean ($300k) / Base ($400k default) / Stress ($600k ceiling). Max commitment ≠ expected deploy. See `FINANCIAL-MODEL-SOURCES.md` and `/financial-model#scenarios`.
 
 **Reference:** `docs/strategic-partner/FINANCIAL-MODEL-SOURCES.md` · live `/financial-model#sources`
 
@@ -410,6 +410,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### June 2026: Formal partner financial summary (short sentences, mobile spacing)
+
+- **Owner ask:** Formalize partner commitment language; shorter sentences; paragraph breaks for mobile; deploy dev → staging → production.
+- **Replaced:** `$X` placeholder with **up to CAD $400,000** Base ask (term-sheet range **$300k–$600k**).
+- **Updated:** Partner financial summary across term sheet, valuation, financial model, project plan, partner letter, readiness HTML + companions, `FINANCIAL-MODEL-SOURCES.md`, roadmap.
+- **Synced:** `ONTARIO-EMR-READINESS-REPORT.md` partner expectations intro with `ontario-readiness.html`.
 
 ### June 2026: Partner expectations (Lean / Base / Stress) and clearer tranche language
 

@@ -56,7 +56,33 @@ Diligence materials are live at the links below, so the Strategic Partner and Fo
 
 **Full certification** means OntarioMD Stages 1–5 validation (including reference site assessment), enabling live provincial pipes and commercial pilots. Estimated timeline: **6–12 months** (Phases A–C).
 
-**Partner expectations (default Base scenario):** max commitment up to **$300k–$600k**; we plan to deploy about **$300k–$400k** including the development fee. New cert-related spend is benchmarked at **$90k–$150k** (plus sourced OntarioMD **$27,500 + HST**). The **$600k** top end is a Stress ceiling, not our spending target. See [Lean / Base / Stress scenarios](https://mediforge.netlify.app/financial-model#scenarios) and the [project plan](https://mediforge.netlify.app/project-plan).
+### Strategic Partner financial summary
+
+We are seeking a seed commitment of **up to CAD $400,000**.
+
+Capital deploys in four milestone-linked tranches over ~18 months (25% / 25% / 30% / 20%).
+
+The discussion-term sheet range is **CAD $300,000 – $600,000**.
+
+Under our **Base planning scenario**, we expect to deploy approximately **CAD $300,000 – $400,000** in total.
+
+That includes the founder development fee, certification, and a modest commercialization buffer.
+
+It does not fund greenfield EMR build. Phases 0–8 software is already delivered.
+
+**Sourced:** OntarioMD validation fees **CAD $27,500 + HST** (~**$31,075** per published schedule).
+
+**Benchmark (pending quotes):** new cert-related spend **$90,000 – $150,000** (audit, legal, consulting, reference site, pilots).
+
+Unquoted categories stay **TBD** in tranche tables. Remaining balance is headroom, not a committed line item.
+
+**Tranches 3 and 4** require Phase B/C milestones **and** partner approval of an updated use-of-proceeds schedule.
+
+Deployment above Base, or toward the **$600,000** Stress ceiling, requires mutual agreement.
+
+The Stress figure is a diligence ceiling, not our spending target.
+
+See [Lean / Base / Stress scenarios](https://mediforge.netlify.app/financial-model#scenarios) and the [project plan](https://mediforge.netlify.app/project-plan).
 
 **Immediate owner actions:** Email OntarioMD for consultation; obtain legal and audit quotes; prepare Stage 1 application and reference clinic; explore Ontario health tech grants.
 

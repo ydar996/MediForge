@@ -41,6 +41,16 @@ Detailed task backlogs remain in [ONTARIO-EMR-IMPLEMENTATION-PLAN.md](../ONTARIO
 
 ## Partner expectations: Lean / Base / Stress
 
+We are seeking a seed commitment of **up to CAD $400,000** (Base default).
+
+The term sheet **maximum commitment** is **CAD $300,000 – $600,000**.
+
+Under **Base**, we expect to deploy approximately **CAD $300,000 – $400,000** in total.
+
+**Sourced:** OntarioMD **$27,500 + HST** (~**$31,075**). **Benchmark (pending quotes):** new cert spend **$90k–$150k**.
+
+The **$600,000** Stress ceiling is for diligence modeling, not our spending target.
+
 | Scenario | Max commitment | New cert + pilot spend | Expected total deploy* |
 |----------|----------------|------------------------|-------------------------|
 | **Lean** | $300k | $60k–$90k | $250k–$300k |

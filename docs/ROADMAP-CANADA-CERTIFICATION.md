@@ -25,7 +25,15 @@
 
 **Realistic timeline from today:** **6–12 months** for certification path and pilots, depending on OntarioMD pace, reference clinic selection, and credential onboarding. Software foundation is largely in place.
 
-**Budget (remaining, benchmark estimates; subject to quotes):** See [Lean / Base / Stress scenarios](https://mediforge.netlify.app/financial-model#scenarios). **Base default:** ~$400k expected deploy; cert spend **$90k–$150k** (excludes dev fee). OntarioMD fees **$27,500 + HST** ([sourced](https://www.ontariomd.ca/emr-certification/emr-certification/overview)).
+**Budget (remaining, benchmark estimates; subject to quotes):**
+
+See [Lean / Base / Stress scenarios](https://mediforge.netlify.app/financial-model#scenarios).
+
+**Base default:** up to **$400,000** commitment; expected deploy **$300k–$400k**.
+
+Cert spend **$90k–$150k** (excludes dev fee).
+
+OntarioMD fees **$27,500 + HST** ([sourced](https://www.ontariomd.ca/emr-certification/emr-certification/overview)).
 
 ---
 

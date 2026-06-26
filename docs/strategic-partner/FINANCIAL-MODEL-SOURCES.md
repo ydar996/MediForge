@@ -32,7 +32,31 @@
 
 *Expected deploy includes founder development fee and commercialization buffer. Cert spend excludes sunk Phases 0–8 build. OntarioMD **$27,500 + HST** is sourced in all scenarios.
 
-**What we tell the partner in one sentence:** *We are asking for up to $X in tranches; we know OntarioMD is ~$31k and the dev fee is $Y; we budget $90k–$150k (Base) for audit, legal, and pilots until quotes arrive; anything above Base requires milestone approval and updated quotes.*
+### What we tell the partner
+
+Work Chop Inc. is seeking a seed commitment of **up to CAD $400,000**.
+
+Capital deploys in four milestone-linked tranches over ~18 months (25% / 25% / 30% / 20%).
+
+The discussion-term sheet range is **CAD $300,000 – $600,000**.
+
+Under our **Base planning scenario**, we expect to deploy approximately **CAD $300,000 – $400,000** in total.
+
+That includes the founder development fee, certification, and a modest commercialization buffer.
+
+It does not fund greenfield EMR build. Phases 0–8 software is already delivered.
+
+**Sourced:** OntarioMD validation fees **CAD $27,500 + HST** (~**$31,075** per published schedule).
+
+**Benchmark (pending quotes):** new cert-related spend **$90,000 – $150,000** (audit, legal, consulting, reference site, pilots).
+
+Unquoted categories stay **TBD** in tranche tables. Remaining balance is headroom, not a committed line item.
+
+**Tranches 3 and 4** require Phase B/C milestones **and** partner approval of an updated use-of-proceeds schedule.
+
+Deployment above Base, or toward the **$600,000** Stress ceiling, requires mutual agreement.
+
+The Stress figure is a diligence ceiling, not our spending target.
 
 ---
 

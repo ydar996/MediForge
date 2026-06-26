@@ -37,7 +37,17 @@ The Company has developed a proprietary Electronic Medical Records (EMR) softwar
 
 ### What the $300k–$600k comprises
 
-**Maximum commitment** is $300k–$600k over ~18 months. **Default planning scenario: Base (~$400k expected deploy).** Seed proceeds fund certification and commercial launch, not greenfield EMR build (Phases 0–8 complete). The founder development fee ($80k–$120k) is a **separate obligation** for work already delivered; it is not part of the cert-only budget.
+We are seeking a seed commitment of **up to CAD $400,000** (Base planning default).
+
+The discussion-term sheet **maximum commitment** is **CAD $300,000 – $600,000** over ~18 months.
+
+Under **Base**, we expect to deploy approximately **CAD $300,000 – $400,000** in total.
+
+Seed proceeds fund certification and commercial launch.
+
+They do not fund greenfield EMR build. Phases 0–8 are complete.
+
+The founder development fee ($80k–$120k) is a **separate obligation** for work already delivered. It is not part of the cert-only budget.
 
 ### Partner expectations: Lean / Base / Stress
 
@@ -51,7 +61,13 @@ The Company has developed a proprietary Electronic Medical Records (EMR) softwar
 
 ### Capital deployment schedule
 
-The Strategic Partner's commitment is **not** a single disbursement at Closing. Capital is deployed in **milestone-linked tranches** over approximately **18 months**, aligned with Phases A–D on the [Ontario Readiness certification path](https://mediforge.netlify.app/ontario-readiness#certification-path). **Tranches 3 and 4** release on milestones **and** partner-approved budgets (vendor quotes where applicable). [Adjust assumptions](https://mediforge.netlify.app/financial-model) on the Financial Model page.
+The Strategic Partner's commitment is **not** a single disbursement at Closing.
+
+Capital is deployed in **milestone-linked tranches** over approximately **18 months**, aligned with Phases A–D on the [Ontario Readiness certification path](https://mediforge.netlify.app/ontario-readiness#certification-path).
+
+**Tranches 3 and 4** release on milestones **and** partner-approved budgets (vendor quotes where applicable).
+
+[Adjust assumptions](https://mediforge.netlify.app/financial-model) on the Financial Model page.
 
 | Tranche | Target period | Share of round | Illustrative amount* | Indicative milestones | Primary use categories |
 |---------|---------------|----------------|----------------------|----------------------|------------------------|

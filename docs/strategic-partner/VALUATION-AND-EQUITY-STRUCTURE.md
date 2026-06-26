@@ -26,7 +26,7 @@ Key terms aligned with the live [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md)
 | Term | Value |
 |------|-------|
 | Pre-money valuation | CAD $1,500,000 – $2,200,000 (target ~$1,800,000; negotiable) |
-| Investment amount | CAD $300,000 – $600,000 (Series Seed Preferred Shares; milestone-linked tranches over ~18 months, not a single lump sum). **Base planning default: ~$400k expected deploy.** |
+| Investment amount | CAD $300,000 – $600,000 (term sheet range). **Base ask: up to $400,000.** Milestone-linked tranches over ~18 months, not a lump sum. |
 | Founder common shares | 65–75% (target ~70%) |
 | Strategic Partner preferred shares | 20–30% |
 | Option pool | 10–15% |
@@ -35,6 +35,20 @@ Key terms aligned with the live [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md)
 | Legal fees cap | Reasonable amount (e.g., $15k–$25k total) |
 | Capital deployment | Four milestone-linked tranches (25% / 25% / 30% / 20%) over ~18 months, aligned with [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) Phases A–C; **Tranches 3–4 conditional** on milestones and partner-approved budget; [scenarios](https://mediforge.netlify.app/financial-model#scenarios) |
 | Definitive terms | Liquidation preference, anti-dilution, exclusivity, tranche milestones, and closing conditions: see [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) |
+
+### Strategic Partner financial summary
+
+We are seeking a seed commitment of **up to CAD $400,000** (Base default).
+
+The term sheet **maximum commitment** is **CAD $300,000 – $600,000**.
+
+Under **Base**, we expect to deploy approximately **CAD $300,000 – $400,000** in total.
+
+That includes the founder development fee, certification, and a modest commercialization buffer.
+
+**Sourced:** OntarioMD **$27,500 + HST** (~**$31,075**). **Benchmark (pending quotes):** new cert spend **$90k–$150k**.
+
+The **$600,000** Stress ceiling is for diligence modeling, not our spending target.
 
 ---
 
