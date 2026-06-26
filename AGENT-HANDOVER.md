@@ -417,6 +417,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Replaced:** `$X` placeholder with **up to CAD $400,000** Base ask (term-sheet range **$300k–$600k**).
 - **Updated:** Partner financial summary across term sheet, valuation, financial model, project plan, partner letter, readiness HTML + companions, `FINANCIAL-MODEL-SOURCES.md`, roadmap.
 - **Synced:** `ONTARIO-EMR-READINESS-REPORT.md` partner expectations intro with `ontario-readiness.html`.
+- **Deployed:** `5de261e` to dev, staging, and production.
 
 ### June 2026: Partner expectations (Lean / Base / Stress) and clearer tranche language
 
