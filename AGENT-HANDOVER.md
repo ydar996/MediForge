@@ -411,6 +411,12 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### June 2026: Mobile stacked-lines spacing (phase bullets and financial summary)
+
+- **Owner ask:** Visible line space between bullet points on mobile; prior CSS change not noticeable on production.
+- **Added:** `stacked-lines` wrappers on partner letter phase list, financial summary blocks, and partner-expectations intros across diligence HTML; `li + li` / `p + p` spacing (~1.75rem) in `css/diligence-mobile.css`; split JS partner-scenarios intro into separate lines.
+- **Deployed:** `f204fb2` to dev, staging, and production (CLI prod deploy after owner reported no visible change on cached production).
+
 ### June 2026: Formal partner financial summary (short sentences, mobile spacing)
 
 - **Owner ask:** Formalize partner commitment language; shorter sentences; paragraph breaks for mobile; deploy dev → staging → production.
