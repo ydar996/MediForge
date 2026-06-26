@@ -411,6 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### June 2026: Revenue projection empty tables (financial-model-reports.js)
+
+- **Owner ask:** `/revenue-projection` showed headers but no revenue/cost/net income rows on production.
+- **Cause:** Missing `buildOutflowDetailRows` function wrapper in `js/financial-model-reports.js` (syntax error crashed script on load).
+- **Fixed:** Restored function declaration so `renderRevenuePage()` runs and fills all dynamic tables.
+- **Note:** Written companion `REVENUE-AND-NET-INCOME-PROJECTION.md` already had full tables; live page was JS-only failure. All-in net income on live page uses interactive defaults (`oneTimeCert` $0); markdown all-in table includes illustrative seed Years 1–2 (pre-existing design).
+
 ### June 2026: Mobile stacked-lines spacing (phase bullets and financial summary)
 
 - **Owner ask:** Visible line space between bullet points on mobile; prior CSS change not noticeable on production.

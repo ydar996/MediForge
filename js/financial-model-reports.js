@@ -63,6 +63,7 @@
     });
   }
 
+  function buildOutflowDetailRows(p, fmt) {
     return p.seedUse.trancheBlocks.flatMap((block) => {
       const header = {
         cells: [
