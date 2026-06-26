@@ -28,12 +28,14 @@ Detailed task backlogs remain in [ONTARIO-EMR-IMPLEMENTATION-PLAN.md](../ONTARIO
 |-----------|-------|
 | Software delivered (Phases 0–8) | **Complete** where buildable without live credentials |
 | Documented Ontario readiness | **72–82%** |
+| OntarioMD certification progress | **0%** (Stages 1–5 pending) |
+| Live provincial connectivity | **5–15%** (credential-gated) |
 | Time to full commercial status (operational) | **6–12 months** from June 2026 |
 | Seed investment (Strategic Partner) | **CAD $300,000 – $600,000** |
 | Capital deployment | **Four tranches** over **~18 months** (not a lump sum) |
 | Founder development fee (Company obligation) | **CAD $80,000–$120,000** (**$32,000–$48,000** at Closing = 40%; balance per options) |
-| OntarioMD milestone fees | **$27,500 + HST** ([OntarioMD](https://www.ontariomd.ca/emr-certification/emr-certification)) |
-| Third-party audit / legal / pilot spend | **TBD pending quotes** (see [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md); line items on [Capital Deployment Detail](https://mediforge.netlify.app/capital-deployment-detail)) |
+| OntarioMD milestone fees | **$27,500 + HST** (~$31,075 total; [OntarioMD](https://www.ontariomd.ca/emr-certification/emr-certification/overview)) |
+| Remaining spend to cert + initial live readiness | **~$60k–$200k+** benchmark (mid **~$80k–$150k**; subject to quotes) |
 
 ---
 
@@ -67,15 +69,15 @@ gantt
 
 ## Phased costs and capital alignment
 
-Illustrative amounts use a **$450,000 midpoint** commitment (25% / 25% / 30% / 20%). Scale proportionally for $300k–$600k.
+Illustrative amounts use a **$450,000 midpoint** commitment (25% / 25% / 30% / 20%). Scale proportionally for $300k–$600k. **Benchmark cost detail:** [certification path on Readiness Report](https://mediforge.netlify.app/ontario-readiness#certification-path) and [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md). Tranche outflows on `/financial-model` remain **TBD pending quotes** until vendor invoices exist.
 
 | Period | Operational focus | Seed tranche | Illustrative capital (CAD) | Primary cost categories |
 |--------|-------------------|--------------|------------------------------|-------------------------|
 | **Pre-Closing** | Phases 0–8 software (done) | n/a | Sunk founder capital; **dev fee $80k–$120k** recognized at Closing | Platform build (replacement cost **$140k–$320k+**) |
-| **Month 0** | Closing; OntarioMD vendor contact; reference clinic search | **Tranche 1 (25%)** | **$75k–$150k** | Legal/definitive docs (TBD pending quotes); dev fee **$32k–$48k** at Closing (40%); compliance retainers (TBD); vendor consultation |
-| **Months 2–4** | **Phase A:** certification path, Stage 1 submission, audit vendor | **Tranche 2 (25%)** | **$75k–$150k** | OntarioMD fees (**$27,500 + HST** per [published schedule](https://www.ontariomd.ca/emr-certification/emr-certification)); PIA/security audit (TBD pending quotes); evidence polish |
-| **Months 5–10** | **Phase B:** live MCEDT/OLIS/PrescribeIT/DIR/HRM/DHDR onboarding | **Tranche 3 (30%)** | **$90k–$180k** | Provincial credential onboarding; conformance testing; integration support (TBD pending quotes); Stage 5 prep |
-| **Months 11–18** | **Phase C:** pilot clinics, sales, commercial ops | **Tranche 4 (20%)** | **$60k–$120k** | Pilot support; marketing and sales (TBD pending quotes); remaining dev fee balance if note/hybrid |
+| **Month 0** | Closing; OntarioMD vendor contact; reference clinic search | **Tranche 1 (25%)** | **$75k–$150k** | Legal/PHIPA finalization (**$5k–$15k** benchmark); dev fee **$32k–$48k** at Closing (40%); consulting quotes; vendor consultation |
+| **Months 2–4** | **Phase A:** certification path, Stage 1 submission, audit vendor | **Tranche 2 (25%)** | **$75k–$150k** | OntarioMD fees (**$27,500 + HST** sourced); PIA/security audit (**$10k–$40k** benchmark); evidence/consulting (**$5k–$25k+** benchmark) |
+| **Months 5–10** | **Phase B:** live MCEDT/OLIS/PrescribeIT/DIR/HRM/DHDR onboarding | **Tranche 3 (30%)** | **$90k–$180k** | Provincial onboarding (mostly time); conformance testing; Stage 5 prep; dev remediation (variable) |
+| **Months 11–18** | **Phase C:** pilot clinics, sales, commercial ops | **Tranche 4 (20%)** | **$60k–$120k** | Pilot/reference support (**$5k–$30k+** benchmark); marketing and sales; remaining dev fee balance if note/hybrid |
 | **Ongoing** | **Phase D:** scale and expansion | Revenue / future round | TBD | Additional provinces; advanced features; compliance maintenance |
 
 **Total seed deployment:** **$300k–$600k** over ~18 months. **Operational commercial target:** **6–12 months** (Phases A–C core path).
@@ -130,9 +132,20 @@ Detail: [ROADMAP-CANADA-CERTIFICATION.md](../ROADMAP-CANADA-CERTIFICATION.md) an
 
 - **OntarioMD pace** and **reference clinic selection** drive Phase A duration (owner-led).
 - **Live provincial pipes** require Infoway/MOH/Ontario Health credentials shared by all vendors (not unique to MediForge).
-- **Third-party security audit** is outstanding; amount **TBD pending quotes** (Tranche 2).
+- **Third-party security audit** is outstanding; benchmark **$10k–$40k** (Tranche 2); obtain vendor quote.
+- **US-based dev resources:** confirm PHIPA Canada data residency before live PHI pilots.
 - Tranche timing assumes good-faith milestone achievement; definitive docs define remedies if external gates delay progress.
 
 ---
 
-*For discussion and diligence only. Not legal or financial advice. Align with [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) and [Valuation](VALUATION-AND-EQUITY-STRUCTURE.md) for binding economics.*
+*For discussion and diligence only. Not legal or financial advice. Cost benchmarks subject to vendor quotes and validation outcomes. Align with [Term Sheet](TERM-SHEET-SEED-PREFERRED-SHARE.md) and [Valuation](VALUATION-AND-EQUITY-STRUCTURE.md) for binding economics.*
+
+### References
+
+MediForge. (2026). *Ontario EMR readiness: Strategic partner report*. https://mediforge.netlify.app/ontario-readiness
+
+Mindbowser. (n.d.). *OntarioMD certification: A guide for digital health vendors*. https://www.mindbowser.com/ontariomd-certification-guide-for-digital-health-vendors/
+
+OntarioMD. (n.d.-a). *EMR certification overview*. https://www.ontariomd.ca/emr-certification/emr-certification/overview
+
+OntarioMD. (n.d.-b). *EMR certification program FAQ*. https://www.ontariomd.ca/emr-certification/faq

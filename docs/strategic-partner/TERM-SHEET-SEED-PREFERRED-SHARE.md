@@ -46,7 +46,7 @@ The Strategic Partner's commitment is **not** a single disbursement at Closing. 
 | 3 | Months 5–10 | 30% | $90k–$180k | Phase B: first provincial credential live | Provincial credential enrollment; conformance testing; … |
 | 4 | Months 11–18 | 20% | $60k–$120k | Phase C: first pilot clinic operational | Pilot clinic support; sales and marketing; remaining dev fee balance; … |
 
-**Line-item detail with amounts and tranche totals:** [/capital-deployment-detail](https://mediforge.netlify.app/capital-deployment-detail). **Evidence policy:** only sourced figures or **TBD pending quotes** (see [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md) and [/financial-model#sources](https://mediforge.netlify.app/financial-model#sources)).
+**Line-item detail with amounts and tranche totals:** [/capital-deployment-detail](https://mediforge.netlify.app/capital-deployment-detail). **Evidence policy:** sourced figures or **TBD pending quotes** in tranche outflows; **planning benchmarks** (~$60k–$200k+ to certification) on [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path) (see [Financial Model Sources](FINANCIAL-MODEL-SOURCES.md) and [/financial-model#sources](https://mediforge.netlify.app/financial-model#sources)).
 
 *Illustrative amounts use 25% / 25% / 30% / 20% of the committed round ($300k low, $600k high). Exact milestone definitions, release mechanics, and reporting cadence (e.g., quarterly use-of-proceeds) to be set in definitive agreements. Tranche timing may overlap where credentials allow (Phases A and B in parallel per readiness plan).
 

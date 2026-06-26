@@ -20,6 +20,7 @@ This letter summarizes what we have built, what we completed in our Ontario EMR 
 | Overall Ontario Readiness | **72–82%** |
 | Clinical EMR | **75–85%** |
 | Live Provincial Pipes | **5–15%** |
+| OntarioMD Certification | **0%** |
 
 ## The short version
 
@@ -53,11 +54,11 @@ Diligence materials are live at the links below, so the Strategic Partner and Fo
 
 ## What comes next
 
-**Live provincial pipes** (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR, ConnectingOntario) and **OntarioMD Stage 5** validation at a reference clinic.
+**Full certification** means OntarioMD Stages 1–5 validation (including reference site assessment), enabling live provincial pipes and commercial pilots. Estimated timeline: **6–12 months** (Phases A–C). Remaining spend from today is benchmarked at **~$60k–$200k+** CAD (mid ~$80k–$150k), plus sourced OntarioMD fees of **$27,500 + HST**. See the [certification path](https://mediforge.netlify.app/ontario-readiness#certification-path) and [project plan](https://mediforge.netlify.app/project-plan) for detail.
 
-These require owner and partner credentials, not additional software we control.
+**Immediate owner actions:** Email OntarioMD for consultation; obtain legal and audit quotes; prepare Stage 1 application and reference clinic; explore Ontario health tech grants.
 
-**Shared next steps:** OntarioMD vendor contact, reference clinic, MOH MCEDT enrollment, Infoway OLIS/PrescribeIT/DIR/HRM/DHDR onboarding.
+**Live provincial pipes** (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR) require partner credentials every certified vendor must obtain. Queue-mode software is built and tested.
 
 ## Materials for your review
 

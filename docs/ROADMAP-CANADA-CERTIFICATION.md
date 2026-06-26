@@ -1,6 +1,6 @@
 # MediForge: Roadmap to Canada Certification (Ontario-Focused)
 
-**Last updated:** June 2026  
+**Last updated:** June 2026 (research integration: cost benchmarks and references)  
 **Written companion to:** [Ontario EMR Implementation Plan](ONTARIO-EMR-IMPLEMENTATION-PLAN.md) · [Ontario Readiness Report](ONTARIO-EMR-READINESS-REPORT.md) · [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path)
 
 **Shareable web version:** The certification path (Phases A–D, timeline, budget, next action) is published on [/ontario-readiness#certification-path](https://mediforge.netlify.app/ontario-readiness#certification-path). **Consolidated Gantt-style project plan (costs + capital tranches):** [/project-plan](https://mediforge.netlify.app/project-plan). Keep this file in sync with that section per **`AGENT-HANDOVER.md`** Rule #3.
@@ -14,16 +14,31 @@
 | Item | Status |
 |------|--------|
 | Product | **Deployed multi-clinic EMR** in active use (not a prototype) |
-| Ontario software (Phases 0–8) | **Complete** where buildable without live provincial credentials |
+| Ontario software (Phases 0–8) | **Complete** where buildable without live provincial credentials; 75+ automated interop tests passing |
+| Evidence binder | Traceability matrix, PHIPA pack, audit trails, phase records ([/evidence-binder](https://mediforge.netlify.app/evidence-binder)) |
 | Documented Ontario readiness | **72–82%** |
+| OntarioMD certification progress | **0%** (Stages 1–5 not started; vendor path pending) |
+| Live provincial pipes (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR) | **5–15%** (blocked on partner enrollment; queue/stub software ready) |
 | OntarioMD Stage 5 validation | **Not started** (owner approval + vendor path required) |
-| Live provincial pipes (OLIS, MCEDT, PrescribeIT, DIR, HRM, DHDR) | **Blocked** on partner enrollment and clinic credentials |
 
-**Goal:** OntarioMD certification, live provincial integrations, pilot clinics, and commercial readiness for physicians and clinics in Ottawa/Ontario (and expansion beyond).
+**Goal:** OntarioMD certification (Stages 1–5 including reference site assessment), live provincial integrations, pilot clinics, and commercial readiness for physicians and clinics in Ottawa/Ontario (and expansion beyond).
 
 **Realistic timeline from today:** **6–12 months** for certification path and pilots, depending on OntarioMD pace, reference clinic selection, and credential onboarding. Software foundation is largely in place.
 
-**Budget (remaining):** **TBD pending quotes** for third-party audits, legal beyond term-sheet cap, pilot support, and live integration onboarding. **OntarioMD EMR validation fees:** **$27,500 + HST** ([published schedule](https://www.ontariomd.ca/emr-certification/emr-certification)).
+**Budget (remaining, benchmark estimates; subject to quotes):**
+
+| Category | Estimate (CAD) |
+|----------|----------------|
+| OntarioMD EMR validation fees | **$27,500 + HST** (~$31,075 total) ([sourced](https://www.ontariomd.ca/emr-certification/emr-certification/overview)) |
+| PIA / security audit / PHIPA pen test | **$10k–$40k** (benchmark) |
+| Legal / PHIPA pack finalization | **$5k–$15k** (benchmark) |
+| Consulting / evidence support | **$5k–$25k+** (benchmark) |
+| Reference / pilot clinic support | **$5k–$30k+** (benchmark) |
+| Dev remediation | **Variable** (potentially low) |
+| Provincial onboarding | **Mostly time + support contracts** |
+| **Rough total additional** | **~$60k–$200k+** (mid **~$80k–$150k**) |
+
+Obtain vendor quotes for binding budgets. Interactive tranche model: [/financial-model](https://mediforge.netlify.app/financial-model). Detail: [FINANCIAL-MODEL-SOURCES.md](strategic-partner/FINANCIAL-MODEL-SOURCES.md).
 
 ---
 
@@ -69,8 +84,8 @@ See phase completion records under `docs/PHASE-*-COMPLETION.md` and the [Impleme
 | Stage 1 application: architecture, feature list, alignment matrix | Owner + agent | 🔶 Evidence ready; submission pending |
 | Stages 2–4: internal self-assessment and gap closure | Agent | ✅ Software self-assessment live |
 | Stage 5: OntarioMD validation testing | OntarioMD | 🚫 Blocked until vendor path opens |
-| Pay milestone fees (~CAD $27,500 total) | Owner | ⬜ |
-| Third-party privacy impact assessment and security audit | Owner/vendor | 🚫 |
+| Pay milestone fees ($27,500 + HST per [published schedule](https://www.ontariomd.ca/emr-certification/emr-certification/overview)) | Owner | ⬜ |
+| Third-party privacy impact assessment and security audit ($10k–$40k benchmark; obtain quote) | Owner/vendor | 🚫 |
 
 **Success metrics:** OntarioMD vendor engagement started | Stage 5 scheduled | reference site identified.
 
@@ -128,7 +143,24 @@ See phase completion records under `docs/PHASE-*-COMPLETION.md` and the [Impleme
 
 ## Next immediate action
 
-**Email OntarioMD** (support@ontariomd.com or emr@ontariomd.com) with a brief overview of MediForge (deployed EMR, Phases 0–8 software complete, 72–82% documented readiness) and request a **certification consultation**. This remains the single most important owner step to unlock Stage 5.
+1. **Email OntarioMD** (support@ontariomd.com or emr@ontariomd.com) with a brief overview of MediForge (deployed EMR, Phases 0–8 software complete, evidence binder ready) and request a **certification consultation**.
+2. **Obtain quotes** for legal, PIA/security audit, and consulting support.
+3. **Prepare Stage 1 application** and identify an Ontario reference clinic.
+4. **Explore Ontario/Canadian health tech grants** to offset certification and pilot costs.
+
+**Cross-border:** Confirm PHIPA-aligned Canada data residency and subprocessors before live PHI pilots if development resources include non-Canadian contributors.
+
+---
+
+## References
+
+MediForge. (2026). *Ontario EMR readiness: Strategic partner report*. https://mediforge.netlify.app/ontario-readiness
+
+Mindbowser. (n.d.). *OntarioMD certification: A guide for digital health vendors*. https://www.mindbowser.com/ontariomd-certification-guide-for-digital-health-vendors/
+
+OntarioMD. (n.d.-a). *EMR certification overview*. https://www.ontariomd.ca/emr-certification/emr-certification/overview
+
+OntarioMD. (n.d.-b). *EMR certification program FAQ*. https://www.ontariomd.ca/emr-certification/faq
 
 ---
 

@@ -199,8 +199,39 @@ Forward-looking plan from today (Phases 0–8 software complete, **72–82%** do
 | Metric | Value |
 |--------|-------|
 | Estimated timeline to full commercial status | **6–12 months** |
-| Remaining spend (audits, legal beyond cap, pilots, provincial onboarding) | **TBD pending quotes** (budget after vendor and OntarioMD engagement) |
-| OntarioMD EMR validation milestone fees | **$27,500 + HST** ([OntarioMD fee schedule](https://www.ontariomd.ca/emr-certification/emr-certification): $2,500 + $15,000 + $10,000 at Stages 1, 3, 4) |
+| Remaining spend (benchmark estimate; subject to quotes) | **~$60k–$200k+** CAD (realistic mid **~$80k–$150k**) |
+| OntarioMD EMR validation milestone fees | **$27,500 + HST** (~$31,075 total; [OntarioMD fee schedule](https://www.ontariomd.ca/emr-certification/emr-certification): $2,500 + $15,000 + $10,000 at Stages 1, 3, 4) |
+
+*June 2026 research update. Benchmark ranges are not vendor quotes; see cost table below and [Financial Model Sources](strategic-partner/FINANCIAL-MODEL-SOURCES.md).*
+
+### Current status (June 2026)
+
+| Dimension | Status |
+|-----------|--------|
+| Phases 0–8 software | **Complete** where buildable without live credentials; provincial desks/queues built; 75+ automated interop tests passing |
+| Evidence binder | Traceability matrix, PHIPA pack elements, audit trails, phase completion records (`/evidence-binder`) |
+| Overall documented readiness | **72–82%** |
+| OntarioMD certification | **0%** (Stages 1–5 not yet started) |
+| Live provincial connectivity | **5–15%** (credential-gated; queue/stub level ready for enrollment post-certification) |
+
+### What full certification means
+
+Successful completion of **OntarioMD five-stage EMR validation** (Stages 1–5, including reference site assessment at Stage 5). This enables official certified status and live provincial integrations (OLIS, MCEDT, PrescribeIT/eRx, DIR, HRM, DHDR) plus commercial pilot deployments (OntarioMD, n.d.-a; Mindbowser, n.d.).
+
+### Estimated costs from current state to certification and initial live readiness
+
+**Disclaimer:** Figures below are **benchmark estimates** from published OntarioMD fees and industry compliance ranges. They are **subject to vendor quotes, validation findings, and internal capacity**. Tranche line items on `/financial-model` show sourced amounts or **TBD pending quotes** until invoices exist.
+
+| Category | Estimate (CAD) | Notes |
+|----------|----------------|-------|
+| OntarioMD EMR validation milestone fees | **$27,500 + HST** (~$31,075 total) | Sourced (OntarioMD, n.d.-a) |
+| PIA / third-party security audit / PHIPA-aligned pen test | **$10k–$40k** (benchmark) | Focused scope; vendor quote recommended |
+| Legal / PHIPA pack finalization | **$5k–$15k** (benchmark) | Beyond term-sheet legal cap where applicable |
+| Consulting / application and evidence support | **$5k–$25k+** (benchmark) | OntarioMD path navigation |
+| Reference / pilot clinic deployment (Stage 5 + Phase C) | **$5k–$30k+** (benchmark) | Reference site and first pilots |
+| Dev remediation / sandbox / minor alignment | **Variable** (potentially low) | Depends on Stage 5 findings |
+| Provincial onboarding | **Mostly time + support contracts** | Low direct fees; TBD pending quotes |
+| **Rough total additional spend** | **~$60k–$200k+** (mid **~$80k–$150k**) | Within seed tranche capacity ($300k–$600k round) |
 
 ### Phase A: OntarioMD certification path (2–6 months, owner-led)
 
@@ -241,9 +272,25 @@ Additional provincial certifications, advanced features, ongoing compliance and 
 | C | Pilots and go-to-market | 3–6 months |
 | **Total** | **Full commercial status** | **6–12 months** |
 
-**Next immediate action (owner):** Email OntarioMD at emr@ontariomd.com or support@ontariomd.com with a brief overview of MediForge (deployed EMR, Phases 0–8 software complete, 72–82% documented readiness) and request a **certification consultation**.
+**Next immediate action (owner):** Email OntarioMD at emr@ontariomd.com or support@ontariomd.com with a brief overview of MediForge (deployed EMR, Phases 0–8 software complete, evidence binder ready) and request a **certification consultation**.
+
+**Additional next steps:** (1) Obtain quotes for legal, PIA/security audit, and consulting; (2) Prepare Stage 1 application and identify Ontario reference clinic; (3) Explore Ontario/Canadian health tech grants to offset costs.
+
+**Cross-border note:** US-based development resources require PHIPA-aligned Canada data residency and subprocessors confirmed before live PHI pilots.
 
 **Resources:** OntarioMD (ontariomd.ca), Ontario Health Service Desk 1-888-411-7742, PrescribeIT (prescribeit.ca), MCEDT manuals (ontario.ca), Infoway (infowayinforoute.ca). Written companion: **`docs/ROADMAP-CANADA-CERTIFICATION.md`**.
+
+### References
+
+MediForge. (2026). *Ontario EMR readiness: Strategic partner report*. https://mediforge.netlify.app/ontario-readiness
+
+Mindbowser. (n.d.). *OntarioMD certification: A guide for digital health vendors*. https://www.mindbowser.com/ontariomd-certification-guide-for-digital-health-vendors/
+
+OntarioMD. (n.d.-a). *EMR certification overview*. https://www.ontariomd.ca/emr-certification/emr-certification/overview
+
+OntarioMD. (n.d.-b). *EMR certification program FAQ*. https://www.ontariomd.ca/emr-certification/faq
+
+*Additional cost benchmarks:* Aggregated industry sources on PHIPA/security audits; obtain vendor quotes for precision. See [Financial Model Sources](strategic-partner/FINANCIAL-MODEL-SOURCES.md).
 
 ---
 
