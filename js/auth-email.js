@@ -77,10 +77,13 @@
     if (msg.includes('password')) {
       return message;
     }
+    if (msg.includes('rate limit') || msg.includes('over_email_send') || msg.includes('email rate')) {
+      return 'Too many registration attempts right now. Please wait about an hour and try again, or ask the platform owner to turn off email confirmation for clinic signups in Supabase Auth settings.';
+    }
     if (msg.includes('profile setup failed') || msg.includes('permission denied') || msg.includes('row-level security')) {
       return 'We could not finish setting up your account. Please try registering again in a few minutes. If it keeps failing, contact support.';
     }
-    if (msg.includes('invalid') || msg.includes('not authorized') || msg.includes('mediforge.app')) {
+    if (msg.includes('invalid') || msg.includes('not authorized')) {
       return 'We could not finish creating your login. Please wait a minute and try again. If it still fails, contact support.';
     }
     if (msg.includes('organization') || msg.includes('internet') || msg.includes('connection')) {

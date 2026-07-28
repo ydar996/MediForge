@@ -1115,6 +1115,15 @@
               postalCode: parsedPostal,
               bloodGroup: patient.blood_group || '',
               paymentSource: patient.payment_source || 'Self Pay',
+              preferredPaymentMethod: patient.preferred_payment_method || patient.preferredPaymentMethod || 'cash',
+              province: patient.province || parsedState || '',
+              healthCardNumber: patient.health_card_number || patient.phn || '',
+              healthCardVersion: patient.health_card_version || '',
+              phn: patient.phn || patient.health_card_number || '',
+              wcbClaimNumber: patient.wcb_claim_number || '',
+              insuranceName: patient.insurance_name || '',
+              insuranceMemberNumber: patient.insurance_member_number || '',
+              insurancePolicyGroupNumber: patient.insurance_policy_number || patient.insurance_policy_group_number || '',
               allergies: allergies,
               conditions: conditions,
               diagnoses: diagnoses,
@@ -1191,6 +1200,30 @@
               }
               if (matchedPrescriptions) {
                 loadedPatient.prescriptions = matchedPrescriptions;
+              }
+            });
+
+            // Preserve locally stored ID/insurance card uploads until cloud document storage is wired
+            patients.forEach(loadedPatient => {
+              const localMatch = existingPatients.find(localPatient =>
+                (localPatient?.patient_id && localPatient.patient_id === loadedPatient.patient_id) ||
+                (localPatient?.id && localPatient.id === loadedPatient.id) ||
+                (localPatient?._supabaseUuid && localPatient._supabaseUuid === loadedPatient._supabaseUuid)
+              );
+              if (!localMatch) return;
+              if (!loadedPatient.identificationCard && localMatch.identificationCard) {
+                loadedPatient.identificationCard = localMatch.identificationCard;
+                loadedPatient.identificationCardFileName = localMatch.identificationCardFileName;
+              }
+              if (!loadedPatient.insuranceCard && !loadedPatient.insuranceCardFront) {
+                if (localMatch.insuranceCard || localMatch.insuranceCardFront) {
+                  loadedPatient.insuranceCard = localMatch.insuranceCard || localMatch.insuranceCardFront;
+                  loadedPatient.insuranceCardFront = localMatch.insuranceCardFront || localMatch.insuranceCard;
+                  loadedPatient.insuranceCardFileName = localMatch.insuranceCardFileName;
+                }
+              }
+              if (!loadedPatient.insuranceCardBack && localMatch.insuranceCardBack) {
+                loadedPatient.insuranceCardBack = localMatch.insuranceCardBack;
               }
             });
           }

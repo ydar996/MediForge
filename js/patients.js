@@ -6981,6 +6981,7 @@ const editPatientForm = document.getElementById("edit-patient-form");
 if (editPatientForm) {
   editPatientForm.addEventListener("submit", async function(e) {
     e.preventDefault();
+    try {
     const urlParams = new URLSearchParams(window.location.search);
     const patientId = urlParams.get("id");
     
@@ -7056,8 +7057,12 @@ if (editPatientForm) {
     if (window.MediForgeRegistrationCase) {
       Object.assign(updated, window.MediForgeRegistrationCase.normalizePatientRecord(updated));
     }
+
+    const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
+    const patient = patients.find(p => p.id === currentPatientId || p.patient_id === currentPatientId);
+
     if (!document.getElementById('dateJoinedPractice')?.value?.trim()) {
-      updated.dateJoinedPractice = patient.dateJoinedPractice || patient.date_joined_practice || todayIsoDate();
+      updated.dateJoinedPractice = (patient && (patient.dateJoinedPractice || patient.date_joined_practice)) || todayIsoDate();
     }
 
     if (typeof window.MediForgePatientCardUploads?.readRegistrationCards === 'function') {
@@ -7077,9 +7082,6 @@ if (editPatientForm) {
         return;
       }
     }
-    
-    const patients = JSON.parse(localStorage.getItem(getDataKey("patients")) || "[]");
-    const patient = patients.find(p => p.id === currentPatientId || p.patient_id === currentPatientId);
     
     if (patient) {
       // Preserve existing insurance card files if no new ones uploaded
@@ -7173,13 +7175,28 @@ if (editPatientForm) {
             last_name: supabasePatientUpdate.last_name
           });
           
-          const { data, error } = await window.supabaseClient
-            .from('patients')
-            .update(supabasePatientUpdate)
-            .eq('patient_id', patient.id)
-            .eq('organization_id', orgId)
-            .select()
-            .single();
+          const displayPatientId = patient.patient_id || patient.patientNumber || patient.id;
+          const supabaseUuid = patient._supabaseUuid || null;
+          let data = null;
+          let error = null;
+          if (supabaseUuid) {
+            ({ data, error } = await window.supabaseClient
+              .from('patients')
+              .update(supabasePatientUpdate)
+              .eq('id', supabaseUuid)
+              .eq('organization_id', orgId)
+              .select()
+              .single());
+          }
+          if ((!data || error) && displayPatientId) {
+            ({ data, error } = await window.supabaseClient
+              .from('patients')
+              .update(supabasePatientUpdate)
+              .eq('patient_id', displayPatientId)
+              .eq('organization_id', orgId)
+              .select()
+              .single());
+          }
           
           if (error) {
             console.error('❌ [EDIT-PATIENT] Supabase update error:', error);
@@ -7276,7 +7293,7 @@ if (editPatientForm) {
             const { data: verifyData, error: verifyError } = await window.supabaseClient
               .from('patients')
               .select('middle_name, first_name, last_name, race')
-              .eq('patient_id', patient.id)
+              .eq('patient_id', displayPatientId)
               .eq('organization_id', orgId)
               .single();
             
@@ -7403,6 +7420,11 @@ if (editPatientForm) {
       window.location.href = "/patients";
     } else {
       console.error('Patient not found in localStorage for ID:', patientId);
+      alert('Could not save: patient record was not found in this browser cache. Please refresh the page and try again.');
+    }
+    } catch (submitErr) {
+      console.error('❌ [EDIT-PATIENT] Unexpected save error:', submitErr);
+      alert(submitErr?.message || 'Could not save patient updates. Please try again.');
     }
   });
 }
@@ -18991,6 +19013,48 @@ async function loadEditForm() {
     alert('Patient not found. Please go back to the patient list.');
     return;
   }
+
+  // Merge payer profile (PHN / private insurance IDs live here, not only on patients row)
+  try {
+    if (typeof window.MediForgePayerEngine?.getPayerProfile === 'function') {
+      const payerUuid = patient._supabaseUuid || null;
+      const payerRow = payerUuid
+        ? await window.MediForgePayerEngine.getPayerProfile(payerUuid)
+        : null;
+      if (payerRow) {
+        if (!patient.phn && !patient.healthCardNumber && payerRow.phn) {
+          patient.phn = payerRow.phn;
+          patient.healthCardNumber = payerRow.phn;
+        }
+        if (!patient.healthCardVersion && payerRow.health_card_version) {
+          patient.healthCardVersion = payerRow.health_card_version;
+        }
+        if (!patient.insuranceName && payerRow.private_insurer_id) {
+          patient.insuranceName = payerRow.private_insurer_id;
+        }
+        if (!patient.insuranceMemberNumber && payerRow.insurance_member_number) {
+          patient.insuranceMemberNumber = payerRow.insurance_member_number;
+        }
+        if (!patient.insurancePolicyGroupNumber && (payerRow.insurance_policy_number || payerRow.insurance_group_number)) {
+          patient.insurancePolicyGroupNumber = payerRow.insurance_policy_number || payerRow.insurance_group_number;
+        }
+        if (!patient.preferredPaymentMethod && payerRow.preferred_payment_method) {
+          patient.preferredPaymentMethod = payerRow.preferred_payment_method;
+        }
+        if (!patient.wcbClaimNumber && payerRow.metadata?.wcbClaimNumber) {
+          patient.wcbClaimNumber = payerRow.metadata.wcbClaimNumber;
+        }
+        if ((!patient.paymentSource || patient.paymentSource === 'Self Pay') && payerRow.payment_source) {
+          patient.paymentSource = payerRow.payment_source;
+        }
+        if (!patient.province && payerRow.province) {
+          patient.province = payerRow.province;
+        }
+      }
+    }
+  } catch (payerLoadErr) {
+    console.warn('[EDIT-PATIENT] Could not load payer profile:', payerLoadErr);
+  }
   
   // DEBUG: Log patient data to see what fields are available
   console.log('🔍 [EDIT-PATIENT] Patient data loaded:', {
@@ -19390,9 +19454,9 @@ async function loadEditForm() {
   setValue("healthCardNumber", patient.healthCardNumber || patient.phn || patient.health_card_number || "");
   setValue("healthCardVersion", patient.healthCardVersion || patient.health_card_version || "");
   setValue("wcbClaimNumber", patient.wcbClaimNumber || patient.wcb_claim_number || patient.metadata?.wcbClaimNumber || "");
-  setValue("insuranceName", patient.insuranceName);
-  setValue("insurancePolicyGroupNumber", patient.insurancePolicyGroupNumber);
-  setValue("insuranceMemberNumber", patient.insuranceMemberNumber);
+  setValue("insuranceName", patient.insuranceName || patient.insurance_name || "");
+  setValue("insurancePolicyGroupNumber", patient.insurancePolicyGroupNumber || patient.insurance_policy_number || patient.insurance_policy_group_number || "");
+  setValue("insuranceMemberNumber", patient.insuranceMemberNumber || patient.insurance_member_number || "");
 
   const practiceFields = mapPracticeEnrolmentFromSupabase(patient);
   setValue("enrolledPhysician", practiceFields.enrolledPhysician);

@@ -125,6 +125,25 @@
     return data;
   }
 
+  async function getPayerProfile(patientId) {
+    const supabase = global.supabaseClient;
+    if (!supabase || !patientId) return null;
+    let orgId = null;
+    if (typeof global.resolveOrganizationId === 'function') orgId = await global.resolveOrganizationId();
+    if (!orgId) return null;
+    const { data, error } = await supabase
+      .from('patient_payer_profiles')
+      .select('*')
+      .eq('patient_id', patientId)
+      .eq('organization_id', orgId)
+      .maybeSingle();
+    if (error) {
+      console.warn('[payer] profile load:', error.message);
+      return null;
+    }
+    return data;
+  }
+
   async function queueClaimDraft(invoice, patient, services) {
     const cfg = await loadConfig();
     if (!cfg.workflow?.autoCreateClaimOnInvoice) return null;
@@ -162,6 +181,7 @@
     loadConfig,
     enrichInvoice,
     savePayerProfile,
+    getPayerProfile,
     queueClaimDraft,
     detectPrimaryPayer,
     PROVINCE_PAYER_MAP

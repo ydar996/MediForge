@@ -530,10 +530,8 @@ const COUNTRIES_DATA = {
 };
 
 // Attach US/Canada city lists when us-ca-cities-data.js is loaded
+// Canada cities are free-text only (no dropdown); keep US lists for select UIs.
 if (typeof window.US_CA_CITIES_BY_STATE !== 'undefined') {
-  if (window.US_CA_CITIES_BY_STATE.Canada) {
-    COUNTRIES_DATA.Canada.citiesByState = window.US_CA_CITIES_BY_STATE.Canada;
-  }
   if (window.US_CA_CITIES_BY_STATE['United States']) {
     COUNTRIES_DATA['United States'].citiesByState = window.US_CA_CITIES_BY_STATE['United States'];
   }
@@ -650,42 +648,109 @@ window.populateStateDropdown = function(stateSelectId, country, selectedState = 
   return states;
 };
 
+/** Convert a city control to a plain text input (Canada: no dropdown / no datalist). */
+window.ensureCityTextInput = function ensureCityTextInput(citySelectId, selectedCity = '') {
+  let cityEl = document.getElementById(citySelectId);
+  if (!cityEl) return null;
+  const oldList = document.getElementById(citySelectId + '-datalist');
+  if (oldList) oldList.remove();
+  if (cityEl.tagName === 'SELECT') {
+    const typed = document.createElement('input');
+    typed.type = 'text';
+    typed.id = cityEl.id;
+    typed.name = cityEl.getAttribute('name') || cityEl.id;
+    typed.required = cityEl.required;
+    typed.autocomplete = 'address-level2';
+    typed.style.cssText = cityEl.style.cssText || 'width: 100%;';
+    typed.placeholder = 'Type city / town name';
+    if (cityEl.className) typed.className = cityEl.className;
+    cityEl.parentNode.replaceChild(typed, cityEl);
+    cityEl = typed;
+  } else {
+    cityEl.removeAttribute('list');
+    if (!cityEl.placeholder) cityEl.placeholder = 'Type city / town name';
+    cityEl.autocomplete = cityEl.autocomplete || 'address-level2';
+  }
+  cityEl.disabled = false;
+  if (selectedCity) cityEl.value = selectedCity;
+  return cityEl;
+};
+
+window.ensureCitySelect = function ensureCitySelect(citySelectId) {
+  let cityEl = document.getElementById(citySelectId);
+  if (!cityEl) return null;
+  const oldList = document.getElementById(citySelectId + '-datalist');
+  if (oldList) oldList.remove();
+  if (cityEl.tagName === 'SELECT') return cityEl;
+  const select = document.createElement('select');
+  select.id = cityEl.id;
+  select.name = cityEl.getAttribute('name') || cityEl.id;
+  select.required = cityEl.required;
+  select.style.cssText = cityEl.style.cssText || 'width: 100%;';
+  if (cityEl.className) select.className = cityEl.className;
+  cityEl.parentNode.replaceChild(select, cityEl);
+  return select;
+};
+
 // Helper function to populate city dropdown based on country + state/province
 window.populateCityDropdown = function(citySelectId, country, state, selectedCity = '') {
-  const citySelect = document.getElementById(citySelectId);
-  if (!citySelect) return;
+  let cityEl = document.getElementById(citySelectId);
+  if (!cityEl) return;
 
-  citySelect.innerHTML = '<option value="">-- Select City --</option>';
+  // Canada: always free-text city (dropdowns freeze / omit places). All forms + portal intake share this.
+  if (country === 'Canada') {
+    if (!state) {
+      cityEl = window.ensureCityTextInput(citySelectId, selectedCity || '');
+      if (cityEl) {
+        cityEl.value = selectedCity || '';
+        cityEl.disabled = true;
+        cityEl.placeholder = 'Select province first, then type city';
+      }
+      return;
+    }
+    cityEl = window.ensureCityTextInput(citySelectId, selectedCity || '');
+    if (cityEl) {
+      cityEl.disabled = false;
+      cityEl.placeholder = 'Type city / town name';
+      if (selectedCity) cityEl.value = selectedCity;
+    }
+    return;
+  }
 
   if (!country || !state || !COUNTRIES_DATA[country]) {
+    cityEl = window.ensureCitySelect(citySelectId) || cityEl;
+    if (cityEl && cityEl.tagName === 'SELECT') {
+      cityEl.innerHTML = '<option value="">-- Select City --</option>';
+      cityEl.disabled = true;
+    }
     return;
   }
 
   const countryData = COUNTRIES_DATA[country];
   let cities = [];
-
   if (countryData.citiesByState && countryData.citiesByState[state]) {
     cities = countryData.citiesByState[state];
   } else {
     cities = [state];
   }
 
+  cityEl = window.ensureCitySelect(citySelectId) || cityEl;
+  cityEl.innerHTML = '<option value="">-- Select City --</option>';
   cities.forEach(city => {
     const option = document.createElement('option');
     option.value = city;
     option.textContent = city;
-    if (city === selectedCity) {
-      option.selected = true;
-    }
-    citySelect.appendChild(option);
+    if (city === selectedCity) option.selected = true;
+    cityEl.appendChild(option);
   });
   if (selectedCity && cities.indexOf(selectedCity) === -1) {
     const legacy = document.createElement('option');
     legacy.value = selectedCity;
     legacy.textContent = selectedCity;
     legacy.selected = true;
-    citySelect.appendChild(legacy);
+    cityEl.appendChild(legacy);
   }
+  cityEl.disabled = false;
 };
 
 window.getPostalCodeLabel = function getPostalCodeLabel(country) {
@@ -708,10 +773,11 @@ window.normalizePostalCode = function normalizePostalCode(country, value) {
 };
 
 window.validatePostalCode = function validatePostalCode(country, value) {
+  // Do not restrict postal / ZIP entries: accept any non-empty value for CA/US when required by the form.
   const normalized = window.normalizePostalCode(country, value);
   if (!normalized) {
     if (country === 'Canada' || country === 'United States') {
-      return { valid: false, error: country === 'Canada' ? 'Please enter a postal code (e.g. K1A 0B1).' : 'Please enter a ZIP code (e.g. 90210).' };
+      return { valid: false, error: country === 'Canada' ? 'Please enter a postal code.' : 'Please enter a ZIP code.' };
     }
     return { valid: true, normalized: '' };
   }
@@ -720,11 +786,10 @@ window.validatePostalCode = function validatePostalCode(country, value) {
     if (/^[A-Z]\d[A-Z]\d[A-Z]\d$/.test(compact)) {
       return { valid: true, normalized: compact.slice(0, 3) + ' ' + compact.slice(3) };
     }
-    return { valid: false, error: 'Canadian postal code format: A1A 1A1 (e.g. K1A 0B1).' };
+    return { valid: true, normalized };
   }
   if (country === 'United States') {
-    const ok = /^\d{5}(-\d{4})?$/.test(normalized);
-    return ok ? { valid: true, normalized } : { valid: false, error: 'US ZIP code: 5 digits or 5+4 (e.g. 90210 or 90210-1234).' };
+    return { valid: true, normalized };
   }
   return { valid: true, normalized };
 };
@@ -760,21 +825,18 @@ window.updatePostalCodeField = function updatePostalCodeField(country, postalInp
   }
 
   field.disabled = false;
+  field.removeAttribute('pattern');
+  field.removeAttribute('maxLength');
+  field.removeAttribute('maxlength');
   if (country === 'Canada') {
-    field.placeholder = 'e.g. K1A 0B1';
-    field.pattern = '[A-Za-z]\\d[A-Za-z][ ]?\\d[A-Za-z]\\d';
-    field.title = 'Canadian postal code, e.g. K1A 0B1';
-    field.maxLength = 7;
+    field.placeholder = 'Postal code';
+    field.title = 'Enter postal code';
   } else if (country === 'United States') {
-    field.placeholder = 'e.g. 90210';
-    field.pattern = '\\d{5}(-\\d{4})?';
-    field.title = 'US ZIP code, e.g. 90210 or 90210-1234';
-    field.maxLength = 10;
+    field.placeholder = 'ZIP code';
+    field.title = 'Enter ZIP code';
   } else {
     field.placeholder = 'Postal or ZIP code';
-    field.removeAttribute('pattern');
     field.title = '';
-    field.removeAttribute('maxLength');
   }
   field.required = country === 'Canada' || country === 'United States';
 
@@ -849,14 +911,8 @@ window.handleAddressCityChange = function handleAddressCityChange(countrySelectI
 window.handleAddressStateChange = function handleAddressStateChange(countrySelectId, stateSelectId, citySelectId, postalSelectId, selectedCity) {
   const country = document.getElementById(countrySelectId)?.value || '';
   const state = document.getElementById(stateSelectId)?.value || '';
-  const citySelect = document.getElementById(citySelectId);
-  if (citySelect) {
-    citySelect.innerHTML = '<option value="">-- Select City --</option>';
-    citySelect.disabled = !country || !state;
-  }
-  if (typeof window.populateCityDropdown === 'function' && country && state) {
+  if (typeof window.populateCityDropdown === 'function') {
     window.populateCityDropdown(citySelectId, country, state, selectedCity || '');
-    if (citySelect) citySelect.disabled = false;
   }
   // Typed postal (CA/US) is available as soon as country is known; sample dropdowns still need city
   if (typeof window.populatePostalCodeDropdown === 'function') {
@@ -866,7 +922,13 @@ window.handleAddressStateChange = function handleAddressStateChange(countrySelec
 
 window.populateCityDatalist = function populateCityDatalist(datalistId, country, state) {
   const datalist = document.getElementById(datalistId);
-  if (!datalist || !country || !state || !COUNTRIES_DATA[country]) return;
+  if (!datalist) return;
+  // Canada cities are free-text only; do not seed large suggestion lists
+  if (country === 'Canada') {
+    datalist.innerHTML = '';
+    return;
+  }
+  if (!country || !state || !COUNTRIES_DATA[country]) return;
   datalist.innerHTML = '';
   const countryData = COUNTRIES_DATA[country];
   let cities = [];

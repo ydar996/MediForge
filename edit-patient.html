@@ -107,7 +107,7 @@
  </select>
 
  <label for="postalCode" id="postal-code-label" style="display: block; margin-top: 10px;">Postal Code*:</label>
- <input type="text" id="postalCode" required autocomplete="postal-code" placeholder="e.g. K1A 0B1" maxlength="7" title="Canadian postal code, e.g. K1A 0B1" style="width: 100%;">
+ <input type="text" id="postalCode" required autocomplete="postal-code" placeholder="Postal code" style="width: 100%;">
  
  <label for="country" style="display: block; margin-top: 10px;">Country*:</label>
  <select id="country" required onchange="handleEditPatientCountryChange()">
@@ -499,6 +499,10 @@
           const currentState = document.getElementById('emergencyState').value;
           await window.populateStateDropdown('emergencyState', country, currentState);
         }
+        const emergencyStateVal = document.getElementById('emergencyState')?.value || '';
+        if (typeof window.populateCityDropdown === 'function') {
+          window.populateCityDropdown('emergencyCity', country, emergencyStateVal);
+        }
         if (typeof window.setPhoneCountryCodeForAddressCountry === 'function') {
           window.setPhoneCountryCodeForAddressCountry('emergencyPhoneCountryCode', country || 'Canada');
           if (typeof updateEmergencyPhonePlaceholder === 'function') updateEmergencyPhonePlaceholder();
@@ -565,8 +569,13 @@
             document.getElementById('city').disabled = !stateSelect.value;
           }
         });
-        document.getElementById('city')?.addEventListener('change', function() {
-          if (typeof window.handleAddressCityChange === 'function') {
+        document.addEventListener('change', function(e) {
+          if (e.target && e.target.id === 'city' && typeof window.handleAddressCityChange === 'function') {
+            window.handleAddressCityChange('country', 'state', 'city', 'postalCode');
+          }
+        });
+        document.addEventListener('input', function(e) {
+          if (e.target && e.target.id === 'city' && typeof window.handleAddressCityChange === 'function') {
             window.handleAddressCityChange('country', 'state', 'city', 'postalCode');
           }
         });
@@ -589,6 +598,11 @@
             }
           }
         });
+        emergencyStateSelect.addEventListener('change', function() {
+          if (typeof window.populateCityDropdown === 'function') {
+            window.populateCityDropdown('emergencyCity', emergencyCountrySelect.value, emergencyStateSelect.value);
+          }
+        });
       }
       
       // Add onchange handlers for country dropdowns
@@ -606,13 +620,13 @@
   <script src="js/supabase-client.js?v=202510220113090113091309"></script>
   
   <!-- Universal Scripts -->
-  <script src="js/universal-data-loader.js?v=202510220113090113091309"></script>
+  <script src="js/universal-data-loader.js?v=20260728143000"></script>
   <script src="js/universal-sync-status.js?v=202510220113090113091309"></script>
   
   <!-- Enhanced selectors -->
   <script src="js/us-ca-cities-data.js?v=20260728120000"></script>
   <script src="js/us-ca-postal-codes-data.js?v=20260728120000"></script>
-  <script src="js/countries-data.js?v=20260728120000"></script>
+  <script src="js/countries-data.js?v=20260728150000"></script>
   <script src="js/country-codes.js"></script>
   <script src="js/searchable-dropdown.js"></script>
   <script src="js/patient-race-options.js?v=20260612120000"></script>
@@ -630,7 +644,8 @@
   <!-- Patient management -->
   <script src="js/payment-source-fields.js?v=20260612150000"></script>
   <script src="js/patient-card-uploads.js?v=20260612160000"></script>
-  <script src="js/patients.js?v=20260612160000"></script>
+  <script src="js/billing-payer-engine.js?v=20260728143000"></script>
+  <script src="js/patients.js?v=20260728143000"></script>
   <script src="js/patient-identity.js?v=20260427160000"></script>
   <script src="js/main.js?v=202510220113090113091309"></script>
   

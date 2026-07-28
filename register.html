@@ -373,7 +373,7 @@
 
       <div class="form-group">
         <label for="org-postal-code" id="org-postal-label">Postal Code*:</label>
-        <input type="text" id="org-postal-code" required autocomplete="postal-code" placeholder="e.g. K1A 0B1" maxlength="7" title="Canadian postal code, e.g. K1A 0B1">
+        <input type="text" id="org-postal-code" required autocomplete="postal-code" placeholder="Postal code">
       </div>
       
       <div class="form-group">
@@ -822,11 +822,8 @@
     // Function to handle country change and populate states
     function handleOrgCountryChange() {
       const country = document.getElementById('country').value;
-      const citySelect = document.getElementById('org-city');
-      if (citySelect) {
-        citySelect.innerHTML = '<option value="">-- Select state/province first --</option>';
-        citySelect.disabled = true;
-        citySelect.required = true;
+      if (typeof window.populateCityDropdown === 'function') {
+        window.populateCityDropdown('org-city', country, '', '');
       }
       if (country) {
         if (typeof window.populateStateDropdown === 'function') {
@@ -856,19 +853,9 @@
     function handleOrgStateChange() {
       const country = document.getElementById('country').value;
       const state = document.getElementById('state').value;
-      const citySelect = document.getElementById('org-city');
-      if (!citySelect) return;
-
-      if (!country || !state) {
-        citySelect.innerHTML = '<option value="">-- Select state/province first --</option>';
-        citySelect.disabled = true;
-        return;
-      }
-
       if (typeof window.populateCityDropdown === 'function') {
         window.populateCityDropdown('org-city', country, state);
       }
-      citySelect.disabled = false;
       if (typeof window.populatePostalCodeDropdown === 'function') {
         window.populatePostalCodeDropdown('org-postal-code', country, state, '');
       }
@@ -2431,10 +2418,13 @@
         if (stateSelect) {
           stateSelect.addEventListener('change', handleOrgStateChange);
         }
-        const orgCitySelect = document.getElementById('org-city');
-        if (orgCitySelect) {
-          orgCitySelect.addEventListener('change', handleOrgCityChange);
-        }
+        // Delegate: city control may be replaced (Canada text input vs US select)
+        document.addEventListener('change', function(e) {
+          if (e.target && e.target.id === 'org-city') handleOrgCityChange();
+        });
+        document.addEventListener('input', function(e) {
+          if (e.target && e.target.id === 'org-city') handleOrgCityChange();
+        });
         
         // Populate state dropdown when focused if country already selected
         if (stateSelect && countryField) {
@@ -2477,7 +2467,7 @@
   <!-- Countries data -->
   <script src="js/us-ca-cities-data.js?v=20260728120000"></script>
   <script src="js/us-ca-postal-codes-data.js?v=20260728120000"></script>
-  <script src="js/countries-data.js?v=20260728120000"></script>
+  <script src="js/countries-data.js?v=20260728150000"></script>
   <script src="js/auth-email.js?v=20260611160000"></script>
   
   <!-- Universal Scripts -->

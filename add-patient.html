@@ -346,7 +346,7 @@
     </select>
 
     <label for="postalCode" id="postal-code-label" style="display: block; margin-top: 10px;">Postal Code*:</label>
-    <input type="text" id="postalCode" required autocomplete="postal-code" placeholder="e.g. K1A 0B1" maxlength="7" title="Canadian postal code, e.g. K1A 0B1" style="width: 100%;">
+    <input type="text" id="postalCode" required autocomplete="postal-code" placeholder="Postal code" style="width: 100%;">
     
     <label for="phone" style="display: block; margin-top: 10px;">Phone*:</label>
     <div style="display: flex; gap: 5px;">
@@ -753,7 +753,7 @@
   <!-- Countries data -->
   <script src="js/us-ca-cities-data.js?v=20260728120000"></script>
   <script src="js/us-ca-postal-codes-data.js?v=20260728120000"></script>
-  <script src="js/countries-data.js?v=20260728120000"></script>
+  <script src="js/countries-data.js?v=20260728150000"></script>
   
   <!-- Country codes with flags -->
   <script src="js/country-codes.js"></script>
@@ -879,6 +879,10 @@
         if (typeof window.populateStateDropdown === 'function') {
           window.populateStateDropdown('emergencyState', country);
         }
+        const emergencyStateVal = document.getElementById('emergencyState')?.value || '';
+        if (typeof window.populateCityDropdown === 'function') {
+          window.populateCityDropdown('emergencyCity', country, emergencyStateVal);
+        }
         
         if (typeof window.setPhoneCountryCodeForAddressCountry === 'function') {
           window.setPhoneCountryCodeForAddressCountry('emergencyPhoneCountryCode', country || 'Canada');
@@ -984,8 +988,13 @@
               document.getElementById('city').disabled = !stateSelect.value;
             }
           });
-          document.getElementById('city')?.addEventListener('change', function() {
-            if (typeof window.handleAddressCityChange === 'function') {
+          document.addEventListener('change', function(e) {
+            if (e.target && e.target.id === 'city' && typeof window.handleAddressCityChange === 'function') {
+              window.handleAddressCityChange('country', 'state', 'city', 'postalCode');
+            }
+          });
+          document.addEventListener('input', function(e) {
+            if (e.target && e.target.id === 'city' && typeof window.handleAddressCityChange === 'function') {
               window.handleAddressCityChange('country', 'state', 'city', 'postalCode');
             }
           });
@@ -1006,6 +1015,13 @@
               if (typeof window.populateStateDropdown === 'function') {
                 window.populateStateDropdown('emergencyState', countryValue);
               }
+            }
+          });
+          emergencyStateSelect.addEventListener('change', function() {
+            const countryValue = emergencyCountrySelect.value;
+            const stateValue = emergencyStateSelect.value;
+            if (typeof window.populateCityDropdown === 'function') {
+              window.populateCityDropdown('emergencyCity', countryValue, stateValue);
             }
           });
         }
