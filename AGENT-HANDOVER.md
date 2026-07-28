@@ -418,7 +418,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Root cause (org code):** UI checked only camelCase `orgCode` while loaders stored `org_code` / `code`, then generated a new random code and **wrote it over** Supabase `organizations.org_code`.
 - **Fixed:** Registration reads selected founder role; Administrator option value is `Admin`; login/session cache stores `orgCode`/`org_code`/`code` together; dashboard and edit-profile load Supabase code first and never overwrite an existing code; `org-migration.js` only normalizes aliases (no invent).
 - **DB:** Added `finalize_new_organization` RPC so non-Admin founders can still activate pending orgs / set contact email (`supabase/migrations/20260728120000_finalize_new_organization_rpc.sql`). **Owner must run this migration** on each Supabase environment.
-- **Deployed:** `6bb5eb1` pushed to `dev`, `staging`, and `main` (Netlify CD).
+- **Deployed:** `6bb5eb1` + `79c0428` to `dev`, `staging`, and `main`; CLI Netlify deploy to all three sites.
 
 ### June 2026: Revenue projection empty tables (financial-model-reports.js)
 
