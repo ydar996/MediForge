@@ -411,6 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### July 28, 2026: Registration blocked by hidden required license field
+
+- **Owner ask:** Register form failed with `admin-license` "not focusable" console errors.
+- **Cause:** License input stayed `required` while hidden for Administrator; browser native validation blocked submit.
+- **Fixed:** Remove static `required` on license inputs; set required only when clinical roles show the field; escape username `pattern` for Chrome `/v` regex.
+- **Deployed:** `9da5c70` to `dev` / `staging` / `main` + CLI Netlify all three sites.
+
 ### July 28, 2026: Org registration role + org-code shape-shifting
 
 - **Owner ask:** First registrant role (e.g. Doctor + license) kept becoming Administrator; org code changed on each login so new staff could not join.
