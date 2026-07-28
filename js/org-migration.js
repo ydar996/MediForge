@@ -16,7 +16,7 @@
 
   window.resolveOrgCodeFromRecord = resolveOrgCode;
 
-  // Normalize aliases only — do not generate new codes
+  // Normalize aliases only: do not generate new codes
   function migrateOrganizations() {
     const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
     let migrated = false;
