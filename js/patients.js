@@ -19445,7 +19445,7 @@ async function loadEditForm() {
       const citySelect = document.getElementById('city');
       if (citySelect) citySelect.disabled = false;
     }
-    if (savedCity && typeof window.populatePostalCodeDropdown === 'function') {
+    if (typeof window.populatePostalCodeDropdown === 'function') {
       window.populatePostalCodeDropdown('postalCode', patient.country, patient.state, savedCity, savedPostal);
     }
     setValue('city', savedCity);

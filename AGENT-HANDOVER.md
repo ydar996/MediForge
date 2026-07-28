@@ -411,6 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### July 28, 2026: Full Canadian cities + typed postal codes
+
+- **Owner ask:** All Canadian provinces/cities (Brantford missing); postal codes too many for dropdowns.
+- **Cities:** Regenerated Canada lists from GeoNames CA populated places via `scripts/build-canada-cities.mjs` into `js/us-ca-cities-data.js` (~14k places; Ontario includes Brantford).
+- **Postal:** Canada/US address forms now use type-in fields with format validation (A1A 1A1 / ZIP), on register, add/edit patient, and intake.
+- **Deployed:** awaiting push to all three environments.
+
 ### July 28, 2026: Registration blocked by missing org INSERT RLS on production
 
 - **Owner symptom:** "Could not save your clinic to the database. Please check your internet connection..."

@@ -1,6 +1,7 @@
 /**
- * Representative postal / ZIP codes for US & Canada address forms.
- * City-specific lists override province/state defaults where defined.
+ * Representative postal / ZIP samples (legacy US helpers).
+ * Canada and United States address forms use typed postal/ZIP entry with format validation
+ * in countries-data.js: not this sample list.
  */
 (function () {
   var CA_DEFAULTS = {

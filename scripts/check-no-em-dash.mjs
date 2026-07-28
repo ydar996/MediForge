@@ -16,7 +16,7 @@ const ALLOWLIST = new Set([
   'scripts/check-no-em-dash.mjs'
 ]);
 
-const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.netlify', 'vendor']);
+const SKIP_DIRS = new Set(['node_modules', '.git', 'dist', 'build', '.netlify', 'vendor', 'tmp-geo']);
 const SCAN_EXT = /\.(html|md|js|json|txt)$/i;
 
 function walk(dir, files = []) {
