@@ -411,6 +411,14 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### July 28, 2026: Page padding + ID cards cloud storage + PHN visibility
+
+- **Owner ask:** Edit patient cut off on left; missing ID attachments and health plan number; apply padding on all form pages.
+- **Padding:** Restored global `html, body` gutter in `css/styles.css` (20px / 16px mobile) with end-of-file lock; cache-busted `styles.css` on 167 HTML pages.
+- **Cards:** Registration ID/insurance uploads now persist to Supabase `patient-documents` / `registration-cards/`; edit form shows View/Download or clear not-on-file message (older cards were browser-local only).
+- **PHN:** Edit form loads payer profile and opens provincial fields when a health card number is on file.
+- **Deployed:** (this commit) to `dev` / `staging` / `main` + CLI Netlify all three sites.
+
 ### July 28, 2026: Edit patient save/load + Canada free-text cities
 
 - **Owner ask:** Edit patient (`LYN0001`) slow to load; Update Patient did nothing; insurance/docs missing. Then: remove Canada city dropdowns everywhere (including intake/portal forms); do not restrict postal entries.

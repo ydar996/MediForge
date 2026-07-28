@@ -6671,6 +6671,31 @@ if (addPatientForm) {
               console.warn('[PATIENTS] Payer profile save skipped:', payerErr.message);
             }
           }
+
+          if (typeof window.MediForgePatientCardUploads?.persistRegistrationCards === 'function') {
+            try {
+              const paths = await window.MediForgePatientCardUploads.persistRegistrationCards(
+                supabaseClient,
+                orgId,
+                data.id,
+                {
+                  identificationCard: patient.identificationCard,
+                  identificationCardFileName: patient.identificationCardFileName,
+                  insuranceCard: patient.insuranceCard || patient.insuranceCardFront,
+                  insuranceCardFileName: patient.insuranceCardFileName,
+                  insuranceCardFront: patient.insuranceCardFront || patient.insuranceCard
+                }
+              );
+              if (paths.identificationCardStoragePath) {
+                patient.identificationCardStoragePath = paths.identificationCardStoragePath;
+              }
+              if (paths.insuranceCardStoragePath) {
+                patient.insuranceCardStoragePath = paths.insuranceCardStoragePath;
+              }
+            } catch (cardPersistErr) {
+              console.warn('[PATIENTS] Card storage upload skipped:', cardPersistErr.message || cardPersistErr);
+            }
+          }
           
           // STEP 2: Cache to localStorage after successful Supabase save
           try {
@@ -7257,6 +7282,32 @@ if (editPatientForm) {
                 });
               } catch (payerErr) {
                 console.warn('[EDIT-PATIENT] Payer profile save skipped:', payerErr.message);
+              }
+            }
+
+            // Persist ID/insurance card files to cloud storage so they survive browser clears
+            if (typeof window.MediForgePatientCardUploads?.persistRegistrationCards === 'function' && data?.id) {
+              try {
+                const paths = await window.MediForgePatientCardUploads.persistRegistrationCards(
+                  window.supabaseClient,
+                  orgId,
+                  data.id,
+                  {
+                    identificationCard: patient.identificationCard,
+                    identificationCardFileName: patient.identificationCardFileName,
+                    insuranceCard: patient.insuranceCard || patient.insuranceCardFront,
+                    insuranceCardFileName: patient.insuranceCardFileName,
+                    insuranceCardFront: patient.insuranceCardFront || patient.insuranceCard
+                  }
+                );
+                if (paths.identificationCardStoragePath) {
+                  patient.identificationCardStoragePath = paths.identificationCardStoragePath;
+                }
+                if (paths.insuranceCardStoragePath) {
+                  patient.insuranceCardStoragePath = paths.insuranceCardStoragePath;
+                }
+              } catch (cardPersistErr) {
+                console.warn('[EDIT-PATIENT] Card storage upload skipped:', cardPersistErr.message || cardPersistErr);
               }
             }
             
@@ -19044,8 +19095,10 @@ async function loadEditForm() {
         if (!patient.wcbClaimNumber && payerRow.metadata?.wcbClaimNumber) {
           patient.wcbClaimNumber = payerRow.metadata.wcbClaimNumber;
         }
-        if ((!patient.paymentSource || patient.paymentSource === 'Self Pay') && payerRow.payment_source) {
-          patient.paymentSource = payerRow.payment_source;
+        if (payerRow.payment_source) {
+          const currentSrc = String(patient.paymentSource || patient.payment_source || '').toLowerCase();
+          const isBlankOrSelf = !currentSrc || currentSrc === 'self pay' || currentSrc === 'self_pay' || currentSrc.includes('self');
+          if (isBlankOrSelf) patient.paymentSource = payerRow.payment_source;
         }
         if (!patient.province && payerRow.province) {
           patient.province = payerRow.province;
@@ -19054,6 +19107,48 @@ async function loadEditForm() {
     }
   } catch (payerLoadErr) {
     console.warn('[EDIT-PATIENT] Could not load payer profile:', payerLoadErr);
+  }
+
+  // If a health card number exists, show provincial payer fields (do not hide behind Self Pay)
+  if ((patient.phn || patient.healthCardNumber) && !patient.paymentSource) {
+    patient.paymentSource = 'provincial';
+  } else if ((patient.phn || patient.healthCardNumber)) {
+    const src = String(patient.paymentSource || '').toLowerCase();
+    if (!src || src === 'self pay' || src === 'self_pay' || src.includes('uninsured')) {
+      patient.paymentSource = 'provincial';
+    }
+  }
+
+  // Load registration ID/insurance cards from cloud storage when local copy is missing
+  try {
+    if (
+      typeof window.MediForgePatientCardUploads?.loadRegistrationCardsFromStorage === 'function' &&
+      window.supabaseClient &&
+      patient._supabaseUuid
+    ) {
+      let orgIdForCards = null;
+      if (typeof window.resolveOrganizationId === 'function') {
+        orgIdForCards = await window.resolveOrganizationId();
+      }
+      if (orgIdForCards) {
+        const storedCards = await window.MediForgePatientCardUploads.loadRegistrationCardsFromStorage(
+          window.supabaseClient,
+          orgIdForCards,
+          patient._supabaseUuid
+        );
+        if (!patient.identificationCard && storedCards.identificationCard) {
+          patient.identificationCard = storedCards.identificationCard;
+          patient.identificationCardFileName = storedCards.identificationCardFileName;
+        }
+        if (!patient.insuranceCard && !patient.insuranceCardFront && storedCards.insuranceCard) {
+          patient.insuranceCard = storedCards.insuranceCard;
+          patient.insuranceCardFront = storedCards.insuranceCardFront || storedCards.insuranceCard;
+          patient.insuranceCardFileName = storedCards.insuranceCardFileName;
+        }
+      }
+    }
+  } catch (cardLoadErr) {
+    console.warn('[EDIT-PATIENT] Could not load registration cards from storage:', cardLoadErr);
   }
   
   // DEBUG: Log patient data to see what fields are available
@@ -19475,14 +19570,29 @@ async function loadEditForm() {
     }
   }
   
-  // Show current document upload status
-  const currentIdentificationCard = document.getElementById("currentIdentificationCard");
-  if (currentIdentificationCard && patient.identificationCard) {
-    currentIdentificationCard.textContent = "Current identification card: ✓ Uploaded";
-  }
-  const currentInsuranceCard = document.getElementById("currentInsuranceCard");
-  if (currentInsuranceCard && (patient.insuranceCard || patient.insuranceCardFront)) {
-    currentInsuranceCard.textContent = "Current insurance card: ✓ Uploaded";
+  // Show current document upload status (view link when available; clear message when not)
+  if (typeof window.MediForgePatientCardUploads?.renderCardStatus === 'function') {
+    window.MediForgePatientCardUploads.renderCardStatus(
+      'currentIdentificationCard',
+      patient.identificationCard,
+      patient.identificationCardFileName,
+      'identification card'
+    );
+    window.MediForgePatientCardUploads.renderCardStatus(
+      'currentInsuranceCard',
+      patient.insuranceCard || patient.insuranceCardFront,
+      patient.insuranceCardFileName,
+      'insurance card'
+    );
+  } else {
+    const currentIdentificationCard = document.getElementById("currentIdentificationCard");
+    if (currentIdentificationCard && patient.identificationCard) {
+      currentIdentificationCard.textContent = "Current identification card: ✓ Uploaded";
+    }
+    const currentInsuranceCard = document.getElementById("currentInsuranceCard");
+    if (currentInsuranceCard && (patient.insuranceCard || patient.insuranceCardFront)) {
+      currentInsuranceCard.textContent = "Current insurance card: ✓ Uploaded";
+    }
   }
   const currentCardFront = document.getElementById("currentCardFront");
   if (currentCardFront && patient.insuranceCardFront && !patient.insuranceCard) {
