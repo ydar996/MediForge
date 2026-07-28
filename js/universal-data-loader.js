@@ -599,11 +599,15 @@
       
       if (resolvedUser.org && resolvedUser.organizationId) {
         const organizations = JSON.parse(localStorage.getItem("organizations") || "{}");
+        const existing = organizations[resolvedUser.org] || {};
+        const code = resolvedUser.orgCode || existing.orgCode || existing.org_code || existing.code || "";
         organizations[resolvedUser.org] = {
-          ...(organizations[resolvedUser.org] || {}),
+          ...existing,
           id: resolvedUser.organizationId,
           name: resolvedUser.org,
-          code: resolvedUser.orgCode || organizations[resolvedUser.org]?.code
+          orgCode: code,
+          org_code: code,
+          code: code
         };
         localStorage.setItem("organizations", JSON.stringify(organizations));
       }

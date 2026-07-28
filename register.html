@@ -435,7 +435,7 @@
       <div class="form-group">
         <label for="admin-role">Your Role*:</label>
         <select id="admin-role" required>
-          <option value="">Administrator</option>
+          <option value="Admin">Administrator</option>
         <option value="Doctor">Doctor</option>
         <option value="Nurse">Nurse</option>
         <option value="Physician Assistant">Physician Assistant</option>
@@ -1239,6 +1239,16 @@
       }
     }
 
+    // Resolve founder clinical role from the registration form (never force Admin).
+    function resolveFounderRole() {
+      const roleSelect = document.getElementById('admin-role');
+      const selectedRole = (roleSelect?.value || '').trim();
+      const otherRole = document.getElementById('admin-other-role')?.value?.trim() || '';
+      if (selectedRole === 'Other' && otherRole) return otherRole;
+      if (selectedRole) return selectedRole;
+      return 'Admin';
+    }
+
     // Handle role selection changes
     document.addEventListener('DOMContentLoaded', function() {
       // Admin role change
@@ -1354,14 +1364,26 @@
         const adminPhone = document.getElementById('admin-phone').value.trim();
         const adminPhoneFull = adminPhoneCode && adminPhone ? `${adminPhoneCode} ${adminPhone}` : adminPhone;
         
+        const founderRole = resolveFounderRole();
+        if (founderRole === 'Other') {
+          alert('Please specify your exact role when selecting "Other".');
+          return;
+        }
+        const rolesRequiringLicense = ['Doctor', 'Nurse', 'Physician Assistant', 'Pharmacist', 'Optometrist', 'Medical Lab Scientist'];
+        const founderLicense = document.getElementById('admin-license')?.value?.trim() || '';
+        if (rolesRequiringLicense.includes(founderRole) && !founderLicense) {
+          alert('Medical License Number is required for ' + founderRole + 's.');
+          return;
+        }
+
         const formData = {
           username: document.getElementById('admin-username').value.trim(),
           password: password,
           firstName: document.getElementById('admin-firstname').value.trim(),
           lastName: document.getElementById('admin-lastname').value.trim(),
           gender: document.getElementById('admin-gender').value,
-          role: 'Admin',
-          medicalLicenseNumber: document.getElementById('admin-license')?.value?.trim() || '',
+          role: founderRole,
+          medicalLicenseNumber: founderLicense,
           phone: adminPhoneFull
           // NOTE: organizationId is NOT included for new org registration - it will be created first
         };
@@ -1650,7 +1672,7 @@
                 firstName: document.getElementById('admin-firstname').value,
                 lastName: document.getElementById('admin-lastname').value,
                 gender: document.getElementById('admin-gender').value,
-                role: 'Admin',
+                role: formData.role,
                 organizationId: organizationId, // Now properly set from Supabase insert result
                 medicalLicenseNumber: formData.medicalLicenseNumber,
                 phone: adminPhoneFull
@@ -1664,49 +1686,44 @@
                   trace('[OK] User registered successfully in Supabase Auth and users table');
                 }
                 
-                // PERMANENT FIX: Activate organization only after user creation succeeds
+                // Activate org + set contact email in one update (any founding member may do this).
+                // Uses finalize_new_organization RPC when available so non-Admin founders are not blocked by RLS.
                 try {
-                  const { error: activateError } = await window.supabaseClient
-                    .from('organizations')
-                    .update({ status: 'active' })
-                    .eq('id', organizationId);
-                  
-                  if (activateError) {
-                    console.warn('[REG] Could not activate organization:', activateError);
-                    // Don't fail registration if activation fails - log it
-                  } else {
-                    trace('[OK] Organization activated (status changed from pending to active)');
+                  const adminUsername = document.getElementById('admin-username').value.trim();
+                  const shortOrgId = organizationId.replace(/-/g, '').substring(0, 8);
+                  const founderEmail = adminUsername.includes('@')
+                    ? adminUsername
+                    : `${adminUsername}-${shortOrgId}@mediforge.app`;
+
+                  let finalized = false;
+                  try {
+                    const { error: finalizeError } = await window.supabaseClient.rpc('finalize_new_organization', {
+                      p_organization_id: organizationId,
+                      p_email: founderEmail
+                    });
+                    if (!finalizeError) {
+                      finalized = true;
+                      trace('[OK] Organization finalized via RPC (active + contact email)');
+                    } else {
+                      console.warn('[REG] finalize_new_organization RPC unavailable or failed:', finalizeError);
+                    }
+                  } catch (rpcEx) {
+                    console.warn('[REG] finalize_new_organization RPC exception:', rpcEx);
+                  }
+
+                  if (!finalized) {
+                    const { error: activateError } = await window.supabaseClient
+                      .from('organizations')
+                      .update({ status: 'active', email: founderEmail })
+                      .eq('id', organizationId);
+                    if (activateError) {
+                      console.warn('[REG] Could not activate organization:', activateError);
+                    } else {
+                      trace('[OK] Organization activated (status changed from pending to active)');
+                    }
                   }
                 } catch (activateException) {
                   console.warn('[REG] Error activating organization:', activateException);
-                  // Don't fail registration if activation fails
-                }
-                
-                // CRITICAL: Update organization email with admin user's generated email
-                // This ensures we can always contact the organization via the admin email
-                try {
-                  const adminUsername = document.getElementById('admin-username').value.trim();
-                  // Generate email the same way registerWithSupabase does
-                  const shortOrgId = organizationId.replace(/-/g, '').substring(0, 8);
-                  const adminEmail = adminUsername.includes('@') 
-                    ? adminUsername 
-                    : `${adminUsername}-${shortOrgId}@mediforge.app`;
-                  
-                  // Update organization email field
-                  const { error: updateEmailError } = await window.supabaseClient
-                    .from('organizations')
-                    .update({ email: adminEmail })
-                    .eq('id', organizationId);
-                  
-                  if (updateEmailError) {
-                    console.warn('[REG] Could not update organization email:', updateEmailError);
-                    // Don't fail registration if email update fails - log it
-                  } else {
-                    trace('[OK] Organization email updated with admin contact:', adminEmail);
-                  }
-                } catch (emailUpdateError) {
-                  console.warn('[REG] Error updating organization email:', emailUpdateError);
-                  // Don't fail registration if email update fails
                 }
                 
                 // CRITICAL: Save legal agreements if user accepted
@@ -1718,7 +1735,7 @@
                     const lastName = document.getElementById('admin-lastname').value.trim();
                     const userName = `${firstName} ${lastName}`;
                     const userEmail = `${document.getElementById('admin-username').value}@mediforge.app`;
-                    const userRole = 'Admin';
+                    const userRole = formData.role;
                     
                     // Save Service Agreement
                     const serviceAgreementResult = await window.saveLegalAgreement({
@@ -1791,12 +1808,13 @@
                   password: hashedPassword,
                   passwordType: 'sha256',
                   gender: document.getElementById('admin-gender').value,
-                  role: 'Admin',
+                  role: formData.role,
                   medicalLicenseNumber: formData.medicalLicenseNumber,
                   phone: adminPhoneFull,
                   org: orgData.name,
                   organization: orgData.name,
                   organizationId: organizationId,
+                  orgCode: orgData.orgCode || generatedOrgCode,
                   syncedToSupabase: true,
                   createdAt: new Date().toISOString()
                 };
@@ -1807,6 +1825,9 @@
                 // Supabase write: supabaseClient.insert() completed above
                 const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
                 orgData.id = organizationId;
+                orgData.orgCode = orgData.orgCode || generatedOrgCode;
+                orgData.org_code = orgData.orgCode;
+                orgData.code = orgData.orgCode;
                 organizations[orgData.name] = orgData;
                 localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.insert()
                 trace('[OK] Data cached to localStorage after Supabase success');

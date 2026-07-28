@@ -1221,95 +1221,94 @@
       if (!orgName) return;
       
       const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
-      let orgData = organizations[orgName];
-      
-      if (!orgData) {
-        orgData = {};
-        organizations[orgName] = orgData;
+      let orgData = organizations[orgName] || {};
+      if (!orgData.id && (user.organizationId || user.organization_id)) {
+        orgData.id = user.organizationId || user.organization_id;
       }
+      organizations[orgName] = orgData;
       
-      let orgCode = orgData.orgCode;
+      let orgCode = String(orgData.orgCode || orgData.org_code || orgData.code || user.orgCode || '').trim();
       
-      // First, try to get org_code from Supabase (source of truth)
+      // First, try to get org_code from Supabase (source of truth) — never overwrite an existing DB code
       try {
         const supabase = window.supabaseClient;
         if (supabase) {
-          const { data: supabaseOrg, error: orgError } = await supabase
-            .from('organizations')
-            .select('org_code')
-            .eq('name', orgName)
-            .single();
+          let query = supabase.from('organizations').select('id, org_code');
+          if (orgData.id) {
+            query = query.eq('id', orgData.id);
+          } else {
+            query = query.eq('name', orgName);
+          }
+          const { data: supabaseOrg, error: orgError } = await query.maybeSingle();
           
-          if (!orgError && supabaseOrg && supabaseOrg.org_code) {
-            orgCode = supabaseOrg.org_code;
-            // Update localStorage to match Supabase
-            orgData.orgCode = orgCode;
-            organizations[orgName] = orgData;
-            localStorage.setItem('organizations', JSON.stringify(organizations));
-            console.log('✅ Loaded organization code from Supabase:', orgCode);
+          if (!orgError && supabaseOrg) {
+            if (supabaseOrg.id) orgData.id = supabaseOrg.id;
+            if (supabaseOrg.org_code && String(supabaseOrg.org_code).trim()) {
+              orgCode = String(supabaseOrg.org_code).trim();
+              orgData.orgCode = orgCode;
+              orgData.org_code = orgCode;
+              orgData.code = orgCode;
+              organizations[orgName] = orgData;
+              localStorage.setItem('organizations', JSON.stringify(organizations));
+              console.log('✅ Loaded organization code from Supabase:', orgCode);
+            }
           }
         }
       } catch (error) {
         console.warn('Could not load organization code from Supabase:', error);
       }
       
-      // If still no code, generate one using the same method as platform-admin
+      // If still no code, generate once for missing codes only — never overwrite Supabase
       if (!orgCode) {
         const prefix = orgName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
         const year = new Date().getFullYear();
-        // Use a more deterministic approach - use org name hash instead of random
-        // This ensures the same org always gets the same code if regenerated
         const hash = orgName.split('').reduce((acc, char) => {
           return ((acc << 5) - acc) + char.charCodeAt(0);
         }, 0);
         const random = Math.abs(hash).toString(36).substring(0, 4).toUpperCase().padEnd(4, '0');
         orgCode = `${prefix}-${year}-${random}`;
-        
-        // Supabase-first: Write to Supabase first, then cache in localStorage
         orgData.orgCode = orgCode;
+        orgData.org_code = orgCode;
+        orgData.code = orgCode;
         
-        // Try to sync to Supabase first
         try {
           const supabase = window.supabaseClient;
           if (supabase && orgData.id) {
-            const { error } = await supabase
+            // Only fill when currently null/empty — never replace an existing code
+            const { data: existing } = await supabase
               .from('organizations')
-              .update({ org_code: orgCode })
-              .eq('id', orgData.id);
-            
-            if (error) {
-              console.warn('⚠️ Could not update org code in Supabase:', error);
+              .select('org_code')
+              .eq('id', orgData.id)
+              .maybeSingle();
+            if (existing?.org_code && String(existing.org_code).trim()) {
+              orgCode = String(existing.org_code).trim();
+              orgData.orgCode = orgCode;
+              orgData.org_code = orgCode;
+              orgData.code = orgCode;
             } else {
-              console.log('✅ Updated org code in Supabase');
+              const { error } = await supabase
+                .from('organizations')
+                .update({ org_code: orgCode })
+                .eq('id', orgData.id);
+              if (error) {
+                console.warn('⚠️ Could not set missing org code in Supabase:', error);
+              } else {
+                console.log('✅ Set missing organization code in Supabase');
+              }
             }
           }
         } catch (error) {
           console.warn('⚠️ Exception updating org code in Supabase:', error);
         }
         
-        // Cache to localStorage (after Supabase write, or as fallback)
-        // Supabase write: supabaseClient.update() completed above
         organizations[orgName] = orgData;
-        localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
-        
-        // Legacy: Try to sync to Supabase if possible (backward compatibility)
-        try {
-          const supabase = window.supabaseClient;
-          if (supabase) {
-            const { error: updateError } = await supabase
-              .from('organizations')
-              .update({ org_code: orgCode })
-              .eq('name', orgName);
-            
-            if (!updateError) {
-              console.log('✅ Synced organization code to Supabase:', orgCode);
-            } else {
-              console.warn('Could not sync organization code to Supabase:', updateError);
-            }
-          }
-        } catch (error) {
-          console.warn('Could not sync organization code to Supabase:', error);
-        }
+        localStorage.setItem('organizations', JSON.stringify(organizations));
+      } else {
+        orgData.orgCode = orgCode;
+        orgData.org_code = orgCode;
+        orgData.code = orgCode;
+        organizations[orgName] = orgData;
+        localStorage.setItem('organizations', JSON.stringify(organizations));
       }
       
       const container = document.getElementById('org-code-container');

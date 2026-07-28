@@ -143,6 +143,8 @@ window.getAllOrganizations = async function(forceRefresh = false) {
             currency: org.currency || localOrg.defaultCurrency || 'CAD',
             defaultCurrency: org.currency || localOrg.defaultCurrency || 'CAD',
             org_code: org.org_code,
+            orgCode: org.org_code,
+            code: org.org_code,
             addressLine1: localOrg.addressLine1 || org.address_line1 || '',
             addressLine2: localOrg.addressLine2 || org.address_line2 || '',
             city: localOrg.city || org.city || '',

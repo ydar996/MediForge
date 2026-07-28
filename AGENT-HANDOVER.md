@@ -1,6 +1,6 @@
 ﻿# MediForge Agent Handover (living document)
 
-**Last updated:** June 2026  
+**Last updated:** July 28, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -410,6 +410,15 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### July 28, 2026: Org registration role + org-code shape-shifting
+
+- **Owner ask:** First registrant role (e.g. Doctor + license) kept becoming Administrator; org code changed on each login so new staff could not join.
+- **Root cause (role):** Live new-org path in `register.html` hardcoded `role: 'Admin'` and ignored `#admin-role`. A prior fix lived only in unused `js/register-handler.js` (not loaded by the page).
+- **Root cause (org code):** UI checked only camelCase `orgCode` while loaders stored `org_code` / `code`, then generated a new random code and **wrote it over** Supabase `organizations.org_code`.
+- **Fixed:** Registration reads selected founder role; Administrator option value is `Admin`; login/session cache stores `orgCode`/`org_code`/`code` together; dashboard and edit-profile load Supabase code first and never overwrite an existing code; `org-migration.js` only normalizes aliases (no invent).
+- **DB:** Added `finalize_new_organization` RPC so non-Admin founders can still activate pending orgs / set contact email (`supabase/migrations/20260728120000_finalize_new_organization_rpc.sql`). **Owner must run this migration** on each Supabase environment.
+- **Not deployed yet** — awaiting owner approval.
 
 ### June 2026: Revenue projection empty tables (financial-model-reports.js)
 

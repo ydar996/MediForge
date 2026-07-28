@@ -1176,50 +1176,77 @@
         return;
       }
       
-      // Check if org code exists, if not, generate it now
-      if (!orgData.orgCode) {
+      // Resolve org code from any known property name (never invent when DB already has one)
+      let resolvedCode = String(orgData.orgCode || orgData.org_code || orgData.code || '').trim();
+
+      // Prefer Supabase as source of truth before generating anything
+      if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient) {
+        try {
+          let query = window.supabaseClient.from('organizations').select('id, org_code');
+          if (orgData.id) {
+            query = query.eq('id', orgData.id);
+          } else {
+            query = query.eq('name', orgName);
+          }
+          const { data: supabaseOrg, error: orgFetchError } = await query.maybeSingle();
+          if (!orgFetchError && supabaseOrg) {
+            if (supabaseOrg.id) orgData.id = supabaseOrg.id;
+            if (supabaseOrg.org_code && String(supabaseOrg.org_code).trim()) {
+              resolvedCode = String(supabaseOrg.org_code).trim();
+            }
+          }
+        } catch (fetchErr) {
+          console.warn('⚠️ Could not load org code from Supabase:', fetchErr);
+        }
+      }
+
+      // Only generate if truly missing — never overwrite an existing Supabase code
+      if (!resolvedCode) {
         const prefix = orgName.substring(0, 3).toUpperCase().replace(/[^A-Z]/g, 'X');
         const year = new Date().getFullYear();
         const random = Math.random().toString(36).substring(2, 6).toUpperCase();
-        orgData.orgCode = `${prefix}-${year}-${random}`;
+        resolvedCode = `${prefix}-${year}-${random}`;
         
         // Supabase-first: Write org code to Supabase first, then cache in localStorage
         if (typeof window.supabaseClient !== 'undefined' && window.supabaseClient && orgData.id) {
           try {
             const { error } = await window.supabaseClient
               .from('organizations')
-              .update({ org_code: orgData.orgCode })
-              .eq('id', orgData.id);
+              .update({ org_code: resolvedCode })
+              .eq('id', orgData.id)
+              .is('org_code', null);
             
+            // Also try empty-string case if is(null) matched nothing with a blank code
             if (error) {
               console.warn('⚠️ Could not update org code in Supabase:', error);
-              // Fallback: Cache to localStorage even if Supabase write failed
-              organizations[orgName] = orgData;
-              localStorage.setItem('organizations', JSON.stringify(organizations));
             } else {
-              console.log('✅ Updated org code in Supabase');
-              // Cache to localStorage immediately after successful Supabase write
-              // Supabase write: supabaseClient.update() completed above
-              organizations[orgName] = orgData;
-              localStorage.setItem('organizations', JSON.stringify(organizations)); // Cached after supabaseClient.update()
+              console.log('✅ Set missing org code in Supabase (only if previously null)');
+            }
+            // Re-read to use whatever is actually stored (avoids racing overwrites)
+            const { data: confirmOrg } = await window.supabaseClient
+              .from('organizations')
+              .select('org_code')
+              .eq('id', orgData.id)
+              .maybeSingle();
+            if (confirmOrg?.org_code) {
+              resolvedCode = String(confirmOrg.org_code).trim();
             }
           } catch (error) {
             console.warn('⚠️ Exception updating org code in Supabase:', error);
-            // Fallback: Cache to localStorage if Supabase exception
-            organizations[orgName] = orgData;
-            localStorage.setItem('organizations', JSON.stringify(organizations));
           }
-        } else {
-          // Supabase not available - fallback to localStorage only
-          organizations[orgName] = orgData;
-          localStorage.setItem('organizations', JSON.stringify(organizations));
         }
-        dashLog('Generated org code:', orgData.orgCode);
+        dashLog('Generated org code for missing value:', resolvedCode);
       }
+
+      orgData.orgCode = resolvedCode;
+      orgData.org_code = resolvedCode;
+      orgData.code = resolvedCode;
+      organizations[orgName] = orgData;
+      localStorage.setItem('organizations', JSON.stringify(organizations));
       
       // Show modal with org code
       document.getElementById('org-modal-org-name').textContent = orgName;
-      document.getElementById('org-code-input').value = orgData.orgCode;
+      document.getElementById('org-code-input').value = resolvedCode;
       document.getElementById('org-code-modal').style.display = 'flex';
       
       // Auto-select the code for easy copying
@@ -2230,7 +2257,7 @@
       };
     }
   </script>
-  <script src="js/org-migration.js?v=1" defer></script>  <!-- Organization migration -->
+  <script src="js/org-migration.js?v=2" defer></script>  <!-- Organization migration -->
   <script src="js/phone-migration.js?v=1" defer></script>  <!-- Phone number migration -->
   <script src="js/subscription-migration.js?v=1" defer></script>  <!-- Subscription migration -->
   <script src="js/platform-readonly.js?v=1" defer></script>  <!-- Read-only mode -->

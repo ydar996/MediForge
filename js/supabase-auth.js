@@ -26,6 +26,27 @@ async function kickoffPhysicianVerificationClock(profileData) {
 /** Build localStorage session from public.users row (keeps phone + license in sync). */
 function buildUserSessionFromProfile(profileData, authUser) {
   const org = profileData.organizations;
+  const orgCode = String(org?.org_code || org?.orgCode || '').trim();
+  const orgName = org?.name || 'Platform';
+  const organizationId = profileData.organization_id;
+
+  // Keep organizations cache aliases in sync so UI never invents a new code
+  if (orgName && organizationId && orgName !== 'Platform') {
+    try {
+      const organizations = JSON.parse(localStorage.getItem('organizations') || '{}');
+      const existing = organizations[orgName] || {};
+      organizations[orgName] = {
+        ...existing,
+        id: organizationId,
+        name: orgName,
+        orgCode: orgCode || existing.orgCode || existing.org_code || existing.code || '',
+        org_code: orgCode || existing.org_code || existing.orgCode || existing.code || '',
+        code: orgCode || existing.code || existing.orgCode || existing.org_code || ''
+      };
+      localStorage.setItem('organizations', JSON.stringify(organizations));
+    } catch (_) { /* ignore cache errors */ }
+  }
+
   return {
     id: profileData.id,
     authUserId: authUser?.id || profileData.auth_user_id,
@@ -37,9 +58,11 @@ function buildUserSessionFromProfile(profileData, authUser) {
     role: profileData.role,
     patientId: profileData.patient_id || null,
     patient_id: profileData.patient_id || null,
-    org: org?.name || 'Platform',
-    organizationId: profileData.organization_id,
-    organization_id: profileData.organization_id,
+    org: orgName,
+    organization: orgName,
+    organizationId: organizationId,
+    organization_id: organizationId,
+    orgCode: orgCode,
     phone: profileData.phone || '',
     medicalLicenseNumber: profileData.license_number || profileData.medical_license_number || '',
     orgAddressLine1: org?.address_line1 || '',
@@ -526,7 +549,8 @@ async function checkAuthentication() {
           id,
           name,
           country,
-          currency
+          currency,
+          org_code
         )
       `)
       .eq('auth_user_id', session.user.id)

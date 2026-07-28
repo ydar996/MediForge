@@ -79,13 +79,13 @@ document.addEventListener('DOMContentLoaded', function() {
       const selectedRole = roleSelect?.value || '';
       const otherRole = document.getElementById('admin-other-role')?.value?.trim() || '';
       
-      // Use the selected role, or "Other" role if specified, or default to "Administrator"
+      // Use the selected role, or "Other" role if specified, or default to "Admin"
       if (selectedRole === 'Other' && otherRole) {
         role = otherRole;
       } else if (selectedRole) {
         role = selectedRole;
       } else {
-        role = 'Administrator'; // Default if nothing selected (matches the form default)
+        role = 'Admin'; // Default if nothing selected (matches form default / DB constraint)
       }
       
       console.log('🔍 [REGISTRATION] Role selection:', {
