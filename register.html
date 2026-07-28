@@ -1589,9 +1589,14 @@
                   if (retryOrgError) {
                     console.error('Retry failed:', retryOrgError);
                     if (window.RegTrace) window.RegTrace.fail('org_insert_failed', retryOrgError, { orgName: orgData.name });
+                    const rlsBlocked = /row-level security|42501/i.test(
+                      String(retryOrgError?.message || '') + String(retryOrgError?.code || '')
+                    );
                     regTraceAlert(
                       'Registration failed',
-                      'Could not save your clinic to the database. Please check your internet connection and try again.'
+                      rlsBlocked
+                        ? 'The database is blocking new clinic signup (security policy missing on this environment). Ask the platform owner to run sql-scripts/FIX-PROD-registration-org-insert-rls.sql in Supabase, then try again.'
+                        : ('Could not save your clinic to the database. ' + (retryOrgError?.message || 'Please try again.'))
                     );
                     if (submitButton) {
                       submitButton.disabled = false;
@@ -1616,7 +1621,7 @@
                   if (window.RegTrace) window.RegTrace.fail('org_insert_exception', retryError, {});
                   regTraceAlert(
                     'Registration failed',
-                    'Could not save your clinic to the database. Please check your internet connection and try again.'
+                    'Could not save your clinic to the database. ' + (retryError?.message || 'Please try again.')
                   );
                   if (submitButton) {
                     submitButton.disabled = false;

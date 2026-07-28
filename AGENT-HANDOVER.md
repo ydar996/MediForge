@@ -411,6 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### July 28, 2026: Registration blocked by missing org INSERT RLS on production
+
+- **Owner symptom:** "Could not save your clinic to the database. Please check your internet connection..."
+- **Actual cause:** Production Supabase returns `42501` RLS violation on `organizations` INSERT for anon (policy `organizations_insert_registration` missing/not applied).
+- **Owner action:** Run `sql-scripts/FIX-PROD-registration-org-insert-rls.sql` on MediForge-Prod (and Dev/Staging if needed). Also includes `finalize_new_organization`.
+- **App:** Clearer error text when RLS blocks signup (deploy separately if desired).
+
 ### July 28, 2026: Registration blocked by hidden required license field
 
 - **Owner ask:** Register form failed with `admin-license` "not focusable" console errors.
