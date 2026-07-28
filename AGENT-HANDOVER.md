@@ -416,7 +416,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Owner ask:** Edit patient (`LYN0001`) slow to load; Update Patient did nothing; insurance/docs missing. Then: remove Canada city dropdowns everywhere (including intake/portal forms); do not restrict postal entries.
 - **Causes:** Ontario city `<select>` with thousands of options froze the page; save crashed (TDZ) when Date Joined Practice was empty; insurance/PHN mapping and payer-profile load gaps; ID/insurance cards were browser-local only and wiped on Supabase reload.
 - **Fixed:** Canada city is free-text on all shared address UIs; postal/ZIP unrestricted; edit-patient save try/catch + UUID/patient_id update; UDL insurance mapping + local card preserve; payer profile load on edit.
-- **Deployed:** (this commit) to `dev` / `staging` / `main` + CLI Netlify all three sites.
+- **Deployed:** `08c5f1f` to `dev` / `staging` / `main` + CLI Netlify all three sites.
 
 ### July 28, 2026: Full Canadian cities + typed postal codes
 
