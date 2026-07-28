@@ -9,6 +9,10 @@
 -- =============================================================================
 
 -- 1) Allow new clinics to register (anon inserts before the founder has an account)
+GRANT USAGE ON SCHEMA public TO anon, authenticated;
+GRANT INSERT ON TABLE public.organizations TO anon, authenticated;
+GRANT SELECT ON TABLE public.organizations TO authenticated;
+
 DROP POLICY IF EXISTS "organizations_insert_registration" ON public.organizations;
 DROP POLICY IF EXISTS "Allow organization creation during registration" ON public.organizations;
 DROP POLICY IF EXISTS "Enable insert for authenticated users" ON public.organizations;
