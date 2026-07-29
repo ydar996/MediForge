@@ -417,7 +417,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Root fix:** New Netlify function `create-patient-portal-user` creates portal Auth users with service role; browser never `signUp`/`signIn` as patient for portal setup.
 - **Wired:** `setup-patient-portal.html` + `setup-test-patient.html` use `createPatientPortalAuthUser`.
 - **Global guards (any staff page):** `supabase-client.js` auto-loads staff session guard, refuses to persist Patient JWT over staff, wraps `signUp`/`signInWithPassword` to restore staff Auth, and `onAuthStateChange` calls `protectStaffAuthFromPatientHijack`.
-- **Deployed:** `4df66a6` (+ em-dash fix) to `dev` / `staging` / `main` + CLI Netlify all three sites.
+- **Deployed:** `3eb3a98` (feature `4df66a6` + em-dash fix) to `dev` / `staging` / `main` + CLI Netlify all three sites.
 
 ### July 29, 2026: Portal Create Access wiped staff Auth (billing RLS)
 
