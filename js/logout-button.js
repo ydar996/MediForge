@@ -30,6 +30,7 @@ async function handleLogout() {
     localStorage.removeItem('organizations');
     localStorage.removeItem('patient_portal_user');
     localStorage.removeItem('staff_user_backup');
+    localStorage.removeItem('staff_supabase_session_backup');
     
     // Clear encryption key if available
     if (typeof window.encryptionService !== 'undefined' && window.encryptionService) {
@@ -46,6 +47,7 @@ async function handleLogout() {
     localStorage.removeItem('supabase_session');
     localStorage.removeItem('patient_portal_user');
     localStorage.removeItem('staff_user_backup');
+    localStorage.removeItem('staff_supabase_session_backup');
     window.location.href = '/login';
   }
 }

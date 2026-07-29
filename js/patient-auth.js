@@ -4,6 +4,7 @@
 
 const PATIENT_PORTAL_USER_KEY = 'patient_portal_user';
 const STAFF_USER_BACKUP_KEY = 'staff_user_backup';
+const STAFF_SUPABASE_SESSION_BACKUP_KEY = 'staff_supabase_session_backup';
 
 function _isPatientRole(role) {
   const r = String(role || '').trim().toLowerCase();
@@ -25,6 +26,24 @@ function _readJsonLocal(key) {
 }
 
 /**
+ * Call BEFORE any patient portal Supabase sign-in so staff JWT tokens are preserved.
+ */
+window.backupStaffClinicSession = function backupStaffClinicSession() {
+  try {
+    const existing = _readJsonLocal('user');
+    if (_isStaffLikeUser(existing)) {
+      localStorage.setItem(STAFF_USER_BACKUP_KEY, JSON.stringify(existing));
+      const sess = localStorage.getItem('supabase_session');
+      if (sess) {
+        localStorage.setItem(STAFF_SUPABASE_SESSION_BACKUP_KEY, sess);
+      }
+    }
+  } catch (e) {
+    console.warn('[patient-auth] Could not backup staff clinic session:', e);
+  }
+};
+
+/**
  * Persist patient portal session. Backs up any active staff clinic session first.
  */
 window.setPatientPortalSession = function setPatientPortalSession(userData) {
@@ -33,10 +52,7 @@ window.setPatientPortalSession = function setPatientPortalSession(userData) {
     sessionType: 'patient_portal'
   });
   try {
-    const existing = _readJsonLocal('user');
-    if (_isStaffLikeUser(existing)) {
-      localStorage.setItem(STAFF_USER_BACKUP_KEY, JSON.stringify(existing));
-    }
+    window.backupStaffClinicSession();
   } catch (e) {
     console.warn('[patient-auth] Could not backup staff session:', e);
   }
@@ -64,6 +80,11 @@ window.patientLogin = async function(username, password) {
   try {
     if (!window.supabaseClient) {
       throw new Error('Database connection not available');
+    }
+
+    // Preserve staff JWT before patient Auth sign-in replaces it
+    if (typeof window.backupStaffClinicSession === 'function') {
+      window.backupStaffClinicSession();
     }
 
     // Check rate limit before attempting login

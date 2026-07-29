@@ -181,12 +181,24 @@ window.resolveOrganizationId = async function() {
  */
 window.ensureStaffSession = async function ensureStaffSession(options = {}) {
   const { redirectOnFailure = false } = options;
+  if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+    try { window.restoreStaffSessionIfNeeded(); } catch (e) { /* ignore */ }
+  }
+
   const storedUser = JSON.parse(localStorage.getItem('user') || '{}');
   if (!storedUser.username && !storedUser.email) {
     if (redirectOnFailure) {
       window.location.href = '/login';
     }
     return { ok: false, reason: 'no_user' };
+  }
+
+  const roleLower = String(storedUser.role || '').toLowerCase();
+  if (roleLower === 'patient' || roleLower === 'client' || roleLower === 'client-patient') {
+    if (redirectOnFailure) {
+      window.location.href = '/login?reason=staff_required';
+    }
+    return { ok: false, reason: 'patient_identity' };
   }
 
   if (typeof window.waitForSupabaseClient === 'function') {
@@ -205,6 +217,40 @@ window.ensureStaffSession = async function ensureStaffSession(options = {}) {
       session = sessionData?.session || null;
     } catch (e) {
       /* continue to restore attempt */
+    }
+
+    // If current Auth session is a Patient, restore staff JWT backup from portal testing
+    if (session && typeof window.restoreStaffSupabaseSessionFromBackup === 'function') {
+      try {
+        const { data: profile } = await sb
+          .from('users')
+          .select('id, role, organization_id')
+          .or(`auth_user_id.eq.${session.user.id},id.eq.${session.user.id}`)
+          .limit(1)
+          .maybeSingle();
+        const profileRole = String((profile && profile.role) || '').toLowerCase();
+        if (profileRole === 'patient' || profileRole === 'client' || profileRole === 'client-patient') {
+          const restoredAuth = await window.restoreStaffSupabaseSessionFromBackup();
+          if (restoredAuth) {
+            const { data: sessionData2 } = await sb.auth.getSession();
+            session = sessionData2?.session || null;
+          } else {
+            session = null;
+          }
+        }
+      } catch (e) {
+        console.warn('[ensureStaffSession] profile role check:', e);
+      }
+    }
+
+    if (!session) {
+      if (typeof window.restoreStaffSupabaseSessionFromBackup === 'function') {
+        const restoredAuth = await window.restoreStaffSupabaseSessionFromBackup();
+        if (restoredAuth) {
+          const { data: sessionData3 } = await sb.auth.getSession();
+          session = sessionData3?.session || null;
+        }
+      }
     }
 
     if (!session) {
@@ -239,11 +285,32 @@ window.ensureStaffSession = async function ensureStaffSession(options = {}) {
         refresh_token: session.refresh_token,
         expires_at: session.expires_at
       }));
+
+      // Final guard: Auth user must be non-patient staff for billing RLS
+      try {
+        const { data: staffProfile } = await sb
+          .from('users')
+          .select('id, role, organization_id')
+          .or(`auth_user_id.eq.${session.user.id},id.eq.${session.user.id}`)
+          .limit(1)
+          .maybeSingle();
+        const staffRole = String((staffProfile && staffProfile.role) || '').toLowerCase();
+        if (!staffProfile || staffRole === 'patient' || staffRole === 'client' || staffRole === 'client-patient') {
+          if (redirectOnFailure) {
+            window.location.href = '/login?reason=staff_required';
+          }
+          return { ok: false, reason: 'auth_not_staff', user: storedUser };
+        }
+      } catch (e) {
+        console.warn('[ensureStaffSession] staff profile verify:', e);
+      }
     } else if (redirectOnFailure) {
       localStorage.removeItem('user');
       localStorage.removeItem('supabase_session');
       window.location.href = '/login?reason=session_expired';
       return { ok: false, reason: 'no_supabase_session' };
+    } else {
+      return { ok: false, reason: 'no_supabase_session', user: storedUser };
     }
   }
 

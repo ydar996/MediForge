@@ -16,6 +16,56 @@ function getBillingKey(key) {
   return `${org}_billing_${key}`;
 }
 
+/**
+ * Billing writes require an authenticated staff Supabase JWT for the clinic org (RLS).
+ * Restores staff Auth after patient-portal testing when a backup exists.
+ */
+async function ensureStaffBillingAccess(options = {}) {
+  const { redirectOnFailure = true } = options;
+  if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+    try { window.restoreStaffSessionIfNeeded(); } catch (e) { /* ignore */ }
+  }
+  if (typeof window.ensureStaffSession === 'function') {
+    const session = await window.ensureStaffSession({ redirectOnFailure: false });
+    if (!session.ok) {
+      const msg =
+        session.reason === 'auth_not_staff' || session.reason === 'patient_identity'
+          ? 'Your clinic staff login expired (often after testing the patient portal). Please sign in again as staff, then retry payment.'
+          : 'Staff login required to save invoices and payments. Please sign in again.';
+      if (redirectOnFailure) {
+        alert(msg);
+        window.location.href = '/login?reason=staff_required&next=' + encodeURIComponent(window.location.pathname + window.location.search);
+      }
+      throw new Error(msg);
+    }
+    return session;
+  }
+  // Fallback when utils.js is not loaded
+  if (!window.supabaseClient) {
+    throw new Error('Database connection not available. Please refresh and sign in as staff.');
+  }
+  const { data: { session } } = await window.supabaseClient.auth.getSession();
+  if (!session) {
+    const msg = 'Staff login required to save invoices and payments. Please sign in again.';
+    if (redirectOnFailure) {
+      alert(msg);
+      window.location.href = '/login?reason=session_expired';
+    }
+    throw new Error(msg);
+  }
+  return { ok: true };
+}
+
+window.ensureStaffBillingAccess = ensureStaffBillingAccess;
+
+function formatBillingSaveError(err) {
+  const msg = (err && (err.message || err.details || String(err))) || 'Unknown error';
+  if (/row-level security|rls|42501/i.test(msg)) {
+    return 'Your clinic staff login is missing or expired (this often happens after testing the patient portal in the same browser). Please sign in again as staff, then retry.';
+  }
+  return msg;
+}
+
 // ==================== INVOICE MANAGEMENT ====================
 
 // Generate unique invoice number
@@ -307,6 +357,8 @@ function saveInvoices(invoices) {
 // Create new invoice
 window.createInvoice = async function(invoiceData) {
   try {
+    await ensureStaffBillingAccess({ redirectOnFailure: true });
+
     const invoices = await getAllInvoices();
     
     const invoiceNumber = await generateInvoiceNumber();
@@ -473,7 +525,7 @@ window.createInvoice = async function(invoiceData) {
             
             if (retryError) {
               console.error('❌ [BILLING] Error saving invoice to Supabase after retry:', retryError);
-              throw new Error(`Failed to save invoice to Supabase: ${retryError.message}`);
+              throw new Error(`Failed to save invoice to Supabase: ${formatBillingSaveError(retryError)}`);
             }
             
             // Update insertedData with retry data
@@ -516,7 +568,7 @@ window.createInvoice = async function(invoiceData) {
           }
           
           console.error('❌ [BILLING] Error saving invoice to Supabase:', supabaseError);
-          throw new Error(`Failed to save invoice to Supabase: ${supabaseError.message}`);
+          throw new Error(`Failed to save invoice to Supabase: ${formatBillingSaveError(supabaseError)}`);
         }
         
         if (!insertedData || insertedData.length === 0) {
@@ -1341,6 +1393,8 @@ window.generatePaymentReference = async function() {
 // Record payment - HYBRID ARCHITECTURE: Supabase-first, localStorage fallback
 window.recordPayment = async function(paymentData) {
   try {
+    await ensureStaffBillingAccess({ redirectOnFailure: true });
+
     const payments = await getAllPayments();
     
     // Ensure payments is an array
@@ -1397,6 +1451,8 @@ window.recordPayment = async function(paymentData) {
           patient_name: payment.patientName,
           amount: payment.amount,
           currency: payment.currency,
+          // Canonical column is `method` (COMPLETE-SCHEMA); keep payment_method for older DBs
+          method: payment.method,
           payment_method: payment.method,
           method_details: payment.methodDetails || null,
           payment_date: payment.date,
@@ -1413,11 +1469,24 @@ window.recordPayment = async function(paymentData) {
           }) : null
         };
         
-        const { data, error } = await supabaseClient
+        let { data, error } = await supabaseClient
           .from('billing_payments')
           .insert(supabasePayment)
           .select()
           .single();
+
+        // If schema only has `method` (or only `payment_method`), retry with the matching shape
+        if (error && /payment_method|column/i.test(String(error.message || ''))) {
+          const alt = Object.assign({}, supabasePayment);
+          if (/payment_method/i.test(String(error.message || ''))) {
+            delete alt.payment_method;
+          } else if (/method/i.test(String(error.message || ''))) {
+            delete alt.method;
+          }
+          const retry = await supabaseClient.from('billing_payments').insert(alt).select().single();
+          data = retry.data;
+          error = retry.error;
+        }
         
         if (error) {
           throw error;

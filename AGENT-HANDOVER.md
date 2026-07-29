@@ -411,6 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### July 29, 2026: Billing invoice RLS on quick-checkout
+
+- **Owner ask:** Quick-checkout payment failed with `billing_invoices` RLS violation; review all payment sources.
+- **Cause:** After patient portal testing, staff UI could look logged in while Supabase Auth JWT was still Patient; billing INSERT policies require authenticated clinic staff.
+- **Fixed:** Backup/restore staff Auth session around portal login; `ensureStaffBillingAccess` before createInvoice/recordPayment; load session helpers on billing pages; clearer re-login message; payment insert uses canonical `method` column with fallback.
+- **Not deployed** until owner asks.
+
 ### July 29, 2026: Messaging staff dropdown + multi-recipient + portal routing
 
 - **Owner ask:** Messages stuck loading; staff recipient dropdown empty; staff↔patient messaging; multi-recipient; check patient portal.

@@ -7,6 +7,7 @@
   const USER_KEY = 'user';
   const PATIENT_PORTAL_USER_KEY = 'patient_portal_user';
   const STAFF_USER_BACKUP_KEY = 'staff_user_backup';
+  const STAFF_SUPABASE_SESSION_BACKUP_KEY = 'staff_supabase_session_backup';
 
   function isPatientRole(role) {
     const r = String(role || '').trim().toLowerCase();
@@ -31,7 +32,6 @@
     try {
       const path = String(global.location && global.location.pathname || '').toLowerCase();
       if (!path || path === '/') return true;
-      // Patient-only surfaces keep the portal session on the shared key
       if (
         path.includes('patient-login') ||
         path.includes('patient-portal') ||
@@ -56,6 +56,44 @@
   }
 
   /**
+   * Restore staff Supabase JWT from backup (saved before patient portal sign-in).
+   * Returns true if a session was applied.
+   */
+  async function restoreStaffSupabaseSessionFromBackup() {
+    const raw = localStorage.getItem(STAFF_SUPABASE_SESSION_BACKUP_KEY);
+    if (!raw) return false;
+    let stored;
+    try {
+      stored = JSON.parse(raw);
+    } catch (e) {
+      return false;
+    }
+    if (!stored || !stored.access_token || !stored.refresh_token) return false;
+    const sb = global.supabaseClient;
+    if (!sb || !sb.auth) return false;
+    try {
+      const { data, error } = await sb.auth.setSession({
+        access_token: stored.access_token,
+        refresh_token: stored.refresh_token
+      });
+      if (error || !data?.session) {
+        console.warn('[staff-session] Could not restore staff Auth session from backup:', error);
+        return false;
+      }
+      localStorage.setItem('supabase_session', JSON.stringify({
+        access_token: data.session.access_token,
+        refresh_token: data.session.refresh_token,
+        expires_at: data.session.expires_at
+      }));
+      console.warn('[staff-session] Restored staff Supabase Auth session after patient portal test.');
+      return true;
+    } catch (e) {
+      console.warn('[staff-session] Auth restore exception:', e);
+      return false;
+    }
+  }
+
+  /**
    * If localStorage.user is a Patient identity on a staff page, restore the staff backup
    * (or clear the patient identity so staff chrome never shows "Patient").
    */
@@ -70,11 +108,12 @@
     const backup = readJson(STAFF_USER_BACKUP_KEY);
     if (isStaffLikeUser(backup)) {
       localStorage.setItem(USER_KEY, JSON.stringify(backup));
+      // Kick off Auth restore (async); billing pages also call ensureStaffSession
+      restoreStaffSupabaseSessionFromBackup().catch(() => {});
       console.warn('[staff-session] Restored clinic staff session after patient portal test login.');
       return backup;
     }
 
-    // No staff backup available - never leave Patient on staff pages
     localStorage.removeItem(USER_KEY);
     console.warn('[staff-session] Cleared patient portal identity from staff page session.');
     return null;
@@ -83,6 +122,7 @@
   function clearPatientPortalSessionOnStaffLogin() {
     localStorage.removeItem(PATIENT_PORTAL_USER_KEY);
     localStorage.removeItem(STAFF_USER_BACKUP_KEY);
+    localStorage.removeItem(STAFF_SUPABASE_SESSION_BACKUP_KEY);
   }
 
   function formatStaffLoggedInLine(user) {
@@ -93,9 +133,6 @@
     return `${name} (${role}) from ${org} is logged in`;
   }
 
-  /**
-   * Rewrite #logged-in-info if a page script already painted a Patient role.
-   */
   function safeguardLoggedInFooter() {
     if (!isStaffClinicPath()) return;
     const el = document.getElementById('logged-in-info');
@@ -117,10 +154,10 @@
     }
   }
 
-  // Run immediately so early inline scripts that re-read localStorage see staff again
   const restored = restoreStaffSessionIfNeeded();
 
   global.restoreStaffSessionIfNeeded = restoreStaffSessionIfNeeded;
+  global.restoreStaffSupabaseSessionFromBackup = restoreStaffSupabaseSessionFromBackup;
   global.clearPatientPortalSessionOnStaffLogin = clearPatientPortalSessionOnStaffLogin;
   global.isPatientPortalRole = isPatientRole;
   global.getStaffLoggedInDisplayLine = function getStaffLoggedInDisplayLine() {
@@ -143,7 +180,6 @@
   } else {
     runFooterSafeguard();
   }
-  // Catch footers painted by later inline scripts
   setTimeout(runFooterSafeguard, 0);
   setTimeout(runFooterSafeguard, 50);
   setTimeout(runFooterSafeguard, 250);

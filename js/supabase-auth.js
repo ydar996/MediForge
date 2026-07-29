@@ -214,6 +214,7 @@ async function loginWithSupabase(email, password) {
                 } else {
                   localStorage.removeItem('patient_portal_user');
                   localStorage.removeItem('staff_user_backup');
+                  localStorage.removeItem('staff_supabase_session_backup');
                 }
                 localStorage.setItem('user', JSON.stringify(userSession));
                 localStorage.setItem('lastActivity', Date.now().toString());
@@ -364,6 +365,7 @@ async function loginWithSupabase(email, password) {
       } else {
         localStorage.removeItem('patient_portal_user');
         localStorage.removeItem('staff_user_backup');
+                  localStorage.removeItem('staff_supabase_session_backup');
       }
       localStorage.setItem('user', JSON.stringify(userSession));
       localStorage.setItem('lastActivity', Date.now().toString());
@@ -407,6 +409,7 @@ async function loginWithSupabase(email, password) {
     } else {
       localStorage.removeItem('patient_portal_user');
       localStorage.removeItem('staff_user_backup');
+                  localStorage.removeItem('staff_supabase_session_backup');
     }
     localStorage.setItem('user', JSON.stringify(userSession));
     localStorage.setItem('lastActivity', Date.now().toString());
