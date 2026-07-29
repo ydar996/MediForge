@@ -191,7 +191,7 @@ async function loadOrganizationUsers() {
     if (supabaseClient) {
       try {
         console.log('🔍 [SUPABASE FIRST] Loading staff from Supabase, orgId:', orgId);
-        // Do not require is_active=true — NULL/false would empty the dropdown for many clinics
+        // Do not require is_active=true - NULL/false would empty the dropdown for many clinics
         let { data: users, error } = await supabaseClient
           .from('users')
           .select('id, username, first_name, last_name, role, email, is_active')
@@ -536,7 +536,7 @@ async function sendMessage(messageData) {
         }
       }
 
-      // Notification trigger only covers messages.recipient_id — notify everyone for group sends
+      // Notification trigger only covers messages.recipient_id - notify everyone for group sends
       if (isGroup) {
         const notifs = uniqueRecipientIds.map((rid) => ({
           organization_id: orgId,

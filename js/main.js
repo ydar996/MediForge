@@ -46,7 +46,7 @@
       if (!/\(\s*patient\s*\)/i.test(text) && !/\bpatient\b.*logged in/i.test(text)) return;
       if (typeof window.getStaffLoggedInDisplayLine === 'function') {
         const line = window.getStaffLoggedInDisplayLine();
-        el.textContent = line || 'Staff login required — please sign in again';
+        el.textContent = line || 'Staff login required - please sign in again';
         return;
       }
       const user = JSON.parse(localStorage.getItem('user') || 'null');
@@ -54,7 +54,7 @@
       if (user && role && role !== 'patient' && role !== 'client') {
         el.textContent = `${user.username} (${user.role}) from ${user.org || 'Unknown Organization'} is logged in`;
       } else {
-        el.textContent = 'Staff login required — please sign in again';
+        el.textContent = 'Staff login required - please sign in again';
       }
     } catch (e) {
       /* ignore */

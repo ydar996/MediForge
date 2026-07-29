@@ -74,7 +74,7 @@
       return backup;
     }
 
-    // No staff backup available — never leave Patient on staff pages
+    // No staff backup available - never leave Patient on staff pages
     localStorage.removeItem(USER_KEY);
     console.warn('[staff-session] Cleared patient portal identity from staff page session.');
     return null;
@@ -113,7 +113,7 @@
     }
 
     if (showsPatient || (text && /\(.*\) from .* is logged in/i.test(text))) {
-      el.textContent = 'Staff login required — please sign in again';
+      el.textContent = 'Staff login required - please sign in again';
     }
   }
 
