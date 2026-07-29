@@ -88,6 +88,88 @@ window.restoreStaffAuthAfterPortalAdminOp = async function restoreStaffAuthAfter
 };
 
 /**
+ * Create (or update) a patient portal Auth user WITHOUT signing the browser in as that patient.
+ * Uses Netlify Admin API so staff JWT never becomes a Patient session.
+ * @returns {Promise<{id: string, email: string, created: boolean}>}
+ */
+window.createPatientPortalAuthUser = async function createPatientPortalAuthUser(opts) {
+  const options = opts || {};
+  const email = String(options.email || '').trim().toLowerCase();
+  const password = String(options.password || '');
+  if (!email || !password) {
+    throw new Error('email and password are required to create portal access');
+  }
+
+  if (typeof window.waitForSupabaseClient === 'function') {
+    try { await window.waitForSupabaseClient(); } catch (e) { /* continue */ }
+  }
+  const sb = window.supabaseClient;
+  if (!sb?.auth) {
+    throw new Error('Supabase is not ready. Refresh and try again.');
+  }
+
+  // Keep a staff JWT backup even though we no longer sign in as patient
+  if (typeof window.backupStaffClinicSession === 'function') {
+    window.backupStaffClinicSession();
+  }
+
+  let accessToken = null;
+  try {
+    const { data: sessionData } = await sb.auth.getSession();
+    accessToken = sessionData?.session?.access_token || null;
+  } catch (e) {
+    /* try stored session */
+  }
+  if (!accessToken) {
+    try {
+      const raw = localStorage.getItem('supabase_session');
+      const stored = raw ? JSON.parse(raw) : null;
+      accessToken = stored && stored.access_token;
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  if (!accessToken) {
+    throw new Error('Staff login required before creating portal access. Please sign in again.');
+  }
+
+  const res = await fetch('/.netlify/functions/create-patient-portal-user', {
+    method: 'POST',
+    headers: {
+      'Content-Type': 'application/json',
+      Authorization: 'Bearer ' + accessToken
+    },
+    body: JSON.stringify({
+      email: email,
+      password: password,
+      username: options.username || undefined,
+      first_name: options.first_name || undefined,
+      last_name: options.last_name || undefined,
+      patient_id: options.patient_id || undefined,
+      organization_id: options.organization_id || undefined,
+      reset_password_if_exists: options.reset_password_if_exists !== false
+    })
+  });
+
+  let payload = null;
+  try {
+    payload = await res.json();
+  } catch (e) {
+    payload = null;
+  }
+
+  if (!res.ok || !payload || !payload.user || !payload.user.id) {
+    throw new Error((payload && payload.error) || ('Failed to create portal Auth user (' + res.status + ')'));
+  }
+
+  return {
+    id: payload.user.id,
+    email: payload.user.email || email,
+    created: !!payload.created
+  };
+};
+
+/**
  * Patient login function
  * @param {string} username - Username or email
  * @param {string} password - Password (can be temporary password)

@@ -56,6 +56,76 @@
   }
 
   /**
+   * Detect a Patient Auth user from JWT metadata/email (no DB round-trip).
+   */
+  function isPatientAuthUser(authUser) {
+    if (!authUser || typeof authUser !== 'object') return false;
+    const metaRole = String(
+      (authUser.user_metadata && authUser.user_metadata.role) ||
+      (authUser.app_metadata && authUser.app_metadata.role) ||
+      ''
+    ).trim().toLowerCase();
+    if (isPatientRole(metaRole)) return true;
+    const email = String(authUser.email || '').trim().toLowerCase();
+    if (email.endsWith('@patient.ehrapp.local')) return true;
+    return false;
+  }
+
+  /**
+   * If a Patient JWT lands on a staff page while localStorage shows staff (or a staff backup exists),
+   * restore staff Auth immediately. Prevents Create Portal Access / accidental signIn from sticking.
+   * @returns {Promise<boolean>} true if a Patient session was rejected/restored
+   */
+  async function protectStaffAuthFromPatientHijack(session) {
+    if (!isStaffClinicPath()) return false;
+    const authUser = session && session.user;
+    if (!authUser || !isPatientAuthUser(authUser)) return false;
+
+    const current = readJson(USER_KEY);
+    const backup = readJson(STAFF_USER_BACKUP_KEY);
+    const staffContext = isStaffLikeUser(current) || isStaffLikeUser(backup);
+    if (!staffContext) {
+      // Staff page with only a Patient JWT and no staff identity — clear Auth so RLS cannot use it
+      try {
+        if (global.supabaseClient && global.supabaseClient.auth) {
+          await global.supabaseClient.auth.signOut({ scope: 'local' });
+        }
+      } catch (e) { /* ignore */ }
+      localStorage.removeItem('supabase_session');
+      console.warn('[staff-session] Cleared orphan Patient Auth session on staff page.');
+      return true;
+    }
+
+    // Ensure UI identity is staff
+    if (isPatientRole(current && current.role) && isStaffLikeUser(backup)) {
+      localStorage.setItem(USER_KEY, JSON.stringify(backup));
+    }
+
+    if (typeof global.restoreStaffAuthAfterPortalAdminOp === 'function') {
+      const ok = await global.restoreStaffAuthAfterPortalAdminOp();
+      if (ok) {
+        console.warn('[staff-session] Blocked Patient Auth hijack; staff session restored.');
+        return true;
+      }
+    }
+
+    const restored = await restoreStaffSupabaseSessionFromBackup();
+    if (restored) {
+      console.warn('[staff-session] Blocked Patient Auth hijack via session backup.');
+      return true;
+    }
+
+    try {
+      if (global.supabaseClient && global.supabaseClient.auth) {
+        await global.supabaseClient.auth.signOut({ scope: 'local' });
+      }
+    } catch (e) { /* ignore */ }
+    localStorage.removeItem('supabase_session');
+    console.warn('[staff-session] Cleared Patient Auth on staff page; staff must sign in again.');
+    return true;
+  }
+
+  /**
    * Restore staff Supabase JWT from backup (saved before patient portal sign-in).
    * Returns true if a session was applied.
    */
@@ -160,6 +230,9 @@
   global.restoreStaffSupabaseSessionFromBackup = restoreStaffSupabaseSessionFromBackup;
   global.clearPatientPortalSessionOnStaffLogin = clearPatientPortalSessionOnStaffLogin;
   global.isPatientPortalRole = isPatientRole;
+  global.isPatientAuthUser = isPatientAuthUser;
+  global.isStaffClinicPath = isStaffClinicPath;
+  global.protectStaffAuthFromPatientHijack = protectStaffAuthFromPatientHijack;
   global.getStaffLoggedInDisplayLine = function getStaffLoggedInDisplayLine() {
     const user = restoreStaffSessionIfNeeded();
     return formatStaffLoggedInLine(user);

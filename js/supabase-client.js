@@ -124,12 +124,142 @@ function initializeSupabaseClient() {
       
       function persistSupabaseSession(session) {
         if (!session) return;
+        // Never overwrite a staff clinic session with a Patient JWT on staff pages
+        try {
+          if (typeof window.isStaffClinicPath === 'function' && window.isStaffClinicPath() &&
+              typeof window.isPatientAuthUser === 'function' && window.isPatientAuthUser(session.user)) {
+            let localUser = null;
+            try { localUser = JSON.parse(localStorage.getItem('user') || 'null'); } catch (e) { /* ignore */ }
+            const role = String((localUser && localUser.role) || '').toLowerCase();
+            const looksStaff = localUser && role && role !== 'patient' && role !== 'client' && role !== 'client-patient';
+            const hasBackup = !!localStorage.getItem('staff_user_backup') || !!localStorage.getItem('staff_supabase_session_backup');
+            if (looksStaff || hasBackup) {
+              warnVerbose('[auth] Refusing to persist Patient session over staff on clinic page');
+              return;
+            }
+          }
+        } catch (e) {
+          /* persist normally */
+        }
         localStorage.setItem('supabase_session', JSON.stringify({
           access_token: session.access_token,
           refresh_token: session.refresh_token,
           expires_at: session.expires_at
         }));
       }
+
+      function ensureStaffSessionGuardScript() {
+        try {
+          if (typeof window.protectStaffAuthFromPatientHijack === 'function') return;
+          if (typeof document === 'undefined') return;
+          if (document.querySelector('script[data-staff-session-guard="true"]')) return;
+          var s = document.createElement('script');
+          s.src = '/js/staff-session-guard.js?v=20260729150000';
+          s.setAttribute('data-staff-session-guard', 'true');
+          document.head.appendChild(s);
+        } catch (e) {
+          /* ignore */
+        }
+      }
+      ensureStaffSessionGuardScript();
+
+      /**
+       * Wrap signUp / signInWithPassword so any Patient Auth change on a staff page
+       * immediately restores staff JWT (defense in depth if a page still calls them).
+       */
+      function wrapAuthMethodsAgainstPatientHijack(client) {
+        if (!client || !client.auth || client.auth.__mediforgeStaffAuthWrapped) return;
+        client.auth.__mediforgeStaffAuthWrapped = true;
+
+        function isStaffPath() {
+          if (typeof window.isStaffClinicPath === 'function') return window.isStaffClinicPath();
+          try {
+            var path = String(window.location && window.location.pathname || '').toLowerCase();
+            if (path.includes('patient-login') || path.includes('patient-dashboard') ||
+                path.includes('patient-portal') || path.includes('patient-register') ||
+                path.includes('patient-reset') || path.includes('patient-change-password') ||
+                path.includes('patient-messages') || path.includes('portal-')) {
+              return false;
+            }
+            return true;
+          } catch (e) {
+            return true;
+          }
+        }
+
+        function looksLikePatientAuthUser(user) {
+          if (typeof window.isPatientAuthUser === 'function') return window.isPatientAuthUser(user);
+          if (!user) return false;
+          var meta = String((user.user_metadata && user.user_metadata.role) || '').toLowerCase();
+          if (meta === 'patient' || meta === 'client') return true;
+          var email = String(user.email || '').toLowerCase();
+          return email.endsWith('@patient.ehrapp.local');
+        }
+
+        function staffContextActive() {
+          try {
+            var u = JSON.parse(localStorage.getItem('user') || 'null');
+            var role = String((u && u.role) || '').toLowerCase();
+            if (u && role && role !== 'patient' && role !== 'client' && role !== 'client-patient') return true;
+          } catch (e) { /* ignore */ }
+          return !!(localStorage.getItem('staff_user_backup') || localStorage.getItem('staff_supabase_session_backup'));
+        }
+
+        function backupStaffIfNeeded() {
+          if (typeof window.backupStaffClinicSession === 'function') {
+            window.backupStaffClinicSession();
+            return;
+          }
+          try {
+            var u = JSON.parse(localStorage.getItem('user') || 'null');
+            var role = String((u && u.role) || '').toLowerCase();
+            if (u && role && role !== 'patient' && role !== 'client' && role !== 'client-patient') {
+              localStorage.setItem('staff_user_backup', JSON.stringify(u));
+              var sess = localStorage.getItem('supabase_session');
+              if (sess) localStorage.setItem('staff_supabase_session_backup', sess);
+            }
+          } catch (e) { /* ignore */ }
+        }
+
+        async function restoreAfterPatientAuth(resultUser) {
+          if (!isStaffPath() || !looksLikePatientAuthUser(resultUser) || !staffContextActive()) return;
+          if (typeof window.restoreStaffAuthAfterPortalAdminOp === 'function') {
+            await window.restoreStaffAuthAfterPortalAdminOp();
+            return;
+          }
+          if (typeof window.protectStaffAuthFromPatientHijack === 'function') {
+            await window.protectStaffAuthFromPatientHijack({ user: resultUser });
+            return;
+          }
+          if (typeof window.restoreStaffSupabaseSessionFromBackup === 'function') {
+            await window.restoreStaffSupabaseSessionFromBackup();
+          }
+        }
+
+        var originalSignIn = client.auth.signInWithPassword.bind(client.auth);
+        var originalSignUp = client.auth.signUp.bind(client.auth);
+
+        client.auth.signInWithPassword = async function wrappedSignInWithPassword(credentials) {
+          if (isStaffPath() && staffContextActive()) backupStaffIfNeeded();
+          var result = await originalSignIn(credentials);
+          var user = result && result.data && (result.data.user || (result.data.session && result.data.session.user));
+          try { await restoreAfterPatientAuth(user); } catch (e) {
+            console.warn('[auth] Staff restore after patient signIn failed:', e);
+          }
+          return result;
+        };
+
+        client.auth.signUp = async function wrappedSignUp(credentials) {
+          if (isStaffPath() && staffContextActive()) backupStaffIfNeeded();
+          var result = await originalSignUp(credentials);
+          var user = result && result.data && (result.data.user || (result.data.session && result.data.session.user));
+          try { await restoreAfterPatientAuth(user); } catch (e) {
+            console.warn('[auth] Staff restore after patient signUp failed:', e);
+          }
+          return result;
+        };
+      }
+      wrapAuthMethodsAgainstPatientHijack(supabaseClient);
 
       try {
         const storedSessionRaw = localStorage.getItem('supabase_session');
@@ -176,6 +306,14 @@ function initializeSupabaseClient() {
         } else if (event === 'SIGNED_OUT') {
           // Only clear on explicit sign-out: not on INITIAL_SESSION races during page load
           localStorage.removeItem('supabase_session');
+        }
+
+        if (session && session.user && (event === 'SIGNED_IN' || event === 'TOKEN_REFRESHED' || event === 'INITIAL_SESSION' || event === 'USER_UPDATED')) {
+          queueMicrotask(function () {
+            if (typeof window.protectStaffAuthFromPatientHijack === 'function') {
+              window.protectStaffAuthFromPatientHijack(session).catch(function () {});
+            }
+          });
         }
 
         if ((event === 'SIGNED_IN' || event === 'INITIAL_SESSION') && session && session.user) {

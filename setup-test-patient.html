@@ -112,7 +112,9 @@
   </div>
 
   <script src="js/vendor/supabase.min.js"></script>
-  <script src="js/supabase-client.js"></script>
+  <script src="js/supabase-client.js?v=20260729150000"></script>
+  <script src="js/staff-session-guard.js?v=20260729150000"></script>
+  <script src="js/patient-auth.js?v=20260729150000"></script>
   <script src="js/patient-id-normalizer.js"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
 
@@ -226,47 +228,32 @@
         log(`   Generated username: ${username}`, 'info');
         log(`   Generated password: ${tempPassword}`, 'info');
 
-        // Step 4: Create Supabase Auth user
+        // Step 4: Create Supabase Auth user via Admin API (never hijack staff session)
         log('📋 Step 4: Creating Supabase Auth user...', 'info');
         
         const email = `${username}@patient.ehrapp.local`;
-        
-        const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
-          email: email,
-          password: tempPassword,
-          options: {
-            data: {
-              username: username,
-              first_name: patient.first_name,
-              last_name: patient.last_name,
-              role: 'patient'
-            }
-          }
-        });
 
-        if (authError) {
-          // If user already exists, try to sign in to get the user
-          if (authError.message.includes('already registered')) {
-            log('⚠️ Auth user already exists, attempting to get user...', 'info');
-            const { data: signInData, error: signInError } = await window.supabaseClient.auth.signInWithPassword({
-              email: email,
-              password: tempPassword
-            });
-
-            if (signInError) {
-              throw new Error(`Auth user exists but password doesn't match. Please reset password manually. Error: ${signInError.message}`);
-            }
-
-            authData.user = signInData.user;
-            log('✅ Using existing Auth user', 'success');
-          } else {
-            throw new Error(`Failed to create Auth user: ${authError.message}`);
-          }
-        } else {
-          log('✅ Auth user created successfully', 'success');
+        if (typeof window.createPatientPortalAuthUser !== 'function') {
+          throw new Error('Portal create helper is not loaded. Refresh and try again.');
         }
 
-        const authUserId = authData.user.id;
+        const portalAuth = await window.createPatientPortalAuthUser({
+          email: email,
+          password: tempPassword,
+          username: username,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          patient_id: patient.id,
+          organization_id: patient.organization_id,
+          reset_password_if_exists: true
+        });
+
+        const authUserId = portalAuth.id;
+        if (portalAuth.created) {
+          log('✅ Auth user created successfully', 'success');
+        } else {
+          log('✅ Using existing Auth user (password updated)', 'success');
+        }
         log(`   Auth User ID: ${authUserId}`, 'info');
 
         // Step 5: Create user profile in users table

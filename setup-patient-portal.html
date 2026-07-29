@@ -310,10 +310,10 @@
   </div>
 
   <script src="js/vendor/supabase.min.js"></script>
-  <script src="js/supabase-client.js"></script>
-  <script src="js/staff-session-guard.js?v=20260729140000"></script>
-  <script src="js/utils.js?v=20260729140000"></script>
-  <script src="js/patient-auth.js?v=20260729140000"></script>
+  <script src="js/supabase-client.js?v=20260729150000"></script>
+  <script src="js/staff-session-guard.js?v=20260729150000"></script>
+  <script src="js/utils.js?v=20260729150000"></script>
+  <script src="js/patient-auth.js?v=20260729150000"></script>
   <script src="js/patient-id-normalizer.js"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
   
@@ -778,46 +778,32 @@
         log(`Generated username: ${username}`, 'info');
         log(`Generated password: ${tempPassword}`, 'info');
 
-        // Create Supabase Auth user
+        // Create portal Auth user via Admin API (never signUp/signIn as patient in this browser)
         log(`Creating Supabase Auth user...`, 'info');
         
         const email = `${username}@patient.ehrapp.local`;
-        
-        const { data: authData, error: authError } = await window.supabaseClient.auth.signUp({
-          email: email,
-          password: tempPassword,
-          options: {
-            data: {
-              username: username,
-              first_name: patient.first_name,
-              last_name: patient.last_name,
-              role: 'Patient'
-            }
-          }
-        });
 
-        if (authError) {
-          if (authError.message.includes('already registered')) {
-            log('Auth user already exists, signing in temporarily to link profile...', 'warning');
-            const { data: signInData, error: signInError } = await window.supabaseClient.auth.signInWithPassword({
-              email: email,
-              password: tempPassword
-            });
-
-            if (signInError) {
-              throw new Error(`Auth user exists but password doesn't match. Please reset password manually.`);
-            }
-
-            authData.user = signInData.user;
-            log('Using existing Auth user', 'success');
-          } else {
-            throw new Error(`Failed to create Auth user: ${authError.message}`);
-          }
-        } else {
-          log('Auth user created successfully', 'success');
+        if (typeof window.createPatientPortalAuthUser !== 'function') {
+          throw new Error('Portal create helper is not loaded. Refresh the page and try again.');
         }
 
-        const authUserId = authData.user.id;
+        const portalAuth = await window.createPatientPortalAuthUser({
+          email: email,
+          password: tempPassword,
+          username: username,
+          first_name: patient.first_name,
+          last_name: patient.last_name,
+          patient_id: patient.id,
+          organization_id: patient.organization_id,
+          reset_password_if_exists: true
+        });
+
+        const authUserId = portalAuth.id;
+        if (portalAuth.created) {
+          log('Auth user created successfully', 'success');
+        } else {
+          log('Auth user already existed; password updated for new credentials', 'success');
+        }
 
         // Create user profile
         log(`Creating user profile...`, 'info');
@@ -921,14 +907,14 @@
         log(`Error: ${error.message}`, 'error');
         console.error('Setup error:', error);
       } finally {
-        // Always put staff Auth back so billing/clinic pages keep working
-        if (typeof window.restoreStaffAuthAfterPortalAdminOp === 'function') {
-          const restored = await window.restoreStaffAuthAfterPortalAdminOp();
-          if (restored) {
-            log('Staff login restored after portal setup.', 'success');
-          } else {
-            log('Could not automatically restore staff login. Please sign in again as staff before billing or clinical work.', 'warning');
-          }
+        // Safety net: staff Auth should never have changed; restore if anything slipped through
+        if (typeof window.protectStaffAuthFromPatientHijack === 'function' && window.supabaseClient?.auth) {
+          try {
+            const { data: sess } = await window.supabaseClient.auth.getSession();
+            await window.protectStaffAuthFromPatientHijack(sess?.session || null);
+          } catch (e) { /* ignore */ }
+        } else if (typeof window.restoreStaffAuthAfterPortalAdminOp === 'function') {
+          await window.restoreStaffAuthAfterPortalAdminOp();
         }
       }
     }
