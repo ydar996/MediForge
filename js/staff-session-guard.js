@@ -85,7 +85,7 @@
     const backup = readJson(STAFF_USER_BACKUP_KEY);
     const staffContext = isStaffLikeUser(current) || isStaffLikeUser(backup);
     if (!staffContext) {
-      // Staff page with only a Patient JWT and no staff identity — clear Auth so RLS cannot use it
+      // Staff page with only a Patient JWT and no staff identity: clear Auth so RLS cannot use it
       try {
         if (global.supabaseClient && global.supabaseClient.auth) {
           await global.supabaseClient.auth.signOut({ scope: 'local' });

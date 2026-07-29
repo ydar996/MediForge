@@ -23,13 +23,13 @@ Technical detail belongs in code comments and docs for developers: **not** as th
 
 ## Rule #2: No em dashes in user-facing text (always)
 
-The owner does **not** want em dashes (—) in the app, docs, or agent replies. Use **colons**, commas, or separate sentences instead.
+The owner does **not** want em dashes (U+2014) in the app, docs, or agent replies. Use **colons**, commas, or separate sentences instead.
 
 | Do | Don't |
 |----|-------|
-| “Lab orders: 176+ tests” | “Lab orders — 176+ tests” |
-| “June 23, 2026: Readiness report published” | “June 23, 2026 — Readiness report published” |
-| “Reviewed: results available” | “Reviewed — results available” |
+| “Lab orders: 176+ tests” | “Lab orders” plus em dash plus “176+ tests” |
+| “June 23, 2026: Readiness report published” | Date plus em dash plus title |
+| “Reviewed: results available” | “Reviewed” plus em dash plus “results available” |
 
 **Scope:** All user-visible HTML, patient/staff UI strings in JS, owner-facing docs, marketing pages, and handover text.
 
@@ -73,7 +73,7 @@ Do **not** invent dollar figures for Strategic Partner materials. Every amount s
 
 ---
 
-## Rule #3: 100% parity (non-negotiable — owner requirement)
+## Rule #3: 100% parity (non-negotiable: owner requirement)
 
 The owner requires **100% parity**, not "good enough" or "the sync guard passed."
 
@@ -411,13 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
-### July 29, 2026: Global harden — Create Portal Access never hijacks staff Auth
+### July 29, 2026: Global harden: Create Portal Access never hijacks staff Auth
 
 - **Owner ask:** Create-patient Auth wipe could happen anywhere; ensure it can never happen again wherever staff work.
 - **Root fix:** New Netlify function `create-patient-portal-user` creates portal Auth users with service role; browser never `signUp`/`signIn` as patient for portal setup.
 - **Wired:** `setup-patient-portal.html` + `setup-test-patient.html` use `createPatientPortalAuthUser`.
 - **Global guards (any staff page):** `supabase-client.js` auto-loads staff session guard, refuses to persist Patient JWT over staff, wraps `signUp`/`signInWithPassword` to restore staff Auth, and `onAuthStateChange` calls `protectStaffAuthFromPatientHijack`.
-- **Deployed:** pending commit hash after promote + CLI Netlify all three sites.
+- **Deployed:** `4df66a6` (+ em-dash fix) to `dev` / `staging` / `main` + CLI Netlify all three sites.
 
 ### July 29, 2026: Portal Create Access wiped staff Auth (billing RLS)
 
@@ -442,7 +442,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ### July 29, 2026: Staff footer showed Patient after portal test + schedule UUID (local)
 
-- **Owner ask:** Administrator saw “Patient” as logged-on on Schedule after only testing a patient portal registration link — must never happen.
+- **Owner ask:** Administrator saw “Patient” as logged-on on Schedule after only testing a patient portal registration link: must never happen.
 - **Cause:** Patient portal login wrote `role: Patient` into the same `localStorage.user` key staff pages use for the footer.
 - **Fixed (local, not deployed until owner asks):** Separate `patient_portal_user` + staff backup/restore (`js/staff-session-guard.js`, `js/patient-auth.js`); staff pages restore staff identity and never paint Patient in `#logged-in-info`; staff login clears portal session keys.
 - **Also local:** Schedule daily modal Patient ID no longer shows raw UUID (`js/appointments.js` + `schedule.html` patient identity scripts).
@@ -545,7 +545,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Title Case:** Rule #2b in handover; `.cursor/rules/title-case-ui.mdc`; `ui-title-case.js` on all diligence pages; `npm run check:diligence-title-case` blocks missing script.
 - **Deployed:** `d98422b` to dev, staging, and production (CLI prod deploy). Verified `/capital-deployment-detail`, term sheet link, and readiness on all three URLs.
 
-### June 2026: Rule #3 codified — 100% parity (owner requirement)
+### June 2026: Rule #3 codified: 100% parity (owner requirement)
 
 - **Owner ask:** Stop partial sync; require **100% parity** between HTML diligence pages and markdown companions (facts, structure, links). Record in handover and agent self-instruction.
 - **Added:** **`AGENT-HANDOVER.md` Rule #3** (100% parity, non-negotiable); former sync checklist is **Rule #4**; **`.cursor/rules/diligence-100-percent-parity.mdc`** (alwaysApply).
@@ -720,7 +720,7 @@ Documentation upkeep is required whenever readiness scores change: update **all 
 - **Owner:** `20260626100000_hrm_inbound_reports.sql` and `20260626110000_hrm_dhdr_consent_types.sql` applied on dev, staging, and production.
 - **Docs:** `PHASE-7-HRM-DHDR-COMPLETION.md`, `evidence-binder.html` updated.
 
-### June 2026: Phase 7 HRM/DHDR + Phase 8 engineering — deploy dev → staging → production
+### June 2026: Phase 7 HRM/DHDR + Phase 8 engineering: deploy dev → staging → production
 
 - **Owner ask:** Implement Phase 7 and 8 software we own; full Ontario doc sync; deploy.
 - **Phase 7:** `/hrm-inbox`, `/provincial-hub-settings`, HRM ingest + DHDR query, `hrm_query`/`dhdr_query` consents, gateway actions, chart DHDR button, migrations `20260626100000` + `20260626110000`.
@@ -743,7 +743,7 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 
 ### Session log
 
-### June 2026: Revenue model — one-time implementation, lean OpEx
+### June 2026: Revenue model: one-time implementation, lean OpEx
 
 - **Owner correction:** Initial implementation costs are not continuously heavy; cert/seed spend Years 1–2 only; light ~$1.5k/clinic onboarding thereafter.
 - **Growth curve:** 2 → 5 → 10 → 20 → 40 clinics; operating net positive from Year 3 on run-rate view.
@@ -832,13 +832,13 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Note:** Valuation, equity, and term sheet docs added later (see session above); Ontario readiness companions updated in same initiative.
 - **Guard:** `check-ontario-readiness-sync.mjs` now forbids stale scores and uses Strategic Partner paths.
 
-### June 2026: Rule #3 enforcement — Ontario companion sync check + drift fix
+### June 2026: Rule #3 enforcement: Ontario companion sync check + drift fix
 
 - **Owner ask:** Linked pages from ontario-readiness/strategic-partner-letter were out of sync; prevent recurrence.
 - **Fixed:** capabilities compare table (72–82%), HRM chart filing on capabilities/evidence-binder/Strategic Partner letter, Phase 8 completion doc, readiness Phase 8 callout.
 - **Guard:** `scripts/check-ontario-readiness-sync.mjs` added to `npm run check`; `.cursor/rules/ontario-readiness-sync.mdc` (always apply).
 
-### June 2026: Phase 0–8 gap closure — HRM chart filing, org hub gateway, polish — deploy dev → staging → production
+### June 2026: Phase 0–8 gap closure: HRM chart filing, org hub gateway, polish: deploy dev → staging → production
 
 - **Owner ask:** Close all immediate-control and queue-mode software gaps; sync Ontario docs + handover; deploy all environments.
 - **Software:** HRM **File to chart** (`fileHrmReportToChart`, unstructured record merge); provincial hub settings merged into gateway via `org-hub-config.js`; MCEDT `validateBatchXmlStructure`; DICOM C-FIND/C-MOVE stub responses; consent registry labels (HRM/DHDR/PrescribeIT); `scripts/load-test-claims.mjs`; interop failure webhook alerts; user manual HRM/DHDR/hub sections.
@@ -851,28 +851,28 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Owner:** `20260625100000_prescribeit_erx_columns.sql` applied on dev, staging, and production.
 - **Docs:** `PHASE-5-PRESCRIBEIT-COMPLETION.md`, `evidence-binder.html` updated.
 
-### June 2026: Phase 0–6 polish completion — deploy dev → staging → production
+### June 2026: Phase 0–6 polish completion: deploy dev → staging → production
 
 - **Owner ask:** Complete all remaining agent-buildable Phase 0–6 tasks; full Ontario doc sync; deploy.
 - **Chart:** Critical lab banner, HL7 ADT export, ConnectingOntario + SMART buttons, DICOMweb on orders/documents.
 - **Desks:** Rx pharmacy picker, claims rejection guidance, extended LOINC/CCDD mappings, encryption runbook.
 - **Evidence:** Expanded traceability matrix, self-assessment, evidence binder, user manual.
 
-### June 2026: Phase 6 imaging desk + Phase 0–5 polish — deploy dev → staging → production
+### June 2026: Phase 6 imaging desk + Phase 0–5 polish: deploy dev → staging → production
 
 - **Owner ask:** Finish Phase 0–5 polish (evidence, workflows, terminology mapping doc); implement Phase 6 software we own; full Ontario companion doc sync; deploy and verify live.
 - **Phase 6:** `/imaging-results-queue`, `/external-imaging-orders`, `imaging-results-workflow.js`, ConnectingOntario + SMART stubs, gateway actions, chart viewer WADO links, interop dashboard imaging panel, `phase6-imaging.test.js` (51 interop tests pass).
 - **Polish:** `TERMINOLOGY-MAPPING-STATUS.md`, `prescriptions.js` provincial eRx routing, fixed `generateLabHl7` in interop-client.
 - **Docs:** Phase 6 completion doc, implementation plan, gap report (DI ~45%), readiness/strategic-partner-letter/capabilities/evidence binder, STOP GATE Phase 7+.
 
-### June 2026: Rule #3 strengthened — docs + live sites must stay in sync
+### June 2026: Rule #3 strengthened: docs + live sites must stay in sync
 
 - **Owner ask:** Record permanently that all changes must be documented and companion pages kept in sync; confirm repo alignment.
 - **Root cause of stale production:** GitHub `main` updated but Netlify production build failed (`check:no-em-dash`); live site lagged git.
 - **Added:** Rule #3 expanded (Ontario companion set table, deploy verify checklist); **`MEDIFORGE-PRODUCT-RULES.md`** §9; **`DEPLOYMENT-PIPELINE.md`** post-promote verification steps; **`DOCUMENTATION-INDEX.md`** mandatory agent rule.
 - **Repos at this entry:** `dev`, `staging`, `main` all at `34acb9b` on GitHub; production manually deployed to match.
 
-### June 2026: Phase 5 deploy — dev → staging → production
+### June 2026: Phase 5 deploy: dev → staging → production
 
 - **Owner ask:** Deploy Phase 5 PrescribeIT software; promote to staging and prod; sync all companion docs.
 - **Shipped:** `/erx-queue`, prescribeit_erx consent, rx cancel/renew/dispense, pharmacy directory, gateway actions, migration `20260625100000`, tests.
@@ -884,13 +884,13 @@ When approved, agents executed **Tier A** first (gap report, audit hardening, FH
 - **Phase 5:** eRx queue (`/erx-queue`), prescribeit_erx consent, rx cancel/renew/dispense workflow, pharmacy sample directory, gateway actions, migration `20260625100000`, tests `phase5-prescribeit.test.js`.
 - **Docs:** `PHASE-5-PRESCRIBEIT-COMPLETION.md`, implementation plan, gap report, readiness report, ontario-readiness Phase 5 callout; STOP GATE now Phase 6+.
 
-### June 2026: Rule #3 audit — remaining stale Ontario companion docs
+### June 2026: Rule #3 audit: remaining stale Ontario companion docs
 
 - **Owner ask:** What else was missed after Strategic Partner letter fix?
 - **Stale:** `ONTARIOMD-GAP-REPORT.md` (45–55%, Phase 0 only), `ONTARIOMD-READINESS-PLAN.md` (wrong STOP GATE), `compliance/README.md`, readiness report §6 evidence binder %, `ontario-readiness.html` Phase 0 “next” callout, `AGENT-HANDOVER.md` STOP GATE, implementation plan Phase 0 STOP GATE note.
 - **Fixed:** All above synced to 60–70% / Phases 0–4; gap report added to Rule #3 pairs; release notes marked historical.
 
-### June 2026: Rule #3 fix — Strategic Partner letter synced to readiness report
+### June 2026: Rule #3 fix: Strategic Partner letter synced to readiness report
 
 - **Owner flagged:** `/strategic-partner-letter` still showed Phase 0–1 and 50–60% while `/ontario-readiness` showed 60–70% and Phases 0–4.
 - **Root cause:** Strategic Partner letter was not listed explicitly in Rule #3 companion pairs; polish sprints updated readiness/capabilities but skipped Strategic Partner letter.

@@ -1,6 +1,6 @@
 /**
  * Create a patient portal Auth user via Admin API (service role).
- * Staff JWT stays in the browser — never signUp/signIn as the patient.
+ * Staff JWT stays in the browser: never signUp/signIn as the patient.
  *
  * POST body: {
  *   email, password, username, first_name, last_name,
@@ -220,7 +220,7 @@ exports.handler = async (event) => {
       const errBody = await createRes.json().catch(() => ({}));
       const msg = String(errBody.msg || errBody.error_description || errBody.message || createRes.statusText || '');
 
-      // Race: user created elsewhere — look up via list (email match)
+      // Race: user created elsewhere: look up via list (email match)
       if (/already|registered|exists/i.test(msg)) {
         const listRes = await fetch(`${supabaseUrl}/auth/v1/admin/users?page=1&per_page=200`, {
           method: 'GET',

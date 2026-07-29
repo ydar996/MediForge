@@ -99,13 +99,13 @@ Same as **`AGENT-HANDOVER.md`**: explicit approval, dev first, one batched deplo
 
 ## 8. Writing style: no em dashes
 
-Do **not** use em dashes (—) in user-facing text, owner-facing documentation, marketing pages, or agent replies to the owner.
+Do **not** use em dashes (:) in user-facing text, owner-facing documentation, marketing pages, or agent replies to the owner.
 
 | Instead of | Use |
 |------------|-----|
-| `Feature — description` | `Feature: description` |
-| `Updated June 2026 — share this page` | `Updated June 2026: share this page` |
-| `Built for clinics — not hospitals only` | `Built for clinics: not hospitals only` |
+| `Feature: description` | `Feature: description` |
+| `Updated June 2026: share this page` | `Updated June 2026: share this page` |
+| `Built for clinics: not hospitals only` | `Built for clinics: not hospitals only` |
 
 **Preferred alternatives:** colon, comma, period, or parentheses.
 

@@ -10,7 +10,7 @@ import path from 'node:path';
 
 const root = process.cwd();
 
-/** Deliberate truth — update only when ontario-readiness.html changes */
+/** Deliberate truth: update only when ontario-readiness.html changes */
 const CANONICAL = {
   overallScore: '72–82%',
   phasesShort: 'Phases 0–8',
@@ -32,7 +32,7 @@ const COMPANIONS = [
   'AGENT-HANDOVER.md'
 ];
 
-/** Stale overall scores — scanned only in live companion pages/docs, not session-log history */
+/** Stale overall scores: scanned only in live companion pages/docs, not session-log history */
 const STALE_SCAN_FILES = COMPANIONS.filter((f) => f !== 'AGENT-HANDOVER.md');
 
 /** Lines containing these are historical session-log context, not live scores */
@@ -188,7 +188,7 @@ for (const rel of STALE_SCAN_FILES) {
     lines.forEach((line, i) => {
       if (!line.includes(stale)) return;
       if (STALE_LINE_ALLOW.some((a) => line.includes(a))) return;
-      errors.push(`${rel}:${i + 1}: stale overall score "${stale}" — use "${CANONICAL.overallScore}" or sub-pillar context only`);
+      errors.push(`${rel}:${i + 1}: stale overall score "${stale}": use "${CANONICAL.overallScore}" or sub-pillar context only`);
     });
   }
 }
@@ -205,7 +205,7 @@ for (const rel of NO_INVESTOR_TERMS_FILES) {
   const text = read(rel);
   if (!text) continue;
   if (INVESTOR_WORD.test(text)) {
-    errors.push(`${rel}: contains legacy "investor" wording — use Strategic Partner`);
+    errors.push(`${rel}: contains legacy "investor" wording: use Strategic Partner`);
   }
 }
 
@@ -274,7 +274,7 @@ for (const rel of FINANCIAL_TERM_FILES) {
     }
   }
   if (STALE_DEV_FEE.test(text)) {
-    errors.push(`${rel}: stale development fee $100,000–$120,000 — use $80,000–$120,000`);
+    errors.push(`${rel}: stale development fee $100,000–$120,000: use $80,000–$120,000`);
   }
 }
 
