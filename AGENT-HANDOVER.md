@@ -415,8 +415,8 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 - **Owner ask:** Messages stuck loading; staff recipient dropdown empty; staff↔patient messaging; multi-recipient; check patient portal.
 - **Causes:** Compose missing session/org helpers; staff query required `is_active=true` (NULLs excluded); inbox init waited on full patient load; compose could not FK patient UUIDs into `messages.recipient_id`.
-- **Fixed (local):** Softened staff load + session restore; inbox loads before recipients; multi-select chips; patient compose → `portal_messages`; portal tab org resolve; dedupe inbox.
-- **Not deployed** until owner asks.
+- **Fixed:** Softened staff load + session restore; inbox loads before recipients; multi-select chips; patient compose → `portal_messages`; portal tab org resolve; dedupe inbox; schedule UUID display + staff/patient session separation.
+- **Deployed:** `2af1940` (feature `071b461` + em-dash check fix) to `dev` / `staging` / `main` + CLI Netlify all three sites.
 
 ### July 29, 2026: Staff footer showed Patient after portal test + schedule UUID (local)
 
