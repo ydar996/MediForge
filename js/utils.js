@@ -219,7 +219,8 @@ window.ensureStaffSession = async function ensureStaffSession(options = {}) {
       /* continue to restore attempt */
     }
 
-    // If current Auth session is a Patient, restore staff JWT backup from portal testing
+    // If current Auth session is a Patient, restore staff JWT backup (e.g. after Create Portal Access)
+    let rejectedPatientJwt = false;
     if (session && typeof window.restoreStaffSupabaseSessionFromBackup === 'function') {
       try {
         const { data: profile } = await sb
@@ -230,11 +231,16 @@ window.ensureStaffSession = async function ensureStaffSession(options = {}) {
           .maybeSingle();
         const profileRole = String((profile && profile.role) || '').toLowerCase();
         if (profileRole === 'patient' || profileRole === 'client' || profileRole === 'client-patient') {
+          rejectedPatientJwt = true;
           const restoredAuth = await window.restoreStaffSupabaseSessionFromBackup();
           if (restoredAuth) {
             const { data: sessionData2 } = await sb.auth.getSession();
             session = sessionData2?.session || null;
+            rejectedPatientJwt = false;
           } else {
+            // Do not fall back to localStorage supabase_session - it is the Patient JWT
+            try { await sb.auth.signOut({ scope: 'local' }); } catch (e) { /* ignore */ }
+            localStorage.removeItem('supabase_session');
             session = null;
           }
         }
@@ -253,7 +259,8 @@ window.ensureStaffSession = async function ensureStaffSession(options = {}) {
       }
     }
 
-    if (!session) {
+    // Only reuse stored tokens if we did not just reject a Patient JWT
+    if (!session && !rejectedPatientJwt) {
       const raw = localStorage.getItem('supabase_session');
       if (raw) {
         try {

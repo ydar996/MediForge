@@ -311,12 +311,19 @@
 
   <script src="js/vendor/supabase.min.js"></script>
   <script src="js/supabase-client.js"></script>
+  <script src="js/staff-session-guard.js?v=20260729140000"></script>
+  <script src="js/utils.js?v=20260729140000"></script>
+  <script src="js/patient-auth.js?v=20260729140000"></script>
   <script src="js/patient-id-normalizer.js"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
   
   <script>
     // Check authentication - must be staff (not patient)
-    window.addEventListener('load', function() {
+    window.addEventListener('load', async function() {
+      if (typeof window.ensureStaffSession === 'function') {
+        const session = await window.ensureStaffSession({ redirectOnFailure: true });
+        if (!session.ok) return;
+      }
       const user = JSON.parse(localStorage.getItem("user") || "{}");
       if (!user.username || !user.role) {
         alert('Please log in as staff to access this page.');
@@ -743,7 +750,12 @@
 
     async function setupPatientPortal(patientId, firstName, lastName) {
       clearLog();
-      log(`🔍 Setting up portal access for ${firstName} ${lastName}...`, 'info');
+      log(`Setting up portal access for ${firstName} ${lastName}...`, 'info');
+
+      // Creating portal Auth accounts must not leave staff signed in as the patient
+      if (typeof window.backupStaffClinicSession === 'function') {
+        window.backupStaffClinicSession();
+      }
 
       try {
         // Get patient data
@@ -757,17 +769,17 @@
           throw new Error(`Patient not found: ${patientError?.message || 'Unknown error'}`);
         }
 
-        log(`✅ Found patient: ${patient.first_name} ${patient.last_name} (${patient.patient_id})`, 'success');
+        log(`Found patient: ${patient.first_name} ${patient.last_name} (${typeof window.patientMrnDisplay === 'function' ? window.patientMrnDisplay(patient) : (patient.patient_id || '')})`, 'success');
 
         // Generate credentials
         const username = generateUsername(patient.first_name, patient.last_name);
         const tempPassword = generatePassword();
         
-        log(`ℹ️ Generated username: ${username}`, 'info');
-        log(`ℹ️ Generated password: ${tempPassword}`, 'info');
+        log(`Generated username: ${username}`, 'info');
+        log(`Generated password: ${tempPassword}`, 'info');
 
         // Create Supabase Auth user
-        log(`ℹ️ Creating Supabase Auth user...`, 'info');
+        log(`Creating Supabase Auth user...`, 'info');
         
         const email = `${username}@patient.ehrapp.local`;
         
@@ -786,7 +798,7 @@
 
         if (authError) {
           if (authError.message.includes('already registered')) {
-            log('⚠️ Auth user already exists, attempting to get user...', 'warning');
+            log('Auth user already exists, signing in temporarily to link profile...', 'warning');
             const { data: signInData, error: signInError } = await window.supabaseClient.auth.signInWithPassword({
               email: email,
               password: tempPassword
@@ -797,18 +809,18 @@
             }
 
             authData.user = signInData.user;
-            log('✅ Using existing Auth user', 'success');
+            log('Using existing Auth user', 'success');
           } else {
             throw new Error(`Failed to create Auth user: ${authError.message}`);
           }
         } else {
-          log('✅ Auth user created successfully', 'success');
+          log('Auth user created successfully', 'success');
         }
 
         const authUserId = authData.user.id;
 
         // Create user profile
-        log(`ℹ️ Creating user profile...`, 'info');
+        log(`Creating user profile...`, 'info');
         
         const userProfileData = {
           id: authUserId,
@@ -835,7 +847,7 @@
 
         if (profileError) {
           if (profileError.message.includes('email') || profileError.message.includes('schema cache')) {
-            log('⚠️ Email column issue, trying without email...', 'warning');
+            log('Email column issue, trying without email...', 'warning');
             
             const { data: userProfileRetry, error: retryError } = await window.supabaseClient
               .from('users')
@@ -846,7 +858,7 @@
             if (retryError) {
               if (retryError.code === '23505') {
                 // Update existing
-                log('⚠️ User profile exists, updating...', 'warning');
+                log('User profile exists, updating...', 'warning');
                 const { data: updatedProfile, error: updateError } = await window.supabaseClient
                   .from('users')
                   .update({
@@ -863,16 +875,16 @@
                   throw new Error(`Failed to update user profile: ${updateError.message}`);
                 }
 
-                log('✅ User profile updated successfully', 'success');
+                log('User profile updated successfully', 'success');
               } else {
                 throw new Error(`Failed to create user profile: ${retryError.message}`);
               }
             } else {
-              log('✅ User profile created (without email)', 'success');
+              log('User profile created (without email)', 'success');
             }
           } else if (profileError.code === '23505') {
             // Update existing
-            log('⚠️ User profile exists, updating...', 'warning');
+            log('User profile exists, updating...', 'warning');
             const { data: updatedProfile, error: updateError } = await window.supabaseClient
               .from('users')
               .update({
@@ -889,25 +901,35 @@
               throw new Error(`Failed to update user profile: ${updateError.message}`);
             }
 
-            log('✅ User profile updated successfully', 'success');
+            log('User profile updated successfully', 'success');
           } else {
             throw new Error(`Failed to create user profile: ${profileError.message}`);
           }
         } else {
-          log('✅ User profile created successfully', 'success');
+          log('User profile created successfully', 'success');
         }
 
         // Display credentials
         displayCredentials(username, tempPassword);
-        log('✅ Portal access setup complete!', 'success');
-        log('ℹ️ Send these credentials to the patient via email or SMS.', 'info');
+        log('Portal access setup complete!', 'success');
+        log('Send these credentials to the patient via email or SMS.', 'info');
 
         // Refresh patient list
         await reloadSelectedPatientCard();
 
       } catch (error) {
-        log(`❌ Error: ${error.message}`, 'error');
+        log(`Error: ${error.message}`, 'error');
         console.error('Setup error:', error);
+      } finally {
+        // Always put staff Auth back so billing/clinic pages keep working
+        if (typeof window.restoreStaffAuthAfterPortalAdminOp === 'function') {
+          const restored = await window.restoreStaffAuthAfterPortalAdminOp();
+          if (restored) {
+            log('Staff login restored after portal setup.', 'success');
+          } else {
+            log('Could not automatically restore staff login. Please sign in again as staff before billing or clinical work.', 'warning');
+          }
+        }
       }
     }
 

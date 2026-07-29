@@ -411,6 +411,13 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 ## Session log
 
+### July 29, 2026: Portal Create Access wiped staff Auth (billing RLS)
+
+- **Owner clarification:** They did not patient-login; may only have created/sent a portal registration link.
+- **Actual cause:** `setup-patient-portal` Create Portal Access uses `auth.signUp` / `signInWithPassword` as the patient, replacing the staff JWT while `localStorage.user` still showed Administrator. Prior backup only covered `patientLogin`.
+- **Fixed (local):** Backup staff Auth before Create Portal Access; always restore staff Auth afterward; stop re-applying Patient tokens from `supabase_session` when staff restore fails; clearer billing errors.
+- **Not deployed** until owner asks.
+
 ### July 29, 2026: Billing invoice RLS on quick-checkout
 
 - **Owner ask:** Quick-checkout payment failed with `billing_invoices` RLS violation; review all payment sources.

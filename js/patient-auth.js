@@ -62,8 +62,29 @@ window.setPatientPortalSession = function setPatientPortalSession(userData) {
   return portalUser;
 };
 
-window.clearPatientPortalSession = function clearPatientPortalSession() {
-  localStorage.removeItem(PATIENT_PORTAL_USER_KEY);
+/**
+ * After staff Create Portal Access (signUp/signIn as patient), restore the staff Auth session.
+ */
+window.restoreStaffAuthAfterPortalAdminOp = async function restoreStaffAuthAfterPortalAdminOp() {
+  try {
+    if (window.supabaseClient?.auth) {
+      try {
+        await window.supabaseClient.auth.signOut({ scope: 'local' });
+      } catch (e) {
+        /* continue to restore */
+      }
+    }
+    if (typeof window.restoreStaffSupabaseSessionFromBackup === 'function') {
+      const ok = await window.restoreStaffSupabaseSessionFromBackup();
+      if (ok) return true;
+    }
+    // No usable backup: clear patient tokens so billing cannot silently use them
+    localStorage.removeItem('supabase_session');
+    return false;
+  } catch (e) {
+    console.warn('[patient-auth] restoreStaffAuthAfterPortalAdminOp:', e);
+    return false;
+  }
 };
 
 /**

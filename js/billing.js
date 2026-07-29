@@ -18,7 +18,6 @@ function getBillingKey(key) {
 
 /**
  * Billing writes require an authenticated staff Supabase JWT for the clinic org (RLS).
- * Restores staff Auth after patient-portal testing when a backup exists.
  */
 async function ensureStaffBillingAccess(options = {}) {
   const { redirectOnFailure = true } = options;
@@ -30,7 +29,7 @@ async function ensureStaffBillingAccess(options = {}) {
     if (!session.ok) {
       const msg =
         session.reason === 'auth_not_staff' || session.reason === 'patient_identity'
-          ? 'Your clinic staff login expired (often after testing the patient portal). Please sign in again as staff, then retry payment.'
+          ? 'Your staff security login is no longer active (this can happen after creating patient portal access). Please sign in again as staff, then retry payment.'
           : 'Staff login required to save invoices and payments. Please sign in again.';
       if (redirectOnFailure) {
         alert(msg);
@@ -61,7 +60,7 @@ window.ensureStaffBillingAccess = ensureStaffBillingAccess;
 function formatBillingSaveError(err) {
   const msg = (err && (err.message || err.details || String(err))) || 'Unknown error';
   if (/row-level security|rls|42501/i.test(msg)) {
-    return 'Your clinic staff login is missing or expired (this often happens after testing the patient portal in the same browser). Please sign in again as staff, then retry.';
+    return 'Your staff security login is missing or expired. Please sign in again as staff, then retry.';
   }
   return msg;
 }
