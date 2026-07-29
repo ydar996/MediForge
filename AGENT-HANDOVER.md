@@ -415,8 +415,8 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 
 - **Owner clarification:** They did not patient-login; may only have created/sent a portal registration link.
 - **Actual cause:** `setup-patient-portal` Create Portal Access uses `auth.signUp` / `signInWithPassword` as the patient, replacing the staff JWT while `localStorage.user` still showed Administrator. Prior backup only covered `patientLogin`.
-- **Fixed (local):** Backup staff Auth before Create Portal Access; always restore staff Auth afterward; stop re-applying Patient tokens from `supabase_session` when staff restore fails; clearer billing errors.
-- **Not deployed** until owner asks.
+- **Fixed:** Backup staff Auth before Create Portal Access; always restore staff Auth afterward; stop re-applying Patient tokens from `supabase_session` when staff restore fails; clearer billing errors.
+- **Deployed:** `a6a2c43` to `dev` / `staging` / `main` + CLI Netlify all three sites.
 
 ### July 29, 2026: Billing invoice RLS on quick-checkout
 
