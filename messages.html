@@ -2,6 +2,7 @@
 <html lang="en">
 <head>
   <script src="/js/supabase-env.js"></script>
+  <script src="/js/staff-session-guard.js?v=20260729110000"></script>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate">
@@ -433,8 +434,8 @@
   <script src="js/universal-data-loader.js?v=20251019043800"></script>
   <script src="js/patient-id-normalizer.js"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
-  <script src="js/messages.js?v=2"></script>
-  <script src="js/patient-portal.js"></script>
+  <script src="js/messages.js?v=20260729120000"></script>
+  <script src="js/patient-portal.js?v=20260729120000"></script>
   <script>
     let currentTab = 'inbox';
     let currentMessages = { received: [], sent: [] };
@@ -445,25 +446,39 @@
     let portalAppointmentRequests = [];
     let selectedPortalPatientId = null;
 
-    // Initialize page
+    // Initialize page — load inbox first so UI never stays on "Loading messages..."
     window.addEventListener('load', async function() {
       try {
-        await loadRecipients();
+        if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+          window.restoreStaffSessionIfNeeded();
+        }
+        if (typeof window.ensureStaffSession === 'function') {
+          await window.ensureStaffSession({ redirectOnFailure: false });
+        }
+
         await loadMessages();
         if (typeof window.loadNotifications === 'function') {
           currentNotifications = await window.loadNotifications();
         }
-        
-        // After loading, check for unread messages and switch to Inbox if needed
-        const unreadCount = (currentMessages.received || []).filter(m => !m.isRead).length;
-        if (unreadCount > 0) {
-          // Switch to Inbox tab automatically
-          switchTab('inbox');
+
+        // Recipients are only needed for compose; do not block inbox paint
+        loadRecipients().catch((e) => console.warn('Recipient preload:', e));
+
+        const urlTab = new URLSearchParams(window.location.search).get('tab');
+        if (urlTab === 'portal') {
+          switchTab('portal');
+        } else {
+          const unreadCount = (currentMessages.received || []).filter(m => !m.isRead).length;
+          if (unreadCount > 0) {
+            switchTab('inbox');
+          }
         }
-        
-        // Notifications badge will be handled by dashboard
       } catch (error) {
         console.error('Error initializing messages page:', error);
+        const listDiv = document.getElementById('messages-list');
+        if (listDiv) {
+          listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Could not load messages. Please refresh or sign in again.</p></div>';
+        }
       }
     });
 
@@ -500,9 +515,17 @@
           displayMessages();
         } else {
           console.error('Messages module not loaded');
+          const listDiv = document.getElementById('messages-list');
+          if (listDiv) {
+            listDiv.innerHTML = '<div class="empty-state"><p>Messages module failed to load. Please refresh.</p></div>';
+          }
         }
       } catch (error) {
         console.error('Error loading messages:', error);
+        const listDiv = document.getElementById('messages-list');
+        if (listDiv) {
+          listDiv.innerHTML = '<div class="empty-state"><div class="empty-state-icon">⚠️</div><p>Could not load messages.</p></div>';
+        }
       }
     }
 
@@ -557,15 +580,21 @@
       }
     }
 
-    function getStaffOrgId() {
+    async function getStaffOrgId() {
+      if (typeof window.resolveOrganizationId === 'function') {
+        try {
+          const id = await window.resolveOrganizationId();
+          if (id) return id;
+        } catch (e) { /* fall through */ }
+      }
       const user = JSON.parse(localStorage.getItem('user') || '{}');
-      return user.organizationId || user.organization_id;
+      return user.organizationId || user.organization_id || null;
     }
 
     async function loadPortalTab() {
-      const orgId = getStaffOrgId();
+      const orgId = await getStaffOrgId();
       if (!orgId || !window.MediForgePatientPortal) {
-        document.getElementById('messages-list').innerHTML = '<div class="empty-state"><p>Organization not found</p></div>';
+        document.getElementById('messages-list').innerHTML = '<div class="empty-state"><p>Organization not found. Please sign in again as clinic staff.</p></div>';
         return;
       }
       portalThreads = await window.MediForgePatientPortal.loadStaffPortalThreads(orgId);
@@ -714,7 +743,11 @@
     async function sendPortalStaffReply(patientId) {
       const body = (document.getElementById('portal-reply-body')?.value || '').trim();
       if (!body) return;
-      const orgId = getStaffOrgId();
+      const orgId = await getStaffOrgId();
+      if (!orgId) {
+        alert('Organization not found. Please sign in again as clinic staff.');
+        return;
+      }
       try {
         await window.MediForgePatientPortal.staffReplyToPatient(patientId, orgId, body);
         await loadPortalTab();

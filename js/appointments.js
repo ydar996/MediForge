@@ -2777,6 +2777,35 @@ async function showDailyDetails(dateStr) {
     const timeB = b.time || "00:00";
     return timeA.localeCompare(timeB);
   });
+
+  // Resolve clinic file numbers (never show raw Supabase UUIDs on this screen)
+  const displayPatientIds = await Promise.all(dayAppointments.map(async (apt) => {
+    try {
+      const resolved = await appointmentDisplayPatientIdForLink(apt);
+      if (resolved && !appointmentsIsUuidLike(resolved)) return resolved;
+    } catch (e) {
+      console.warn('[schedule] Could not resolve display patient id:', e);
+    }
+    try {
+      const raw = apt.patientId || apt.patient_id || '';
+      if (raw && !appointmentsIsUuidLike(raw)) return raw;
+      if (raw && appointmentsIsUuidLike(raw)) {
+        const patients = JSON.parse(localStorage.getItem(getDataKey('patients')) || '[]');
+        const match = patients.find((p) =>
+          p._supabaseUuid === raw ||
+          p.id === raw ||
+          (p.patient_id && p.patient_id === raw)
+        );
+        if (match) {
+          const legacy = typeof window.getPatientIdentifier === 'function'
+            ? window.getPatientIdentifier(match)
+            : (match.patient_id || match.patientNumber || match.id);
+          if (legacy && !appointmentsIsUuidLike(legacy)) return legacy;
+        }
+      }
+    } catch (e2) { /* non-fatal */ }
+    return ':';
+  }));
   
   // Create modal content
   const modalHTML = `
@@ -2825,12 +2854,14 @@ async function showDailyDetails(dateStr) {
           <div style="margin-bottom: 20px;">
             <h3 style="color: #007bff; margin-bottom: 15px;">📋 ${dayAppointments.length} Appointment(s) Scheduled</h3>
             <div style="display: grid; gap: 15px;">
-              ${dayAppointments.map(apt => `
+              ${dayAppointments.map((apt, aptIndex) => {
+                const displayPid = displayPatientIds[aptIndex] || ':';
+                return `
                 <div style="border: 1px solid #dee2e6; border-radius: 8px; padding: 20px; background-color: #f8f9fa;">
                   <div style="display: flex; justify-content: space-between; align-items: start; margin-bottom: 10px;">
                     <div>
                       <h4 style="margin: 0 0 5px 0; color: #333;">${scheduleEscapeHtml(apt.patientName)}</h4>
-                      <p style="margin: 0; color: #666; font-size: 14px;">Patient ID: ${typeof window.patientMrnDisplay === 'function' ? scheduleEscapeHtml(window.patientMrnDisplay(apt.patientId)) : scheduleEscapeHtml(apt.patientId)}</p>
+                      <p style="margin: 0; color: #666; font-size: 14px;">Patient ID: ${scheduleEscapeHtml(displayPid)}</p>
                       <p style="margin: 4px 0 0 0; color: #555; font-size: 14px;">Provider: <strong>${scheduleEscapeHtml(formatProviderDisplayName(apt.doctor || apt.doctor_name || 'Unassigned'))}</strong></p>
                     </div>
                     <div style="text-align: right;">
@@ -2845,10 +2876,11 @@ async function showDailyDetails(dateStr) {
                   <div style="margin-top: 15px; display: flex; gap: 10px;">
                     <button onclick="editAppointment('${apt.id}')" style="background: #007bff; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Edit</button>
                     <button onclick="deleteAppointment('${apt.id}')" style="background: #dc3545; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Delete</button>
-                    <button onclick="openClinicalNote(${JSON.stringify(apt.patientId || apt.patient_id || '')}, ${JSON.stringify(apt.date)}, ${JSON.stringify(apt.appointment_type || apt.appointmentType || '')}, ${JSON.stringify(apt.patientName || apt.patient_name || '')})" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Open Note</button>
+                    <button onclick="openClinicalNote(${JSON.stringify(displayPid !== ':' ? displayPid : (apt.patientId || apt.patient_id || ''))}, ${JSON.stringify(apt.date)}, ${JSON.stringify(apt.appointment_type || apt.appointmentType || '')}, ${JSON.stringify(apt.patientName || apt.patient_name || '')})" style="background: #28a745; color: white; border: none; padding: 6px 12px; border-radius: 4px; cursor: pointer; font-size: 12px;">Open Note</button>
                   </div>
                 </div>
-              `).join('')}
+              `;
+              }).join('')}
             </div>
           </div>`
         }

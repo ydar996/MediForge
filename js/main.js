@@ -1,5 +1,74 @@
 // Console filtering to suppress noisy logs by default.
 // Enable only with ?debugLogs=true in the URL.
+
+// Patient portal must never remain as the staff identity on clinic pages
+(function bootstrapStaffSessionFromMain() {
+  try {
+    if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+      window.restoreStaffSessionIfNeeded();
+      return;
+    }
+    const current = JSON.parse(localStorage.getItem('user') || '{}');
+    const role = String(current.role || '').toLowerCase();
+    if (role !== 'patient' && role !== 'client' && role !== 'client-patient') return;
+    const path = String((window.location && window.location.pathname) || '').toLowerCase();
+    if (
+      path.includes('patient-login') ||
+      path.includes('patient-portal') ||
+      path.includes('patient-dashboard') ||
+      path.includes('patient-register') ||
+      path.includes('patient-reset') ||
+      path.includes('patient-change-password') ||
+      path.includes('portal-')
+    ) {
+      return;
+    }
+    const backup = JSON.parse(localStorage.getItem('staff_user_backup') || 'null');
+    const backupRole = String((backup && backup.role) || '').toLowerCase();
+    if (backup && backupRole && backupRole !== 'patient' && backupRole !== 'client') {
+      localStorage.setItem('user', JSON.stringify(backup));
+      console.warn('[main] Restored staff session after patient portal login.');
+    } else {
+      localStorage.removeItem('user');
+    }
+  } catch (e) {
+    /* ignore */
+  }
+})();
+
+// If a page footer already painted "Patient" before main.js ran, rewrite it
+(function safeguardStaffLoggedInFooterFromMain() {
+  function fix() {
+    try {
+      const el = document.getElementById('logged-in-info');
+      if (!el) return;
+      const text = String(el.textContent || '');
+      if (!/\(\s*patient\s*\)/i.test(text) && !/\bpatient\b.*logged in/i.test(text)) return;
+      if (typeof window.getStaffLoggedInDisplayLine === 'function') {
+        const line = window.getStaffLoggedInDisplayLine();
+        el.textContent = line || 'Staff login required — please sign in again';
+        return;
+      }
+      const user = JSON.parse(localStorage.getItem('user') || 'null');
+      const role = String((user && user.role) || '').toLowerCase();
+      if (user && role && role !== 'patient' && role !== 'client') {
+        el.textContent = `${user.username} (${user.role}) from ${user.org || 'Unknown Organization'} is logged in`;
+      } else {
+        el.textContent = 'Staff login required — please sign in again';
+      }
+    } catch (e) {
+      /* ignore */
+    }
+  }
+  if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', fix);
+  } else {
+    fix();
+  }
+  setTimeout(fix, 0);
+  setTimeout(fix, 100);
+})();
+
 (function setupConsoleFiltering() {
   if (window.__consoleFilteringApplied) {
     return;

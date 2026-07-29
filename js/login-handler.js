@@ -398,6 +398,12 @@ document.addEventListener('DOMContentLoaded', function() {
           console.log('✅ localStorage login successful');
           
           // Set user session
+          if (typeof window.clearPatientPortalSessionOnStaffLogin === 'function') {
+            window.clearPatientPortalSessionOnStaffLogin();
+          } else {
+            localStorage.removeItem('patient_portal_user');
+            localStorage.removeItem('staff_user_backup');
+          }
           localStorage.setItem('user', JSON.stringify(localUser));
           
           // Initialize session management properly

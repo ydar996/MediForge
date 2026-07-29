@@ -1,6 +1,6 @@
 ﻿# MediForge Agent Handover (living document)
 
-**Last updated:** July 28, 2026  
+**Last updated:** July 29, 2026  
 **Purpose:** Primary handover for every AI agent and developer. **Read this first.**  
 **Project folder:** `C:\Users\yinka\Documents\MediForge`
 
@@ -410,6 +410,20 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 ---
 
 ## Session log
+
+### July 29, 2026: Messaging staff dropdown + multi-recipient + portal routing
+
+- **Owner ask:** Messages stuck loading; staff recipient dropdown empty; staff↔patient messaging; multi-recipient; check patient portal.
+- **Causes:** Compose missing session/org helpers; staff query required `is_active=true` (NULLs excluded); inbox init waited on full patient load; compose could not FK patient UUIDs into `messages.recipient_id`.
+- **Fixed (local):** Softened staff load + session restore; inbox loads before recipients; multi-select chips; patient compose → `portal_messages`; portal tab org resolve; dedupe inbox.
+- **Not deployed** until owner asks.
+
+### July 29, 2026: Staff footer showed Patient after portal test + schedule UUID (local)
+
+- **Owner ask:** Administrator saw “Patient” as logged-on on Schedule after only testing a patient portal registration link — must never happen.
+- **Cause:** Patient portal login wrote `role: Patient` into the same `localStorage.user` key staff pages use for the footer.
+- **Fixed (local, not deployed until owner asks):** Separate `patient_portal_user` + staff backup/restore (`js/staff-session-guard.js`, `js/patient-auth.js`); staff pages restore staff identity and never paint Patient in `#logged-in-info`; staff login clears portal session keys.
+- **Also local:** Schedule daily modal Patient ID no longer shows raw UUID (`js/appointments.js` + `schedule.html` patient identity scripts).
 
 ### July 28, 2026: Page padding + ID cards cloud storage + PHN visibility
 

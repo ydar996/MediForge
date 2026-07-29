@@ -135,6 +135,43 @@
       border-bottom: none;
     }
 
+    .recipient-chips {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 8px;
+      margin-top: 10px;
+      min-height: 0;
+    }
+
+    .recipient-chip {
+      display: inline-flex;
+      align-items: center;
+      gap: 6px;
+      background: #e8f5e9;
+      color: #1b5e20;
+      border: 1px solid #a5d6a7;
+      border-radius: 16px;
+      padding: 6px 10px;
+      font-size: 13px;
+      max-width: 100%;
+    }
+
+    .recipient-chip button {
+      border: none;
+      background: transparent;
+      color: #c62828;
+      cursor: pointer;
+      font-size: 16px;
+      line-height: 1;
+      padding: 0 2px;
+    }
+
+    .recipient-hint {
+      font-size: 12px;
+      color: #666;
+      margin-top: 6px;
+    }
+
     .form-actions {
       display: flex;
       gap: 10px;
@@ -214,18 +251,18 @@
       </div>
 
       <div class="form-group" id="recipient-select-group" style="display: none;">
-        <label for="recipient-search-input">Search & Select Recipient *</label>
+        <label for="recipient-search-input">Search & Add Recipients *</label>
         <div class="recipient-search-container">
           <input 
             type="text" 
             id="recipient-search-input" 
-            placeholder="Type to search for recipient..."
+            placeholder="Type to search — click to add one or more recipients..."
             autocomplete="off"
-            required
           />
           <div id="recipient-dropdown" class="recipient-dropdown"></div>
-          <input type="hidden" id="message-recipient" required />
         </div>
+        <div id="recipient-chips" class="recipient-chips" aria-live="polite"></div>
+        <p class="recipient-hint" id="recipient-hint">You can select multiple recipients. Staff messages go to the clinic inbox; patient messages appear in the patient portal.</p>
       </div>
 
       <div class="form-group">
@@ -270,64 +307,59 @@
 
   <!-- Supabase CDN Library -->
   <script src="js/vendor/supabase.min.js"></script>
-  
-  <!-- Supabase Client Initialization -->
   <script src="js/supabase-client.js?v=20251019043800"></script>
-  
+  <script src="js/staff-session-guard.js?v=20260729110000"></script>
+  <script src="js/utils.js?v=20260729120000"></script>
   <script src="js/patient-id-normalizer.js"></script>
   <script src="js/patients.js?v=20260429200000-mrn-sweep"></script>
-  <!-- Messages functionality -->
-  <script src="js/messages.js?v=2"></script>
+  <script src="js/patient-portal.js?v=20260729120000"></script>
+  <script src="js/messages.js?v=20260729120000"></script>
   <script>
     let allStaff = [];
     let allPatients = [];
+    let selectedRecipients = [];
 
-    // Load recipients on page load
+    function renderRecipientChips() {
+      const chips = document.getElementById('recipient-chips');
+      if (!chips) return;
+      if (!selectedRecipients.length) { chips.innerHTML = ''; return; }
+      chips.innerHTML = selectedRecipients.map((r) => {
+        const label = r.type === 'staff'
+          ? (escapeHtml(r.name) + ' (' + escapeHtml(r.role || 'Staff') + ')')
+          : (escapeHtml(r.name) + (r.patientId ? ' (' + escapeHtml(r.patientId) + ')' : ''));
+        const safeId = String(r.id).replace(/\\/g, '\\\\').replace(/'/g, "\\'");
+        return '<span class="recipient-chip">' + label +
+          '<button type="button" title="Remove" aria-label="Remove recipient" onclick="removeRecipient(\'' + safeId + '\')">&times;</button></span>';
+      }).join('');
+    }
+
+    window.removeRecipient = function removeRecipient(id) {
+      selectedRecipients = selectedRecipients.filter((r) => r.id !== id);
+      renderRecipientChips();
+    };
+
     async function loadRecipients() {
       try {
-        // Load staff - ensure it's only staff (case-insensitive filtering)
+        if (typeof window.ensureStaffSession === 'function') {
+          await window.ensureStaffSession({ redirectOnFailure: false });
+        }
         if (typeof window.loadOrganizationUsers === 'function') {
           const loadedStaff = await window.loadOrganizationUsers();
-          // Filter to ensure only staff (double-check, case-insensitive) and validate id exists
           allStaff = (loadedStaff || []).filter(r => {
-            if (!r || !r.id) {
-              console.warn('⚠️ Invalid staff object (missing id):', r);
-              return false;
-            }
+            if (!r || !r.id) return false;
             const role = (r.role || '').toLowerCase();
-            const isValid = r.type === 'staff' && role !== 'patient';
-            if (!isValid) {
-              console.warn('⚠️ Non-staff in staff list:', r);
-            }
-            return isValid;
+            return r.type === 'staff' && role !== 'patient';
           });
-          console.log('✅ Loaded staff:', allStaff.length, 'items');
-          console.log('✅ Staff items:', allStaff.map(s => ({ id: s.id, name: s.name, role: s.role })));
+          console.log('Loaded staff:', allStaff.length);
         } else {
           allStaff = [];
-          console.warn('⚠️ loadOrganizationUsers function not available');
         }
-        
-        // Load patients - ensure it's only patients
         if (typeof window.loadOrganizationPatients === 'function') {
           const loadedPatients = await window.loadOrganizationPatients();
-          // Filter to ensure only patients (double-check) and validate id exists
-          allPatients = (loadedPatients || []).filter(r => {
-            if (!r || !r.id) {
-              console.warn('⚠️ Invalid patient object (missing id):', r);
-              return false;
-            }
-            const isValid = r.type === 'patient';
-            if (!isValid) {
-              console.warn('⚠️ Non-patient in patient list:', r);
-            }
-            return isValid;
-          });
-          console.log('✅ Loaded patients:', allPatients.length, 'items');
-          console.log('✅ Patient items:', allPatients.map(p => ({ id: p.id, name: p.name })));
+          allPatients = (loadedPatients || []).filter(r => r && r.id && r.type === 'patient');
+          console.log('Loaded patients:', allPatients.length);
         } else {
           allPatients = [];
-          console.warn('⚠️ loadOrganizationPatients function not available');
         }
       } catch (error) {
         console.error('Error loading recipients:', error);
@@ -336,350 +368,212 @@
       }
     }
 
-    // Switch between staff and patient recipients
     function switchRecipientType() {
       const type = document.getElementById('recipient-type').value;
       const selectGroup = document.getElementById('recipient-select-group');
       const searchInput = document.getElementById('recipient-search-input');
-      const hiddenInput = document.getElementById('message-recipient');
       const dropdown = document.getElementById('recipient-dropdown');
-      
+      const hint = document.getElementById('recipient-hint');
+      selectedRecipients = [];
+      renderRecipientChips();
       if (!type) {
         selectGroup.style.display = 'none';
         if (searchInput) searchInput.value = '';
-        if (hiddenInput) hiddenInput.value = '';
         if (dropdown) dropdown.style.display = 'none';
         return;
       }
-      
-      // Show recipient select group
       selectGroup.style.display = 'block';
-      
-      // Clear search input and hidden input
+      if (hint) {
+        hint.textContent = type === 'patient'
+          ? 'Select one or more patients. Messages appear in the Patient Portal chat.'
+          : 'Select one or more staff members. Each will receive the message in their inbox.';
+      }
       if (searchInput) {
         searchInput.value = '';
         searchInput.disabled = false;
         searchInput.readOnly = false;
         searchInput.focus();
       }
-      if (hiddenInput) {
-        hiddenInput.value = '';
-      }
-      if (dropdown) {
-        dropdown.style.display = 'none';
-      }
+      if (dropdown) dropdown.style.display = 'none';
     }
 
-    // Show recipient dropdown
     function showRecipientDropdown() {
       const dropdown = document.getElementById('recipient-dropdown');
       const searchInput = document.getElementById('recipient-search-input');
-      
-      if (!dropdown || !searchInput) {
-        console.warn('⚠️ Dropdown or search input not found');
-        return;
-      }
-      
-      console.log('🔍 showRecipientDropdown called, allStaff:', allStaff.length, 'allPatients:', allPatients.length);
-      
-      const searchTerm = searchInput.value.toLowerCase().trim();
-      const typeSelect = document.getElementById('recipient-type');
-      const type = typeSelect ? typeSelect.value : '';
-      
-      if (!type) {
-        dropdown.style.display = 'none';
-        return;
-      }
-      
-      // CRITICAL: Get the correct source based on type - use ONLY the correct array
+      if (!dropdown || !searchInput) return;
+      const type = document.getElementById('recipient-type').value;
+      const searchTerm = (searchInput.value || '').toLowerCase().trim();
       let source = [];
       if (type === 'staff') {
-        // ONLY use allStaff array - never use allPatients
-        source = Array.isArray(allStaff) ? allStaff : [];
-        // Filter to ensure ONLY staff with type === 'staff' AND role !== 'patient' (case-insensitive)
-        source = source.filter(r => {
-          if (!r) return false;
-          const role = (r.role || '').toLowerCase();
-          const isStaff = r.type === 'staff' && role !== 'patient';
-          if (!isStaff) {
-            console.error('❌ NON-STAFF FOUND IN STAFF LIST:', r);
-            return false;
-          }
-          return true;
-        });
-        console.log('📋 STAFF MODE - Showing:', source.length, 'staff from', allStaff?.length, 'total staff');
+        source = (allStaff || []).filter((r) => r.type === 'staff' && (r.role || '').toLowerCase() !== 'patient');
       } else if (type === 'patient') {
-        // ONLY use allPatients array - never use allStaff
-        source = Array.isArray(allPatients) ? allPatients : [];
-        // Filter to ensure ONLY patients with type === 'patient'
-        source = source.filter(r => {
-          if (!r) return false;
-          const isPatient = r.type === 'patient';
-          if (!isPatient) {
-            console.error('❌ NON-PATIENT FOUND IN PATIENT LIST:', r);
-            return false;
-          }
-          return true;
-        });
-        console.log('📋 PATIENT MODE - Showing:', source.length, 'patients from', allPatients?.length, 'total patients');
+        source = (allPatients || []).filter((r) => r.type === 'patient');
       } else {
-        source = [];
-      }
-      
-      if (!source || source.length === 0) {
-        dropdown.innerHTML = '<div style="padding: 12px; color: #666; text-align: center;">No recipients found</div>';
+        dropdown.innerHTML = '<div class="recipient-item" style="color:#666;">Select recipient type first</div>';
         dropdown.style.display = 'block';
         return;
       }
-      
-      // Filter recipients based on search term
-      let displayRecipients = source;
-      if (searchTerm) {
-        displayRecipients = source.filter(recipient => {
-          if (!recipient) return false;
-          // Double-check type matches
-          if (type === 'staff') {
-            const role = (recipient.role || '').toLowerCase();
-            if (recipient.type !== 'staff' || role === 'patient') return false;
-          }
-          if (type === 'patient' && recipient.type !== 'patient') return false;
-          
-          const name = (recipient.name || '').toLowerCase();
-          const role = (recipient.role || '').toLowerCase();
-          const email = (recipient.email || '').toLowerCase();
-          const patientId = (recipient.patientId || '').toLowerCase();
-          return name.includes(searchTerm) || 
-                 role.includes(searchTerm) || 
-                 email.includes(searchTerm) ||
-                 patientId.includes(searchTerm);
-        });
-      }
-      
-      // Populate dropdown
+      const selectedIds = new Set(selectedRecipients.map((r) => r.id));
+      const filtered = source.filter((recipient) => {
+        if (selectedIds.has(recipient.id)) return false;
+        if (!searchTerm) return true;
+        const name = (recipient.name || '').toLowerCase();
+        const role = (recipient.role || '').toLowerCase();
+        const username = (recipient.username || '').toLowerCase();
+        const patientId = (recipient.patientId || '').toLowerCase();
+        return name.includes(searchTerm) || role.includes(searchTerm) ||
+               username.includes(searchTerm) || patientId.includes(searchTerm);
+      });
       dropdown.innerHTML = '';
-      
-      // CRITICAL: Get current type one more time to ensure consistency
-      const currentType = document.getElementById('recipient-type').value;
-      
-      if (displayRecipients.length === 0) {
-        dropdown.innerHTML = '<div style="padding: 12px; color: #666; text-align: center;">No recipients match your search</div>';
+      if (!source.length) {
+        dropdown.innerHTML = '<div class="recipient-item" style="color:#666;">No ' +
+          (type === 'staff' ? 'staff members' : 'patients') +
+          ' found for this clinic. Confirm you are signed in as staff, then refresh.</div>';
+      } else if (!filtered.length) {
+        dropdown.innerHTML = '<div class="recipient-item" style="color:#666;">No matches (or all matching people are already selected)</div>';
       } else {
-        // Filter one more time to be absolutely sure
-        const finalRecipients = displayRecipients.filter(recipient => {
-          if (!recipient) return false;
-          if (currentType === 'staff') {
-            const role = (recipient.role || '').toLowerCase();
-            if (recipient.type !== 'staff' || role === 'patient') {
-              console.error('❌ REJECTED: Non-staff in staff mode:', recipient);
-              return false;
-            }
-          }
-          if (currentType === 'patient' && recipient.type !== 'patient') {
-            console.error('❌ REJECTED: Non-patient in patient mode:', recipient);
-            return false;
-          }
-          return true;
-        });
-        
-        finalRecipients.forEach((recipient, index) => {
-          // Final verification before displaying - MUST have id
-          if (!recipient) {
-            console.warn('⚠️ Null recipient at index', index);
-            return;
-          }
-          if (!recipient.id) {
-            console.error('❌ Recipient missing id at index', index, ':', recipient);
-            return;
-          }
-          if (!recipient.name) {
-            console.warn('⚠️ Recipient missing name at index', index, ':', recipient);
-            return;
-          }
-          
+        filtered.slice(0, 80).forEach((recipient) => {
           const item = document.createElement('div');
           item.className = 'recipient-item';
-          item.onclick = function(e) {
-            e.stopPropagation();
-            selectRecipient(recipient);
-          };
-          
+          item.onclick = function(e) { e.stopPropagation(); selectRecipient(recipient); };
           if (recipient.type === 'staff') {
-            item.innerHTML = `<strong>${escapeHtml(recipient.name)}</strong><br><span style="color: #666; font-size: 12px;">${escapeHtml(recipient.role || 'Staff')}</span>`;
-          } else if (recipient.type === 'patient') {
-            item.innerHTML = `<strong>${escapeHtml(recipient.name)}</strong>${recipient.patientId ? `<br><span style="color: #666; font-size: 12px;">ID: ${escapeHtml(recipient.patientId)}</span>` : ''}`;
+            item.innerHTML = '<strong>' + escapeHtml(recipient.name) +
+              '</strong><br><span style="color:#666;font-size:12px;">' +
+              escapeHtml(recipient.role || 'Staff') + '</span>';
           } else {
-            console.error('❌ Recipient without valid type at index', index, ':', recipient);
-            return;
+            item.innerHTML = '<strong>' + escapeHtml(recipient.name) + '</strong>' +
+              (recipient.patientId
+                ? '<br><span style="color:#666;font-size:12px;">ID: ' + escapeHtml(recipient.patientId) + '</span>'
+                : '');
           }
-          
           dropdown.appendChild(item);
         });
       }
-      
       dropdown.style.display = 'block';
     }
 
-    // Select recipient from dropdown
     function selectRecipient(recipient) {
       const searchInput = document.getElementById('recipient-search-input');
-      const hiddenInput = document.getElementById('message-recipient');
       const dropdown = document.getElementById('recipient-dropdown');
-      
-      if (searchInput) {
-        if (recipient.type === 'staff') {
-          searchInput.value = `${recipient.name} (${recipient.role || 'Staff'})`;
-        } else {
-          searchInput.value = `${recipient.name}${recipient.patientId ? ` (${recipient.patientId})` : ''}`;
-        }
-      }
-      
-      if (hiddenInput) {
-        hiddenInput.value = recipient.id;
-      }
-      
-      if (dropdown) {
-        dropdown.style.display = 'none';
-      }
+      if (!recipient || !recipient.id) return;
+      if (selectedRecipients.some((r) => r.id === recipient.id)) return;
+      selectedRecipients.push(recipient);
+      renderRecipientChips();
+      if (searchInput) { searchInput.value = ''; searchInput.focus(); }
+      if (dropdown) dropdown.style.display = 'none';
+      setTimeout(() => showRecipientDropdown(), 0);
     }
 
-    // Escape HTML
     function escapeHtml(text) {
       const div = document.createElement('div');
-      div.textContent = text;
+      div.textContent = text == null ? '' : String(text);
       return div.innerHTML;
     }
 
-    // Wait for Supabase to initialize before loading recipients
     async function waitForSupabase(maxWait = 5000) {
       const startTime = Date.now();
       while (!window.supabaseClient && (Date.now() - startTime) < maxWait) {
         await new Promise(resolve => setTimeout(resolve, 100));
       }
-      if (window.supabaseClient) {
-        console.log('✅ Supabase client ready');
-        return true;
-      } else {
-        console.warn('⚠️ Supabase client not available after waiting');
-        return false;
-      }
+      return !!window.supabaseClient;
     }
 
-    // Initialize page
     window.addEventListener('load', async function() {
-      // Wait for Supabase to be ready (like dashboard does)
       await waitForSupabase();
+      if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+        window.restoreStaffSessionIfNeeded();
+      }
       await loadRecipients();
-      
-      // Show task due date field when task type is selected
+
       const messageTypeSelect = document.getElementById('message-type');
       if (messageTypeSelect) {
         messageTypeSelect.addEventListener('change', function() {
           const taskGroup = document.getElementById('task-due-date-group');
-          if (taskGroup) {
-            taskGroup.style.display = this.value === 'task' ? 'block' : 'none';
-          }
+          if (taskGroup) taskGroup.style.display = this.value === 'task' ? 'block' : 'none';
         });
       }
 
-      // Recipient type change handler
       const recipientTypeSelect = document.getElementById('recipient-type');
-      if (recipientTypeSelect) {
-        recipientTypeSelect.addEventListener('change', switchRecipientType);
-      }
+      if (recipientTypeSelect) recipientTypeSelect.addEventListener('change', switchRecipientType);
 
-      // Search input handlers - show dropdown immediately on focus/click, debounce on input
       const searchInput = document.getElementById('recipient-search-input');
       let dropdownTimeout = null;
-      let isDropdownVisible = false;
-      
       if (searchInput) {
-        const showDropdownDebounced = () => {
+        const showImmediate = () => { clearTimeout(dropdownTimeout); showRecipientDropdown(); };
+        const showDebounced = () => {
           clearTimeout(dropdownTimeout);
-          dropdownTimeout = setTimeout(() => {
-            showRecipientDropdown();
-            isDropdownVisible = true;
-          }, 150); // Small delay for input to prevent excessive calls
+          dropdownTimeout = setTimeout(showRecipientDropdown, 150);
         };
-        
-        const showDropdownImmediate = () => {
-          clearTimeout(dropdownTimeout);
-          showRecipientDropdown();
-          isDropdownVisible = true;
-        };
-        
-        searchInput.addEventListener('focus', showDropdownImmediate);
-        searchInput.addEventListener('click', showDropdownImmediate);
-        searchInput.addEventListener('input', showDropdownDebounced);
+        searchInput.addEventListener('focus', showImmediate);
+        searchInput.addEventListener('click', showImmediate);
+        searchInput.addEventListener('input', showDebounced);
       }
 
-      // Close dropdown when clicking outside
       document.addEventListener('click', function(e) {
         const dropdown = document.getElementById('recipient-dropdown');
         const searchContainer = document.querySelector('.recipient-search-container');
-        const searchInput = document.getElementById('recipient-search-input');
-        
-        // Don't close if clicking on search input or dropdown items
-        if (searchContainer && searchContainer.contains(e.target)) {
-          return;
-        }
-        
-        if (dropdown) {
-          dropdown.style.display = 'none';
-          isDropdownVisible = false;
-        }
+        if (searchContainer && searchContainer.contains(e.target)) return;
+        if (dropdown) dropdown.style.display = 'none';
       });
 
-      // Handle form submission
       const form = document.getElementById('compose-form');
       if (form) {
         form.addEventListener('submit', async function(e) {
           e.preventDefault();
-          
           const errorDiv = document.getElementById('error-message');
           const successDiv = document.getElementById('success-message');
-          
-          // Hide previous messages
           if (errorDiv) errorDiv.style.display = 'none';
           if (successDiv) successDiv.style.display = 'none';
-          
-          const recipientId = document.getElementById('message-recipient').value;
-          if (!recipientId) {
+          const recipientType = document.getElementById('recipient-type').value;
+          if (!selectedRecipients.length) {
             if (errorDiv) {
-              errorDiv.textContent = 'Please select a recipient';
+              errorDiv.textContent = 'Please add at least one recipient';
               errorDiv.style.display = 'block';
             }
             return;
           }
-          
-          const messageData = {
-            recipientId: recipientId,
-            subject: document.getElementById('subject').value,
-            body: document.getElementById('body').value,
-            messageType: document.getElementById('message-type').value,
-            priority: document.getElementById('priority').value
-          };
-          
+          const subject = document.getElementById('subject').value;
+          const body = document.getElementById('body').value;
+          const messageType = document.getElementById('message-type').value;
+          const priority = document.getElementById('priority').value;
           const taskDueDate = document.getElementById('task-due-date').value;
-          if (taskDueDate && messageData.messageType === 'task') {
-            messageData.taskDueDate = taskDueDate;
-          }
-          
           try {
-            if (typeof window.sendMessage === 'function') {
-              await window.sendMessage(messageData);
-              
+            if (recipientType === 'patient') {
+              if (typeof window.sendStaffMessageToPatients !== 'function') {
+                throw new Error('Patient messaging is not available');
+              }
+              await window.sendStaffMessageToPatients(
+                selectedRecipients.map((r) => r.id), subject, body
+              );
               if (successDiv) {
-                successDiv.textContent = 'Message sent successfully!';
+                successDiv.textContent = selectedRecipients.length > 1
+                  ? ('Message sent to ' + selectedRecipients.length + ' patients via Patient Portal.')
+                  : 'Message sent to patient via Patient Portal.';
                 successDiv.style.display = 'block';
               }
-              
-              // Redirect after 1 second
-              setTimeout(() => {
-                window.location.href = 'messages.html';
-              }, 1000);
-            } else {
+              setTimeout(() => { window.location.href = 'messages.html?tab=portal'; }, 1000);
+              return;
+            }
+            const messageData = {
+              recipientIds: selectedRecipients.map((r) => r.id),
+              recipientId: selectedRecipients[0].id,
+              subject: subject,
+              body: body,
+              messageType: messageType,
+              priority: priority
+            };
+            if (taskDueDate && messageType === 'task') messageData.taskDueDate = taskDueDate;
+            if (typeof window.sendMessage !== 'function') {
               throw new Error('sendMessage function not available');
             }
+            await window.sendMessage(messageData);
+            if (successDiv) {
+              successDiv.textContent = selectedRecipients.length > 1
+                ? ('Message sent to ' + selectedRecipients.length + ' staff members.')
+                : 'Message sent successfully!';
+              successDiv.style.display = 'block';
+            }
+            setTimeout(() => { window.location.href = 'messages.html'; }, 1000);
           } catch (error) {
             console.error('Error sending message:', error);
             if (errorDiv) {
@@ -690,30 +584,19 @@
         });
       }
 
-      // Check if we're replying to a message (from URL params)
       const urlParams = new URLSearchParams(window.location.search);
-      const replyTo = urlParams.get('replyTo');
       const replySubject = urlParams.get('subject');
       const replyRecipientId = urlParams.get('recipientId');
       const replyRecipientType = urlParams.get('recipientType');
-      
-      if (replyTo || replySubject) {
-        if (replySubject) {
-          document.getElementById('subject').value = 'Re: ' + replySubject;
-        }
-        if (replyRecipientId && replyRecipientType) {
-          document.getElementById('recipient-type').value = replyRecipientType;
-          switchRecipientType();
-          // Find and select the recipient
-          const recipients = replyRecipientType === 'staff' ? allStaff : allPatients;
-          const recipient = recipients.find(r => r.id === replyRecipientId);
-          if (recipient) {
-            selectRecipient(recipient);
-          }
-        }
+      if (replySubject) document.getElementById('subject').value = 'Re: ' + replySubject;
+      if (replyRecipientId && replyRecipientType) {
+        document.getElementById('recipient-type').value = replyRecipientType;
+        switchRecipientType();
+        const recipients = replyRecipientType === 'staff' ? allStaff : allPatients;
+        const recipient = recipients.find(r => r.id === replyRecipientId);
+        if (recipient) selectRecipient(recipient);
       }
     });
   </script>
 </body>
 </html>
-

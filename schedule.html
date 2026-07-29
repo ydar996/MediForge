@@ -120,6 +120,7 @@
     }
   </style>
   <script src="js/ui-title-case.js?v=20260616120000" defer></script>
+  <script src="js/staff-session-guard.js?v=20260729110000"></script>
 </head>
 <body>
   <h1 id="page-title">Schedule Calendar</h1>
@@ -145,10 +146,14 @@
     console.log('[SCHEDULE] TRACE: Deployment timestamp:', new Date().toISOString());
     console.log('[SCHEDULE] TRACE: CSS version updated to v169 for cache busting');
     
-    // Dynamic page title with org
-    const user = JSON.parse(localStorage.getItem("user"));
-    if (user) {
-      document.getElementById("page-title").innerHTML = `Schedule Calendar for ${user.org}`;
+    // Dynamic page title with org (staff session only — never Patient from portal test)
+    if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+      window.restoreStaffSessionIfNeeded();
+    }
+    const user = JSON.parse(localStorage.getItem("user") || "null");
+    const staffRole = String((user && user.role) || '').toLowerCase();
+    if (user && staffRole !== 'patient' && staffRole !== 'client') {
+      document.getElementById("page-title").innerHTML = `Schedule Calendar for ${user.org || 'Clinic'}`;
     }
     
     // TRACE LOGGING: Page initialization complete
@@ -159,18 +164,32 @@
   <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
   
   <script>
-    // Display logged-in user info with org
-    const userFooter = JSON.parse(localStorage.getItem("user"));
-    if (userFooter) {
-      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
+    // Display logged-in staff info only (patient portal session must never appear here)
+    if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+      window.restoreStaffSessionIfNeeded();
+    }
+    const footerLine = typeof window.getStaffLoggedInDisplayLine === 'function'
+      ? window.getStaffLoggedInDisplayLine()
+      : '';
+    if (footerLine) {
+      document.getElementById("logged-in-info").textContent = footerLine;
+    } else {
+      const userFooter = JSON.parse(localStorage.getItem("user") || "null");
+      const role = String((userFooter && userFooter.role) || '').toLowerCase();
+      if (userFooter && role !== 'patient' && role !== 'client') {
+        document.getElementById("logged-in-info").textContent =
+          `${userFooter.username} (${userFooter.role}) from ${userFooter.org || 'Unknown Organization'} is logged in`;
+      }
     }
   </script>
   
   <script src="js/vendor/supabase.min.js"></script>  <!-- Supabase CDN library -->
   <script src="js/supabase-client.js?v=202510220113130113131313"></script>  <!-- Supabase client initialization -->
   <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
-  <script src="js/appointments.js?v=20260618140000-schedule-by-provider"></script>  <!-- Loads schedule logic -->
-  <script src="js/main.js?v=202510220113130113131313"></script>  <!-- General helpers -->
+  <script src="js/patients.js?v=20260729100000"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/appointments.js?v=20260729100000-schedule-display-id"></script>  <!-- Loads schedule logic -->
+  <script src="js/main.js?v=20260729110000"></script>  <!-- General helpers -->
   <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>  <!-- Universal sync status indicator -->
   
   <script>

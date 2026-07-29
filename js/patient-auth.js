@@ -1,5 +1,54 @@
 // Patient Authentication Functions
-// Handles patient login, registration, and password management
+// Handles patient login, registration, and password management.
+// Patient portal must NEVER overwrite a staff clinic session without backup.
+
+const PATIENT_PORTAL_USER_KEY = 'patient_portal_user';
+const STAFF_USER_BACKUP_KEY = 'staff_user_backup';
+
+function _isPatientRole(role) {
+  const r = String(role || '').trim().toLowerCase();
+  return r === 'patient' || r === 'client' || r === 'client-patient';
+}
+
+function _isStaffLikeUser(user) {
+  if (!user || typeof user !== 'object') return false;
+  if (!user.username && !user.id && !user.email) return false;
+  return !_isPatientRole(user.role);
+}
+
+function _readJsonLocal(key) {
+  try {
+    return JSON.parse(localStorage.getItem(key) || 'null');
+  } catch (e) {
+    return null;
+  }
+}
+
+/**
+ * Persist patient portal session. Backs up any active staff clinic session first.
+ */
+window.setPatientPortalSession = function setPatientPortalSession(userData) {
+  const portalUser = Object.assign({}, userData || {}, {
+    role: 'Patient',
+    sessionType: 'patient_portal'
+  });
+  try {
+    const existing = _readJsonLocal('user');
+    if (_isStaffLikeUser(existing)) {
+      localStorage.setItem(STAFF_USER_BACKUP_KEY, JSON.stringify(existing));
+    }
+  } catch (e) {
+    console.warn('[patient-auth] Could not backup staff session:', e);
+  }
+  localStorage.setItem(PATIENT_PORTAL_USER_KEY, JSON.stringify(portalUser));
+  // Legacy key for older portal pages; staff pages restore from backup via staff-session-guard.js
+  localStorage.setItem('user', JSON.stringify(portalUser));
+  return portalUser;
+};
+
+window.clearPatientPortalSession = function clearPatientPortalSession() {
+  localStorage.removeItem(PATIENT_PORTAL_USER_KEY);
+};
 
 /**
  * Patient login function
@@ -143,17 +192,14 @@ window.patientLogin = async function(username, password) {
           .update({ password_reset_required: true })
           .eq('id', user.id);
         
-        // Set user session
-        const userData = {
+        window.setPatientPortalSession({
           id: user.id,
           username: user.username,
           email: user.email || userEmail,
-          role: 'Patient',  // Use capitalized 'Patient' to match CHECK constraint
+          role: 'Patient',
           patientId: user.patient_id,
           passwordResetRequired: true
-        };
-        
-        localStorage.setItem('user', JSON.stringify(userData));
+        });
         
         return {
           success: true,
@@ -177,16 +223,14 @@ window.patientLogin = async function(username, password) {
 
     // Check if password reset is required
     if (user.password_reset_required) {
-      const userData = {
+      window.setPatientPortalSession({
         id: user.id,
         username: user.username,
         email: user.email,
-        role: 'Patient',  // Use capitalized 'Patient' to match CHECK constraint
+        role: 'Patient',
         patientId: user.patient_id,
         passwordResetRequired: true
-      };
-      
-      localStorage.setItem('user', JSON.stringify(userData));
+      });
       
       return {
         success: true,
@@ -194,17 +238,15 @@ window.patientLogin = async function(username, password) {
       };
     }
 
-    // Successful login - set user session
-    const userData = {
+    // Successful login - set patient portal session (backs up staff if present)
+    window.setPatientPortalSession({
       id: user.id,
       username: user.username,
       email: user.email,
-      role: 'Patient',  // Use capitalized 'Patient' to match CHECK constraint
+      role: 'Patient',
       patientId: user.patient_id,
       passwordResetRequired: false
-    };
-    
-    localStorage.setItem('user', JSON.stringify(userData));
+    });
 
     // Update last_login
     await window.supabaseClient
@@ -255,9 +297,12 @@ window.patientChangePassword = async function(currentPassword, newPassword, conf
       throw new Error('Password must be at least 8 characters long');
     }
 
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
+    const user = (typeof window.getCurrentPatient === 'function' && window.getCurrentPatient())
+      || _readJsonLocal(PATIENT_PORTAL_USER_KEY)
+      || _readJsonLocal('user')
+      || {};
     
-    if (!user.id || user.role !== 'Patient') {
+    if (!user.id || !_isPatientRole(user.role)) {
       throw new Error('Not authenticated as patient');
     }
 
@@ -325,9 +370,9 @@ window.patientChangePassword = async function(currentPassword, newPassword, conf
       console.warn('Password updated in Auth, but users table update failed:', updateError);
     }
 
-    // Update local user data
+    // Update local portal session
     user.passwordResetRequired = false;
-    localStorage.setItem('user', JSON.stringify(user));
+    window.setPatientPortalSession(user);
 
     // Log audit event
     if (typeof logAuditEvent === 'function') {
@@ -351,13 +396,17 @@ window.patientChangePassword = async function(currentPassword, newPassword, conf
 };
 
 /**
- * Get current patient user
+ * Get current patient user (portal key first; never treat a restored staff user as patient)
  * @returns {Object|null}
  */
 window.getCurrentPatient = function() {
   try {
-    const user = JSON.parse(localStorage.getItem('user') || '{}');
-    if (user.role === 'Patient' && user.patientId) {
+    const portal = _readJsonLocal(PATIENT_PORTAL_USER_KEY);
+    if (portal && _isPatientRole(portal.role) && portal.patientId) {
+      return portal;
+    }
+    const user = _readJsonLocal('user') || {};
+    if (_isPatientRole(user.role) && user.patientId) {
       return user;
     }
     return null;

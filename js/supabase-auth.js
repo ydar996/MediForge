@@ -209,6 +209,12 @@ async function loginWithSupabase(email, password) {
                   passwordResetRequired: true
                 };
                 
+                if (typeof window.clearPatientPortalSessionOnStaffLogin === 'function') {
+                  window.clearPatientPortalSessionOnStaffLogin();
+                } else {
+                  localStorage.removeItem('patient_portal_user');
+                  localStorage.removeItem('staff_user_backup');
+                }
                 localStorage.setItem('user', JSON.stringify(userSession));
                 localStorage.setItem('lastActivity', Date.now().toString());
                 localStorage.setItem('supabase_session', JSON.stringify(tempAuthData.session));
@@ -353,6 +359,12 @@ async function loginWithSupabase(email, password) {
     if (profileData.password_reset_required) {
       // Store session with password reset flag
       userSession.passwordResetRequired = true;
+      if (typeof window.clearPatientPortalSessionOnStaffLogin === 'function') {
+        window.clearPatientPortalSessionOnStaffLogin();
+      } else {
+        localStorage.removeItem('patient_portal_user');
+        localStorage.removeItem('staff_user_backup');
+      }
       localStorage.setItem('user', JSON.stringify(userSession));
       localStorage.setItem('lastActivity', Date.now().toString());
       localStorage.setItem('supabase_session', JSON.stringify(data.session));
@@ -390,10 +402,16 @@ async function loginWithSupabase(email, password) {
     }
 
     // Store session
+    if (typeof window.clearPatientPortalSessionOnStaffLogin === 'function') {
+      window.clearPatientPortalSessionOnStaffLogin();
+    } else {
+      localStorage.removeItem('patient_portal_user');
+      localStorage.removeItem('staff_user_backup');
+    }
     localStorage.setItem('user', JSON.stringify(userSession));
     localStorage.setItem('lastActivity', Date.now().toString());
     localStorage.setItem('supabase_session', JSON.stringify(data.session));
-    
+
     // Store session token in secure cookie (with localStorage fallback)
     // This provides enhanced security while maintaining backward compatibility
     if (typeof window.storeSessionToken === 'function') {
@@ -530,7 +548,14 @@ async function checkAuthentication() {
     console.log('Active session found for:', session.user.email);
 
     // Get user from localStorage (faster than DB query)
-    const userSession = JSON.parse(localStorage.getItem('user') || 'null');
+    let userSession = JSON.parse(localStorage.getItem('user') || 'null');
+    if (userSession && typeof window.restoreStaffSessionIfNeeded === 'function') {
+      const maybeRestored = window.restoreStaffSessionIfNeeded();
+      if (maybeRestored) userSession = maybeRestored;
+      else if (String(userSession.role || '').toLowerCase() === 'patient') {
+        userSession = null;
+      }
+    }
 
     if (userSession) {
       return { 
@@ -562,6 +587,30 @@ async function checkAuthentication() {
     }
 
     const userSessionData = buildUserSessionFromProfile(profileData, session.user);
+
+    // Never paint a Patient identity onto staff clinic pages from a leftover portal Auth session
+    const roleLower = String(userSessionData.role || '').trim().toLowerCase();
+    const isPatientProfile = roleLower === 'patient' || roleLower === 'client' || roleLower === 'client-patient';
+    const path = String((typeof window !== 'undefined' && window.location && window.location.pathname) || '').toLowerCase();
+    const onPatientPortalSurface =
+      path.includes('patient-login') ||
+      path.includes('patient-portal') ||
+      path.includes('patient-dashboard') ||
+      path.includes('patient-register') ||
+      path.includes('patient-reset') ||
+      path.includes('patient-change-password') ||
+      path.includes('portal-');
+
+    if (isPatientProfile && !onPatientPortalSurface) {
+      if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+        const restored = window.restoreStaffSessionIfNeeded();
+        if (restored) {
+          return { authenticated: true, user: restored, session: session };
+        }
+      }
+      console.warn('[auth] Ignoring patient portal Supabase session on staff clinic page.');
+      return { authenticated: false, session: session };
+    }
 
     localStorage.setItem('user', JSON.stringify(userSessionData));
 

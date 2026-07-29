@@ -251,14 +251,31 @@
   }
 
   async function staffReplyToPatient(patientId, organizationId, body) {
+    if (typeof global.restoreStaffSessionIfNeeded === 'function') {
+      try { global.restoreStaffSessionIfNeeded(); } catch (e) { /* ignore */ }
+    }
     const user = JSON.parse(global.localStorage.getItem('user') || '{}');
     if (!global.supabaseClient) throw new Error('Not connected');
     const patientUuid = await resolvePatientUuidForPortal(patientId);
+    let senderId = user.id;
+    if ((!senderId || !String(senderId).includes('-')) && global.supabaseClient.auth) {
+      try {
+        const { data: { session } } = await global.supabaseClient.auth.getSession();
+        if (session?.user?.id) {
+          const { data: row } = await global.supabaseClient
+            .from('users')
+            .select('id')
+            .eq('auth_user_id', session.user.id)
+            .maybeSingle();
+          if (row?.id) senderId = row.id;
+        }
+      } catch (e) { /* keep user.id */ }
+    }
     const { error } = await global.supabaseClient.from('portal_messages').insert({
       organization_id: organizationId,
       patient_id: patientUuid,
       from_patient: false,
-      sender_user_id: user.id,
+      sender_user_id: senderId || null,
       body: body.trim(),
       is_read_by_patient: false,
       is_read_by_staff: true

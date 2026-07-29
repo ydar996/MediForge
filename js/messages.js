@@ -20,15 +20,18 @@ if (typeof window.getDataKey === 'function' && window.getDataKey !== getDataKey)
 
 // Get current user ID (use existing pattern, try Supabase if needed)
 async function getCurrentUserId() {
-  const user = JSON.parse(localStorage.getItem("user") || "{}");
-  // Try multiple possible field names for user ID
-  if (user.id && user.id.includes('-')) {
-    return user.id; // UUID format
+  if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+    try { window.restoreStaffSessionIfNeeded(); } catch (e) { /* ignore */ }
   }
-  if (user.userId && user.userId.includes('-')) {
+  const user = JSON.parse(localStorage.getItem("user") || "{}");
+  // Prefer users table UUID (with hyphens); also accept any non-empty id
+  if (user.id && String(user.id).includes('-')) {
+    return user.id;
+  }
+  if (user.userId && String(user.userId).includes('-')) {
     return user.userId;
   }
-  if (user.user_id && user.user_id.includes('-')) {
+  if (user.user_id && String(user.user_id).includes('-')) {
     return user.user_id;
   }
   
@@ -51,8 +54,25 @@ async function getCurrentUserId() {
       }
     }
   }
+
+  // Last resort: active Supabase auth session → users.auth_user_id
+  if (window.supabaseClient?.auth) {
+    try {
+      const { data: { session } } = await window.supabaseClient.auth.getSession();
+      if (session?.user?.id) {
+        const { data: userData, error } = await window.supabaseClient
+          .from('users')
+          .select('id')
+          .eq('auth_user_id', session.user.id)
+          .maybeSingle();
+        if (!error && userData?.id) return userData.id;
+      }
+    } catch (e) {
+      console.warn('⚠️ getCurrentUserId from auth session:', e);
+    }
+  }
   
-  return null;
+  return user.id || null;
 }
 
 // Get current organization ID (use standardized utility if available)
@@ -87,105 +107,142 @@ async function getCurrentOrgId() {
   return null;
 }
 
+function isPatientMessagingRole(role) {
+  const r = String(role || '').trim().toLowerCase();
+  return r === 'patient' || r === 'client' || r === 'client-patient';
+}
+
+function mapStaffRecipient(u) {
+  const userId = u.id || u.userId || u.user_id || null;
+  return {
+    id: userId,
+    name: `${u.first_name || u.firstName || ''} ${u.last_name || u.lastName || ''}`.trim() || u.username || u.email || 'Staff',
+    username: u.username,
+    role: u.role || 'Staff',
+    email: u.email,
+    type: 'staff'
+  };
+}
+
+function readLocalStaffUsers(orgId) {
+  const keys = [];
+  try {
+    if (typeof getDataKey === 'function') keys.push(getDataKey('users'));
+  } catch (e) { /* ignore */ }
+  keys.push('users');
+
+  const seen = new Set();
+  const out = [];
+  keys.forEach((key) => {
+    let raw = [];
+    try {
+      raw = JSON.parse(localStorage.getItem(key) || '[]');
+    } catch (e) {
+      raw = [];
+    }
+    if (!Array.isArray(raw)) return;
+    raw.forEach((u) => {
+      if (!u) return;
+      const userOrgId = u.organizationId || u.organization_id;
+      if (orgId && userOrgId && userOrgId !== orgId) return;
+      if (isPatientMessagingRole(u.role)) return;
+      const mapped = mapStaffRecipient(u);
+      if (!mapped.id || seen.has(mapped.id)) return;
+      seen.add(mapped.id);
+      out.push(mapped);
+    });
+  });
+  return out;
+}
+
 // Load all users in organization for message recipients (staff only)
 async function loadOrganizationUsers() {
   try {
+    if (typeof window.restoreStaffSessionIfNeeded === 'function') {
+      window.restoreStaffSessionIfNeeded();
+    }
+    if (typeof window.ensureStaffSession === 'function') {
+      try {
+        await window.ensureStaffSession({ redirectOnFailure: false });
+      } catch (e) {
+        console.warn('[messages] ensureStaffSession:', e);
+      }
+    }
+
     const orgId = await getCurrentOrgId();
+    const currentUserId = await getCurrentUserId();
     if (!orgId) {
-      console.warn('⚠️ No organization ID found');
+      console.warn('⚠️ No organization ID found for staff recipients');
       return [];
     }
 
-    // SUPABASE FIRST: Try Supabase with proper initialization check
     let supabaseClient = window.supabaseClient;
-    
-    // Wait a bit for Supabase to initialize if it's not ready yet
     if (!supabaseClient && typeof window.initSupabase === 'function') {
-      console.log('🔄 Supabase client not ready, attempting initialization...');
-      const initialized = window.initSupabase();
-      if (initialized) {
-        supabaseClient = window.supabaseClient;
-      }
+      window.initSupabase();
+      supabaseClient = window.supabaseClient;
     }
-    
+    if (!supabaseClient && typeof window.waitForSupabaseClient === 'function') {
+      try {
+        await window.waitForSupabaseClient();
+        supabaseClient = window.supabaseClient;
+      } catch (e) { /* continue */ }
+    }
+
     if (supabaseClient) {
       try {
         console.log('🔍 [SUPABASE FIRST] Loading staff from Supabase, orgId:', orgId);
-        const { data: users, error } = await supabaseClient
+        // Do not require is_active=true — NULL/false would empty the dropdown for many clinics
+        let { data: users, error } = await supabaseClient
           .from('users')
-          .select('id, username, first_name, last_name, role, email')
+          .select('id, username, first_name, last_name, role, email, is_active')
           .eq('organization_id', orgId)
-          .eq('is_active', true)
           .order('first_name', { ascending: true });
-        
+
         if (error) {
           console.warn('⚠️ [SUPABASE] Error loading users:', error);
-          // Fall through to localStorage fallback
-        } else if (users && Array.isArray(users) && users.length > 0) {
-          // Filter out patients (case-insensitive) after fetching
-          // This handles both 'patient' and 'Patient' and any other case variations
-          const staffUsers = users.filter(u => {
-            const role = (u.role || '').toLowerCase();
-            return role !== 'patient';
+          users = null;
+        }
+
+        // Retry without order if the sort column is missing in some envs
+        if (error && /order|column/i.test(String(error.message || ''))) {
+          const retry = await supabaseClient
+            .from('users')
+            .select('id, username, first_name, last_name, role, email, is_active')
+            .eq('organization_id', orgId);
+          if (!retry.error) {
+            users = retry.data;
+            error = null;
+          }
+        }
+
+        if (!error && Array.isArray(users) && users.length > 0) {
+          const staffUsers = users.filter((u) => {
+            if (!u || !u.id) return false;
+            if (isPatientMessagingRole(u.role)) return false;
+            if (u.is_active === false) return false;
+            if (currentUserId && u.id === currentUserId) return false;
+            return true;
           });
 
-          if (staffUsers && staffUsers.length > 0) {
-            const staffList = staffUsers.map(u => ({
-              id: u.id,
-              name: `${u.first_name || ''} ${u.last_name || ''}`.trim() || u.username,
-              username: u.username,
-              role: u.role,
-              email: u.email,
-              type: 'staff' // Explicitly set type
-            }));
-            console.log('✅ [SUPABASE] Loaded staff:', staffList.length, 'Total users:', users.length);
-            console.log('✅ [SUPABASE] Staff roles:', [...new Set(staffList.map(s => s.role))]);
-            return staffList; // Return immediately - Supabase first!
-          } else {
-            console.warn('⚠️ [SUPABASE] No staff found after filtering patients from', users.length, 'users');
-            // Fall through to localStorage fallback
+          if (staffUsers.length > 0) {
+            const staffList = staffUsers.map(mapStaffRecipient).filter((u) => u.id);
+            console.log('✅ [SUPABASE] Loaded staff:', staffList.length, 'of', users.length, 'users');
+            return staffList;
           }
+          console.warn('⚠️ [SUPABASE] No staff after filtering from', users.length, 'users');
         } else {
-          console.warn('⚠️ [SUPABASE] No users returned (empty array or null)');
-          // Fall through to localStorage fallback
+          console.warn('⚠️ [SUPABASE] No users returned for org', orgId);
         }
       } catch (supabaseError) {
         console.error('❌ [SUPABASE] Exception loading users:', supabaseError);
-        // Fall through to localStorage fallback
       }
     } else {
       console.warn('⚠️ [SUPABASE] Client not available, using localStorage fallback');
     }
 
-    // LOCALSTORAGE FALLBACK: Only if Supabase failed or unavailable
     console.log('📦 [FALLBACK] Loading staff from localStorage...');
-    const users = JSON.parse(localStorage.getItem('users') || '[]');
-    const orgUsers = users.filter(u => {
-      const userOrgId = u.organizationId || u.organization_id;
-      const role = (u.role || '').toLowerCase();
-      return userOrgId === orgId && role !== 'patient';
-    });
-
-    const staffList = orgUsers.map(u => {
-      // Ensure id exists - try multiple possible fields
-      const userId = u.id || u.userId || u.user_id || u.auth_user_id || null;
-      if (!userId) {
-        console.warn('⚠️ [FALLBACK] User missing id field:', u);
-      }
-      return {
-        id: userId || `temp-${u.username}-${Date.now()}`, // Fallback ID if missing
-        name: `${u.firstName || u.first_name || ''} ${u.lastName || u.last_name || ''}`.trim() || u.username,
-        username: u.username,
-        role: u.role,
-        email: u.email,
-        type: 'staff' // Explicitly set type
-      };
-    }).filter(u => u.id); // Remove any without valid id
-    
+    const staffList = readLocalStaffUsers(orgId).filter((u) => !currentUserId || u.id !== currentUserId);
     console.log('✅ [FALLBACK] Loaded staff from localStorage:', staffList.length);
-    if (staffList.length === 0) {
-      console.warn('⚠️ [FALLBACK] No staff found in localStorage. Check organization ID:', orgId);
-    }
     return staffList;
   } catch (error) {
     console.error('❌ Error loading organization users:', error);
@@ -235,14 +292,21 @@ async function loadOrganizationPatients() {
             return nameA.localeCompare(nameB);
           });
           
-          const patientList = sortedPatients.map(p => ({
-            id: p.id,
-            name: `${p.first_name || ''} ${p.middle_name || ''} ${p.last_name || ''}`.trim(),
-            patientId: p.patient_id,
-            email: p.email,
-            phone: p.phone,
-            type: 'patient' // Explicitly set type
-          }));
+          const patientList = sortedPatients.map(p => {
+            const rawPid = p.patient_id || '';
+            const displayPid =
+              typeof window.patientMrnDisplay === 'function'
+                ? window.patientMrnDisplay(p, rawPid)
+                : (rawPid && !/^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(rawPid) ? rawPid : ':');
+            return {
+              id: p.id,
+              name: `${p.first_name || ''} ${p.middle_name || ''} ${p.last_name || ''}`.trim(),
+              patientId: displayPid === ':' ? '' : displayPid,
+              email: p.email,
+              phone: p.phone,
+              type: 'patient'
+            };
+          });
           console.log('✅ [SUPABASE] Loaded patients:', patientList.length);
           return patientList; // Return immediately - Supabase first!
         } else {
@@ -345,6 +409,14 @@ async function loadMessagesWithSupabasePriority(forceRefresh = false) {
           received = [...received, ...groupMessages];
         }
 
+        // Deduplicate (same message can appear via recipient_id and message_recipients)
+        const seenIds = new Set();
+        received = received.filter((m) => {
+          if (!m || !m.id || seenIds.has(m.id)) return false;
+          seenIds.add(m.id);
+          return true;
+        });
+
         // Process sent messages
         const sent = (sentMessages || []).map(convertSupabaseMessage);
 
@@ -398,7 +470,7 @@ function convertSupabaseMessage(msg) {
   };
 }
 
-// Send message
+// Send message to one or more staff recipients (messages + message_recipients)
 async function sendMessage(messageData) {
   try {
     const userId = await getCurrentUserId();
@@ -408,6 +480,19 @@ async function sendMessage(messageData) {
       throw new Error('Missing user ID or organization ID');
     }
 
+    const recipientIds = Array.isArray(messageData.recipientIds)
+      ? messageData.recipientIds.filter(Boolean)
+      : (messageData.recipientId ? [messageData.recipientId] : []);
+
+    if (!recipientIds.length) {
+      throw new Error('Please select at least one recipient');
+    }
+
+    const uniqueRecipientIds = [...new Set(recipientIds)];
+    const isGroup = uniqueRecipientIds.length > 1;
+    // Single: set recipient_id (notification trigger). Multi: null + message_recipients + notifications.
+    const primaryRecipientId = isGroup ? null : uniqueRecipientIds[0];
+
     const message = {
       organization_id: orgId,
       subject: messageData.subject,
@@ -415,7 +500,7 @@ async function sendMessage(messageData) {
       message_type: messageData.messageType || 'message',
       priority: messageData.priority || 'normal',
       sender_id: userId,
-      recipient_id: messageData.recipientId || null,
+      recipient_id: primaryRecipientId,
       task_status: messageData.taskStatus || 'outstanding',
       task_due_date: messageData.taskDueDate || null,
       thread_id: messageData.threadId || null,
@@ -423,7 +508,6 @@ async function sendMessage(messageData) {
       attachments: messageData.attachments || []
     };
 
-    // Try Supabase first
     if (window.supabaseClient) {
       const { data, error } = await window.supabaseClient
         .from('messages')
@@ -435,46 +519,117 @@ async function sendMessage(messageData) {
         throw error;
       }
 
-      // If group message (multiple recipients), create message_recipients records
-      if (messageData.recipientIds && messageData.recipientIds.length > 0) {
-        const recipients = messageData.recipientIds.map(recipientId => ({
+      // Always record junction rows so multi-recipient inbox works; single also OK with dedupe on load
+      {
+        const recipients = uniqueRecipientIds.map((recipientId) => ({
           message_id: data.id,
           recipient_id: recipientId,
           organization_id: orgId,
           task_status: messageData.taskStatus || 'outstanding'
         }));
 
-        await window.supabaseClient
+        const { error: recipError } = await window.supabaseClient
           .from('message_recipients')
           .insert(recipients);
+        if (recipError) {
+          console.warn('⚠️ message_recipients insert:', recipError);
+        }
       }
 
-      // Save to localStorage
+      // Notification trigger only covers messages.recipient_id — notify everyone for group sends
+      if (isGroup) {
+        const notifs = uniqueRecipientIds.map((rid) => ({
+          organization_id: orgId,
+          user_id: rid,
+          message_id: data.id,
+          type: (messageData.messageType === 'task') ? 'task_assigned' : 'new_message',
+          title: messageData.subject,
+          body: String(messageData.body || '').slice(0, 200),
+          priority: messageData.priority || 'normal',
+          action_url: '/messages?message=' + data.id
+        }));
+        const { error: notifError } = await window.supabaseClient
+          .from('notifications')
+          .insert(notifs);
+        if (notifError) {
+          console.warn('⚠️ group notifications insert:', notifError);
+        }
+      }
+
       const localMessage = convertSupabaseMessage(data);
-      const sent = JSON.parse(localStorage.getItem(getDataKey("messages_sent")) || "[]");
+      const sent = JSON.parse(localStorage.getItem(getDataKey('messages_sent')) || '[]');
       sent.unshift(localMessage);
-      localStorage.setItem(getDataKey("messages_sent"), JSON.stringify(sent));
+      localStorage.setItem(getDataKey('messages_sent'), JSON.stringify(sent));
 
       return localMessage;
     }
 
-    // Fallback to localStorage only
     const localMessage = {
       id: `local_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
       ...message,
+      recipientIds: uniqueRecipientIds,
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString()
     };
 
-    const sent = JSON.parse(localStorage.getItem(getDataKey("messages_sent")) || "[]");
+    const sent = JSON.parse(localStorage.getItem(getDataKey('messages_sent')) || '[]');
     sent.unshift(localMessage);
-    localStorage.setItem(getDataKey("messages_sent"), JSON.stringify(sent));
+    localStorage.setItem(getDataKey('messages_sent'), JSON.stringify(sent));
 
     return localMessage;
   } catch (error) {
     console.error('❌ Error sending message:', error);
     throw error;
   }
+}
+
+/**
+ * Staff → patient messages go through portal_messages (not messages.recipient_id,
+ * which only accepts users.id).
+ */
+async function sendStaffMessageToPatients(patientIds, subject, body) {
+  const orgId = await getCurrentOrgId();
+  const userId = await getCurrentUserId();
+  if (!orgId || !userId) throw new Error('Missing user ID or organization ID');
+  if (!window.supabaseClient) throw new Error('Database connection not available');
+
+  const ids = [...new Set((patientIds || []).filter(Boolean))];
+  if (!ids.length) throw new Error('Please select at least one patient');
+
+  const text = [subject ? String(subject).trim() : '', String(body || '').trim()]
+    .filter(Boolean)
+    .join('\n\n');
+  if (!text) throw new Error('Message body is required');
+
+  const errors = [];
+  for (const patientId of ids) {
+    try {
+      if (window.MediForgePatientPortal && typeof window.MediForgePatientPortal.staffReplyToPatient === 'function') {
+        await window.MediForgePatientPortal.staffReplyToPatient(patientId, orgId, text);
+      } else {
+        const { error } = await window.supabaseClient.from('portal_messages').insert({
+          organization_id: orgId,
+          patient_id: patientId,
+          from_patient: false,
+          sender_user_id: userId,
+          body: text,
+          is_read_by_patient: false,
+          is_read_by_staff: true
+        });
+        if (error) throw error;
+      }
+    } catch (e) {
+      errors.push(`${patientId}: ${e.message || e}`);
+    }
+  }
+
+  if (errors.length === ids.length) {
+    throw new Error('Could not deliver to patients: ' + errors.join('; '));
+  }
+  if (errors.length) {
+    console.warn('⚠️ Partial patient message delivery:', errors);
+  }
+  return { sent: ids.length - errors.length, failed: errors.length };
 }
 
 // Update message status (read, archived, task status)
@@ -749,6 +904,7 @@ async function getUserNameById(userId) {
 
 // Export functions
 window.sendMessage = sendMessage;
+window.sendStaffMessageToPatients = sendStaffMessageToPatients;
 window.updateMessageStatus = updateMessageStatus;
 window.loadMessagesWithSupabasePriority = loadMessagesWithSupabasePriority;
 window.loadOrganizationUsers = loadOrganizationUsers;
