@@ -1,0 +1,207 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Doctor Day Schedule</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260728161000">
+  <script src="js/ui-title-case.js?v=20260616120000" defer></script>
+  <style>
+    .controls {
+      display: flex; flex-wrap: wrap; gap: 12px; align-items: end;
+      margin: 16px 0 24px; padding: 16px; background: #f8f9fa; border-radius: 8px;
+    }
+    .controls label { display: block; font-weight: 600; margin-bottom: 4px; }
+    .controls select, .controls input { min-height: 44px; padding: 8px 12px; font-size: 16px; border: 1px solid #ccc; border-radius: 4px; min-width: 200px; }
+    .banner { padding: 12px 16px; border-radius: 6px; margin-bottom: 16px; }
+    .banner.closed { background: #fdecea; border-left: 4px solid #dc3545; }
+    .banner.open { background: #e8f5e9; border-left: 4px solid #28a745; }
+    table.day-grid { width: 100%; border-collapse: collapse; }
+    table.day-grid th, table.day-grid td { border: 1px solid #dee2e6; padding: 10px; text-align: left; }
+    table.day-grid th { background: #007bff; color: #fff; }
+    tr.slot-open td { background: #f4fff6; }
+    tr.slot-taken td { background: #fff8e6; }
+    a.book-link { color: #28a745; font-weight: 700; text-decoration: none; }
+    a.book-link:hover { text-decoration: underline; }
+    .secondary { background: #6c757d; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; }
+  </style>
+</head>
+<body>
+  <div style="margin-bottom: 16px; display: flex; flex-wrap: wrap; gap: 10px;">
+    <button class="secondary" onclick="window.location.href='dashboard'">&larr; Dashboard</button>
+    <button class="secondary" onclick="window.location.href='schedule'">Schedule Calendar</button>
+    <button class="secondary" onclick="window.location.href='set-clinic-schedule'">Configure Clinic Schedule</button>
+  </div>
+
+  <h1>Doctor Day Schedule</h1>
+  <p style="color:#555;">Review one doctor's full day: taken and open slots. Click an open slot to schedule an appointment.</p>
+
+  <div class="controls">
+    <div>
+      <label for="doctor-select">Doctor</label>
+      <select id="doctor-select"><option value="">Loading doctors...</option></select>
+    </div>
+    <div>
+      <label for="date-select">Date</label>
+      <input type="date" id="date-select">
+    </div>
+    <div>
+      <button class="secondary" type="button" id="prev-day">Previous Day</button>
+      <button class="secondary" type="button" id="next-day">Next Day</button>
+    </div>
+  </div>
+
+  <div id="status-banner"></div>
+  <div id="schedule-grid"><p>Select a doctor and date.</p></div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20260729160000"></script>
+  <script src="js/staff-session-guard.js?v=20260729150000"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/main.js?v=202510220113130113131313"></script>
+  <script src="js/clinic-schedule.js?v=20260729180000"></script>
+  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>
+  <script src="js/patients.js?v=20260729100000"></script>
+  <script src="js/patient-identity.js?v=20260427160000"></script>
+  <script src="js/appointments.js?v=20260729180000-clinic-schedule"></script>
+
+  <script>
+    function esc(s) {
+      return String(s || '').replace(/[&<>"']/g, function (c) {
+        return ({ '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#39;' })[c];
+      });
+    }
+
+    function normalizeDoctor(name) {
+      return String(name || '').replace(/^dr\.?\s*/i, '').trim().toLowerCase();
+    }
+
+    async function fillDoctors() {
+      var select = document.getElementById('doctor-select');
+      var doctors = [];
+      if (typeof loadDoctors === 'function') {
+        doctors = await loadDoctors();
+      }
+      select.innerHTML = '<option value="">Select a doctor...</option>';
+      (doctors || []).forEach(function (d) {
+        var opt = document.createElement('option');
+        opt.value = d;
+        opt.textContent = 'Dr. ' + d;
+        select.appendChild(opt);
+      });
+      var params = new URLSearchParams(window.location.search);
+      var fromUrl = params.get('doctor');
+      if (fromUrl) {
+        var match = (doctors || []).find(function (d) { return normalizeDoctor(d) === normalizeDoctor(fromUrl); });
+        if (match) select.value = match;
+        else {
+          var other = document.createElement('option');
+          other.value = fromUrl.replace(/^dr\.?\s*/i, '').trim();
+          other.textContent = 'Dr. ' + other.value;
+          select.appendChild(other);
+          select.value = other.value;
+        }
+      }
+    }
+
+    function getAppointmentsForDay(dateStr) {
+      var key = typeof getDataKey === 'function' ? getDataKey('appointments') : 'appointments';
+      var all = [];
+      try { all = JSON.parse(localStorage.getItem(key) || '[]'); } catch (e) { all = []; }
+      return all.filter(function (a) { return a && a.date === dateStr; });
+    }
+
+    function render() {
+      var doctor = document.getElementById('doctor-select').value;
+      var dateStr = document.getElementById('date-select').value;
+      var banner = document.getElementById('status-banner');
+      var grid = document.getElementById('schedule-grid');
+
+      if (!dateStr) {
+        banner.innerHTML = '';
+        grid.innerHTML = '<p>Select a date.</p>';
+        return;
+      }
+
+      var openInfo = window.isClinicOpenOnDate(dateStr);
+      if (!openInfo.open) {
+        var reason = openInfo.reason === 'holiday'
+          ? ('Public holiday: ' + ((openInfo.holiday && openInfo.holiday.name) || 'Clinic closed'))
+          : 'Clinic is closed on this day.';
+        banner.innerHTML = '<div class="banner closed"><strong>Closed.</strong> ' + esc(reason) + ' Appointments cannot be scheduled.</div>';
+        grid.innerHTML = '<p>No open slots.</p>';
+        return;
+      }
+
+      if (!doctor) {
+        banner.innerHTML = '<div class="banner open">Clinic open ' + esc(openInfo.startTime) + ' to ' + esc(openInfo.endTime) + '. Select a doctor to see their full day.</div>';
+        grid.innerHTML = '<p>Select a doctor.</p>';
+        return;
+      }
+
+      var slots = window.getSlotsForDate(dateStr);
+      var dayAppts = getAppointmentsForDay(dateStr);
+      var doctorNorm = normalizeDoctor(doctor);
+      var mine = dayAppts.filter(function (a) {
+        return normalizeDoctor(a.doctor || a.doctor_name) === doctorNorm;
+      });
+
+      banner.innerHTML = '<div class="banner open"><strong>Dr. ' + esc(doctor) + '</strong> on ' + esc(dateStr) +
+        ': clinic open ' + esc(openInfo.startTime) + ' to ' + esc(openInfo.endTime) +
+        '. ' + mine.length + ' booked, ' + Math.max(0, slots.length - mine.length) + ' open.</div>';
+
+      if (!slots.length) {
+        grid.innerHTML = '<p>No bookable slots for this day (check breaks and hours).</p>';
+        return;
+      }
+
+      var html = '<table class="day-grid"><thead><tr><th>Time</th><th>Status</th><th>Patient / Action</th></tr></thead><tbody>';
+      slots.forEach(function (slot) {
+        var appt = mine.find(function (a) { return a.time === slot; });
+        if (appt) {
+          var patient = esc(appt.patientName || appt.patient_name || 'Patient');
+          var type = esc(appt.appointmentType || appt.appointment_type || appt.visitType || '');
+          html += '<tr class="slot-taken"><td>' + esc(slot) + '</td><td>Taken</td><td><strong>' + patient + '</strong>' +
+            (type ? '<div style="font-size:12px;color:#666;">' + type + '</div>' : '') + '</td></tr>';
+        } else {
+          var href = 'add-appointment?date=' + encodeURIComponent(dateStr) +
+            '&time=' + encodeURIComponent(slot) +
+            '&doctor=' + encodeURIComponent(doctor);
+          html += '<tr class="slot-open"><td>' + esc(slot) + '</td><td>Open</td><td>' +
+            '<a class="book-link" href="' + href + '">Schedule Appointment</a></td></tr>';
+        }
+      });
+      html += '</tbody></table>';
+      grid.innerHTML = html;
+    }
+
+    function shiftDate(days) {
+      var input = document.getElementById('date-select');
+      if (!input.value) return;
+      var bits = input.value.split('-').map(Number);
+      var d = new Date(bits[0], bits[1] - 1, bits[2]);
+      d.setDate(d.getDate() + days);
+      input.value = window.ClinicSchedule.formatDateLocal(d);
+      render();
+    }
+
+    window.addEventListener('load', async function () {
+      if (typeof window.ensureStaffSession === 'function') {
+        try { await window.ensureStaffSession(); } catch (e) { /* ignore */ }
+      }
+      var params = new URLSearchParams(window.location.search);
+      var dateInput = document.getElementById('date-select');
+      dateInput.value = params.get('date') || window.ClinicSchedule.formatDateLocal(new Date());
+      await fillDoctors();
+      document.getElementById('doctor-select').addEventListener('change', render);
+      dateInput.addEventListener('change', render);
+      document.getElementById('prev-day').addEventListener('click', function () { shiftDate(-1); });
+      document.getElementById('next-day').addEventListener('click', function () { shiftDate(1); });
+      render();
+    });
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>

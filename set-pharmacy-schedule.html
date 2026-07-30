@@ -1,0 +1,229 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <script src="/js/supabase-env.js"></script>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Pharmacy Schedule</title>
+  <link rel="stylesheet" href="css/styles.css?v=20260728161000">
+  <script src="js/ui-title-case.js?v=20260616120000" defer></script>
+  <style>
+    .config-section { margin-bottom: 24px; padding: 20px; border: 1px solid #ddd; border-radius: 8px; background: #f9f9f9; }
+    .config-section h2 { margin-top: 0; border-bottom: 2px solid #008751; padding-bottom: 8px; }
+    .day-row { display: grid; grid-template-columns: 140px 1fr 1fr; gap: 12px; align-items: center; padding: 10px 0; border-bottom: 1px solid #e5e5e5; }
+    .break-row { display: flex; flex-wrap: wrap; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #fff; border: 1px solid #ddd; border-radius: 6px; }
+    .hint { color: #666; font-size: 13px; }
+    button.secondary { background: #6c757d; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; }
+    button.primary { background: #008751; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+    button.danger { background: #dc3545; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+    input[type="time"], input[type="number"], input[type="text"] { padding: 8px; border: 1px solid #ccc; border-radius: 4px; }
+    #custom-hours { display: none; }
+  </style>
+</head>
+<body>
+  <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
+    <button class="secondary" onclick="window.location.href='dashboard'">&larr; Back to Dashboard</button>
+    <button class="secondary" onclick="window.location.href='set-clinic-schedule'">Clinic Schedule</button>
+    <button class="secondary" onclick="window.location.href='pharmacy-dashboard'">Pharmacy Dashboard</button>
+  </div>
+
+  <h1>Pharmacy Schedule</h1>
+  <p class="hint">By default the in-house pharmacy follows the clinic schedule. Turn off that option only if pharmacy hours differ (weekdays or weekends).</p>
+  <div id="pharmacy-disabled-banner" class="config-section" style="display:none; border-left: 4px solid #dc3545;">
+    <p>In-house pharmacy is currently off for this organization. Enable it from Facility Configuration on the dashboard, then return here to set pharmacy hours.</p>
+  </div>
+
+  <form id="pharmacy-schedule-form">
+    <div class="config-section">
+      <h2>Follow Clinic Hours</h2>
+      <label style="font-weight:600;">
+        <input type="checkbox" id="use-clinic-schedule" checked>
+        Pharmacy operates on the same schedule as the clinic
+      </label>
+      <p class="hint" id="clinic-summary"></p>
+    </div>
+
+    <div id="custom-hours">
+      <div class="config-section">
+        <h2>Pharmacy Hours By Day</h2>
+        <div id="day-hours-list"></div>
+      </div>
+      <div class="config-section">
+        <h2>Pharmacy Breaks</h2>
+        <div id="breaks-list"></div>
+        <button type="button" class="secondary" id="add-break-btn">Add Break</button>
+      </div>
+    </div>
+
+    <button type="submit" class="primary">Save Pharmacy Schedule</button>
+  </form>
+
+  <div class="config-section" style="margin-top:24px;">
+    <h2>Preview</h2>
+    <div id="preview"></div>
+  </div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20260729160000"></script>
+  <script src="js/main.js?v=202510220113130113131313"></script>
+  <script src="js/clinic-schedule.js?v=20260729180000"></script>
+  <script>
+    var DAY_KEYS = window.ClinicSchedule.DAY_KEYS;
+    var DAY_LABELS = window.ClinicSchedule.DAY_LABELS;
+    var breaksState = [];
+
+    function inHousePharmacyEnabled() {
+      try {
+        var user = JSON.parse(localStorage.getItem('user') || '{}');
+        var orgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+        var org = orgs[user.org] || {};
+        return !!(org.settings && org.settings.in_house_pharmacy === true);
+      } catch (e) {
+        return false;
+      }
+    }
+
+    function renderDayHours(dayHours) {
+      var el = document.getElementById('day-hours-list');
+      el.innerHTML = DAY_KEYS.map(function (day) {
+        var d = (dayHours && dayHours[day]) || { enabled: false, startTime: '08:00', endTime: '18:00' };
+        return '<div class="day-row">' +
+          '<label><input type="checkbox" data-day-enabled="' + day + '"' + (d.enabled ? ' checked' : '') + '> ' + DAY_LABELS[day] + '</label>' +
+          '<label>Open <input type="time" data-day-start="' + day + '" value="' + (d.startTime || '08:00') + '"></label>' +
+          '<label>Close <input type="time" data-day-end="' + day + '" value="' + (d.endTime || '18:00') + '"></label>' +
+          '</div>';
+      }).join('');
+      el.querySelectorAll('input').forEach(function (i) { i.addEventListener('change', updatePreview); });
+    }
+
+    function renderBreaks() {
+      var el = document.getElementById('breaks-list');
+      if (!breaksState.length) {
+        el.innerHTML = '<p class="hint">No pharmacy-specific breaks.</p>';
+        return;
+      }
+      el.innerHTML = breaksState.map(function (b, idx) {
+        return '<div class="break-row">' +
+          '<label>Label <input type="text" data-break-label="' + idx + '" value="' + (b.label || 'Break').replace(/"/g, '&quot;') + '"></label>' +
+          '<label>Start <input type="time" data-break-start="' + idx + '" value="' + (b.startTime || '12:00') + '"></label>' +
+          '<label>Duration <input type="number" data-break-duration="' + idx + '" min="5" max="240" value="' + (b.duration || 60) + '"></label>' +
+          '<button type="button" class="danger" data-remove-break="' + idx + '">Remove</button></div>';
+      }).join('');
+      el.querySelectorAll('input').forEach(function (i) {
+        i.addEventListener('change', syncBreaks);
+        i.addEventListener('input', syncBreaks);
+      });
+      el.querySelectorAll('[data-remove-break]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          breaksState.splice(parseInt(btn.getAttribute('data-remove-break'), 10), 1);
+          renderBreaks();
+          updatePreview();
+        });
+      });
+    }
+
+    function syncBreaks() {
+      breaksState = breaksState.map(function (b, idx) {
+        return {
+          label: (document.querySelector('[data-break-label="' + idx + '"]') || {}).value || 'Break',
+          startTime: (document.querySelector('[data-break-start="' + idx + '"]') || {}).value || '12:00',
+          duration: parseInt((document.querySelector('[data-break-duration="' + idx + '"]') || {}).value, 10) || 60
+        };
+      });
+      updatePreview();
+    }
+
+    function collectPharmacy() {
+      var useClinic = document.getElementById('use-clinic-schedule').checked;
+      if (useClinic) {
+        return { useClinicSchedule: true };
+      }
+      syncBreaks();
+      var dayHours = {};
+      var workingDays = [];
+      DAY_KEYS.forEach(function (day) {
+        var enabled = !!(document.querySelector('[data-day-enabled="' + day + '"]') || {}).checked;
+        var start = (document.querySelector('[data-day-start="' + day + '"]') || {}).value || '08:00';
+        var end = (document.querySelector('[data-day-end="' + day + '"]') || {}).value || '18:00';
+        dayHours[day] = { enabled: enabled, startTime: start, endTime: end };
+        if (enabled) workingDays.push(day);
+      });
+      var first = workingDays[0];
+      return {
+        useClinicSchedule: false,
+        startTime: first ? dayHours[first].startTime : '08:00',
+        endTime: first ? dayHours[first].endTime : '18:00',
+        workingDays: workingDays,
+        dayHours: dayHours,
+        lunchBreaks: breaksState.slice()
+      };
+    }
+
+    function updatePreview() {
+      var clinic = window.ClinicSchedule.getClinicScheduleConfig();
+      var useClinic = document.getElementById('use-clinic-schedule').checked;
+      var html = '';
+      if (useClinic) {
+        html = '<p>Pharmacy follows clinic hours.</p><p><strong>Clinic open days:</strong> ' +
+          clinic.workingDays.map(function (d) { return DAY_LABELS[d]; }).join(', ') + '</p>';
+      } else {
+        var p = collectPharmacy();
+        html = '<p>Custom pharmacy hours.</p>';
+        (p.workingDays || []).forEach(function (d) {
+          html += '<p><strong>' + DAY_LABELS[d] + ':</strong> ' + p.dayHours[d].startTime + ' to ' + p.dayHours[d].endTime + '</p>';
+        });
+        html += '<p><strong>Breaks:</strong> ' + ((p.lunchBreaks || []).length
+          ? p.lunchBreaks.map(function (b) { return b.label + ' ' + b.startTime + ' (' + b.duration + ' min)'; }).join('; ')
+          : 'None') + '</p>';
+      }
+      document.getElementById('preview').innerHTML = html;
+      document.getElementById('clinic-summary').textContent =
+        'Clinic currently open: ' + clinic.workingDays.map(function (d) {
+          return DAY_LABELS[d] + ' ' + clinic.dayHours[d].startTime + '-' + clinic.dayHours[d].endTime;
+        }).join('; ');
+    }
+
+    function toggleCustom() {
+      var useClinic = document.getElementById('use-clinic-schedule').checked;
+      document.getElementById('custom-hours').style.display = useClinic ? 'none' : 'block';
+      updatePreview();
+    }
+
+    function load() {
+      if (!inHousePharmacyEnabled()) {
+        document.getElementById('pharmacy-disabled-banner').style.display = 'block';
+      }
+      var clinic = window.ClinicSchedule.getClinicScheduleConfig();
+      var ph = clinic.pharmacy || { useClinicSchedule: true };
+      document.getElementById('use-clinic-schedule').checked = ph.useClinicSchedule !== false;
+      var dayHours = ph.dayHours || clinic.dayHours;
+      breaksState = Array.isArray(ph.lunchBreaks) ? ph.lunchBreaks.slice() : [];
+      renderDayHours(dayHours);
+      renderBreaks();
+      toggleCustom();
+    }
+
+    document.getElementById('use-clinic-schedule').addEventListener('change', toggleCustom);
+    document.getElementById('add-break-btn').addEventListener('click', function () {
+      breaksState.push({ label: 'Break', startTime: '12:00', duration: 60 });
+      renderBreaks();
+      updatePreview();
+    });
+    document.getElementById('pharmacy-schedule-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var pharmacy = collectPharmacy();
+      if (pharmacy.useClinicSchedule === false && !(pharmacy.workingDays || []).length) {
+        alert('Enable at least one pharmacy working day, or choose to follow the clinic schedule.');
+        return;
+      }
+      window.ClinicSchedule.savePharmacyScheduleConfig(pharmacy);
+      alert('Pharmacy schedule saved.');
+      load();
+    });
+
+    window.addEventListener('load', load);
+  </script>
+  <script src="js/logout-button.js"></script>
+  <script src="js/session-timeout.js"></script>
+</body>
+</html>

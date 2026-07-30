@@ -1,356 +1,431 @@
 <!DOCTYPE html>
 <html lang="en">
 <head>
-  <script src="/js/supabase-env.js"></script>  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
-  <meta http-equiv="Pragma" content="no-cache">
-  <meta http-equiv="Expires" content="0">
-  <meta name="mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-capable" content="yes">
-  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <script src="/js/supabase-env.js"></script>
+  <meta http-equiv="Cache-Control" content="no-cache, no-store, must-revalidate, max-age=0">
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Set Clinic Schedule</title>
+  <title>Clinic Schedule Configuration</title>
   <link rel="stylesheet" href="css/styles.css?v=20260728161000">
   <script src="js/ui-title-case.js?v=20260616120000" defer></script>
-</head>
-<body>
-  <div style="margin-bottom: 20px;">
-    <button onclick="window.location.href='dashboard'" style="margin-right: 10px; padding: 10px 20px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">&larr; Back to Dashboard</button>
-    <button onclick="window.location.href='schedule'" style="padding: 10px 20px; background-color: #28a745; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 14px; font-weight: 500;">&larr; Back to Schedule</button>
-  </div>
-  
-  <h1>Clinic Schedule Configuration</h1>
-  
-  <form id="schedule-config-form">
-    <div class="config-section">
-      <h2>Working Hours</h2>
-      <div class="form-group">
-        <label for="start-time">Start Time:</label>
-        <input type="time" id="start-time" required>
-      </div>
-      <div class="form-group">
-        <label for="end-time">End Time:</label>
-        <input type="time" id="end-time" required>
-      </div>
-    </div>
-
-    <div class="config-section">
-      <h2>Lunch Break (Optional)</h2>
-      <div class="form-group">
-        <label>
-          <input type="checkbox" id="enable-lunch-break"> Enable Lunch Break
-        </label>
-      </div>
-      <div id="lunch-break-config" style="display: none;">
-        <div class="form-group">
-          <label for="lunch-start">Lunch Start Time:</label>
-          <input type="time" id="lunch-start">
-        </div>
-        <div class="form-group">
-          <label for="lunch-duration">Lunch Duration (minutes):</label>
-          <input type="number" id="lunch-duration" min="30" max="60" value="60" required>
-          <small style="color: #666; font-size: 12px;">Enter minutes between 30-60 (inclusive)</small>
-        </div>
-      </div>
-    </div>
-
-    <div class="config-section">
-      <h2>Appointment Slot Duration</h2>
-      <div class="form-group">
-        <label for="slot-duration">Default Slot Duration:</label>
-        <select id="slot-duration" required>
-          <option value="15">15 minutes</option>
-          <option value="20" selected>20 minutes</option>
-          <option value="30">30 minutes</option>
-          <option value="45">45 minutes</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="regular-visit-duration">Regular Follow-up Visit Duration:</label>
-        <select id="regular-visit-duration" required>
-          <option value="15">15 minutes</option>
-          <option value="20" selected>20 minutes</option>
-          <option value="30">30 minutes</option>
-        </select>
-      </div>
-      <div class="form-group">
-        <label for="initial-visit-duration">Initial Visit Duration:</label>
-        <select id="initial-visit-duration" required>
-          <option value="30">30 minutes</option>
-          <option value="45" selected>45 minutes</option>
-          <option value="60">60 minutes</option>
-        </select>
-      </div>
-    </div>
-
-    <div class="config-section">
-      <h2>Working Days</h2>
-      <div class="form-group">
-        <label>
-          <input type="checkbox" id="monday" checked> Monday
-        </label>
-        <label>
-          <input type="checkbox" id="tuesday" checked> Tuesday
-        </label>
-        <label>
-          <input type="checkbox" id="wednesday" checked> Wednesday
-        </label>
-        <label>
-          <input type="checkbox" id="thursday" checked> Thursday
-        </label>
-        <label>
-          <input type="checkbox" id="friday" checked> Friday
-        </label>
-        <label>
-          <input type="checkbox" id="saturday"> Saturday
-        </label>
-        <label>
-          <input type="checkbox" id="sunday"> Sunday
-        </label>
-      </div>
-    </div>
-
-    <button type="submit" style="margin-top: 20px; padding: 12px 24px; background-color: #007bff; color: white; border: none; border-radius: 5px; cursor: pointer; font-size: 16px; font-weight: 500;">Save Schedule Configuration</button>
-  </form>
-
-  <div style="margin-top: 30px; padding: 15px; background-color: #f8f9fa; border-radius: 5px; border-left: 4px solid #007bff;">
-    <h3>Current Schedule Preview</h3>
-    <div id="schedule-preview"></div>
-  </div>
-
-  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
-  
-  <script>
-    // TRACE LOGGING: Set clinic schedule page complete Supabase setup fix v52
-    console.log('TRACE: set-clinic-schedule.html loaded - Complete Supabase setup fix v52');
-    console.log('TRACE: Added Supabase CDN library, client, and data loader');
-    console.log('TRACE: Set clinic schedule page now has complete Supabase setup');
-    console.log('TRACE: Deployment timestamp:', new Date().toISOString());
-    console.log('TRACE: CSS version updated to v52 for cache busting');
-    
-    // Display logged-in user info with org
-    const userFooter = JSON.parse(localStorage.getItem("user"));
-    if (userFooter) {
-      document.getElementById("logged-in-info").innerHTML = `${userFooter.username} (${userFooter.role}) from ${userFooter.org} is logged in`;
-    }
-  </script>
-  
-  <script src="js/vendor/supabase.min.js"></script>  <!-- Supabase CDN library -->
-  <script src="js/supabase-client.js?v=202510220113130113131313"></script>  <!-- Supabase client initialization -->
-  <script src="js/universal-data-loader.js?v=202510220113130113131313"></script>  <!-- Universal data loader with Supabase priority -->
-  <script src="js/main.js?v=202510220113130113131313"></script>  <!-- General helpers -->
-  <script src="js/universal-sync-status.js?v=202510220113130113131313"></script>  <!-- Universal sync status indicator -->
-  
-  <script>
-    // Load current configuration
-    function loadCurrentConfig() {
-      const config = JSON.parse(localStorage.getItem(getDataKey("clinic-schedule")) || '{}');
-      
-      // Set working hours
-      document.getElementById("start-time").value = config.startTime || "08:00";
-      document.getElementById("end-time").value = config.endTime || "18:00";
-      
-      // Set lunch break
-      if (config.lunchBreak && config.lunchBreak.enabled) {
-        document.getElementById("enable-lunch-break").checked = true;
-        document.getElementById("lunch-start").value = config.lunchBreak.startTime || "12:00";
-        document.getElementById("lunch-duration").value = config.lunchBreak.duration || 60;
-        document.getElementById("lunch-break-config").style.display = "block";
-      }
-      
-      // Set slot durations
-      document.getElementById("slot-duration").value = config.slotDuration || 20;
-      document.getElementById("regular-visit-duration").value = config.regularVisitDuration || 20;
-      document.getElementById("initial-visit-duration").value = config.initialVisitDuration || 45;
-      
-      // Set working days
-      const workingDays = config.workingDays || ["monday", "tuesday", "wednesday", "thursday", "friday"];
-      workingDays.forEach(day => {
-        const checkbox = document.getElementById(day);
-        if (checkbox) checkbox.checked = true;
-      });
-      
-      updatePreview();
-    }
-
-    // Toggle lunch break configuration
-    document.getElementById("enable-lunch-break").addEventListener("change", function() {
-      const configDiv = document.getElementById("lunch-break-config");
-      configDiv.style.display = this.checked ? "block" : "none";
-      updatePreview();
-    });
-
-    // Update preview when any setting changes
-    document.querySelectorAll("input, select").forEach(element => {
-      element.addEventListener("change", updatePreview);
-    });
-
-    // Add validation for lunch duration input
-    document.getElementById("lunch-duration").addEventListener("input", function() {
-      const value = parseInt(this.value);
-      if (value < 30 || value > 60) {
-        this.setCustomValidity("Lunch duration must be between 30 and 60 minutes");
-      } else {
-        this.setCustomValidity("");
-      }
-      updatePreview();
-    });
-
-    // Generate time slots
-    function generateTimeSlots(startTime, endTime, slotDuration, lunchBreak = null) {
-      const slots = [];
-      const start = new Date(`2000-01-01T${startTime}`);
-      const end = new Date(`2000-01-01T${endTime}`);
-      
-      let current = new Date(start);
-      
-      while (current < end) {
-        const timeStr = current.toTimeString().substr(0, 5);
-        
-        // Check if this slot conflicts with lunch break
-        if (lunchBreak && lunchBreak.enabled) {
-          const lunchStart = new Date(`2000-01-01T${lunchBreak.startTime}`);
-          const lunchEnd = new Date(lunchStart.getTime() + lunchBreak.duration * 60000);
-          
-          if (current >= lunchStart && current < lunchEnd) {
-            current.setMinutes(current.getMinutes() + slotDuration);
-            continue;
-          }
-        }
-        
-        slots.push(timeStr);
-        current.setMinutes(current.getMinutes() + slotDuration);
-      }
-      
-      return slots;
-    }
-
-    // Update schedule preview
-    function updatePreview() {
-      const startTime = document.getElementById("start-time").value || "08:00";
-      const endTime = document.getElementById("end-time").value || "18:00";
-      const slotDuration = parseInt(document.getElementById("slot-duration").value) || 20;
-      const enableLunch = document.getElementById("enable-lunch-break").checked;
-      
-      let lunchBreak = null;
-      if (enableLunch) {
-        lunchBreak = {
-          enabled: true,
-          startTime: document.getElementById("lunch-start").value || "12:00",
-          duration: parseInt(document.getElementById("lunch-duration").value) || 60
-        };
-      }
-      
-      const slots = generateTimeSlots(startTime, endTime, slotDuration, lunchBreak);
-      
-      const preview = document.getElementById("schedule-preview");
-      preview.innerHTML = `
-        <p><strong>Working Hours:</strong> ${startTime} - ${endTime}</p>
-        <p><strong>Slot Duration:</strong> ${slotDuration} minutes</p>
-        ${lunchBreak ? `<p><strong>Lunch Break:</strong> ${lunchBreak.startTime} (${lunchBreak.duration} minutes)</p>` : '<p><strong>Lunch Break:</strong> None</p>'}
-        <p><strong>Total Available Slots:</strong> ${slots.length}</p>
-        <p><strong>Sample Slots:</strong> ${slots.slice(0, 5).join(', ')}${slots.length > 5 ? '...' : ''}</p>
-      `;
-    }
-
-    // Form submission
-    document.getElementById("schedule-config-form").addEventListener("submit", function(e) {
-      e.preventDefault();
-      
-      const config = {
-        startTime: document.getElementById("start-time").value,
-        endTime: document.getElementById("end-time").value,
-        slotDuration: parseInt(document.getElementById("slot-duration").value),
-        regularVisitDuration: parseInt(document.getElementById("regular-visit-duration").value),
-        initialVisitDuration: parseInt(document.getElementById("initial-visit-duration").value),
-        workingDays: []
-      };
-      
-      // Get working days
-      const days = ["monday", "tuesday", "wednesday", "thursday", "friday", "saturday", "sunday"];
-      days.forEach(day => {
-        if (document.getElementById(day).checked) {
-          config.workingDays.push(day);
-        }
-      });
-      
-      // Get lunch break configuration
-      if (document.getElementById("enable-lunch-break").checked) {
-        config.lunchBreak = {
-          enabled: true,
-          startTime: document.getElementById("lunch-start").value,
-          duration: parseInt(document.getElementById("lunch-duration").value)
-        };
-      } else {
-        config.lunchBreak = { enabled: false };
-      }
-      
-      // Save configuration
-      localStorage.setItem(getDataKey("clinic-schedule"), JSON.stringify(config));
-      
-      alert("Schedule configuration saved successfully!");
-      
-      // Dispatch custom event to notify other pages
-      window.dispatchEvent(new CustomEvent('scheduleConfigUpdated', { detail: config }));
-    });
-
-    // Load configuration on page load
-    window.addEventListener('load', loadCurrentConfig);
-  </script>
-  
   <style>
     .config-section {
-      margin-bottom: 30px;
+      margin-bottom: 24px;
       padding: 20px;
       border: 1px solid #ddd;
       border-radius: 8px;
-      background-color: #f9f9f9;
+      background: #f9f9f9;
     }
-    
     .config-section h2 {
       margin-top: 0;
       color: #333;
       border-bottom: 2px solid #007bff;
-      padding-bottom: 10px;
+      padding-bottom: 8px;
     }
-    
-    .form-group {
-      margin-bottom: 15px;
+    .day-row {
+      display: grid;
+      grid-template-columns: 140px 1fr 1fr;
+      gap: 12px;
+      align-items: center;
+      padding: 10px 0;
+      border-bottom: 1px solid #e5e5e5;
     }
-    
-    .form-group label {
-      display: block;
-      margin-bottom: 5px;
-      font-weight: 500;
+    .day-row label { font-weight: 600; margin: 0; }
+    .break-row, .holiday-row, .duration-chip {
+      display: flex;
+      flex-wrap: wrap;
+      gap: 10px;
+      align-items: center;
+      margin-bottom: 10px;
+      padding: 10px;
+      background: #fff;
+      border: 1px solid #ddd;
+      border-radius: 6px;
     }
-    
-    .form-group input[type="time"],
-    .form-group select {
-      width: 200px;
-      padding: 8px;
-      border: 1px solid #ccc;
-      border-radius: 4px;
-      font-size: 14px;
+    .hint { color: #666; font-size: 13px; margin-top: 6px; }
+    .actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 16px; }
+    button.secondary { background: #6c757d; color: #fff; border: none; padding: 10px 16px; border-radius: 5px; cursor: pointer; }
+    button.primary { background: #007bff; color: #fff; border: none; padding: 12px 24px; border-radius: 5px; cursor: pointer; font-weight: 600; }
+    button.danger { background: #dc3545; color: #fff; border: none; padding: 8px 12px; border-radius: 5px; cursor: pointer; }
+    input[type="time"], input[type="number"], input[type="text"], input[type="date"], select {
+      padding: 8px; border: 1px solid #ccc; border-radius: 4px; font-size: 14px;
     }
-    
-    .form-group input[type="checkbox"] {
-      margin-right: 8px;
-    }
-    
-    .form-group label input[type="checkbox"] {
-      display: inline;
-      width: auto;
-      margin-right: 5px;
-    }
-  </style>  
+    #schedule-preview { line-height: 1.5; }
+  </style>
+</head>
+<body>
+  <div style="margin-bottom: 20px; display: flex; flex-wrap: wrap; gap: 10px;">
+    <button class="secondary" onclick="window.location.href='dashboard'">&larr; Back to Dashboard</button>
+    <button class="secondary" onclick="window.location.href='schedule'">&larr; Back to Schedule</button>
+    <button class="secondary" onclick="window.location.href='doctor-day-schedule'">Doctor Day Schedule</button>
+    <button class="secondary" id="pharmacy-schedule-link" onclick="window.location.href='set-pharmacy-schedule'" style="display:none;">Pharmacy Hours</button>
+  </div>
 
+  <h1>Clinic Schedule Configuration</h1>
+  <p class="hint">Set hours per weekday, multiple breaks, custom appointment lengths, and public holidays. Booking is blocked during breaks and on holidays.</p>
 
+  <form id="schedule-config-form">
+    <div class="config-section">
+      <h2>Hours By Day</h2>
+      <p class="hint">Enable each day the clinic is open, and set that day's open and close times.</p>
+      <div id="day-hours-list"></div>
+    </div>
+
+    <div class="config-section">
+      <h2>Breaks (Lunch And Other)</h2>
+      <p class="hint">Add as many breaks as you need. Appointment slots cannot be booked during these times.</p>
+      <div id="breaks-list"></div>
+      <button type="button" class="secondary" id="add-break-btn">Add Break</button>
+    </div>
+
+    <div class="config-section">
+      <h2>Appointment Lengths</h2>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label for="slot-duration">Default Slot Length (minutes)</label><br>
+        <select id="slot-duration"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label for="regular-visit-duration">Regular Follow-Up Duration</label><br>
+        <select id="regular-visit-duration"></select>
+      </div>
+      <div class="form-group" style="margin-bottom:12px;">
+        <label for="initial-visit-duration">Initial Visit Duration</label><br>
+        <select id="initial-visit-duration"></select>
+      </div>
+      <h3 style="margin-top:18px;">Custom Lengths</h3>
+      <p class="hint">Add lengths such as 35 minutes. They become selectable for the default slot length and visit types.</p>
+      <div id="custom-durations-list"></div>
+      <div class="break-row">
+        <label for="new-custom-duration">Add Custom Length (minutes)</label>
+        <input type="number" id="new-custom-duration" min="5" max="240" step="5" placeholder="35">
+        <button type="button" class="secondary" id="add-custom-duration-btn">Add Length</button>
+      </div>
+    </div>
+
+    <div class="config-section">
+      <h2>Public Holidays</h2>
+      <p class="hint">Name and mark closed days for the year. Appointments cannot be scheduled on these dates.</p>
+      <div id="holidays-list"></div>
+      <div class="holiday-row">
+        <label for="holiday-date">Date</label>
+        <input type="date" id="holiday-date">
+        <label for="holiday-name">Name</label>
+        <input type="text" id="holiday-name" placeholder="e.g. Canada Day" maxlength="80">
+        <button type="button" class="secondary" id="add-holiday-btn">Add Holiday</button>
+      </div>
+    </div>
+
+    <div class="actions">
+      <button type="submit" class="primary">Save Schedule Configuration</button>
+    </div>
+  </form>
+
+  <div class="config-section" style="margin-top: 24px;">
+    <h2>Current Schedule Preview</h2>
+    <div id="schedule-preview"></div>
+  </div>
+
+  <div id="logged-in-info" style="position: fixed; bottom: 10px; right: 10px; font-size: 12px; color: #666;"></div>
+
+  <script src="js/vendor/supabase.min.js"></script>
+  <script src="js/supabase-client.js?v=20260729160000"></script>
+  <script src="js/staff-session-guard.js?v=20260729150000"></script>
+  <script src="js/utils.js"></script>
+  <script src="js/main.js?v=202510220113130113131313"></script>
+  <script src="js/clinic-schedule.js?v=20260729180000"></script>
+  <script>
+    var DAY_KEYS = window.ClinicSchedule.DAY_KEYS;
+    var DAY_LABELS = window.ClinicSchedule.DAY_LABELS;
+    var customDurations = [];
+    var holidays = [];
+    var breaksState = [];
+
+    async function showPharmacyLinkIfNeeded() {
+      var enabled = false;
+      try {
+        var user = JSON.parse(localStorage.getItem('user') || '{}');
+        var orgs = JSON.parse(localStorage.getItem('organizations') || '{}');
+        var orgId = user.organizationId || user.organization_id;
+        var org = orgs[orgId] || orgs[user.org] || {};
+        var settings = org.settings || {};
+        if (settings.in_house_pharmacy === true) enabled = true;
+        if (!enabled) {
+          Object.keys(orgs).some(function (k) {
+            if (orgs[k] && orgs[k].settings && orgs[k].settings.in_house_pharmacy === true) {
+              enabled = true;
+              return true;
+            }
+            return false;
+          });
+        }
+        if (!enabled && window.supabaseClient && typeof window.resolveOrganizationId === 'function') {
+          try {
+            var resolvedId = await window.resolveOrganizationId();
+            if (resolvedId) {
+              var res = await window.supabaseClient
+                .from('organizations')
+                .select('settings')
+                .eq('id', resolvedId)
+                .maybeSingle();
+              if (!res.error && res.data && res.data.settings && res.data.settings.in_house_pharmacy === true) {
+                enabled = true;
+              }
+            }
+          } catch (e) { /* ignore supabase lookup */ }
+        }
+        if (enabled) {
+          document.getElementById('pharmacy-schedule-link').style.display = '';
+        }
+      } catch (e) { /* ignore */ }
+    }
+
+    function durationOptionsHtml(selected, extras) {
+      var values = (window.ClinicSchedule.normalizeConfig({
+        slotDuration: selected,
+        customDurations: extras || customDurations
+      }).availableDurations);
+      return values.map(function (n) {
+        return '<option value="' + n + '"' + (String(n) === String(selected) ? ' selected' : '') + '>' + n + ' minutes</option>';
+      }).join('');
+    }
+
+    function refreshDurationSelects(cfg) {
+      var extras = customDurations;
+      document.getElementById('slot-duration').innerHTML = durationOptionsHtml(cfg.slotDuration || 20, extras);
+      document.getElementById('regular-visit-duration').innerHTML = durationOptionsHtml(cfg.regularVisitDuration || 20, extras);
+      document.getElementById('initial-visit-duration').innerHTML = durationOptionsHtml(cfg.initialVisitDuration || 45, extras);
+    }
+
+    function renderCustomDurations() {
+      var el = document.getElementById('custom-durations-list');
+      if (!customDurations.length) {
+        el.innerHTML = '<p class="hint">No custom lengths yet.</p>';
+        return;
+      }
+      el.innerHTML = customDurations.map(function (n, idx) {
+        return '<div class="duration-chip"><strong>' + n + ' minutes</strong> <button type="button" class="danger" data-remove-duration="' + idx + '">Remove</button></div>';
+      }).join('');
+      el.querySelectorAll('[data-remove-duration]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          customDurations.splice(parseInt(btn.getAttribute('data-remove-duration'), 10), 1);
+          renderCustomDurations();
+          refreshDurationSelects(collectPartialConfig());
+          updatePreview();
+        });
+      });
+    }
+
+    function renderBreaks() {
+      var el = document.getElementById('breaks-list');
+      if (!breaksState.length) {
+        el.innerHTML = '<p class="hint">No breaks configured.</p>';
+        return;
+      }
+      el.innerHTML = breaksState.map(function (b, idx) {
+        return '<div class="break-row">' +
+          '<label>Label <input type="text" data-break-label="' + idx + '" value="' + (b.label || 'Break').replace(/"/g, '&quot;') + '" maxlength="40"></label>' +
+          '<label>Start <input type="time" data-break-start="' + idx + '" value="' + (b.startTime || '12:00') + '"></label>' +
+          '<label>Duration (min) <input type="number" data-break-duration="' + idx + '" min="5" max="240" value="' + (b.duration || 60) + '"></label>' +
+          '<button type="button" class="danger" data-remove-break="' + idx + '">Remove</button>' +
+          '</div>';
+      }).join('');
+      el.querySelectorAll('[data-break-label],[data-break-start],[data-break-duration]').forEach(function (input) {
+        input.addEventListener('change', syncBreakInputs);
+        input.addEventListener('input', syncBreakInputs);
+      });
+      el.querySelectorAll('[data-remove-break]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          breaksState.splice(parseInt(btn.getAttribute('data-remove-break'), 10), 1);
+          renderBreaks();
+          updatePreview();
+        });
+      });
+    }
+
+    function syncBreakInputs() {
+      breaksState = breaksState.map(function (b, idx) {
+        var labelEl = document.querySelector('[data-break-label="' + idx + '"]');
+        var startEl = document.querySelector('[data-break-start="' + idx + '"]');
+        var durEl = document.querySelector('[data-break-duration="' + idx + '"]');
+        return {
+          label: (labelEl && labelEl.value.trim()) || 'Break',
+          startTime: (startEl && startEl.value) || '12:00',
+          duration: parseInt(durEl && durEl.value, 10) || 60
+        };
+      });
+      updatePreview();
+    }
+
+    function renderHolidays() {
+      var el = document.getElementById('holidays-list');
+      if (!holidays.length) {
+        el.innerHTML = '<p class="hint">No public holidays marked yet.</p>';
+        return;
+      }
+      el.innerHTML = holidays.map(function (h, idx) {
+        return '<div class="holiday-row"><strong>' + h.date + '</strong> <span>' + (h.name || 'Public Holiday') + '</span>' +
+          '<button type="button" class="danger" data-remove-holiday="' + idx + '">Remove</button></div>';
+      }).join('');
+      el.querySelectorAll('[data-remove-holiday]').forEach(function (btn) {
+        btn.addEventListener('click', function () {
+          holidays.splice(parseInt(btn.getAttribute('data-remove-holiday'), 10), 1);
+          renderHolidays();
+          updatePreview();
+        });
+      });
+    }
+
+    function renderDayHours(cfg) {
+      var el = document.getElementById('day-hours-list');
+      el.innerHTML = DAY_KEYS.map(function (day) {
+        var d = (cfg.dayHours && cfg.dayHours[day]) || { enabled: false, startTime: '08:00', endTime: '18:00' };
+        return '<div class="day-row">' +
+          '<label><input type="checkbox" data-day-enabled="' + day + '"' + (d.enabled ? ' checked' : '') + '> ' + DAY_LABELS[day] + '</label>' +
+          '<label>Open <input type="time" data-day-start="' + day + '" value="' + (d.startTime || '08:00') + '"></label>' +
+          '<label>Close <input type="time" data-day-end="' + day + '" value="' + (d.endTime || '18:00') + '"></label>' +
+          '</div>';
+      }).join('');
+      el.querySelectorAll('input').forEach(function (input) {
+        input.addEventListener('change', updatePreview);
+      });
+    }
+
+    function collectPartialConfig() {
+      var dayHours = {};
+      var workingDays = [];
+      DAY_KEYS.forEach(function (day) {
+        var enabled = !!(document.querySelector('[data-day-enabled="' + day + '"]') || {}).checked;
+        var start = (document.querySelector('[data-day-start="' + day + '"]') || {}).value || '08:00';
+        var end = (document.querySelector('[data-day-end="' + day + '"]') || {}).value || '18:00';
+        dayHours[day] = { enabled: enabled, startTime: start, endTime: end };
+        if (enabled) workingDays.push(day);
+      });
+      syncBreakInputs();
+      var first = workingDays[0];
+      return {
+        startTime: first ? dayHours[first].startTime : '08:00',
+        endTime: first ? dayHours[first].endTime : '18:00',
+        slotDuration: parseInt(document.getElementById('slot-duration').value, 10) || 20,
+        regularVisitDuration: parseInt(document.getElementById('regular-visit-duration').value, 10) || 20,
+        initialVisitDuration: parseInt(document.getElementById('initial-visit-duration').value, 10) || 45,
+        customDurations: customDurations.slice(),
+        workingDays: workingDays,
+        dayHours: dayHours,
+        lunchBreaks: breaksState.slice(),
+        holidays: holidays.slice(),
+        pharmacy: (window.ClinicSchedule.getClinicScheduleConfig().pharmacy || { useClinicSchedule: true })
+      };
+    }
+
+    function updatePreview() {
+      var cfg = window.ClinicSchedule.normalizeConfig(collectPartialConfig());
+      var lines = ['<p><strong>Open Days:</strong> ' + (cfg.workingDays.map(function (d) { return DAY_LABELS[d]; }).join(', ') || 'None') + '</p>'];
+      cfg.workingDays.forEach(function (d) {
+        var h = cfg.dayHours[d];
+        var slots = window.ClinicSchedule.getSlotsForDate;
+        // Preview using a synthetic upcoming date matching weekday is heavy; show hours + break count
+        lines.push('<p><strong>' + DAY_LABELS[d] + ':</strong> ' + h.startTime + ' to ' + h.endTime + '</p>');
+      });
+      lines.push('<p><strong>Default Slot:</strong> ' + cfg.slotDuration + ' minutes</p>');
+      lines.push('<p><strong>Breaks:</strong> ' + (cfg.lunchBreaks.length
+        ? cfg.lunchBreaks.map(function (b) { return (b.label || 'Break') + ' at ' + b.startTime + ' (' + b.duration + ' min)'; }).join('; ')
+        : 'None') + '</p>');
+      lines.push('<p><strong>Custom Lengths:</strong> ' + (cfg.customDurations.length ? cfg.customDurations.join(', ') + ' min' : 'None') + '</p>');
+      lines.push('<p><strong>Public Holidays:</strong> ' + (cfg.holidays.length
+        ? cfg.holidays.map(function (h) { return h.date + ' (' + h.name + ')'; }).join('; ')
+        : 'None') + '</p>');
+      if (cfg.workingDays.length) {
+        var sampleDay = cfg.workingDays[0];
+        var slots = window.ClinicSchedule.slotsFromDayHours(
+          cfg.dayHours[sampleDay],
+          cfg.lunchBreaks,
+          cfg.slotDuration
+        );
+        lines.push('<p><strong>Sample Slots (' + DAY_LABELS[sampleDay] + '):</strong> ' + slots.length + ' slots' +
+          (slots.length ? ' (e.g. ' + slots.slice(0, 6).join(', ') + (slots.length > 6 ? '...' : '') + ')' : '') + '</p>');
+      }
+      document.getElementById('schedule-preview').innerHTML = lines.join('');
+    }
+
+    function loadCurrentConfig() {
+      var cfg = window.ClinicSchedule.getClinicScheduleConfig();
+      customDurations = (cfg.customDurations || []).slice();
+      holidays = (cfg.holidays || []).slice();
+      breaksState = (cfg.lunchBreaks || []).slice();
+      if (!breaksState.length && cfg.lunchBreak && cfg.lunchBreak.enabled) {
+        breaksState = [{ startTime: cfg.lunchBreak.startTime || '12:00', duration: cfg.lunchBreak.duration || 60, label: 'Lunch' }];
+      }
+      renderDayHours(cfg);
+      renderBreaks();
+      renderHolidays();
+      renderCustomDurations();
+      refreshDurationSelects(cfg);
+      updatePreview();
+    }
+
+    document.getElementById('add-break-btn').addEventListener('click', function () {
+      breaksState.push({ label: breaksState.length ? 'Break' : 'Lunch', startTime: '12:00', duration: 60 });
+      renderBreaks();
+      updatePreview();
+    });
+
+    document.getElementById('add-custom-duration-btn').addEventListener('click', function () {
+      var n = parseInt(document.getElementById('new-custom-duration').value, 10);
+      if (!(n >= 5 && n <= 240)) {
+        alert('Enter a custom length between 5 and 240 minutes.');
+        return;
+      }
+      if (customDurations.indexOf(n) === -1) customDurations.push(n);
+      customDurations.sort(function (a, b) { return a - b; });
+      document.getElementById('new-custom-duration').value = '';
+      renderCustomDurations();
+      refreshDurationSelects(collectPartialConfig());
+      updatePreview();
+    });
+
+    document.getElementById('add-holiday-btn').addEventListener('click', function () {
+      var date = document.getElementById('holiday-date').value;
+      var name = (document.getElementById('holiday-name').value || '').trim() || 'Public Holiday';
+      if (!date) {
+        alert('Select a holiday date.');
+        return;
+      }
+      holidays = holidays.filter(function (h) { return h.date !== date; });
+      holidays.push({ date: date, name: name });
+      holidays.sort(function (a, b) { return a.date.localeCompare(b.date); });
+      document.getElementById('holiday-date').value = '';
+      document.getElementById('holiday-name').value = '';
+      renderHolidays();
+      updatePreview();
+    });
+
+    document.getElementById('schedule-config-form').addEventListener('submit', function (e) {
+      e.preventDefault();
+      var cfg = collectPartialConfig();
+      if (!cfg.workingDays.length) {
+        alert('Enable at least one working day.');
+        return;
+      }
+      window.ClinicSchedule.saveClinicScheduleConfig(cfg);
+      alert('Schedule configuration saved successfully.');
+      loadCurrentConfig();
+    });
+
+    document.getElementById('slot-duration').addEventListener('change', updatePreview);
+    document.getElementById('regular-visit-duration').addEventListener('change', updatePreview);
+    document.getElementById('initial-visit-duration').addEventListener('change', updatePreview);
+
+    window.addEventListener('load', function () {
+      var userFooter = JSON.parse(localStorage.getItem('user') || 'null');
+      if (userFooter && document.getElementById('logged-in-info')) {
+        document.getElementById('logged-in-info').textContent =
+          (userFooter.username || '') + ' (' + (userFooter.role || '') + ') from ' + (userFooter.org || '') + ' is logged in';
+      }
+      showPharmacyLinkIfNeeded();
+      loadCurrentConfig();
+    });
+  </script>
   <script src="js/logout-button.js"></script>
-  <script src="js/session-timeout.js"></script>  <!-- Auto-logout after 30 minutes of inactivity -->
+  <script src="js/session-timeout.js"></script>
 </body>
 </html>
-
-
-
-
-

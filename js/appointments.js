@@ -1,56 +1,56 @@
 // Purpose: Handles appointments: loading, adding, cancellation, and schedule calendar views with configurable slots.
 // Version: v=286 - Fixed variable conflicts and schema mismatch
 
-// Get clinic schedule configuration
+// Get clinic schedule configuration (per-day hours, multi-breaks, holidays via clinic-schedule.js)
 function getClinicSchedule() {
+  if (window.ClinicSchedule && typeof window.ClinicSchedule.getClinicScheduleConfig === 'function') {
+    return window.ClinicSchedule.getClinicScheduleConfig();
+  }
   const config = JSON.parse(localStorage.getItem(getDataKey("clinic-schedule")) || '{}');
   return {
     startTime: config.startTime || "08:00",
     endTime: config.endTime || "18:00",
     slotDuration: config.slotDuration || 20,
     lunchBreak: config.lunchBreak || { enabled: false },
-    workingDays: config.workingDays || ["monday", "tuesday", "wednesday", "thursday", "friday"]
+    lunchBreaks: config.lunchBreaks || [],
+    workingDays: config.workingDays || ["monday", "tuesday", "wednesday", "thursday", "friday"],
+    dayHours: config.dayHours || {},
+    holidays: config.holidays || [],
+    customDurations: config.customDurations || []
   };
 }
 
-// Generate all possible time slots based on configuration
-function getAllSlots() {
+// Generate bookable slots. Pass YYYY-MM-DD (or Date) for day-specific hours / holidays / breaks.
+function getAllSlots(dateInput) {
+  if (typeof window.getSlotsForDate === 'function') {
+    return window.getSlotsForDate(dateInput || null);
+  }
+  if (window.ClinicSchedule && typeof window.ClinicSchedule.getSlotsForDate === 'function') {
+    return window.ClinicSchedule.getSlotsForDate(dateInput || null);
+  }
+  // Legacy fallback (single lunch break, global hours)
   const schedule = getClinicSchedule();
   const slots = [];
-  
   const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
   const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
-  
   let hour = startHour;
   let minute = startMinute;
-  
   while (hour < endHour || (hour === endHour && minute < endMinute)) {
     const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-    
-    // Check if this slot conflicts with lunch break
     if (schedule.lunchBreak && schedule.lunchBreak.enabled) {
       const [lunchHour, lunchMinute] = schedule.lunchBreak.startTime.split(':').map(Number);
       const lunchEndTime = new Date(2000, 0, 1, lunchHour, lunchMinute + schedule.lunchBreak.duration);
       const currentTime = new Date(2000, 0, 1, hour, minute);
-      
       if (currentTime >= new Date(2000, 0, 1, lunchHour, lunchMinute) && currentTime < lunchEndTime) {
         minute += schedule.slotDuration;
-        if (minute >= 60) {
-          minute = 0;
-          hour++;
-        }
+        if (minute >= 60) { minute = 0; hour++; }
         continue;
       }
     }
-    
     slots.push(timeStr);
     minute += schedule.slotDuration;
-    if (minute >= 60) {
-      minute = 0;
-      hour++;
-    }
+    if (minute >= 60) { minute = 0; hour++; }
   }
-  
   return slots;
 }
 
@@ -1872,10 +1872,25 @@ async function loadAvailableSlots() {
       return;
     }
 
+    if (typeof window.isClinicOpenOnDate === 'function') {
+      const openInfo = window.isClinicOpenOnDate(selectedDate);
+      if (!openInfo.open) {
+        const reason = openInfo.reason === 'holiday'
+          ? (`Public holiday: ${(openInfo.holiday && openInfo.holiday.name) || 'Clinic closed'}`)
+          : 'Clinic is closed on this day';
+        slotSelect.innerHTML = `<option value="">${reason}. Choose another date.</option>`;
+        return;
+      }
+    }
+
     const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
 
-    // Get all slots
-    const allSlots = getAllSlots();
+    // Get all slots for the selected date (per-day hours, breaks, holidays)
+    const allSlots = getAllSlots(selectedDate);
+    if (!allSlots.length) {
+      slotSelect.innerHTML = '<option value="">No open slots on this date</option>';
+      return;
+    }
 
     // Count doctors in organization to multiply available slots
     const doctorCount = await getDoctorCount();
@@ -2507,12 +2522,22 @@ async function generateDailyView(date) {
   const grouped = getAppointmentsByDate();
   const dateStr = formatDate(date);
   const appts = grouped[dateStr] || [];
-  const allSlots = getAllSlots();
+  const allSlots = getAllSlots(dateStr);
   const providers = await getScheduleProviders(date);
+  const openInfo = (typeof window.isClinicOpenOnDate === 'function')
+    ? window.isClinicOpenOnDate(dateStr)
+    : { open: true };
 
   let html = `<h3>Daily Schedule for ${date.toDateString()}</h3>`;
   html += '<button onclick="changeDate(-1, \'daily\')">Previous Day</button> ';
-  html += '<button onclick="changeDate(1, \'daily\')">Next Day</button>';
+  html += '<button onclick="changeDate(1, \'daily\')">Next Day</button> ';
+  html += `<button onclick="window.location.href='doctor-day-schedule?date=${dateStr}'">Doctor Day Schedule</button>`;
+  if (!openInfo.open) {
+    const reason = openInfo.reason === 'holiday'
+      ? (`Public holiday: ${(openInfo.holiday && openInfo.holiday.name) || 'Clinic closed'}`)
+      : 'Clinic closed this day';
+    html += `<div style="margin:12px 0;padding:12px;background:#fdecea;border-left:4px solid #dc3545;border-radius:4px;"><strong>Closed.</strong> ${scheduleEscapeHtml(reason)}. Booking is disabled.</div>`;
+  }
 
   html += `<div style="margin: 15px 0; display: flex; align-items: center; gap: 10px; flex-wrap: wrap;">
     <label for="daily-provider-filter" style="font-weight: 600;">Provider:</label>
@@ -2558,6 +2583,8 @@ async function generateDailyView(date) {
           parts.push(await renderSchedulePatientLink(appt));
         }
         status = parts.join('<br>');
+      } else if (!openInfo.open) {
+        status = '<span style="color:#999;">Closed</span>';
       } else {
         const doctorParam = provider && provider.key !== '__unassigned__'
           ? `&doctor=${encodeURIComponent(provider.label)}`
@@ -2577,11 +2604,21 @@ async function generateDailyByProviderView(date) {
   const dateStr = formatDate(date);
   const appts = grouped[dateStr] || [];
   const providers = await getScheduleProviders(date);
-  const allSlots = getAllSlots();
+  const allSlots = getAllSlots(dateStr);
+  const openInfo = (typeof window.isClinicOpenOnDate === 'function')
+    ? window.isClinicOpenOnDate(dateStr)
+    : { open: true };
 
   let html = `<h3>Daily Schedule by Provider: ${date.toDateString()}</h3>`;
   html += '<button onclick="changeDate(-1, \'byProvider\')">Previous Day</button> ';
-  html += '<button onclick="changeDate(1, \'byProvider\')">Next Day</button>';
+  html += '<button onclick="changeDate(1, \'byProvider\')">Next Day</button> ';
+  html += `<button onclick="window.location.href='doctor-day-schedule?date=${dateStr}'">Doctor Day Schedule</button>`;
+  if (!openInfo.open) {
+    const reason = openInfo.reason === 'holiday'
+      ? (`Public holiday: ${(openInfo.holiday && openInfo.holiday.name) || 'Clinic closed'}`)
+      : 'Clinic closed this day';
+    html += `<div style="margin:12px 0;padding:12px;background:#fdecea;border-left:4px solid #dc3545;border-radius:4px;"><strong>Closed.</strong> ${scheduleEscapeHtml(reason)}. Open-slot booking links are hidden.</div>`;
+  }
 
   html += '<div style="margin: 12px 0; display: flex; flex-wrap: wrap; gap: 8px;">';
   providers.forEach((provider) => {
@@ -2603,16 +2640,25 @@ async function generateDailyByProviderView(date) {
   });
   html += '</tr></thead><tbody>';
 
+  if (!allSlots.length) {
+    html += '<p style="color:#666;">No bookable slots for this day.</p>';
+    return html;
+  }
+
   for (const slot of allSlots) {
     html += `<tr><td style="padding: 8px; border: 1px solid #dee2e6; font-weight: 600; white-space: nowrap;">${slot}</td>`;
     for (const provider of providers) {
       const slotAppts = getAppointmentsForSlotAndProvider(appts, slot, provider.key);
       html += '<td style="padding: 8px; border: 1px solid #dee2e6; vertical-align: top;">';
       if (slotAppts.length === 0) {
-        const doctorParam = provider.key !== '__unassigned__'
-          ? `&doctor=${encodeURIComponent(provider.label)}`
-          : '';
-        html += `<a href="add-appointment?date=${dateStr}&time=${slot}${doctorParam}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">Free</a>`;
+        if (!openInfo.open) {
+          html += '<span style="color:#999;">Closed</span>';
+        } else {
+          const doctorParam = provider.key !== '__unassigned__'
+            ? `&doctor=${encodeURIComponent(provider.label)}`
+            : '';
+          html += `<a href="add-appointment?date=${dateStr}&time=${slot}${doctorParam}" style="color: #4CAF50; text-decoration: none; font-weight: bold;">Free</a>`;
+        }
       } else {
         for (const appt of slotAppts) {
           const patientLink = await renderSchedulePatientLink(appt);
@@ -2644,8 +2690,6 @@ async function generateWeeklyView(date) {
   
   // Get doctor count once for all days
   const doctorCount = await getDoctorCount();
-  const allSlots = getAllSlots();
-  const totalSlotsPerDay = allSlots.length * doctorCount;
   
   for (let i = 0; i < 7; i++) {
     const day = new Date(startOfWeek);
@@ -2653,8 +2697,18 @@ async function generateWeeklyView(date) {
     const dateStr = formatDate(day);
     const appts = grouped[dateStr] || [];
     const occupied = appts.length;
-    // Calculate free slots accounting for multiple doctors
-    const free = totalSlotsPerDay - occupied;
+    const daySlots = getAllSlots(dateStr);
+    const openInfo = (typeof window.isClinicOpenOnDate === 'function')
+      ? window.isClinicOpenOnDate(dateStr)
+      : { open: daySlots.length > 0 };
+    if (!openInfo.open) {
+      const label = openInfo.reason === 'holiday'
+        ? ((openInfo.holiday && openInfo.holiday.name) || 'Holiday')
+        : 'Closed';
+      html += `<td>${day.getDate()}<br><span style="color:#dc3545;font-weight:600;">${scheduleEscapeHtml(label)}</span></td>`;
+      continue;
+    }
+    const free = Math.max(0, (daySlots.length * doctorCount) - occupied);
     html += `<td>${day.getDate()}<br>Occupied: ${occupied}<br>Free: ${free}</td>`;
   }
   html += '</tr></tbody></table>';
@@ -2676,8 +2730,6 @@ async function generateMonthlyView(date) {
   
   // Get doctor count once for all days
   const doctorCount = await getDoctorCount();
-  const allSlots = getAllSlots();
-  const totalSlotsPerDay = allSlots.length * doctorCount;
   
   // Pad start of month
   for (let i = 0; i < firstDay.getDay(); i++) {
@@ -2688,17 +2740,28 @@ async function generateMonthlyView(date) {
     const dateStr = formatDate(day);
     const appts = grouped[dateStr] || [];
     const occupied = appts.length;
+    const daySlots = getAllSlots(dateStr);
+    const openInfo = (typeof window.isClinicOpenOnDate === 'function')
+      ? window.isClinicOpenOnDate(dateStr)
+      : { open: daySlots.length > 0 };
     
     // Calculate total available slots for this day (accounting for multiple doctors)
-    const freeSlots = totalSlotsPerDay - occupied;
+    const freeSlots = Math.max(0, (daySlots.length * doctorCount) - occupied);
     
     // Make dates clickable with appointment details
     const clickableDate = `<span style="cursor: pointer; color: #007bff; text-decoration: underline; font-weight: bold;" onclick="showDailyDetails('${dateStr}')" title="Click to view ${occupied} appointment(s)">${d}</span>`;
     
-    // Show status with actual numbers
-    const statusText = occupied > 0 ? 
-      `<span style="color: ${occupied >= 5 ? '#dc3545' : occupied >= 3 ? '#ffc107' : '#28a745'}; font-weight: bold;">Occupied: ${occupied}</span><br><span style="color: #6c757d; font-weight: bold;">Free: ${freeSlots}</span>` :
-      `<span style="color: #28a745; font-weight: bold;">Free: ${freeSlots}</span>`;
+    let statusText;
+    if (!openInfo.open) {
+      const label = openInfo.reason === 'holiday'
+        ? ((openInfo.holiday && openInfo.holiday.name) || 'Holiday')
+        : 'Closed';
+      statusText = `<span style="color:#dc3545;font-weight:bold;">${scheduleEscapeHtml(label)}</span>`;
+    } else if (occupied > 0) {
+      statusText = `<span style="color: ${occupied >= 5 ? '#dc3545' : occupied >= 3 ? '#ffc107' : '#28a745'}; font-weight: bold;">Occupied: ${occupied}</span><br><span style="color: #6c757d; font-weight: bold;">Free: ${freeSlots}</span>`;
+    } else {
+      statusText = `<span style="color: #28a745; font-weight: bold;">Free: ${freeSlots}</span>`;
+    }
     
     row += `<td style="padding: 8px; border: 1px solid #ddd; vertical-align: top; min-height: 60px; background-color: #f8f9fa;">${clickableDate}<br>${statusText}</td>`;
     if (day.getDay() === 6) {  // End row on Saturday
@@ -2764,8 +2827,8 @@ async function showDailyDetails(dateStr) {
   const dayAppointments = appointments.filter(apt => apt.date === dateStr);
   const providers = await getScheduleProviders(new Date(dateStr + 'T12:00:00'));
   
-  // Calculate slot information
-  const allSlots = getAllSlots();
+  // Calculate slot information for this specific date
+  const allSlots = getAllSlots(dateStr);
   const doctorCount = await getDoctorCount();
   const totalSlots = allSlots.length * Math.max(1, doctorCount);
   const occupiedSlots = dayAppointments.length;

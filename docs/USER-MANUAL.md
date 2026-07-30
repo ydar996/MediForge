@@ -257,7 +257,10 @@ See also **Preventive Gaps Summary** on the dashboard for clinic-wide reports.
 
 ### Other scheduling tools
 
-- **View Schedule Calendar**: calendar view  
+- **View Schedule Calendar**: daily, by-provider, weekly, and monthly views  
+- **Doctor Day Schedule**: one doctor's full day with taken and open slots; click an open slot to book  
+- **Configure Clinic Schedule**: hours per weekday, multiple breaks, custom appointment lengths, and public holidays (booking blocked on holidays and during breaks)  
+- **Configure Pharmacy Hours**: shown when In-House Pharmacy is on; defaults to clinic hours, or set a separate pharmacy schedule  
 - **Upcoming Appointments**: list of what’s next  
 - **Appointment Reminder Settings**: configure reminders (admins)  
 - **Upcoming Appointments – Copy SMS**: copy reminder text to send by phone  
@@ -415,7 +418,9 @@ MediForge can keep working when the connection drops **if you prepared while onl
 
 | Task | Where |
 |------|--------|
-| Clinic schedule | Configure Clinic Schedule |
+| Clinic schedule | Configure Clinic Schedule (per-day hours, breaks, custom lengths, holidays) |
+| Pharmacy hours | Configure Pharmacy Hours (when in-house pharmacy is on) |
+| Doctor day view | Doctor Day Schedule |
 | Subscription | Manage Subscription |
 | Import/export data | Import/Export Data |
 | Encryption | Setup Encryption / Recover Encryption |

@@ -64,7 +64,8 @@
   <script src="js/main.js?v=202510220113070113071307"></script>
   <script src="js/pricing.js"></script>
   <script src="js/appointment-types.js"></script>
-  <script src="js/appointments.js?v=20260416140000-appointment-org-reconcile"></script>
+  <script src="js/clinic-schedule.js?v=20260729180000"></script>
+  <script src="js/appointments.js?v=20260729180000-clinic-schedule"></script>
   <script src="js/universal-sync-status.js?v=202510220113070113071307"></script>
   <script>
     window.addEventListener('load', async function() {
@@ -93,6 +94,11 @@
       
       // THEN load appointment data (so dropdowns are ready when we try to set values)
       await loadAppointmentForEdit(appointmentId);
+      loadAvailableSlots();
+      const dateInput = document.getElementById('date');
+      if (dateInput) {
+        dateInput.addEventListener('change', loadAvailableSlots);
+      }
       
       // Setup form submission
       document.getElementById('edit-appointment-form').addEventListener('submit', handleEditAppointmentSubmit);
@@ -485,63 +491,28 @@
       };
     }
     
-    function getClinicSchedule() {
-      const config = JSON.parse(localStorage.getItem(getDataKey("clinic-schedule")) || '{}');
-      return {
-        startTime: config.startTime || "08:00",
-        endTime: config.endTime || "18:00",
-        slotDuration: config.slotDuration || 20,
-        lunchBreak: config.lunchBreak || { enabled: false },
-        workingDays: config.workingDays || ["monday", "tuesday", "wednesday", "thursday", "friday"]
-      };
-    }
-    
-    function getAllSlots() {
-      const schedule = getClinicSchedule();
-      const slots = [];
+    function loadAvailableSlots() {
+      const timeSelect = document.getElementById('time');
+      const dateInput = document.getElementById('date');
+      const selectedDate = dateInput ? dateInput.value : '';
       
-      const [startHour, startMinute] = schedule.startTime.split(':').map(Number);
-      const [endHour, endMinute] = schedule.endTime.split(':').map(Number);
-      
-      let hour = startHour;
-      let minute = startMinute;
-      
-      while (hour < endHour || (hour === endHour && minute < endMinute)) {
-        const timeStr = `${hour.toString().padStart(2, '0')}:${minute.toString().padStart(2, '0')}`;
-        
-        // Check if this slot conflicts with lunch break
-        if (schedule.lunchBreak && schedule.lunchBreak.enabled) {
-          const [lunchHour, lunchMinute] = schedule.lunchBreak.startTime.split(':').map(Number);
-          const lunchEndTime = new Date(2000, 0, 1, lunchHour, lunchMinute + schedule.lunchBreak.duration);
-          const currentTime = new Date(2000, 0, 1, hour, minute);
-          
-          if (currentTime >= new Date(2000, 0, 1, lunchHour, lunchMinute) && currentTime < lunchEndTime) {
-            minute += schedule.slotDuration;
-            if (minute >= 60) {
-              minute = 0;
-              hour++;
-            }
-            continue;
-          }
-        }
-        
-        slots.push(timeStr);
-        minute += schedule.slotDuration;
-        if (minute >= 60) {
-          minute = 0;
-          hour++;
+      timeSelect.innerHTML = '<option value="">Select a time slot...</option>';
+
+      if (selectedDate && typeof window.isClinicOpenOnDate === 'function') {
+        const openInfo = window.isClinicOpenOnDate(selectedDate);
+        if (!openInfo.open) {
+          const reason = openInfo.reason === 'holiday'
+            ? (`Public holiday: ${(openInfo.holiday && openInfo.holiday.name) || 'Clinic closed'}`)
+            : 'Clinic is closed on this day';
+          const option = document.createElement('option');
+          option.value = '';
+          option.textContent = reason;
+          timeSelect.appendChild(option);
+          return;
         }
       }
       
-      return slots;
-    }
-    
-    function loadAvailableSlots() {
-      const timeSelect = document.getElementById('time');
-      
-      timeSelect.innerHTML = '<option value="">Select a time slot...</option>';
-      
-      const slots = getAllSlots();
+      const slots = (typeof getAllSlots === 'function') ? getAllSlots(selectedDate || null) : [];
       slots.forEach(slot => {
         const option = document.createElement('option');
         option.value = slot;

@@ -60,7 +60,8 @@
   <script src="js/main.js?v=202510220113070113071307"></script>
   <script src="js/pricing.js"></script>  <!-- Load pricing for billing services -->
   <script src="js/appointment-types.js"></script>  <!-- Appointment types utility -->
-  <script src="js/appointments.js?v=20260416140000-appointment-org-reconcile"></script>
+  <script src="js/clinic-schedule.js?v=20260729180000"></script>
+  <script src="js/appointments.js?v=20260729180000-clinic-schedule"></script>
   <script src="js/universal-sync-status.js?v=202510220113070113071307"></script>  <!-- Universal sync status indicator -->
   <script>
     window.addEventListener('load', async function() {
@@ -231,7 +232,9 @@
           notes: appointment.notes || '',
           status: finalStatus,
           organization_id: orgId, // CRITICAL: Use resolved orgId (UUID)
-          duration_minutes: 30
+          duration_minutes: (typeof window.resolveAppointmentDurationMinutes === 'function')
+            ? window.resolveAppointmentDurationMinutes(selectedTypeName || appointment.appointmentType)
+            : (appointment.duration || appointment.duration_minutes || 30)
         };
         
         // Debug logging to verify appointment_type is set correctly
@@ -314,9 +317,21 @@
         }
       }
 
+      const bookingDate = document.getElementById("date")?.value;
+      if (bookingDate && typeof window.isClinicOpenOnDate === 'function') {
+        const openInfo = window.isClinicOpenOnDate(bookingDate);
+        if (!openInfo.open) {
+          const reason = openInfo.reason === 'holiday'
+            ? (`public holiday (${(openInfo.holiday && openInfo.holiday.name) || 'closed'})`)
+            : 'a day the clinic is closed';
+          alert('Appointments cannot be scheduled on ' + reason + '. Choose another date.');
+          return;
+        }
+      }
+
       // Duplicate guard: allow retry when a prior attempt only saved locally
       const patientNameForDup = document.getElementById("patientName")?.value?.trim();
-      const dupDate = document.getElementById("date")?.value;
+      const dupDate = bookingDate;
       if (patientNameForDup && dupDate) {
         const appointmentsKey = getDataKey("appointments");
         const existing = JSON.parse(localStorage.getItem(appointmentsKey) || "[]");
@@ -536,10 +551,13 @@
         appointment_type_id: appointmentTypeId, // Store appointment type ID for reference
         notes: document.getElementById("notes").value,
         status: 'scheduled',
-        duration: 30,
+        duration: (typeof window.resolveAppointmentDurationMinutes === 'function')
+          ? window.resolveAppointmentDurationMinutes(appointmentTypeName)
+          : 30,
         created_at: new Date().toISOString(),
         organization_id: orgIdForAppt
       };
+      appointment.duration_minutes = appointment.duration;
       
       // Debug logging to verify appointment type is set correctly
       console.log('🔍 [saveAppointment] Appointment created:', {
@@ -1083,16 +1101,31 @@
           return;
         }
 
+        if (typeof window.isClinicOpenOnDate === 'function') {
+          const openInfo = window.isClinicOpenOnDate(selectedDate);
+          if (!openInfo.open) {
+            const reason = openInfo.reason === 'holiday'
+              ? (`Public holiday: ${(openInfo.holiday && openInfo.holiday.name) || 'Clinic closed'}`)
+              : 'Clinic is closed on this day';
+            timeSelect.innerHTML = `<option value="">${reason}. Choose another date.</option>`;
+            return;
+          }
+        }
+
         const appointments = JSON.parse(localStorage.getItem(getDataKey("appointments")) || "[]");
 
-        // Get all slots from configured schedule - NO FILTERING BY TIME
+        // Get all slots from configured schedule for the selected date (per-day hours / breaks / holidays)
         if (typeof getAllSlots !== 'function') {
           console.error('❌ getAllSlots function not available');
           timeSelect.innerHTML = '<option value="">Error: Schedule not configured</option>';
           return;
         }
-        const allSlots = getAllSlots();
+        const allSlots = getAllSlots(selectedDate);
         console.log('📋 getAllSlots returned', allSlots.length, 'slots');
+        if (!allSlots.length) {
+          timeSelect.innerHTML = '<option value="">No open slots on this date</option>';
+          return;
+        }
         
         // Count doctors in organization to multiply available slots
         if (typeof getDoctorCount !== 'function') {
