@@ -416,7 +416,7 @@ On a **fresh MediForge database**, ignore org-specific migration scripts unless 
 - **Owner ask:** Pharmacy can have different hours than clinic; multiple lunch breaks; custom appointment lengths; per-day hours; public holidays that block booking; doctor full-day view with open/taken slots and click-to-book.
 - **Added:** `js/clinic-schedule.js` (shared schedule model); rebuilt `/set-clinic-schedule`; new `/set-pharmacy-schedule` (defaults to clinic; override per weekday); new `/doctor-day-schedule`; booking/slot generation honors per-day hours, multi-breaks, and holidays; dashboard + schedule links; user manual updates.
 - **Follow-up:** All booking/slot paths pass the selected date; appointment duration uses configured initial/regular visit lengths; pharmacy hours link also checks Supabase `in_house_pharmacy`.
-- **Deployed:** pending commit hash after promote + CLI Netlify all three sites.
+- **Deployed:** `6a34b9c` to `dev` / `staging` / `main` + CLI Netlify all three sites.
 
 ### July 29, 2026: Global harden: Create Portal Access never hijacks staff Auth
 
